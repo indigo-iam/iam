@@ -19,6 +19,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="o" tagdir="/WEB-INF/tags"%>
 
 <t:page title="Register">
     <jsp:attribute name="footer">
@@ -33,11 +34,31 @@
         <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/authn-info.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/aup.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/privacy-policy.service.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/js/toaster/toaster.min.js"></script>
+        <script type="text/javascript" src="<c:url value='/webjars/angular-ui-router/release/angular-ui-router.min.js'/>"></script>
     </jsp:attribute>
     <jsp:body>
         <div ng-app="registrationApp">
             <div ng-include src="'${resourcesPrefix}/iam/apps/registration/registration.html'">
             </div>
-        </div>
+        <script>
+            window.IAM_X509_CRED = "${IAM_X509_CRED}";  
+            window.IAM_X509_CRED_SUBJECT = "${IAM_X509_CRED.subject}";
+            window.IAM_X509_CRED_ISSUER = "${IAM_X509_CRED.issuer}";
+            window.IAM_X509_CAN_LOGIN = "${IAM_X509_CAN_LOGIN}";
+            window.IAM_X509_SUSPENDED_ACCOUNT = "${IAM_X509_SUSPENDED_ACCOUNT}";
+            window.IAM_X509_ALMOST_EXPIRED = "${IAM_X509_ALMOST_EXPIRED}";
+            window.IAM_X509_EXPIRATION_DATE = "${IAM_X509_EXPIRATION_DATE}";
+            window.IAM_X509_REQUIRED = "${IAM_X509_REQUIRED}";
+        </script>
     </jsp:body>
 </t:page>
+
+<o:iamHeader title="Register">
+    <jsp:body>
+        <div ng-app="registrationApp">
+            <div ng-include src="'${resourcesPrefix}/iam/apps/registration/registration.html'">
+            </div>
+        </div> 
+    </jsp:body>
+</o:iamHeader>

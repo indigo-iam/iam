@@ -24,7 +24,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -36,8 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.UnsupportedEncodingException;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
@@ -45,7 +44,6 @@ import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,10 +54,9 @@ import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class ClientRegistrationTests extends ClientRegistrationTestSupport {
+class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
   @Autowired
   private ObjectMapper mapper;
@@ -74,7 +71,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   private MockMvc mvc;
 
   @Test
-  public void testClientRegistrationWorksForLegacyEndpoint() throws Exception {
+  void testClientRegistrationWorksForLegacyEndpoint() throws Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
@@ -87,7 +84,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void testClientRegistrationAccessTokenWorks() throws Exception {
+  void testClientRegistrationAccessTokenWorks() throws Exception {
 
     String jsonInString =
         ClientJsonStringBuilder.builder().scopes("test").grantTypes("authorization_code").build();
@@ -141,7 +138,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void testCreateClientWithRegistrationReservedScopes() throws Exception {
+  void testCreateClientWithRegistrationReservedScopes() throws Exception {
 
     String[] scopes =
         {"registration:read", "registration:write", "scim:read", "scim:write", "proxy:generate"};
@@ -169,7 +166,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void testGetTokenWithScimReservedScopesFailure() throws Exception {
+  void testGetTokenWithScimReservedScopesFailure() throws Exception {
 
     String[] scopes = {"scim:read", "scim:write", "registration:read", "registration:write"};
 
@@ -203,7 +200,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void passwordGrantTypeNotAllowedWhenRegisteringNewClient() throws Exception {
+  void passwordGrantTypeNotAllowedWhenRegisteringNewClient() throws Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("authorization_code", "password")
@@ -218,7 +215,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void tokenExchangeGrantTypeNotAllowedWhenRegisteringNewClient() throws Exception {
+  void tokenExchangeGrantTypeNotAllowedWhenRegisteringNewClient() throws Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("authorization_code", TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)
@@ -232,7 +229,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void additionalGrantTypesAreNotLostWhenUpdatingClient() throws Exception {
+  void additionalGrantTypesAreNotLostWhenUpdatingClient() throws Exception {
 
     String jsonInString =
         ClientJsonStringBuilder.builder().grantTypes("authorization_code").scopes("openid").build();
@@ -300,8 +297,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   }
 
   @Test
-  public void deviceCodeTimeoutNotAffectedWhenCreatingAndUpdatingClient()
-      throws UnsupportedEncodingException, Exception {
+  void deviceCodeTimeoutNotAffectedWhenCreatingAndUpdatingClient()
+    throws UnsupportedEncodingException, Exception {
     String jsonInString =
         ClientJsonStringBuilder.builder().grantTypes("authorization_code").scopes("openid").build();
 

@@ -57,7 +57,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @IamNoMvcTest
-public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
+class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
 
   @Autowired
@@ -93,7 +93,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   }
 
   @Test
-  public void testBasicClientOps() {
+  void testBasicClientOps() {
 
     ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
 
@@ -123,7 +123,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
 
   @Test
-  public void testMultipleLinkRaiseReferentialIntegrityError() {
+  void testMultipleLinkRaiseReferentialIntegrityError() {
 
     JpaSystemException exception = assertThrows(JpaSystemException.class, () -> {
       ClientDetailsEntity testClient =
@@ -151,7 +151,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   }
 
   @Test
-  public void accountCanOwnMultipleClients() {
+  void accountCanOwnMultipleClients() {
 
     ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
     ClientDetailsEntity passwordGrantClient =
@@ -181,7 +181,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   }
 
   @Test
-  public void clientCanBeOwnedByMultipleAccounts() {
+  void clientCanBeOwnedByMultipleAccounts() {
 
     ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
     ClientDetailsEntity passwordGrantClient =
@@ -215,7 +215,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   }
 
   @Test
-  public void accountDeletionHandledGracefully() {
+  void accountDeletionHandledGracefully() {
     ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
     IamAccount test100Account = accountRepo.findByUsername(TEST_100_USER).orElseThrow();
 
@@ -236,7 +236,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   }
 
   @Test
-  public void clientDeletionHandledGracefully() {
+  void clientDeletionHandledGracefully() {
 
     ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
 
@@ -273,7 +273,7 @@ public class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
 
   @Test
-  public void testClientSearchWorkAsExpected() {
+  void testClientSearchWorkAsExpected() {
     ClientDetailsEntity client0 = new ClientDetailsEntity();
     client0.setContacts(Sets.newHashSet("first@example.net"));
     client0.setGrantTypes(Sets.newHashSet("client_credentials"));

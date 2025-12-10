@@ -25,12 +25,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -40,11 +40,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read"})
-public class ScimGroupProvisioningListTests {
+class ScimGroupProvisioningListTests {
 
   @Autowired
   private IamGroupRepository groupRepo;
@@ -59,19 +58,19 @@ public class ScimGroupProvisioningListTests {
 
   private Integer totalResults = 0;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     totalResults = (int) groupRepo.count();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testNoParameterListRequest() throws Exception {
+  void testNoParameterListRequest() throws Exception {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
@@ -83,7 +82,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testCountAs8Returns8Items() throws Exception {
+  void testCountAs8Returns8Items() throws Exception {
     Integer count = 8;
 
     //@formatter:off
@@ -100,7 +99,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testCount1Returns1Item() throws Exception {
+  void testCount1Returns1Item() throws Exception {
     Integer count = 1;
 
     //@formatter:off
@@ -117,7 +116,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testNegativeCountBecomesZero() throws Exception {
+  void testNegativeCountBecomesZero() throws Exception {
     Integer count = -10;
 
     //@formatter:off
@@ -134,7 +133,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testInvalidStartIndex() throws Exception {
+  void testInvalidStartIndex() throws Exception {
     Integer startIndex = 24;
 
     //@formatter:off
@@ -151,7 +150,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testRightEndPagination() throws Exception {
+  void testRightEndPagination() throws Exception {
     Integer count = 10;
     Integer startIndex = 17;
     Integer items = totalResults - startIndex + 1;
@@ -171,7 +170,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testLastElementPagination() throws Exception {
+  void testLastElementPagination() throws Exception {
     Integer count = 2;
     Integer startIndex = 22;
     Integer items = totalResults - startIndex + 1;
@@ -191,7 +190,7 @@ public class ScimGroupProvisioningListTests {
   }
 
   @Test
-  public void testFirstElementPagination() throws Exception {
+  void testFirstElementPagination() throws Exception {
     Integer count = 5;
     Integer startIndex = 1;
 

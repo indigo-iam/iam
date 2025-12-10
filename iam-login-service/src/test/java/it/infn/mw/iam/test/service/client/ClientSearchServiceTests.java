@@ -36,14 +36,14 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE)
-public class ClientSearchServiceTests {
+  webEnvironment = WebEnvironment.NONE)
+class ClientSearchServiceTests {
 
   @Autowired
   private ClientSearchService service;
 
   @Test
-  public void testParamValidation() {
+  void testParamValidation() {
     
     assertThrows(ConstraintViolationException.class, () -> {
       ClientSearchForm form = new ClientSearchForm();
@@ -67,7 +67,7 @@ public class ClientSearchServiceTests {
   }
 
   @Test
-  public void testSimpleSearch() {
+  void testSimpleSearch() {
 
     ClientSearchForm form = new ClientSearchForm();
     form.setSearch("scim");

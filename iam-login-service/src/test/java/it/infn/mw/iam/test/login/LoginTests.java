@@ -16,9 +16,9 @@
 package it.infn.mw.iam.test.login;
 
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -28,11 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -41,10 +41,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class LoginTests implements LoginTestSupport {
+class LoginTests implements LoginTestSupport {
 
   @Autowired
   private IamAccountRepository accountRepo;
@@ -56,7 +55,7 @@ public class LoginTests implements LoginTestSupport {
   private MockMvc mvc;
 
   @Test
-  public void loginForAdminUserWorks() throws Exception {
+  void loginForAdminUserWorks() throws Exception {
 
     Instant now = Instant.now();
 
@@ -87,7 +86,7 @@ public class LoginTests implements LoginTestSupport {
   }
 
   @Test
-  public void loginWithInvalidCredentialsIsBlocked() throws Exception {
+  void loginWithInvalidCredentialsIsBlocked() throws Exception {
     //@formatter:off
     mvc.perform(post(LOGIN_URL)
         .param("username", ADMIN_USERNAME)
@@ -106,7 +105,7 @@ public class LoginTests implements LoginTestSupport {
   }
 
   @Test
-  public void loginRedirectsToSignAupPageWhenNeeded() throws Exception {
+  void loginRedirectsToSignAupPageWhenNeeded() throws Exception {
     IamAup aup = new IamAup();
 
     aup.setCreationTime(new Date());

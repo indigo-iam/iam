@@ -20,42 +20,44 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.authn.common.ValidatorResult;
 
-@RunWith(MockitoJUnitRunner.class)
-public class HasAttributeCheckTests extends SamlValidatorTestSupport{
-  
+@ExtendWith(MockitoExtension.class)
+class HasAttributeCheckTests extends SamlValidatorTestSupport {
+
   @Test
-  public void attributeNotFoundIsFailure() {
-    
-    ValidatorResult result = hasAttribute(ENTITLEMENT_ATTR_NAME).validate(credential); 
+  void attributeNotFoundIsFailure() {
+
+    ValidatorResult result = hasAttribute(ENTITLEMENT_ATTR_NAME).validate(credential);
     assertThat(result.isFailure(), is(true));
     assertThat(result.hasMessage(), is(true));
-    assertThat(result.getMessage(), containsString(format("Attribute '%s' not found", ENTITLEMENT_ATTR_NAME)));
-  }
-  
-  @Test
-  public void attributeFoundIsSuccess() {
-   
-    when(credential.getAttribute(ENTITLEMENT_ATTR_NAME)).thenReturn(attribute);
-    ValidatorResult result = hasAttribute(ENTITLEMENT_ATTR_NAME).validate(credential); 
-    assertThat(result.isSuccess(), is(true));
-    assertThat(result.hasMessage(), is(false));    
+    assertThat(result.getMessage(),
+        containsString(format("Attribute '%s' not found", ENTITLEMENT_ATTR_NAME)));
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyAttributeNameNotAllowed() {
-    hasAttribute("");
+  @Test
+  void attributeFoundIsSuccess() {
+
+    when(credential.getAttribute(ENTITLEMENT_ATTR_NAME)).thenReturn(attribute);
+    ValidatorResult result = hasAttribute(ENTITLEMENT_ATTR_NAME).validate(credential);
+    assertThat(result.isSuccess(), is(true));
+    assertThat(result.hasMessage(), is(false));
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullAttributeNameNotAllowed() {
-    hasAttribute(null);
+
+  @Test
+  void emptyAttributeNameNotAllowed() {
+    assertThrows(IllegalArgumentException.class, () -> hasAttribute(""));
+  }
+
+  @Test
+  void nullAttributeNameNotAllowed() {
+    assertThrows(IllegalArgumentException.class, () -> hasAttribute(null));
   }
 }

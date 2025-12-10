@@ -27,12 +27,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -42,11 +42,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read"})
-public class ScimGroupProvisioningAttributeFilterTests {
+class ScimGroupProvisioningAttributeFilterTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -59,18 +58,18 @@ public class ScimGroupProvisioningAttributeFilterTests {
 
   private final static String GROUPS_URI = ScimUtils.getGroupsLocation();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testReuturnOnlyDisplayNameRequest() throws Exception {
+  void testReuturnOnlyDisplayNameRequest() throws Exception {
     final int SIZE = (int) groupRepo.count();
     //@formatter:off
     mvc.perform(get(GROUPS_URI)
@@ -90,7 +89,7 @@ public class ScimGroupProvisioningAttributeFilterTests {
   }
 
   @Test
-  public void testMultipleAttrsRequest() throws Exception {
+  void testMultipleAttrsRequest() throws Exception {
     final int SIZE = (int) groupRepo.count();
     //@formatter:off
     mvc.perform(get(GROUPS_URI)

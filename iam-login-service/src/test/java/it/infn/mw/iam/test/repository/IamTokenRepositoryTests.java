@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -28,30 +28,29 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.time.DateUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
 public class IamTokenRepositoryTests {
 
@@ -76,10 +75,10 @@ public class IamTokenRepositoryTests {
   private ClientDetailsEntityService clientDetailsService;
 
   @Autowired
-  private DefaultOAuth2ProviderTokenService tokenService;
+  private IamTokenService tokenService;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     accessTokenRepo.deleteAll();
     refreshTokenRepo.deleteAll();
   }
@@ -115,7 +114,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testTokenResolutionCorrectlyEnforcesUsernameChecks() {
+  void testTokenResolutionCorrectlyEnforcesUsernameChecks() {
 
     buildAccessToken(loadTestClient(), TEST_347_USER);
     Date currentTimestamp = new Date();
@@ -133,7 +132,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testExpiredTokensAreNotReturned() {
+  void testExpiredTokensAreNotReturned() {
 
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
 
@@ -159,7 +158,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testClientTokensNotBoundToUsersAreIgnored() {
+  void testClientTokensNotBoundToUsersAreIgnored() {
     buildAccessToken(loadTestClient());
     Date currentTimestamp = new Date();
 
@@ -170,7 +169,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testRepositoryDoesntRelyOnDbTime() {
+  void testRepositoryDoesntRelyOnDbTime() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
 
     Date now = DateUtils.addHours(new Date(), -2);
@@ -184,7 +183,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testTokenNoCascadeDeletion() {
+  void testTokenNoCascadeDeletion() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
@@ -199,7 +198,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testTokenCascadeDeletion() {
+  void testTokenCascadeDeletion() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
     accessTokenRepo.save(at);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
@@ -216,7 +215,7 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  public void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() {
+  void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
     accessTokenRepo.save(at);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();

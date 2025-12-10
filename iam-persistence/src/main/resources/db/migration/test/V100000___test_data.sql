@@ -576,6 +576,8 @@ INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED) VALUES
 (346, 'Test-346','User', 'test-346@test.org', true),
 (347, 'Test-347','User', 'test-347@test.org', true);
 
+UPDATE iam_user_info SET MIDDLENAME = 'middlename-101' WHERE ID = 101;
+
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
 (100, 'f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a', 'test_100', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 100, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
 (101, '1a78b3b8-22d2-4746-9269-df55aceb036f', 'test_101', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 101, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),

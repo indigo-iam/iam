@@ -20,14 +20,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -43,11 +41,10 @@ import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @WebAppConfiguration
 @Transactional
-public class UsernameErrorMessageTests extends TestSupport {
+class UsernameErrorMessageTests extends TestSupport {
 
   @Autowired
   ObjectMapper objectMapper;
@@ -63,15 +60,15 @@ public class UsernameErrorMessageTests extends TestSupport {
 
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
@@ -89,7 +86,7 @@ public class UsernameErrorMessageTests extends TestSupport {
   }
 
   @Test
-  public void errorMessageTest() throws Exception {
+  void errorMessageTest() throws Exception {
 
     final String u = "test/";
 

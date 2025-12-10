@@ -21,15 +21,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.OffsetPageable;
@@ -37,8 +35,6 @@ import it.infn.mw.iam.api.common.PagedResourceService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
@@ -69,7 +65,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByNameAsc() {
+  void getAllPagesSortedByNameAsc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Pageable current = op.first();
@@ -82,7 +78,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByNameDesc() {
+  void getAllPagesSortedByNameDesc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Pageable current = op.first();
@@ -95,7 +91,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByEmailAsc() {
+  void getAllPagesSortedByEmailAsc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByEmail(Sort.Direction.ASC));
     Pageable current = op.first();
@@ -108,7 +104,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByEmailDesc() {
+  void getAllPagesSortedByEmailDesc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByEmail(Sort.Direction.DESC));
     Pageable current = op.first();
@@ -121,7 +117,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void testGetFirstPageSortByNameAsc() {
+  void testGetFirstPageSortByNameAsc() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamAccount> page = accountService.getPage(op);
@@ -129,7 +125,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void testGetFirstPageSortByNameDesc() {
+  void testGetFirstPageSortByNameDesc() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Page<IamAccount> page = accountService.getPage(op);
@@ -137,7 +133,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void testGetLastPageSortByNameAsc() {
+  void testGetLastPageSortByNameAsc() {
 
     OffsetPageable op =
         new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
@@ -147,7 +143,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
 
 
   @Test
-  public void testGetLastPageSortByNameDesc() {
+  void testGetLastPageSortByNameDesc() {
 
     OffsetPageable op =
         new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
@@ -156,7 +152,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void testFilterWithFullName() {
+  void testFilterWithFullName() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamAccount> page = accountService.getPage(op, "Admin User");
@@ -168,7 +164,7 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   }
 
   @Test
-  public void testFilterCountWithFullName() {
+  void testFilterCountWithFullName() {
 
     long totalResults = accountService.count("Admin User");
     assertThat(totalResults, equalTo(1L));

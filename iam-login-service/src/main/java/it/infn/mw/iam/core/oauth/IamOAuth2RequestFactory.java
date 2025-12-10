@@ -169,7 +169,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     handlePasswordGrantAuthenticationTimestamp(request);
 
-    profileResolver.resolveProfile(client.getScope())
+    profileResolver.resolveProfile(client.getScope(), request.getScope())
       .getRequestValidator()
       .validateRequest(request);
 

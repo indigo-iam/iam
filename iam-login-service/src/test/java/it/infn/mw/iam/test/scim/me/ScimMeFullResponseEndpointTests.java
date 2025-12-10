@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.scim.me;
 
-import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
@@ -26,25 +26,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"scim.include_attributes[0].name=affiliation",
-    "scim.include_managed_groups=true", "scim.include_authorities=true"})
-public class ScimMeFullResponseEndpointTests {
+  "scim.include_managed_groups=true", "scim.include_authorities=true"})
+class ScimMeFullResponseEndpointTests {
 
   private final static String ME_ENDPOINT = "/scim/Me";
 
@@ -54,19 +53,19 @@ public class ScimMeFullResponseEndpointTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "manager", roles = {"USER", "GM:c617d586-54e6-411d-8e38-64967798fa8a"})
-  public void meEndpointFullUserInfo() throws Exception {
+  void meEndpointFullUserInfo() throws Exception {
     //@formatter:off
     mvc.perform(get(ME_ENDPOINT)
         .contentType(SCIM_CONTENT_TYPE))

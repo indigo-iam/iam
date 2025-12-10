@@ -28,8 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -39,7 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,10 +52,9 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class IntrospectionEndpointTests extends TestTokensUtils {
+class IntrospectionEndpointTests extends TestTokensUtils {
 
   @Value("${iam.organisation.name}")
   String organisationName;
@@ -110,7 +107,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {
+  void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {
 
     String accessToken = getPasswordToken("openid").accessToken();
 
@@ -118,7 +115,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointForbiddenForBadCredentials() throws Exception {
+  void testIntrospectionEndpointForbiddenForBadCredentials() throws Exception {
 
     String accessToken = getPasswordToken("openid").accessToken();
 
@@ -127,7 +124,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointInactiveWithEmptyStringToken() throws Exception {
+  void testIntrospectionEndpointInactiveWithEmptyStringToken() throws Exception {
 
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", ACCESS_TOKEN)
@@ -140,7 +137,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointInactiveWithExpiredToken() throws Exception {
+  void testIntrospectionEndpointInactiveWithExpiredToken() throws Exception {
 
     ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
     String accessToken = getExpiredAccessToken(client).getValue();
@@ -158,7 +155,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
+  void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
 
     String accessToken = getPasswordToken("openid").accessToken();
 
@@ -181,7 +178,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectionEndpointWithRefreshToken() throws Exception {
+  void testIntrospectionEndpointWithRefreshToken() throws Exception {
 
     String refreshToken = getPasswordToken("openid profile offline_access").refreshToken();
 
@@ -202,7 +199,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testGroupsAndUsernameAreReturnedWhenUserIsTheSubject() throws Exception {
+  void testGroupsAndUsernameAreReturnedWhenUserIsTheSubject() throws Exception {
     String accessToken = getPasswordToken("openid").accessToken();
     IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
@@ -229,7 +226,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testGroupsAndUsernameAreNullWhenClientIsSubject() throws Exception {
+  void testGroupsAndUsernameAreNullWhenClientIsSubject() throws Exception {
 
     String accessToken = getClientCredentialsToken("openid profile").accessToken();
     IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
@@ -252,7 +249,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectRevokedAccessToken() throws Exception {
+  void testIntrospectRevokedAccessToken() throws Exception {
     String accessToken = getPasswordToken("openid profile").accessToken();
 
     // @formatter:off
@@ -272,7 +269,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectRevokedRefreshToken() throws Exception {
+  void testIntrospectRevokedRefreshToken() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
     String accessToken = tokens.accessToken();
@@ -301,7 +298,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectWithInvalidToken() throws Exception {
+  void testIntrospectWithInvalidToken() throws Exception {
     String accessToken = "invalid-token";
 
     // @formatter:off
@@ -312,7 +309,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectTokensWithNoTokenTypeHint() throws Exception {
+  void testIntrospectTokensWithNoTokenTypeHint() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
     String accessToken = tokens.accessToken();

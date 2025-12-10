@@ -15,11 +15,6 @@
  */
 package it.infn.mw.iam.api.client.management;
 
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -31,6 +26,8 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
@@ -55,10 +52,12 @@ import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ClientViews;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
+import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
@@ -97,7 +96,7 @@ public class ClientManagementAPIController {
     return managementService.saveNewClient(client);
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @GetMapping
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
@@ -113,7 +112,7 @@ public class ClientManagementAPIController {
     }
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @GetMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId) {
@@ -123,6 +122,7 @@ public class ClientManagementAPIController {
 
   @GetMapping("/{clientId}/owners")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
@@ -140,6 +140,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/rat")
   @ResponseStatus(CREATED)
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO rotateRegistrationAccessToken(@PathVariable String clientId) {
     return managementService.rotateRegistrationAccessToken(clientId);
@@ -155,6 +156,7 @@ public class ClientManagementAPIController {
 
   @PutMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   public RegisteredClientDTO updateClient(@PathVariable String clientId,
       @RequestBody RegisteredClientDTO client) throws ParseException {
     return managementService.updateClient(clientId, client);
@@ -206,7 +208,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/secret")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public RegisteredClientDTO rotateClientSecret(@PathVariable String clientId) {
     return managementService.generateNewClientSecret(clientId);
   }

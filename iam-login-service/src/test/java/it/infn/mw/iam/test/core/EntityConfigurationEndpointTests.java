@@ -16,21 +16,19 @@
 package it.infn.mw.iam.test.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Map;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -39,11 +37,10 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
-public class EntityConfigurationEndpointTests {
+class EntityConfigurationEndpointTests {
 
   private String endpoint = "/.well-known/openid-federation";
 
@@ -52,7 +49,7 @@ public class EntityConfigurationEndpointTests {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testFederationEndpoint() throws Exception {
+  void testFederationEndpoint() throws Exception {
 
     MvcResult result = mvc.perform(get(endpoint))
       .andExpect(status().isOk())

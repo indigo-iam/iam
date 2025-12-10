@@ -22,18 +22,18 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,7 +41,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,7 +59,7 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 @ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
@@ -187,14 +187,14 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
       .statusCode(HttpStatus.OK.value());
   }
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
 
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
@@ -202,7 +202,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAuthzCodeAudienceSupport() throws IOException, ParseException {
+  void testAuthzCodeAudienceSupport() throws Exception {
 
     String[] audienceKeys = {"aud", "audience"};
 
@@ -303,7 +303,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAuthzCodeResourceIndicatorSupport() throws IOException, ParseException {
+  void testAuthzCodeResourceIndicatorSupport() throws IOException, ParseException {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "resource",
         "http://example1.org http://example2.org", "http://example1.org http://example2.org");
@@ -319,7 +319,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAuthzCodeResourceIndicatorNotOriginallyGranted() {
+  void testAuthzCodeResourceIndicatorNotOriginallyGranted() {
 
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -406,7 +406,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testNarrowerResourceIndicator() throws IOException, ParseException {
+  void testNarrowerResourceIndicator() throws Exception {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "resource",
         "http://example1.org http://example2.org", "http://example1.org");
@@ -421,7 +421,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFilteredResourceIndicator() throws IOException, ParseException {
+  void testFilteredResourceIndicator() throws Exception {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "resource",
         "http://storm.org http://dcache.org", "http://storm.org http://rucio.org");
@@ -436,7 +436,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFilteredResourceIndicatorWithAudRequest() throws IOException, ParseException {
+  void testFilteredResourceIndicatorWithAudRequest() throws Exception {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "audience",
         "http://1.org http://2.org", "http://1.org http://3.org");
@@ -451,7 +451,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAuthzCodeEmptyResourceIndicator() throws IOException, ParseException {
+  void testAuthzCodeEmptyResourceIndicator() throws IOException, ParseException {
 
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -542,7 +542,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshTokenAfterAuthzCodeWorks() throws IOException {
+  void testRefreshTokenAfterAuthzCodeWorks() throws IOException {
 
     refreshTokenRepository.deleteAll();
 
@@ -696,8 +696,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testNarrowerResourceIndicatorRTFlowAfterAuthzCode()
-      throws IOException, ParseException {
+  void testNarrowerResourceIndicatorRTFlowAfterAuthzCode()
+    throws IOException, ParseException {
 
     refreshTokenRepository.deleteAll();
 
@@ -735,8 +735,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFilteredResourceIndicatorRTFlowAfterAuthzCode()
-      throws IOException, ParseException {
+  void testFilteredResourceIndicatorRTFlowAfterAuthzCode()
+    throws IOException, ParseException {
 
     refreshTokenRepository.deleteAll();
 
@@ -774,8 +774,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFilteredResourceIndicatorWithAudRequestRTFlowAfterAuthzCode()
-      throws IOException, ParseException {
+  void testFilteredResourceIndicatorWithAudRequestRTFlowAfterAuthzCode()
+    throws IOException, ParseException {
 
     refreshTokenRepository.deleteAll();
 
@@ -818,7 +818,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testResourceIndicatorRTFlowBoundToAuthzCode() throws IOException, ParseException {
+  void testResourceIndicatorRTFlowBoundToAuthzCode() throws IOException, ParseException {
 
     refreshTokenRepository.deleteAll();
 
@@ -871,7 +871,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
     RestAssured.given()
       .header("Authorization", "Bearer " + token)
       .when()
-      .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+      .get("/scim/Users/f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a")
       .then()
       .statusCode(HttpStatus.FORBIDDEN.value());
 
@@ -927,7 +927,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testNullAuthorizationCode() throws IOException {
+  void testNullAuthorizationCode() throws IOException {
 
     Cookie session =
         getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
@@ -952,7 +952,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFakeAuthorizationCode() throws IOException {
+  void testFakeAuthorizationCode() throws IOException {
 
     Cookie session =
         getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
@@ -977,7 +977,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRedirectURIMismatch() throws IOException {
+  void testRedirectURIMismatch() throws IOException {
 
     Cookie session =
         getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
@@ -1002,7 +1002,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testClientIDMismatch() throws IOException {
+  void testClientIDMismatch() throws IOException {
 
     Cookie session =
         getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
@@ -1036,7 +1036,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testUnverifiedUserCannotGetAToken() {
+  void testUnverifiedUserCannotGetAToken() {
 
     Cookie session =
         getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)

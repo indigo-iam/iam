@@ -15,22 +15,21 @@
  */
 package it.infn.mw.iam.test.api.requests;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -42,10 +41,9 @@ import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsListTests extends GroupRequestsTestUtils {
+class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Autowired
   private MockMvc mvc;
@@ -57,8 +55,8 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   private final static String GROUP_02 = "Test-002";
   private final static String GROUP_03 = "Test-003";
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     savePendingGroupRequest(USER_100, GROUP_01);
     savePendingGroupRequest(USER_101, GROUP_01);
 
@@ -71,7 +69,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void listAllGroupRequestAsAdmin() throws Exception {
+  void listAllGroupRequestAsAdmin() throws Exception {
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON))
@@ -84,7 +82,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void filterByUsernameAsAdmin() throws Exception {
+  void filterByUsernameAsAdmin() throws Exception {
 
     String response = mvc.perform(get(LIST_ALL_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -108,7 +106,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_USERNAME)
-  public void filterByUsernameAsUser() throws Exception {
+  void filterByUsernameAsUser() throws Exception {
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -119,8 +117,18 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = { "USER" }, username = USER_101)
+  void searchGroupRequestAsUserIsForbidden() throws Exception {
+
+    mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   @WithMockUser(roles = {"USER"}, username = USER_101)
-  public void filterByOwnUsernameAsUser() throws Exception {
+  void filterByOwnUsernameAsUser() throws Exception {
 
     String response = mvc.perform(get(LIST_ALL_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +153,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void filterByStatusAsAdmin() throws Exception {
+  void filterByStatusAsAdmin() throws Exception {
 
     String response = mvc
       .perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON)
@@ -169,7 +177,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void filterByGroupAsAdmin() throws Exception {
+  void filterByGroupAsAdmin() throws Exception {
 
     String response = mvc
       .perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON)
@@ -192,8 +200,84 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_ADMIN)
+  void searchByUsernameAsAdmin() throws Exception {
+
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(3)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(3)))
+        .andExpect(jsonPath("$.Resources", hasSize(3)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+    }
+  }
+
+  @Test
+  @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_ADMIN)
+  void searchByUserFullNameAsAdmin() throws Exception {
+    String middleName = "middlename-101";
+
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("userFullName", middleName))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(3)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(3)))
+        .andExpect(jsonPath("$.Resources", hasSize(3)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+      assertThat(elem.getUserFullName(), containsString(middleName));
+    }
+  }
+
+  @Test
+  @WithMockUser(roles = { "GM:" + TEST_001_GROUP_UUID, "USER" }, username = USER_100)
+  void searchByUsernameAsGroupManager() throws Exception {
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(1)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(1)))
+        .andExpect(jsonPath("$.Resources", hasSize(1)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+    }
+  }
+
+  @Test
   @WithMockUser(roles = {"USER"}, username = USER_100)
-  public void listMyGroupRequestAsUser() throws Exception {
+  void listMyGroupRequestAsUser() throws Exception {
 
     String response = mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
@@ -215,15 +299,23 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithAnonymousUser
-  public void listGroupRequestAsAnonymous() throws Exception {
+  void listGroupRequestAsAnonymous() throws Exception {
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
+  @WithAnonymousUser
+  void filterGroupRequestAsAnonymous() throws Exception {
+
+    mvc.perform(get(SEARCH_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void filterByUsernameAndStatusAsAdmin() throws Exception {
+  void filterByUsernameAndStatusAsAdmin() throws Exception {
     String testStatus = IamGroupRequestStatus.PENDING.name();
 
     String response = mvc.perform(get(LIST_ALL_REQUESTS_URL)
@@ -250,7 +342,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void filterByGroupAndStatusAsAdmin() throws Exception {
+  void filterByGroupAndStatusAsAdmin() throws Exception {
     String testStatus = IamGroupRequestStatus.PENDING.name();
 
     String response = mvc.perform(get(LIST_ALL_REQUESTS_URL)

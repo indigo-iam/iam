@@ -18,18 +18,19 @@ package it.infn.mw.iam.test.oauth;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
@@ -41,7 +42,7 @@ import it.infn.mw.iam.core.userinfo.DefaultOAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OAuth2AuthenticationScopeResolverTests {
 
   public static final String TOKEN_VALUE = "token-value";
@@ -63,13 +64,13 @@ public class OAuth2AuthenticationScopeResolverTests {
   @InjectMocks
   DefaultOAuth2AuthenticationScopeResolver scopeResolver;
 
-  @Before
-  public void setup() {
-    when(auth.getOAuth2Request()).thenReturn(oauthRequest);
+  @BeforeEach
+  void setup() {
+    lenient().when(auth.getOAuth2Request()).thenReturn(oauthRequest);
   }
 
   @Test
-  public void testNullDetailsHandled() {
+  void testNullDetailsHandled() {
     Set<String> scopes = scopeResolver.resolveScope(auth);
     assertThat(scopes, hasSize(2));
     assertThat(scopes, hasItem("openid"));
@@ -77,27 +78,27 @@ public class OAuth2AuthenticationScopeResolverTests {
   }
 
   @Test
-  public void testNullTokenValueHandled() {
-    when(auth.getDetails()).thenReturn(authDetails);
+  void testNullTokenValueHandled() {
+    lenient().when(auth.getDetails()).thenReturn(authDetails);
     Set<String> scopes = scopeResolver.resolveScope(auth);
     assertThat(scopes, hasSize(2));
     assertThat(scopes, hasItem("openid"));
     assertThat(scopes, hasItem("profile"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void tokenNotFoundInRepoRaisesIllegalArgumentException() {
-    when(auth.getDetails()).thenReturn(authDetails);
-    when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
-    scopeResolver.resolveScope(auth);
+  @Test
+  void tokenNotFoundInRepoRaisesIllegalArgumentException() {
+    lenient().when(auth.getDetails()).thenReturn(authDetails);
+    lenient().when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
+    assertThrows(IllegalArgumentException.class, () -> scopeResolver.resolveScope(auth));
   }
 
   @Test
-  public void tokenFound() {
-    when(auth.getDetails()).thenReturn(authDetails);
-    when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
-    when(repo.getAccessTokenByValue(TOKEN_VALUE)).thenReturn(tokenEntity);
-    when(tokenEntity.getScope()).thenReturn(Sets.newHashSet("openid"));
+  void tokenFound() {
+    lenient().when(auth.getDetails()).thenReturn(authDetails);
+    lenient().when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
+    lenient().when(repo.getAccessTokenByValue(TOKEN_VALUE)).thenReturn(tokenEntity);
+    lenient().when(tokenEntity.getScope()).thenReturn(Sets.newHashSet("openid"));
     Set<String> scopes = scopeResolver.resolveScope(auth);
     assertThat(scopes, hasSize(1));
     assertThat(scopes, hasItem("openid"));

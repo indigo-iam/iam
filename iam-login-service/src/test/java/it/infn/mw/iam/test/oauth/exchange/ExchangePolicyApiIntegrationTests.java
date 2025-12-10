@@ -31,17 +31,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,11 +62,10 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.core.IamTokenService;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     ExchangePolicyApiIntegrationTests.TestBeans.class})
-public class ExchangePolicyApiIntegrationTests {
+class ExchangePolicyApiIntegrationTests {
 
   @Configuration
   public static class TestBeans {
@@ -80,7 +77,7 @@ public class ExchangePolicyApiIntegrationTests {
 
     @Bean
     @Primary
-    public TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
+    TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
       DefaultTokenExchangePdp pdp =
           new DefaultTokenExchangePdp(repo, registry, properties, tokenService);
@@ -88,7 +85,7 @@ public class ExchangePolicyApiIntegrationTests {
     }
   }
 
-  public static final String ENDPOINT = "/iam/api/exchange/policies";
+  static final String ENDPOINT = "/iam/api/exchange/policies";
 
   @Autowired
   MockOAuth2Filter filter;
@@ -103,16 +100,16 @@ public class ExchangePolicyApiIntegrationTests {
   TokenExchangePdp pdp;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     filter.cleanupSecurityContext();
     reset(pdp);
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     filter.cleanupSecurityContext();
   }
 
@@ -124,21 +121,21 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  public void listPoliciesRequiresAuthenticatedUser() throws Exception {
+  void listPoliciesRequiresAuthenticatedUser() throws Exception {
     mvc.perform(get(ENDPOINT)).andExpect(status().isUnauthorized());
   }
 
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void listPoliciesRequiresAdmin() throws Exception {
+  void listPoliciesRequiresAdmin() throws Exception {
     mvc.perform(get(ENDPOINT)).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
-      scopes = "iam:admin.read")
-  public void listPoliciesWorks() throws Exception {
+    scopes = "iam:admin.read")
+  void listPoliciesWorks() throws Exception {
     mvc.perform(get(ENDPOINT))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$").isArray())
@@ -150,21 +147,21 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  public void deletePolicyRequiresAuthenticatedUser() throws Exception {
+  void deletePolicyRequiresAuthenticatedUser() throws Exception {
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isUnauthorized());
   }
 
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void deletePolicyRequiresAdminUser() throws Exception {
+  void deletePolicyRequiresAdminUser() throws Exception {
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
-      scopes = "iam:admin.write")
-  public void deletePolicyWorks() throws Exception {
+    scopes = "iam:admin.write")
+  void deletePolicyWorks() throws Exception {
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNoContent());
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNotFound());
     verify(pdp, times(1)).reloadPolicies();
@@ -172,14 +169,14 @@ public class ExchangePolicyApiIntegrationTests {
 
 
   @Test
-  public void createPolicyRequiresAuthenticatedUser() throws Exception {
+  void createPolicyRequiresAuthenticatedUser() throws Exception {
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
     mvc.perform(post(ENDPOINT).content(policy)).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void createPolicyRequiresAdminUser() throws Exception {
+  void createPolicyRequiresAdminUser() throws Exception {
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
     mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
       .andExpect(status().isForbidden());
@@ -187,8 +184,8 @@ public class ExchangePolicyApiIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
-      scopes = {"iam:admin.read", "iam:admin.write"})
-  public void createPolicyWorks() throws Exception {
+    scopes = {"iam:admin.read", "iam:admin.write"})
+  void createPolicyWorks() throws Exception {
     repo.deleteAll();
 
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
@@ -226,8 +223,8 @@ public class ExchangePolicyApiIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
-      scopes = {"iam:admin.write", "iam:admin.read"})
-  public void createPolicyWithScopePoliciesWorks() throws Exception {
+    scopes = {"iam:admin.write", "iam:admin.read"})
+  void createPolicyWithScopePoliciesWorks() throws Exception {
 
     repo.deleteAll();
 
@@ -271,11 +268,10 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
 
-
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
-      scopes = "iam:admin.write")
-  public void policyValidation() throws Exception {
+    scopes = "iam:admin.write")
+  void policyValidation() throws Exception {
 
     // Empty object
     ObjectNode node = mapper.createObjectNode();

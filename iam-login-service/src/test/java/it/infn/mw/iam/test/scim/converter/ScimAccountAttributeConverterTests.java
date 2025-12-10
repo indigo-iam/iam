@@ -20,14 +20,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
@@ -39,11 +39,10 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"scim.include_attributes[0].name=test0"})
-public class ScimAccountAttributeConverterTests {
+class ScimAccountAttributeConverterTests {
 
   private static final String TEST0 = "test0";
   private static final String VAL0 = "val0";
@@ -65,20 +64,20 @@ public class ScimAccountAttributeConverterTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testAttributesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
+  void testAttributesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
     
     IamAccount testAccount = accountRepo.findByUsername("test")
         .orElseThrow(() -> new AssertionError("Expected test account not found"));

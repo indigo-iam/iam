@@ -10,7 +10,7 @@ With this setup the VOMS-AA service can be replicated on one or more remote loca
 
 The `compose` file definises a few containers:
 
-* `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` used in this deployment for test certificates.
+* `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` (created on-the-fly) used in this deployment for test certificates.
 
 The actual VOMS services are virtually divided between three sites:
 
@@ -27,7 +27,7 @@ The actual VOMS services are virtually divided between three sites:
 * `ngx-remote`
 
 #### Site 3: Anywhere else
-* `client`: it is a single container containing GRID clients (in particular `voms-proxy-init`) used to query both the VOMS services. It connects in round-robin fashion to each endpoint and when one fails it falls back to the others. Here a p12 file for the test user encrypted with the `pass` password is present in the well-known directory (`/home/test/.globus/usercred.p12`). It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc`.
+* `client`: it is a single container containing Grid clients (in particular `voms-proxy-init`) used to query both the VOMS services. It connects in round-robin fashion to each endpoint and when one fails it falls back to the others. Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc`.
 
 ### Networking
 
@@ -38,6 +38,12 @@ We use a few distinct networks, similar to a real scenario:
 * `wan`: The NGINX servers are exposed on the public network so that the clients can connect from anywhere.
 
 ## Test
+
+Build the trust container with
+
+```
+$ docker compose build --no-cache trust
+```
 
 Run the docker-compose with
 
@@ -50,7 +56,7 @@ and wait for the `trust` service to finish; all the services will be available s
 To query the voms-aa using the VOMS client, run:
 
 ``` 
-$ docker compose exec client voms-proxy-init -voms indigo-dc
+$ docker compose exec client voms-proxy-init -voms indigo-dc -cert /certs/test0.p12
 Enter GRID pass phrase for this identity:
 Contacting voms-remote.test.example:443 [/C=IT/O=IGI/CN=*.test.example] "indigo-dc"...
 Remote VOMS server contacted succesfully.
@@ -84,9 +90,9 @@ uri       : voms-remote.test.example:8080
 ```
 If you want to force the query to one voms-aa use one of the followings:
 ```
-$ docker compose exec client voms-proxy-init -voms voms-primary
-$ docker compose exec client voms-proxy-init -voms voms-replica
-$ docker compose exec client voms-proxy-init -voms voms-remote
+$ docker compose exec client voms-proxy-init -voms voms-primary -cert /certs/test0.p12
+$ docker compose exec client voms-proxy-init -voms voms-replica -cert /certs/test0.p12
+$ docker compose exec client voms-proxy-init -voms voms-remote -cert /certs/test0.p12
 ```
 
 To run the testsuite:

@@ -20,14 +20,14 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.account.authority.AccountAuthorityService;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -39,11 +39,10 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"scim.include_authorities=true"})
-public class ScimAccountAuthoritiesConverterTests {
+class ScimAccountAuthoritiesConverterTests {
 
   private static final String USER_AUTHORITY = "ROLE_USER";
   private static final String GM_AUTHORITY = "ROLE_GM" + UUID.randomUUID();
@@ -66,24 +65,24 @@ public class ScimAccountAuthoritiesConverterTests {
 
   private IamAuthority gmAuthority;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     gmAuthority = new IamAuthority();
     gmAuthority.setAuthority(GM_AUTHORITY);
     authRepo.save(gmAuthority);
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     authRepo.delete(gmAuthority);
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testAuthoritiesReturnedIfAllowedByConfigurationSerializedByDefault()
-      throws Exception {
+  void testAuthoritiesReturnedIfAllowedByConfigurationSerializedByDefault()
+    throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test_106")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));

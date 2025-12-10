@@ -50,7 +50,9 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
         return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
             account.get().getUserInfo().getGroups()) : null;
       case AUTH_TIME:
-        return account.isPresent() ? account.get().getLastLoginTime() : null;
+        return account.isPresent() && account.get().getLastLoginTime() != null
+            ? account.get().getLastLoginTime().getTime() / 1000
+            : null;
       case GROUPS:
         /* remove inherited groups from allowed claims */
         return null;

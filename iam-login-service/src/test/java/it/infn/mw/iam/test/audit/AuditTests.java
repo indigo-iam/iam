@@ -16,14 +16,13 @@
 package it.infn.mw.iam.test.audit;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -39,7 +38,6 @@ import org.springframework.security.authentication.event.InteractiveAuthenticati
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.audit.IamAuditEventLogger;
@@ -49,20 +47,19 @@ import it.infn.mw.iam.audit.events.auth.IamAuthenticationSuccessEvent;
 import it.infn.mw.iam.audit.events.auth.IamAuthorizationFailureEvent;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class AuditTests {
+class AuditTests {
 
   @Autowired
-  private ApplicationEventPublisher eventPublisher;
+  ApplicationEventPublisher eventPublisher;
 
   @Autowired
-  private IamAuditEventLogger logger;
+  IamAuditEventLogger logger;
 
   @Test
   @WithMockUser(username = "admin", password = "bad_password")
-  public void testAuthenticationFailureBadCredentialsEvent() throws Exception {
+  void testAuthenticationFailureBadCredentialsEvent() {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     BadCredentialsException e = new BadCredentialsException("Bad credentials test");
@@ -79,7 +76,7 @@ public class AuditTests {
 
   @Test
   @WithMockUser(username = "admin", password = "password")
-  public void testInteractiveAuthenticationSuccessEvent() throws Exception {
+  void testInteractiveAuthenticationSuccessEvent() {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -94,7 +91,7 @@ public class AuditTests {
   }
 
   @Test
-  public void testAuthorizationFailureEvent() throws Exception {
+  void testAuthorizationFailureEvent() {
 
     AuthorizationFailureEvent event = new AuthorizationFailureEvent(this,
         Collections.<ConfigAttribute>singletonList(new SecurityConfig("USER")),

@@ -34,15 +34,12 @@ import it.infn.mw.iam.authn.x509.voms.VOMSAccessDeniedHandler;
 import it.infn.mw.iam.authn.x509.voms.VOMSAuthenticationEntryPoint;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
 
-
-
 public class SecurityConfig {
-  
+
   private SecurityConfig() {
     // prevent instantiation
   }
-  
-  
+
   @Configuration
   @EnableWebSecurity
   @EnableGlobalMethodSecurity(prePostEnabled = true, proxyTargetClass = true)
@@ -56,7 +53,7 @@ public class SecurityConfig {
 
     @Autowired
     private VOMSResponseBuilder responseBuilder;
-    
+
     public AuthenticationSuccessHandler successHandler() {
       return (req, res, auth) -> {
       };

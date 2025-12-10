@@ -169,7 +169,8 @@ public class IamIntrospectionService
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    JWTProfile profile = profileResolver.resolveProfile(rt.getClient().getScope());
+    JWTProfile profile = profileResolver.resolveProfile(rt.getClient().getScope(),
+        rt.getAuthenticationHolder().getAuthentication().getOAuth2Request().getScope());
     profile.getIntrospectionResultHelper()
       .assembleIntrospectionResult(rt, authenticatedClient)
       .forEach(builder::addField);
@@ -185,7 +186,7 @@ public class IamIntrospectionService
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    JWTProfile profile = profileResolver.resolveProfile(at.getClient().getScope());
+    JWTProfile profile = profileResolver.resolveProfile(at.getClient().getScope(), at.getScope());
     profile.getIntrospectionResultHelper()
       .assembleIntrospectionResult(at, authenticatedClient)
       .forEach(builder::addField);

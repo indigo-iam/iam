@@ -17,17 +17,18 @@ package it.infn.mw.iam.test.api.account.password;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,8 +41,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class PasswordUpdateServiceTests {
+@ExtendWith(MockitoExtension.class)
+class PasswordUpdateServiceTests {
 
   @Mock
   IamAccountRepository accountRepository;
@@ -56,8 +57,8 @@ public class PasswordUpdateServiceTests {
   private final String OLD_PASSWORD = "old";
   private final String NEW_PASSWORD = "new";
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
     updateService = new DefaultPasswordResetService(accountRepository, null, null, encoder);
     updateService.setApplicationEventPublisher(eventPublisher);
   }
@@ -71,8 +72,8 @@ public class PasswordUpdateServiceTests {
     return result;
   }
 
-  @Test(expected = UserNotActiveOrNotVerified.class)
-  public void testUserIsNotActive() {
+  @Test
+  void testUserIsNotActive() {
 
     final String USERNAME = "inactive_user";
 
@@ -81,12 +82,12 @@ public class PasswordUpdateServiceTests {
 
     Mockito.when(accountRepository.findByUsername(anyString())).thenReturn(Optional.of(account));
 
-    updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD);
-
+    assertThrows(UserNotActiveOrNotVerified.class,
+        () -> updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD));
   }
 
-  @Test(expected = UserNotActiveOrNotVerified.class)
-  public void testUserIsNotVerified() {
+  @Test
+  void testUserIsNotVerified() {
 
     final String USERNAME = "inactive_user";
 
@@ -96,23 +97,24 @@ public class PasswordUpdateServiceTests {
 
     Mockito.when(accountRepository.findByUsername(anyString())).thenReturn(Optional.of(account));
 
-    updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD);
+    assertThrows(UserNotActiveOrNotVerified.class,
+        () -> updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD));
 
   }
 
-  @Test(expected = UserNotFoundError.class)
-  public void testUserNotFound() {
+  @Test
+  void testUserNotFound() {
 
     final String USERNAME = "not_found_user";
 
     Mockito.when(accountRepository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-    updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD);
-
+    assertThrows(UserNotFoundError.class,
+        () -> updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD));
   }
 
-  @Test(expected = BadUserPasswordError.class)
-  public void testBadUserPassword() {
+  @Test
+  void testBadUserPassword() {
 
     final String USERNAME = "active_user";
     final String OLD_PASSWORD = "password";
@@ -126,12 +128,13 @@ public class PasswordUpdateServiceTests {
 
     Mockito.when(accountRepository.findByUsername(USERNAME)).thenReturn(Optional.of(account));
 
-    updateService.updatePassword(USERNAME, BAD_OLD_PASSWORD, NEW_PASSWORD);
+    assertThrows(BadUserPasswordError.class,
+        () -> updateService.updatePassword(USERNAME, BAD_OLD_PASSWORD, NEW_PASSWORD));
 
   }
 
   @Test
-  public void testUpdatePasswordWorks() {
+  void testUpdatePasswordWorks() {
 
     final String USERNAME = "active_user";
     final String OLD_PASSWORD = "password";

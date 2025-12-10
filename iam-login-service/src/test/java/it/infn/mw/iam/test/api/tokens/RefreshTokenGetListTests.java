@@ -16,21 +16,21 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.TOKENS_MAX_PAGE_SIZE;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Date;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.MultiValueMap;
 
 import com.google.common.collect.Lists;
@@ -45,7 +45,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
 public class RefreshTokenGetListTests extends TestTokensUtils {
@@ -71,20 +71,20 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void getEmptyRefreshTokenList() throws Exception {
+  void getEmptyRefreshTokenList() throws Exception {
 
     assertThat(tokenRepository.count(), equalTo(0L));
 
@@ -108,7 +108,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getNotEmptyRefreshTokenListWithCountZero() throws Exception {
+  void getNotEmptyRefreshTokenListWithCountZero() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -126,7 +126,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListWithAttributes() throws Exception {
+  void getRefreshTokenListWithAttributes() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     IamAccount user = loadTestUser(TESTUSER_USERNAME);
@@ -157,7 +157,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListWithClientIdFilter() throws Exception {
+  void getRefreshTokenListWithClientIdFilter() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -195,7 +195,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListWithUserIdFilter() throws Exception {
+  void getRefreshTokenListWithUserIdFilter() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -232,7 +232,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListWithClientIdAndUserIdFilter() throws Exception {
+  void getRefreshTokenListWithClientIdAndUserIdFilter() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -272,7 +272,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
+  void getRefreshTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -291,7 +291,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListLimitedToPageSizeFirstPage() throws Exception {
+  void getRefreshTokenListLimitedToPageSizeFirstPage() throws Exception {
 
     for (int i = 0; i < 2 * TOKENS_MAX_PAGE_SIZE; i++) {
       buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
@@ -307,7 +307,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListLimitedToPageSizeSecondPage() throws Exception {
+  void getRefreshTokenListLimitedToPageSizeSecondPage() throws Exception {
 
     for (int i = 0; i < 2 * TOKENS_MAX_PAGE_SIZE; i++) {
       buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
@@ -326,7 +326,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getRefreshTokenListFilterUserIdInjection() throws Exception {
+  void getRefreshTokenListFilterUserIdInjection() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -348,7 +348,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidRefreshTokensCountWithExpiredTokens() throws Exception {
+  void getAllValidRefreshTokensCountWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -365,7 +365,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidRefreshTokensCountForUserWithExpiredTokens() throws Exception {
+  void getAllValidRefreshTokensCountForUserWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -395,7 +395,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidRefreshTokensCountForClientWithExpiredTokens() throws Exception {
+  void getAllValidRefreshTokensCountForClientWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -427,7 +427,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
 
 
   @Test
-  public void getAllValidRefreshTokensCountForUserAndClientWithExpiredTokens() throws Exception {
+  void getAllValidRefreshTokensCountForUserAndClientWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);

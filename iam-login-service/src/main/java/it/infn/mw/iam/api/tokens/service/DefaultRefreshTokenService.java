@@ -20,11 +20,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.tokens.converter.TokensConverter;
@@ -40,7 +42,7 @@ public class DefaultRefreshTokenService extends AbstractTokenService<RefreshToke
   private TokensConverter tokensConverter;
 
   @Autowired
-  private DefaultOAuth2ProviderTokenService tokenService;
+  private OAuth2TokenEntityService tokenService;
 
   @Autowired
   private IamOAuthRefreshTokenRepository tokenRepository;

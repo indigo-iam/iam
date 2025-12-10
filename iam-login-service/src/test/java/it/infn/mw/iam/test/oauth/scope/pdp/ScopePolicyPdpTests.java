@@ -32,12 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.common.collect.Sets;
@@ -52,11 +52,10 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @ActiveProfiles({"h2-test", "h2", "saml", "registration", "wlcg-scopes"})
 @IamMockMvcIntegrationTest
-public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
+class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
   @Autowired
   IamScopePolicyRepository policyScopeRepo;
@@ -80,7 +79,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testBasicDefaultPolicyDecision() {
+  void testBasicDefaultPolicyDecision() {
 
     IamAccount testAccount = findTestAccount();
     Set<String> filteredScopes =
@@ -97,7 +96,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAccountPolicyIsEnforced() {
+  void testAccountPolicyIsEnforced() {
     IamAccount testAccount = findTestAccount();
 
     IamScopePolicy up = initDenyScopePolicy();
@@ -113,7 +112,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAccountPolicyIsCompletelyEnforced() {
+  void testAccountPolicyIsCompletelyEnforced() {
     IamAccount testAccount = findTestAccount();
 
     IamScopePolicy up = initDenyScopePolicy();
@@ -132,7 +131,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testGroupPolicyIsEnforced() {
+  void testGroupPolicyIsEnforced() {
     IamAccount testAccount = findTestAccount();
 
     Iterator<IamAccountGroupMembership> groupsIter = testAccount.getGroups().iterator();
@@ -154,7 +153,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
 
   @Test
-  public void testChainedOverrideAtGroupIsEnforced() {
+  void testChainedOverrideAtGroupIsEnforced() {
     IamAccount testAccount = findTestAccount();
 
     Iterator<IamAccountGroupMembership> groupsIter = testAccount.getGroups().iterator();
@@ -177,7 +176,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
 
   @Test
-  public void testChainedOverrideIsEnforced() {
+  void testChainedOverrideIsEnforced() {
     IamAccount testAccount = findTestAccount();
 
     Iterator<IamAccountGroupMembership> groupsIter = testAccount.getGroups().iterator();
@@ -204,7 +203,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConflictingGroupPolicyDenyOverrides() {
+  void testConflictingGroupPolicyDenyOverrides() {
     IamAccount testAccount = findTestAccount();
 
     Iterator<IamAccountGroupMembership> groupsIter = testAccount.getGroups().iterator();
@@ -232,7 +231,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConflictingGroupPolicyDenyOverrides2() {
+  void testConflictingGroupPolicyDenyOverrides2() {
     IamAccount testAccount = findTestAccount();
 
     Iterator<IamAccountGroupMembership> groupsIter = testAccount.getGroups().iterator();
@@ -261,7 +260,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
 
   @Test
-  public void testPathFiltering() {
+  void testPathFiltering() {
 
     IamAccount testAccount = findTestAccount();
     IamScopePolicy up = initDenyScopePolicy();
@@ -280,7 +279,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testPathPermit() {
+  void testPathPermit() {
 
     IamAccount testAccount = findTestAccount();
     IamScopePolicy up = initPermitScopePolicy();
@@ -299,7 +298,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testPathForCustomScope() {
+  void testPathForCustomScope() {
 
     IamAccount testAccount = findTestAccount();
     IamScopePolicy up = initDenyScopePolicy();
@@ -325,7 +324,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testMisspelledScopeInScopePolicy() throws Exception {
+  void testMisspelledScopeInScopePolicy() throws Exception {
 
     findTestAccount();
     IamScopePolicy up = initPermitScopePolicy();
@@ -349,7 +348,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFakeWLCGScopeAsCustomScopeNotIncluded() throws Exception {
+  void testFakeWLCGScopeAsCustomScopeNotIncluded() throws Exception {
 
     mvc
       .perform(post("/token").with(httpBasic("password-grant", "secret"))

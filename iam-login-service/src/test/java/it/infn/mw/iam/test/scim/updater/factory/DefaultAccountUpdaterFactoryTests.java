@@ -45,13 +45,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -88,7 +88,7 @@ import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultAccountUpdaterFactoryTests {
 
   public static final String OLD = "old";
@@ -135,8 +135,8 @@ public class DefaultAccountUpdaterFactoryTests {
 
   UsernameValidator usernameValidator = new UsernameValidator();
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
 
     factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, accessTokenRepo,
         refreshTokenRepo, oidcConverter, samlConverter, sshKeyConverter, x509Converter,
@@ -144,7 +144,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testGivenNamePatchOpParsing() {
+  void testGivenNamePatchOpParsing() {
 
     IamAccount account = newAccount(OLD);
     account.getUserInfo().setGivenName(OLD);
@@ -166,7 +166,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testPicturePatchOpParsing() {
+  void testPicturePatchOpParsing() {
 
     IamAccount account = newAccount(OLD);
     account.getUserInfo().setPicture(OLD);
@@ -188,7 +188,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testPictureRemoveOpParsing() {
+  void testPictureRemoveOpParsing() {
 
     IamAccount account = newAccount(OLD);
     account.getUserInfo().setPicture(OLD);
@@ -211,7 +211,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testSshKeyPatchAddOpParsing() {
+  void testSshKeyPatchAddOpParsing() {
 
     IamAccount account = newAccount(OLD);
 
@@ -245,7 +245,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testPatchAddOpMultipleParsing() {
+  void testPatchAddOpMultipleParsing() {
 
     List<UpdaterType> expectedUpdatersType = Lists.newArrayList(ACCOUNT_REPLACE_GIVEN_NAME,
         ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_PASSWORD,
@@ -325,7 +325,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testPatchReplaceOpMultipleParsing() {
+  void testPatchReplaceOpMultipleParsing() {
 
     List<UpdaterType> expectedUpdatersType = Lists.newArrayList(ACCOUNT_REPLACE_GIVEN_NAME,
         ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_USERNAME,
@@ -375,7 +375,7 @@ public class DefaultAccountUpdaterFactoryTests {
   }
 
   @Test
-  public void testPatchRemoveOpMultipleParsing() {
+  void testPatchRemoveOpMultipleParsing() {
 
     List<UpdaterType> expectedUpdatersType =
         Lists.newArrayList(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_REMOVE_SSH_KEY);

@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.not;
 
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
@@ -31,7 +31,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
@@ -41,10 +41,10 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"cache.enabled=false", "iam.access_token.include_scope=true"})
-public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
+class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "cache-client";
   private static final String CLIENT_SECRET = "secret";
@@ -65,14 +65,14 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void ensureRedisCacheIsDisabled() {
+  void ensureRedisCacheIsDisabled() {
     assertThat(cacheManager, instanceOf(NoOpCacheManager.class));
     assertThat(cacheManager, not(instanceOf(ConcurrentMapCacheManager.class)));
     assertThat(cacheManager, not(instanceOf(RedisCacheManager.class)));
   }
 
   @Test
-  public void updatingClientScopesWithNoCache() throws Exception {
+  void updatingClientScopesWithNoCache() throws Exception {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);

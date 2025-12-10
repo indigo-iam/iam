@@ -28,14 +28,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -52,7 +52,7 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class GroupSearchControllerTests {
 
@@ -73,20 +73,20 @@ public class GroupSearchControllerTests {
   @Autowired
   private GroupConverter scimGroupConverter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getFirstPageOfAllGroups() throws Exception {
+  void getFirstPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -104,7 +104,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getSecondPageOfAllGroups() throws Exception {
+  void getSecondPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -123,7 +123,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithCustomStartIndexAndCount() throws Exception {
+  void getGroupsWithCustomStartIndexAndCount() throws Exception {
 
     long expectedSize = groupRepository.count();
     int startIndex = 3;
@@ -145,7 +145,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getCountOfAllGroups() throws Exception {
+  void getCountOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -164,7 +164,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getFirstFilteredPageOfGroups() throws Exception {
+  void getFirstFilteredPageOfGroups() throws Exception {
 
     final String filter = "duction";
     OffsetPageable op = new OffsetPageable(0, 10);
@@ -190,7 +190,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getCountOfFilteredGroups() throws Exception {
+  void getCountOfFilteredGroups() throws Exception {
 
     final String filter = "duction";
     long expectedSize = 1;
@@ -210,14 +210,14 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  public void getGroupsAsAnonymousUser() throws Exception {
+  void getGroupsAsAnonymousUser() throws Exception {
     mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithNegativeStartIndex() throws Exception {
+  void getGroupsWithNegativeStartIndex() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -236,7 +236,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithStartIndexZero() throws Exception {
+  void getGroupsWithStartIndexZero() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -255,7 +255,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithCountBiggerThanPageSize() throws Exception {
+  void getGroupsWithCountBiggerThanPageSize() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -275,7 +275,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithNegativeCount() throws Exception {
+  void getGroupsWithNegativeCount() throws Exception {
 
     long expectedSize = groupRepository.count();
 

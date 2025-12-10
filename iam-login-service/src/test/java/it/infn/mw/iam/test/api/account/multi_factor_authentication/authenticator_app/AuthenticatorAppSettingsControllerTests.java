@@ -33,14 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -62,9 +62,9 @@ import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
+class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
 
   private MockMvc mvc;
 
@@ -80,13 +80,13 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   @MockBean
   private IamTotpMfaProperties iamTotpMfaProperties;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
@@ -97,7 +97,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testAddSecret() throws Exception {
+  void testAddSecret() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(false);
@@ -114,7 +114,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testAddSecretThrowsMfaSecretAlreadyBoundException() throws Exception {
+  void testAddSecretThrowsMfaSecretAlreadyBoundException() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(false);
@@ -132,7 +132,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testAddSecret_withEmptyPassword() throws Exception {
+  void testAddSecret_withEmptyPassword() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(false);
@@ -153,19 +153,19 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithAnonymousUser
-  public void testAddSecretNoAuthenticationIsUnauthorized() throws Exception {
+  void testAddSecretNoAuthenticationIsUnauthorized() throws Exception {
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockPreAuthenticatedUser
-  public void testAddSecretPreAuthenticationIsUnauthorized() throws Exception {
+  void testAddSecretPreAuthenticationIsUnauthorized() throws Exception {
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorApp() throws Exception {
+  void testEnableAuthenticatorApp() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
 
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
@@ -187,7 +187,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppThrowsTotpMfaAlreadyEnabledException() throws Exception {
+  void testEnableAuthenticatorAppThrowsTotpMfaAlreadyEnabledException() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "123456";
 
@@ -204,7 +204,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppIncorrectCode() throws Exception {
+  void testEnableAuthenticatorAppIncorrectCode() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "123456";
 
@@ -218,7 +218,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppButTotpVerificationFails() throws Exception {
+  void testEnableAuthenticatorAppButTotpVerificationFails() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "123456";
 
@@ -233,7 +233,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppInvalidCharactersInCode() throws Exception {
+  void testEnableAuthenticatorAppInvalidCharactersInCode() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "abcdef";
 
@@ -244,7 +244,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppCodeTooShort() throws Exception {
+  void testEnableAuthenticatorAppCodeTooShort() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "12345";
 
@@ -255,7 +255,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppCodeTooLong() throws Exception {
+  void testEnableAuthenticatorAppCodeTooLong() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "1234567";
 
@@ -266,7 +266,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppNullCode() throws Exception {
+  void testEnableAuthenticatorAppNullCode() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = null;
 
@@ -277,7 +277,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testEnableAuthenticatorAppEmptyCode() throws Exception {
+  void testEnableAuthenticatorAppEmptyCode() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "";
 
@@ -288,7 +288,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithAnonymousUser
-  public void testEnableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
+  void testEnableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
     mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
@@ -296,7 +296,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockPreAuthenticatedUser
-  public void testEnableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
+  void testEnableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
     String totp = "654321";
 
     mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
@@ -304,7 +304,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorApp() throws Exception {
+  void testDisableAuthenticatorApp() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     String totp = "123456";
@@ -321,7 +321,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppIncorrectCode() throws Exception {
+  void testDisableAuthenticatorAppIncorrectCode() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "123456";
 
@@ -335,7 +335,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppButTotpVerificationFails() throws Exception {
+  void testDisableAuthenticatorAppButTotpVerificationFails() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "123456";
 
@@ -350,7 +350,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppInvalidCharactersInCode() throws Exception {
+  void testDisableAuthenticatorAppInvalidCharactersInCode() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "123456";
 
@@ -361,7 +361,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppCodeTooShort() throws Exception {
+  void testDisableAuthenticatorAppCodeTooShort() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "12345";
 
@@ -372,7 +372,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppCodeTooLong() throws Exception {
+  void testDisableAuthenticatorAppCodeTooLong() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "1234567";
 
@@ -383,7 +383,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppNullCode() throws Exception {
+  void testDisableAuthenticatorAppNullCode() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = null;
 
@@ -394,7 +394,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockMfaUser
-  public void testDisableAuthenticatorAppEmptyCode() throws Exception {
+  void testDisableAuthenticatorAppEmptyCode() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "";
 
@@ -405,7 +405,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithAnonymousUser
-  public void testDisableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
+  void testDisableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
     mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
@@ -413,7 +413,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockPreAuthenticatedUser
-  public void testDisableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
+  void testDisableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
     String totp = "654321";
 
     mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());

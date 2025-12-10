@@ -24,12 +24,10 @@ import org.springframework.util.FileCopyUtils;
 
 public class TestUtils {
 
-  public static String loadClasspathResourceContent(String resource)
-      throws IOException {
+  public static String loadClasspathResourceContent(String resource) throws IOException {
 
     ClassPathResource cpr = new ClassPathResource(resource);
-    InputStreamReader reader =
-        new InputStreamReader(cpr.getInputStream(), StandardCharsets.UTF_8);
+    InputStreamReader reader = new InputStreamReader(cpr.getInputStream(), StandardCharsets.UTF_8);
 
     return FileCopyUtils.copyToString(reader);
   }

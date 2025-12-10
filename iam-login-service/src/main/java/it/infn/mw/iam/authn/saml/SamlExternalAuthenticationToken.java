@@ -107,10 +107,6 @@ public class SamlExternalAuthenticationToken
     visitor.linkToIamAccount(account, this);
   }
 
-  public IamSamlId getSamlId() {
-    return samlId;
-  }
-
   @Override
   public Map<String, String> buildAuthnInfoMap() {
 

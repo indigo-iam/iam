@@ -22,26 +22,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2", "wlcg-scopes"})
-public class ClientRegistrationScopeFilteringTests extends ClientRegistrationTestSupport {
+class ClientRegistrationScopeFilteringTests extends ClientRegistrationTestSupport {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void testClientRegistrationScopesAreFiltered() throws Exception {
+  void testClientRegistrationScopesAreFiltered() throws Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .scopes("example", "storage.read:/", "storage.read:/sub/path")

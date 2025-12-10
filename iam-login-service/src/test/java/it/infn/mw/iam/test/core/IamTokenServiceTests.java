@@ -15,29 +15,31 @@
  */
 package it.infn.mw.iam.test.core;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@SuppressWarnings("deprecation")
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class IamTokenServiceTests extends TestTokensUtils {
 
@@ -48,7 +50,7 @@ public class IamTokenServiceTests extends TestTokensUtils {
   private IamTokenService tokenService;
 
   @Test
-  public void testPreAuthenticatedUserCannotGetToken() {
+  void testPreAuthenticatedUserCannotGetToken() {
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
     savedAuth.setName(TESTUSER_USERNAME);
     savedAuth.setAuthenticated(true);

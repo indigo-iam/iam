@@ -17,15 +17,15 @@ package it.infn.mw.iam.test.repository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
@@ -37,10 +37,9 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
-public class IamAupSignatureRepositoryTests extends AupTestSupport {
+class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Autowired
   private IamAupRepository aupRepo;
@@ -58,7 +57,7 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
   }
 
   @Test
-  public void signatureCreationWorks() {
+  void signatureCreationWorks() {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
 
@@ -77,7 +76,7 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
   }
 
   @Test
-  public void signatureCreationCanBeInvokedMultipleTimes() {
+  void signatureCreationCanBeInvokedMultipleTimes() {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
 
@@ -102,7 +101,7 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
   }
 
   @Test
-  public void signatureUpdateUpdatesSignatureTime() throws InterruptedException {
+  void signatureUpdateUpdatesSignatureTime() {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
@@ -115,7 +114,7 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
   }
 
   @Test
-  public void testServiceAccountThrowsExceptionOnAUPSignatureCreation() {
+  void testServiceAccountThrowsExceptionOnAUPSignatureCreation() {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
@@ -130,9 +129,9 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
     assertTrue(actualMessage.contains(expectedMessage));
   }
 
-  
+
   @Test
-  public void testServiceAccountThrowsExceptionOnDeleteSignatureForAccount() {
+  void testServiceAccountThrowsExceptionOnDeleteSignatureForAccount() {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();

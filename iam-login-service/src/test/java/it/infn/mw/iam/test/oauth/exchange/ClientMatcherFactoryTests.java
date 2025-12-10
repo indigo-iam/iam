@@ -17,59 +17,52 @@ package it.infn.mw.iam.test.oauth.exchange;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.core.oauth.exchange.ClientMatcherFactory;
+import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ClientMatcherFactoryTests extends TokenExchangePdpTestSupport{
+@ExtendWith(MockitoExtension.class)
+class ClientMatcherFactoryTests extends TokenExchangePdpTestSupport {
 
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullClientIdNotAllowed() {
-    
-    try {
-      ClientMatcherFactory.newClientMatcher(buildByIdClientMatcher(null));
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), containsString("<null> or empty clientId not allowed"));
-      throw e;
-    }
+  @Test
+  void nullClientIdNotAllowed() {
+
+    IamClientMatchingPolicy policy = buildByIdClientMatcher(null);
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> ClientMatcherFactory.newClientMatcher(policy));
+    assertThat(e.getMessage(), containsString("<null> or empty clientId not allowed"));
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyClientIdNotAllowed() {
-    
-    try {
-      ClientMatcherFactory.newClientMatcher(buildByIdClientMatcher(""));
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), containsString("<null> or empty clientId not allowed"));
-      throw e;
-    }
+
+  @Test
+  void emptyClientIdNotAllowed() {
+
+    IamClientMatchingPolicy policy = buildByIdClientMatcher("");
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> ClientMatcherFactory.newClientMatcher(policy));
+    assertThat(e.getMessage(), containsString("<null> or empty clientId not allowed"));
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullScopeNotAllowed() {
-    
-    try {
-      ClientMatcherFactory.newClientMatcher(buildByScopeClientMatcher(null));
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), containsString("<null> or empty scope not allowed"));
-      throw e;
-    }
+
+  @Test
+  void nullScopeNotAllowed() {
+
+    IamClientMatchingPolicy policy = buildByScopeClientMatcher(null);
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> ClientMatcherFactory.newClientMatcher(policy));
+    assertThat(e.getMessage(), containsString("<null> or empty scope not allowed"));
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyScopeNotAllowed() {
-    
-    try {
-      ClientMatcherFactory.newClientMatcher(buildByScopeClientMatcher(""));
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), containsString("<null> or empty scope not allowed"));
-      throw e;
-    }
+
+  @Test
+  void emptyScopeNotAllowed() {
+
+    IamClientMatchingPolicy policy = buildByScopeClientMatcher("");
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> ClientMatcherFactory.newClientMatcher(policy));
+    assertThat(e.getMessage(), containsString("<null> or empty scope not allowed"));
   }
 
 }

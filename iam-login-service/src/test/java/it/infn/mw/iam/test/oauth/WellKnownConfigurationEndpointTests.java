@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,8 +30,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +38,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,13 +49,11 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = "task.wellKnownCacheCleanupPeriodSecs=1")
 @ActiveProfiles({"h2-test", "dev"})
-public class WellKnownConfigurationEndpointTests {
+class WellKnownConfigurationEndpointTests {
 
   private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;
 
@@ -83,7 +79,7 @@ public class WellKnownConfigurationEndpointTests {
   private ObjectMapper mapper;
 
   @Test
-  public void testGrantTypesSupported() throws Exception {
+  void testGrantTypesSupported() throws Exception {
 
     // @formatter:off
     mvc.perform(get(endpoint))
@@ -95,7 +91,7 @@ public class WellKnownConfigurationEndpointTests {
   }
 
   @Test
-  public void testSupportedClaims() throws Exception {
+  void testSupportedClaims() throws Exception {
 
     // @formatter:off
     mvc.perform(get(endpoint))
@@ -109,14 +105,14 @@ public class WellKnownConfigurationEndpointTests {
   }
 
   @Test
-  public void testIssuerEndsWithSlash() throws Exception {
+  void testIssuerEndsWithSlash() throws Exception {
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.issuer", is("http://localhost:8080/")));
   }
 
   @Test
-  public void testEndpoints() throws Exception {
+  void testEndpoints() throws Exception {
 
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())
@@ -134,7 +130,7 @@ public class WellKnownConfigurationEndpointTests {
   }
 
   @Test
-  public void testScopes() throws Exception {
+  void testScopes() throws Exception {
 
     Set<String> unrestrictedScopes = scopeService.getUnrestricted()
       .stream()
@@ -164,7 +160,7 @@ public class WellKnownConfigurationEndpointTests {
   }
 
   @Test
-  public void testWellKnownCacheEviction() throws Exception {
+  void testWellKnownCacheEviction() throws Exception {
 
     SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
     scopeService.save(scope);

@@ -33,8 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -55,8 +55,7 @@ import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AuthorizationCodeTests {
 
@@ -116,7 +115,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlowExternalHint() throws Exception {
+  void testOidcAuthorizationCodeFlowExternalHint() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -136,7 +135,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlow() throws Exception {
+  void testOidcAuthorizationCodeFlow() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -170,7 +169,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlowWithAUPSignature() throws Exception {
+  void testOidcAuthorizationCodeFlowWithAUPSignature() throws Exception {
 
     IamAup aup = new IamAup();
 
@@ -236,7 +235,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testNormalClientNotLinkedToUser() throws Exception {
+  void testNormalClientNotLinkedToUser() throws Exception {
 
     User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
         commaSeparatedStringToAuthorityList("ROLE_USER"));
@@ -274,7 +273,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
+  void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
@@ -321,7 +320,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
+  void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
@@ -372,7 +371,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
+  void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");

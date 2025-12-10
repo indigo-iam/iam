@@ -28,15 +28,16 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
+import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
@@ -52,7 +53,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -143,8 +143,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
     assertThat(savedClient.getClientId(), is(client.getClientId()));
@@ -160,8 +160,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwk(NOT_A_JSON_STRING);
 
     ParseException e = assertThrows(ParseException.class, () -> {
@@ -189,8 +189,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwksUri(NOT_A_VALID_URI);
 
     ConstraintViolationException e = assertThrows(ConstraintViolationException.class, () -> {
@@ -225,7 +225,7 @@ class ClientManagementServiceTests {
 
     client.setClientName("client");
     client.setClientId("client");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     exception = assertThrows(ConstraintViolationException.class, () -> {
       managementService.saveNewClient(client);
@@ -239,11 +239,11 @@ class ClientManagementServiceTests {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
-    when(userAuth.getAuthorities()).thenAnswer(x -> Sets.newHashSet(Authorities.ROLE_USER));
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
 
 
@@ -269,8 +269,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
     assertThat(savedClient.getClientId(), is(client.getClientId()));
@@ -289,8 +289,8 @@ class ClientManagementServiceTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-rat-rotation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
     assertThat(savedClient.getClientId(), notNullValue());
@@ -311,8 +311,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
     assertThat(savedClient.getClientId(), is(client.getClientId()));
@@ -362,8 +362,8 @@ class ClientManagementServiceTests {
       RegisteredClientDTO client = new RegisteredClientDTO();
       client.setClientName("test-client-creation");
       client.setClientId("test-client-creation");
-      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-      client.setScope(Sets.newHashSet("test"));
+      client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+      client.setScope(Set.of("test"));
       client.setCodeChallengeMethod(value);
       ConstraintViolationException exception =
           assertThrows(ConstraintViolationException.class, () -> {
@@ -376,8 +376,8 @@ class ClientManagementServiceTests {
     for (String value : validCodeChallengeValues) {
       RegisteredClientDTO client = new RegisteredClientDTO();
       client.setClientName("test-client-creation");
-      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-      client.setScope(Sets.newHashSet("test"));
+      client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+      client.setScope(Set.of("test"));
       client.setCodeChallengeMethod(value);
       Assertions.assertDoesNotThrow(() -> {
         RegisteredClientDTO response = managementService.saveNewClient(client);

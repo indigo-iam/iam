@@ -15,19 +15,19 @@
  */
 package it.infn.mw.iam.test.repository;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Sets;
 
@@ -41,10 +41,9 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
-public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
+class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
 
   @Autowired
   private IamScopePolicyRepository policyRepo;
@@ -58,13 +57,13 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   @Autowired
   private IamGroupService groupService;
 
-  @Before
-  public void cleanupPolicies() {
+  @BeforeEach
+  void cleanupPolicies() {
     policyRepo.deleteAll();
   }
-  
+
   @Test
-  public void testGroupPolicyCreationWorks() {
+  void testGroupPolicyCreationWorks() {
 
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));
@@ -88,7 +87,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testUserPolicyCreationWorks() {
+  void testUserPolicyCreationWorks() {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected 'test' user not found"));
@@ -113,7 +112,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testUserPolicyIsRemovedWhenUserIsRemoved() {
+  void testUserPolicyIsRemovedWhenUserIsRemoved() {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected 'test' user not found"));
@@ -135,7 +134,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testGroupPolicyIsRemovedWhenGroupIsRemoved() {
+  void testGroupPolicyIsRemovedWhenGroupIsRemoved() {
 
     IamGroup emptyGroup = new IamGroup();
     emptyGroup.setName("empty");
@@ -170,7 +169,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testFindEquivalentScopePolicy() {
+  void testFindEquivalentScopePolicy() {
     IamScopePolicy permitPolicy = initPermitScopePolicy();
 
     permitPolicy = policyRepo.save(permitPolicy);
@@ -186,7 +185,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testGroupEquivalentScopePolicy() {
+  void testGroupEquivalentScopePolicy() {
     IamScopePolicy policy = initDenyScopePolicy();
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));
@@ -233,7 +232,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testGroupEquivalentAllScopesPolicy() {
+  void testGroupEquivalentAllScopesPolicy() {
     IamScopePolicy policy = initDenyScopePolicy();
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));
@@ -251,7 +250,7 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testUserEquivalentAllScopePolicy() {
+  void testUserEquivalentAllScopePolicy() {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected 'test' user not found"));
 
@@ -278,9 +277,9 @@ public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
     equivalentPolicies = policyRepo.findEquivalentPolicies(otherDenyPolicy);
     assertThat(equivalentPolicies, hasSize(0));
   }
-  
+
   @Test
-  public void testUserEquivalentScopePolicy() {
+  void testUserEquivalentScopePolicy() {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected 'test' user not found"));
 

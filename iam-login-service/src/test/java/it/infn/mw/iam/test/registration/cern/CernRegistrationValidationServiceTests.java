@@ -34,9 +34,8 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -46,7 +45,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,16 +65,14 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class,
-        CernRegistrationValidationServiceTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    CernRegistrationValidationServiceTests.TestConfig.class},
+  webEnvironment = WebEnvironment.MOCK)
 @ActiveProfiles({"h2-test", "cern"})
 @TestPropertySource(properties = {"cern.task.enabled=false"})
-public class CernRegistrationValidationServiceTests {
+class CernRegistrationValidationServiceTests {
 
   @TestConfiguration
   public static class TestConfig {
@@ -102,8 +98,8 @@ public class CernRegistrationValidationServiceTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     reset(hrDbApi);
   }
 
@@ -174,7 +170,7 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithAnonymousUser
-  public void testAuthenticationIsRequired() throws Exception {
+  void testAuthenticationIsRequired() throws Exception {
 
     mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
@@ -186,7 +182,7 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser
-  public void testCernSSOAuthIsRequired() throws Exception {
+  void testCernSSOAuthIsRequired() throws Exception {
 
     mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
@@ -198,7 +194,7 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern")
-  public void testPersonIdIsRequired() throws Exception {
+  void testPersonIdIsRequired() throws Exception {
 
     mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
@@ -210,8 +206,8 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
-      claims = {"cern_person_id", "988211"})
-  public void testHrDbApiErrorIsHandled() throws Exception {
+    claims = {"cern_person_id", "988211"})
+  void testHrDbApiErrorIsHandled() throws Exception {
     when(hrDbApi.getHrDbPersonRecord(anyString()))
       .thenThrow(new CernHrDbApiError("error"));
 
@@ -225,8 +221,8 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern", givenName = "Test",
-      familyName = "User", claims = {"cern_person_id", "988211"})
-  public void testInvalidRequestIsReported() throws Exception {
+    familyName = "User", claims = {"cern_person_id", "988211"})
+  void testInvalidRequestIsReported() throws Exception {
     when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockInvalidVoPerson());
 
     mvc
@@ -238,8 +234,8 @@ public class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
-      claims = {"cern_person_id", "988211"})
-  public void testLabelIsAddedToRegistrationRequest() throws Exception {
+    claims = {"cern_person_id", "988211"})
+  void testLabelIsAddedToRegistrationRequest() throws Exception {
     when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockVoPerson());
 
     String response = mvc

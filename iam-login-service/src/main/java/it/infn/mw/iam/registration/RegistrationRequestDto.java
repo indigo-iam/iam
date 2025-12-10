@@ -96,6 +96,10 @@ public class RegistrationRequestDto implements Serializable {
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
+  private String registerCertificate;
+
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   private List<LabelDTO> labels;
 
   public RegistrationRequestDto() {}
@@ -105,6 +109,7 @@ public class RegistrationRequestDto implements Serializable {
       @JsonProperty(value = "givenname", required = true) String givenname,
       @JsonProperty(value = "familyname", required = true) String familyname,
       @JsonProperty(value = "email", required = true) String email,
+      @JsonProperty(value = "registerCertificate", required = false) String registerCertificate,
       @JsonProperty("notes") String notes, @JsonProperty("uuid") String uuid,
       @JsonProperty("birthdate") String birthdate, @JsonProperty("accountId") String accountId,
       @JsonProperty("creationTime") Date creationTime, @JsonProperty("status") String status,
@@ -112,6 +117,7 @@ public class RegistrationRequestDto implements Serializable {
       @JsonProperty("affiliation") String affiliation,
       @JsonProperty("labels") List<LabelDTO> labels) {
     super();
+    this.registerCertificate = registerCertificate;
     this.username = username;
     this.givenname = givenname;
     this.familyname = familyname;
@@ -235,12 +241,21 @@ public class RegistrationRequestDto implements Serializable {
     this.notes = notes;
   }
 
+  public String getRegisterCertificate() {
+    return this.registerCertificate;
+  }
+
+  public void setRegisterCertificate(String registerCertificate) {
+    this.registerCertificate = registerCertificate;
+  }
+
   public String getAffiliation() {
     return affiliation;
   }
 
   public void setAffiliation(String affiliation) {
     this.affiliation = affiliation;
+
   }
 
   public List<LabelDTO> getLabels() {

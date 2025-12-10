@@ -23,16 +23,18 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.apache.commons.lang.RandomStringUtils.random;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
@@ -40,16 +42,16 @@ import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-public class ScimUserValidationTests extends ScimUserTestSupport {
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+class ScimUserValidationTests extends ScimUserTestSupport {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -73,149 +75,155 @@ public class ScimUserValidationTests extends ScimUserTestSupport {
   private final String VALID_LONG_EMAIL = STRING_64 + "@" + STRING_64 + ".com";
 
   private ScimUser lennon;
-  private ScimUser lincoln;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     lennon = createScimUser("john_lennon", "lennon@email.test", "John", "Lennon");
-    lincoln = createScimUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() throws Exception {
-
-    deleteScimUser(lennon);
-    deleteScimUser(lincoln);
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testReplaceWithTooShortGivenName() throws Exception {
+  void testReplaceWithTooShortGivenName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(STRING_2, STRING_1).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("length must be between 2 and 64")));
   }
 
   @Test
-  public void testReplaceWithTooLongGivenName() throws Exception {
+  void testReplaceWithTooLongGivenName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(STRING_65, STRING_64).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("length must be between 2 and 64")));
   }
 
   @Test
-  public void testReplaceWithInvalidGivenName() throws Exception {
+  void testReplaceWithInvalidGivenName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(INVALID_STRING, VALID_STRING).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("String contains invalid characters")));
   }
 
   @Test
-  public void testReplaceWithTooShortFamilyName() throws Exception {
+  void testReplaceWithTooShortFamilyName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(STRING_64, STRING_1).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("length must be between 2 and 64")));
   }
 
   @Test
-  public void testReplaceWithTooLongFamilyName() throws Exception {
+  void testReplaceWithTooLongFamilyName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(STRING_64, STRING_65).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("length must be between 2 and 64")));
   }
 
   @Test
-  public void testReplaceWithInvalidFamilyName() throws Exception {
+  void testReplaceWithInvalidFamilyName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(VALID_STRING, INVALID_STRING).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("String contains invalid characters")));
   }
 
   @Test
-  public void testReplaceWithTooLongEmail() throws Exception {
+  void testReplaceWithTooLongEmail() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildEmail(VALID_LONG_EMAIL).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("length must be less than 128")));
   }
 
   @Test
-  public void testReplaceWithInvalidEmail() throws Exception {
+  void testReplaceWithInvalidEmail() throws Exception {
 
     for (int i = 0; i < INVALID_EMAILS.length; i++) {
 
       ScimEmail email = ScimEmail.builder().email(INVALID_EMAILS[i]).build();
       ScimUser updates = ScimUser.builder().addEmail(email).build();
-      scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+      scimUtils.patchUser(lennon.getId(), replace, updates)
+        .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.detail", containsString("Please provide a valid email address")));
     }
   }
 
   @Test
-  public void testReplaceWithEmailNoType() throws Exception {
+  void testReplaceWithEmailNoType() throws Exception {
 
     ScimEmail email = ScimEmail.builder().value(VALID_EMAILS[0]).primary(true).build();
     ScimUser updates = ScimUser.builder().addEmail(email).build();
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("Please provide a value for email type")));
   }
 
   @Test
-  public void testReplaceWithEmailNoPrimary() throws Exception {
+  void testReplaceWithEmailNoPrimary() throws Exception {
 
     ScimEmail email = ScimEmail.builder().value(VALID_EMAILS[0]).build();
     ScimUser updates = ScimUser.builder().addEmail(email).build();
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("Please provide a value for email primary")));
   }
 
   @Test
-  public void testReplaceWithValidEmail() throws Exception {
+  void testReplaceWithValidEmail() throws Exception {
 
     for (int i = 0; i < VALID_EMAILS.length; i++) {
 
       ScimEmail email = ScimEmail.builder().email(VALID_EMAILS[i]).build();
       ScimUser updates = ScimUser.builder().addEmail(email).build();
-      scimUtils.patchUser(lennon.getId(), replace, updates);
+      scimUtils.patchUser(lennon.getId(), replace, updates).andExpect(status().isNoContent());
     }
   }
 
   @Test
-  public void testAddInvalidPicture() throws Exception {
+  void testAddInvalidPicture() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildPhoto(PICTURE_INVALID_URL).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchUser(lennon.getId(), add, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("String contains HTML tags")));
   }
 
   @Test
-  public void testReplaceWithGivenAndFamilyNameWithMaxLength() throws Exception {
+  void testReplaceWithGivenAndFamilyNameWithMaxLength() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(STRING_64, STRING_64).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates);
+    scimUtils.patchUser(lennon.getId(), replace, updates).andExpect(status().isNoContent());
   }
 
   @Test
-  public void testReplaceWithValidGivenAndFamilyName() throws Exception {
+  void testReplaceWithValidGivenAndFamilyName() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildName(VALID_STRING, VALID_STRING).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates);
+    scimUtils.patchUser(lennon.getId(), replace, updates).andExpect(status().isNoContent());
   }
 }

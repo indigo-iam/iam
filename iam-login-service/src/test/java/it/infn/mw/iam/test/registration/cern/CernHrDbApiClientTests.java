@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.registration.cern;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -29,9 +30,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -40,7 +40,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,17 +53,15 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CernHrDbApiClientTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+  webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"cern.hr-api.username=" + CernTestSupport.HR_API_USERNAME,
-    "cern.hr-api.password=" + CernTestSupport.HR_API_PASSWORD,
-    "cern.hr-api.url=" + CernTestSupport.HR_API_URL,
-    "cern.experiment-name=" + CernTestSupport.EXPERIMENT_NAME, "cern.task.enabled=false"})
+  "cern.hr-api.password=" + CernTestSupport.HR_API_PASSWORD,
+  "cern.hr-api.url=" + CernTestSupport.HR_API_URL,
+  "cern.experiment-name=" + CernTestSupport.EXPERIMENT_NAME, "cern.task.enabled=false"})
 @ActiveProfiles({"h2-test", "cern"})
-public class CernHrDbApiClientTests extends CernTestSupport {
+class CernHrDbApiClientTests extends CernTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -86,14 +83,14 @@ public class CernHrDbApiClientTests extends CernTestSupport {
   @Autowired
   private CernHrDBApiService hrDbService;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
 
   @Test
-  public void checkPersonRecordReturned() throws JsonProcessingException {
+  void checkPersonRecordReturned() throws JsonProcessingException {
     String personId = "12356789";
     String voPersonUrl = voPersonUrl(personId);
     mockRtf.getMockServer()
@@ -110,7 +107,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
   }
 
   @Test
-  public void checkPersonNotFoundMeansEmptyOptional() throws JsonProcessingException {
+  void checkPersonNotFoundMeansEmptyOptional() throws JsonProcessingException {
     String personId = "12356789";
     String voPersonUrl = voPersonUrl(personId);
     mockRtf.getMockServer()
@@ -123,8 +120,8 @@ public class CernHrDbApiClientTests extends CernTestSupport {
     assertThat(hrDbService.getHrDbPersonRecord(personId).isEmpty(), is(true));
   }
 
-  @Test(expected = CernHrDbApiError.class)
-  public void checkApiErrorThrowsException() {
+  @Test
+  void checkApiErrorThrowsException() {
     String personId = "12356789";
     String voPersonUrl = voPersonUrl(personId);
     mockRtf.getMockServer()
@@ -133,6 +130,6 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
       .andRespond(withStatus(INTERNAL_SERVER_ERROR));
 
-    hrDbService.getHrDbPersonRecord(personId);
+    assertThrows(CernHrDbApiError.class, () -> hrDbService.getHrDbPersonRecord(personId));
   }
 }

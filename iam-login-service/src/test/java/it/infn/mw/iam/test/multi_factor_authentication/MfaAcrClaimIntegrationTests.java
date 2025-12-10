@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
@@ -37,7 +37,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
 
@@ -55,14 +55,14 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
   public static final String TEST_CLIENT_SECRET = "secret";
   public static final String TESTUSER_USERNAME = "test-with-mfa";
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     SecurityContextHolder.clearContext();
     clearAllTokens();
   }
 
   @Test
-  public void testAcrClaimInTokensAndIntrospectionWhenMfaEnabled() throws Exception {
+  void testAcrClaimInTokensAndIntrospectionWhenMfaEnabled() throws Exception {
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
     savedAuth.setName(TESTUSER_USERNAME);

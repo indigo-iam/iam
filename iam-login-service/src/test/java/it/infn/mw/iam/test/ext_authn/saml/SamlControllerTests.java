@@ -20,19 +20,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class SamlControllerTests extends SamlAuthenticationTestSupport {
+class SamlControllerTests extends SamlAuthenticationTestSupport {
 
   @Test
-  public void testListIdpsMatch() throws Exception {
+  void testListIdpsMatch() throws Exception {
     mvc.perform(get("/saml/idps").param("q", "test"))
       .andExpect(status().isOk())
       .andExpect(MockMvcResultMatchers.jsonPath("$[0].entityId",
@@ -42,7 +42,7 @@ public class SamlControllerTests extends SamlAuthenticationTestSupport {
 
 
   @Test
-  public void testListIdpsNoMatch() throws Exception {
+  void testListIdpsNoMatch() throws Exception {
     mvc.perform(get("/saml/idps").param("q", "not-found"))
       .andExpect(status().isOk())
       .andExpect(content().string("[]"));

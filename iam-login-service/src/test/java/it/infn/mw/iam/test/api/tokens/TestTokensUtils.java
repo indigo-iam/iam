@@ -19,6 +19,8 @@ import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -28,7 +30,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,6 +48,7 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -75,7 +77,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
   protected IamAccountRepository accountRepository;
 
   @Autowired
-  protected DefaultOAuth2ProviderTokenService tokenService;
+  protected IamTokenService tokenService;
 
   @Autowired
   protected IamAccountService accountService;
@@ -89,7 +91,11 @@ public class TestTokensUtils extends EndpointsTestUtils {
   @Autowired
   protected PasswordEncoder encoder;
 
-  private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
+  protected Date yesterday() {
+    return Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+  }
+
+  protected OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
       String[] scopes) {
 
     Authentication userAuth = null;
@@ -105,29 +111,26 @@ public class TestTokensUtils extends EndpointsTestUtils {
     return new OAuth2Authentication(req, userAuth);
   }
 
-  public ClientDetailsEntity loadTestClient(String clientId) {
+  protected ClientDetailsEntity loadTestClient(String clientId) {
     return clientDetailsService.loadClientByClientId(clientId);
   }
 
-  public IamAccount loadTestUser(String userId) {
+  protected IamAccount loadTestUser(String userId) {
     return accountRepository.findByUsername(userId)
       .orElseThrow(() -> new IamAccountException("User not found"));
   }
 
-  public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
+  protected OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
       String[] scopes) {
     return tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
   }
 
-  public OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
+  protected OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
       String username, String[] scopes) {
 
     OAuth2AccessTokenEntity token =
         tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(new Date());
-    cal.add(Calendar.DATE, -10);
-    token.setExpiration(cal.getTime());
+    token.setExpiration(yesterday());
     accessTokenRepository.save(token);
     return token;
   }

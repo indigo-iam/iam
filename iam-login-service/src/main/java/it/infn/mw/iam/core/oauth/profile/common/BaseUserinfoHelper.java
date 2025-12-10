@@ -68,6 +68,8 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
     Set<String> claimNames = new HashSet<>();
     claimNames.addAll(getRequiredClaims());
     claimNames.addAll(scopeTranslationService.getClaimsForScopeSet(scopes));
-    return claimValueHelper.resolveClaims(claimNames, auth, Optional.of(account));
+    Map<String, Object> claims = claimValueHelper.resolveClaims(claimNames, auth, Optional.of(account));
+    claims.put("scope", scopes);
+    return claims;
   }
 }

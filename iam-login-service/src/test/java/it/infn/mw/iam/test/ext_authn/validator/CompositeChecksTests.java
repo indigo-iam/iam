@@ -19,9 +19,9 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.authn.common.Conjunction;
 import it.infn.mw.iam.authn.common.Disjunction;
@@ -31,13 +31,13 @@ import it.infn.mw.iam.authn.common.Negation;
 import it.infn.mw.iam.authn.common.Success;
 import it.infn.mw.iam.authn.common.ValidatorResult;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CompositeChecksTests {
 
   public static final Object CREDENTIAL = new Object();
 
   @Test
-  public void negationTest() {
+  void negationTest() {
 
     Negation<Object> not = new Negation<>(asList(new Success<>()), null);
 
@@ -50,54 +50,44 @@ public class CompositeChecksTests {
     assertThat(not.validate(CREDENTIAL).isError(), is(true));
   }
 
-
   @Test
-  public void conjunctionTest() {
+  void conjunctionTest() {
 
     Conjunction<Object> and = new Conjunction<>(asList(new Success<>(), new Success<>()), null);
-
     assertThat(and.validate(CREDENTIAL).isSuccess(), is(true));
 
     and = new Conjunction<Object>(asList(new Success<>(), new Fail<>()), null);
-
     assertThat(and.validate(CREDENTIAL).isFailure(), is(true));
 
     and = new Conjunction<Object>(asList(new Fail<>(), new Success<>()), null);
-
     assertThat(and.validate(CREDENTIAL).isFailure(), is(true));
 
     and = new Conjunction<Object>(asList(new Error<>(), new Success<>()), null);
-
     assertThat(and.validate(CREDENTIAL).isError(), is(true));
   }
 
   @Test
-  public void disjunctionTest() {
-
+  void disjunctionTest() {
 
     Disjunction<Object> or = new Disjunction<>(asList(new Success<>(), new Fail<>()), null);
-
     assertThat(or.validate(CREDENTIAL).isSuccess(), is(true));
 
     or = new Disjunction<>(asList(new Fail<>(), new Success<>()), null);
-
     assertThat(or.validate(CREDENTIAL).isSuccess(), is(true));
 
     or = new Disjunction<>(asList(new Fail<>(), new Fail<>()), null);
-
     assertThat(or.validate(CREDENTIAL).isFailure(), is(true));
 
     or = new Disjunction<>(asList(new Fail<>()), null);
-
     assertThat(or.validate(CREDENTIAL).isFailure(), is(true));
 
     or = new Disjunction<>(asList(new Fail<>(), new Error<>()), null);
-
     assertThat(or.validate(CREDENTIAL).isError(), is(true));
   }
 
   @Test
-  public void failMessageTest() {
+  void failMessageTest() {
+
     Disjunction<Object> or = new Disjunction<>(asList(new Fail<>()), "yo");
     ValidatorResult result = or.validate(CREDENTIAL);
     assertThat(result.isFailure(), is(true));
@@ -119,6 +109,5 @@ public class CompositeChecksTests {
     result = and.validate(CREDENTIAL);
     assertThat(result.isError(), is(true));
     assertThat(result.getMessage(), is("error"));
-
   }
 }

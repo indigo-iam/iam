@@ -17,8 +17,8 @@ package it.infn.mw.iam.test.config;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
@@ -27,33 +27,33 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.config.login.LoginButtonImage;
 
-@RunWith(MockitoJUnitRunner.class)
-public class LoginButtonImageValidatorTests {
+@ExtendWith(MockitoExtension.class)
+class LoginButtonImageValidatorTests {
 
   private static ValidatorFactory validatorFactory;
   private static Validator validator;
 
-  @BeforeClass
-  public static void createValidator() {
+  @BeforeAll
+  static void createValidator() {
       validatorFactory = Validation.buildDefaultValidatorFactory();
       validator = validatorFactory.getValidator();
   }
 
-  @AfterClass
-  public static void close() {
+  @AfterAll
+  static void close() {
       validatorFactory.close();
   }
 
   @Test
-  public void nullImageUrl() {
+  void nullImageUrl() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl(null);
     Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);
@@ -61,7 +61,7 @@ public class LoginButtonImageValidatorTests {
   }
 
   @Test
-  public void validUrl() {
+  void validUrl() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl("https://example.org/test.png");
     Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);
@@ -69,7 +69,7 @@ public class LoginButtonImageValidatorTests {
   }
 
   @Test
-  public void invalidUrl() {
+  void invalidUrl() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl("abcd://example.org/test.png");
     Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);
@@ -78,7 +78,7 @@ public class LoginButtonImageValidatorTests {
   }
 
   @Test
-  public void validResourcePath() {
+  void validResourcePath() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl("/resources/images/edugain-logo.gif");
     Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);
@@ -86,7 +86,7 @@ public class LoginButtonImageValidatorTests {
   }
 
   @Test
-  public void invalidResourcePath() {
+  void invalidResourcePath() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl("/resources/not/found");
     Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);

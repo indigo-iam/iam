@@ -17,7 +17,6 @@ package it.infn.mw.iam.authn.saml;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.EXT_SAML_PROVIDER;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -81,7 +80,7 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
   private Supplier<AuthenticationServiceException> handleResolutionFailure(
       SamlUserIdentifierResolutionResult result) {
 
-    List<String> errorMessages = result.getErrorMessages().orElse(Collections.emptyList());
+    List<String> errorMessages = result.getErrorMessages();
 
     return () -> new AuthenticationServiceException(joiner.join(errorMessages));
   }
@@ -103,7 +102,8 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
     SamlUserIdentifierResolutionResult result =
         userIdResolver.resolveSamlUserIdentifier(samlCredentials);
 
-    IamSamlId samlId = result.getResolvedId().orElseThrow(handleResolutionFailure(result));
+    IamSamlId samlId =
+        result.getResolvedIds().stream().findFirst().orElseThrow(handleResolutionFailure(result));
 
     validator.validateAuthentication(token);
 

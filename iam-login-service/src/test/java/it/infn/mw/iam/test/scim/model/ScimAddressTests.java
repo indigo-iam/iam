@@ -15,12 +15,13 @@
  */
 package it.infn.mw.iam.test.scim.model;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.api.scim.model.ScimAddress;
 
-public class ScimAddressTests {
+class ScimAddressTests {
 
   final ScimAddress DEFAULT_ADDRESS = ScimAddress.builder()
     .country("IT")
@@ -32,7 +33,7 @@ public class ScimAddressTests {
     .build();
 
   @Test
-  public void testEqualsFailsForCountry() {
+  void testEqualsFailsForCountry() {
 
     ScimAddress address = ScimAddress.builder()
       .country("UK")
@@ -43,11 +44,11 @@ public class ScimAddressTests {
       .streetAddress(DEFAULT_ADDRESS.getStreetAddress())
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 
   @Test
-  public void testEqualsFailsForFormatted() {
+  void testEqualsFailsForFormatted() {
 
     ScimAddress address = ScimAddress.builder()
       .country(DEFAULT_ADDRESS.getCountry())
@@ -58,11 +59,11 @@ public class ScimAddressTests {
       .streetAddress(DEFAULT_ADDRESS.getStreetAddress())
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 
   @Test
-  public void testEqualsFailsForLocality() {
+  void testEqualsFailsForLocality() {
 
     ScimAddress address = ScimAddress.builder()
       .country(DEFAULT_ADDRESS.getCountry())
@@ -73,11 +74,11 @@ public class ScimAddressTests {
       .streetAddress(DEFAULT_ADDRESS.getStreetAddress())
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 
   @Test
-  public void testEqualsFailsForPostalCode() {
+  void testEqualsFailsForPostalCode() {
 
     ScimAddress address = ScimAddress.builder()
       .country(DEFAULT_ADDRESS.getCountry())
@@ -88,11 +89,11 @@ public class ScimAddressTests {
       .streetAddress(DEFAULT_ADDRESS.getStreetAddress())
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 
   @Test
-  public void testEqualsFailsForRegion() {
+  void testEqualsFailsForRegion() {
 
     ScimAddress address = ScimAddress.builder()
       .country(DEFAULT_ADDRESS.getCountry())
@@ -103,11 +104,11 @@ public class ScimAddressTests {
       .streetAddress(DEFAULT_ADDRESS.getStreetAddress())
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 
   @Test
-  public void testEqualsFailsForStreetAddress() {
+  void testEqualsFailsForStreetAddress() {
 
     ScimAddress address = ScimAddress.builder()
       .country(DEFAULT_ADDRESS.getCountry())
@@ -118,6 +119,6 @@ public class ScimAddressTests {
       .streetAddress("via Ranzani 13/2c")
       .build();
 
-    Assert.assertFalse(address.equals(DEFAULT_ADDRESS));
+    assertNotEquals(DEFAULT_ADDRESS, address);
   }
 }

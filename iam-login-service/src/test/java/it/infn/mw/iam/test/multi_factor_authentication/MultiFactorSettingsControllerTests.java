@@ -28,13 +28,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -44,9 +44,9 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
+class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
   private MockMvc mvc;
   @Autowired
   private WebApplicationContext context;
@@ -55,26 +55,26 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
   @MockBean
   private IamTotpMfaRepository totpMfaRepository;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
+
     when(accountRepository.findByUuid(TOTP_UUID)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
   @Test
   @WithAnonymousUser
-  public void testGetMfaAccountSettingNoAuthenticationFails() throws Exception {
+  void testGetMfaAccountSettingNoAuthenticationFails() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void testGetMfaAccountSettingWorksForAdmin() throws Exception {
+  void testGetMfaAccountSettingWorksForAdmin() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
@@ -82,7 +82,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = "group-manager", roles = "GM:6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1")
-  public void testGetMfaAccountSettingWorksForGroupManager() throws Exception {
+  void testGetMfaAccountSettingWorksForGroupManager() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
@@ -90,7 +90,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = "reader", roles = "READER")
-  public void testGetMfaAccountSettingWorksForReader() throws Exception {
+  void testGetMfaAccountSettingWorksForReader() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
@@ -98,7 +98,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = "test-mfa-user", roles = "USER")
-  public void testGetMfaAccountSettingWorksForUser() throws Exception {
+  void testGetMfaAccountSettingWorksForUser() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
@@ -106,7 +106,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = "test-mfa-user", roles = "USER")
-  public void testGetMfaSettingWorksForAuthenticatedUser() throws Exception {
+  void testGetMfaSettingWorksForAuthenticatedUser() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_URL))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
@@ -114,7 +114,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void testGetMfaAccountSettingOfAnotherUserFails() throws Exception {
+  void testGetMfaAccountSettingOfAnotherUserFails() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isForbidden());
   }

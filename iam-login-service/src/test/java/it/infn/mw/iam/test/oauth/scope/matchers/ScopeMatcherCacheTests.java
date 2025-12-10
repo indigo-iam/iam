@@ -19,19 +19,18 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.text.ParseException;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
@@ -43,25 +42,25 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-public class ScopeMatcherCacheTests extends EndpointsTestUtils {
+class ScopeMatcherCacheTests extends EndpointsTestUtils {
 
-  private static final String CLIENT_ID = "cache-client";
-  private static final String CLIENT_SECRET = "secret";
-
-  @Autowired
-  private ClientService clientService;
+  static final String CLIENT_ID = "cache-client";
+  static final String CLIENT_SECRET = "secret";
 
   @Autowired
-  private IamClientRepository clientRepository;
+  ClientService clientService;
 
   @Autowired
-  private CacheManager localCacheManager;
+  IamClientRepository clientRepository;
 
   @Autowired
-  private CacheProperties cacheProperties;
+  CacheManager localCacheManager;
+
+  @Autowired
+  CacheProperties cacheProperties;
 
   private String getAccessTokenForClient(String scopes) throws Exception {
 
@@ -72,7 +71,8 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       .getAccessTokenValue();
   }
 
-  private void getAccessTokenForClientFailWithStatusCode(String scopes, int statusCode) throws Exception {
+  private void getAccessTokenForClientFailWithStatusCode(String scopes, int statusCode)
+      throws Exception {
 
     new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_ID)
@@ -82,13 +82,13 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void ensureRedisCacheIsDisabled() {
+  void ensureRedisCacheIsDisabled() {
     assertFalse(cacheProperties.getRedis().isEnabled());
     assertThat(localCacheManager, instanceOf(ConcurrentMapCacheManager.class));
   }
 
   @Test
-  public void updatingClientScopesInvalidatesCache() throws ParseException, Exception {
+  void updatingClientScopesInvalidatesCache() throws Exception {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);

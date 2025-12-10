@@ -17,20 +17,10 @@ package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_SSH_KEY;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_GROUP_MEMBERSHIP;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_OIDC_ID;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_PICTURE;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SAML_ID;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SSH_KEY;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -61,11 +51,10 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
+import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -80,10 +69,6 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 @Transactional
 public class ScimMeController implements ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> ACCOUNT_LINKING_UPDATERS =
-      EnumSet.of(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY,
-          ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_REMOVE_GROUP_MEMBERSHIP);
-
   private final IamAccountRepository iamAccountRepository;
 
   private final UserConverter userConverter;
@@ -92,7 +77,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   private ApplicationEventPublisher eventPublisher;
 
-  private final EnumSet<UpdaterType> enabledUpdaters;
+  private final Set<UpdaterType> enabledUpdaters;
 
   public ScimMeController(IamAccountRepository accountRepository,
       IamGroupRepository groupRepository, IamAccountService accountService,
@@ -100,32 +85,15 @@ public class ScimMeController implements ApplicationEventPublisherAware {
       IamOAuthRefreshTokenRepository refreshTokenRepo, UserConverter userConverter,
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
-      X509CertificateConverter x509CertificateConverter, IamProperties properties,
-      UsernameValidator usernameValidator) {
+      X509CertificateConverter x509CertificateConverter, ScimUserProvisioning scimUserProvisioning,
+      UsernameValidator usernameValidator, Set<UpdaterType> enabledUpdaters) {
 
     this.iamAccountRepository = accountRepository;
     this.userConverter = userConverter;
+    this.enabledUpdaters = enabledUpdaters;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
-
-    enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
-
-    enabledUpdaters.addAll(ACCOUNT_LINKING_UPDATERS);
-
-    properties.getUserProfile().getEditableFields().forEach(e -> {
-      if (EditableFields.NAME.equals(e)) {
-        enabledUpdaters.add(ACCOUNT_REPLACE_GIVEN_NAME);
-      } else if (EditableFields.SURNAME.equals(e)) {
-        enabledUpdaters.add(ACCOUNT_REPLACE_FAMILY_NAME);
-      } else if (EditableFields.PICTURE.equals(e)) {
-        enabledUpdaters.add(ACCOUNT_REPLACE_PICTURE);
-        enabledUpdaters.add(ACCOUNT_REMOVE_PICTURE);
-      } else if (EditableFields.EMAIL.equals(e)) {
-        enabledUpdaters.add(ACCOUNT_REPLACE_EMAIL);
-      }
-    });
-
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {

@@ -20,28 +20,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.idp-metadata[0].require-valid-signature=true",
-    "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.signed.xml"})
+  "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.signed.xml"})
 @Transactional
-public class MetadataValidSignatureIntegrationTests {
+class MetadataValidSignatureIntegrationTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void idpEndpointReturnsIdpsAsSignatureValidationSucceeded() throws Exception {
+  void idpEndpointReturnsIdpsAsSignatureValidationSucceeded() throws Exception {
 
     mvc.perform(get("/saml/idps"))
       .andExpect(status().isOk())

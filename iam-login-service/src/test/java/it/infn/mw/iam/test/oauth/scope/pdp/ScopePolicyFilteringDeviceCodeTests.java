@@ -29,12 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,9 +50,9 @@ import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
+class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
 
   @Autowired
   private IamAccountRepository accountRepo;
@@ -81,7 +81,7 @@ public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void deviceCodeFlowScopeFilteringByAccountWorks() throws Exception {
+  void deviceCodeFlowScopeFilteringByAccountWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -140,7 +140,7 @@ public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void deviceCodeMatchingPolicyFilteringWorks() throws Exception {
+  void deviceCodeMatchingPolicyFilteringWorks() throws Exception {
     setupPolicyAndScopes();
 
     String response = mvc
@@ -190,7 +190,7 @@ public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void deviceCodeFlowAdminScopeFilteringWorks() throws Exception {
+  void deviceCodeFlowAdminScopeFilteringWorks() throws Exception {
 
     String response = mvc
       .perform(post("/devicecode").contentType(APPLICATION_FORM_URLENCODED)

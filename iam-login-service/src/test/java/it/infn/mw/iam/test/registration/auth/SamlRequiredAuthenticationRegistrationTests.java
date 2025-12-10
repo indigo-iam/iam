@@ -19,50 +19,48 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
-    "iam.registration.requireExternalAuthentication=true",
-    "iam.registration.authenticationType=saml",
-    "iam.registration.samlEntityId=https://idp.example"
-    // @formatter:on
+  "iam.registration.requireExternalAuthentication=true",
+  "iam.registration.authenticationType=saml",
+  "iam.registration.samlEntityId=https://idp.example"
+// @formatter:on
 })
-public class SamlRequiredAuthenticationRegistrationTests extends EndpointsTestUtils {
+class SamlRequiredAuthenticationRegistrationTests extends EndpointsTestUtils {
 
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithAnonymousUser
-  public void startRegistrationRequiresAuthentication() throws Exception {
+  void startRegistrationRequiresAuthentication() throws Exception {
     mvc.perform(get("/start-registration"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl("http://localhost/saml/login?idp=https://idp.example"));
   }
-
 }

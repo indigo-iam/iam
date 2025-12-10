@@ -23,45 +23,36 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SessionTimeoutHelperTests {
-  
+
   public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
   public static final Instant NOW_PLUS_60_SECS = NOW.plus(Duration.ofSeconds(60));
-  
+
   Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
-  
+
   @Test
-  public void testTimeout() {
-    
-    
+  void testTimeout() {
+
     SessionTimeoutHelper timeoutHelper = new SessionTimeoutHelper(clock, 0);
-    
     Instant sessionTimeout = timeoutHelper.getDefaultSessionExpirationTime();
-    
     assertThat(sessionTimeout, is(NOW_PLUS_60_SECS));
-    
+
     timeoutHelper = new SessionTimeoutHelper(clock, 59);
-    
     sessionTimeout = timeoutHelper.getDefaultSessionExpirationTime();
-    
     assertThat(sessionTimeout, is(NOW_PLUS_60_SECS));
-    
+
     timeoutHelper = new SessionTimeoutHelper(clock, 120);
-    
     sessionTimeout = timeoutHelper.getDefaultSessionExpirationTime();
-    
     assertThat(sessionTimeout, is(NOW.plus(Duration.ofSeconds(120))));
-    
   }
-  
-  
-  
+
+
 
 }

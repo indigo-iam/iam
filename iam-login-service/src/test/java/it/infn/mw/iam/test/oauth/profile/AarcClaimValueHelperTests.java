@@ -26,12 +26,12 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
@@ -46,7 +46,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
@@ -55,7 +55,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
   // @formatter:on
 })
 @Transactional
-public class AarcClaimValueHelperTests {
+class AarcClaimValueHelperTests {
 
   @Autowired
   private IamProperties properties;
@@ -73,15 +73,14 @@ public class AarcClaimValueHelperTests {
   private AarcClaimValueHelper helper;
   private AarcScopeClaimTranslationService claimService = new AarcScopeClaimTranslationService();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     helper = new AarcClaimValueHelper(properties, sshConverter, attrHelper, claimService);
     when(userInfo.getGroups()).thenReturn(Collections.emptySet());
   }
 
-
   @Test
-  public void testEmptyGroupsUrnEncode() {
+  void testEmptyGroupsUrnEncode() {
 
     when(userInfo.getGroups()).thenReturn(Sets.newHashSet());
 
@@ -90,7 +89,7 @@ public class AarcClaimValueHelperTests {
   }
 
   @Test
-  public void testGroupUrnEncode() {
+  void testGroupUrnEncode() {
 
     String s = "urn:geant:projectescape.eu:sub:mission:group:test";
 
@@ -106,7 +105,7 @@ public class AarcClaimValueHelperTests {
   }
 
   @Test
-  public void testGroupHierarchyUrnEncode() {
+  void testGroupHierarchyUrnEncode() {
 
     String parentUrn = "urn:geant:projectescape.eu:sub:mission:group:parent";
     String childUrn = "urn:geant:projectescape.eu:sub:mission:group:parent:child";
@@ -136,7 +135,7 @@ public class AarcClaimValueHelperTests {
   }
 
   @Test
-  public void testEmptyGroupListEncode() {
+  void testEmptyGroupListEncode() {
     when(userInfo.getGroups()).thenReturn(emptySet());
     Set<String> urns = helper.resolveGroups(userInfo);
     assertThat(urns, empty());

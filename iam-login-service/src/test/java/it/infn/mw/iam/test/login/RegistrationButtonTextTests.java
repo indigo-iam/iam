@@ -15,89 +15,81 @@
  */
 package it.infn.mw.iam.test.login;
 
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-
-
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {"iam.registration.registration-button-text=Another value"})
-public class RegistrationButtonTextTests {
+class RegistrationButtonTextTests {
 
+  @Value("${local.server.port}")
+  private Integer serverPort;
 
-    @Value("${local.server.port}")
-    private Integer serverPort;
+  private final String REGISTRATIONBUTTONTEXT = "Another value";
 
-    private final String REGISTRATIONBUTTONTEXT = "Another value";
+  @BeforeAll
+  static void init() {
+    TestUtils.initRestAssured();
+  }
 
-    @BeforeClass
-    public static void init() {
-        TestUtils.initRestAssured();
-    }
+  @Test
+  void registrationButtonSuccess() {
+    RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200);
+  }
 
-    @Test
-    public void registrationButtonSuccess() {
-        RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200);
-    }
+  @Test
+  void registrationButtonIsShown() {
+    String responseBody = RestAssured.given()
+      .port(serverPort)
+      .when()
+      .get("/login")
+      .then()
+      .statusCode(200)
+      .extract()
+      .body()
+      .asString();
 
-    @Test
-    public void registrationButtonIsShown() {
-        String responseBody = RestAssured.given()
-            .port(serverPort)
-            .when()
-            .get("/login")
-            .then()
-            .statusCode(200)
-            .extract()
-            .body()
-            .asString();
+    int amountOccurences = 0;
+    int index = 0;
 
-        int amountOccurences = 0;
-        int index = 0;
-
-        while (responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) != -1) {
-            amountOccurences++;
-            index = responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) + 1;
-
-        }
-
-        assertEquals(2, amountOccurences);
+    while (responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) != -1) {
+      amountOccurences++;
+      index = responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) + 1;
 
     }
 
-    @Test
-    public void registrationButtonText() {
+    assertEquals(2, amountOccurences);
+  }
 
-        String responseBody = RestAssured.given()
-            .port(serverPort)
-            .when()
-            .get("/login")
-            .then()
-            .statusCode(200)
-            .extract()
-            .body()
-            .asString();
+  @Test
+  void registrationButtonText() {
 
-        assertTrue(responseBody.contains(REGISTRATIONBUTTONTEXT));
+    String responseBody = RestAssured.given()
+      .port(serverPort)
+      .when()
+      .get("/login")
+      .then()
+      .statusCode(200)
+      .extract()
+      .body()
+      .asString();
 
-    }
+    assertTrue(responseBody.contains(REGISTRATIONBUTTONTEXT));
+
+  }
 
 }
 

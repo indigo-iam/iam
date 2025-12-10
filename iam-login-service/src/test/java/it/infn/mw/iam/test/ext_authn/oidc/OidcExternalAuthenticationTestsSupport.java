@@ -20,14 +20,14 @@ import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_TOKEN_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
 import java.util.Map;
 
-import org.junit.Assert;
 import org.mitre.openid.connect.client.UserInfoFetcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -122,9 +122,9 @@ public class OidcExternalAuthenticationTestsSupport {
     UriComponents locationUri =
         UriComponentsBuilder.fromUri(response.getHeaders().getLocation()).build();
 
-    Assert.assertFalse(locationUri.getQueryParams().get("state").isEmpty());
-    Assert.assertFalse(locationUri.getQueryParams().get("nonce").isEmpty());
-    Assert.assertFalse(response.getHeaders().get("Set-Cookie").isEmpty());
+    assertFalse(locationUri.getQueryParams().get("state").isEmpty());
+    assertFalse(locationUri.getQueryParams().get("nonce").isEmpty());
+    assertFalse(response.getHeaders().get("Set-Cookie").isEmpty());
 
   }
 

@@ -24,12 +24,12 @@ jobs:
           dnf upgrade -y
           [[ "${{ matrix.version }}" -lt 10 ]] && dnf module enable -y maven:3.8 && dnf install -y maven-openjdk17
           [[ "${{ matrix.version }}" = 10 ]] && dnf install -y almalinux-release-devel maven-openjdk21
-          dnf install -y git rpmdevtools rpmlint
+          dnf install -y git rpmdevtools rpmlint rpm-sign
       - name: Setup build tree
         run: |
           echo "%_topdir $(pwd)/rpmbuild" >> ~/.rpmmacros
           rpmdev-setuptree
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: 'rpmbuild/BUILD'
           fetch-depth: 0
@@ -77,12 +77,30 @@ jobs:
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "Version: ${VERSION}"
           echo "Repo: ${REPO:-none}"
+      - name: Import GPG key
+        if: ${{ matrix.version != 8 }}
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          echo "${MAVEN_GPG_KEY}" > private-key.asc
+          gpg --batch --import-options import-show --import private-key.asc
+          rm private-key.asc
+          gpg --export -a CNAFSD > RPM-GPG-KEY-pmanager
+          rpm --import RPM-GPG-KEY-pmanager
+          echo "%_gpg_name CNAFSD" >> ~/.rpmmacros
+          echo "%_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase ${MAVEN_GPG_PASSPHRASE}" >> ~/.rpmmacros
       - name: Build RPM
         run: |
           cp rpmbuild/BUILD/iam-login-service/iam-login-service.spec rpmbuild/SPECS/iam-login-service.spec
           rpmlint rpmbuild/SPECS/iam-login-service.spec
           rpmbuild --define "base_version ${VERSION}" -ba rpmbuild/SPECS/iam-login-service.spec
-      - uses: actions/upload-artifact@v4
+          if [[ "${{ matrix.version }}" = 8 ]]; then
+            echo "Skip signing on AlmaLinux 8 to avoid error: RPM-GPG-KEY-pmanager: key 1 import failed"
+            exit 0
+          fi
+          GPG_TTY="" rpm --addsign rpmbuild/RPMS/noarch/*.rpm
+      - uses: actions/upload-artifact@v5
         with:
           name: build-rpm-${{ matrix.os }}-${{ matrix.version }}
           path: |

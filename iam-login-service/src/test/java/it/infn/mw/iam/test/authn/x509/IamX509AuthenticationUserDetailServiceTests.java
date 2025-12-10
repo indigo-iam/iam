@@ -16,7 +16,7 @@
 
 package it.infn.mw.iam.test.authn.x509;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
@@ -43,8 +43,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
+@ExtendWith(MockitoExtension.class)
+class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
 
   @Mock
   IamAccountRepository accountRepository;
@@ -56,8 +56,8 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
   IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
   PreAuthenticatedAuthenticationToken token;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
         accountRepository, totpMfaRepository, inactiveAccountHandler);
     token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
@@ -73,7 +73,7 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
   }
 
   @Test
-  public void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
+  void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
 
     IamAccount account = newAccount("test-user");
     when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
@@ -90,6 +90,7 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
   }
 
   private boolean hasRole(UserDetails userDetails, String role) {
+
     Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
     return authorities.stream().map(GrantedAuthority::getAuthority).anyMatch(role::equals);
   }

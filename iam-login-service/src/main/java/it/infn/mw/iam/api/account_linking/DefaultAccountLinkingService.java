@@ -61,6 +61,7 @@ public class DefaultAccountLinkingService
   public DefaultAccountLinkingService(IamAccountRepository repo,
       IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
+
     this.iamAccountRepository = repo;
     this.certificateRepository = certificateRepository;
     this.externalAccountLinker = linker;
@@ -197,7 +198,8 @@ public class DefaultAccountLinkingService
     }
 
     if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
-      notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
+      notificationFactory.createLinkedCertificateMessage(userAccount,
+          x509Credential.asIamX509Certificate());
     }
   }
 
@@ -238,7 +240,7 @@ public class DefaultAccountLinkingService
               .build();
 
         notificationFactory.createUnlinkedCertificateMessage(userAccount,
-            iamX509AuthenticationCredential);
+            iamX509AuthenticationCredential.asIamX509Certificate());
       }
     }
   }
