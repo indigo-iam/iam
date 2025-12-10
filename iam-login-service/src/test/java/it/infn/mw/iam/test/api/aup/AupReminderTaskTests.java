@@ -24,15 +24,13 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
@@ -50,13 +48,12 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+  NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 @TestPropertySource(properties = {"notification.disable=false"})
-public class AupReminderTaskTests extends AupTestSupport {
+class AupReminderTaskTests extends AupTestSupport {
 
   @Autowired
   private DefaultAupSignatureCheckService service;
@@ -82,15 +79,15 @@ public class AupReminderTaskTests extends AupTestSupport {
   @Autowired
   private MockTimeProvider mockTimeProvider;
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     notificationDelivery.clearDeliveredNotifications();
     aupRepo.deleteAll();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailWorks() {
+  void aupReminderEmailWorks() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);
@@ -127,7 +124,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailWorks() {
+  void aupExpirationEmailWorks() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(2L);
 
@@ -165,7 +162,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentIfUserIsDisabled() {
+  void aupExpirationEmailNotSentIfUserIsDisabled() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(2L);
 
@@ -200,7 +197,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentIfAupSignatureValidityIsZero() {
+  void aupExpirationEmailNotSentIfAupSignatureValidityIsZero() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(0L);
 
@@ -227,7 +224,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentForServiceAccount() {
+  void aupExpirationEmailNotSentForServiceAccount() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(2L);
 
@@ -261,7 +258,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailNotSentForServiceAccount() {
+  void aupReminderEmailNotSentForServiceAccount() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);

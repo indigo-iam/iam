@@ -20,20 +20,20 @@ import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,10 +46,9 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScimNestedGroupTests {
+class ScimNestedGroupTests {
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -63,19 +62,19 @@ public class ScimNestedGroupTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateNewChildGroup() throws Exception {
+  void testCreateNewChildGroup() throws Exception {
 
     ScimGroup animals = createGroup("animals");
     assertNotNull(animals);
@@ -88,7 +87,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateGroupWithNotExistingParent() throws Exception {
+  void testCreateGroupWithNotExistingParent() throws Exception {
     String uuid = "fake-group-very-long-uuid";
     ScimGroupRef fakeGroupRef = ScimGroupRef.builder()
       .display("fake group")
@@ -111,7 +110,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testDeleteParentGroupWithChildren() throws Exception {
+  void testDeleteParentGroupWithChildren() throws Exception {
     ScimGroup animals = createGroup("animals");
     createGroup("mammals", animals);
 
@@ -125,7 +124,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testDeleteChildGroup() throws Exception {
+  void testDeleteChildGroup() throws Exception {
     ScimGroup animals = createGroup("animals");
     ScimGroup mammals = createGroup("mammals", animals);
 
@@ -145,7 +144,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testGetChildGroup() throws Exception {
+  void testGetChildGroup() throws Exception {
     ScimGroup animals = createGroup("animals");
     ScimGroup mammals = createGroup("mammals", animals);
 
@@ -162,7 +161,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateGroupWithASlashIntoDisplayName() throws Exception {
+  void testCreateGroupWithASlashIntoDisplayName() throws Exception {
     ScimGroup group = ScimGroup.builder("te/st").build();
 
     // @formatter:off
@@ -175,7 +174,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateTwoGroupsWithSameNameButDifferentParent() throws Exception {
+  void testCreateTwoGroupsWithSameNameButDifferentParent() throws Exception {
     ScimGroup cms = createGroup("cms");
     ScimGroup alice = createGroup("alice");
 
@@ -190,7 +189,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateTwoGroupsWithSameNameAndSameParent() throws Exception {
+  void testCreateTwoGroupsWithSameNameAndSameParent() throws Exception {
     ScimGroup cms = createGroup("cms");
 
     ScimGroup cmsTest = createGroup("test", cms);
@@ -207,7 +206,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateGroupWithFullNameTooLong() throws Exception {
+  void testCreateGroupWithFullNameTooLong() throws Exception {
     String name = "group_with_fifty_characters_name_has_a_long_name_";
     ScimGroup group = createGroup(name);
 
@@ -227,7 +226,7 @@ public class ScimNestedGroupTests {
 
   @Test
   @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-  public void testCreateGroupWithNameTooLong() throws Exception {
+  void testCreateGroupWithNameTooLong() throws Exception {
     ScimGroup group =
         buildGroupObject("group_with_name_longer_than_fifty_characters_is_not_allowed", null);
 

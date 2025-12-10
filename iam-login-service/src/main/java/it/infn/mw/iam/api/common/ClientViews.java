@@ -17,26 +17,28 @@ package it.infn.mw.iam.api.common;
 
 /**
  * Markers class used for JSON serialization
- * 
  */
-public class ClientViews {
+public final class ClientViews {
 
   private ClientViews() {
     // prevent instantiation
   }
 
-  public static class Limited {
+  public interface Limited {
   }
 
-  public static class Full extends Limited {
+  public interface Full extends Limited {
   }
 
-  public static class DynamicRegistration {
-
+  public interface DynamicRegistration {
   }
 
-  public static class ClientManagement extends DynamicRegistration {
-
+  public interface ClientManagement extends DynamicRegistration {
   }
 
+  public interface NoSecretDynamicRegistration {
+  }
+
+  public interface NoSecretManagementRegistration extends NoSecretDynamicRegistration {
+  }
 }

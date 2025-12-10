@@ -21,36 +21,33 @@ import static org.springframework.security.test.web.servlet.response.SecurityMoc
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class AccessTokenAnonymousTests extends TestTokensUtils {
+class AccessTokenAnonymousTests extends TestTokensUtils {
 
   private static final int FAKE_TOKEN_ID = 12345;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     clearAllTokens();
   }
 
   @Test
-  public void authenticationRequiredOnGettingListTest() throws Exception {
+  void authenticationRequiredOnGettingListTest() throws Exception {
     mvc.perform(get(ACCESS_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE)
         .with(authentication(anonymousAuthenticationToken()))).andExpect(unauthenticated());
   }
 
   @Test
-  public void authenticationRequiredOnRevokingTest() throws Exception {
+  void authenticationRequiredOnRevokingTest() throws Exception {
 
     String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
     mvc.perform(

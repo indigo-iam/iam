@@ -27,13 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -47,10 +47,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class GroupCreationTests {
+class GroupCreationTests {
 
   private static final String NEW_GROUP_NAME = "brand-new-group";
   private static final String NEW_GROUP_DESC = "A description";
@@ -67,13 +67,13 @@ public class GroupCreationTests {
   @Autowired
   private ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -82,7 +82,7 @@ public class GroupCreationTests {
   }
 
   @Test
-  public void createGroupRequiresAuthenticatedUser() throws Exception {
+  void createGroupRequiresAuthenticatedUser() throws Exception {
 
     GroupDTO model = GroupDTO.builder().name(NEW_GROUP_NAME).description(NEW_GROUP_DESC).build();
 
@@ -95,7 +95,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void createGroupFailsForNonAdminUser() throws Exception {
+  void createGroupFailsForNonAdminUser() throws Exception {
 
     GroupDTO model = GroupDTO.builder().name(NEW_GROUP_NAME).description(NEW_GROUP_DESC).build();
 
@@ -107,7 +107,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createGroupSucceedsForAdminUser() throws Exception {
+  void createGroupSucceedsForAdminUser() throws Exception {
 
     GroupDTO model = GroupDTO.builder().name(NEW_GROUP_NAME).description(NEW_GROUP_DESC).build();
 
@@ -139,7 +139,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void slashNotAllowedInGroupName() throws Exception {
+  void slashNotAllowedInGroupName() throws Exception {
     GroupDTO model = GroupDTO.builder().name("ihave/agroupname").build();
 
     mvc
@@ -151,7 +151,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void blankNameNotAllowed() throws Exception {
+  void blankNameNotAllowed() throws Exception {
 
     GroupDTO blanky = GroupDTO.builder().name("").build();
     mvc
@@ -163,7 +163,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void longCompositeNameNotAllowed() throws Exception {
+  void longCompositeNameNotAllowed() throws Exception {
     StringBuilder longNameBuilder = new StringBuilder();
     for (int i = 0; i < 510; i++) {
       longNameBuilder.append('a');
@@ -193,7 +193,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void longDescriptionNotAllowed() throws Exception {
+  void longDescriptionNotAllowed() throws Exception {
     StringBuilder longNameBuilder = new StringBuilder();
 
     for (int i = 0; i < 513; i++) {
@@ -213,7 +213,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void longDescriptionNotAllowedInUpdate() throws Exception {
+  void longDescriptionNotAllowedInUpdate() throws Exception {
     StringBuilder longNameBuilder = new StringBuilder();
 
     for (int i = 0; i < 513; i++) {
@@ -244,7 +244,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void adminCanUpdateDescription() throws Exception {
+  void adminCanUpdateDescription() throws Exception {
 
     GroupDTO model = GroupDTO.builder().name(NEW_GROUP_NAME).build();
     mvc
@@ -268,7 +268,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void userCannotUpdateDescription() throws Exception {
+  void userCannotUpdateDescription() throws Exception {
 
     IamGroup g =
         groupRepo.findByName("Production").orElseThrow(assertionError("Expected group not found"));
@@ -282,7 +282,7 @@ public class GroupCreationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void nonExistingGroupCorrectlyHandled() throws Exception {
+  void nonExistingGroupCorrectlyHandled() throws Exception {
 
     GroupDTO desc = GroupDTO.builder().description(NEW_GROUP_DESC).build();
 

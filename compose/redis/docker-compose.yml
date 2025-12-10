@@ -1,0 +1,33 @@
+services:
+
+  redis:
+    image: redis:6-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  iam:
+    image: indigoiam/iam-login-service:v1.12.2
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      TZ: Europe/Rome
+      IAM_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Dspring.profiles.active=h2-test,dev,wlcg-scopes
+      IAM_NOTIFICATION_DISABLE: "true"
+
+      IAM_JWT_DEFAULT_PROFILE: wlcg
+      IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
+      IAM_ACCESS_TOKEN_INCLUDE_NBF: "true"
+
+      IAM_KEY_STORE_LOCATION: file:///indigo-iam/config/keystore.jwks
+ 
+      IAM_SPRING_REDIS_HOST: redis
+      IAM_SPRING_SESSION_STORE_TYPE: redis
+      IAM_CACHE_ENABLED: "true"
+      IAM_CACHE_REDIS_ENABLED: "true"
+
+    volumes:
+      - /dev/urandom:/dev/random
+      - ../../iam-login-service/src/main/resources/keystore.jwks:/indigo-iam/config/keystore.jwks:ro

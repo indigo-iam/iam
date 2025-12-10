@@ -15,11 +15,6 @@
  */
 package it.infn.mw.iam.api.client.management.service;
 
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static java.util.Objects.isNull;
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
-
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
@@ -35,6 +30,7 @@ import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -44,6 +40,8 @@ import it.infn.mw.iam.api.client.service.ClientConverter;
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -162,13 +160,17 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Validated(OnClientUpdate.class)
   @Override
-  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO client)
+  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
 
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(client);
+    if (oldClient.getClientRelyingParty() != null) {
+      throw new InvalidRequestException("Federated clients cannot be updated");
+    }
+
+    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
     newClient.setCreatedAt(oldClient.getCreatedAt());
@@ -176,12 +178,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setDynamicallyRegistered(oldClient.isDynamicallyRegistered());
     newClient.setActive(oldClient.isActive());
-
-    if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
-      newClient.setClientSecret(null);
-    } else if (isNull(client.getClientSecret())) {
-      client.setClientSecret(defaultsService.generateClientSecret());
-    }
+    // Direct updates are disabled. Changes must be made via secret reset process
+    newClient.setClientSecret(oldClient.getClientSecret());
 
     newClient = clientService.updateClient(newClient);
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, newClient));

@@ -31,25 +31,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
+class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
 
   @Test
-  public void testSuccessfulExternalUnregisteredUserAuthentication() throws Throwable {
+  void testSuccessfulExternalUnregisteredUserAuthentication() throws Throwable {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
       .andExpect(status().isOk())
@@ -85,7 +85,7 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
   }
 
   @Test
-  public void testExternalAuthenticationFailureRedirectsToLoginPage() throws Throwable {
+  void testExternalAuthenticationFailureRedirectsToLoginPage() throws Throwable {
 
     MockHttpSession session =
         (MockHttpSession) mvc.perform(MockMvcRequestBuilders.get(samlDefaultIdpLoginUrl()))
@@ -114,7 +114,7 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
   }
 
   @Test
-  public void testRegisteredUserWithMfaGetsRedirectedToMfaVerify() throws Throwable {
+  void testRegisteredUserWithMfaGetsRedirectedToMfaVerify() throws Throwable {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
       .andExpect(status().isOk())
@@ -142,7 +142,7 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
   }
 
   @Test
-  public void testRedirectionToDashboardIfRemoteIdpPerformsMfa() throws Throwable {
+  void testRedirectionToDashboardIfRemoteIdpPerformsMfa() throws Throwable {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
       .andExpect(status().isOk())

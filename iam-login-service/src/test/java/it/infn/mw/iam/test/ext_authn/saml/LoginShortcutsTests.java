@@ -20,37 +20,36 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.login-shortcuts[0].name=test",
-    "saml.login-shortcuts[0].entityId=https://idptestbed/idp/shibboleth",
-    "saml.login-shortcuts[0].loginButton.text=Sign in with Test IDP"
-})
+  "saml.login-shortcuts[0].entityId=https://idptestbed/idp/shibboleth",
+  "saml.login-shortcuts[0].loginButton.text=Sign in with Test IDP"})
 @Transactional
 @WithAnonymousUser
-public class LoginShortcutsTests {
-  
+class LoginShortcutsTests {
+
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void getLoginShortcutsConfiguration() throws Exception {
-    
+  void getLoginShortcutsConfiguration() throws Exception {
+
     mvc.perform(get("/iam/config/saml/shortcuts"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[0].name", is("test")))
       .andExpect(jsonPath("$[0].entityId", is("https://idptestbed/idp/shibboleth")))
-      .andExpect(jsonPath("$[0].loginButton.text", is("Sign in with Test IDP")));    
+      .andExpect(jsonPath("$[0].loginButton.text", is("Sign in with Test IDP")));
   }
 }

@@ -26,8 +26,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
-import com.google.common.base.Predicates;
-
 import eu.emi.security.authn.x509.impl.PEMCredential;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
@@ -55,16 +53,15 @@ public class VomsConfig {
   HttpFirewall allowHeadersHttpFirewall() {
 
     StrictHttpFirewall httpFirewall = new StrictHttpFirewall();
-    httpFirewall.setAllowedHeaderValues(Predicates.alwaysTrue());
-
+    httpFirewall.setAllowedHeaderValues(value -> true);
     return httpFirewall;
   }
 
   @Bean
   IamX509AuthenticationProvider authProvider(IamX509AuthenticationUserDetailService ds) {
+
     IamX509AuthenticationProvider provider = new IamX509AuthenticationProvider();
     provider.setPreAuthenticatedUserDetailsService(ds);
-
     return provider;
   }
 

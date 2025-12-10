@@ -15,19 +15,21 @@
     limitations under the License.
 
 --%>
-<%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <t:page title="An unexpected error occurred">
-  <h2 class="text-center text-danger">${errorMessage }</h2>
+  <h2 class="text-center text-danger">${fn:escapeXml(errorMessage)}</h2>
   
   <c:if test="${exceptionMessage != null}">
     <div class="text-center" id="exception-message">
-      <p>${exceptionMessage}</p>
+      <p>${fn:escapeXml(exceptionMessage)}</p>
     </div>
     <h4 class="text-center">Stack trace</h4>
     <textarea style="width: 100%;" rows="10" id="exception-stack-trace" readonly="readonly">
-      ${exceptionStackTrace}
+      ${fn:escapeXml(exceptionStackTrace)}
     </textarea>
   </c:if>
   

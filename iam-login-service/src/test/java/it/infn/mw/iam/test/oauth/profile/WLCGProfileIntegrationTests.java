@@ -15,10 +15,18 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
-
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
+import static com.nimbusds.jwt.JWTClaimNames.EXPIRATION_TIME;
+import static com.nimbusds.jwt.JWTClaimNames.ISSUED_AT;
+import static com.nimbusds.jwt.JWTClaimNames.ISSUER;
+import static com.nimbusds.jwt.JWTClaimNames.JWT_ID;
+import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
+import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
+import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile.PROFILE_VERSION;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -26,9 +34,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,10 +48,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -50,17 +59,21 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -71,16 +84,15 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
-
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2", "wlcg-scopes"})
 @TestPropertySource(properties = {
-  // @formatter:off
+// @formatter:off
   "iam.jwt-profile.default-profile=wlcg",
   "iam.access_token.include_authn_info=true",
+  "iam.access_token.include_nbf=true",
   // @formatter:on
 })
 public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
@@ -117,25 +129,28 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   private IamAccountRepository repo;
 
   @Autowired
+  private IamProperties properties;
+
+  @Autowired
   private IamAccountService accountService;
 
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
+    repo.touchLastLoginTimeForUserWithUsername(USERNAME);
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
   }
-
 
   private void setOAuthAdminSecurityContext() {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -155,60 +170,152 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     oauth2Filter.setSecurityContext(context);
   }
 
-  private String getAccessTokenForUser(String scopes) throws Exception {
+  @Test
+  void testWlcgProfile() throws Exception {
 
-    return new AccessTokenGetter().grantType("password")
-      .clientId(CLIENT_ID)
-      .clientSecret(CLIENT_SECRET)
-      .username(USERNAME)
-      .password(PASSWORD)
-      .scope(scopes)
-      .getAccessTokenValue();
+    TokenEndpointResponse response = getPasswordTokenResponse("openid profile");
+    JWTClaimsSet claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim(NOT_BEFORE), notNullValue());
+    List<String> scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    response = getPasswordTokenResponse("openid profile wlcg.groups offline_access");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim(NOT_BEFORE), notNullValue());
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "offline_access"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    List<String> groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis"));
+    assertThat(groups, not(hasItems("/Optional")));
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    String refreshToken = response.refreshToken();
+    response = getRefreshTokenResponse(refreshToken, "openid profile");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim(NOT_BEFORE), notNullValue());
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    response = getRefreshTokenResponse(refreshToken, "openid profile wlcg.groups");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim(NOT_BEFORE), notNullValue());
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis"));
+    assertThat(groups, not(hasItems("/Optional")));
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    response = getRefreshTokenResponse(refreshToken, "openid profile wlcg.groups:/Optional");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Optional"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis", "/Optional"));
+    assertThat(groups.get(0), is("/Optional"));
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    response = getRefreshTokenResponse(refreshToken, "openid profile wlcg.groups:/Production");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Production"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis"));
+    assertThat(groups, not(hasItems("/Optional")));
+    assertThat(groups.get(0), is("/Production"));
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(ALL_AUDIENCES_VALUE));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+
+    String subjectToken = response.accessToken();
+    response = getExchangeTokenResponse(subjectToken, "openid profile wlcg.groups:/Optional",
+        "https://new.audience.example/");
+    claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
+    scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Optional"));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis", "/Optional"));
+    assertThat(groups.get(0), is("/Optional"));
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem("https://new.audience.example/"));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
   }
 
   @Test
-  public void testWlcgProfile() throws Exception {
-    JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
-
-    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
-    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(token.getJWTClaimsSet().getAudience(), hasItem(ALL_AUDIENCES_VALUE));
-  }
-
-  @Test
-  public void testWlcgProfileIdToken() throws Exception {
+  void testWlcgProfileIdToken() throws Exception {
 
     String idTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
       .clientSecret(CLIENT_SECRET)
       .username(USERNAME)
       .password(PASSWORD)
-      .scope("openid profile wlcg.groups")
+      .scope("openid profile email wlcg")
       .getTokenResponseObject()
       .getAdditionalInformation()
       .get("id_token");
 
-    JWT idToken = JWTParser.parse(idTokenString);
-    assertThat(idToken.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
-    assertThat(idToken.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(idToken.getJWTClaimsSet().getClaim("wlcg.groups"), notNullValue());
-    assertThat(idToken.getJWTClaimsSet().getStringListClaim("wlcg.groups"),
+    JWTClaimsSet claims = JWTParser.parse(idTokenString).getJWTClaimsSet();
+    // WLCG required claims
+    assertThat(claims.getClaim(SUBJECT), is(TEST_UUID));
+    assertThat(claims.getClaim(EXPIRATION_TIME), notNullValue());
+    assertThat(claims.getClaim(ISSUER), is(properties.getIssuer()));
+    assertThat(claims.getClaim(AUDIENCE), notNullValue());
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem(CLIENT_ID));
+    assertThat(claims.getClaim(ISSUED_AT), notNullValue());
+    assertThat(claims.getClaim(NOT_BEFORE), notNullValue());
+    assertThat(claims.getClaim(JWT_ID), notNullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim(IamExtraClaimNames.GROUPS), nullValue());
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_GROUPS), notNullValue());
+    assertThat(claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS),
         hasItems("/Analysis", "/Production"));
-    assertThat(idToken.getJWTClaimsSet().getClaim("name"), is("Test User"));
-    assertThat(idToken.getJWTClaimsSet().getClaim("preferred_username"), is("test"));
-    assertThat(idToken.getJWTClaimsSet().getClaim("organisation_name"), is("indigo-dc"));
-    assertThat(idToken.getJWTClaimsSet().getClaim("auth_time"), notNullValue());
-    assertThat(idToken.getJWTClaimsSet().getClaim("jti"), notNullValue());
-    assertThat(idToken.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(idToken.getJWTClaimsSet().getAudience(), hasItem("password-grant"));
+    assertThat(claims.getClaim(StandardClaimNames.NAME), is(TEST_NAME));
+    assertThat(claims.getClaim(StandardClaimNames.PREFERRED_USERNAME), is(USERNAME));
+    assertThat(claims.getClaim(StandardClaimNames.EMAIL), is(TEST_EMAIL));
+    assertThat(claims.getClaim(IamExtraClaimNames.ORGANISATION_NAME), notNullValue());
   }
 
   @Test
-  public void testWlcgProfileAudience() throws Exception {
+  void testWlcgProfileAudience() throws Exception {
 
 
     String accessToken = new AccessTokenGetter().grantType("password")
@@ -224,9 +331,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
     assertThat(token.getJWTClaimsSet().getAudience(), hasSize(2));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("test-audience-1"));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("test-audience-2"));
@@ -243,16 +350,16 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
     assertThat(token.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("https://wlcg.cern.ch/jwt/v1/any"));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem(ALL_AUDIENCES_VALUE));
 
   }
 
   @Test
-  public void testWlcgProfileResourceIndicator() throws Exception {
+  void testWlcgProfileResourceIndicator() throws Exception {
 
 
     String accessToken = new AccessTokenGetter().grantType("password")
@@ -268,9 +375,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
     assertThat(token.getJWTClaimsSet().getAudience(), hasSize(2));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
@@ -289,9 +396,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
     assertThat(token.getJWTClaimsSet().getAudience(), hasSize(2));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
@@ -308,41 +415,77 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS), nullValue());
     assertThat(token.getJWTClaimsSet().getAudience(), hasSize(1));
     assertThat(token.getJWTClaimsSet().getAudience(), hasItem("https://wlcg.cern.ch/jwt/v1/any"));
 
   }
 
   @Test
-  public void testWlcgProfileGroups() throws Exception {
-    JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups"));
+  void testWlcgProfileGroups() throws Exception {
 
-    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile wlcg.groups"));
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
-    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getStringListClaim("wlcg.groups"),
+    TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups");
+    JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim("scope"), is("openid profile wlcg.groups"));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim("nbf"), notNullValue());
+    assertThat(claims.getClaim("groups"), nullValue());
+    assertThat(claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS),
         hasItems("/Production", "/Analysis"));
   }
 
   @Test
-  public void testWlcgProfileGroupRequest() throws Exception {
-    JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups:/Analysis"));
+  void testWlcgProfileGroupRequest() throws Exception {
 
-    assertThat(token.getJWTClaimsSet().getClaim("scope"),
-        is("openid profile wlcg.groups:/Analysis"));
-    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
-    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getStringListClaim("wlcg.groups"),
-        hasItems("/Production", "/Analysis"));
+    TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups:/Analysis");
+    JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
+
+    List<String> scopes = List.of(claims.getStringClaim("scope").split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Analysis"));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim("nbf"), notNullValue());
+    assertThat(claims.getClaim("groups"), nullValue());
+    List<String> groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis"));
+    assertThat(groups, not(hasItems("/Optional")));
+    assertThat(groups.get(0), is("/Analysis"));
+    assertThat(groups.get(1), is("/Production"));
+
+    tokens = getPasswordToken("openid profile wlcg.groups:/Production");
+    claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
+
+    scopes = List.of(claims.getStringClaim("scope").split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Production"));
+    assertThat(claims.getClaim(WlcgExtraClaimNames.WLCG_VER), is(PROFILE_VERSION));
+    assertThat(claims.getClaim("nbf"), notNullValue());
+    assertThat(claims.getClaim("groups"), nullValue());
+    groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Production", "/Analysis"));
+    assertThat(groups, not(hasItems("/Optional")));
+    assertThat(groups.get(0), is("/Production"));
+    assertThat(groups.get(1), is("/Analysis"));
   }
 
   @Test
-  public void testWlcgProfileClientCredentials() throws Exception {
+  void testWlcgProfileOptionalGroupRequest() throws Exception {
+
+    TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups:/Optional");
+    JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
+
+    List<String> scopes = List.of(claims.getStringClaim("scope").split(" "));
+    assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Optional"));
+    assertThat(scopes.size(), is(3));
+    List<String> groups = claims.getStringListClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+    assertThat(groups, hasItems("/Optional", "/Production", "/Analysis"));
+    assertThat(groups.get(0), is("/Optional"));
+    assertThat(groups.size(), is(3));
+  }
+
+  @Test
+  void testWlcgProfileClientCredentials() throws Exception {
 
     String response = mvc
       .perform(post("/token")
@@ -373,7 +516,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileGroupRequestClientCredentials() throws Exception {
+  void testWlcgProfileGroupRequestClientCredentials() throws Exception {
 
     String response = mvc
       .perform(post("/token")
@@ -382,7 +525,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
         .param("scope", "storage.read:/a-path wlcg.groups"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("storage.read:/a-path")))
-      .andExpect(jsonPath("$.scope", containsString("wlcg.groups")))
+      .andExpect(jsonPath("$.scope", containsString(WlcgExtraClaimNames.WLCG_GROUPS)))
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -393,13 +536,14 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     JWT accessToken = JWTParser.parse(tokenResponseObject.getValue());
 
-    assertThat(accessToken.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(accessToken.getJWTClaimsSet().getClaim(WlcgExtraClaimNames.WLCG_GROUPS),
+        nullValue());
 
   }
 
 
   @Test
-  public void testWlcgProfileServiceIdentityTokenExchange() throws Exception {
+  void testWlcgProfileServiceIdentityTokenExchange() throws Exception {
 
     String subjectToken = new AccessTokenGetter().grantType(CLIENT_CREDENTIALS_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
@@ -485,7 +629,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testWlcgProfileUserIdentityTokenExchangeNoScopeParameter() throws Exception {
+  void testWlcgProfileUserIdentityTokenExchangeNoScopeParameter() throws Exception {
     String subjectToken = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
       .clientSecret(SUBJECT_CLIENT_SECRET)
@@ -506,7 +650,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileUserIdentityTokenExchange() throws Exception {
+  void testWlcgProfileUserIdentityTokenExchange() throws Exception {
 
     String subjectToken = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
@@ -550,7 +694,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     // Check that token can be introspected properly
     mvc
-      .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", tokenResponseObject.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -590,7 +735,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     // Check that token can be introspected properly
     mvc
-      .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", tokenResponseObject2.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -598,7 +744,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAudiencePreservedAcrossRefresh() throws Exception {
+  void testAudiencePreservedAcrossRefresh() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", CLIENT_ID)
@@ -636,7 +782,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAudienceRequestRefreshTokenFlow() throws Exception {
+  void testAudienceRequestRefreshTokenFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", CLIENT_ID)
@@ -695,8 +841,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid"})
-  public void testUserInfoEndpointRetursMinimalInformation() throws Exception {
+    scopes = {"openid"})
+  void testUserInfoEndpointRetursMinimalInformation() throws Exception {
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -713,7 +859,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
+  void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -762,12 +908,13 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.*", hasSize(1)))
-      .andExpect(jsonPath("$.sub").exists());
+      .andExpect(jsonPath("$.*", hasSize(2)))
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists());
   }
 
   @Test
-  public void attributesAreNotIncludedInAccessTokenWhenNotRequested() throws Exception {
+  void attributesAreNotIncludedInAccessTokenWhenNotRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -793,7 +940,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void attributesAreIncludedInAccessTokenWhenRequested() throws Exception {
+  void attributesAreIncludedInAccessTokenWhenRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -820,7 +967,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
+  void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -847,7 +994,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
+  void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")

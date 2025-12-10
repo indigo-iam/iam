@@ -21,14 +21,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,11 +47,10 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"scim.include_managed_groups=true"})
-public class ScimAccountManagedGroupConverterTests {
+class ScimAccountManagedGroupConverterTests {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -70,7 +69,7 @@ public class ScimAccountManagedGroupConverterTests {
 
   @Autowired
   private ScimResourceLocationProvider resourceLocationProvider;
-  
+
   @Autowired
   private MockMvc mvc;
 
@@ -80,8 +79,8 @@ public class ScimAccountManagedGroupConverterTests {
   private IamGroup productionGroup;
   private ScimGroupRef producGroupRef;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     productionGroup = groupRepo.findByName("Production").get();
     producGroupRef = ScimGroupRef.builder()
@@ -92,17 +91,18 @@ public class ScimAccountManagedGroupConverterTests {
 
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testManagedGroupsReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
+  void testManagedGroupsReturnedIfAllowedByConfigurationSerializedByDefault()
+    throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
-        .orElseThrow(() -> new AssertionError("Expected test account not found"));
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
     mvc.perform(get(ScimUtils.getUserLocation(testAccount.getUuid())))
       .andExpect(status().isOk())
@@ -114,6 +114,7 @@ public class ScimAccountManagedGroupConverterTests {
     System.out.println(mapper.writeValueAsString(updatedUser));
 
     assertThat(updatedUser.getIndigoUser().getManagedGroups().size(), equalTo(1));
-    assertThat(updatedUser.getIndigoUser().getManagedGroups().contains(producGroupRef), equalTo(true));
+    assertThat(updatedUser.getIndigoUser().getManagedGroups().contains(producGroupRef),
+        equalTo(true));
   }
 }

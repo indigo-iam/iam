@@ -24,19 +24,21 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.opensaml.saml2.core.Attribute.URI_REFERENCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensaml.saml2.common.Extensions;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.metadata.EntitiesDescriptor;
@@ -48,8 +50,8 @@ import org.opensaml.xml.schema.XSString;
 
 import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AttributeMetadataFilterTests {
+@ExtendWith(MockitoExtension.class)
+class AttributeMetadataFilterTests {
 
   @Mock
   EntityDescriptor entityDescriptor1;
@@ -73,25 +75,25 @@ public class AttributeMetadataFilterTests {
 
   protected Attribute buildMockAttribute(String name, String format, List<String> values) {
     Attribute attr = mock(Attribute.class);
-    when(attr.getName()).thenReturn(name);
-    when(attr.getNameFormat()).thenReturn(format);
+    lenient().when(attr.getName()).thenReturn(name);
+    lenient().when(attr.getNameFormat()).thenReturn(format);
 
     List<XMLObject> attributeValues = new ArrayList<>();
 
     values.forEach(s -> {
       XSString value = mock(XSString.class);
-      when(value.getValue()).thenReturn(s);
+      lenient().when(value.getValue()).thenReturn(s);
       attributeValues.add(value);
     });
 
-    when(attr.getAttributeValues()).thenReturn(attributeValues);
+    lenient().when(attr.getAttributeValues()).thenReturn(attributeValues);
     return attr;
   }
 
 
   protected Extensions buildMockAttributeExtensions(EntityAttributes entityAttributes) {
     Extensions extensions = mock(Extensions.class);
-    when(extensions.getUnknownXMLObjects(EntityAttributes.DEFAULT_ELEMENT_NAME))
+    lenient().when(extensions.getUnknownXMLObjects(EntityAttributes.DEFAULT_ELEMENT_NAME))
       .thenReturn(asList(entityAttributes));
     return extensions;
   }
@@ -103,66 +105,64 @@ public class AttributeMetadataFilterTests {
     EntityAttributes attrs = mock(EntityAttributes.class);
     List<Attribute> attrsAttrs = new ArrayList<>();
     attrsAttrs.add(buildMockAttribute(attributeName, attributeFormat, attributeValues));
-    when(attrs.getAttributes()).thenReturn(attrsAttrs);
+    lenient().when(attrs.getAttributes()).thenReturn(attrsAttrs);
 
     return attrs;
 
   }
 
-  @Before
-  public void setup() {
-    // when(entityDescriptor1.getEntityID()).thenReturn("1");
-    when(entityDescriptor2.getEntityID()).thenReturn("2");
-    when(entityDescriptor3.getEntityID()).thenReturn("3");
-    when(entityDescriptor4.getEntityID()).thenReturn("4");
+  @BeforeEach
+  void setup() {
+
+    lenient().when(entityDescriptor2.getEntityID()).thenReturn("2");
+    lenient().when(entityDescriptor3.getEntityID()).thenReturn("3");
+    lenient().when(entityDescriptor4.getEntityID()).thenReturn("4");
 
     EntityAttributes attrs1 = buildMockEntityAttributes(ASSURANCE_CERTIFICATION_ATTRIBUTE_NAME,
         Attribute.URI_REFERENCE, asList(SIRTFI_ATTRIBUTE_VALUE));
 
     Extensions extensions1 = buildMockAttributeExtensions(attrs1);
-    when(entityDescriptor1.getExtensions()).thenReturn(extensions1);
+    lenient().when(entityDescriptor1.getExtensions()).thenReturn(extensions1);
 
     Extensions extensions2 = mock(Extensions.class);
-    when(entityDescriptor2.getExtensions()).thenReturn(extensions2);
+    lenient().when(entityDescriptor2.getExtensions()).thenReturn(extensions2);
 
     EntityAttributes attrs3 = buildMockEntityAttributes(ASSURANCE_CERTIFICATION_ATTRIBUTE_NAME,
         Attribute.UNSPECIFIED, asList(SIRTFI_ATTRIBUTE_VALUE));
 
     Extensions extensions3 = buildMockAttributeExtensions(attrs3);
-    when(entityDescriptor3.getExtensions()).thenReturn(extensions3);
+    lenient().when(entityDescriptor3.getExtensions()).thenReturn(extensions3);
 
     EntityAttributes attrs4 = buildMockEntityAttributes(ENTITY_CATEGORY_ATTRIBUTE_NAME,
         URI_REFERENCE, asList(R_S_ATTRIBUTE_VALUE));
     Extensions extensions4 = buildMockAttributeExtensions(attrs4);
-    when(entityDescriptor4.getExtensions()).thenReturn(extensions4);
+    lenient().when(entityDescriptor4.getExtensions()).thenReturn(extensions4);
 
-    when(entitiesDescriptor.getEntityDescriptors()).thenReturn(new ArrayList<>(
-        Arrays.asList(entityDescriptor1, entityDescriptor2, entityDescriptor3, entityDescriptor4)));
-
-  }
-
-  @Test(expected = FilterException.class)
-  public void testSirfiFilter() throws FilterException {
-
-    try {
-      filter.doFilter(entityDescriptor2);
-    } catch (FilterException e) {
-      assertThat(e.getMessage(),
-          equalTo("Attribute 'urn:oasis:names:tc:SAML:attribute:assurance-certification' with "
-              + "required values 'https://refeds.org/sirtfi' not found in EntityAttributes "
-              + "for entity '2'"));
-      throw e;
-    }
+    lenient().when(entitiesDescriptor.getEntityDescriptors())
+      .thenReturn(new ArrayList<>(Arrays.asList(entityDescriptor1, entityDescriptor2,
+          entityDescriptor3, entityDescriptor4)));
   }
 
   @Test
-  public void testSirfiFilterSuccess() throws FilterException {
-    filter.doFilter(entityDescriptor1);
+  void testSirfiFilter() {
+
+    FilterException e =
+        assertThrows(FilterException.class, () -> filter.doFilter(entityDescriptor2));
+    assertThat(e.getMessage(),
+        equalTo("Attribute 'urn:oasis:names:tc:SAML:attribute:assurance-certification' with "
+            + "required values 'https://refeds.org/sirtfi' not found in EntityAttributes "
+            + "for entity '2'"));
   }
 
   @Test
-  public void testSirtfiEntities() throws FilterException {
-    filter.doFilter(entitiesDescriptor);
+  void testSirfiFilterSuccess() {
+
+    assertDoesNotThrow(() -> filter.doFilter(entityDescriptor1));
+  }
+
+  @Test
+  void testSirtfiEntities() {
+    assertDoesNotThrow(() -> filter.doFilter(entitiesDescriptor));
 
     assertThat(entitiesDescriptor.getEntityDescriptors(), hasSize(1));
     assertThat(entitiesDescriptor.getEntityDescriptors(), hasItem(entityDescriptor1));

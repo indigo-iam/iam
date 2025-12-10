@@ -19,13 +19,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,11 +38,10 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"client-registration.allow-for=REGISTERED_USERS"})
-public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport {
+class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport {
 
   @Autowired
   private MockMvc mvc;
@@ -60,7 +59,7 @@ public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport 
   private IamAccountRepository accountRepo;
 
   @Test
-  public void testClientRegistrationRequiresAuthenticatedUser() throws Exception {
+  void testClientRegistrationRequiresAuthenticatedUser() throws Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
@@ -70,7 +69,7 @@ public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport 
 
   @WithMockUser(username = "test", roles = "USER")
   @Test
-  public void testClientRegistrationWorksForAuthenticatedUser() throws Exception {
+  void testClientRegistrationWorksForAuthenticatedUser() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -91,7 +90,7 @@ public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport 
 
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   @Test
-  public void testClientRegistrationWorksForAdminUser() throws Exception {
+  void testClientRegistrationWorksForAdminUser() throws Exception {
 
     IamAccount adminAccount = accountRepo.findByUsername("admin").orElseThrow();
 

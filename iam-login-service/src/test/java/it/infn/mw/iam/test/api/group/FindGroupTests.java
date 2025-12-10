@@ -27,13 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.core.group.IamGroupService;
@@ -47,10 +47,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class FindGroupTests extends TestSupport {
+class FindGroupTests extends TestSupport {
 
   @Autowired
   private MockMvc mvc;
@@ -70,13 +70,13 @@ public class FindGroupTests extends TestSupport {
   @Autowired
   private IamAccountService accountService;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -86,7 +86,7 @@ public class FindGroupTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void findingRequiresAuthenticatedUser() throws Exception {
+  void findingRequiresAuthenticatedUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(UNAUTHORIZED);
@@ -99,7 +99,7 @@ public class FindGroupTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void findingRequiresAdminUser() throws Exception {
+  void findingRequiresAdminUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(FORBIDDEN);
@@ -110,7 +110,7 @@ public class FindGroupTests extends TestSupport {
   }
 
   @Test
-  public void findByNameWorks() throws Exception {
+  void findByNameWorks() throws Exception {
 
 
     IamGroup group = groupRepo.findByUuid(TEST_001_GROUP_UUID)
@@ -131,7 +131,7 @@ public class FindGroupTests extends TestSupport {
 
 
   @Test
-  public void findUnsubscribedGroupsWorks() throws Exception {
+  void findUnsubscribedGroupsWorks() throws Exception {
 
     IamAccount testAccount =
         accountRepo.findByUsername(TEST_USER)

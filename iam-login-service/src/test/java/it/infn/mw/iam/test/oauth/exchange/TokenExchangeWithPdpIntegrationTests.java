@@ -20,13 +20,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.exchange_policy.ClientMatchingPolicyDTO;
@@ -38,14 +36,13 @@ import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @DirtiesContext
-public class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
+class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
 
-  private static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+  private static final String TOKEN_EXCHANGE_GRANT_TYPE =
+      "urn:ietf:params:oauth:grant-type:token-exchange";
   private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
   private static final String TOKEN_ENDPOINT = "/token";
 
@@ -56,7 +53,7 @@ public class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
   private TokenExchangePolicyService service;
 
   @Test
-  public void testTokenExchangeBlockedWithNoPolicy() throws Exception {
+  void testTokenExchangeBlockedWithNoPolicy() throws Exception {
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
 
@@ -73,8 +70,8 @@ public class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
 
     service.deleteAllTokenExchangePolicies();
 
-    mvc.perform(post(TOKEN_ENDPOINT)
-        .with(httpBasic(actorClientId, actorClientSecret))
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)

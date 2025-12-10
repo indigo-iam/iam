@@ -16,107 +16,127 @@
 package it.infn.mw.iam.test.core;
 
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
-public class MeControllerTests {
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+class MeControllerTests {
 
-  private final static String TESTUSER_USERNAME = "test_101";
-  private final static String NOT_FOUND_USERNAME = "not_found";
+  static final String TESTUSER_USERNAME = "test_101";
+  static final String NOT_FOUND_USERNAME = "not_found";
 
   @Autowired
-  private ScimRestUtilsMvc restUtils;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
+  ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(user = TESTUSER_USERNAME, scopes = {})
-  public void insufficientScopeUser() throws Exception {
+  void insufficientScopeUser() throws Exception {
 
-    restUtils.getMe(FORBIDDEN);
+    mvc.perform(get(ScimUtils.getMeLocation())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = TESTUSER_USERNAME, roles = {})
-  public void insufficientAuthoritiesUser() throws Exception {
+  void insufficientAuthoritiesUser() throws Exception {
 
-    restUtils.getMe(FORBIDDEN);
+    mvc.perform(get(ScimUtils.getMeLocation())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = NOT_FOUND_USERNAME, scopes = {SCIM_READ_SCOPE})
-  public void notFoundUserWithToken() throws Exception {
+  void notFoundUserWithToken() throws Exception {
 
-    restUtils.getMe(NOT_FOUND);
+    mvc.perform(get(ScimUtils.getMeLocation())).andExpect(status().isNotFound());
   }
 
   @Test
   @WithMockUser(username = NOT_FOUND_USERNAME, roles = {"USER"})
-  public void notFoundUser() throws Exception {
+  void notFoundUser() throws Exception {
 
-    restUtils.getMe(NOT_FOUND);
+    mvc.perform(get(ScimUtils.getMeLocation())).andExpect(status().isNotFound());
   }
 
   @Test
   @WithMockOAuthUser(user = TESTUSER_USERNAME, scopes = {SCIM_READ_SCOPE})
-  public void authenticatedUserWithToken() throws Exception {
+  void authenticatedUserWithToken() throws Exception {
 
-    assertThat(restUtils.getMe().getUserName(), equalTo(TESTUSER_USERNAME));
+    ScimUser user = mapper.readValue(mvc.perform(get(ScimUtils.getMeLocation()))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), ScimUser.class);
+
+    assertEquals(TESTUSER_USERNAME, user.getUserName());
   }
 
   @Test
   @WithMockUser(username = TESTUSER_USERNAME, roles = {"USER"})
-  public void authenticatedUserNoToken() throws Exception {
+  void authenticatedUserNoToken() throws Exception {
 
-    assertThat(restUtils.getMe().getUserName(), equalTo(TESTUSER_USERNAME));
+    ScimUser user = mapper.readValue(mvc.perform(get(ScimUtils.getMeLocation()))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), ScimUser.class);
+
+    assertEquals(TESTUSER_USERNAME, user.getUserName());
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-  public void notAuthorizedClient() throws Exception {
+  void notAuthorizedClient() throws Exception {
 
-    restUtils.getMe(BAD_REQUEST)
+    mvc.perform(get(ScimUtils.getMeLocation()))
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", is("No user linked to the current OAuth token")));
-
   }
 }

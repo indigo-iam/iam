@@ -29,12 +29,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
@@ -50,11 +50,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
+class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -81,16 +80,16 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
     return () -> new AssertionError(message);
   }
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
   }
 
-  @After
-  public void teardown() throws Exception {
+  @AfterEach
+  void teardown() throws Exception {
     deleteScimResource(lennon);
     deleteScimResource(lincoln);
     deleteScimResource(engineers);
@@ -98,7 +97,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchAddMember() throws Exception {
+  void testGroupPatchAddMember() throws Exception {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
     members.add(lennon);
@@ -116,7 +115,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchAddMemberAndDeleteGMR() throws Exception {
+  void testGroupPatchAddMemberAndDeleteGMR() throws Exception {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
     IamAccount account =
@@ -163,7 +162,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchAddMembers() throws Exception {
+  void testGroupPatchAddMembers() throws Exception {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
     members.add(lennon);
@@ -192,7 +191,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchAddMembersWithFakeUser() throws Exception {
+  void testGroupPatchAddMembersWithFakeUser() throws Exception {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
     ScimUser ringo = addTestUser("ringo", "mail@domain.com", "Ringo", "Star");
@@ -214,7 +213,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchAddEmptyMembersList() throws Exception {
+  void testGroupPatchAddEmptyMembersList() throws Exception {
 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(new ArrayList<ScimUser>());
 

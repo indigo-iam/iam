@@ -39,9 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -53,7 +52,6 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.util.UriComponents;
@@ -72,49 +70,44 @@ import it.infn.mw.iam.test.util.oidc.IdTokenBuilder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, RCAuthTestConfig.class,
-        RCAuthIntegrationTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, RCAuthTestConfig.class,
+    RCAuthIntegrationTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
     properties = {"rcauth.enabled=true", "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
-public class RCAuthIntegrationTests extends RCAuthTestSupport {
-
+class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary
-    public RestTemplateFactory mockRestTemplateFactory() {
+    RestTemplateFactory mockRestTemplateFactory() {
       return new MockRestTemplateFactory();
     }
   }
 
   @Autowired
-  private RestTemplateFactory rtf;
+  RestTemplateFactory rtf;
 
   @Autowired
-  private ObjectMapper mapper;
-
-  private MockRestTemplateFactory mockRtf;
+  ObjectMapper mapper;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
-  @Before
-  public void setup() {
+  MockRestTemplateFactory mockRtf;
+
+  @BeforeEach
+  void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
 
   @Test
   @WithAnonymousUser
-  public void rcAuthRequiresAuthenticatedUser() throws Exception {
+  void rcAuthRequiresAuthenticatedUser() throws Exception {
     mvc.perform(get(GETCERT_PATH).with(csrf().asHeader()))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(LOGIN_URL));
@@ -122,7 +115,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void rcAuthWithUserSucceedsAndSetsSessionAttributes() throws Exception {
+  void rcAuthWithUserSucceedsAndSetsSessionAttributes() throws Exception {
 
     MvcResult result = mvc.perform(get(GETCERT_PATH).with(csrf().asHeader()))
       .andExpect(status().isFound())
@@ -137,7 +130,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void rcAuthAuthorizationResponseValidation() throws Exception {
+  void rcAuthAuthorizationResponseValidation() throws Exception {
 
     mvc.perform(get(CALLBACK_PATH).with(csrf().asHeader()))
       .andExpect(status().isFound())
@@ -160,7 +153,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void rcAuthAuthorizationResponseInvalidContext() throws Exception {
+  void rcAuthAuthorizationResponseInvalidContext() throws Exception {
 
     mvc
       .perform(get(CALLBACK_PATH).param("code", "a-code")
@@ -174,7 +167,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void rcAuthFullLinking() throws Exception {
+  void rcAuthFullLinking() throws Exception {
     MvcResult result = mvc.perform(get(GETCERT_PATH).with(csrf().asHeader()))
       .andExpect(status().isFound())
       .andExpect(request().sessionAttribute(RCAUTH_CTXT_SESSION_KEY, notNullValue()))

@@ -18,13 +18,14 @@ package it.infn.mw.iam.test.ext_authn.oidc.validator;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.nimbusds.jwt.JWT;
@@ -35,10 +36,10 @@ import it.infn.mw.iam.authn.common.ValidatorCheck;
 import it.infn.mw.iam.authn.common.ValidatorResult;
 import it.infn.mw.iam.authn.oidc.validator.check.ClaimRegexpMatch;
 
-public class ClaimRegexpMatchTests extends JWTTestSupport {
+class ClaimRegexpMatchTests extends JWTTestSupport {
 
   @Test
-  public void claimNotFound() {
+  void claimNotFound() {
 
     JWT jwt = new PlainJWT(claimSetBuilder().build());
 
@@ -50,35 +51,33 @@ public class ClaimRegexpMatchTests extends JWTTestSupport {
   }
 
   @Test
-  public void stringClaimMatches() {
+  void stringClaimMatches() {
     JWTClaimsSet.Builder builder = claimSetBuilder();
     builder.claim("entitlement", "sheriff");
 
     JWT jwt = new PlainJWT(builder.build());
 
-    ValidatorCheck<JWT> check =
-        ClaimRegexpMatch.claimMatches("entitlement", "sheriff|major");
+    ValidatorCheck<JWT> check = ClaimRegexpMatch.claimMatches("entitlement", "sheriff|major");
     ValidatorResult result = check.validate(jwt);
     assertThat(result.isSuccess(), is(true));
   }
 
   @Test
-  public void stringClaimDoesNotMatch() {
+  void stringClaimDoesNotMatch() {
     JWTClaimsSet.Builder builder = claimSetBuilder();
     builder.claim("entitlement", "sheriff");
 
     JWT jwt = new PlainJWT(builder.build());
 
-    ValidatorCheck<JWT> check =
-        ClaimRegexpMatch.claimMatches("entitlement", "general|president");
+    ValidatorCheck<JWT> check = ClaimRegexpMatch.claimMatches("entitlement", "general|president");
     ValidatorResult result = check.validate(jwt);
     assertThat(result.isFailure(), is(true));
-    assertThat(result.getMessage(),
-        containsString("Claim 'entitlement' value 'sheriff' does not match regexp: 'general|president'"));
+    assertThat(result.getMessage(), containsString(
+        "Claim 'entitlement' value 'sheriff' does not match regexp: 'general|president'"));
   }
 
   @Test
-  public void emptyClaimMatchTest() {
+  void emptyClaimMatchTest() {
 
     JWTClaimsSet.Builder builder = claimSetBuilder();
     builder.claim("empty_claim", "");
@@ -92,7 +91,7 @@ public class ClaimRegexpMatchTests extends JWTTestSupport {
   }
 
   @Test
-  public void stringArrayClaimMatchTest() {
+  void stringArrayClaimMatchTest() {
 
     JWTClaimsSet.Builder builder = claimSetBuilder();
 
@@ -106,7 +105,7 @@ public class ClaimRegexpMatchTests extends JWTTestSupport {
   }
 
   @Test
-  public void stringArrayNoFailureMatchTest() {
+  void stringArrayNoFailureMatchTest() {
 
     JWTClaimsSet.Builder builder = claimSetBuilder();
 
@@ -121,19 +120,20 @@ public class ClaimRegexpMatchTests extends JWTTestSupport {
         containsString("No claim 'array_claim' value found matching regexp: 'ciccio'"));
 
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullRegexpContructionFails() {
-    ClaimRegexpMatch.claimMatches("array_claim", null);
-  }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullClaimContructionFails() {
-    ClaimRegexpMatch.claimMatches(null, ".*");
-  }
-  
+
   @Test
-  public void noStringValueTest() {
+  void nullRegexpContructionFails() {
+    assertThrows(IllegalArgumentException.class,
+        () -> ClaimRegexpMatch.claimMatches("array_claim", null));
+  }
+
+  @Test
+  void nullClaimContructionFails() {
+    assertThrows(IllegalArgumentException.class, () -> ClaimRegexpMatch.claimMatches(null, ".*"));
+  }
+
+  @Test
+  void noStringValueTest() {
     JWTClaimsSet.Builder builder = claimSetBuilder();
     builder.expirationTime(Date.from(Instant.now()));
     JWT jwt = new PlainJWT(builder.build());
@@ -141,16 +141,16 @@ public class ClaimRegexpMatchTests extends JWTTestSupport {
     ValidatorResult result = check.validate(jwt);
     assertThat(result.isFailure(), is(true));
   }
-  
+
   @Test
-  public void jwtParseExceptionHandled() throws Exception {
+  void jwtParseExceptionHandled() throws Exception {
     JWT jwt = Mockito.mock(JWT.class);
-    
-    when(jwt.getJWTClaimsSet()).thenThrow(new ParseException("parse error",0));
+
+    when(jwt.getJWTClaimsSet()).thenThrow(new ParseException("parse error", 0));
     ValidatorCheck<JWT> check = ClaimRegexpMatch.claimMatches("test", ".*");
     ValidatorResult result = check.validate(jwt);
     assertThat(result.isError(), is(true));
     assertThat(result.getMessage(), is("JWT parse error: parse error"));
-    
+
   }
 }

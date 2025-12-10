@@ -18,9 +18,9 @@ package it.infn.mw.iam.test.ext_authn;
 import static it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint.EXT_AUTHN_HINT_PARAM;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 
@@ -28,19 +28,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HintAwareAuthenticationEntryPointTests {
 
   public static final String BASE_URL = "";
@@ -64,30 +63,27 @@ public class HintAwareAuthenticationEntryPointTests {
   @InjectMocks
   HintAwareAuthenticationEntryPoint entryPoint;
 
-  @Before
-  public void before() {
-    // when(request.getContextPath()).thenReturn("");
+  @Test
+  void nonAuthorizeRequestIsPassedToDelegateEntryPoint()
+    throws IOException, ServletException {
+    lenient().when(request.getRequestURI()).thenReturn(BASE_URL);
+    entryPoint.commence(request, response, exception);
+    verify(delegateEntryPoint, times(1)).commence(request, response, exception);
   }
 
   @Test
-  public void nonAuthorizeRequestIsPassedToDelegateEntryPoint() throws IOException, ServletException {
-    when(request.getRequestURI()).thenReturn(BASE_URL);
+  void authorizeRequestWithoutHintIsPassedToDelegateEntryPoint()
+    throws IOException, ServletException {
+    lenient().when(request.getRequestURI()).thenReturn(AUTHORIZE_URL);
     entryPoint.commence(request, response, exception);
     verify(delegateEntryPoint, times(1)).commence(request, response, exception);
   }
-  
+
   @Test
-  public void authorizeRequestWithoutHintIsPassedToDelegateEntryPoint() throws IOException, ServletException {
-    when(request.getRequestURI()).thenReturn(AUTHORIZE_URL);
-    entryPoint.commence(request, response, exception);
-    verify(delegateEntryPoint, times(1)).commence(request, response, exception);
-  }
-  
-  @Test
-  public void authorizeRequestWithHintIsUnderstood() throws IOException, ServletException {
-    when(request.getRequestURI()).thenReturn(AUTHORIZE_URL);
-    when(request.getParameter(EXT_AUTHN_HINT_PARAM)).thenReturn("saml:exampleEntity");
-    when(hintService.resolve(anyString())).thenReturn("/saml/login?idp=exampleEntity");
+  void authorizeRequestWithHintIsUnderstood() throws IOException, ServletException {
+    lenient().when(request.getRequestURI()).thenReturn(AUTHORIZE_URL);
+    lenient().when(request.getParameter(EXT_AUTHN_HINT_PARAM)).thenReturn("saml:exampleEntity");
+    lenient().when(hintService.resolve(anyString())).thenReturn("/saml/login?idp=exampleEntity");
     entryPoint.commence(request, response, exception);
     verify(delegateEntryPoint, times(0)).commence(request, response, exception);
     verify(hintService, times(1)).resolve(eq("saml:exampleEntity"));

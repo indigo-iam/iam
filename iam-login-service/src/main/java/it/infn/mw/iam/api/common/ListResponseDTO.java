@@ -31,8 +31,7 @@ import com.google.common.collect.Lists;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonView(value = {ClientViews.Full.class, ClientViews.Limited.class,
-    ClientViews.ClientManagement.class, ClientViews.DynamicRegistration.class})
+@JsonView(value = {ClientViews.NoSecretDynamicRegistration.class})
 public class ListResponseDTO<T> {
 
   private final Long totalResults;

@@ -27,15 +27,13 @@ import java.time.Duration;
 import java.time.Instant;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -50,11 +48,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @TestPropertySource(properties = {"proxycert.enabled=true"})
-public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
+class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
   IamProperties iamProperties;
@@ -68,13 +65,13 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -99,19 +96,19 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
   @WithAnonymousUser
   @Test
-  public void proxyApiRequiresAuthentication() throws Exception {
+  void proxyApiRequiresAuthentication() throws Exception {
     mvc.perform(post(PROXY_API_PATH)).andExpect(status().isUnauthorized());
   }
 
   @WithMockUser
   @Test
-  public void proxyApiRequiresClientAuthentication() throws Exception {
+  void proxyApiRequiresClientAuthentication() throws Exception {
     mvc.perform(post(PROXY_API_PATH)).andExpect(status().isUnauthorized());
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"})
   @Test
-  public void proxyApiRequiresProxyGenScope() throws Exception {
+  void proxyApiRequiresProxyGenScope() throws Exception {
 
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isForbidden())
@@ -119,18 +116,18 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-      scopes = {"proxy:generate"})
+    scopes = {"proxy:generate"})
   @Test
-  public void proxyApiRequiresRegisteredProxy() throws Exception {
+  void proxyApiRequiresRegisteredProxy() throws Exception {
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isPreconditionFailed())
       .andExpect(jsonPath("$.error", startsWith("No proxy found")));
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-      scopes = {"proxy:generate"})
+    scopes = {"proxy:generate"})
   @Test
-  public void proxyRequestIsValidated() throws Exception {
+  void proxyRequestIsValidated() throws Exception {
     linkProxyToTestAccount();
 
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS).param("lifetimeSecs", "60"))
@@ -139,9 +136,9 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-      scopes = {"proxy:generate"})
+    scopes = {"proxy:generate"})
   @Test
-  public void proxyRequestIssuerIsValidated() throws Exception {
+  void proxyRequestIssuerIsValidated() throws Exception {
 
     String longIssuerString = RandomStringUtils.random(129);
 
@@ -151,9 +148,9 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-      scopes = {"proxy:generate"})
+    scopes = {"proxy:generate"})
   @Test
-  public void proxyGenerationWorks() throws Exception {
+  void proxyGenerationWorks() throws Exception {
     linkProxyToTestAccount();
 
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))

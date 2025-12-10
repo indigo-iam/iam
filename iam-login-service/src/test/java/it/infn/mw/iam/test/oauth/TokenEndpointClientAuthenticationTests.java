@@ -26,12 +26,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,11 +38,9 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TokenEndpointClientAuthenticationTests {
+class TokenEndpointClientAuthenticationTests {
 
   private static final String TOKEN_ENDPOINT = "/token";
   private static final String GRANT_TYPE = "client_credentials";
@@ -61,7 +57,7 @@ public class TokenEndpointClientAuthenticationTests {
   private ObjectMapper mapper;
 
   @Test
-  public void testTokenEndpointFormClientAuthentication() throws Exception {
+  void testTokenEndpointFormClientAuthentication() throws Exception {
 
     String clientId = "post-client";
     String clientSecret = "secret";
@@ -78,7 +74,7 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointFormClientAuthenticationInvalidCredentials() throws Exception {
+  void testTokenEndpointFormClientAuthenticationInvalidCredentials() throws Exception {
 
     String clientId = "post-client";
     String clientSecret = "wrong-password";
@@ -96,7 +92,7 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointFormClientAuthenticationUnknownClient() throws Exception {
+  void testTokenEndpointFormClientAuthenticationUnknownClient() throws Exception {
 
     String clientId = "unknown-client";
     String clientSecret = "password";
@@ -114,7 +110,7 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointBasicClientAuthentication() throws Exception {
+  void testTokenEndpointBasicClientAuthentication() throws Exception {
 
     String clientId = "post-client";
     String clientSecret = "secret";
@@ -130,7 +126,7 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointPublicClientAuthentication() throws Exception {
+  void testTokenEndpointPublicClientAuthentication() throws Exception {
 
     String clientId = "public-client";
 
@@ -145,13 +141,13 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointOptionsMethodAllowed() throws Exception {
+  void testTokenEndpointOptionsMethodAllowed() throws Exception {
     mvc.perform(options(TOKEN_ENDPOINT)).andExpect(status().isOk());
   }
 
   @Test
   @WithAnonymousUser
-  public void testInsufficientScopedClientCredentialTokenForbidsAccess() throws Exception {
+  void testInsufficientScopedClientCredentialTokenForbidsAccess() throws Exception {
 
     String clientId = "scim-client-rw";
     String clientSecret = "secret";
@@ -202,7 +198,7 @@ public class TokenEndpointClientAuthenticationTests {
 
   @Test
   @WithAnonymousUser
-  public void testSCIMScopedClientCredentialTokenAllowsAccess() throws Exception {
+  void testSCIMScopedClientCredentialTokenAllowsAccess() throws Exception {
 
     String clientId = "scim-client-rw";
     String clientSecret = "secret";
@@ -258,7 +254,7 @@ public class TokenEndpointClientAuthenticationTests {
 
   @Test
   @WithAnonymousUser
-  public void testAdminScopedClientCredentialTokenAllowsAccess() throws Exception {
+  void testAdminScopedClientCredentialTokenAllowsAccess() throws Exception {
 
     String clientId = "admin-client-rw";
     String clientSecret = "secret";

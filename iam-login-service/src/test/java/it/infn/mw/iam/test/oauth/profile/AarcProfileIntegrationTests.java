@@ -15,123 +15,94 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
-
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
-import static java.lang.String.join;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcExtraClaimNames.ID_TOKEN_REQUIRED_CLAIMS;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
-    "iam.host=example.org",
-    "iam.jwt-profile.default-profile=aarc",
-    // @formatter:on
+  "iam.host=example.org",
+  "iam.jwt-profile.default-profile=aarc",
+  "iam.access-token.include-authn-info=true"
+// @formatter:on
 })
-public class AarcProfileIntegrationTests extends EndpointsTestUtils {
-
-  private static final String CLIENT_ID = "password-grant";
-  private static final String CLIENT_SECRET = "secret";
-  private static final String USERNAME = "test";
-  private static final String PASSWORD = "password";
-  private static final String GRANT_TYPE = "password";
+@SuppressWarnings("deprecation")
+class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   private static final String URN_GROUP_ANALYSIS = "urn:geant:iam.example:group:Analysis";
+  private static final String URN_GROUP_OPTIONAL = "urn:geant:iam.example:group:Optional";
   private static final String URN_GROUP_PRODUCTION = "urn:geant:iam.example:group:Production";
 
   private static final String ASSURANCE = "https://refeds.org/assurance";
   private static final String ASSURANCE_VALUE = "https://refeds.org/assurance/IAP/low";
 
-  protected static final Set<String> BASE_SCOPES = Sets.newHashSet("openid", "profile");
-  protected static final Set<String> EDUPERSON_AFFILIATION_SCOPE =
-      Sets.newHashSet("openid", "profile", "email", "eduperson_scoped_affiliation");
-  protected static final Set<String> ENTITLEMENTS_SCOPE =
-      Sets.newHashSet("openid", "profile", "entitlements");
-  protected static final Set<String> EDUPERSON_ASSURANCE_SCOPE =
-      Sets.newHashSet("openid", "profile", "eduperson_assurance");
-  protected static final Set<String> EDUPERSON_SCOPES = Sets.newHashSet("openid", "profile",
-      "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
-
+  private static final String EDUPERSON_SCOPED_VALUE = "member@indigo-dc";
 
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  private String getAccessTokenForUser(Set<String> scopes) throws Exception {
-
-    return getAccessTokenForUser(join(" ", scopes));
-  }
-
-  private String getAccessTokenForUser(String scopes) throws Exception {
-
-    return new AccessTokenGetter().grantType("password")
-      .clientId(CLIENT_ID)
-      .clientSecret(CLIENT_SECRET)
-      .username(USERNAME)
-      .password(PASSWORD)
-      .scope(scopes)
-      .getAccessTokenValue();
-  }
-
-  @SuppressWarnings("deprecation")
   private String getIdToken(String scopes) throws Exception {
 
     // @formatter:off
     String response = mvc.perform(post("/token")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("grant_type", GRANT_TYPE)
-        .param("username", USERNAME)
-        .param("password", PASSWORD)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .param("grant_type", "password")
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
         .param("scope", scopes))
       .andExpect(status().isOk())
       .andReturn()
@@ -146,340 +117,337 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testEdupersonEntitlementScope() throws Exception {
+  void testEdupersonEntitlementScope() throws Exception {
 
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "entitlements");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+    Set<String> scopes = Sets.newHashSet("openid", "entitlements");
+    JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
 
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
+    assertThat(claims.getClaim("sub"), equalTo(TEST_UUID));
+    assertThat(claims.getClaim("eduperson_scoped_affiliation"), nullValue());
+    assertThat(claims.getClaim("eduperson_entitlement"), nullValue());
 
-    List<String> groups =
-        Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim(ENTITLEMENTS_CLAIM));
-    assertThat(groups, hasSize(2));
-    assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
-    assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
+    List<String> groups = Lists.newArrayList(claims.getStringArrayClaim("entitlements"));
+    assertThat(groups, hasSize(3));
+    assertThat(groups, hasItems(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION));
 
-    Set<String> scopes2 =
-        Sets.newHashSet("openid", "profile", "entitlements", "eduperson_entitlement");
-    JWT token2 = JWTParser.parse(getAccessTokenForUser(scopes2));
-    assertThat(token2.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), notNullValue());
-    assertThat(token2.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), notNullValue());
+    Set<String> scopes2 = Sets.newHashSet("openid", "entitlements", "eduperson_entitlement");
+    JWTClaimsSet claims2 =
+        SignedJWT.parse(getPasswordToken(scopes2).accessToken()).getJWTClaimsSet();
 
-    Set<String> scopes3 = Sets.newHashSet("openid", "profile", "eduperson_entitlement");
-    JWT token3 = JWTParser.parse(getAccessTokenForUser(scopes3));
-    assertThat(token3.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), notNullValue());
-    assertThat(token3.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), notNullValue());
+    assertThat(claims2.getClaim("entitlements"), notNullValue());
+    assertThat(claims2.getClaim("eduperson_entitlement"), notNullValue());
+
+    Set<String> scopes3 = Sets.newHashSet("openid", "eduperson_entitlement");
+    JWTClaimsSet claims3 =
+        SignedJWT.parse(getPasswordToken(scopes3).accessToken()).getJWTClaimsSet();
+
+    assertThat(claims3.getClaim("entitlements"), notNullValue());
+    assertThat(claims3.getClaim("eduperson_entitlement"), notNullValue());
   }
 
   @Test
-  public void testEdupersonScopedAffiliationScope() throws Exception {
+  void testEdupersonScopedAffiliationScope() throws Exception {
 
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "eduperson_scoped_affiliation");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+    Set<String> scopes = Sets.newHashSet("openid", "eduperson_scoped_affiliation");
+    JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
 
-    assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
-
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM),
-        equalTo("member@iam.example"));
+    assertThat(claims.getClaim("sub"), equalTo(TEST_UUID));
+    assertThat(claims.getClaim("eduperson_scoped_affiliation"), equalTo(EDUPERSON_SCOPED_VALUE));
+    assertThat(claims.getClaim("entitlements"), notNullValue());
+    assertThat(claims.getClaim("organization_name"), nullValue());
+    assertThat(claims.getClaim("voperson_external_affiliation"), nullValue());
+    assertThat(claims.getClaim("voperson_id"), notNullValue());
+    assertThat(claims.getClaim("eduperson_assurance"), notNullValue());
   }
 
   @Test
-  public void testEdupersonAssuranceScope() throws Exception {
+  void testEdupersonAssuranceScope() throws Exception {
 
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+    Set<String> scopes = Sets.newHashSet("openid", "eduperson_assurance");
+    JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
 
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
+    assertThat(claims.getClaim("sub"), equalTo(TEST_UUID));
+    assertThat(claims.getClaim("eduperson_scoped_affiliation"), nullValue());
+    assertThat(claims.getClaim("entitlements"), notNullValue());
+    assertThat(claims.getClaim("organization_name"), nullValue());
+    assertThat(claims.getClaim("voperson_external_affiliation"), nullValue());
+    assertThat(claims.getClaim("voperson_id"), notNullValue());
 
-    List<String> assurance =
-        Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim(EDUPERSON_ASSURANCE_CLAIM));
+    List<String> assurance = Lists.newArrayList(claims.getStringArrayClaim("eduperson_assurance"));
+
     assertThat(assurance, hasSize(2));
     assertThat(assurance, hasItem(ASSURANCE));
     assertThat(assurance, hasItem(ASSURANCE_VALUE));
   }
 
+  @SuppressWarnings("unchecked")
   @Test
-  public void testEdupersonScopedAffiliationAndEntitlementScopes() throws Exception {
+  void testVoPersonIdScope() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid");
+    JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim("sub"), equalTo(TEST_UUID));
+    // required by default
+    assertThat(claims.getClaim("voperson_id"), equalTo(TEST_UUID + "@" + ORGANISATION_NAME));
+    assertThat(claims.getClaim("eduperson_assurance"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("eduperson_assurance"),
+        containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE));
+    assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("entitlements"),
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
+    // not required by default
+    assertThat(claims.getClaim("aarc_ver"), nullValue());
+    assertThat(claims.getClaim("organization_name"), nullValue());
+    assertThat(claims.getClaim("eduperson_scoped_affiliation"), nullValue());
+    assertThat(claims.getClaim("voperson_external_affiliation"), nullValue());
+  }
+
+  @Test
+  void testAarcProfileIntrospect() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet(OidcScopes.OPENID, OidcScopes.PROFILE, OidcScopes.EMAIL,
+        AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.ENTITLEMENTS,
+        AarcOidcScopes.EDUPERSON_ASSURANCE);
+    String accessToken = getPasswordToken(scopes).accessToken();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
+    // @formatter:on
+
+  }
+
+  @Test
+  void testAarcProfileIntrospectWithOldEdupersonEntitlementsScope() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
+        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
+    String accessToken = getPasswordToken(scopes).accessToken();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
+      .andExpect(jsonPath("$.eduperson_entitlement", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.eduperson_entitlement", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)));
+    // @formatter:on
+
+  }
+
+  @Test
+  void testAarcProfileIntrospectWithoutScopes() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "email");
+    String accessToken = getPasswordToken(scopes).accessToken();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation").doesNotExist())
+      .andExpect(jsonPath("$.entitlements").exists())
+      .andExpect(jsonPath("$.eduperson_assurance").exists())
+      .andExpect(jsonPath("$.voperson_id").exists());
+    // @formatter:on
+
+  }
+
+  @Test
+  void testAarcProfileIntrospectWithNoUser() throws Exception {
+
+    String accessToken = getClientCredentialsToken("openid profile").accessToken();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation").doesNotExist())
+      .andExpect(jsonPath("$.entitlements").doesNotExist())
+      .andExpect(jsonPath("$.eduperson_assurance").doesNotExist())
+      .andExpect(jsonPath("$.voperson_id").doesNotExist());
+    // @formatter:on
+
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
+    authorities = {"ROLE_USER"}, scopes = {"openid aarc"})
+  void testAarcProfileUserinfo() throws Exception {
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
+    authorities = {"ROLE_USER"}, scopes = {
+    "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
+  void testAarcProfileUserinfoWithEmail() throws Exception {
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")))
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
+      .andExpect(jsonPath("$.email_verified", equalTo(true)));
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
+    authorities = {"ROLE_USER"}, scopes = {
+    "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance voperson_id"})
+  void testAarcProfileUserinfoWithAllScopes() throws Exception {
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
+      .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)))
+      .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")))
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
+      .andExpect(jsonPath("$.email_verified", equalTo(true)));
+    // @formatter:on
+  }
+
+  @Test
+  void testAarcProfileIdTokenWithNoScopes() throws Exception {
+
+    JWTClaimsSet claims = JWTParser.parse(getIdToken("openid")).getJWTClaimsSet();
+    assertNotNull(claims.getClaim("sub"));
+    ID_TOKEN_REQUIRED_CLAIMS.forEach(c -> assertNotNull(claims.getClaim(c)));
+  }
+
+  @Test
+  void testAarcProfileIdTokenWithAarcScope() throws Exception {
+
+    JWTClaimsSet claims = JWTParser.parse(getIdToken("openid aarc")).getJWTClaimsSet();
+    assertNotNull(claims.getClaim("sub"));
+    assertNotNull(claims.getClaim("voperson_id"));
+    assertNotNull(claims.getClaim("entitlements"));
+    assertNotNull(claims.getClaim("eduperson_scoped_affiliation"));
+    assertNotNull(claims.getClaim("eduperson_assurance"));
+    // no external authentication, expected null
+    assertNull(claims.getClaim("voperson_external_affiliation"));
+    // null legacy claims
+    assertNull(claims.getClaim("eduperson_entitlement"));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void testAarcProfileIdTokenWithAllSeparatedAarcScopes() throws Exception {
 
     Set<String> scopes =
-        Sets.newHashSet("openid", "profile", "eduperson_scoped_affiliation", "entitlements");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+        Set.of("openid", "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
+    JWTClaimsSet claims = JWTParser.parse(getPasswordToken(scopes).idToken()).getJWTClaimsSet();
 
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
+    assertNotNull(claims.getClaim("sub"));
+    assertThat(claims.getClaim("sub"), is(TEST_UUID));
+    assertNotNull(claims.getClaim("aud"));
+    assertThat(claims.getClaim("aud"), is(List.of(PASSWORD_CLIENT_ID)));
+    assertNotNull(claims.getClaim("voperson_id"));
+    assertThat(claims.getClaim("voperson_id"), is(TEST_UUID + "@" + ORGANISATION_NAME));
+    assertNotNull(claims.getClaim("entitlements"));
+    assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("entitlements"),
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
+    assertNotNull(claims.getClaim("eduperson_scoped_affiliation"));
+    assertThat(claims.getClaim("eduperson_scoped_affiliation"), is(EDUPERSON_SCOPED_VALUE));
+    assertNotNull(claims.getClaim("eduperson_assurance"));
+    assertThat(claims.getClaim("eduperson_assurance"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("eduperson_assurance"),
+        containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE));
+  }
 
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM),
-        equalTo("member@iam.example"));
+  @SuppressWarnings("unchecked")
+  @Test
+  void testAarcProfileIdTokenWithLegacyAarcScopes() throws Exception {
 
-    List<String> groups =
-        Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim(ENTITLEMENTS_CLAIM));
-    assertThat(groups, hasSize(2));
-    assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
-    assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
+    Set<String> scopes = Set.of(OidcScopes.OPENID, AarcOidcScopes.EDUPERSON_ENTITLEMENT);
+    JWTClaimsSet claims = JWTParser.parse(getPasswordToken(scopes).idToken()).getJWTClaimsSet();
+
+    assertThat(claims.getClaim("sub"), is(TEST_UUID));
+    assertThat(claims.getClaim("aud"), is(List.of(PASSWORD_CLIENT_ID)));
+    // legacy entitlements
+    assertThat(claims.getClaim("eduperson_entitlement"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("eduperson_entitlement"),
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
+    // entitlements
+    assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
+    assertThat((ArrayList<String>) claims.getClaim("entitlements"),
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
+    assertNull(claims.getClaim("eduperson_scoped_affiliation"));
+    assertNotNull(claims.getClaim("eduperson_assurance"));
+    assertNotNull(claims.getClaim("voperson_id"));
+    assertNull(claims.getClaim("voperson_external_affiliation"));
   }
 
   @Test
-  public void testAarcProfileIntrospect() throws Exception {
+  void testAarcProfileAccessTokenWithAllAarcScopes() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
         "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
-  }
-
-  @Test
-  public void testAarcProfileIntrospectWithOldScope() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
-        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
-  }
-
-  @Test
-  public void testAarcProfileIntrospectWithoutScopes() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
-      scopes = {"openid profile eduperson_scoped_affiliation entitlements eduperson_assurance"})
-  public void testAarcProfileUserinfo() throws Exception {
-
-    // @formatter:off
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub").exists())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")));
-    // @formatter:on
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, scopes = {
-      "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
-  public void testAarcProfileUserinfoWithEmail() throws Exception {
-
-    // @formatter:off
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub").exists())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
-      .andExpect(jsonPath("$.email_verified", equalTo(true)));
-    // @formatter:on
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, scopes = {
-      "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
-  public void testAarcProfileUserinfoWithVoperson_id() throws Exception {
-
-    // @formatter:off
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub").exists())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
-      .andExpect(jsonPath("$.email_verified", equalTo(true)));
-    // @formatter:on
-  }
-
-  @Test
-  public void testAarcProfileIntrospectWithoutScopesWithVoperson_id() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+    SignedJWT token = SignedJWT.parse(getPasswordToken(scopes).accessToken());
 
     assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
+    assertNotNull(token.getJWTClaimsSet().getClaim("entitlements"));
+    assertNotNull(token.getJWTClaimsSet().getClaim("eduperson_assurance"));
+    assertNotNull(token.getJWTClaimsSet().getClaim("eduperson_scoped_affiliation"));
   }
-
-  @Test
-  public void testAarcProfileIntrospectWithOldScopeWithVoperson_id() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
-        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
-  }
-
-  @Test
-  public void testAarcProfileIntrospectWithVoperson_id() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
-        "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", token.getParsedString()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
-      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.given_name", equalTo("Test")))
-      .andExpect(jsonPath("$.family_name", equalTo("User")))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
-
-  }
-
-  @Test
-  public void testAarcProfileIdTokenWithVoperson_id() throws Exception {
-
-    JWT token = JWTParser.parse(getIdToken("openid email"));
-    System.out.println(token.getJWTClaimsSet());
-    assertNotNull(token.getJWTClaimsSet().getClaim("sub"));
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
-  }
-
-  @Test
-  public void testAarcProfileAccessTokenWithVoperson_id() throws Exception {
-
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
-        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
-    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
-
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
-  }
-
-
 }

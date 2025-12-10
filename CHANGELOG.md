@@ -1,5 +1,74 @@
 # Changelog
 
+## 1.13.3 (2025-12-09)
+
+## What's Changed
+
+* Don't fallback on default JWT profile when the requested scopes clarifies the desired one
+* Evaluate all SAML identifiers resolved on login to avoid errors after a change in strategy
+* Fix issue about missing pre-filled registration values
+* Convert the SCIM X.509 DTO before sending email to avoid wrong notification and an error on uploading PEM certificates
+
+## 1.13.2 (2025-11-25)
+
+## What's Changed
+
+* Restore local login link for hidden case
+* Fix group membership requests acceptance and refusal propagation properly
+* Fix registration's form fields configuration by making it case insensitive
+* Make it clear for admins how strong is the client reset operation
+
+## 1.13.1 (2025-11-20)
+
+## What's Changed
+
+* Fix expired client query to avoid suspension of all clients when using openid-federation profile
+* Fix duplicated sub claim in UserInfo response
+* Restore scope claim in UserInfo response
+* Ignore empty strings when computing claim values
+* Fix epoch timestamps unit from milliseconds to seconds for both Introspection and UserInfo responses
+
+## 1.13.0 (2025-11-03)
+
+## What's Changed
+
+* Search users by Subject DN
+* Store user affiliation into user info table
+* Return only FQANs with parent group equal to the VO name in the proxy
+* Add endpoint to retrieve clients owned by user
+* Option to limit custom scopes to admins only
+* Allow users to remove themselves from groups
+* SCIM API bulk operations
+* Configurable support button
+* Implement SCIM filtering
+* Enable command line execution for development
+* Configurable text in the registration button
+* Configurable 'nbf' duration for tokens
+* Restrict authZ on /iam/account/search endpoint
+* Add RPM build workflow on Continuous Integration
+* Ensure removal of configured MFA totp before account deletion
+* Add endpoint to retrieve the list of group memberships of a user
+* Synch affiliation with CERN HR DB
+* Notify VO Admins when a certificate is added
+* Revoke all refresh tokens for a client
+* Implement JIT account provisioning for OPs
+* Fix both H2 and MySQL devcontainers by
+* Scoped voPerson_id
+* Build and expose the OpenID Provider's OID Federation Entity Configuration
+* Implement OID Federation Trust Chain resolution and validation
+* Implement OID Federation Explicit Client Registration
+* Add openid_relying_party metadata
+* Token lifetime configurable in token request
+* Fix wrong information displayed when viewing other accounts with READER_ROLE
+* Update nimbus-jose-jwt dependency version to 9.37.4
+
+## 1.12.3 (2025-10-08)
+
+### What's Fixed
+
+* Fix for [Advisory-EGI-SVG-2025-18](https://advisories.egi.eu/Advisory-EGI-SVG-2025-18)
+* Fix for [Advisory-EGI-SVG-2025-19](https://advisories.egi.eu/Advisory-EGI-SVG-2025-19)
+
 ## 1.12.2 (2025-08-05)
 
 ### What's Changed

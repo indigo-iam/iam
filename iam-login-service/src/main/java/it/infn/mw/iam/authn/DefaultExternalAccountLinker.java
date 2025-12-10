@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.stereotype.Component;
@@ -35,7 +34,6 @@ public class DefaultExternalAccountLinker implements ExternalAccountLinker {
   final IamAccountRepository repo;
   final SamlUserIdentifierResolver samlUserIdResolver;
 
-  @Autowired
   public DefaultExternalAccountLinker(IamAccountRepository repo,
       SamlUserIdentifierResolver resolver) {
     this.repo = repo;
@@ -83,7 +81,9 @@ public class DefaultExternalAccountLinker implements ExternalAccountLinker {
         (SAMLCredential) token.getExternalAuthentication().getCredentials();
 
     final IamSamlId iamSamlId = samlUserIdResolver.resolveSamlUserIdentifier(credential)
-      .getResolvedId()
+      .getResolvedIds()
+      .stream()
+      .findFirst()
       .orElseThrow(() -> new UsernameNotFoundException(
           "Could not extract a user identifier from the SAML assertion"));
 
@@ -112,5 +112,4 @@ public class DefaultExternalAccountLinker implements ExternalAccountLinker {
     repo.save(targetAccount);
 
   }
-
 }

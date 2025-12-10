@@ -54,6 +54,14 @@ public class ScimUserTestSupport {
     .primary(true)
     .build();
 
+  protected ScimX509Certificate X509CERT_TEST2 = ScimX509Certificate.builder()
+    .display("Personal Certificate 2")
+    .pemEncodedCertificate(X509Utils.x509Certs.get(1).certificate)
+    .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+    .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
+    .primary(false)
+    .build();
+
   protected String SSHKEY_TEST_FINGERPRINT = SshKeyUtils.sshKeys.get(0).fingerprintSHA256;
 
   protected ScimSshKey SSHKEY_TEST = ScimSshKey.builder()

@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.oauth.profile;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,10 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import org.assertj.core.util.Lists;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -43,10 +44,10 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwt-profile.default-profile=kc",})
-public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
+class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "password-grant";
   private static final String CLIENT_SECRET = "secret";
@@ -78,7 +79,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfileAccessToken() throws Exception {
+  void testKeycloakProfileAccessToken() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
@@ -87,13 +88,12 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getClaim("roles"), notNullValue());
     List<String> roles =
         Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim(KC_GROUP_CLAIM));
-    assertThat(roles, hasSize(2));
-    assertThat(roles, hasItem("Analysis"));
-    assertThat(roles, hasItem("Production"));
+    assertThat(roles, hasSize(3));
+    assertThat(roles, hasItems("Analysis", "Optional", "Production"));
   }
 
   @Test
-  public void testKeycloakProfileAccessTokenForUserNotInGroups() throws Exception {
+  void testKeycloakProfileAccessTokenForClientWithNoRoles() throws Exception {
     String accessTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
       .clientSecret(CLIENT_SECRET)
@@ -102,12 +102,12 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .scope("openid profile")
       .getAccessTokenValue();
 
-    assertThat(!accessTokenString.contains("roles"), is(true));
-
+    JWT jwt = JWTParser.parse(accessTokenString);
+    assertThat(jwt.getJWTClaimsSet().getClaim("roles"), nullValue());
   }
 
   @Test
-  public void testKeycloakProfileAccessTokenWithClientCredentials() throws Exception {
+  void testKeycloakProfileAccessTokenWithClientCredentials() throws Exception {
     String accessTokenString = (String) new AccessTokenGetter().grantType("client_credentials")
       .clientId("client-cred")
       .clientSecret("secret")
@@ -119,43 +119,43 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloackProfileIntrospect() throws Exception {
+  void testKeycloackProfileIntrospect() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + KC_GROUP_CLAIM, containsInAnyOrder("Analysis", "Production")))
-      .andExpect(jsonPath("$." + KC_GROUP_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(
+          jsonPath("$." + KC_GROUP_CLAIM, containsInAnyOrder("Analysis", "Production", "Optional")))
+      .andExpect(jsonPath("$." + KC_GROUP_CLAIM, hasSize(equalTo(3))))
       .andExpect(jsonPath("$.iss", equalTo("http://localhost:8080/")))
       .andExpect(jsonPath("$.scope", containsString("openid")))
       .andExpect(jsonPath("$.scope", containsString("profile")));
-    // @formatter:on
 
   }
 
   @Test
-  public void testKeycloackProfileIntrospectWithAudience() throws Exception {
+  void testKeycloackProfileIntrospectWithAudience() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenWithAudience("openid profile", "myAudience"));
 
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.aud", equalTo("myAudience")));
-    // @formatter:on
 
   }
 
   @Test
-  public void testKeycloackProfileForUserNotInGroups() throws Exception {
+  void testKeycloackProfileForUserNotInGroups() throws Exception {
 
     String accessTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
@@ -165,14 +165,13 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .scope("openid profile")
       .getAccessTokenValue();
 
-    // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessTokenString))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.roles").doesNotExist());
-    // @formatter:on
 
   }
 }

@@ -22,7 +22,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.13.0</version>
+    <version>1.13.3</version>
   </parent>
 
   <groupId>it.infn.mw.iam-login-service</groupId>
@@ -33,14 +33,12 @@
   <description>The INDIGO IAM login service</description>
 
   <properties>
+    <!-- needed fix to remove Eclipse issue on running jUnit tests -->
+    <jacocoArgLine>${argLine}</jacocoArgLine>
     <test-clock.version>1.0.2</test-clock.version>
     <eclipselink.version>2.7.9</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
-    <nimbus-jose-jwt.version>9.37.2</nimbus-jose-jwt.version>
-
-    <!-- Sonar Jacoco massaging -->
-    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+    <nimbus-jose-jwt.version>9.37.4</nimbus-jose-jwt.version>
   </properties>
 
   <dependencies>
@@ -70,18 +68,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-cache</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -291,6 +277,12 @@
     <dependency>
       <groupId>org.mitre</groupId>
       <artifactId>openid-connect-server</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.persistence</groupId>
+          <artifactId>org.eclipse.persistence.core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -328,29 +320,10 @@
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
+      <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>mysql</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>mariadb</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
 
     <dependency>
       <groupId>com.mercateo</groupId>
@@ -489,39 +462,25 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- Jacoco prepare-agent builds some command-line params without -->
-          <!-- which jacoco will not instrument. Hence it is important to add -->
-          <!-- those command-line params here (${argLine} holds those params) -->
-          <argLine>@{argLine} ${jvm.test.args}</argLine>
-          <runOrder>alphabetical</runOrder>
-          <useSystemClassLoader>false</useSystemClassLoader>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>jacoco-site-aggregate</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report-aggregate</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <excludes>
             <exclude>it/infn/mw/iam/api/registration/cern/mock/*.class</exclude>
             <exclude>it/infn/mw/iam/api/registration/cern/dto/*.class</exclude>
           </excludes>
         </configuration>
-        <executions>
-          <execution>
-            <id>agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>report-aggregate</id>
-            <goals>
-              <goal>report-aggregate</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>

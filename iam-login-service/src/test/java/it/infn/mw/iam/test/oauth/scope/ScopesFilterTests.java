@@ -25,17 +25,15 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.internal.util.collections.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -49,7 +47,6 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class ScopesFilterTests extends ScopePolicyTestUtils {
@@ -87,20 +84,20 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   private String loginUrl;
   private String authorizeUrl;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
   }
 
   @Test
-  public void testConsentPageReturnsFilteredScopes() {
+  void testConsentPageReturnsFilteredScopes() {
 
     IamAccount testAccount = findTestAccount();
 
@@ -175,7 +172,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConsentPageDoesNotReturnAdminScopeToRegularUser() {
+  void testConsentPageDoesNotReturnAdminScopeToRegularUser() {
 
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()
@@ -230,7 +227,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConsentPageReturnsAdminScopeToAdmins() {
+  void testConsentPageReturnsAdminScopeToAdmins() {
 
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()

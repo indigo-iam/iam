@@ -21,10 +21,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.authn.common.Fail;
@@ -37,7 +37,7 @@ import it.infn.mw.iam.authn.saml.validator.DefaultSamlValidatorResolver;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties.IssuerValidationProperties;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SamlValidatorResolverTests {
 
   public static final String ENTITY_ID_1 = "e1";
@@ -48,15 +48,15 @@ public class SamlValidatorResolverTests {
 
   ValidatorConfigParser configParser = new DefaultValidatorConfigParser();
   ValidatorResolver<SAMLCredential> resolver;
-  
+
   @Test
-  public void noValidatorsIsFine() {
+  void noValidatorsIsFine() {
     resolver = new DefaultSamlValidatorResolver(configParser, properties);
     assertThat(resolver.resolveChecks(ENTITY_ID_1).isPresent(), is(false));
   }
-  
+
   @Test
-  public void defaultValidatorUnderstood() {
+  void defaultValidatorUnderstood() {
     
     ValidatorProperties defaultProps = new ValidatorProperties();
     defaultProps.setKind("true");

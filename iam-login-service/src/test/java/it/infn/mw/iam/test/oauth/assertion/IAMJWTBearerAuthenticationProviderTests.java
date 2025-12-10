@@ -19,9 +19,10 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,9 +30,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -40,7 +41,7 @@ import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
@@ -54,93 +55,84 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IAMJWTBearerAuthenticationProviderTests
+@ExtendWith(MockitoExtension.class)
+class IAMJWTBearerAuthenticationProviderTests
     implements IAMJWTBearerAuthenticationProviderTestSupport {
 
-  public static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
-
-  private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
+  static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
   @Mock
-  private ClientDetailsEntityService clientService;
+  ClientDetailsEntityService clientService;
 
   @Mock
-  private ClientKeyCacheService validators;
+  ClientKeyCacheService validators;
 
   @Mock
-  private IamProperties iamProperties;
+  IamProperties iamProperties;
 
   @Mock
-  private JWTBearerAssertionAuthenticationToken authentication;
+  JWTBearerAssertionAuthenticationToken authentication;
 
   @Mock
-  private JWTSigningAndValidationService validator;
+  JWTSigningAndValidationService validator;
 
   @Mock
-  private ClientDetailsEntity client;
+  ClientDetailsEntity client;
 
   IAMJWTBearerAuthenticationProvider provider;
 
+  Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
-  @Before
-  public void setup() {
-    when(authentication.getName()).thenReturn(JWT_AUTH_NAME);
-    when(iamProperties.getIssuer()).thenReturn(ISSUER);
-    when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(client);
-    when(client.getClientId()).thenReturn(JWT_AUTH_NAME);
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+  @BeforeEach
+  void setup() {
+
+    lenient().when(authentication.getName()).thenReturn(JWT_AUTH_NAME);
+    lenient().when(iamProperties.getIssuer()).thenReturn(ISSUER);
+    lenient().when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(client);
+    lenient().when(client.getClientId()).thenReturn(JWT_AUTH_NAME);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     provider =
         new IAMJWTBearerAuthenticationProvider(clock, iamProperties, clientService, validators);
   }
 
-  @Test(expected = UsernameNotFoundException.class)
-  public void testClientNotFoundTriggersUsernameNotFoundException() {
+  @Test
+  void testClientNotFoundTriggersUsernameNotFoundException() {
 
-    when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(null);
+    lenient().when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(null);
 
-    try {
-      provider.authenticate(authentication);
-    } catch (UsernameNotFoundException e) {
-      assertThat(e.getMessage(), containsString("Unknown client"));
-      throw e;
-    }
-  }
-
-  @Test(expected = AuthenticationServiceException.class)
-  public void testPlainJwtTriggersException() {
-
-    when(authentication.getJwt())
-      .thenReturn(new PlainJWT(new JWTClaimsSet.Builder().subject("sub").build()));
-
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Unsupported JWT type"));
-      throw e;
-    }
-  }
-
-  @Test(expected = AuthenticationServiceException.class)
-  public void testNullJwtTriggersException() {
-
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Null JWT"));
-      throw e;
-    }
+    UsernameNotFoundException e =
+        assertThrows(UsernameNotFoundException.class, () -> provider.authenticate(authentication));
+    assertThat(e.getMessage(), containsString("Unknown client"));
   }
 
   @Test
-  public void testUnsupportClientAuthMethodTriggersException() throws JOSEException {
+  void testPlainJwtTriggersException() {
 
-    when(authentication.getJwt()).thenReturn(macSignJwt(JUST_SUB_JWT));
+    lenient().when(authentication.getJwt())
+      .thenReturn(new PlainJWT(new JWTClaimsSet.Builder().subject("sub").build()));
 
-    when(client.getTokenEndpointAuthMethod()).thenReturn(null, AuthMethod.NONE,
-        AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertThat(e.getMessage(), containsString("Unsupported JWT type"));
+  }
+
+  @Test
+  void testNullJwtTriggersException() {
+
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertThat(e.getMessage(), containsString("Null JWT"));
+  }
+
+  @Test
+  void testUnsupportClientAuthMethodTriggersException() throws JOSEException {
+
+    lenient().when(authentication.getJwt()).thenReturn(macSignJwt(JUST_SUB_JWT));
+
+    lenient().when(client.getTokenEndpointAuthMethod())
+      .thenReturn(null, AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
 
     for (int i = 0; i < 4; i++) {
       try {
@@ -153,13 +145,13 @@ public class IAMJWTBearerAuthenticationProviderTests
   }
 
   @Test
-  public void testInvalidAsymmetricAlgo() throws JOSEException {
+  void testInvalidAsymmetricAlgo() {
 
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -170,13 +162,13 @@ public class IAMJWTBearerAuthenticationProviderTests
   }
 
   @Test
-  public void testInvalidSymmetricAlgo() throws JOSEException {
+  void testInvalidSymmetricAlgo() {
 
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -188,13 +180,13 @@ public class IAMJWTBearerAuthenticationProviderTests
   }
 
   @Test
-  public void testValidatorNotFound() throws JOSEException {
+  void testValidatorNotFound() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(null);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(null);
 
     testForAllAlgos(client, a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -207,16 +199,16 @@ public class IAMJWTBearerAuthenticationProviderTests
   }
 
   @Test
-  public void testInvalidSignatureHandled() throws JOSEException {
+  void testInvalidSignatureHandled() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(false);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(false);
 
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -225,11 +217,11 @@ public class IAMJWTBearerAuthenticationProviderTests
       }
     });
 
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -240,16 +232,16 @@ public class IAMJWTBearerAuthenticationProviderTests
   }
 
   @Test
-  public void testInvalidAssertionIssuer() {
+  void testInvalidAssertionIssuer() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
 
       JWSHeader header = new JWSHeader(a);
       SignedJWT jws = new SignedJWT(header, JUST_SUB_JWT);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -261,7 +253,7 @@ public class IAMJWTBearerAuthenticationProviderTests
           new JWTClaimsSet.Builder().issuer("invalid-issuer").subject(JWT_AUTH_NAME).build();
 
       jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -269,36 +261,34 @@ public class IAMJWTBearerAuthenticationProviderTests
         assertThat(e.getMessage(), containsString("issuer does not match client id"));
       }
     });
-
   }
 
   @Test
-  public void testExpirationTimeNotSet() {
+  void testExpirationTimeNotSet() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet =
           new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME).subject(JWT_AUTH_NAME).build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("expiration time not set"));
       }
-
     });
   }
 
   @Test
-  public void testExpirationInThePast() {
+  void testExpirationInThePast() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -307,22 +297,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .expirationTime(Date.from(clock.instant().minusSeconds(301)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("expired assertion token"));
       }
-
     });
   }
 
   @Test
-  public void testNotBeforeInTheFuture() {
+  void testNotBeforeInTheFuture() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -332,22 +321,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .notBeforeTime(Date.from(clock.instant().plusSeconds(900)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("assertion is not yet valid"));
       }
-
     });
   }
 
   @Test
-  public void testIssuedInTheFuture() {
+  void testIssuedInTheFuture() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -357,22 +345,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .issueTime(Date.from(clock.instant().plusSeconds(1000)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("assertion was issued in the future"));
       }
-
     });
   }
 
   @Test
-  public void testNullAudience() {
+  void testNullAudience() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -381,22 +368,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("invalid audience"));
       }
-
     });
   }
 
   @Test
-  public void testInvalidAudience() {
+  void testInvalidAudience() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -406,22 +392,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .audience(singletonList("invalid-audience"))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("invalid audience"));
       }
-
     });
   }
 
   @Test
-  public void testJTIRequired() {
+  void testJTIRequired() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -431,22 +416,21 @@ public class IAMJWTBearerAuthenticationProviderTests
         .audience(singletonList(ISSUER_TOKEN_ENDPOINT))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
         assertThat(e.getMessage(), containsString("jti is null"));
       }
-
     });
   }
 
   @Test
-  public void testValidAssertion() {
+  void testValidAssertion() {
 
-    when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
-    when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     testForAllAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
@@ -457,7 +441,7 @@ public class IAMJWTBearerAuthenticationProviderTests
         .jwtID(UUID.randomUUID().toString())
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getJwt()).thenReturn(jws);
 
 
       JWTBearerAssertionAuthenticationToken authToken =
@@ -466,8 +450,6 @@ public class IAMJWTBearerAuthenticationProviderTests
       assertThat(authToken.getName(), is(JWT_AUTH_NAME));
       assertThat(authToken.getAuthorities(), hasItem(ROLE_CLIENT_AUTHORITY));
       assertThat(authToken.getAuthorities(), hasSize(1));
-
-
     });
   }
 

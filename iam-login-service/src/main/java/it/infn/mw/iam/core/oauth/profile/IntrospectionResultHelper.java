@@ -16,13 +16,17 @@
 package it.infn.mw.iam.core.oauth.profile;
 
 import java.util.Map;
-import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 
 public interface IntrospectionResultHelper {
 
-  Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes);
+  public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
+      ClientDetailsEntity authenticatedClient);
+
+  public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
+      ClientDetailsEntity authenticatedClient);
+
 }

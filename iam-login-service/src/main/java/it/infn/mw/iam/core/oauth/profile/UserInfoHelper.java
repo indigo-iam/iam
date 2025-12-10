@@ -15,12 +15,32 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import org.mitre.openid.connect.model.UserInfo;
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 public interface UserInfoHelper {
-  
-  UserInfo resolveUserInfo(OAuth2Authentication authentication);
+
+  /**
+   * Returns the list of claim names required to be added to the UserInfo response
+   * 
+   * @return the list of required claims
+   */
+  Set<String> getRequiredClaims();
+
+  /**
+   * Resolve scope to claim names and their value (if available)
+   * 
+   * @param scopes The collection of scopes from which computing the related claims
+   * @param account The user account info
+   * @param auth The current Authentication info that can contain also the external provider additionalInfo
+   * @return the map of claim names and values
+   */
+  Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
+      OAuth2Authentication auth);
 
 }

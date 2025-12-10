@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -37,8 +36,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
-@RunWith(JUnit4.class)
-@Transactional
+@SpringBootTest
 public class ScopePolicyJacksonSerializerTests extends ScopePolicyTestUtils {
 
   public static final String REPR1 =
@@ -48,7 +46,8 @@ public class ScopePolicyJacksonSerializerTests extends ScopePolicyTestUtils {
       "{\"id\":null,\"description\":null,\"rule\":\"PERMIT\",\"matching_policy\":\"EQ\",\"account\":{\"uuid\":\"f5f009ca-30b6-48d1-bb6a-b976b1a95525\",\"name\":\"test\"},\"group\":null,\"scopes\":[]}";
 
   @Test
-  public void testJacksonSerializationHandlesNull() throws IOException {
+  @Transactional
+  void testJacksonSerializationHandlesNull() throws IOException {
     ObjectMapper mapper = new ObjectMapper();
 
     Writer jsonWriter = new StringWriter();
@@ -65,7 +64,8 @@ public class ScopePolicyJacksonSerializerTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testJacksonSerialization() throws IOException {
+  @Transactional
+  void testJacksonSerialization() throws IOException {
     ObjectMapper mapper = new ObjectMapper();
 
     Writer jsonWriter = new StringWriter();

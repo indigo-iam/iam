@@ -15,13 +15,16 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.DisabledException;
 
 import it.infn.mw.iam.authn.DefaultInactiveAccountAuthenticationHandler;
@@ -29,13 +32,13 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
+@ExtendWith(MockitoExtension.class)
+class InactiveAccountHandlerTests {
 
-public class InactiveAccountHandlerTests {
-  
-  public static final String ORG_NAME = "indigo-dc";
-  
+  static final String ORG_NAME = "indigo-dc";
+
   @Test
-  public void inactiveAccountHandlerSilentlyIgnoresActiveAccount() {
+  void inactiveAccountHandlerSilentlyIgnoresActiveAccount() {
 
     IamAccount account = Mockito.mock(IamAccount.class);
 
@@ -44,12 +47,11 @@ public class InactiveAccountHandlerTests {
     DefaultInactiveAccountAuthenticationHandler handler =
         new DefaultInactiveAccountAuthenticationHandler(ORG_NAME);
 
-    handler.handleInactiveAccount(account);
-
+    assertDoesNotThrow(() -> handler.handleInactiveAccount(account), "Unexpected Exception");
   }
 
   @Test
-  public void inactiveAccountHandlerRaiseErrorForDisabledUser() {
+  void inactiveAccountHandlerRaiseErrorForDisabledUser() {
 
     IamAccount account = Mockito.mock(IamAccount.class);
 
@@ -57,19 +59,13 @@ public class InactiveAccountHandlerTests {
     DefaultInactiveAccountAuthenticationHandler handler =
         new DefaultInactiveAccountAuthenticationHandler(ORG_NAME);
 
-    try {
-
-      handler.handleInactiveAccount(account);
-      fail("Expected exception not raised");
-
-    } catch (DisabledException ex) {
-      assertThat(ex.getMessage(), equalTo("Your account is suspended"));
-
-    }
+    DisabledException ex =
+        assertThrows(DisabledException.class, () -> handler.handleInactiveAccount(account));
+    assertThat(ex.getMessage(), equalTo("Your account is suspended"));
   }
 
   @Test
-  public void inactiveAccountHandlerInformsOfRegistrationRequestWaitingConfirmation() {
+  void inactiveAccountHandlerInformsOfRegistrationRequestWaitingConfirmation() {
     IamRegistrationRequest req = Mockito.mock(IamRegistrationRequest.class);
     IamAccount account = Mockito.mock(IamAccount.class);
 
@@ -92,7 +88,7 @@ public class InactiveAccountHandlerTests {
   }
 
   @Test
-  public void inactiveAccountHandlerInformsOfRegistrationRequestWaitingForApproval() {
+  void inactiveAccountHandlerInformsOfRegistrationRequestWaitingForApproval() {
     IamRegistrationRequest req = Mockito.mock(IamRegistrationRequest.class);
     IamAccount account = Mockito.mock(IamAccount.class);
 
@@ -115,7 +111,7 @@ public class InactiveAccountHandlerTests {
   }
 
   @Test
-  public void inactiveAccountHandlerIgnoresApprovedRegistrationRequest() {
+  void inactiveAccountHandlerIgnoresApprovedRegistrationRequest() {
     IamRegistrationRequest req = Mockito.mock(IamRegistrationRequest.class);
     IamAccount account = Mockito.mock(IamAccount.class);
 

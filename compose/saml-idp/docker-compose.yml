@@ -1,0 +1,30 @@
+services:
+  http_proxy:
+    container_name: idptestbed
+    build: 
+      context: ./httpd-proxy/
+    ports:
+      - "443:443"
+  idp:
+    container_name: idp
+    build: 
+      context: ./idp/
+    environment:
+      - JETTY_MAX_HEAP=64m
+      - JETTY_BROWSER_SSL_KEYSTORE_PASSWORD=password
+      - JETTY_BACKCHANNEL_SSL_KEYSTORE_PASSWORD=password
+    expose:
+      - "4443"
+
+    extra_hosts:
+      - "iam.local.io:192.168.99.100"
+
+  ldap:
+    container_name: ldap
+    build: 
+      context: ./ldap/
+
+  sp:
+    container_name: sp
+    build: 
+      context: ./sp/

@@ -17,12 +17,13 @@ package it.infn.mw.iam.test.ext_authn.saml.profile;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -32,7 +33,7 @@ import it.infn.mw.iam.authn.saml.profile.IamSSOProfileOptions;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties.ProfileProperties;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OptionsProfileResolverTests {
 
   public static final String ENTITY_ID_1 = "urn:example:entityId1";
@@ -47,30 +48,24 @@ public class OptionsProfileResolverTests {
   @Mock
   ProfileProperties pp;
 
-  
-  @Test(expected = NullPointerException.class)
-  public void testNullChecks1() {
-    
-    try {
-        new DefaultSSOProfileOptionsResolver(null, defaultOptions);
-    }catch(NullPointerException e) {
-      assertThat(e.getMessage(), is("samlProperties cannot be null"));
-      throw e;
-    }
-  }
-  
-  @Test(expected = NullPointerException.class)
-  public void testNullChecks2() {
-    
-    try {
-      new DefaultSSOProfileOptionsResolver(properties, null);
-    }catch(NullPointerException e) {
-      assertThat(e.getMessage(), is("defaultOptions cannot be null"));
-      throw e;
-    }
-  }
   @Test
-  public void testUnmatchedProfileYeldsDefaultProfile() {
+  void testNullChecks1() {
+
+    NullPointerException e = assertThrows(NullPointerException.class,
+        () -> new DefaultSSOProfileOptionsResolver(null, defaultOptions));
+    assertThat(e.getMessage(), is("samlProperties cannot be null"));
+  }
+
+  @Test
+  void testNullChecks2() {
+
+    NullPointerException e = assertThrows(NullPointerException.class,
+        () -> new DefaultSSOProfileOptionsResolver(properties, null));
+    assertThat(e.getMessage(), is("defaultOptions cannot be null"));
+  }
+
+  @Test
+  void testUnmatchedProfileYeldsDefaultProfile() {
 
     DefaultSSOProfileOptionsResolver resolver =
         new DefaultSSOProfileOptionsResolver(properties, defaultOptions);
@@ -81,38 +76,37 @@ public class OptionsProfileResolverTests {
 
 
   @Test
-  public void testSingleEntityCustomProfileResolution() {
-    
+  void testSingleEntityCustomProfileResolution() {
+
     IamSSOProfileOptions customOpts = new IamSSOProfileOptions();
     customOpts.setSpidIdp(true);
     customOpts.setPassive(null);
-    
+
     when(pp.getEntityIds()).thenReturn(ENTITY_ID_1);
     when(pp.getOptions()).thenReturn(customOpts);
-    
+
     when(properties.getCustomProfile()).thenReturn(Lists.newArrayList(pp));
 
     DefaultSSOProfileOptionsResolver resolver =
         new DefaultSSOProfileOptionsResolver(properties, defaultOptions);
 
     IamSSOProfileOptions options = resolver.resolveProfileOptions(ENTITY_ID_1);
-    
+
     assertThat(options, is(customOpts));
-    
   }
 
 
   @Test
-  public void testMultiEntityCustomProfileResolution() {
-    
+  void testMultiEntityCustomProfileResolution() {
+
     IamSSOProfileOptions customOpts = new IamSSOProfileOptions();
     customOpts.setSpidIdp(true);
     customOpts.setPassive(null);
-    
+
     when(pp.getEntityIds()).thenReturn(Joiner.on(',').join(ENTITY_ID_1, ENTITY_ID_2));
     when(pp.getOptions()).thenReturn(customOpts);
     when(properties.getCustomProfile()).thenReturn(Lists.newArrayList(pp));
-    
+
     DefaultSSOProfileOptionsResolver resolver =
         new DefaultSSOProfileOptionsResolver(properties, defaultOptions);
 

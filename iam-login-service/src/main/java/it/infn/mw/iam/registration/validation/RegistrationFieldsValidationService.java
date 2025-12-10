@@ -146,6 +146,8 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
         return dto.getEmail() != null && !dto.getEmail().isBlank();
       case NOTES:
         return dto.getNotes() != null && !dto.getNotes().isBlank();
+      case CERTIFICATE:
+        return dto.getRegisterCertificate() != null && !dto.getRegisterCertificate().isBlank();
       default:
         return false;
     }

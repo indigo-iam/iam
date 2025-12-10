@@ -22,22 +22,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwk.keystore-location=classpath:/jwk/iam-1024-keys.jwks"})
-public class JWKKeyTests1024 extends EndpointsTestUtils implements JWKTestSupport {
-
+class JWKKeyTests1024 extends EndpointsTestUtils implements JWKTestSupport {
 
   @Test
-  public void test1024bitsKeysAreSupported() throws Exception {
+  void test1024bitsKeysAreSupported() throws Exception {
     // @formatter:off
     mvc.perform(get(JWK_ENDPOINT))
     .andExpect(status().isOk())

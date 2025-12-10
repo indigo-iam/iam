@@ -20,19 +20,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -51,8 +52,8 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ScopePolicyAuditTests extends ScopePolicyTestUtils {
+@ExtendWith(MockitoExtension.class)
+class ScopePolicyAuditTests extends ScopePolicyTestUtils {
 
   @Mock
   private ApplicationEventPublisher eventPublisher;
@@ -73,74 +74,74 @@ public class ScopePolicyAuditTests extends ScopePolicyTestUtils {
 
   private DefaultScopePolicyService service;
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
+
     converter = new DefaultScopePolicyConverter(new DefaultScimResourceLocationProvider(),
         accountRepo, groupRepo);
 
-    // when(scopePolicyRepo.findDefaultPolicies()).thenReturn(emptyList());
-    when(scopePolicyRepo.findEquivalentPolicies(Mockito.any()))
-      .thenReturn(emptyList());
-    
-    when(scopePolicyRepo.save(Mockito.any(IamScopePolicy.class))).thenAnswer(returnsFirstArg());
-    
+    lenient().when(scopePolicyRepo.findEquivalentPolicies(Mockito.any())).thenReturn(emptyList());
+    lenient().when(scopePolicyRepo.save(Mockito.any(IamScopePolicy.class))).thenAnswer(returnsFirstArg());
+
     service = new DefaultScopePolicyService(scopePolicyRepo, converter, eventPublisher);
   }
 
   @Test
-  public void testCreatePolicyRaisesEvent() {
+  void testCreatePolicyRaisesEvent() {
+
     ScopePolicyDTO dto = initDenyScopePolicyDTO();
-    IamScopePolicy sp=service.createScopePolicy(dto);
+    IamScopePolicy sp = service.createScopePolicy(dto);
     verify(eventPublisher).publishEvent(eventCaptor.capture());
 
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(ScopePolicyCreatedEvent.class));
-    
-    ScopePolicyCreatedEvent e = (ScopePolicyCreatedEvent)event;
+
+    ScopePolicyCreatedEvent e = (ScopePolicyCreatedEvent) event;
     assertThat(e.getPolicy(), equalTo(sp));
   }
-  
+
   @Test
-  public void testRemovePolicyRaisesEvent() {
+  void testRemovePolicyRaisesEvent() {
+
     ScopePolicyDTO dto = initDenyScopePolicyDTO();
     dto.setId(1L);
-    
+
     IamScopePolicy sp = initDenyScopePolicy();
     sp.setId(1L);
     sp.setRule(PolicyRule.DENY);
-    
+
     when(scopePolicyRepo.findById(1L)).thenReturn(Optional.of(sp));
-    
+
     service.deleteScopePolicyById(1L);
     verify(eventPublisher).publishEvent(eventCaptor.capture());
 
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(ScopePolicyDeletedEvent.class));
-    
-    ScopePolicyDeletedEvent e = (ScopePolicyDeletedEvent)event;
+
+    ScopePolicyDeletedEvent e = (ScopePolicyDeletedEvent) event;
     assertThat(e.getPolicy(), equalTo(sp));
   }
-  
+
   @Test
-  public void testUpdatePolicyRaisesEvent(){
+  void testUpdatePolicyRaisesEvent() {
+
     ScopePolicyDTO dto = initPermitScopePolicyDTO();
     dto.setId(1L);
-    
+
     IamScopePolicy sp = initDenyScopePolicy();
     sp.setId(1L);
     sp.setRule(PolicyRule.DENY);
-    
+
     when(scopePolicyRepo.findById(1L)).thenReturn(Optional.of(sp));
-    
+
     service.updateScopePolicy(dto);
     verify(eventPublisher).publishEvent(eventCaptor.capture());
-    
+
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(ScopePolicyUpdatedEvent.class));
-    
-    ScopePolicyUpdatedEvent e = (ScopePolicyUpdatedEvent)event;
+
+    ScopePolicyUpdatedEvent e = (ScopePolicyUpdatedEvent) event;
     assertThat(e.getPolicy(), equalTo(sp));
-    
   }
 
 }

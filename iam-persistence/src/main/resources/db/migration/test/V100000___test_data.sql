@@ -27,7 +27,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
-  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true);
+  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
+  (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -79,11 +80,18 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (5, 'scim:read'),
   (5, 'scim:write'),
   (5, 'proxy:generate'),
+  (5, 'wlcg'),
   (5, 'wlcg.groups'),
   (5, 'storage.read:/'),
   (5, 'storage.modify:/'),
   (5, 'storage.create:/'),
   (5, 'attr'),
+  (5, 'aarc'),
+  (5, 'eduperson_scoped_affiliation'),
+  (5, 'eduperson_entitlement'),
+  (5, 'eduperson_assurance'),
+  (5, 'entitlements'),
+  (5, 'voperson_scoped_affiliation'),
   (6, 'openid'),
   (6, 'profile'),
   (6, 'email'),
@@ -110,6 +118,7 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (8, 'read-tasks'),
   (8, 'storage.read:/'),
   (8, 'storage.write:/'),
+  (8, 'wlcg.groups'),
   (9, 'openid'),
   (9, 'profile'),
   (9, 'offline_access'),
@@ -147,6 +156,8 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (14, 'email'),
   (14, 'address'),
   (14, 'phone'),
+  (15, 'openid'),
+  (16, 'openid'),
   (17, 'iam:admin.read'),
   (18, 'iam:admin.read'),
   (18, 'iam:admin.write'),
@@ -159,7 +170,12 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (20, 'phone'),
   (20, 'offline_access'),
   (20, 'storage.read:/'),
-  (20, 'storage.write:/');
+  (20, 'storage.write:/'),
+  (21, 'openid'),
+  (21, 'profile'),
+  (21, 'email'),
+  (21, 'address'),
+  (21, 'phone');
 
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
@@ -205,6 +221,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (12, 'urn:ietf:params:oauth:grant-type:device_code'),
   (13, 'implicit'),
   (14, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (15, 'client_credentials'),
+  (16, 'client_credentials'),
   (17, 'client_credentials'),
   (17, 'urn:ietf:params:oauth:grant-type:device_code'),
   (17, 'authorization_code'),
@@ -222,14 +240,15 @@ INSERT INTO client_contact (owner_id, contact) VALUES
   (1, 'admin@example.com'),
   (12, 'test@example.com');
     
-INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
-  (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test'),
-  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa');
+INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME, AFFILIATION) VALUES
+  (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test','indigo'),
+  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa','indigo'),
+  (2000, 'User', 'Unverified', 'unverified@another.test', false, null, null, 'unverified', 'unknown affiliation');
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
   (2, '80e5fb8d-b7c8-451a-89ba-346ae278a66f', 'test', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
-  (1000, '467c882e-90da-11ec-b909-0242ac120002', 'test-with-mfa', '$2a$12$S3lUZw/ESq9lULn5he6bBu9KNGCvs7C2rWo0XdVC6t65ITwAc22w2', 1000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
-
+  (1000, '467c882e-90da-11ec-b909-0242ac120002', 'test-with-mfa', '$2a$12$S3lUZw/ESq9lULn5he6bBu9KNGCvs7C2rWo0XdVC6t65ITwAc22w2', 1000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
+  (2000, '37d205e3-df24-4171-a9a4-07b427055782', 'unverified-user', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
 
 INSERT INTO iam_oidc_id(issuer, subject, account_id) VALUES
 ('https://accounts.google.com', '105440632287425289613', 2),
@@ -268,11 +287,16 @@ CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),1);
 
 INSERT INTO iam_group(id, name, uuid, description, creationtime, lastupdatetime) VALUES
 (1, 'Production', 'c617d586-54e6-411d-8e38-64967798fa8a', 'The production group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(2, 'Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+(2, 'Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(3, 'Optional', '31d9230c-90ae-4457-a990-0c443ab4aacc', 'The optional group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
 
 INSERT INTO iam_account_group(account_id, group_id) VALUES
 (2,1),
-(2,2);
+(2,2),
+(2,3);
+
+INSERT INTO iam_group_labels(name, prefix, val, group_id) VALUES
+('wlcg.optional-group', null, null, 3);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
 (2,2),
@@ -551,6 +575,8 @@ INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED) VALUES
 (345, 'Test-345','User', 'test-345@test.org', true),
 (346, 'Test-346','User', 'test-346@test.org', true),
 (347, 'Test-347','User', 'test-347@test.org', true);
+
+UPDATE iam_user_info SET MIDDLENAME = 'middlename-101' WHERE ID = 101;
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
 (100, 'f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a', 'test_100', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 100, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),

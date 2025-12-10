@@ -26,14 +26,14 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -41,12 +41,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=0"})
-public class AccountLifecycleNoRemovalGracePeriodTests implements LifecycleTestSupport {
+  properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+    "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=0"})
+class AccountLifecycleNoRemovalGracePeriodTests implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -64,7 +64,7 @@ public class AccountLifecycleNoRemovalGracePeriodTests implements LifecycleTestS
   private ExpiredAccountsHandler handler;
 
   @Test
-  public void testZeroDaysRemovalGracePeriod() {
+  void testZeroDaysRemovalGracePeriod() {
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 

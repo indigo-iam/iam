@@ -30,14 +30,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,14 +55,13 @@ import it.infn.mw.iam.test.util.WithMockSAMLUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.registration.add-nickname-as-attribute=true",
-    "iam.registration.fields.email.read-only=true", "iam.registration.fields.name.read-only=true",
-    "iam.registration.fields.surname.read-only=true",
-    "iam.registration.fields.username.read-only=true"})
-public class ReadOnlyFieldsValidationTests extends TestSupport {
+  "iam.registration.fields.email.read-only=true", "iam.registration.fields.name.read-only=true",
+  "iam.registration.fields.surname.read-only=true",
+  "iam.registration.fields.username.read-only=true"})
+class ReadOnlyFieldsValidationTests extends TestSupport {
 
   private final String TEST_USERNAME = "test-attributes";
   private final String TEST_EMAIL = TEST_USERNAME + "@example.org";
@@ -96,13 +95,13 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
   @Autowired
   private IamRegistrationRequestRepository registrationRequestRepo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
@@ -140,7 +139,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
   }
 
   @Test
-  public void anonymousRequestWithReadOnlyFieldsFails() throws Exception {
+  void anonymousRequestWithReadOnlyFieldsFails() throws Exception {
 
     final String EXPECTED_ERROR = "{\"error\":\"External authentication is required with read only fields\"}";
 
@@ -154,8 +153,8 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
-  public void samlAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
+    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+  void samlAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
     mvc
@@ -187,9 +186,9 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-      email = OIDC_EMAIL)
-  public void oidcAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
+    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+    email = OIDC_EMAIL)
+  void oidcAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
     mvc
@@ -221,8 +220,8 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
-  public void samlAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
+    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+  void samlAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     final String EXPECTED_ERROR =
         "{\"error\":\"Invalid value for the read only field %s: not coherent with the external authn\"}";
@@ -266,9 +265,9 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-      email = OIDC_EMAIL)
-  public void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
+    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+    email = OIDC_EMAIL)
+  void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     final String EXPECTED_ERROR =
         "{\"error\":\"Invalid value for the read only field %s: not coherent with the external authn\"}";

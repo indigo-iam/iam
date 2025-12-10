@@ -22,13 +22,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -41,7 +41,7 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_authn_info=true"})
 public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
@@ -64,42 +64,40 @@ public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
     return () -> new AssertionError(message);
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void attrsAreNotEncodedIfNotRequested() throws Exception {
+  void attrsAreNotEncodedIfNotRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
     
     accountService.setAttribute(testAccount, TEST_ATTR);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile");
+    String accessToken = getPasswordToken("openid profile").accessToken();
 
-    JWT token = JWTParser.parse(tg.getAccessTokenValue());
+    JWT token = JWTParser.parse(accessToken);
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr"), nullValue());
 
   }
 
   @Test
-  public void attrsAreEncodedWhenRequested() throws Exception {
+  void attrsAreEncodedWhenRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
     accountService.setAttribute(testAccount, TEST_ATTR);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile attr");
+    String accessToken = getPasswordToken("openid profile attr").accessToken();
 
-    JWT token = JWTParser.parse(tg.getAccessTokenValue());
+    JWT token = JWTParser.parse(accessToken);
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr"), notNullValue());
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr").get("test"), is("test"));
   }

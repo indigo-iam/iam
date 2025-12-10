@@ -21,20 +21,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsPaginationTests extends GroupRequestsTestUtils{
@@ -53,8 +50,8 @@ public class GroupRequestsPaginationTests extends GroupRequestsTestUtils{
   }
 
   @Test
-  @WithMockUser(username="test", roles="USER")
-  public void testNoGroupManagersPaginationResult() throws Exception {
+  @WithMockUser(username = "test", roles = "USER")
+  void testNoGroupManagersPaginationResult() throws Exception {
     mvc.perform(get(LIST_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON))
     .andExpect(status().isOk())
@@ -63,10 +60,10 @@ public class GroupRequestsPaginationTests extends GroupRequestsTestUtils{
     .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
     .andExpect(jsonPath("$.Resources", hasSize(0)));
   }
-  
+
   @Test
-  @WithMockUser(username="test", roles="USER")
-  public void testPaginatedAccess() throws Exception {
+  @WithMockUser(username = "test", roles = "USER")
+  void testPaginatedAccess() throws Exception {
     
     saveNPendingGroupRequests("test", 20);
     

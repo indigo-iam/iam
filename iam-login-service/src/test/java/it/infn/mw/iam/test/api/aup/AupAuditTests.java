@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -28,16 +28,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,10 +56,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class AupAuditTests extends AupTestSupport {
+class AupAuditTests extends AupTestSupport {
 
   private final String UPDATED_AUP_URL = "http://updated-aup.org/";
 
@@ -86,21 +86,21 @@ public class AupAuditTests extends AupTestSupport {
 
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     eventCaptor = ArgumentCaptor.forClass(ApplicationEvent.class);
     reset(eventPublisher);
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRaisesAupCreatedEvent() throws JsonProcessingException, Exception {
+  void aupCreationRaisesAupCreatedEvent() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     Date now = new Date();
@@ -118,7 +118,7 @@ public class AupAuditTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDeletionRaisesAupDeletedEvent() throws JsonProcessingException, Exception {
+  void aupDeletionRaisesAupDeletedEvent() throws JsonProcessingException, Exception {
 
     IamAup aup = buildDefaultAup();
     aupRepo.saveDefaultAup(aup);
@@ -135,7 +135,7 @@ public class AupAuditTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRaisesAupUpdatedEvent() throws JsonProcessingException, Exception {
+  void aupUpdateRaisesAupUpdatedEvent() throws JsonProcessingException, Exception {
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -158,10 +158,10 @@ public class AupAuditTests extends AupTestSupport {
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(AupUpdatedEvent.class));
   }
-  
+
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupSignatureRaisesAupSignedEvent() throws JsonProcessingException, Exception {
+  void aupSignatureRaisesAupSignedEvent() throws JsonProcessingException, Exception {
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 

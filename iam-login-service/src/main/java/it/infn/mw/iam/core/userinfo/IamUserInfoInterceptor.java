@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.UserInfoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
@@ -48,7 +47,6 @@ public class IamUserInfoInterceptor implements HandlerInterceptor, AsyncHandlerI
   private static final JsonSerializer<GrantedAuthority> AUTHORITY_SERIALIZER =
       (src, type, context) -> new JsonPrimitive(src.getAuthority());
 
-  @Autowired
   public IamUserInfoInterceptor(UserInfoService userInfoService) {
     this.userInfoService = userInfoService;
     gsonBuilder = new GsonBuilder()

@@ -15,70 +15,65 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Sets.newHashSet;
-import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toCollection;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-import org.springframework.security.oauth2.provider.ClientDetails;
-import org.springframework.security.oauth2.provider.ClientDetailsService;
-
-@SuppressWarnings("deprecation")
 public class ScopeAwareProfileResolver implements JWTProfileResolver {
 
-  public static final String AARC_PROFILE_ID = "aarc";
-  public static final String IAM_PROFILE_ID = "iam";
-  public static final String WLCG_PROFILE_ID = "wlcg";
-  public static final String KC_PROFILE_ID = "kc";
-
-  private static final Set<String> SUPPORTED_PROFILES =
-      newHashSet(AARC_PROFILE_ID, IAM_PROFILE_ID, WLCG_PROFILE_ID, KC_PROFILE_ID);
+  public static final String MISMATCH_ERROR =
+      "JWT profile requested doesn't match the ones allowed for the client";
 
   private final Map<String, JWTProfile> profileMap;
   private final JWTProfile defaultProfile;
-  private final ClientDetailsService clientDetailsService;
 
-
-  public ScopeAwareProfileResolver(JWTProfile defaultProfile, Map<String, JWTProfile> profileMap,
-      ClientDetailsService clientDetailsService) {
+  public ScopeAwareProfileResolver(JWTProfile defaultProfile, Map<String, JWTProfile> profileMap) {
     this.defaultProfile = defaultProfile;
     this.profileMap = profileMap;
-    this.clientDetailsService = clientDetailsService;
   }
 
+  @Override
+  public JWTProfile resolveProfile(Set<String> scopes) {
 
-  private JWTProfile findProfileFromScope(ClientDetails client) {
-    
-    Set<String> clientScopes = client.getScope();
-    
-    Set<JWTProfile> matchedProfiles = clientScopes
-      .stream()
-      .filter(SUPPORTED_PROFILES::contains)
-      .map(profileMap::get)
-      .collect(toCollection(LinkedHashSet::new));
+    return resolveProfile(scopes, Set.of());
+  }
 
-    if (matchedProfiles.isEmpty() || matchedProfiles.size() > 1) {
+  @Override
+  public JWTProfile resolveProfile(Set<String> clientScopes, Set<String> requestedScopes) {
+
+    if (Objects.isNull(clientScopes) || Objects.isNull(requestedScopes)) {
+      throw new IllegalArgumentException("null list of scopes");
+    }
+    if (clientScopes.isEmpty() && requestedScopes.isEmpty()) {
       return defaultProfile;
     }
 
-    return matchedProfiles.iterator().next();
+    Set<JWTProfile> clientMatches = matches(clientScopes);
+    if (clientMatches.isEmpty()) {
+      return defaultProfile;
+    }
+    if (clientMatches.size() == 1) {
+      return clientMatches.iterator().next();
+    }
+    // clientMatches.size() > 1
+    Set<JWTProfile> requestedMatches = matches(requestedScopes);
+    if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
+      return defaultProfile;
+    }
+    if (!clientMatches.containsAll(requestedMatches)) {
+      throw new IllegalArgumentException(MISMATCH_ERROR);
+    }
+    return requestedMatches.iterator().next();
   }
 
+  private Set<JWTProfile> matches(Set<String> clientScopes) {
 
-  @Override
-  public JWTProfile resolveProfile(String clientId) {
-    checkArgument(!isNullOrEmpty(clientId), "non-null clientId required");
-    ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
-
-    if (isNull(client)) {
-      throw new IllegalArgumentException("Client not found: " + clientId);
-    }
-
-    return findProfileFromScope(client);
+    return clientScopes.stream()
+      .filter(profileMap.keySet()::contains)
+      .map(profileMap::get)
+      .collect(toCollection(LinkedHashSet::new));
   }
 }

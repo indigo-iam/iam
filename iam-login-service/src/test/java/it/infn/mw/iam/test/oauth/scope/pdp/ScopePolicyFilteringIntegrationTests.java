@@ -18,8 +18,8 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,13 +29,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +54,7 @@ import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(
 // @formatter:off
@@ -67,7 +67,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
         "scope.matchers[1].type=path",
         "scope.matchers[1].prefix=write", 
         "scope.matchers[1].path=/",
-   // @formatter:on
+// @formatter:on
     })
 public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
 
@@ -90,14 +90,14 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
   }
 
-  @BeforeClass
-  public static void init() {
-    TestUtils.initRestAssured();
+  @BeforeAll
+  static void init() {
 
+    TestUtils.initRestAssured();
   }
 
   @Test
-  public void testPasswordFlowScopeFilteringByAccountWorks() throws Exception {
+  void testPasswordFlowScopeFilteringByAccountWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -124,7 +124,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testPasswordFlowDenyAllScopesWorksExceptForOpenidScope() throws Exception {
+  void testPasswordFlowDenyAllScopesWorksExceptForOpenidScope() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -161,7 +161,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testAuthzCodeFlowScopeFilteringByAccountWorks() throws Exception {
+  void testAuthzCodeFlowScopeFilteringByAccountWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -215,7 +215,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testMatchingPolicyFilteringWorks() throws Exception {
+  void testMatchingPolicyFilteringWorks() throws Exception {
 
     IamScopePolicy up = initDenyScopePolicy();
     up.setRule(PolicyRule.DENY);
@@ -268,7 +268,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshTokenAfterPasswordFlowSystemScopeFilteringWorks() throws Exception {
+  void testRefreshTokenAfterPasswordFlowSystemScopeFilteringWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 

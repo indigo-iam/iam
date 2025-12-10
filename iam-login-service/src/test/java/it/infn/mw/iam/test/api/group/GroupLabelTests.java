@@ -32,13 +32,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -52,11 +52,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-public class GroupLabelTests extends TestSupport {
+class GroupLabelTests extends TestSupport {
 
   private static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
       jsonPath("$.error", containsString("Group not found"));
@@ -75,13 +74,13 @@ public class GroupLabelTests extends TestSupport {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -91,7 +90,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
+  void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
@@ -106,7 +105,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
+  void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
@@ -120,13 +119,13 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void gettingLabelsWorksForAdminUser() throws Exception {
+  void gettingLabelsWorksForAdminUser() throws Exception {
     gettingLabelsWorks();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void gettingLabelsWorksForReaderUser() throws Exception {
+  void gettingLabelsWorksForReaderUser() throws Exception {
     gettingLabelsWorks();
   }
 
@@ -141,7 +140,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void setLabelWorks() throws Exception {
+  void setLabelWorks() throws Exception {
 
     mvc
       .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
@@ -173,7 +172,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void deleteLabelWorks() throws Exception {
+  void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
 
@@ -223,7 +222,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void nonExistingResourceHandledCorrectly() throws Exception {
+  void nonExistingResourceHandledCorrectly() throws Exception {
     mvc.perform(get(RESOURCE, RANDOM_UUID))
       .andExpect(NOT_FOUND)
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
@@ -242,7 +241,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void multipleLabelsHandledCorrectly() throws Exception {
+  void multipleLabelsHandledCorrectly() throws Exception {
     List<LabelDTO> labels = Lists.newArrayList();
 
     for (int i = 0; i < 10; i++) {
@@ -296,7 +295,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void labelValidationTests() throws Exception {
+  void labelValidationTests() throws Exception {
 
     final String[] SOME_INVALID_PREFIXES = {"aword", "-starts-with-dash.com", "ends-with-dash-.com",
         "contains_underscore.org", "contains/slashes.org"};

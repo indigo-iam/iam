@@ -19,20 +19,18 @@ import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.D
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,11 +46,9 @@ import it.infn.mw.iam.test.util.WithMockOIDCUser;
 import it.infn.mw.iam.test.util.WithMockSAMLUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class ExternalAuthenticationRegistrationTests {
+class ExternalAuthenticationRegistrationTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
@@ -68,7 +64,7 @@ public class ExternalAuthenticationRegistrationTests {
 
   @Test
   @WithMockOIDCUser
-  public void testExtAuthOIDC() throws Exception {
+  void testExtAuthOIDC() throws Exception {
 
     String username = "test-oidc-subject";
 
@@ -116,7 +112,7 @@ public class ExternalAuthenticationRegistrationTests {
 
   @Test
   @WithMockSAMLUser
-  public void testExtAuthSAML() throws Exception {
+  void testExtAuthSAML() throws Exception {
 
     String username = "test-saml-user";
 
@@ -161,6 +157,4 @@ public class ExternalAuthenticationRegistrationTests {
 
     accountRepository.delete(account);
   }
-
-
 }

@@ -26,14 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -50,7 +50,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 public class ScimX509Tests extends X509TestSupport implements ScimConstants {
@@ -70,18 +70,18 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-  
-  @After
-  public void teardown() throws Exception {
+
+  @AfterEach
+  void teardown() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testNoScimX509ForAccountWithoutCertificates() throws Exception {
+  void testNoScimX509ForAccountWithoutCertificates() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -91,7 +91,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimX509Answer() throws Exception {
+  void testScimX509Answer() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -118,7 +118,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimX509AnswerMultipleCerts() throws Exception {
+  void testScimX509AnswerMultipleCerts() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -135,7 +135,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimCreateUserWithCertSucceeds() throws Exception {
+  void testScimCreateUserWithCertSucceeds() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
@@ -175,7 +175,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimCreateUserWithCertAndProvidedSubjectInfoSucceeds() throws Exception {
+  void testScimCreateUserWithCertAndProvidedSubjectInfoSucceeds() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
@@ -217,7 +217,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimCreateUserWithInvalidCertFails() throws Exception {
+  void testScimCreateUserWithInvalidCertFails() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
@@ -249,7 +249,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimCreateUserWithBoundCertFails() throws Exception {
+  void testScimCreateUserWithBoundCertFails() throws Exception {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
       .pemEncodedCertificate(TEST_0_CERT_STRING)
@@ -292,7 +292,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimAddCertificateSuccess() throws Exception {
+  void testScimAddCertificateSuccess() throws Exception {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
       .pemEncodedCertificate(TEST_0_CERT_STRING)
@@ -317,9 +317,9 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     assertThat(testUser.getUsername(), equalTo(TEST_USERNAME));
   }
-  
+
   @Test
-  public void testScimAddCertificateFailureInvalidCertificate() throws Exception {
+  void testScimAddCertificateFailureInvalidCertificate() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
@@ -347,7 +347,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimAddCertificateFailureCertificateAlreadyBound() throws Exception {
+  void testScimAddCertificateFailureCertificateAlreadyBound() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
@@ -390,7 +390,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimRemoveCertificateSuccess() throws Exception {
+  void testScimRemoveCertificateSuccess() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
@@ -432,7 +432,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   }
 
   @Test
-  public void testScimRemoveUnboundCertificateYeldsa204() throws Exception {
+  void testScimRemoveUnboundCertificateYeldsa204() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)

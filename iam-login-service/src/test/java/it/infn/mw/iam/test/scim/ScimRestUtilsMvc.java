@@ -21,7 +21,6 @@ import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersBulkLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersLocation;
 import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
@@ -37,8 +36,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
-import it.infn.mw.iam.api.scim.model.ScimUsersBulkResponse;
 import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
+import it.infn.mw.iam.api.scim.model.ScimUsersBulkResponse;
 
 @Component
 public class ScimRestUtilsMvc extends RestUtils {
@@ -130,19 +129,9 @@ public class ScimRestUtilsMvc extends RestUtils {
         ScimUser.class);
   }
 
-  public ResultActions deleteUser(String uuid, HttpStatus expectedStatus) throws Exception {
+  public ResultActions deleteUser(String uuid) throws Exception {
 
-    return doDelete(getUserLocation(uuid), expectedStatus);
-  }
-
-  public void deleteUser(String uuid) throws Exception {
-
-    deleteUser(uuid, NO_CONTENT);
-  }
-
-  public void deleteUser(ScimUser user, HttpStatus expectedStatus) throws Exception {
-
-    deleteUser(user.getId(), expectedStatus);
+    return doDelete(getUserLocation(uuid));
   }
 
   public void deleteUser(ScimUser user) throws Exception {
@@ -177,28 +166,14 @@ public class ScimRestUtilsMvc extends RestUtils {
     return patchRequest;
   }
 
-  public ResultActions patchUser(String uuid, ScimPatchOperationType type, ScimUser updates,
-      HttpStatus expectedStatus) throws Exception {
-
-    return doPatch(getUserLocation(uuid), getUserPatchRequest(type, updates), SCIM_CONTENT_TYPE,
-        expectedStatus);
-  }
-
   public ResultActions patchUser(String uuid, ScimPatchOperationType type, ScimUser updates)
       throws Exception {
 
-    return patchUser(uuid, type, updates, NO_CONTENT);
-  }
-
-  public ResultActions patchMe(ScimPatchOperationType type, ScimUser updates,
-      HttpStatus expectedStatus) throws Exception {
-
-    return doPatch(getMeLocation(), getUserPatchRequest(type, updates), SCIM_CONTENT_TYPE,
-        expectedStatus);
+    return doPatch(getUserLocation(uuid), getUserPatchRequest(type, updates), SCIM_CONTENT_TYPE);
   }
 
   public ResultActions patchMe(ScimPatchOperationType type, ScimUser updates) throws Exception {
 
-    return patchMe(type, updates, NO_CONTENT);
+    return doPatch(getMeLocation(), getUserPatchRequest(type, updates), SCIM_CONTENT_TYPE);
   }
 }

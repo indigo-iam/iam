@@ -31,7 +31,7 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -46,10 +46,9 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -61,7 +60,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Sets;
 
@@ -81,20 +79,18 @@ import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    CernAccountLifecycleTests.TestConfig.class})
+  CernAccountLifecycleTests.TestConfig.class})
 @TestPropertySource(properties = {
 // @formatter:off
-        "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
-        "cern.task.pageSize=5"
-    // @formatter:on
+  "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+  "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
+  "cern.task.pageSize=5"
+// @formatter:on
 })
 @ActiveProfiles(value = {"h2-test", "cern"})
-public class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -131,8 +127,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
   IamAccount cernUser;
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
 
     cernUser = IamAccount.newAccount();
     cernUser.setUsername(CERN_USER);
@@ -147,8 +143,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     service.addLabel(cernUser, cernPersonIdLabel(CERN_PERSON_ID));
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     reset(hrDb);
     service.deleteAccount(cernUser);
   }
@@ -158,7 +154,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testUserSuspensionWorksAfterCernHrEndTimeUpdate() {
+  void testUserSuspensionWorksAfterCernHrEndTimeUpdate() {
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
@@ -209,7 +205,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testUserRemovalWorksAfterCernHrEndTimeUpdate() {
+  void testUserRemovalWorksAfterCernHrEndTimeUpdate() {
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
@@ -242,7 +238,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testLifecycleWorksForValidAccounts() {
+  void testLifecycleWorksForValidAccounts() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
@@ -279,7 +275,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testLifecycleWorksForAccountsWithOneValidParticipationAndOneExpired() {
+  void testLifecycleWorksForAccountsWithOneValidParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
         Sets.newHashSet(getLimitedParticipation("test"), getExpiredParticipation("test", 20)));
@@ -321,7 +317,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testLifecycleWorksForAccountsWithOneUnlimitedParticipationAndOneExpired() {
+  void testLifecycleWorksForAccountsWithOneUnlimitedParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
         Sets.newHashSet(getUnlimitedParticipation("test"), getExpiredParticipation("test", 20)));
@@ -360,7 +356,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
 
   @Test
-  public void testLifecycleWhenVOPersonEndDateIsNull() {
+  void testLifecycleWhenVOPersonEndDateIsNull() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, null);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
@@ -396,7 +392,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testRestoreLifecycleWorks() {
+  void testRestoreLifecycleWorks() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
       .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
@@ -434,7 +430,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testApiErrorIsHandled() {
+  void testApiErrorIsHandled() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenThrow(new CernHrDbApiError("API is unreachable"));
@@ -462,7 +458,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testApiReturnsNullVoPersonIsHandled() {
+  void testApiReturnsNullVoPersonIsHandled() {
 
     when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
 
@@ -489,7 +485,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testNullEndTimeAndNoVoPersonFoundOnHR() {
+  void testNullEndTimeAndNoVoPersonFoundOnHR() {
 
     when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
 
@@ -529,7 +525,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testVoPersonWithNoValidParticipationIsHandled() {
+  void testVoPersonWithNoValidParticipationIsHandled() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenReturn(Optional.of(noParticipationsVoPerson(CERN_PERSON_ID)));
@@ -565,7 +561,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testNoEmailVoPersonIsReturned() {
+  void testNoEmailVoPersonIsReturned() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenReturn(Optional.of(noEmailVoPerson(CERN_PERSON_ID)));
@@ -579,7 +575,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testLifecycleNotRestoreAccountsSuspendedByAdmins() {
+  void testLifecycleNotRestoreAccountsSuspendedByAdmins() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
       .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
@@ -605,7 +601,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testIgnoreAccount() {
+  void testIgnoreAccount() {
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
@@ -634,7 +630,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testPaginationWorks() {
+  void testPaginationWorks() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenReturn(Optional.of(voPerson(String.valueOf(new Random().nextLong() % 100L))));
@@ -666,7 +662,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testEmailNotSynchronizedIfSkipEmailSyncIsPresent() {
+  void testEmailNotSynchronizedIfSkipEmailSyncIsPresent() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
 

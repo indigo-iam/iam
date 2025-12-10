@@ -32,24 +32,25 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import javax.servlet.http.HttpSession;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -65,9 +66,8 @@ import it.infn.mw.iam.rcauth.RCAuthProperties;
 import it.infn.mw.iam.rcauth.RCAuthTokenRequestor;
 import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 
-@RunWith(MockitoJUnitRunner.class)
-public class RequestServiceTests extends RCAuthTestSupport {
-
+@ExtendWith(MockitoExtension.class)
+class RequestServiceTests extends RCAuthTestSupport {
 
   @Mock
   IamProperties iamProps;
@@ -99,27 +99,25 @@ public class RequestServiceTests extends RCAuthTestSupport {
   @InjectMocks
   DefaultRcAuthRequestService service;
 
-  @Before
-  public void setup() {
-    when(props.getKeySize()).thenReturn(512);
-    when(props.getClientId()).thenReturn(CLIENT_ID);
-    when(props.getIssuer()).thenReturn(ISSUER);
-    when(scs.getServerConfiguration(Mockito.anyString())).thenReturn(serverConfig);
-    when(serverConfig.getAuthorizationEndpointUri()).thenReturn(AUTHORIZATION_URI);
-    when(iamProps.getBaseUrl()).thenReturn(IAM_BASE_URL);
-    when(tokenRequestor.getAccessToken(Mockito.anyString())).thenReturn(tokenResponse);
-    // This is just to return a well-formed X509 certificate, even if returing TEST_0
-    // cert does not make sense in this context
-    when(certRequestor.getCertificate(Mockito.any(), Mockito.any())).thenReturn(TEST_0_CERT);
+  @BeforeEach
+  void setup() {
+
+    lenient().when(props.getKeySize()).thenReturn(512);
+    lenient().when(props.getClientId()).thenReturn(CLIENT_ID);
+    lenient().when(props.getIssuer()).thenReturn(ISSUER);
+    lenient().when(scs.getServerConfiguration(Mockito.anyString())).thenReturn(serverConfig);
+    lenient().when(serverConfig.getAuthorizationEndpointUri()).thenReturn(AUTHORIZATION_URI);
+    lenient().when(iamProps.getBaseUrl()).thenReturn(IAM_BASE_URL);
+    lenient().when(tokenRequestor.getAccessToken(Mockito.anyString())).thenReturn(tokenResponse);
+    lenient().when(certRequestor.getCertificate(Mockito.any(), Mockito.any()))
+      .thenReturn(TEST_0_CERT);
   }
 
-
   @Test
-  public void testUrlGeneration() throws UnsupportedEncodingException {
+  void testUrlGeneration() throws UnsupportedEncodingException {
+
     String url = service.buildAuthorizationRequest(session);
-
     UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build();
-
     assertThat(uri.getHost(), is(RCAUTH_HOST));
     assertThat(uri.getScheme(), is(HTTPS));
     assertThat(uri.getQueryParams().getFirst(STATE_PARAM), notNullValue());
@@ -130,14 +128,13 @@ public class RequestServiceTests extends RCAuthTestSupport {
     assertThat(uri.getQueryParams().getFirst(CLIENT_ID_PARAM), is(CLIENT_ID));
     assertThat(uri.getQueryParams().getFirst(REDIRECT_URI_PARAM),
         is(URLEncoder.encode(format("%s%s", IAM_BASE_URL, CALLBACK_PATH), "UTF-8")));
-
   }
 
   @Test
-  public void testIdpHintIsRecognized() throws UnsupportedEncodingException {
-    when(props.getIdpHint()).thenReturn(IAM_ENTITY_ID);
-    String url = service.buildAuthorizationRequest(session);
+  void testIdpHintIsRecognized() throws UnsupportedEncodingException {
 
+    lenient().when(props.getIdpHint()).thenReturn(IAM_ENTITY_ID);
+    String url = service.buildAuthorizationRequest(session);
     UriComponents uri = UriComponentsBuilder.fromHttpUrl(url).build();
     assertThat(uri.getHost(), is(RCAUTH_HOST));
     assertThat(uri.getScheme(), is(HTTPS));
@@ -150,97 +147,35 @@ public class RequestServiceTests extends RCAuthTestSupport {
     assertThat(uri.getQueryParams().getFirst(IDP_HINT_PARAM), is(IAM_ENTITY_ID));
     assertThat(uri.getQueryParams().getFirst(REDIRECT_URI_PARAM),
         is(URLEncoder.encode(format("%s%s", IAM_BASE_URL, CALLBACK_PATH), "UTF-8")));
-
-  }
-
-  @Test(expected = RCAuthError.class)
-  public void testHandleCodeResponseInvalidState() throws UnsupportedEncodingException {
-
-    service.buildAuthorizationRequest(session);
-    when(authzResponse.getState()).thenReturn("76321");
-
-    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
-        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
-
-    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
-    when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
-    try {
-      service.handleAuthorizationCodeResponse(session, authzResponse);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("state parameter mismatch"));
-      throw e;
-    }
-  }
-
-  @Test(expected = RCAuthError.class)
-  public void testHandleCodeResponseContextNotFound() throws UnsupportedEncodingException {
-
-    // when(authzResponse.getState()).thenReturn("76321");
-
-    try {
-      service.handleAuthorizationCodeResponse(session, authzResponse);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("RCAuth context not found"));
-      throw e;
-    }
-  }
-
-  @Test(expected = RCAuthError.class)
-  public void testHandleCodeResponseParseError() throws UnsupportedEncodingException {
-    service.buildAuthorizationRequest(session);
-
-    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
-        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
-
-    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
-
-    when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
-    when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
-    when(authzResponse.getCode()).thenReturn("code");
-
-    when(tokenResponse.getIdToken()).thenReturn("fake-id-token");
-
-    try {
-      service.handleAuthorizationCodeResponse(session, authzResponse);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("Error parsing id token"));
-      throw e;
-    }
-  }
-
-
-  @Test(expected = RCAuthError.class)
-  public void testHandleCodeResponseMissingCertificateSubjectClaim()
-      throws UnsupportedEncodingException, JOSEException {
-
-    service.buildAuthorizationRequest(session);
-
-    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
-        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
-
-    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
-
-    when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
-    when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
-    when(authzResponse.getCode()).thenReturn("code");
-
-    String idToken = tokenBuilder.sub(SUB).issuer(ISSUER).build();
-
-    when(tokenResponse.getIdToken()).thenReturn(idToken);
-
-    try {
-      service.handleAuthorizationCodeResponse(session, authzResponse);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("Certificate subject claim not found in id token"));
-      throw e;
-    }
   }
 
   @Test
-  public void testHandleCodeResponseOk() throws UnsupportedEncodingException, JOSEException {
+  void testHandleCodeResponseInvalidState() {
+
+    service.buildAuthorizationRequest(session);
+    lenient().when(authzResponse.getState()).thenReturn("76321");
+
+    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
+        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
+
+    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
+    lenient().when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
+    RCAuthError e = assertThrows(RCAuthError.class,
+        () -> service.handleAuthorizationCodeResponse(session, authzResponse));
+    assertThat(e.getMessage(), containsString("state parameter mismatch"));
+  }
+
+  @Test
+  void testHandleCodeResponseContextNotFound() {
+
+    RCAuthError e = assertThrows(RCAuthError.class,
+        () -> service.handleAuthorizationCodeResponse(session, authzResponse));
+    assertThat(e.getMessage(), containsString("RCAuth context not found"));
+  }
+
+  @Test
+  void testHandleCodeResponseParseError() {
 
     service.buildAuthorizationRequest(session);
 
@@ -250,14 +185,60 @@ public class RequestServiceTests extends RCAuthTestSupport {
 
     verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
 
-    when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
-    when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
-    when(authzResponse.getCode()).thenReturn("code");
+    lenient().when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
+    lenient().when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
+    lenient().when(authzResponse.getCode()).thenReturn("code");
+    lenient().when(tokenResponse.getIdToken()).thenReturn("fake-id-token");
+
+    RCAuthError e = assertThrows(RCAuthError.class,
+        () -> service.handleAuthorizationCodeResponse(session, authzResponse));
+    assertThat(e.getMessage(), containsString("Error parsing id token"));
+  }
+
+  @Test
+  void testHandleCodeResponseMissingCertificateSubjectClaim()
+    throws UnsupportedEncodingException, JOSEException {
+
+    service.buildAuthorizationRequest(session);
+
+    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
+        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
+
+    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
+
+    lenient().when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
+    lenient().when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
+    lenient().when(authzResponse.getCode()).thenReturn("code");
+
+    String idToken = tokenBuilder.sub(SUB).issuer(ISSUER).build();
+
+    lenient().when(tokenResponse.getIdToken()).thenReturn(idToken);
+
+    RCAuthError e = assertThrows(RCAuthError.class,
+        () -> service.handleAuthorizationCodeResponse(session, authzResponse));
+    assertThat(e.getMessage(), containsString("Certificate subject claim not found in id token"));
+  }
+
+  @Test
+  void testHandleCodeResponseOk() throws JOSEException {
+
+    service.buildAuthorizationRequest(session);
+
+    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<RCAuthExchangeContext> ctxtCaptor =
+        ArgumentCaptor.forClass(RCAuthExchangeContext.class);
+
+    verify(session).setAttribute(keyCaptor.capture(), ctxtCaptor.capture());
+
+    lenient().when(session.getAttribute(RCAUTH_CTXT_SESSION_KEY)).thenReturn(ctxtCaptor.getValue());
+    lenient().when(authzResponse.getState()).thenReturn(ctxtCaptor.getValue().getState());
+    lenient().when(authzResponse.getCode()).thenReturn("code");
 
     String idToken =
         tokenBuilder.sub(SUB).issuer(ISSUER).customClaim(CERT_SUBJECT_CLAIM, "CN=Example").build();
 
-    when(tokenResponse.getIdToken()).thenReturn(idToken);
+    lenient().when(tokenResponse.getIdToken()).thenReturn(idToken);
 
     service.handleAuthorizationCodeResponse(session, authzResponse);
 

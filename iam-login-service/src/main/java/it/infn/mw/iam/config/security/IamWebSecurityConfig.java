@@ -18,9 +18,11 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import javax.servlet.RequestDispatcher;
 
+import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +39,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
+import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -47,11 +51,13 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AARCHintService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
@@ -66,6 +72,8 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
 import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -128,6 +136,9 @@ public class IamWebSecurityConfig {
     private ExternalAuthenticationHintService hintService;
 
     @Autowired
+    private AARCHintService aarcHintService;
+
+    @Autowired
     private IamProperties iamProperties;
 
     @Autowired
@@ -151,12 +162,14 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()),
+          certRepo, iamProperties);
     }
 
     protected AuthenticationEntryPoint entryPoint() {
+
       LoginUrlAuthenticationEntryPoint delegate = new LoginUrlAuthenticationEntryPoint("/login");
-      return new HintAwareAuthenticationEntryPoint(delegate, hintService);
+      return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
 
@@ -238,8 +251,21 @@ public class IamWebSecurityConfig {
 
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
+
+    private UserLoginConfig userLoginConfig;
+    private GenericFilterBean authorizationRequestFilter;
+    private IamProperties iamProperties;
+
+
     @Autowired
-    IamProperties iamProperties;
+    public RegistrationConfig(UserLoginConfig userLoginConfig,
+        @Qualifier("mitreAuthzRequestFilter") GenericFilterBean authorizationRequestFilter,
+        IamProperties iamProperties) {
+      this.userLoginConfig = userLoginConfig;
+      this.authorizationRequestFilter = authorizationRequestFilter;
+      this.iamProperties = iamProperties;
+    }
+
 
     AccessDeniedHandler accessDeniedHandler() {
       return (request, response, authError) -> {
@@ -265,11 +291,41 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      http.requestMatchers()
-        .antMatchers(START_REGISTRATION_ENDPOINT)
-        .and()
-        .sessionManagement()
-        .enableSessionUrlRewriting(false);
+      boolean registrationCertField = iamProperties.getRegistration().getFields() != null
+          && !iamProperties.getRegistration().getFields().isEmpty()
+          && iamProperties.getRegistration().getFields().get(RegistrationField.CERTIFICATE) != null
+          && iamProperties.getRegistration()
+            .getFields()
+            .get(RegistrationField.CERTIFICATE)
+            .getFieldBehaviour() != null;
+
+      if (registrationCertField && !iamProperties.getRegistration()
+        .getFields()
+        .get(RegistrationField.CERTIFICATE)
+        .getFieldBehaviour()
+        .equals(ExternalAuthAttributeSectionBehaviour.HIDDEN)) {
+        http.requestMatchers()
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false)
+          .and()
+          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+          .anonymous()
+          .and()
+          .csrf()
+          .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize"))
+          .disable()
+          .addFilter(userLoginConfig.iamX509Filter());
+      } else {
+        http.requestMatchers()
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false);
+      }
+
+
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()
@@ -395,6 +451,47 @@ public class IamWebSecurityConfig {
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())
         .and()
         .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+  }
+
+  @Configuration
+  @Order(15)
+  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+    private UserDetailsService userDetailsService;
+    private JWTBearerClientAssertionTokenEndpointFilter bearerFilter;
+
+    public IntrospectEndpointAuthorizationConfig(
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
+        JWTBearerClientAssertionTokenEndpointFilter bearerFilter) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.userDetailsService = userDetailsService;
+      this.bearerFilter = bearerFilter;
+    }
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService)
+        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/introspect/**")
+        .csrf().disable()
+        .sessionManagement().sessionCreationPolicy(STATELESS).and()
+        .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
+        .cors().and()
+        .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
+        .addFilterBefore(bearerFilter, BasicAuthenticationFilter.class)
+        .authorizeRequests().anyRequest().fullyAuthenticated();
+      // @formatter:on
     }
   }
 }

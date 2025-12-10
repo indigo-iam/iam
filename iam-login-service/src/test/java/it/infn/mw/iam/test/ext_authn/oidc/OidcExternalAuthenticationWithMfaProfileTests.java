@@ -22,13 +22,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -37,7 +35,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, OidcTestConfig.class},
@@ -45,12 +42,12 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
     properties = "mfa.password-to-encrypt-and-decrypt=define_me_please"
 )
 @ActiveProfiles({"h2", "mfa"})
-public class OidcExternalAuthenticationWithMfaProfileTests
-    extends OidcExternalAuthenticationTestsSupport {
+class OidcExternalAuthenticationWithMfaProfileTests
+  extends OidcExternalAuthenticationTestsSupport {
 
   @Test
-  public void testAcrValuesClaimIsAddedWhenMfaProfileIsActive()
-      throws RestClientException, UnsupportedEncodingException {
+  void testAcrValuesClaimIsAddedWhenMfaProfileIsActive()
+    throws RestClientException, UnsupportedEncodingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);

@@ -15,16 +15,16 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
-import static it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.REGISTER_ENDPOINT;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -39,15 +39,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.openid.connect.web.ApprovedSiteAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,18 +54,19 @@ import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
+class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -148,7 +147,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     return mvc
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
-        .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode))
       .andReturn()
       .getResponse()
@@ -156,12 +155,12 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testDeviceCodeEndpointRequiresClientWithDeviceCodeGrantEnabled() throws Exception {
+  void testDeviceCodeEndpointRequiresClientWithDeviceCodeGrantEnabled() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client"))
+        .param("client_id", DEVICE_CODE_CLIENT_ID))
       .andExpect(status().isOk());
 
     mvc
@@ -171,17 +170,17 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("Unauthorized grant type: " + DEVICE_CODE_GRANT_TYPE)));
+          equalTo("Unauthorized grant type: " + GrantType.DEVICE_CODE.getValue())));
 
   }
 
   @Test
-  public void testDeviceCodeWithoutAllowedScope() throws Exception {
+  void testDeviceCodeWithoutAllowedScope() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
         .param("scope", "openid not-allowed-scope"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
@@ -192,12 +191,12 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
 
   @Test
-  public void testDeviceCodeNoApproval() throws Exception {
+  void testDeviceCodeNoApproval() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
         .param("scope", "openid profile offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
@@ -215,7 +214,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("authorization_pending")))
@@ -276,7 +275,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
         .param("scope", "openid profile offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
@@ -305,11 +304,11 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
 
   @Test
-  public void testDevideCodeFlowWithAudience() throws Exception {
+  void testDevideCodeFlowWithAudience() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
         .param("scope", "openid profile offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
@@ -376,7 +375,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode)
             .param("aud", "example-audience"))
       .andExpect(status().isOk())
@@ -403,12 +402,12 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testDeviceCodeApprovalFlowWorks() throws Exception {
+  void testDeviceCodeApprovalFlowWorks() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
         .param("scope", "openid profile offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
@@ -479,11 +478,16 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
       .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)));
 
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic("client", "secret"))
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
+        .param("device_code", deviceCode))
+      .andExpect(status().isUnauthorized());
 
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
@@ -512,17 +516,20 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
 
   @Test
-  public void testDeviceCodeFlowDoesNotWorkIfScopeNotAllowed() throws Exception {
+  void testDeviceCodeFlowDoesNotWorkIfScopeNotAllowed() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
         .param("client_id", "device-code-client")
         .param("scope", "openid profile offline_access custom-scope"))
       .andExpect(status().isBadRequest())
@@ -530,8 +537,8 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
-      throws UnsupportedEncodingException, Exception {
+  void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
+    throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -570,8 +577,8 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
 
   @Test
-  public void deviceCodeWorksForDynamicallyRegisteredClient()
-      throws UnsupportedEncodingException, Exception {
+  void deviceCodeWorksForDynamicallyRegisteredClient()
+    throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -611,14 +618,16 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
 
 
   @Test
-  public void publicClientDeviceCodeWorks() throws Exception {
+  void publicClientDeviceCodeWorks() throws Exception {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(PUBLIC_DEVICE_CODE_CLIENT_ID);
     Set<String> scopes = Sets.newHashSet();
@@ -646,7 +655,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     String deviceCode = responseJson.get("device_code").asText();
 
     mvc
-      .perform(post(TOKEN_ENDPOINT).param("grant_type", DEVICE_CODE_GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode)
         .param("client_id", PUBLIC_DEVICE_CODE_CLIENT_ID))
       .andExpect(status().isBadRequest())
@@ -706,7 +715,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
 
     String tokenResponse = mvc
-      .perform(post(TOKEN_ENDPOINT).param("grant_type", DEVICE_CODE_GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode)
         .param("client_id", PUBLIC_DEVICE_CODE_CLIENT_ID))
       .andExpect(status().isOk())
@@ -730,7 +739,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testRefreshedTokenAfterDeviceCodeApprovalFlowWorks() throws Exception {
+  void testRefreshedTokenAfterDeviceCodeApprovalFlowWorks() throws Exception {
 
     final String SCIM_DEVICE_CLIENT_ID = "scim-client-rw";
     final String SCIM_DEVICE_CLIENT_SECRET = "secret";
@@ -751,7 +760,9 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(SCIM_DEVICE_CLIENT_ID, SCIM_DEVICE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
@@ -787,7 +798,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc.perform(get("/scim/Groups").header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isForbidden());
     mvc
-      .perform(get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f").header("Authorization",
+      .perform(get("/scim/Users/f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a").header("Authorization",
           scimAuthorizationHeader))
       .andExpect(status().isForbidden());
     mvc
@@ -805,7 +816,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testAdminScopesAllowedToAdmins() throws Exception {
+  void testAdminScopesAllowedToAdmins() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "admin", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -817,7 +828,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testFilteredAdminScopes() throws Exception {
+  void testFilteredAdminScopes() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "test", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -828,7 +839,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testAdminScopesWithRefreshedTokenAllowedToAdmins() throws Exception {
+  void testAdminScopesWithRefreshedTokenAllowedToAdmins() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "admin", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -846,7 +857,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
-  public void testFilteredAdminScopesWithRefreshedToken() throws Exception {
+  void testFilteredAdminScopesWithRefreshedToken() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "test", "password",
         "offline_access iam:admin.read iam:admin.write");

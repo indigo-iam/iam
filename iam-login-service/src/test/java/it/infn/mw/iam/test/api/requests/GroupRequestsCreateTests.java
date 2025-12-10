@@ -26,16 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -48,11 +46,9 @@ import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
+class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -66,14 +62,14 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     notificationService.clearAllNotifications();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
-  public void createGroupRequestAsAdmin() throws Exception {
+  void createGroupRequestAsAdmin() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_ADMIN_UUID, TEST_001_GROUPNAME);
 
     mvc
@@ -89,7 +85,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestIgnoresTheGroupRequestUser() throws Exception {
+  void createGroupRequestIgnoresTheGroupRequestUser() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_101_USERUUID, TEST_001_GROUPNAME);
 
     mvc
@@ -104,7 +100,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestAsUser() throws Exception {
+  void createGroupRequestAsUser() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
     mvc
@@ -128,7 +124,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithAnonymousUser
-  public void createGroupRequestAsAnonymous() throws Exception {
+  void createGroupRequestAsAnonymous() throws Exception {
     GroupRequestDto request = buildGroupRequest(null, TEST_001_GROUPNAME);
 
     // @formatter:off
@@ -141,7 +137,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestWitInvalidNotes() throws Exception {
+  void createGroupRequestWitInvalidNotes() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     request.setNotes(null);
 
@@ -171,7 +167,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestWithInvalidGroup() throws Exception {
+  void createGroupRequestWithInvalidGroup() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     request.setGroupName("");
 
@@ -193,7 +189,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestAlreadyExists() throws Exception {
+  void createGroupRequestAlreadyExists() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
@@ -208,7 +204,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_USERNAME)
-  public void createGroupRequestUserAlreadyMember() throws Exception {
+  void createGroupRequestUserAlreadyMember() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_USERUUID, "Analysis");
 
     // @formatter:off
@@ -222,7 +218,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_100_USERNAME)
-  public void createGroupRequestAsUserWithBothRoles() throws Exception {
+  void createGroupRequestAsUserWithBothRoles() throws Exception {
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
     // @formatter:off

@@ -15,16 +15,16 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -38,7 +38,7 @@ import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
+class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
   private MultiFactorTotpCheckProvider multiFactorTotpCheckProvider;
 
@@ -57,20 +57,20 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   @Mock
   private SamlExternalAuthenticationToken samlToken;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     MockitoAnnotations.openMocks(this);
     multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
   }
 
   @Test
-  public void authenticateReturnsNullWhenTotpIsNull() {
+  void authenticateReturnsNullWhenTotpIsNull() {
     when(token.getTotp()).thenReturn(null);
     assertNull(multiFactorTotpCheckProvider.authenticate(token));
   }
 
   @Test
-  public void authenticateThrowsBadCredentialsExceptionWhenAccountNotFound() {
+  void authenticateThrowsBadCredentialsExceptionWhenAccountNotFound() {
     when(token.getTotp()).thenReturn("123456");
     when(token.getName()).thenReturn("username");
     when(accountRepo.findByUsername("username")).thenReturn(Optional.empty());
@@ -80,7 +80,7 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   }
 
   @Test
-  public void authenticatePropagatesMfaSecretNotFoundException() {
+  void authenticatePropagatesMfaSecretNotFoundException() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -93,7 +93,7 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   }
 
   @Test
-  public void authenticateThrowsBadCredentialsExceptionWhenTotpIsInvalid() {
+  void authenticateThrowsBadCredentialsExceptionWhenTotpIsInvalid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -105,7 +105,7 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   }
 
   @Test
-  public void authenticateReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -116,7 +116,7 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   }
 
   @Test
-  public void authenticateWithOidcTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateWithOidcTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(oidcToken.getName()).thenReturn("totp");
     when(oidcToken.getTotp()).thenReturn("123456");
@@ -127,7 +127,7 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
   }
 
   @Test
-  public void authenticateWithSamlTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateWithSamlTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(samlToken.getName()).thenReturn("totp");
     when(samlToken.getTotp()).thenReturn("123456");

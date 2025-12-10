@@ -20,84 +20,82 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.notification.service.resolver.DefaultAddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.InvalidAudience;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AddressResolutionServiceTests extends AddressResolutionServiceTestSupport {
+@ExtendWith(MockitoExtension.class)
+class AddressResolutionServiceTests extends AddressResolutionServiceTestSupport {
 
   @Mock
   IamAccountRepository repo;
 
   @InjectMocks
   DefaultAddressResolutionService service;
-  
+
   @Captor
   ArgumentCaptor<String> resolvedAudience;
 
-  @Before
-  public void setup() {
-    when(repo.findByAuthority(ROLE_ADMIN)).thenReturn(emptyList());
+  @BeforeEach
+  void setup() {
+    lenient().when(repo.findByAuthority(ROLE_ADMIN)).thenReturn(emptyList());
   }
 
   @Test
-  public void testVoAdminsNoAdminsResolution() {
+  void testVoAdminsNoAdminsResolution() {
 
-    assertThat(service.resolveAddressesForAudience(VO_ADMINS),
-        empty());
-  }
-
-  @Test(expected=InvalidAudience.class)
-  public void testUnknownAudience() {
-    service.resolveAddressesForAudience(INVALID_AUDIENCE);
-  }
-  
-  @Test(expected=NullPointerException.class)
-  public void testNullAudience() {
-    service.resolveAddressesForAudience(null);
+    assertThat(service.resolveAddressesForAudience(VO_ADMINS), empty());
   }
 
   @Test
-  public void testVoAdminsEmailResolution() {
-    when(repo.findByAuthority(ROLE_ADMIN)).thenReturn(
-        asList(createAccount(ADMIN_1, ADMIN_1_EMAIL), createAccount(ADMIN_2, ADMIN_2_EMAIL)));
-    
-    assertThat(service.resolveAddressesForAudience(VO_ADMINS),
-        hasSize(2));
-    
-    assertThat(service.resolveAddressesForAudience(VO_ADMINS),
-        hasItem(ADMIN_1_EMAIL));
-    
-    assertThat(service.resolveAddressesForAudience(VO_ADMINS),
-        hasItem(ADMIN_2_EMAIL));
+  void testUnknownAudience() {
+    assertThrows(InvalidAudience.class,
+        () -> service.resolveAddressesForAudience(INVALID_AUDIENCE));
   }
 
   @Test
-  public void testNoGroupManagerResolution() {
-    when(repo.findByAuthority(GROUP_ADMIN_001)).thenReturn(emptyList());
-    
-    assertThat(service.resolveAddressesForAudience("gm:001"),
-        empty());
-    
+  void testNullAudience() {
+    assertThrows(NullPointerException.class, () -> service.resolveAddressesForAudience(null));
+  }
+
+  @Test
+  void testVoAdminsEmailResolution() {
+    lenient().when(repo.findByAuthority(ROLE_ADMIN))
+      .thenReturn(
+          asList(createAccount(ADMIN_1, ADMIN_1_EMAIL), createAccount(ADMIN_2, ADMIN_2_EMAIL)));
+
+    assertThat(service.resolveAddressesForAudience(VO_ADMINS), hasSize(2));
+
+    assertThat(service.resolveAddressesForAudience(VO_ADMINS), hasItem(ADMIN_1_EMAIL));
+
+    assertThat(service.resolveAddressesForAudience(VO_ADMINS), hasItem(ADMIN_2_EMAIL));
+  }
+
+  @Test
+  void testNoGroupManagerResolution() {
+    lenient().when(repo.findByAuthority(GROUP_ADMIN_001)).thenReturn(emptyList());
+
+    assertThat(service.resolveAddressesForAudience("gm:001"), empty());
+
     verify(repo).findByAuthority(resolvedAudience.capture());
     assertThat(resolvedAudience.getValue(), is(GROUP_ADMIN_001));
-    
+
   }
 
 }

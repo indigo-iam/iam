@@ -16,34 +16,40 @@
 package it.infn.mw.iam.test.api.account.group;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.contains;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -59,10 +65,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class GroupMembersIntegrationTests {
+class GroupMembersIntegrationTests {
 
   private static final String EXPECTED_USER_NOT_FOUND = "expected user not found";
   private static final String EXPECTED_GROUP_NOT_FOUND = "expected group not found";
@@ -95,13 +101,16 @@ public class GroupMembersIntegrationTests {
   @Autowired
   private IamScopePolicyRepository scopePolicyRepo;
 
-  @Before
-  public void setup() {
+  @Autowired
+  private ObjectMapper mapper;
+
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -114,7 +123,7 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  public void addGroupMemberRequiresAuthenticatedUser() throws Exception {
+  void addGroupMemberRequiresAuthenticatedUser() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -126,7 +135,7 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  public void removeGroupMemberRequiresAuthenticatedUser() throws Exception {
+  void removeGroupMemberRequiresAuthenticatedUser() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -140,7 +149,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = TEST_USER, roles = "USER")
-  public void addGroupMemberRequiresPrivileges() throws Exception {
+  void addGroupMemberRequiresPrivileges() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -153,7 +162,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = TEST_USER, roles = "USER")
-  public void removeGroupMemberRequiresPrivileges() throws Exception {
+  void removeGroupMemberRequiresPrivileges() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -167,7 +176,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
-  public void adminCanAddGroupMember() throws Exception {
+  void adminCanAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -192,7 +201,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin.write"})
-  public void adminWithCorrectScopeCanAddGroupMember() throws Exception {
+  void adminWithCorrectScopeCanAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -217,7 +226,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"})
-  public void adminWithoutScopeCannotAddGroupMember() throws Exception {
+  void adminWithoutScopeCannotAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -232,7 +241,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
-  public void adminCanRemoveMember() throws Exception {
+  void adminCanRemoveMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -260,7 +269,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = TEST_USER, roles = {"USER", TEST_001_GM})
-  public void groupManagerCanAddMember() throws Exception {
+  void groupManagerCanAddMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -286,7 +295,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = TEST_USER, roles = {"USER", TEST_001_GM})
-  public void groupManagerCanRemoveMember() throws Exception {
+  void groupManagerCanRemoveMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -314,7 +323,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
-  public void cannotChangeMembershipForUnknownGroupOrAccount() throws Exception {
+  void cannotChangeMembershipForUnknownGroupOrAccount() throws Exception {
 
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -344,7 +353,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
-  public void intermediateGroupMembershipIsEnforcedOnAdd() throws Exception {
+  void intermediateGroupMembershipIsEnforcedOnAdd() throws Exception {
 
     // Create group hierarchy
     IamGroup rootGroup = createGroup("root", null);
@@ -393,7 +402,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
-  public void intermediateGroupMembershipIsEnforcedOnRemove() throws Exception {
+  void intermediateGroupMembershipIsEnforcedOnRemove() throws Exception {
 
     // Create group hierarchy
     IamGroup rootGroup = createGroup("root", null);
@@ -507,17 +516,17 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void getGroupsForAccountWorksForAdminsTest() throws Exception {
+  void getGroupsForAccountWorksForAdminsTest() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.totalResults", is(2)))
+          .andExpect(jsonPath("$.totalResults", is(3)))
           .andExpect(jsonPath("$.Resources", not(empty())))
           .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
 
   @Test
-  public void anonymousAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+  void anonymousAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
     mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
       .andDo(print())
       .andExpect(status().isUnauthorized());
@@ -525,7 +534,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void nonAdminAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+  void nonAdminAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
     mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
       .andDo(print())
       .andExpect(status().isForbidden());
@@ -533,7 +542,7 @@ public class GroupMembersIntegrationTests {
 
   @Test
   @WithMockUser(username = "test", authorities = {"ROLE_USER"})
-  public void userAccessToGetListOfUserGroupEndpointSuccessTest() throws Exception {
+  void userAccessToGetListOfUserGroupEndpointSuccessTest() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
       .andDo(print())
@@ -541,19 +550,19 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  @WithMockUser(username = "test", authorities = { "ROLE_USER" })
-  public void userAccessToGetListOfUserGroupUsingMeEndpointSuccessTest() throws Exception {
+  @WithMockUser(username = "test", authorities = {"ROLE_USER"})
+  void userAccessToGetListOfUserGroupUsingMeEndpointSuccessTest() throws Exception {
     mvc.perform(get("/iam/account/me/groups"))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(2)))
+        .andExpect(jsonPath("$.totalResults", is(3)))
         .andExpect(jsonPath("$.Resources", not(empty())))
         .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
 
   @Test
-  @WithMockUser(username = ADMIN_USER, roles = { "USER", "ADMIN" })
-  public void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
+  @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
+  void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
     Set<IamScopePolicy> scopePolicies = Set.of(
         initScopePolicy("Scope policy description 1"),
         initScopePolicy("Scope policy description 2"),
@@ -569,14 +578,21 @@ public class GroupMembersIntegrationTests {
     mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
         .andExpect(status().isCreated());
 
-    mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
+    final int groupsCount = account.getGroups().size();
+
+    String response = mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(5)))
+        .andExpect(jsonPath("$.totalResults", is(groupsCount)))
         .andExpect(jsonPath("$.Resources", not(empty())))
-        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")))
-        .andExpect(jsonPath("$.Resources[2].scopePoliciesDescription",
-            contains("Scope policy description 1", "Scope policy description 2", "Scope policy description 3")));
+        .andReturn().getResponse().getContentAsString();
+
+    ListResponseDTO<RegisteredGroupDTO> groups =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<RegisteredGroupDTO>>() {});
+
+    assertThat(groups.getResources().size(), is(groupsCount));
+    List<String> descriptions = groups.getResources().stream().filter(r -> r.getName().equals("root")).findFirst().get().getScopePoliciesDescription();
+    assertThat(descriptions, hasItems("Scope policy description 1", "Scope policy description 2", "Scope policy description 3"));
   }
 
   private IamGroup createGroup(String name, IamGroup parent) {

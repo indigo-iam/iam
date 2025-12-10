@@ -16,43 +16,44 @@
 package it.infn.mw.iam.test.api.requests;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
+class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   private final static String APPROVE_URL = "/iam/group_requests/{uuid}/approve";
 
@@ -65,14 +66,14 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     emailRepository.deleteAll();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveGroupRequestAsAdmin() throws Exception {
+  void approveGroupRequestAsAdmin() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -104,7 +105,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"})
-  public void approveGroupRequestAsUser() throws Exception {
+  void approveGroupRequestAsUser() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -114,7 +115,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithAnonymousUser
-  public void approveGroupRequestAsAnonymous() throws Exception {
+  void approveGroupRequestAsAnonymous() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -126,7 +127,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveNotExitingGroupRequest() throws Exception {
+  void approveNotExitingGroupRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
     // @formatter:off
@@ -138,7 +139,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveAlreadyApprovedRequest() throws Exception {
+  void approveAlreadyApprovedRequest() throws Exception {
     GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -149,7 +150,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveRejectedRequest() throws Exception {
+  void approveRejectedRequest() throws Exception {
     GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -160,7 +161,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
-  public void approveGroupRequestAsUserWithBothRoles() throws Exception {
+  void approveGroupRequestAsUserWithBothRoles() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -172,5 +173,105 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.lastUpdateTime").exists())
       .andExpect(jsonPath("$.lastUpdateTime").isNotEmpty());
     // @formatter:on
+  }
+
+  @Transactional
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  void autoApproveParentGroupRequest() throws Exception {
+    // Setup: Create parent-child group hierarchy
+    IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
+    IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();
+  
+    childGroup.setParentGroup(parentGroup);
+    groupRepository.save(childGroup);
+  
+    IamAccount account = accountRepository.findByUsername(TEST_100_USERNAME).get();
+  
+    // Create a pending request for parent group
+    IamGroupRequest parentRequest = new IamGroupRequest();
+    parentRequest.setUuid(UUID.randomUUID().toString());
+    parentRequest.setAccount(account);
+    parentRequest.setGroup(parentGroup);
+    parentRequest.setStatus(IamGroupRequestStatus.PENDING);
+    parentRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(parentRequest);
+  
+    // Create a pending request for child group
+    IamGroupRequest childRequest = new IamGroupRequest();
+    childRequest.setUuid(UUID.randomUUID().toString());
+    childRequest.setAccount(account);
+    childRequest.setGroup(childGroup);
+    childRequest.setStatus(IamGroupRequestStatus.PENDING);
+    childRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(childRequest);
+  
+    // Approve child request - User will be automatically added to the parent group
+    String response = mvc.perform(post(APPROVE_URL, childRequest.getUuid()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
+      .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
+      .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+  
+    GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
+  
+    // Child request is approved
+    assertThat(result.getStatus(), equalTo(IamGroupRequestStatus.APPROVED.toString()));
+    assertThat(result.getGroupName(), equalTo(TEST_001_GROUPNAME));
+    assertThat(result.getUsername(), equalTo(TEST_100_USERNAME));
+  
+    // Parent request will be approved automatically via recursive logic
+    Optional<IamGroupRequest> hasParentRequest =
+        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(parentGroup.getId(), account.getId(), IamGroupRequestStatus.APPROVED);
+  
+    assertThat(hasParentRequest.isPresent(), equalTo(true));
+    IamGroupRequest updatedParentRequest = hasParentRequest.get();
+    assertThat(updatedParentRequest.getStatus(), equalTo(IamGroupRequestStatus.APPROVED));
+    assertThat(updatedParentRequest.getAccount().getUsername(), equalTo(TEST_100_USERNAME));
+  }
+
+  @Transactional
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  void autoRejectChildGroupRequest() throws Exception {
+    // Setup: parent-child relationship
+    IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
+    IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();
+    childGroup.setParentGroup(parentGroup);
+    groupRepository.save(childGroup);
+
+    IamAccount account = accountRepository.findByUsername(TEST_100_USERNAME).get();
+
+    // Parent request
+    IamGroupRequest parentRequest = new IamGroupRequest();
+    parentRequest.setUuid(UUID.randomUUID().toString());
+    parentRequest.setAccount(account);
+    parentRequest.setGroup(parentGroup);
+    parentRequest.setStatus(IamGroupRequestStatus.PENDING);
+    parentRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(parentRequest);
+
+    // Child request
+    IamGroupRequest childRequest = new IamGroupRequest();
+    childRequest.setUuid(UUID.randomUUID().toString());
+    childRequest.setAccount(account);
+    childRequest.setGroup(childGroup);
+    childRequest.setStatus(IamGroupRequestStatus.PENDING);
+    childRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(childRequest);
+
+    // Reject parent request -> should cascade to child
+    String motivation = "Parent group request rejected";
+    mvc.perform(post(REJECT_URL, parentRequest.getUuid()).param("motivation", motivation))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())));
+
+    Optional<IamGroupRequest> rejectedChild =
+        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(childGroup.getId(), account.getId(),
+            IamGroupRequestStatus.REJECTED);
+    assertThat(rejectedChild.isPresent(), equalTo(true));
   }
 }

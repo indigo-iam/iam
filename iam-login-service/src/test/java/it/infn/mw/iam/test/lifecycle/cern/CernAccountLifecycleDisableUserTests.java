@@ -37,10 +37,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -48,7 +47,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.mercateo.test.clock.TestClock;
 
@@ -67,19 +65,17 @@ import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    CernAccountLifecycleDisableUserTests.TestConfig.class})
+  CernAccountLifecycleDisableUserTests.TestConfig.class})
 @TestPropertySource(properties = {
   // @formatter:off
-    "cern.task.pageSize=5",
+  "cern.task.pageSize=5",
   // @formatter:on
 })
 @ActiveProfiles(value = {"h2-test", "cern"})
-public class CernAccountLifecycleDisableUserTests extends TestSupport
-    implements LifecycleTestSupport {
+class CernAccountLifecycleDisableUserTests extends TestSupport
+  implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -116,8 +112,8 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
 
   IamAccount cernUser;
 
-  @Before
-  public void init() {
+  @BeforeEach
+  void init() {
 
     cernUser = IamAccount.newAccount();
     cernUser.setUsername(CERN_USER);
@@ -132,8 +128,8 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
     service.addLabel(cernUser, cernPersonIdLabel(CERN_PERSON_ID));
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     reset(hrDb);
     service.deleteAccount(cernUser);
   }
@@ -143,7 +139,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
   }
 
   @Test
-  public void testCernPersonIdNotFoundMeansUserEndTimeIsResetToCurrentDate() {
+  void testCernPersonIdNotFoundMeansUserEndTimeIsResetToCurrentDate() {
 
     Date currentEndTime = cernUser.getEndTime();
     when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
@@ -186,7 +182,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
   }
 
   @Test
-  public void testNoParticipationIsFoundMeansUserEndTimeIsResetToCurrentDate() {
+  void testNoParticipationIsFoundMeansUserEndTimeIsResetToCurrentDate() {
 
     Date currentEndTime = cernUser.getEndTime();
 
@@ -233,7 +229,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
   }
 
   @Test
-  public void testEndTimeIsNotSynchronizedIfSkipLabelIsPresent() {
+  void testEndTimeIsNotSynchronizedIfSkipLabelIsPresent() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
 

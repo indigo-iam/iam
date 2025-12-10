@@ -21,11 +21,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import java.text.ParseException;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,33 +33,28 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, JWKCacheSetServiceTests.TestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-public class JWKCacheSetServiceTests {
+class JWKCacheSetServiceTests {
 
-  public static final String JWK_URL = "https://iam.example/jwk";
-  public static final String JKS_PATH = "oidc/mock_jwk.jks";
+  static final String JWK_URL = "https://iam.example/jwk";
+  static final String JKS_PATH = "oidc/mock_jwk.jks";
 
   @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary
-    public RestTemplateFactory mockRestTemplateFactory() {
+    RestTemplateFactory mockRestTemplateFactory() {
       return new MockRestTemplateFactory();
     }
   }
@@ -78,14 +70,14 @@ public class JWKCacheSetServiceTests {
 
   MockRestTemplateFactory mockRtf;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
 
   @Test
-  public void testGetJwk() throws JsonProcessingException, JOSEException, ParseException {
+  void testGetJwk() { 
 
     try {
       mockRtf.getMockServer()
@@ -119,7 +111,6 @@ public class JWKCacheSetServiceTests {
             MediaType.APPLICATION_JSON));
 
       assertThat(service.getEncrypter(JWK_URL), notNullValue());
-
 
     } finally {
       verifyMockServerCalls();

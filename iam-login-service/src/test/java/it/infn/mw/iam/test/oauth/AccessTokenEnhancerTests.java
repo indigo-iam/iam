@@ -15,61 +15,84 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.ImmutableList;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
+    "iam.access_token.include_authn_info=true"})
+@Transactional
+class AccessTokenEnhancerTests extends EndpointsTestUtils {
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"iam.access_token.include_authn_info=true"})
-public class AccessTokenEnhancerTests extends EndpointsTestUtils {
+  static final String CLIENT_CREDENTIALS_CLIENT_ID = "token-lookup-client";
+  static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
 
-  private static final String CLIENT_CREDENTIALS_CLIENT_ID = "token-lookup-client";
-  private static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
+  static final String CLIENT_ID = "password-grant";
+  static final String CLIENT_SECRET = "secret";
+  static final String USERNAME = "test";
+  static final String PASSWORD = "password";
+  static final String EMAIL = "test@iam.test";
+  static final String ORGANISATION = "indigo-dc";
+  static final String NAME = "Test User";
+  static final List<String> GROUPS = ImmutableList.of("Production", "Analysis", "Optional");
 
-  private static final String CLIENT_ID = "password-grant";
-  private static final String CLIENT_SECRET = "secret";
-  private static final String USERNAME = "test";
-  private static final String PASSWORD = "password";
-  private static final String EMAIL = "test@iam.test";
-  private static final String ORGANISATION = "indigo-dc";
-  private static final String NAME = "Test User";
-  private static final List<String> GROUPS = ImmutableList.of("Production", "Analysis");
+  @Autowired
+  @Qualifier("iamJwtProfile")
+  JWTProfile iamJwtProfile;
 
   private String getAccessTokenForUser(String scopes) throws Exception {
 
-    return new AccessTokenGetter().grantType("password").clientId(CLIENT_ID)
-        .clientSecret(CLIENT_SECRET).username(USERNAME).password(PASSWORD).scope(scopes)
-        .getAccessTokenValue();
+    return new AccessTokenGetter().grantType("password")
+      .clientId(CLIENT_ID)
+      .clientSecret(CLIENT_SECRET)
+      .username(USERNAME)
+      .password(PASSWORD)
+      .scope(scopes)
+      .getAccessTokenValue();
   }
 
   private String getAccessTokenForClient(String scopes) throws Exception {
 
     return new AccessTokenGetter().grantType("client_credentials")
-        .clientId(CLIENT_CREDENTIALS_CLIENT_ID).clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
-        .scope(scopes).getAccessTokenValue();
+      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
+      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
+      .scope(scopes)
+      .getAccessTokenValue();
   }
 
   @Test
-  public void testEnhancedEmailOk() throws Exception {
+  void testEnhancedEmailOk() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid email"));
     String email = (String) token.getJWTClaimsSet().getClaim("email");
@@ -78,51 +101,51 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testClientCredentialsAccessTokenIsNotEnhanced() throws Exception {
+  void testClientCredentialsAccessTokenIsNotEnhanced() throws Exception {
 
-    JWT token = JWTParser.parse(getAccessTokenForClient("openid profile email"));
-    assertThat(token.getJWTClaimsSet().getClaim("email"), is(nullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("name"), is(nullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("preferred_username"), is(nullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("organisation_name"), is(nullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), is(nullValue()));
+    JWTClaimsSet claims =
+        JWTParser.parse(getAccessTokenForClient("openid profile email")).getJWTClaimsSet();
+    iamJwtProfile.getAccessTokenBuilder()
+      .getAdditionalAuthnInfoClaims()
+      .forEach(claim -> assertThat(claims.getClaim(claim), is(nullValue())));
+    assertThat(claims.getClaim("groups"), is(nullValue()));
   }
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testEnhancedProfileClaimsOk() throws Exception {
+  void testEnhancedProfileClaimsOk() throws Exception {
 
-    JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
-    
-    String name = (String) token.getJWTClaimsSet().getClaim("name");
+    JWTClaimsSet claims =
+        JWTParser.parse(getAccessTokenForUser("openid profile")).getJWTClaimsSet();
+
+    String name = (String) claims.getClaim(StandardClaimNames.NAME);
     assertThat(name, is(notNullValue()));
     assertThat(name, is(NAME));
-    
-    String preferredUsername = (String) token.getJWTClaimsSet().getClaim("preferred_username");
+
+    String preferredUsername = (String) claims.getClaim(StandardClaimNames.PREFERRED_USERNAME);
     assertThat(preferredUsername, is(notNullValue()));
     assertThat(preferredUsername, is(USERNAME));
-    
-    String organisationName = (String) token.getJWTClaimsSet().getClaim("organisation_name");
+
+    String organisationName = (String) claims.getClaim(IamExtraClaimNames.ORGANISATION_NAME);
     assertThat(organisationName, is(notNullValue()));
     assertThat(organisationName, is(ORGANISATION));
-    
-    List<String> groups = (List<String>) token.getJWTClaimsSet().getClaim("groups");
+
+    List<String> groups = (List<String>) claims.getClaim(IamExtraClaimNames.GROUPS);
     assertThat(groups, is(notNullValue()));
-    assertThat(groups, hasSize(2));
-    
-    assertThat(groups, hasItem(GROUPS.get(0)));
-    assertThat(groups, hasItem(GROUPS.get(1)));
+    assertThat(groups, hasSize(3));
+
+    assertThat(groups, hasItems(GROUPS.get(0), GROUPS.get(1), GROUPS.get(2)));
   }
 
   @Test
-  public void testEnhancedEmailNotEnhanced() throws Exception {
+  void testEnhancedEmailNotEnhanced() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid"));
     assertThat(token.getJWTClaimsSet().getClaim("email"), is(nullValue()));
   }
 
   @Test
-  public void testEnhancedProfileClaimsNotEnhanced() throws Exception {
+  void testEnhancedProfileClaimsNotEnhanced() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid"));
     assertThat(token.getJWTClaimsSet().getClaim("name"), is(nullValue()));
@@ -130,7 +153,7 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getClaim("organisation_name"), is(nullValue()));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), is(nullValue()));
   }
-  
+
   public void accessTokenDoesNotIncludeNbfByDefault() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid"));
     assertThat(token.getJWTClaimsSet().getNotBeforeTime(), nullValue());

@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.rcauth;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -25,9 +26,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import java.text.ParseException;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,29 +55,23 @@ import it.infn.mw.iam.test.util.oidc.IdTokenBuilder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, RCAuthTestConfig.class,
-        RCAuthTokenRequestorTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, RCAuthTestConfig.class,
+  RCAuthTokenRequestorTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
-    properties = {"rcauth.enabled=true", "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
-        "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
-        "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
-public class RCAuthTokenRequestorTests extends RCAuthTestSupport {
-
+  properties = {"rcauth.enabled=true", "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
+    "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
+    "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
+class RCAuthTokenRequestorTests extends RCAuthTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary
-    public RestTemplateFactory mockRestTemplateFactory() {
+    RestTemplateFactory mockRestTemplateFactory() {
       return new MockRestTemplateFactory();
     }
   }
-
 
   @Autowired
   private RCAuthTokenRequestor tokenRequestor;
@@ -91,15 +84,15 @@ public class RCAuthTokenRequestorTests extends RCAuthTestSupport {
 
   private MockRestTemplateFactory mockRtf;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
 
   @Test
-  public void testGetAccessTokenSuccess()
-      throws JsonProcessingException, JOSEException, ParseException {
+  void testGetAccessTokenSuccess()
+    throws JsonProcessingException, JOSEException, ParseException {
 
     prepareTokenResponse(NONCE);
 
@@ -113,55 +106,41 @@ public class RCAuthTokenRequestorTests extends RCAuthTestSupport {
     assertThat(subjectDnClaim, is(DN));
   }
 
-
-  @Test(expected = RCAuthError.class)
-  public void testGetAccessTokenError() throws JsonProcessingException {
+  @Test
+  void testGetAccessTokenError() throws JsonProcessingException {
     prepareErrorRespose();
-    try {
-      tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("Token request error: invalid_request"));
-      throw e;
-    } finally {
-      verifyMockServerCalls();
-    }
-
+    RCAuthError e =
+        assertThrows(RCAuthError.class, () -> tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE));
+    assertThat(e.getMessage(), containsString("Token request error: invalid_request"));
+    verifyMockServerCalls();
   }
 
-  @Test(expected = RCAuthError.class)
-  public void testGetAccessTokenBogusError() throws JsonProcessingException {
+  @Test
+  void testGetAccessTokenBogusError() {
     prepareBogusErrorRespose();
-    try {
-      tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("Token request error:"));
-      throw e;
-    } finally {
-      verifyMockServerCalls();
-    }
+    RCAuthError e =
+        assertThrows(RCAuthError.class, () -> tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE));
+    assertThat(e.getMessage(), containsString("Token request error:"));
+    verifyMockServerCalls();
   }
-  
-  @Test(expected = RCAuthError.class)
-  public void testGetAccessTokenInternalServerError() throws JsonProcessingException {
+
+  @Test
+  void testGetAccessTokenInternalServerError() {
     prepareInternalServerErrorResponse();
-    try {
-      tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("Token request error:"));
-      throw e;
-    } finally {
-      verifyMockServerCalls();
-    }
+    RCAuthError e =
+        assertThrows(RCAuthError.class, () -> tokenRequestor.getAccessToken(RANDOM_AUTHZ_CODE));
+    assertThat(e.getMessage(), containsString("Token request error:"));
+    verifyMockServerCalls();
   }
+
   private void prepareInternalServerErrorResponse() {
     mockRtf.getMockServer()
-    .expect(requestTo(TOKEN_URI))
-    .andExpect(method(HttpMethod.POST))
+      .expect(requestTo(TOKEN_URI))
+      .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8))
-    .andRespond(MockRestResponseCreators.withServerError()
-      .body("internal server error"));
+      .andRespond(MockRestResponseCreators.withServerError().body("internal server error"));
   }
-  
+
   private void prepareBogusErrorRespose() {
 
     mockRtf.getMockServer()

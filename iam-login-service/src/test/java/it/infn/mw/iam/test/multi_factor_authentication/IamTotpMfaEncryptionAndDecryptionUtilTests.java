@@ -15,42 +15,42 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommons {
+@ExtendWith(MockitoExtension.class)
+class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommons {
 
   private static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
       .getInstance();
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     defaultModel.setIterations(ANOTHER_ITERATIONS);
     defaultModel.setKeyLengthInBits(ANOTHER_KEY_SIZE);
     defaultModel.setSaltLengthInBytes(ANOTHER_SALT_SIZE);
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     defaultModel.setIterations(DEFAULT_ITERATIONS);
     defaultModel.setKeyLengthInBits(DEFAULT_KEY_SIZE);
     defaultModel.setSaltLengthInBytes(DEFAULT_SALT_SIZE);
   }
 
   @Test
-  public void testEncryptionAndDecryptionSecretMethods() throws IamTotpMfaInvalidArgumentError {
+  void testEncryptionAndDecryptionSecretMethods() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
     String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
@@ -63,7 +63,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testDecryptSecretWithDifferentKey() throws IamTotpMfaInvalidArgumentError {
+  void testDecryptSecretWithDifferentKey() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
     String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
@@ -83,7 +83,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretWithTamperedCipher() throws IamTotpMfaInvalidArgumentError {
+  void testEncryptSecretWithTamperedCipher() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
     String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
@@ -111,7 +111,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
+  void testEncryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
       // Try to encrypt the empty plainText
@@ -123,7 +123,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretWithInvalidSaltSize() throws IamTotpMfaInvalidArgumentError {
+  void testEncryptSecretWithInvalidSaltSize() throws IamTotpMfaInvalidArgumentError {
     defaultModel.setSaltLengthInBytes(INVALID_SALT_SIZE);
 
     IamTotpMfaInvalidArgumentError throwException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
@@ -134,7 +134,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testDecryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
+  void testDecryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
       IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(null, KEY_TO_ENCRYPT_DECRYPT);
@@ -145,7 +145,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretWithAesCipher_CBC_Mode() throws IamTotpMfaInvalidArgumentError {
+  void testEncryptSecretWithAesCipher_CBC_Mode() throws IamTotpMfaInvalidArgumentError {
     defaultModel.setShortFormOfCipherMode(
         IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC);
     defaultModel.setModeOfOperation(

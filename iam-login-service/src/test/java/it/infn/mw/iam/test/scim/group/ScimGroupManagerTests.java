@@ -31,13 +31,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,10 +56,9 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScimGroupManagerTests {
+class ScimGroupManagerTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -84,19 +83,19 @@ public class ScimGroupManagerTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER", "GM:" + TEST_001_GROUP_ID})
-  public void groupManagerCanSeeGroup() throws Exception {
+  void groupManagerCanSeeGroup() throws Exception {
     mvc.perform(get(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
@@ -108,7 +107,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void roleReaderCanSeeGroup() throws Exception {
+  void roleReaderCanSeeGroup() throws Exception {
     mvc.perform(get(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
@@ -122,7 +121,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void roleReaderCanSeeListOfGroups() throws Exception {
+  void roleReaderCanSeeListOfGroups() throws Exception {
     mvc.perform(get(GROUP_URI).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
@@ -132,7 +131,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void roleReaderCanSeeGroupMembers() throws Exception {
+  void roleReaderCanSeeGroupMembers() throws Exception {
     mvc.perform(get(GROUP_URI+ "/{uuid}/members", TEST_001_GROUP_ID ).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
@@ -141,7 +140,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER", "GM:" + TEST_001_GROUP_ID})
-  public void groupManagerCanDeleteGroup() throws Exception {
+  void groupManagerCanDeleteGroup() throws Exception {
 
     mvc.perform(delete(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isNoContent());
@@ -152,7 +151,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void groupCreationCreatesGroupManagerAuthority() throws Exception {
+  void groupCreationCreatesGroupManagerAuthority() throws Exception {
     String name = "test-gm-creation";
     ScimGroup group = ScimGroup.builder(name).build();
 
@@ -173,7 +172,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void groupDeletionRemovesGroupManagerAuthority() throws Exception {
+  void groupDeletionRemovesGroupManagerAuthority() throws Exception {
     String name = "test-gm-deletion";
 
     ScimGroup group = ScimGroup.builder(name).build();
@@ -207,7 +206,7 @@ public class ScimGroupManagerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER", "GM:" + TEST_001_GROUP_ID})
-  public void groupManagerCanAddAndRemoveMembers() throws Exception {
+  void groupManagerCanAddAndRemoveMembers() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user test not found"));

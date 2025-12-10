@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.x509;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor.Headers.EEC;
 import static it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor.Headers.EEC_ISSUER_DN;
 import static it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor.Headers.EEC_SUBJECT_DN;
@@ -33,7 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -74,7 +72,6 @@ public class DefaultX509AuthenticationCredentialExtractor
       EnumSet.of(EEC_SUBJECT_DN,
       EEC_ISSUER_DN, EEC, SUBJECT, ISSUER, SERIAL, V_START, V_END);
 
-  @Autowired
   public DefaultX509AuthenticationCredentialExtractor(X509CertificateChainParser chainParser) {
     this.certChainParser = chainParser;
   }
@@ -86,7 +83,7 @@ public class DefaultX509AuthenticationCredentialExtractor
   private boolean requiredHeadersPresent(HttpServletRequest request) {
 
     for (Headers e : HEADERS_REQUIRED) {
-      if (isNullOrEmpty(request.getHeader(e.header))) {
+      if (request.getHeader(e.header) == null || request.getHeader(e.header).isEmpty()) {
         LOG.warn("Required header not found in: {}", e.header);
         return false;
       }
@@ -98,7 +95,7 @@ public class DefaultX509AuthenticationCredentialExtractor
 
     String eecSubjectDN = getHeader(request, EEC_SUBJECT_DN);
 
-    if (isNullOrEmpty(eecSubjectDN)) {
+    if (eecSubjectDN == null || eecSubjectDN.isEmpty()) {
       return false;
     }
 

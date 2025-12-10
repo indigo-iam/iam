@@ -23,13 +23,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.util.Date;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,7 +43,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AccountLifecycleApiTests extends TestSupport {
 
@@ -64,13 +64,13 @@ public class AccountLifecycleApiTests extends TestSupport {
   private MockMvc mvc;
 
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -80,7 +80,7 @@ public class AccountLifecycleApiTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void managingEndTimeRequiresAuthenticatedUser() throws Exception {
+  void managingEndTimeRequiresAuthenticatedUser() throws Exception {
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     mvc
       .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
@@ -90,7 +90,7 @@ public class AccountLifecycleApiTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void managingEndTimeFailsForNormalUser() throws Exception {
+  void managingEndTimeFailsForNormalUser() throws Exception {
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     mvc
       .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
@@ -100,7 +100,7 @@ public class AccountLifecycleApiTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void managingEndTimeRequiresAdminUser() throws Exception {
+  void managingEndTimeRequiresAdminUser() throws Exception {
     Date newEndTime = new Date();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
@@ -118,7 +118,7 @@ public class AccountLifecycleApiTests extends TestSupport {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void setEndTimeWorksForAdminUserWithScope() throws Exception {
+  void setEndTimeWorksForAdminUserWithScope() throws Exception {
     Date newEndTime = new Date();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
@@ -131,7 +131,7 @@ public class AccountLifecycleApiTests extends TestSupport {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void setEndTimeDoesNotWork() throws Exception {
+  void setEndTimeDoesNotWork() throws Exception {
     Date newEndTime = new Date();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);

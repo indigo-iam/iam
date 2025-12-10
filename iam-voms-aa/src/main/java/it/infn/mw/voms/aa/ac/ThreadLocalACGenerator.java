@@ -20,14 +20,13 @@ import static java.util.Objects.isNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.italiangrid.voms.asn1.VOMSACGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
 
 import eu.emi.security.authn.x509.impl.PEMCredential;
 import it.infn.mw.voms.aa.VOMSRequestContext;
@@ -54,7 +53,7 @@ public class ThreadLocalACGenerator implements ACGenerator {
 
     BigInteger serialNo = computeRandomSerialNumber();
 
-    List<String> issuedFqans = Lists.newArrayList(context.getResponse().getIssuedFQANs());
+    List<String> issuedFqans = new ArrayList<>(context.getResponse().getIssuedFQANs());
 
     X509AttributeCertificateHolder ac = generator.generateVOMSAttributeCertificate(issuedFqans,
         context.getResponse().getIssuedGAs(), context.getResponse().getTargets(),

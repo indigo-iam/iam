@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.account.password;
 
 import static it.infn.mw.iam.test.util.AuthenticationUtils.adminAuthentication;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -23,15 +24,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -46,9 +46,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class PasswordEncodingTests {
+class PasswordEncodingTests {
 
   @Autowired
   private PasswordEncoder passwordEncoder;
@@ -68,18 +68,18 @@ public class PasswordEncodingTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testNoValidResetToken() throws Exception {
+  void testNoValidResetToken() throws Exception {
     String username = "password_encoded";
 
     RegistrationRequestDto request = new RegistrationRequestDto();
@@ -107,7 +107,7 @@ public class PasswordEncodingTests {
   }
 
   @Test
-  public void testPasswordEncoded() throws Exception {
+  void testPasswordEncoded() throws Exception {
     String username = "password_encoded";
     String newPassword = "Secure_P@ssw0rd!";
 
@@ -153,7 +153,7 @@ public class PasswordEncodingTests {
     IamAccount account = iamAccountRepository.findByUuid(request.getAccountId())
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
-    Assert.assertTrue(passwordEncoder.matches(newPassword, account.getPassword()));
+    assertTrue(passwordEncoder.matches(newPassword, account.getPassword()));
   }
 
 }

@@ -26,15 +26,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -45,14 +43,12 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-public class ScimUserProvisioningListTests {
+class ScimUserProvisioningListTests {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -60,18 +56,18 @@ public class ScimUserProvisioningListTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testNoParameterListRequest() throws Exception {
+  void testNoParameterListRequest() throws Exception {
 
     scimUtils.getUsers()
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -83,38 +79,39 @@ public class ScimUserProvisioningListTests {
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void testReaderCanGetListOfUsers() throws Exception {
+  void testReaderCanGetListOfUsers() throws Exception {
     testNoParameterListRequest();
   }
 
   @Test
   @WithMockUser(username = "test", roles = "ADMIN")
-  public void testAdminCanNotSeePemEncodedCertificate() throws Exception {
+  void testAdminCanNotSeePemEncodedCertificate() throws Exception {
     testPemEncodedCertificateDoesNotExist();
   }
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void testReaderCanNotSeePemEncodedCertificate() throws Exception {
+  void testReaderCanNotSeePemEncodedCertificate() throws Exception {
     testPemEncodedCertificateDoesNotExist();
   }
 
   private void testPemEncodedCertificateDoesNotExist() throws Exception {
     scimUtils.getUsers()
-        .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
-        .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-        .andExpect(jsonPath("$.Resources[0].userName", equalTo("admin")))
-        .andExpect(jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates",
-            hasSize(equalTo(1))))
-        .andExpect(jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].subjectDn",
-            equalTo("CN=test2,O=IGI,C=IT")))
-        .andExpect(
-            jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].pemEncodedCertificate")
-                .doesNotExist());
+      .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
+      .andExpect(jsonPath("$.Resources[0].userName", equalTo("admin")))
+      .andExpect(jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates",
+          hasSize(equalTo(1))))
+      .andExpect(
+          jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].subjectDn",
+              equalTo("CN=test2,O=IGI,C=IT")))
+      .andExpect(jsonPath(
+          "$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].pemEncodedCertificate")
+            .doesNotExist());
   }
 
   @Test
-  public void testCountAs10Returns10Items() throws Exception {
+  void testCountAs10Returns10Items() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(10).build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -125,7 +122,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testCount1Returns1Item() throws Exception {
+  void testCount1Returns1Item() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(1).build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -136,7 +133,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testCountShouldBeLimitedToOneHundred() throws Exception {
+  void testCountShouldBeLimitedToOneHundred() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(1000).build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -147,7 +144,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testNegativeCountBecomesZero() throws Exception {
+  void testNegativeCountBecomesZero() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(-10).build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -158,7 +155,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testInvalidStartIndex() throws Exception {
+  void testInvalidStartIndex() throws Exception {
 
     int startIndex = Long.valueOf(TOTAL_USERS_COUNT).intValue() + 1;
     scimUtils.getUsers(ParamsBuilder.builder().startIndex(startIndex).build())
@@ -170,7 +167,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testRightEndPagination() throws Exception {
+  void testRightEndPagination() throws Exception {
 
     int startIndex = Long.valueOf(TOTAL_USERS_COUNT).intValue() - 5;
     scimUtils.getUsers(ParamsBuilder.builder().startIndex(startIndex).count(10).build())
@@ -182,7 +179,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testLastElementPagination() throws Exception {
+  void testLastElementPagination() throws Exception {
 
     int startIndex = Long.valueOf(TOTAL_USERS_COUNT).intValue();
     scimUtils.getUsers(ParamsBuilder.builder().startIndex(startIndex).count(2).build())
@@ -194,7 +191,7 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
-  public void testFirstElementPagination() throws Exception {
+  void testFirstElementPagination() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().startIndex(1).count(5).build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))

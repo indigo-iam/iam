@@ -16,9 +16,9 @@
 package it.infn.mw.iam.test.scim.group.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -28,12 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
@@ -42,10 +42,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = { "scim:read", "scim:write" })
-public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
+@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -55,8 +55,8 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
 
   List<ScimUser> members;
 
-  @Before
-  public void initTests() throws Exception {
+  @BeforeEach
+  void initTests() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
@@ -72,8 +72,8 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
     addMembers(engineers, members);
   }
 
-  @After
-  public void teardownTests() throws Exception {
+  @AfterEach
+  void teardownTests() throws Exception {
     deleteScimResource(lennon);
     deleteScimResource(kennedy);
     deleteScimResource(lincoln);
@@ -83,7 +83,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   }
 
   @Test
-  public void testGroupPatchReplaceWithEmptyGroup() throws Exception {
+  void testGroupPatchReplaceWithEmptyGroup() throws Exception {
     List<ScimUser> emptyGroup = new ArrayList<>();
     ScimGroupPatchRequest patchReplaceRequest = getPatchReplaceUsersRequest(emptyGroup);
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
@@ -112,7 +112,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   }
 
   @Test
-  public void testGroupPatchReplaceWithSubset() throws Exception {
+  void testGroupPatchReplaceWithSubset() throws Exception {
 
     List<ScimUser> subsetMembers = new ArrayList<>();
     subsetMembers.add(lennon);
@@ -141,7 +141,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   }
 
   @Test
-  public void testGroupPatchReplaceMembersWithFakeUser() throws Exception {
+  void testGroupPatchReplaceMembersWithFakeUser() throws Exception {
 
     List<ScimUser> groupWithFakeUser = new ArrayList<>();
     ScimUser ringo = addTestUser("ringo", "mail@domain.com", "Ringo", "Star");
@@ -163,7 +163,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   }
 
   @Test
-  public void testGroupPatchReplaceWithNewMember() throws Exception {
+  void testGroupPatchReplaceWithNewMember() throws Exception {
 
     List<ScimUser> singleUserGroup = new ArrayList<>();
     singleUserGroup.add(reagan);

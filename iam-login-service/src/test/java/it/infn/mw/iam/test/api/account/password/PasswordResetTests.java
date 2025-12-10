@@ -23,14 +23,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -50,12 +48,11 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, NotificationTestConfig.class,
-    CoreControllerTestSupport.class}, webEnvironment = WebEnvironment.MOCK)
+  CoreControllerTestSupport.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
-public class PasswordResetTests {
+class PasswordResetTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator tokenGenerator;
@@ -75,19 +72,19 @@ public class PasswordResetTests {
   @Autowired
   private IamAccountRepository accountRepo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     notificationDelivery.clearDeliveredNotifications();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testChangePassword() throws Exception {
+  void testChangePassword() throws Exception {
     String testEmail = "test@iam.test";
 
     String newPassword = "Secure_P@ssw0rd!";
@@ -113,7 +110,7 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testChangePasswordWeak() throws Exception {
+  void testChangePasswordWeak() throws Exception {
     String testEmail = "test@iam.test";
 
     String newPassword = "weakpassword";
@@ -139,7 +136,7 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testChangePasswordWithTokenJustUsed() throws Exception {
+  void testChangePasswordWithTokenJustUsed() throws Exception {
     String testEmail = "test@iam.test";
 
     String newPassword = "Secure_P@ssw0rd!";
@@ -167,13 +164,13 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testRedirectToResetPasswordPage() throws Exception {
+  void testRedirectToResetPasswordPage() throws Exception {
     String resetToken = tokenGenerator.getLastToken() + "<div>";
     mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
   }
 
   @Test
-  public void testRedirectToResetPasswordPageWithValidResetKey() throws Exception {
+  void testRedirectToResetPasswordPageWithValidResetKey() throws Exception {
     String resetToken = tokenGenerator.generateToken();
     String testEmail = "test@iam.test";
     IamAccount account = accountRepo.findByEmail(testEmail)
@@ -186,7 +183,7 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testResetPasswordWithInvalidResetToken() throws Exception {
+  void testResetPasswordWithInvalidResetToken() throws Exception {
 
     String resetToken = "abcdefghilmnopqrstuvz";
 
@@ -196,7 +193,7 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testCreatePasswordResetTokenReturnsOkForUnknownAddress() throws Exception {
+  void testCreatePasswordResetTokenReturnsOkForUnknownAddress() throws Exception {
 
     String testEmail = "test@foo.bar";
 
@@ -206,7 +203,7 @@ public class PasswordResetTests {
   }
 
   @Test
-  public void testEmailValidationForPasswordResetTokenCreation() throws Exception {
+  void testEmailValidationForPasswordResetTokenCreation() throws Exception {
     String invalidEmailAddress = "this_is_not_an_email";
 
     mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))

@@ -19,19 +19,18 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -42,40 +41,38 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
+class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-
 
   @Test
-  public void testPatchRemoveOidcId() throws Exception {
+  void testPatchRemoveOidcId() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addOidcId(user.getIndigoUser().getOidcIds().get(0)).build();
 
-    scimUtils.patchUser(user.getId(), remove, updates);
+    scimUtils.patchUser(user.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user.getId());
 
@@ -83,8 +80,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveAnotherUserOidcId() throws Exception {
-
+  void testPatchRemoveAnotherUserOidcId() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
     ScimUser user2 = createLincolnTestUser();
@@ -92,7 +88,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
     ScimUser updates =
         ScimUser.builder().addOidcId(user2.getIndigoUser().getOidcIds().get(0)).build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser1 = scimUtils.getUser(user1.getId());
     assertThat(updatedUser1.getIndigoUser().getOidcIds(), hasSize(equalTo(1)));
@@ -102,7 +98,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveNotFoundOidcId() throws Exception {
+  void testPatchRemoveNotFoundOidcId() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
@@ -110,7 +106,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
       .addOidcId(ScimOidcId.builder().issuer("fake_issuer").subject("fake_subject").build())
       .build();
 
-    scimUtils.patchUser(user.getId(), remove, updates);
+    scimUtils.patchUser(user.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user.getId());
     assertThat(updatedUser.getId(), equalTo(user.getId()));
@@ -118,7 +114,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveX509Certificate() throws Exception {
+  void testPatchRemoveX509Certificate() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
@@ -126,7 +122,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
       .addX509Certificate(user.getIndigoUser().getCertificates().get(0))
       .build();
 
-    scimUtils.patchUser(user.getId(), remove, updates);
+    scimUtils.patchUser(user.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user.getId());
     assertThat(updatedUser.getId(), equalTo(user.getId()));
@@ -134,7 +130,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveAnotherUserX509Certificate() throws Exception {
+  void testPatchRemoveAnotherUserX509Certificate() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
     ScimUser user2 = createLincolnTestUser();
@@ -143,7 +139,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
       .addX509Certificate(user2.getIndigoUser().getCertificates().get(0))
       .build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user1.getId());
     assertThat(updatedUser.getId(), equalTo(user1.getId()));
@@ -151,7 +147,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveNotFoundX509Certificate() throws Exception {
+  void testPatchRemoveNotFoundX509Certificate() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
 
@@ -159,12 +155,12 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
       .addX509Certificate(user1.getIndigoUser().getCertificates().get(0))
       .build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
   }
 
   @Test
-  public void testPatchRemoveSshKey() throws Exception {
+  void testPatchRemoveSshKey() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
@@ -179,7 +175,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveAnotherUserSshKey() throws Exception {
+  void testPatchRemoveAnotherUserSshKey() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
     ScimUser user2 = createLincolnTestUser();
@@ -187,7 +183,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
     ScimUser updates =
         ScimUser.builder().addSshKey(user2.getIndigoUser().getSshKeys().get(0)).build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user1.getId());
     assertThat(updatedUser.getId(), equalTo(user1.getId()));
@@ -195,19 +191,19 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveNotFoundSshKey() throws Exception {
+  void testPatchRemoveNotFoundSshKey() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSshKey(user1.getIndigoUser().getSshKeys().get(0)).build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
   }
 
   @Test
-  public void testPatchRemoveSamlId() throws Exception {
+  void testPatchRemoveSamlId() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
@@ -222,7 +218,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveAnotherUserSamlId() throws Exception {
+  void testPatchRemoveAnotherUserSamlId() throws Exception {
 
     ScimUser user1 = createLennonTestUser();
     ScimUser user2 = createLincolnTestUser();
@@ -230,7 +226,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
     ScimUser updates =
         ScimUser.builder().addSamlId(user2.getIndigoUser().getSamlIds().get(0)).build();
 
-    scimUtils.patchUser(user1.getId(), remove, updates);
+    scimUtils.patchUser(user1.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser1 = scimUtils.getUser(user1.getId());
     assertThat(updatedUser1.getId(), equalTo(user1.getId()));
@@ -243,13 +239,13 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchRemoveNotFoundSamlId() throws Exception {
+  void testPatchRemoveNotFoundSamlId() throws Exception {
 
     ScimUser user = createLennonTestUser();
 
     ScimUser updates = ScimUser.builder().buildSamlId("fake_idpid", "fake_userid").build();
 
-    scimUtils.patchUser(user.getId(), remove, updates);
+    scimUtils.patchUser(user.getId(), remove, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(user.getId());
     assertThat(updatedUser.getId(), equalTo(user.getId()));

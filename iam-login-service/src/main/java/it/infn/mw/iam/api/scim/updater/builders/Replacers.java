@@ -16,19 +16,18 @@
 package it.infn.mw.iam.api.scim.updater.builders;
 
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_ACTIVE;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_AFFILIATION;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWORD;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_AFFILIATION;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
@@ -39,17 +38,19 @@ import it.infn.mw.iam.api.scim.updater.util.AccountFinder;
 import it.infn.mw.iam.api.scim.updater.util.IdNotBoundChecker;
 import it.infn.mw.iam.audit.events.account.ActiveReplacedEvent;
 import it.infn.mw.iam.audit.events.account.AffiliationReplacedEvent;
-import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.PasswordReplacedEvent;
 import it.infn.mw.iam.audit.events.account.PictureReplacedEvent;
+import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.audit.events.account.UsernameReplacedEvent;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Replacers extends AccountBuilderSupport {
@@ -64,10 +65,11 @@ public class Replacers extends AccountBuilderSupport {
   final AccountFinder<String> findByUsername;
 
   public Replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
-      UsernameValidator usernameValidator) {
+      PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
 
-    super(repo, accountService, tokenService, encoder, usernameValidator, account);
+    super(repo, accountService, accessTokenRepo, refreshTokenRepo, encoder, usernameValidator,
+        account);
     findByEmail = repo::findByEmail;
     findByUsername = repo::findByUsername;
     encodedPasswordSetter = t -> account.setPassword(encoder.encode(t));
@@ -78,10 +80,9 @@ public class Replacers extends AccountBuilderSupport {
   }
 
   private Predicate<String> buildEmailAddChecks() {
-    Predicate<String> emailNotBound =
-        new IdNotBoundChecker<>(findByEmail, account, (e, a) -> {
-          throw new ScimResourceExistsException("Email " + e + " already bound to another user");
-        });
+    Predicate<String> emailNotBound = new IdNotBoundChecker<>(findByEmail, account, (e, a) -> {
+      throw new ScimResourceExistsException("Email " + e + " already bound to another user");
+    });
 
     Predicate<String> emailNotOwned = e -> !account.getUserInfo().getEmail().equals(e);
 
@@ -141,7 +142,7 @@ public class Replacers extends AccountBuilderSupport {
   public AccountUpdater username(String newUsername) {
 
     return new UsernameUpdater(account, ACCOUNT_REPLACE_USERNAME, account::setUsername, newUsername,
-        usernameAddChecks, UsernameReplacedEvent::new, tokenService);
+        usernameAddChecks, UsernameReplacedEvent::new, accessTokenRepo, refreshTokenRepo);
   }
 
   public AccountUpdater active(boolean isActive) {
@@ -151,14 +152,16 @@ public class Replacers extends AccountBuilderSupport {
   }
 
   public AccountUpdater serviceAccount(boolean isServiceAccount) {
-    return new DefaultAccountUpdater<Boolean, ServiceAccountReplacedEvent>(account, ACCOUNT_REPLACE_SERVICE_ACCOUNT,
-        account::isServiceAccount, account::setServiceAccount, isServiceAccount, ServiceAccountReplacedEvent::new);
+    return new DefaultAccountUpdater<Boolean, ServiceAccountReplacedEvent>(account,
+        ACCOUNT_REPLACE_SERVICE_ACCOUNT, account::isServiceAccount, account::setServiceAccount,
+        isServiceAccount, ServiceAccountReplacedEvent::new);
   }
 
   public AccountUpdater affiliation(String affiliation) {
     final IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, AffiliationReplacedEvent>(account, ACCOUNT_REPLACE_AFFILIATION,
-        ui::getAffiliation, ui::setAffiliation, affiliation, AffiliationReplacedEvent::new);
+    return new DefaultAccountUpdater<String, AffiliationReplacedEvent>(account,
+        ACCOUNT_REPLACE_AFFILIATION, ui::getAffiliation, ui::setAffiliation, affiliation,
+        AffiliationReplacedEvent::new);
   }
 
 }

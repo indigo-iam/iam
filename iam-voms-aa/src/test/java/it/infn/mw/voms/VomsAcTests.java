@@ -34,13 +34,11 @@ import java.util.concurrent.TimeUnit;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.request.VOMSResponse;
 import org.italiangrid.voms.request.impl.RESTVOMSResponseParsingStrategy;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -49,12 +47,11 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.voms.properties.VomsProperties;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("h2")
 @AutoConfigureMockMvc
 @Transactional
-public class VomsAcTests extends TestSupport {
+class VomsAcTests extends TestSupport {
 
   RESTVOMSResponseParsingStrategy parser = new RESTVOMSResponseParsingStrategy();
 
@@ -62,10 +59,10 @@ public class VomsAcTests extends TestSupport {
   VomsProperties properties;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Test
-  public void unauthenticatedRequestGetsUnauthenticatedClientError() throws Exception {
+  void unauthenticatedRequestGetsUnauthenticatedClientError() throws Exception {
 
     byte[] xmlResponse = mvc.perform(get("/generate-ac"))
       .andExpect(status().isBadRequest())
@@ -80,7 +77,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void unregisteredUserGetsNoSuchUserError() throws Exception {
+  void unregisteredUserGetsNoSuchUserError() throws Exception {
     byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
       .andExpect(status().isForbidden())
       .andReturn()
@@ -93,7 +90,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void registeredUserNotInVomsGroupDoesNotGetAnAC() throws Exception {
+  void registeredUserNotInVomsGroupDoesNotGetAnAC() throws Exception {
 
     setupTestUser();
 
@@ -110,7 +107,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void supendedUserDoesNotGetAnAc() throws Exception {
+  void supendedUserDoesNotGetAnAc() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     testAccount.setActive(false);
@@ -130,7 +127,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void userInGroupGetsAC() throws Exception {
+  void userInGroupGetsAC() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
 
@@ -151,7 +148,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void userWithDifferentCertIssuerDoesNotGetAC() throws Exception {
+  void userWithDifferentCertIssuerDoesNotGetAC() throws Exception {
     IamAccount testAccount = setupTestUserWithDifferentCertIssuer();
     IamGroup rootGroup = createVomsRootGroup();
 
@@ -171,7 +168,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void userWithExpiredAUPDoesNotGetAc() throws Exception {
+  void userWithExpiredAUPDoesNotGetAc() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
@@ -216,7 +213,7 @@ public class VomsAcTests extends TestSupport {
 
 
   @Test
-  public void allGroupsAreReturnedForUser() throws Exception {
+  void allGroupsAreReturnedForUser() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -245,7 +242,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void optionalGroupIsNotReturnedForUser() throws Exception {
+  void optionalGroupIsNotReturnedForUser() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup subGroup = createChildGroup(rootGroup, "sub");
@@ -271,7 +268,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void optionalGroupIsReturnedForUserIfRequested() throws Exception {
+  void optionalGroupIsReturnedForUserIfRequested() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup subGroup = createChildGroup(rootGroup, "sub");
@@ -299,7 +296,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void requestedFqanOrderEnforced() throws Exception {
+  void requestedFqanOrderEnforced() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -328,7 +325,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void roleRequestWorks() throws Exception {
+  void roleRequestWorks() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -359,7 +356,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void roleRequestInAnOptionalGroupWorks() throws Exception {
+  void roleRequestInAnOptionalGroupWorks() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup optionalGroup = createOptionalGroup(rootGroup, "optional");
@@ -387,7 +384,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void roleRequestForUnassignedRoleIsHandledCorrectly() throws Exception {
+  void roleRequestForUnassignedRoleIsHandledCorrectly() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -410,7 +407,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void gasAreCorrectlyEncoded() throws Exception {
+  void gasAreCorrectlyEncoded() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     addAccountToGroup(testAccount, rootGroup);
@@ -434,7 +431,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void acLifetimeIsCorrectlyEnforced() throws Exception {
+  void acLifetimeIsCorrectlyEnforced() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
@@ -471,7 +468,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void lifetimeValidationWorks() throws Exception {
+  void lifetimeValidationWorks() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
@@ -506,7 +503,8 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void allDescendantsFromRootGroupAreReturnedForUser() throws Exception {
+  void allDescendantsFromRootGroupAreReturnedForUser() throws Exception {
+
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -538,7 +536,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void groupNotDescendantsFromRootCannotBeReturnedForUser() throws Exception {
+  void groupNotDescendantsFromRootCannotBeReturnedForUser() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");

@@ -26,8 +26,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -35,7 +34,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
@@ -47,15 +45,14 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class,
-        AccountLifecycleNoSuspensionGracePeriodTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    AccountLifecycleNoSuspensionGracePeriodTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
-public class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTestSupport {
+  properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+    "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
+class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -73,7 +70,7 @@ public class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTe
   private ExpiredAccountsHandler handler;
 
   @Test
-  public void testZeroDaysSuspensionGracePeriod() {
+  void testZeroDaysSuspensionGracePeriod() {
     IamAccount testAccount =
         repo.findByUuid(TestSupport.TEST_USER_UUID).orElseThrow(assertionError(TestSupport.EXPECTED_ACCOUNT_NOT_FOUND));
 

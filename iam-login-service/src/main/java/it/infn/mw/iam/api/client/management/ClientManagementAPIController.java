@@ -15,11 +15,6 @@
  */
 package it.infn.mw.iam.api.client.management;
 
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -28,12 +23,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,14 +52,18 @@ import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ClientViews;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
+import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping(ClientManagementAPIController.ENDPOINT)
 public class ClientManagementAPIController {
@@ -72,19 +73,19 @@ public class ClientManagementAPIController {
   private final ClientManagementService managementService;
   private final AccountUtils accountUtils;
 
-  private final OAuth2TokenEntityService tokenService;
-
   private final ClientService clientService;
+
+  private final TokenRevocationService revocationService;
 
   DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public ClientManagementAPIController(ClientManagementService managementService,
-      AccountUtils accountUtils, OAuth2TokenEntityService tokenService,
-      ClientService clientService) {
+      AccountUtils accountUtils, ClientService clientService,
+      TokenRevocationService revocationService) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
-    this.tokenService = tokenService;
     this.clientService = clientService;
+    this.revocationService = revocationService;
   }
 
   @PostMapping
@@ -95,7 +96,7 @@ public class ClientManagementAPIController {
     return managementService.saveNewClient(client);
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @GetMapping
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
@@ -111,7 +112,7 @@ public class ClientManagementAPIController {
     }
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @GetMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId) {
@@ -121,6 +122,7 @@ public class ClientManagementAPIController {
 
   @GetMapping("/{clientId}/owners")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
@@ -138,6 +140,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/rat")
   @ResponseStatus(CREATED)
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO rotateRegistrationAccessToken(@PathVariable String clientId) {
     return managementService.rotateRegistrationAccessToken(clientId);
@@ -153,6 +156,7 @@ public class ClientManagementAPIController {
 
   @PutMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   public RegisteredClientDTO updateClient(@PathVariable String clientId,
       @RequestBody RegisteredClientDTO client) throws ParseException {
     return managementService.updateClient(clientId, client);
@@ -177,7 +181,7 @@ public class ClientManagementAPIController {
   public void revokeRefreshTokens(@PathVariable String clientId) {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
+    revocationService.revokeRefreshTokens(client);
   }
 
   @PatchMapping("/{clientId}/revoke-access-tokens")
@@ -185,7 +189,7 @@ public class ClientManagementAPIController {
   public void revokeAccessTokens(@PathVariable String clientId) {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    revocationService.revokeAccessTokens(client);
   }
 
   @PatchMapping("/{clientId}/reset-client")
@@ -194,8 +198,9 @@ public class ClientManagementAPIController {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
-    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    revocationService.revokeRefreshTokens(client);
+    revocationService.revokeAccessTokens(client);
+    revocationService.revokeRegistrationToken(client);
     RegisteredClientDTO resetClient = rotateClientSecret(clientId);
     enableClient(clientId);
     return new MappingJacksonValue(resetClient.getClientSecret());
@@ -203,7 +208,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/secret")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public RegisteredClientDTO rotateClientSecret(@PathVariable String clientId) {
     return managementService.generateNewClientSecret(clientId);
   }
@@ -236,6 +241,12 @@ public class ClientManagementAPIController {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ParseException.class)
   public ErrorDTO jsonMappingError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidRequestException.class)
+  public ErrorDTO invalidRequestError(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }

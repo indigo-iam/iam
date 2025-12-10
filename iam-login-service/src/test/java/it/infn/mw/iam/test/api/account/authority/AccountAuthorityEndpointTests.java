@@ -30,13 +30,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -45,9 +45,9 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class AccountAuthorityEndpointTests {
+class AccountAuthorityEndpointTests {
 
   private static final String TEST_100 = "test_100";
   private static final String TEST_100_UUID = "f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a";
@@ -69,13 +69,13 @@ public class AccountAuthorityEndpointTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -96,7 +96,7 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  public void anonymousAccessToAuthorityEndpointFails() throws Exception {
+  void anonymousAccessToAuthorityEndpointFails() throws Exception {
     mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
       .andDo(print())
       .andExpect(status().isUnauthorized());
@@ -118,7 +118,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser("test")
-  public void unprivilegedAccessToAuthorityEndpointFails() throws Exception {
+  void unprivilegedAccessToAuthorityEndpointFails() throws Exception {
     mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
       .andDo(print())
       .andExpect(status().isForbidden());
@@ -139,7 +139,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void getAuthoritiesWorks() throws Exception {
+  void getAuthoritiesWorks() throws Exception {
     mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
       .andDo(print())
       .andExpect(status().isOk())
@@ -148,8 +148,8 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  @WithMockUser(username = "test", roles ="READER")
-  public void getAuthoritiesWorksForReader() throws Exception {
+  @WithMockUser(username = "test", roles = "READER")
+  void getAuthoritiesWorksForReader() throws Exception {
     mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
       .andDo(print())
       .andExpect(status().isOk())
@@ -160,7 +160,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void getMeAuthoritiesWorks() throws Exception {
+  void getMeAuthoritiesWorks() throws Exception {
     mvc.perform(get("/iam/me/authorities"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -170,7 +170,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void AddInvalidAuthorityFails() throws Exception {
+  void AddInvalidAuthorityFails() throws Exception {
 
     String invalidAuthority = "CICCIO_PAGLIA";
     String expectedErrorMessage = String.format("Invalid authority: '%s'", invalidAuthority);
@@ -187,7 +187,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void AddEmptyAuthorityFails() throws Exception {
+  void AddEmptyAuthorityFails() throws Exception {
 
     String invalidAuthority = "";
     String expectedErrorMessage = "Authority cannot be an empty string";
@@ -204,7 +204,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void AddSuperLongAuthorityFails() throws Exception {
+  void AddSuperLongAuthorityFails() throws Exception {
 
     StringBuilder sb = new StringBuilder();
 
@@ -227,7 +227,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void AddAlreadyBoundAuthorityGetsBadRequest() throws Exception {
+  void AddAlreadyBoundAuthorityGetsBadRequest() throws Exception {
 
     String alreadyBoundAuthority = "ROLE_USER";
     String expectedErrorMessage = String.format("Authority '%s' is already bound to user '%s' (%s)",
@@ -243,7 +243,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void AddAuthorityWorks() throws Exception {
+  void AddAuthorityWorks() throws Exception {
 
     String authority = ROLE_ADMIN;
 
@@ -272,7 +272,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void AddAuthorityWorkWithCorrectScope() throws Exception {
+  void AddAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = ROLE_ADMIN;
 
@@ -288,7 +288,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void AddAuthorityDoesNotWork() throws Exception {
+  void AddAuthorityDoesNotWork() throws Exception {
 
     String authority = ROLE_ADMIN;
 
@@ -301,7 +301,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void DeleteAuthorityWorks() throws Exception {
+  void DeleteAuthorityWorks() throws Exception {
 
     String authority = "ROLE_USER";
 
@@ -324,7 +324,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void DeleteAuthorityWorkWithCorrectScope() throws Exception {
+  void DeleteAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = "ROLE_USER";
 
@@ -340,7 +340,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void DeleteAuthorityDoesNotWork() throws Exception {
+  void DeleteAuthorityDoesNotWork() throws Exception {
 
     String authority = "ROLE_USER";
 
@@ -354,7 +354,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void DeleteUnboundAuthoritySilentlySucceeds() throws Exception {
+  void DeleteUnboundAuthoritySilentlySucceeds() throws Exception {
 
     String unboundAuthority = ROLE_ADMIN;
 
@@ -368,7 +368,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void deleteInvalidAuthorityGetsBadRequest() throws Exception {
+  void deleteInvalidAuthorityGetsBadRequest() throws Exception {
 
     String invalidAuthority = "CICCIO_PAGLIA";
     String expectedErrorMessage = String.format("Invalid authority: '%s'", invalidAuthority);
@@ -384,7 +384,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void deleteEmptyAuthorityGetsBadRequest() throws Exception {
+  void deleteEmptyAuthorityGetsBadRequest() throws Exception {
 
     String emptyAuthority = "";
     String expectedErrorMessage = "Authority cannot be an empty string";
@@ -401,7 +401,7 @@ public class AccountAuthorityEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void invalidUserIdFailsWithNotFound() throws Exception {
+  void invalidUserIdFailsWithNotFound() throws Exception {
 
     String expectedErrorMessage = format("No account found for id '%s'", INVALID_USER_ID);
 
