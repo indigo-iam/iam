@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,16 +35,13 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -51,7 +49,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
+public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
     private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
@@ -65,9 +63,6 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
     @Autowired
     private ObjectMapper mapper;
-
-    @Autowired
-    private IamProperties properties;
 
     @Autowired
     private IamClientRepository clientRepository;
@@ -95,8 +90,9 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
         clientRepository.save(client);
     }
 
+    // Upscoping disabled, Access token with scopes, Iam settings with scopes, same scopes
     @Test
-    public void testTokenExchangeForClientCredentialsDisableUpscopingSuccess() throws Exception {
+    public void testTokenExchangeForClientCredentialsSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -116,10 +112,14 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
         assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+
+        // Scopes should be present in access token
+        assertEquals("read-tasks", exchangedToken.getJWTClaimsSet().getClaim("scope"));
     }
 
+    // Upscoping disabled, Access token with scopes, Iam settings with scopes, attempt at upscoping
     @Test
-    public void testTokenExchangeForClientCredentialsDisableUpscopingFail() throws Exception {
+    public void testTokenExchangeForClientCredentialsUpScopingFail() throws Exception {
 
         mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
             .param("grant_type", GRANT_TYPE)
@@ -132,71 +132,10 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
                 .value("scope not allowed by subject token configuration: profile"));
     }
 
+    // Upscoping disabled, Access token with scopes, Iam settings with scopes, Using upscoping
+    // in the exchange for offline access
     @Test
-    @DirtiesContext
-    public void testTokenExchangeForClientCredentialsDisableUpscopingDisableTokenScopes()
-            throws Exception {
-        properties.getAccessToken().setIncludeScope(false);
-
-        String tokenResponse = mvc
-            .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-                .param("grant_type", GRANT_TYPE)
-                .param("subject_token", accessToken)
-                .param("subject_token_type", TOKEN_TYPE)
-                .param("scope", "read-tasks"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-        DefaultOAuth2AccessToken tokenResponseObject =
-                mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
-
-        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
-
-        properties.getAccessToken().setIncludeAuthnInfo(true);
-    }
-
-    @Test
-    @DirtiesContext
-    public void testTokenExchangeForClientCredentialsDisableUpscopingTokenWithoutScopes()
-            throws Exception {
-        properties.getAccessToken().setIncludeScope(false);
-
-        MockHttpServletRequestBuilder req = post("/token").param("grant_type", "client_credentials")
-            .param("client_id", "client-cred")
-            .param("client_secret", "secret");
-
-        String response = mvc.perform(req)
-            .andExpect(status().is(200))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-        String accessTokenNoScopes =
-                mapper.readValue(response, DefaultOAuth2AccessToken.class).getValue();
-
-        properties.getAccessToken().setIncludeScope(true);
-
-        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", GRANT_TYPE)
-            .param("subject_token", accessTokenNoScopes)
-            .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "profile"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("invalid_request"))
-            .andExpect(jsonPath("$.error_description")
-                .value("cannot verify requested scopes with subject token"));
-
-    }
-
-
-    @Test
-    public void testTokenExchangeForClientCredentialsDisableUpscopingIncludingOfflineScope()
-            throws Exception {
+    public void testTokenExchangeForClientCredentialsUpscopingOfflineAccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -216,5 +155,12 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
         assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+
+        // Scopes should be present in access token
+
+        assertThat((String) exchangedToken.getJWTClaimsSet().getClaim("scope"),
+                containsString("offline_access"));
+        assertThat((String) exchangedToken.getJWTClaimsSet().getClaim("scope"),
+                containsString("read-tasks"));
     }
 }

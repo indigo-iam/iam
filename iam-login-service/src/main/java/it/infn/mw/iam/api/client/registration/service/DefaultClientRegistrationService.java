@@ -365,7 +365,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     client.setActive(true);
     // only allow to disable upscoping for admins
     if (accountUtils.isAdmin(authentication)) {
-      client.setUpScopingEnabled(request.isUpScopingEnabled());;
+      client.setUpScopingEnabled(request.isUpScopingEnabled());
     } else {
       client.setUpScopingEnabled(true);
     }
@@ -459,7 +459,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     // If user isn't admin upscoping doesn't change
     if (!accountUtils.isAdmin(authentication)) {
-      newClient.setUpScopingEnabled(oldClient.isUpScopingEnabled());;
+      newClient.setUpScopingEnabled(oldClient.isUpScopingEnabled());
     }
 
     if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
