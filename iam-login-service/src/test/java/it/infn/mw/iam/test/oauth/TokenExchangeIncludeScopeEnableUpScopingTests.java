@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-public class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
+class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
     private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
@@ -62,7 +62,7 @@ public class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTest
     private ObjectMapper mapper;
 
     @BeforeAll
-    public void setup() throws Exception {
+    void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
             .clientSecret("secret")
@@ -72,7 +72,7 @@ public class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTest
 
     // Upscoping Enabled, Access token with scopes, Iam settings with scopes, no upscoping
     @Test
-    public void testTokenExchangeForClientCredentialsSuccess() throws Exception {
+    void testTokenExchangeForClientCredentialsSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -100,7 +100,7 @@ public class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTest
     // Upscoping Enabled, Access token with scopes, Iam settings with scopes, using upscoping in
     // exchange
     @Test
-    public void testTokenExchangeForClientCredentialsUpscopingSuccess() throws Exception {
+    void testTokenExchangeForClientCredentialsUpscopingSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -128,7 +128,7 @@ public class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTest
     // Upscoping Enabled, Access token without scopes, Iam settings without scopes, Using upscoping
     // in the exchange for offline access
     @Test
-    public void testTokenExchangeForClientCredentialsUpscopingOfflineScope() throws Exception {
+    void testTokenExchangeForClientCredentialsUpscopingOfflineScope() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
