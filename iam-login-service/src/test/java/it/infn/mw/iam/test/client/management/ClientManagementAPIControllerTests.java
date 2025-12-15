@@ -118,7 +118,7 @@ class ClientManagementAPIControllerTests {
     Optional<ClientDetailsEntity> newClient =
         clientRepository.findByClientId("test-client-creation");
 
-    assertThrows(NoSuchElementException.class, () -> newClient.get());
+    assertThrows(NoSuchElementException.class, newClient::get);
 
     mvc
       .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
