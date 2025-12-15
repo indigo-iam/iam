@@ -24,7 +24,7 @@ public interface TokenExchangePdp {
 
   public void reloadPolicies();
 
-  TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetailsEntity originClient,
-      ClientDetails destinationClient);
+  TokenExchangePdpResult validateTokenExchange(TokenRequest request,
+      ClientDetailsEntity originClient, ClientDetails destinationClient);
 
 }

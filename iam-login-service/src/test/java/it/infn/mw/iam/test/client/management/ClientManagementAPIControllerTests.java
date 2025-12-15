@@ -115,10 +115,10 @@ class ClientManagementAPIControllerTests {
     client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     client.setScope(Set.of("test"));
 
-    Optional<ClientDetailsEntity> newClient = clientRepository.findByClientId("test-client-creation");
+    Optional<ClientDetailsEntity> newClient =
+        clientRepository.findByClientId("test-client-creation");
 
-    assertThrows(NoSuchElementException.class,
-        () -> newClient.get());
+    assertThrows(NoSuchElementException.class, () -> newClient.get());
 
     mvc
       .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)

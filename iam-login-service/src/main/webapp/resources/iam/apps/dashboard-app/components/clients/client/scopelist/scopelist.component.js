@@ -93,7 +93,7 @@
         }
 
         function changeUpScopingValue() {
-            self.client.up_scoping_enabled = ! self.client.up_scoping_enabled;
+            self.client.up_scoping_enabled = !self.client.up_scoping_enabled;
         }
 
         function isCustomScope(scope) {
