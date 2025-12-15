@@ -275,7 +275,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
-  private boolean upScopingEnabled;
+  private boolean upScopingEnabled = true;
 
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
