@@ -169,7 +169,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  void userRegisterClientUpscopingOn() throws JsonProcessingException, Exception {
+  void userRegisterClientUpscopingOn() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -194,7 +194,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  void userRegisterClientUpscopingOff() throws JsonProcessingException, Exception {
+  void userRegisterClientUpscopingOff() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -220,7 +220,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  void adminRegisterClientUpscopingOn() throws JsonProcessingException, Exception {
+  void adminRegisterClientUpscopingOn() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -245,7 +245,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  void adminRegisterClientUpscopingOff() throws JsonProcessingException, Exception {
+  void adminRegisterClientUpscopingOff() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -272,7 +272,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  void userUpdateClientUpscopingOn() throws JsonProcessingException, Exception {
+  void userUpdateClientUpscopingOn() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientId(clientUpscopingOff.getClientId());
@@ -298,7 +298,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  void userUpdateClientUpscopingOff() throws JsonProcessingException, Exception {
+  void userUpdateClientUpscopingOff() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -338,7 +338,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  void adminUpdateClientUpscopingOn() throws JsonProcessingException, Exception {
+  void adminUpdateClientUpscopingOn() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientId(clientUpscopingOff.getClientId());
@@ -364,7 +364,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  void adminUpdateClientUpscopingOff() throws JsonProcessingException, Exception {
+  void adminUpdateClientUpscopingOff() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");

@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -114,8 +115,10 @@ class ClientManagementAPIControllerTests {
     client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     client.setScope(Set.of("test"));
 
+    Optional<ClientDetailsEntity> newClient = clientRepository.findByClientId("test-client-creation");
+
     assertThrows(NoSuchElementException.class,
-        () -> clientRepository.findByClientId("test-client-creation").get());
+        () -> newClient.get());
 
     mvc
       .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
