@@ -26,9 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @IamMockMvcIntegrationTest
 class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
@@ -65,7 +63,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     @Autowired
     private IamProperties properties;
 
-    @BeforeAll
+    @BeforeEach
     void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")

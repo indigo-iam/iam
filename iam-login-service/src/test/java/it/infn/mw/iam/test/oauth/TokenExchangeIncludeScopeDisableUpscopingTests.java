@@ -28,10 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.NoSuchElementException;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -49,7 +47,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils {
@@ -70,7 +67,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
     @Autowired
     private IamClientRepository clientRepository;
 
-    @BeforeAll
+    @BeforeEach
     void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
@@ -81,15 +78,6 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
             .orElseThrow(NoSuchElementException::new);
         client.setUpScopingEnabled(false);
-        clientRepository.save(client);
-    }
-
-
-    @AfterAll
-    void cleanUp() {
-        ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
-            .orElseThrow(NoSuchElementException::new);
-        client.setUpScopingEnabled(true);
         clientRepository.save(client);
     }
 
