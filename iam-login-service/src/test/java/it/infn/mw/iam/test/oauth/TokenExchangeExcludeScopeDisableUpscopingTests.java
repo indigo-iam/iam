@@ -49,7 +49,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@DirtiesContext
 class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
