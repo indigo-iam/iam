@@ -45,6 +45,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
+@DirtiesContext
 class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
@@ -130,7 +131,6 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     // Upscoping Enabled, Access token without scopes, Iam settings with scopes, Using upscoping in
     // the exchange
     @Test
-    @DirtiesContext
     void testTokenExchangeForClientCredentialsUpScopingIncludeScopes() throws Exception {
 
         properties.getAccessToken().setIncludeScope(true);
