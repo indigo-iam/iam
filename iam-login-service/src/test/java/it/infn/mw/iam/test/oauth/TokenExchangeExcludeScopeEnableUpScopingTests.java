@@ -156,6 +156,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
         // No scopes should be present in access token
         assertEquals("profile", exchangedToken.getJWTClaimsSet().getClaim("scope"));
+        properties.getAccessToken().setIncludeScope(false);
     }
 
     // Upscoping Enabled, Access token without scopes, Iam settings without scopes, Using upscoping

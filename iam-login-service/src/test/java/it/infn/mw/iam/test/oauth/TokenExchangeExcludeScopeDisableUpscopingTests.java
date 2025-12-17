@@ -145,6 +145,8 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
             .andExpect(jsonPath("$.error").value("invalid_request"))
             .andExpect(jsonPath("$.error_description")
                 .value("cannot verify requested scopes with subject token"));
+
+        properties.getAccessToken().setIncludeScope(false);
     }
 
     // Upscoping disabled, Access token without scopes, Iam settings without scopes, Using upscoping
