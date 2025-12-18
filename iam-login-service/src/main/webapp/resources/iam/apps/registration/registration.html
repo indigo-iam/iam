@@ -134,40 +134,40 @@
 
 					<chekbox ng-if="field.type === 'certificate'">
 						<div id="checkbox"
-							ng-attr-title="{{(request.registerCertificate) ? 'Un-check to not link your certificate to the account' : 'Check to link your certificate to the account'}}"
+							ng-attr-title="{{(request.certificate) ? 'Un-check to not link your certificate to the account' : 'Check to link your certificate to the account'}}"
 							ng-if="iamX509Required === 'OPTIONAL'">
 
 							<label for="register-certificate"
-								ng-style="(request.registerCertificate && (iamX509SuspendedAccount || iamX509CanLogin)) ? {'color' : 'red'} : {}">
+								ng-style="(request.certificate && (iamX509SuspendedAccount || iamX509CanLogin)) ? {'color' : 'red'} : {}">
 								Register certificate
 							</label><br>
 
 							<input type="checkbox" id="register-certificate" name="register-certificate"
-								ng-model="request.registerCertificate">
+								ng-model="request.certificate">
 
 							<!-- Certificate is already linked -->
 							<span
-								ng-if="(iamX509Required === 'OPTIONAL') && iamX509CanLogin && request.registerCertificate"
+								ng-if="(iamX509Required === 'OPTIONAL') && iamX509CanLogin && request.certificate"
 								style="color: red;">
 								Certificate is already linked to an account. It can not be linked
 							</span>
 
 							<!-- Certificate is linked to a blocked account -->
 							<span
-								ng-if="(iamX509Required === 'OPTIONAL') && iamX509SuspendedAccount && request.registerCertificate"
+								ng-if="(iamX509Required === 'OPTIONAL') && iamX509SuspendedAccount && request.certificate"
 								style="color: red;">
 								Certificate is linked to an suspended account. It can not be linked
 							</span>
 
 							<!-- Certificate is not present in the browser -->
-							<span ng-if="(iamX509Required === 'OPTIONAL') &&!iamX509Cred && request.registerCertificate"
+							<span ng-if="(iamX509Required === 'OPTIONAL') &&!iamX509Cred && request.certificate"
 								style="color: red;">
 								No certificate present to link. Not possible to link certificate
 							</span>
 
 							<!-- No errors or the box is not checked -->
 							<span
-								ng-if="(iamX509Required === 'OPTIONAL') && ((!iamX509SuspendedAccount && !iamX509CanLogin && iamX509Cred && request.registerCertificate) || !request.registerCertificate)">
+								ng-if="(iamX509Required === 'OPTIONAL') && ((!iamX509SuspendedAccount && !iamX509CanLogin && iamX509Cred && request.certificate) || !request.certificate)">
 								Link your certificate to the account
 							</span>
 
@@ -221,7 +221,7 @@
 			<div class="form-group"
 				ng-if="!(iamX509Required === 'MANDATORY') || (iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)">
 				<button class="btn btn-primary" type="submit" id="register-submit-btn" name="register"
-					ng-disabled="!registrationForm.$valid || busy || (iamX509Required === 'OPTIONAL' && request.registerCertificate && (iamX509CanLogin || iamX509SuspendedAccount || !iamX509Cred))"
+					ng-disabled="!registrationForm.$valid || busy || (iamX509Required === 'OPTIONAL' && request.certificate && (iamX509CanLogin || iamX509SuspendedAccount || !iamX509Cred))"
 					ng-click="rc.submit()">Register</button>
 				<button class="btn btn-warning" type="button" id="register-reset-btn" name="reset" ng-click="rc.reset()"
 					ng-disabled="registrationForm.$pristine">Reset Form</button>
@@ -229,7 +229,7 @@
 			</div>
 			<div id="x509-authn-info"
 				ng-if="iamX509Cred && (iamX509Required === 'OPTIONAL' || (iamX509Required === 'MANDATORY' && !iamX509CanLogin && !iamX509SuspendedAccount))">
-				You have been succesfully authenticated as, {{registerCertificate}}<br>
+				You have been succesfully authenticated as, {{certificate}}<br>
 				<strong>{{iamX509Subject}}</strong>
 
 				<p ng-if="!iamX509CanLogin && !iamX509SuspendedAccount">

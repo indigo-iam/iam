@@ -128,7 +128,7 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate: {
+		certificate: {
 			type: "certificate",
 			required: false,
 			showField: true,
@@ -149,7 +149,7 @@ function RegistrationController(
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
 	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
-	vm.registerCertificate = true;
+	vm.certificate = true;
 
 	vm.activate();
 	vm.openExpiringCertificateDialog();
@@ -261,7 +261,7 @@ function RegistrationController(
 				email: populateValue(info, 'email'),
 				affiliation: populateValue(info, 'affiliation'),
 				notes: '',
-				registerCertificate: true,
+				certificate: true,
 			};
 
 			if (info.type === 'OIDC') {
@@ -316,7 +316,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
-			registerCertificate: true,
+			certificate: true,
 			affiliation: '',
 		};
 	}
@@ -359,6 +359,7 @@ function RegistrationController(
 					$scope.fields[field.toLowerCase()].showField = true;
 					$scope.fields[field.toLowerCase()].required = false;
 				} else {
+					//Think it is failing, because certificate isn't properly a part
 					$scope.fields[field.toLowerCase()].showField = false;
 					$scope.fields[field.toLowerCase()].required = false;
 				}
