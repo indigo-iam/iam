@@ -423,7 +423,7 @@ class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRequestWithClientIdNotCompliant() throws Exception {
+  void testRequestWithClientIdNotCompliant() throws Exception {
     String rpEntityId = "https://rp.example?foo=x";
     String redirectUri = "https://rp.example/cb";
 
