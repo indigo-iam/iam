@@ -17,30 +17,27 @@ package it.infn.mw.iam.test.startup;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @ActiveProfiles({"h2"})
 @SpringBootTest(classes = {IamLoginService.class})
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=false"})
-public class ApplicationStartupSuccessTests {
+class ApplicationStartupSuccessTests {
 
   @Autowired
   private ApplicationContext context;
 
   @Test
-  public void testSuccessOnStartupWithBeanDefinitionOverridingIsOff() {
+  void testSuccessOnStartupWithBeanDefinitionOverridingIsOff() {
     assertDoesNotThrow(() -> {
       context.getBean(UserApprovalHandler.class);
     });

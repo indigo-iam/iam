@@ -28,31 +28,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Set;
 
 import org.assertj.core.util.Sets;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class WhitelistedSiteTests extends EndpointsTestUtils {
+class WhitelistedSiteTests extends EndpointsTestUtils {
 
   @Autowired
-  private DefaultWhitelistedSiteService whitelistedSiteService;
+  DefaultWhitelistedSiteService whitelistedSiteService;
 
-  public WhitelistedSite getApprovedSiteFor(String creator, String clientId, Set<String> scopes) {
+  protected WhitelistedSite getApprovedSiteFor(String creator, String clientId, Set<String> scopes) {
 
     WhitelistedSite ws = new WhitelistedSite();
 
@@ -64,7 +56,7 @@ public class WhitelistedSiteTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWhitelistedSiteWithDeviceCodeDoesNotPromptToConsentPage() throws Exception {
+  void testWhitelistedSiteWithDeviceCodeDoesNotPromptToConsentPage() throws Exception {
 
     WhitelistedSite ws = getApprovedSiteFor(ADMIN_USERNAME, DEVICE_CODE_CLIENT_ID,
         Sets.newLinkedHashSet("openid", "profile"));
@@ -111,8 +103,7 @@ public class WhitelistedSiteTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc
-      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"));
 

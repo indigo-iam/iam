@@ -18,15 +18,15 @@ package it.infn.mw.iam.test.api.account.multi_factor_authentication;
 import static it.infn.mw.iam.test.TestUtils.passwordTokenGetter;
 import static org.hamcrest.Matchers.equalTo;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -38,9 +38,9 @@ import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
-public class MultiFactorSettingsTests {
+class MultiFactorSettingsTests {
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -56,13 +56,13 @@ public class MultiFactorSettingsTests {
   @Autowired
   private ScimUserProvisioning userService;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     testUser = userService.create(ScimUser.builder()
       .active(true)
       .addEmail(USER_EMAIL)
@@ -73,8 +73,8 @@ public class MultiFactorSettingsTests {
       .build());
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     userService.delete(testUser.getId());
   }
 
@@ -106,7 +106,7 @@ public class MultiFactorSettingsTests {
   }
 
   @Test
-  public void testGetSettings() {
+  void testGetSettings() {
     String accessToken = passwordTokenGetter().port(iamPort)
       .username(testUser.getUserName())
       .password(USER_PASSWORD)
@@ -116,7 +116,7 @@ public class MultiFactorSettingsTests {
   }
 
   @Test
-  public void testGetSettingsFullAuthenticationRequired() {
+  void testGetSettingsFullAuthenticationRequired() {
     doGet().statusCode(HttpStatus.UNAUTHORIZED.value())
       .body("error", equalTo("unauthorized"))
       .body("error_description",

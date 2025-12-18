@@ -68,6 +68,24 @@ public class GroupRequestsController {
     return groupRequestService.listGroupRequests(username, groupName, status, pageRequest);
   }
 
+  @PreAuthorize("#iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @GetMapping(value = BASE_RESOURCE + "/search")
+  public ListResponseDTO<GroupRequestDto> searchGroupRequests(
+      @RequestParam(required = false) String username,
+      @RequestParam(required = false) String userFullName,
+      @RequestParam(required = false) String groupName,
+      @RequestParam(required = false) String notes,
+      @RequestParam(required = false) String status, @RequestParam(required = false) Integer count,
+      @RequestParam(required = false) Integer startIndex) {
+
+    final Sort sort = Sort.by("account.username", "group.name", "creationTime");
+
+    OffsetPageable pageRequest =
+        PagingUtils.buildPageRequest(count, startIndex, GROUP_REQUEST_MAX_PAGE_SIZE, sort);
+
+    return groupRequestService.searchGroupRequests(username, userFullName, groupName, notes, status, pageRequest);
+  }
+
   @GetMapping(value = BASE_RESOURCE + "/{requestId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.canAccessGroupRequest(#requestId)")
   public GroupRequestDto getGroupRequestDetails(@PathVariable("requestId") String requestId) {

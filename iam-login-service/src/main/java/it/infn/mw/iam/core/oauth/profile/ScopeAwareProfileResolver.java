@@ -19,9 +19,13 @@ import static java.util.stream.Collectors.toCollection;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class ScopeAwareProfileResolver implements JWTProfileResolver {
+
+  public static final String MISMATCH_ERROR =
+      "JWT profile requested doesn't match the ones allowed for the client";
 
   private final Map<String, JWTProfile> profileMap;
   private final JWTProfile defaultProfile;
@@ -32,22 +36,44 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
   }
 
   @Override
-  public JWTProfile resolveProfile(Set<String> clientScopes) {
+  public JWTProfile resolveProfile(Set<String> scopes) {
 
-    if (clientScopes == null) {
+    return resolveProfile(scopes, Set.of());
+  }
+
+  @Override
+  public JWTProfile resolveProfile(Set<String> clientScopes, Set<String> requestedScopes) {
+
+    if (Objects.isNull(clientScopes) || Objects.isNull(requestedScopes)) {
       throw new IllegalArgumentException("null list of scopes");
     }
-
-    Set<JWTProfile> matchedProfiles = clientScopes
-      .stream()
-      .filter(profileMap.keySet()::contains)
-      .map(profileMap::get)
-      .collect(toCollection(LinkedHashSet::new));
-
-    if (matchedProfiles.isEmpty() || matchedProfiles.size() > 1) {
+    if (clientScopes.isEmpty() && requestedScopes.isEmpty()) {
       return defaultProfile;
     }
 
-    return matchedProfiles.iterator().next();
+    Set<JWTProfile> clientMatches = matches(clientScopes);
+    if (clientMatches.isEmpty()) {
+      return defaultProfile;
+    }
+    if (clientMatches.size() == 1) {
+      return clientMatches.iterator().next();
+    }
+    // clientMatches.size() > 1
+    Set<JWTProfile> requestedMatches = matches(requestedScopes);
+    if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
+      return defaultProfile;
+    }
+    if (!clientMatches.containsAll(requestedMatches)) {
+      throw new IllegalArgumentException(MISMATCH_ERROR);
+    }
+    return requestedMatches.iterator().next();
+  }
+
+  private Set<JWTProfile> matches(Set<String> clientScopes) {
+
+    return clientScopes.stream()
+      .filter(profileMap.keySet()::contains)
+      .map(profileMap::get)
+      .collect(toCollection(LinkedHashSet::new));
   }
 }

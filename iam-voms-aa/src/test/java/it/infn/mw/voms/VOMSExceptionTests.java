@@ -15,27 +15,27 @@
  */
 package it.infn.mw.voms;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.voms.aa.VOMSException;
 import it.infn.mw.voms.aa.VOMSNamingException;
 
-public class VOMSExceptionTests {
-  
+class VOMSExceptionTests {
+
   @Test
-  public void vomsExceptionWithMessageThrowableTest() {
-    
+  void vomsExceptionWithMessageThrowableTest() {
+
     NullPointerException cause = new NullPointerException();
     VOMSException ex = new VOMSException("Testing the voms exception with message", cause);
     assertEquals("Testing the voms exception with message", ex.getMessage());
     assertEquals(cause, ex.getCause());
   }
-  
+
   @Test
-  public void vomsNamingExceptionWithMessageThrowableTest() {
-    
+  void vomsNamingExceptionWithMessageThrowableTest() {
+
     VOMSNamingException e = new VOMSNamingException("Message");
     assertEquals("Message", e.getMessage());
   }

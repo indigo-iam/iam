@@ -22,14 +22,14 @@ import java.util.Optional;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
 import com.nimbusds.jwt.JWT;
 
 public interface IamOAuthRefreshTokenRepository
-    extends PagingAndSortingRepository<OAuth2RefreshTokenEntity, Long> {
+    extends JpaRepository<OAuth2RefreshTokenEntity, Long> {
 
   @Query("select r from OAuth2RefreshTokenEntity r where r.jwt = :value")
   Optional<OAuth2RefreshTokenEntity> findByTokenValue(@Param("value") JWT value);
@@ -97,4 +97,7 @@ public interface IamOAuthRefreshTokenRepository
       + "select sua.id from SavedUserAuthentication sua where sua.name not in ("
       + "select a.username from IamAccount a))")
   List<OAuth2RefreshTokenEntity> findOrphanedTokens();
+
+  @Query("select t from OAuth2RefreshTokenEntity t where t.expiration < current_date")
+  Page<OAuth2RefreshTokenEntity> findExpiredTokens(Pageable offsetPageable);
 }

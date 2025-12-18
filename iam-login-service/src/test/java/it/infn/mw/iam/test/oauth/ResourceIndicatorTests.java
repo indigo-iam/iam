@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,11 +31,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -48,8 +48,7 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.test.oauth.devicecode.DeviceCodeTestsConstants;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
@@ -159,7 +158,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRequestPasswordFlow() throws Exception {
+  void testResourceIndicatorRequestPasswordFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -186,7 +185,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorRequestPasswordFlow() throws Exception {
+  void testMultipleResourceIndicatorRequestPasswordFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -214,7 +213,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorOverridesAudienceRequestPasswordFlow() throws Exception {
+  void testResourceIndicatorOverridesAudienceRequestPasswordFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -246,7 +245,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorValidationFailsPasswordFlow() throws Exception {
+  void testResourceIndicatorValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -263,7 +262,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorValidationFailsPasswordFlow() throws Exception {
+  void testMultipleResourceIndicatorValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -280,7 +279,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithAudienceValidationFailsPasswordFlow() throws Exception {
+  void testResourceIndicatorWithAudienceValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -298,7 +297,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorValidationFailsPasswordFlow() throws Exception {
+  void testEmptyResourceIndicatorValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -315,8 +314,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithQueryParameterValidationFailsPasswordFlow()
-      throws Exception {
+  void testResourceIndicatorWithQueryParameterValidationFailsPasswordFlow()
+    throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -334,7 +333,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithFragmentValidationFailsPasswordFlow() throws Exception {
+  void testResourceIndicatorWithFragmentValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -352,7 +351,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRequestClientCredentialsFlow() throws Exception {
+  void testResourceIndicatorRequestClientCredentialsFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -375,7 +374,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorClientCredentialFlow() throws Exception {
+  void testMultipleResourceIndicatorClientCredentialFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -400,7 +399,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorOverridesAudienceRequestClientCredentialFlow() throws Exception {
+  void testResourceIndicatorOverridesAudienceRequestClientCredentialFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -429,7 +428,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
+  void testResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -443,7 +442,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
+  void testMultipleResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -457,8 +456,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithAudienceValidationFailsClientCredentialFlow()
-      throws Exception {
+  void testResourceIndicatorWithAudienceValidationFailsClientCredentialFlow()
+    throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -473,7 +472,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
+  void testEmptyResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -487,8 +486,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithQueryParameterValidationFailsClientCredentialsFlow()
-      throws Exception {
+  void testResourceIndicatorWithQueryParameterValidationFailsClientCredentialsFlow()
+    throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -503,8 +502,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorWithFragmentValidationFailsClientCredentialsFlow()
-      throws Exception {
+  void testResourceIndicatorWithFragmentValidationFailsClientCredentialsFlow()
+    throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -519,7 +518,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+  void testResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
     String resource = "https://example.org";
 
@@ -535,7 +534,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+  void testMultipleResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
     String resource = "https://example1.org https://example2.org";
 
@@ -552,7 +551,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testNarrowerResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+  void testNarrowerResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
     String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource",
         "https://example1.org https://example2.org", "https://example2.org");
@@ -566,7 +565,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testFilteredResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+  void testFilteredResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
     String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource",
         "https://storm.org https://dcache.org", "https://storm.org https://rucio.org");
@@ -580,7 +579,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testFilteredResourceIndicatorWithAudRequestRefreshTokenFlow() throws Exception {
+  void testFilteredResourceIndicatorWithAudRequestRefreshTokenFlow() throws Exception {
 
     String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "audience",
         "https://1.org https://2.org", "https://1.org https://3.org");
@@ -594,7 +593,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
+  void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
     
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -625,7 +624,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorRequestRTFlowAfterPassword() throws Exception {
+  void testEmptyResourceIndicatorRequestRTFlowAfterPassword() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)
@@ -663,7 +662,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  void testResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -705,7 +704,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRequestWrongDevideCodeFlow() throws Exception {
+  void testResourceIndicatorRequestWrongDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -733,7 +732,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testMultipleResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  void testMultipleResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -776,7 +775,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorTokenRequestDevideCodeFlow() throws Exception {
+  void testEmptyResourceIndicatorTokenRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -816,7 +815,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorDeviceCodeRequest() throws Exception {
+  void testEmptyResourceIndicatorDeviceCodeRequest() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -847,7 +846,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testNarrowerResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  void testNarrowerResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -889,7 +888,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testFilteredResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  void testFilteredResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -931,7 +930,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testFilteredResourceIndicatorWithAudRequestDevideCodeFlow() throws Exception {
+  void testFilteredResourceIndicatorWithAudRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -973,7 +972,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorNotOriginallyGrantedDevideCodeFlow() throws Exception {
+  void testResourceIndicatorNotOriginallyGrantedDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -1005,7 +1004,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorRequestRTFlowAfterDevideCode() throws Exception {
+  void testEmptyResourceIndicatorRequestRTFlowAfterDevideCode() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -1061,7 +1060,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorNotOriginallyGrantedRTAfterDeviceFlow() throws Exception {
+  void testResourceIndicatorNotOriginallyGrantedRTAfterDeviceFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -1106,7 +1105,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testResourceIndicatorRTBoundToDeviceRequestParameters() throws Exception {
+  void testResourceIndicatorRTBoundToDeviceRequestParameters() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -1160,7 +1159,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testAuthzCodeEmptyTokenRequestResourceIndicator() throws Exception {
+  void testAuthzCodeEmptyTokenRequestResourceIndicator() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
@@ -1250,7 +1249,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testAuthzCodeEmptyAuthzRequestResourceIndicator() throws Exception {
+  void testAuthzCodeEmptyAuthzRequestResourceIndicator() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)

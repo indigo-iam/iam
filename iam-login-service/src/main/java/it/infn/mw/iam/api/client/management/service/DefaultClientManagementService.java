@@ -17,8 +17,6 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static java.util.Objects.isNull;
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 
 import java.text.ParseException;
 import java.time.Clock;
@@ -178,7 +176,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Validated(OnClientUpdate.class)
   @Override
-  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO client)
+  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
 
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
@@ -188,7 +186,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       throw new InvalidRequestException("Federated clients cannot be updated");
     }
 
-    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(client);
+    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
     newClient.setCreatedAt(oldClient.getCreatedAt());
@@ -196,16 +194,12 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setDynamicallyRegistered(oldClient.isDynamicallyRegistered());
     newClient.setActive(oldClient.isActive());
+    // Direct updates are disabled. Changes must be made via secret reset process
+    newClient.setClientSecret(oldClient.getClientSecret());
 
-    if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
-      newClient.setClientSecret(null);
-    } else if (isNull(client.getClientSecret())) {
-      client.setClientSecret(defaultsService.generateClientSecret());
-    }
-
-    if (hasRelyingParty(client)) {
-      ClientRelyingPartyEntity clientRelyingParty =
-          new ClientRelyingPartyEntity(newClient, client.getExpiration(), client.getEntityId());
+    if (hasRelyingParty(clientDTO)) {
+      ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,
+          clientDTO.getExpiration(), clientDTO.getEntityId());
       newClient.setClientRelyingParty(clientRelyingParty);
       newClient.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     }

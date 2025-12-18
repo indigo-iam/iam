@@ -15,31 +15,28 @@
  */
 package it.infn.mw.iam.test.core;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import io.restassured.RestAssured;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment  = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class IamErrorControllerTests {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class IamErrorControllerTests {
 
-    @LocalServerPort
-    int port;
+  @LocalServerPort
+  int port;
 
-    @Before
-    public void setup() {
-        RestAssured.port = port;
-    }
+  @BeforeEach
+  void setup() {
+    RestAssured.port = port;
+  }
 
-    @Test
-    public void testInternalServerError() throws InterruptedException {
-        RestAssured.given().basePath("/error").get("").then().statusCode(500);
-    }
+  @Test
+  void testInternalServerError() {
+    RestAssured.given().basePath("/error").get("").then().statusCode(500);
+  }
 }
-    
+
 

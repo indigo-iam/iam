@@ -18,25 +18,25 @@ package it.infn.mw.iam.test.notification.resolver;
 import static it.infn.mw.iam.notification.service.resolver.DefaultAddressResolutionService.VO_ADMINS;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.CompositeAdminsNotificationDelivery;
-import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyAdminAddressStrategy;
+import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CompositeNotificationPolicyTests extends AddressResolutionServiceTestSupport {
 
   public static final String ADMIN_ADDRESS = "admin.list@example";
@@ -47,14 +47,13 @@ public class CompositeNotificationPolicyTests extends AddressResolutionServiceTe
   @Mock
   AddressResolutionService ars;
 
-  
   NotifyAdminsStrategy sta;
   NotifyAdminAddressStrategy stl;
 
   CompositeAdminsNotificationDelivery strategy;
 
-  @Before
-  public void before() {
+  @BeforeEach
+  void before() {
     when(props.getAdminAddress()).thenReturn(ADMIN_ADDRESS);
     when(ars.resolveAddressesForAudience(VO_ADMINS))
       .thenReturn(asList(ADMIN_1_EMAIL, ADMIN_2_EMAIL));
@@ -63,16 +62,15 @@ public class CompositeNotificationPolicyTests extends AddressResolutionServiceTe
     stl = new NotifyAdminAddressStrategy(props);
     strategy = new CompositeAdminsNotificationDelivery(asList(stl, sta));
   }
-  
+
   @Test
-  public void testComposite() {
-    List<String> emails = strategy.resolveAdminEmailAddresses(); 
-    
+  void testComposite() {
+    List<String> emails = strategy.resolveAdminEmailAddresses();
+
     assertThat(emails, hasSize(3));
     assertThat(emails, hasItem(ADMIN_ADDRESS));
     assertThat(emails, hasItem(ADMIN_1_EMAIL));
     assertThat(emails, hasItem(ADMIN_2_EMAIL));
   }
-  
-  
+
 }

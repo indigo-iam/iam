@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.13.3 (2025-12-09)
+
+## What's Changed
+
+* Don't fallback on default JWT profile when the requested scopes clarifies the desired one
+* Evaluate all SAML identifiers resolved on login to avoid errors after a change in strategy
+* Fix issue about missing pre-filled registration values
+* Convert the SCIM X.509 DTO before sending email to avoid wrong notification and an error on uploading PEM certificates
+
+## 1.13.2 (2025-11-25)
+
+## What's Changed
+
+* Restore local login link for hidden case
+* Fix group membership requests acceptance and refusal propagation properly
+* Fix registration's form fields configuration by making it case insensitive
+* Make it clear for admins how strong is the client reset operation
+
 ## 1.13.1 (2025-11-20)
 
 ## What's Changed

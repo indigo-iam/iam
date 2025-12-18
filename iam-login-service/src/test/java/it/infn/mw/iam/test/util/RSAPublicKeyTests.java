@@ -26,15 +26,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
-public class RSAPublicKeyTests {
-
+class RSAPublicKeyTests {
 
   @Test
-  public void testSHA256Fingerprint() {
+  void testSHA256Fingerprint() {
 
     String fp = RSAPublicKeyUtils.getSHA256Fingerprint(sshKeys.get(0).key);
     assertThat(fp, equalTo(sshKeys.get(0).fingerprintSHA256));
@@ -42,18 +41,14 @@ public class RSAPublicKeyTests {
     assertThat(fp, equalTo(sshKeys.get(1).fingerprintSHA256));
   }
 
-
-
   @Test
-  public void testSHA26FingerprintIsAccepted() throws NoSuchAlgorithmException {
+  void testSHA26FingerprintIsAccepted() throws NoSuchAlgorithmException {
 
     final String test = "test";
     final String testBase64Encoded = Base64.getEncoder().encodeToString(test.getBytes());
     final String sha256fingerprint = Base64.getEncoder()
       .encodeToString(
-          MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256)
-            .digest(test.getBytes()));
-
+          MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256).digest(test.getBytes()));
 
     assertThat(
         RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s comment", testBase64Encoded)),
@@ -61,6 +56,5 @@ public class RSAPublicKeyTests {
 
     assertThat(RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s", testBase64Encoded)),
         is(sha256fingerprint));
-
   }
 }

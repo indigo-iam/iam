@@ -50,7 +50,8 @@
         self.voAdmin = Utils.isAdmin();
 
         $scope.$watch('$ctrl.filter', function() {
-            filterRequests();
+            self.currentPage = 1;
+            filterRequests(1);
         });
 
         self.groupManagerForGroup = function(req) {
@@ -73,11 +74,15 @@
             });
         }
 
-        function loadSuccess(res) {
+        function loadSuccess(res, updateRootCounters = true) {
             self.totalResults = res.totalResults;
-            self.filtered = self.requests = res.Resources;
             updatePageCounters();
-            updateRootScopeCounters(res);
+            if (updateRootCounters) {
+                updateRootScopeCounters(res);
+                self.filtered = self.requests = res.Resources;
+            } else {
+                self.filtered = res.Resources;
+            }
             self.loaded = true;
             self.busy = false;
             return res;
@@ -94,34 +99,19 @@
             loadRequests();
         };
 
-        function filterRequests() {
-            self.filtered = filterFilter(self.requests, function(request) {
+        function filterRequests(startIndex) {
+            const filterPayload = {
+                status: 'PENDING',
+                startIndex: startIndex,
+                username: self.filter,
+                userFullName: self.filter,
+                groupName: self.filter,
+                notes: self.filter
+            };
 
-                if (!self.filter) {
-                    return true;
-                }
-
-                var query = self.filter.toLowerCase();
-
-                if (request.userFullName.toLowerCase().indexOf(query) != -1) {
-                    return true;
-                }
-                if (request.username.toLowerCase().indexOf(query) != -1) {
-                    return true;
-                }
-                if (request.groupName.toLowerCase().indexOf(query) != -1) {
-                    return true;
-                }
-
-                if (request.notes.toLowerCase().indexOf(query) != -1) {
-                    return true;
-                }
-                return false;
-            });
-
-            if (self.filtered) {
-                updatePageCounters();
-            }
+            GroupRequestsService.searchGroupRequests(filterPayload)
+                .then(response => loadSuccess(response, false))
+                .catch(errorHandler);
         }
 
         self.resetFilter = function() {
@@ -150,21 +140,33 @@
         };
 
         function approveSuccess(res) {
-            loadRequests().then(function(res) {
+            var startIndex = ((self.currentPage - 1) * self.itemsPerPage) + 1;
+
+            loadRequests().then(() => {
+                if (self.filter && self.filter.trim() !== "") {
+                    return filterRequests(startIndex);
+                }
+            }).then(() => {
                 toaster.pop({
                     type: 'success',
                     body: "Request approved"
                 });
-            });
+            }).catch(errorHandler);
         }
 
         function rejectSuccess(res) {
-            loadRequests().then(function(res) {
+            var startIndex = ((self.currentPage - 1) * self.itemsPerPage) + 1;
+
+            loadRequests().then(() => {
+                if (self.filter && self.filter.trim() !== "") {
+                    return filterRequests(startIndex);
+                }
+            }).then(() => {
                 toaster.pop({
                     type: 'success',
                     body: "Request rejected"
                 });
-            });
+            }).catch(errorHandler);
         }
 
         function decisionErrorHandler(res) {
@@ -177,11 +179,15 @@
             self.busy = false;
         }
 
-        self.pageChanged = function() {
+        self.pageChanged = function () {
             var startIndex = ((self.currentPage - 1) * self.itemsPerPage) + 1;
-            loadRequests(startIndex).then(function(r) {
-                console.log(r);
-            });
+            if (self.filter) {
+                filterRequests(startIndex);
+            } else {
+                loadRequests(startIndex).then(function (r) {
+                    console.log(r);
+                });
+            }
         };
     }
 

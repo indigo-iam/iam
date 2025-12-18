@@ -18,44 +18,44 @@ package it.infn.mw.iam.test.ext_authn.oidc.validator;
 import static it.infn.mw.iam.authn.oidc.validator.check.ClaimPresentCheck.hasClaim;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.PlainJWT;
 
-public class ClaimPresentCheckTests extends JWTTestSupport{
+class ClaimPresentCheckTests extends JWTTestSupport {
 
   @Test
-  public void hasClaimWorkAsExpected() {
+  void hasClaimWorkAsExpected() {
 
     JWT jwt = new PlainJWT(claimSetBuilder().build());
     assertThat(hasClaim("sub").validate(jwt).isSuccess(), is(true));
     assertThat(hasClaim("exp").validate(jwt).isFailure(), is(true));
   }
-  
-  
+
   @Test
-  public void claimParseErrorHandled() throws ParseException {
+  void claimParseErrorHandled() throws ParseException {
     JWT jwt = Mockito.mock(JWT.class);
-    
-    when(jwt.getJWTClaimsSet()).thenThrow(new ParseException("parse error",0));
+
+    when(jwt.getJWTClaimsSet()).thenThrow(new ParseException("parse error", 0));
     assertThat(hasClaim("sub").validate(jwt).isError(), is(true));
-    
+
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void nullClaimNotAllowed() {
-    hasClaim(null);
+
+  @Test
+  void nullClaimNotAllowed() {
+    assertThrows(IllegalArgumentException.class, () -> hasClaim(null));
   }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyClaimNotAllowed() {
-    hasClaim("");
+
+  @Test
+  void emptyClaimNotAllowed() {
+    assertThrows(IllegalArgumentException.class, () -> hasClaim(""));
   }
 
 }

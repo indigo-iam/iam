@@ -15,15 +15,15 @@
  */
 package it.infn.mw.iam.test.scim.converter;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.converter.AddressConverter;
@@ -38,61 +38,62 @@ import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
-@RunWith(MockitoJUnitRunner.class)
-public class UserConverterTest {
+@ExtendWith(MockitoExtension.class)
+class UserConverterTest {
 
-    @Mock
-    private ScimResourceLocationProvider resourceLocationProvider;
-    @Mock
-    private AddressConverter addressConverter;
-    @Mock
-    private OidcIdConverter oidcIdConverter;
-    @Mock
-    private SshKeyConverter sshKeyConverter;
-    @Mock
-    private SamlIdConverter samlIdConverter;
-    @Mock
-    private X509CertificateConverter x509CertificateIamConverter;
-    @Mock
-    private AccountGroupManagerService groupManagerService;
-    @Mock
-    private ScimProperties properties;
+  @Mock
+  private ScimResourceLocationProvider resourceLocationProvider;
+  @Mock
+  private AddressConverter addressConverter;
+  @Mock
+  private OidcIdConverter oidcIdConverter;
+  @Mock
+  private SshKeyConverter sshKeyConverter;
+  @Mock
+  private SamlIdConverter samlIdConverter;
+  @Mock
+  private X509CertificateConverter x509CertificateIamConverter;
+  @Mock
+  private AccountGroupManagerService groupManagerService;
+  @Mock
+  private ScimProperties properties;
 
-    private UserConverter userConverter;
-    
-    @Before
-    public void setup() {
-        when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
+  private UserConverter userConverter;
 
-        userConverter = new UserConverter(properties, resourceLocationProvider, addressConverter,
-                            oidcIdConverter, sshKeyConverter, samlIdConverter, x509CertificateIamConverter, groupManagerService);        
-    }
+  @BeforeEach
+  void setup() {
 
-    @Test
-    public void testEntityWithAffiliationProduceDtoWithAffiliation() {
-        IamUserInfo userInfo = new IamUserInfo();
-        userInfo.setAffiliation("Test user affiliation");
+    lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
+    userConverter =
+        new UserConverter(properties, resourceLocationProvider, addressConverter, oidcIdConverter,
+            sshKeyConverter, samlIdConverter, x509CertificateIamConverter, groupManagerService);
+  }
 
-        IamAccount iamAccount = new IamAccount();
-        iamAccount.setUsername("Test User");
-        iamAccount.setUuid("UUID");
-        iamAccount.setUserInfo(userInfo);
+  @Test
+  void testEntityWithAffiliationProduceDtoWithAffiliation() {
 
-        ScimUser scimUser = userConverter.dtoFromEntity(iamAccount);
+    IamUserInfo userInfo = new IamUserInfo();
+    userInfo.setAffiliation("Test user affiliation");
 
-        assertEquals("Test user affiliation", scimUser.getIndigoUser().getAffiliation());
-    }
+    IamAccount iamAccount = new IamAccount();
+    iamAccount.setUsername("Test User");
+    iamAccount.setUuid("UUID");
+    iamAccount.setUserInfo(userInfo);
 
-    @Test
-    public void testDtoWithAffiliationProduceEntityWithAffiliation() {
-        ScimUser.Builder userBuilder = ScimUser.builder()
-                                        .buildName("Test Givenname", "Test Familyname")
-                                        .buildEmail("test@example.com")
-                                        .userName("Test Username")
-                                        .affiliation("Test user affiliation");
+    ScimUser scimUser = userConverter.dtoFromEntity(iamAccount);
+    assertEquals("Test user affiliation", scimUser.getIndigoUser().getAffiliation());
+  }
 
-        IamAccount iamAccount = userConverter.entityFromDto(userBuilder.build());
+  @Test
+  void testDtoWithAffiliationProduceEntityWithAffiliation() {
 
-        assertEquals("Test user affiliation", iamAccount.getUserInfo().getAffiliation());
-    }
+    ScimUser.Builder userBuilder = ScimUser.builder()
+      .buildName("Test Givenname", "Test Familyname")
+      .buildEmail("test@example.com")
+      .userName("Test Username")
+      .affiliation("Test user affiliation");
+
+    IamAccount iamAccount = userConverter.entityFromDto(userBuilder.build());
+    assertEquals("Test user affiliation", iamAccount.getUserInfo().getAffiliation());
+  }
 }

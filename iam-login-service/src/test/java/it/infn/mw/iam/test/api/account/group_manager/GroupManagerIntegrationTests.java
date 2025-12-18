@@ -27,13 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -50,10 +50,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class GroupManagerIntegrationTests {
+class GroupManagerIntegrationTests {
 
   private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
 
@@ -72,18 +72,18 @@ public class GroupManagerIntegrationTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void getAccountManagerInformationRequiresAuthenticatdUser() throws Exception {
+  void getAccountManagerInformationRequiresAuthenticatdUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -94,7 +94,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "test_001", roles = {"USER"})
-  public void getAccountManagerInformationRequiresAdminUser() throws Exception {
+  void getAccountManagerInformationRequiresAdminUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -105,7 +105,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
-  public void getAccountManagerInformationWorksForAdminUser() throws Exception {
+  void getAccountManagerInformationWorksForAdminUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -123,7 +123,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getAccountManagerInformationWorksForSameUser() throws Exception {
+  void getAccountManagerInformationWorksForSameUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -148,7 +148,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN"})
-  public void getAccountManagerInformatReturnsBadRequestWhenAccountNotFound() throws Exception {
+  void getAccountManagerInformatReturnsBadRequestWhenAccountNotFound() throws Exception {
 
     String randomUuid = UUID.randomUUID().toString();
 
@@ -159,7 +159,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getAccountManagerInformationReturnsRightInformatio() throws Exception {
+  void getAccountManagerInformationReturnsRightInformatio() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -183,7 +183,7 @@ public class GroupManagerIntegrationTests {
   }
 
   @Test
-  public void addGroupManagerRequiresAuthenticatedUser() throws Exception {
+  void addGroupManagerRequiresAuthenticatedUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -195,7 +195,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void addGroupManagerRequiresAdminUser() throws Exception {
+  void addGroupManagerRequiresAdminUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -207,7 +207,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void addGroupManagerWorksForAdminUser() throws Exception {
+  void addGroupManagerWorksForAdminUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -230,7 +230,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void addGroupManagerWorksForAdminWithScope() throws Exception {
+  void addGroupManagerWorksForAdminWithScope() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -242,7 +242,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void addGroupManagerDoesNotWork() throws Exception {
+  void addGroupManagerDoesNotWork() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -254,7 +254,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void addGroupManagerRequiresValidUserAndGroupIds() throws Exception {
+  void addGroupManagerRequiresValidUserAndGroupIds() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
@@ -275,7 +275,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void removeGroupManagerWorksForAdminUser() throws Exception {
+  void removeGroupManagerWorksForAdminUser() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -305,7 +305,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void removeGroupManagerWorksForAdminUserWithScope() throws Exception {
+  void removeGroupManagerWorksForAdminUserWithScope() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -325,7 +325,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void removeGroupManagerDoesNotWork() throws Exception {
+  void removeGroupManagerDoesNotWork() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -344,21 +344,21 @@ public class GroupManagerIntegrationTests {
   }
 
   @Test
-  public void listGroupManagersRequiresAuthenticatedUser() throws Exception {
+  void listGroupManagersRequiresAuthenticatedUser() throws Exception {
     mvc.perform(get("/iam/group/{uuid}/group-managers", TEST_001_GROUP_ID))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void listGroupManagersRequiresAdminUserOrGroupManager() throws Exception {
+  void listGroupManagersRequiresAdminUserOrGroupManager() throws Exception {
     mvc.perform(get("/iam/group/{uuid}/group-managers", TEST_001_GROUP_ID))
       .andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN"})
-  public void listGroupManagersRequiresAdminUser() throws Exception {
+  void listGroupManagersRequiresAdminUser() throws Exception {
     mvc.perform(get("/iam/group/{uuid}/group-managers", TEST_001_GROUP_ID))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$").isArray())
@@ -384,7 +384,7 @@ public class GroupManagerIntegrationTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"READER"})
-  public void listGroupManagersWorksForReaderUser() throws Exception {
+  void listGroupManagersWorksForReaderUser() throws Exception {
     mvc.perform(get("/iam/group/{uuid}/group-managers", TEST_001_GROUP_ID))
       .andExpect(status().isOk());
   }

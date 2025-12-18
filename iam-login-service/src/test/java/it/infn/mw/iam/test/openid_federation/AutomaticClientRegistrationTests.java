@@ -36,9 +36,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
@@ -50,7 +50,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -75,9 +75,9 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class AutomaticClientRegistrationTests {
+class AutomaticClientRegistrationTests {
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -100,8 +100,8 @@ public class AutomaticClientRegistrationTests {
 
   private JWKSet jwkSet;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() throws Exception {
     rsaJWK = new RSAKeyGenerator(2048).keyID("rsa1").generate();
 
     jwkSet = new JWKSet(rsaJWK.toPublicJWK());
@@ -152,7 +152,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testAutomaticClientRegistrationWithEntityId() throws Exception {
+  void testAutomaticClientRegistrationWithEntityId() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
@@ -238,7 +238,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testAutomaticClientRegistrationWithTrustChain() throws Exception {
+  void testAutomaticClientRegistrationWithTrustChain() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -273,7 +273,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRegistrationWithoutRedirectUri() throws Exception {
+  void testRegistrationWithoutRedirectUri() throws Exception {
     String rpEntityId = "https://rp.example";
     String requestJwt = generateRequestJWT(rpEntityId, null, null);
 
@@ -293,7 +293,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testInvalidTrustChainError() throws Exception {
+  void testInvalidTrustChainError() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
@@ -315,7 +315,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRegistrationWithInvalidJwt() throws Exception {
+  void testRegistrationWithInvalidJwt() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/callback";
     String requestJwt = "invalid-jwt";
@@ -332,7 +332,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRegistrationWithoutRequestObject() throws Exception {
+  void testRegistrationWithoutRequestObject() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -355,7 +355,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testMissingJwksAndJwksUriInRpMetadata() throws Exception {
+  void testMissingJwksAndJwksUriInRpMetadata() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -389,7 +389,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testUnknownJwksUriInRpMetadata() throws Exception {
+  void testUnknownJwksUriInRpMetadata() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -442,7 +442,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRequestWithMalformedClientId() throws Exception {
+  void testRequestWithMalformedClientId() throws Exception {
     String rpEntityId = "https://rp.example:ABC";
     String redirectUri = "https://rp.example/cb";
 
@@ -460,7 +460,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testRequestWithClientIdNotFound() throws Exception {
+  void testRequestWithClientIdNotFound() throws Exception {
     String rpEntityId = "ht!tps://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -476,7 +476,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testPromptNoneUnauthenticated() throws Exception {
+  void testPromptNoneUnauthenticated() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -499,7 +499,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testPromptLoginClearsAuth() throws Exception {
+  void testPromptLoginClearsAuth() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
@@ -542,7 +542,7 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
-  public void testMaxAgeForcesLogout() throws Exception {
+  void testMaxAgeForcesLogout() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 

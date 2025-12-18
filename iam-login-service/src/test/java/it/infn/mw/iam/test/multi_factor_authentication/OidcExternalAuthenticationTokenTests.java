@@ -17,16 +17,16 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mockito.Mockito;
 
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 
-public class OidcExternalAuthenticationTokenTests {
+class OidcExternalAuthenticationTokenTests {
 
   @Test
-  public void testEqualsSameObject() {
+  void testEqualsSameObject() {
     OIDCAuthenticationToken mockAuthn = Mockito.mock(OIDCAuthenticationToken.class);
     OidcExternalAuthenticationToken token1 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");
@@ -34,7 +34,7 @@ public class OidcExternalAuthenticationTokenTests {
   }
 
   @Test
-  public void testEqualsNullObject() {
+  void testEqualsNullObject() {
     OIDCAuthenticationToken mockAuthn = Mockito.mock(OIDCAuthenticationToken.class);
     OidcExternalAuthenticationToken token1 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");
@@ -42,7 +42,7 @@ public class OidcExternalAuthenticationTokenTests {
   }
 
   @Test
-  public void testEqualsDifferentClass() {
+  void testEqualsDifferentClass() {
     OIDCAuthenticationToken mockAuthn = Mockito.mock(OIDCAuthenticationToken.class);
     OidcExternalAuthenticationToken token1 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");
@@ -51,7 +51,7 @@ public class OidcExternalAuthenticationTokenTests {
   }
 
   @Test
-  public void testEqualsAndHashcodeSameValues() {
+  void testEqualsAndHashcodeSameValues() {
     OIDCAuthenticationToken mockAuthn = Mockito.mock(OIDCAuthenticationToken.class);
     OidcExternalAuthenticationToken token1 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");
@@ -62,7 +62,7 @@ public class OidcExternalAuthenticationTokenTests {
   }
 
   @Test
-  public void testEqualsAndHashCodeDifferentValues() {
+  void testEqualsAndHashCodeDifferentValues() {
     OIDCAuthenticationToken mockAuthn = Mockito.mock(OIDCAuthenticationToken.class);
     OidcExternalAuthenticationToken token1 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");

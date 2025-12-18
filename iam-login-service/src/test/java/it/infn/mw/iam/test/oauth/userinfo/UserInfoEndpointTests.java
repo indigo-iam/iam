@@ -30,12 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,37 +56,34 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
-
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class UserInfoEndpointTests {
+class UserInfoEndpointTests {
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-
-  @Autowired
-  private IamAccountService accountService;
+  MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountService accountService;
 
-  @Before
-  public void setup() throws Exception {
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testUserInfoResponseCreationWithoutSub() {
+  void testUserInfoResponseCreationWithoutSub() {
 
     Map<String, Object> claims = Map.of("iss", "https://iam-example.org/");
     assertThrows(IllegalArgumentException.class, () -> {
@@ -96,15 +93,15 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
-  public void testUserInfoEndpointReturs404ForClientCredentialsToken() throws Exception {
+  void testUserInfoEndpointReturs404ForClientCredentialsToken() throws Exception {
 
     mvc.perform(get("/userinfo")).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid"})
-  public void testUserInfoEndpointRetursOk() throws Exception {
+    scopes = {"openid"})
+  void testUserInfoEndpointRetursOk() throws Exception {
 
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
@@ -118,8 +115,8 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
-  public void testUserInfoEndpointRetursAllExpectedInfo() throws Exception {
+    scopes = {"openid", "profile"})
+  void testUserInfoEndpointRetursAllExpectedInfo() throws Exception {
 
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
@@ -134,9 +131,9 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"}, externallyAuthenticated = true,
-      externalAuthenticationType = ExternalAuthenticationType.OIDC)
-  public void testUserInfoEndpointRetursExtAuthnClaim() throws Exception {
+    scopes = {"openid", "profile"}, externallyAuthenticated = true,
+    externalAuthenticationType = ExternalAuthenticationType.OIDC)
+  void testUserInfoEndpointRetursExtAuthnClaim() throws Exception {
 
     MvcResult result = mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
@@ -153,8 +150,8 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
-  public void userinfoEndpointDoesNotReturnsSshKeysWithoutScope() throws Exception {
+    scopes = {"openid", "profile"})
+  void userinfoEndpointDoesNotReturnsSshKeysWithoutScope() throws Exception {
 
     IamAccount test = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected account not found"));
@@ -177,8 +174,8 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile", "ssh-keys"})
-  public void userinfoEndpointDoesNotReturnsSshKeysWithAppropriateScope() throws Exception {
+    scopes = {"openid", "profile", "ssh-keys"})
+  void userinfoEndpointDoesNotReturnsSshKeysWithAppropriateScope() throws Exception {
     IamAccount test = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
@@ -203,9 +200,9 @@ public class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
+    scopes = {"openid", "profile"})
   @Transactional
-  public void testUserInfoEndpointReturnsNoEmptyClaims() throws Exception {
+  void testUserInfoEndpointReturnsNoEmptyClaims() throws Exception {
 
     IamAccount test = accountRepo.findByUsername("test")
         .orElseThrow(() -> new AssertionError("Expected account not found"));

@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,13 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -46,10 +44,9 @@ import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class ClientEventTests {
+class ClientEventTests {
   
   @Autowired
   private IamAuditEventLogger logger;
@@ -59,7 +56,7 @@ public class ClientEventTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void testClientCreation() throws Exception {
+  void testClientCreation() throws Exception {
   
     String jsonInString = ClientJsonStringBuilder.builder().name("client").scopes("test").build();
   
@@ -80,10 +77,10 @@ public class ClientEventTests {
     assertThat(event.getMessage(),
         containsString("Client created"));
   }
-  
+
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void testClientUpdate() throws Exception {
+  void testClientUpdate() throws Exception {
   
     String newScope = ClientJsonStringBuilder.builder().scopes("test1").build();
     
@@ -100,10 +97,10 @@ public class ClientEventTests {
     assertThat(event.getMessage(),
         containsString("Client updated"));
   }
-  
+
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void testClientDelete() throws Exception {
+  void testClientDelete() throws Exception {
     
     mvc.perform(delete("/iam/api/clients/client")
             .contentType(APPLICATION_JSON))

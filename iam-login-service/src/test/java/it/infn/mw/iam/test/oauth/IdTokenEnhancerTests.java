@@ -23,13 +23,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,12 +38,10 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class IdTokenEnhancerTests {
+class IdTokenEnhancerTests {
 
   private static final String CLIENT_ID = "password-grant";
   private static final String CLIENT_SECRET = "secret";
@@ -81,7 +77,7 @@ public class IdTokenEnhancerTests {
   }
 
   @Test
-  public void testEnhancedEmailOk() throws Exception {
+  void testEnhancedEmailOk() throws Exception {
 
     JWT token = JWTParser.parse(getIdToken("openid email"));
     System.out.println(token.getJWTClaimsSet());
@@ -89,7 +85,7 @@ public class IdTokenEnhancerTests {
   }
 
   @Test
-  public void testEnhancedProfileClaimsOk() throws Exception {
+  void testEnhancedProfileClaimsOk() throws Exception {
 
     JWTClaimsSet claims = JWTParser.parse(getIdToken("openid profile")).getJWTClaimsSet();
 
@@ -97,11 +93,11 @@ public class IdTokenEnhancerTests {
     assertThat(claims.getClaim("preferred_username"), is(notNullValue()));
     assertThat(claims.getClaim("organisation_name"), is(notNullValue()));
     assertThat(claims.getClaim("groups"), is(notNullValue()));
-    
+
   }
 
   @Test
-  public void testEnhancedEmailNotEnhanced() throws Exception {
+  void testEnhancedEmailNotEnhanced() throws Exception {
 
     JWT token = JWTParser.parse(getIdToken("openid"));
 
@@ -110,7 +106,7 @@ public class IdTokenEnhancerTests {
   }
 
   @Test
-  public void testEnhancedProfileClaimsNotEnhanced() throws Exception {
+  void testEnhancedProfileClaimsNotEnhanced() throws Exception {
 
     JWT token = JWTParser.parse(getIdToken("openid"));
     System.out.println(token.getJWTClaimsSet());

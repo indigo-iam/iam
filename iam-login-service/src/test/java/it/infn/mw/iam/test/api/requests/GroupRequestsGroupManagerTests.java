@@ -23,14 +23,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -38,11 +36,9 @@ import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
+class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   private static final String GROUP_MANAGER_USER = "test_200";
 
   private static final String USER_ROLE = "USER";
@@ -54,11 +50,11 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
-  public void testGroupManagerCanAccessGroupPendingRequest() throws Exception {
+  void testGroupManagerCanAccessGroupPendingRequest() throws Exception {
 
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
- // @formatter:off
+    // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
@@ -71,8 +67,8 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER,
-      roles = {GROUP_MANAGER_ROLE_001, GROUP_MANAGER_ROLE_002, USER_ROLE})
-  public void testGroupManagercanListPendingRequestForManagedGroups() throws Exception {
+    roles = {GROUP_MANAGER_ROLE_001, GROUP_MANAGER_ROLE_002, USER_ROLE})
+  void testGroupManagercanListPendingRequestForManagedGroups() throws Exception {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
@@ -97,7 +93,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
-  public void testGroupManagercanListPendingRequestForManagedGroup() throws Exception {
+  void testGroupManagercanListPendingRequestForManagedGroup() throws Exception {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
@@ -120,7 +116,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_002, USER_ROLE})
-  public void testGroupManagercanListPendingRequestForManagedGroup2() throws Exception {
+  void testGroupManagercanListPendingRequestForManagedGroup2() throws Exception {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
@@ -133,7 +129,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
-  public void testGroupManagerCanApproveRequestsForManagedGroup() throws Exception {
+  void testGroupManagerCanApproveRequestsForManagedGroup() throws Exception {
 
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
@@ -153,7 +149,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
-  public void testGroupManagerCanRejectRequestsForManagedGroup() throws Exception {
+  void testGroupManagerCanRejectRequestsForManagedGroup() throws Exception {
 
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
@@ -175,7 +171,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
-  public void testGroupManagerCanDeleteRequestsForManagedGroup() throws Exception {
+  void testGroupManagerCanDeleteRequestsForManagedGroup() throws Exception {
 
     GroupRequestDto req1 = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     GroupRequestDto req2 = saveApprovedGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);

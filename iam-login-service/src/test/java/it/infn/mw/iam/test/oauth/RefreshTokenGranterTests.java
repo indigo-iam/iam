@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,8 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.text.ParseException;
 import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -39,7 +38,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,7 +56,6 @@ import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class RefreshTokenGranterTests extends TestTokensUtils {
@@ -84,7 +81,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   private MockMvc mvc;
 
   @Test
-  public void testTokenRefreshFailsIfAupIsNotSigned() throws Exception {
+  void testTokenRefreshFailsIfAupIsNotSigned() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -142,7 +139,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshFlowNotAllowedIfUserIsSuspended() throws Exception {
+  void testRefreshFlowNotAllowedIfUserIsSuspended() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -181,7 +178,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshFlowNotAllowedIfClientIsSuspended() throws Exception {
+  void testRefreshFlowNotAllowedIfClientIsSuspended() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -217,7 +214,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
         .param("refresh_token", refreshToken))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error").value("invalid_client"))
-      .andExpect(jsonPath("$.error_description").value("Client is suspended: " + clientId));
+      .andExpect(jsonPath("$.error_description").value("Suspended client '" + clientId + "'"));
     // @formatter:on
 
     client.setActive(true);
@@ -225,7 +222,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshTokenParsingThrowsParseException() throws Exception {
+  void testRefreshTokenParsingThrowsParseException() throws Exception {
 
     OAuth2AccessTokenEntity accessToken = Mockito.mock(OAuth2AccessTokenEntity.class);
     OAuth2RefreshTokenEntity refreshToken = Mockito.mock(OAuth2RefreshTokenEntity.class);
@@ -252,7 +249,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshTokenJtiInAccessTokenAuditLogs() throws Exception {
+  void testRefreshTokenJtiInAccessTokenAuditLogs() throws Exception {
 
     String clientId = "password-grant";
     ClientDetailsEntity client = loadTestClient(clientId);

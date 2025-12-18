@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,8 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +39,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
@@ -54,11 +52,9 @@ import it.infn.mw.iam.test.util.WithMockSAMLUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport {
+class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport {
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
@@ -68,7 +64,7 @@ public class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport 
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, subject = T1_EPUID)
-  public void externalSamlRegistrationCreatesDisabledAccount() throws Throwable {
+  void externalSamlRegistrationCreatesDisabledAccount() throws Throwable {
 
     String username = "test-saml-ext-reg";
 

@@ -23,13 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -39,10 +37,9 @@ import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
+class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Autowired
   private MockMvc mvc;
@@ -52,7 +49,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"}, username = TEST_ADMIN)
-  public void getGroupRequestDetailsAsAdmin() throws Exception {
+  void getGroupRequestDetailsAsAdmin() throws Exception {
 
     GroupRequestDto request = buildGroupRequest(TEST_ADMIN_UUID, TEST_001_GROUPNAME);
     request = groupRequestsService.createGroupRequest(request);
@@ -68,7 +65,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void getGroupRequestDetailsAsUser() throws Exception {
+  void getGroupRequestDetailsAsUser() throws Exception {
 
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     request = groupRequestsService.createGroupRequest(request);
@@ -82,14 +79,14 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void getGroupRequestDetailsOfAnotherUser() throws Exception {
+  void getGroupRequestDetailsOfAnotherUser() throws Exception {
     GroupRequestDto request = savePendingGroupRequest("test_101", TEST_001_GROUPNAME);
     mvc.perform(get(GET_DETAILS_URL, request.getUuid())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithAnonymousUser
-  public void getGroupRequestDetailsAsAnonymous() throws Exception {
+  void getGroupRequestDetailsAsAnonymous() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
@@ -100,7 +97,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void getDetailsOfNotExitingGroupRequest() throws Exception {
+  void getDetailsOfNotExitingGroupRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
     mvc.perform(get(GET_DETAILS_URL, fakeRequestUuid))
@@ -110,7 +107,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
-  public void getGroupRequestDetailsAsUserWithBothRoles() throws Exception {
+  void getGroupRequestDetailsAsUserWithBothRoles() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())

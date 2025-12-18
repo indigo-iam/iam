@@ -26,11 +26,16 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,16 +56,23 @@ import it.infn.mw.iam.audit.events.registration.RegistrationConfirmEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationService;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
@@ -93,6 +105,8 @@ public class DefaultRegistrationRequestService
   private IamAupRepository iamAupRepo;
 
   @Autowired
+  private IamX509CertificateRepository iamX509CertificateRepository;
+
   private LabelDTOConverter labelConverter;
 
   @Autowired(required = false)
@@ -104,9 +118,18 @@ public class DefaultRegistrationRequestService
   @Autowired
   private Clock clock;
 
+  private IamProperties iamProperties;
+
   private ApplicationEventPublisher eventPublisher;
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
+
+  @Autowired
+  public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
+      IamProperties iamProperties) {
+    this.labelConverter = labelConverter;
+    this.iamProperties = iamProperties;
+  }
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
@@ -131,7 +154,7 @@ public class DefaultRegistrationRequestService
 
   @Override
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, HttpServletRequest request) {
 
     if (!isNull(validationService)) {
       RegistrationRequestValidationResult result =
@@ -143,7 +166,28 @@ public class DefaultRegistrationRequestService
       }
     }
 
-    IamAccount account = accountService.createAccount(dto, extAuthnInfo);
+    IamAccount account;
+
+    if (iamProperties.getRegistration()
+      .getFields()
+      .get(RegistrationField.CERTIFICATE)
+      .getFieldBehaviour()
+      .equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
+        || (iamProperties.getRegistration()
+          .getFields()
+          .get(RegistrationField.CERTIFICATE)
+          .getFieldBehaviour()
+          .equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
+            && dto.getRegisterCertificate().equals("true"))) {
+
+      certificateSanityCheck(request);
+
+      account = accountService.createAccount(dto, extAuthnInfo);
+
+      linkRequestCertificateToAccount(account, request);
+    } else {
+      account = accountService.createAccount(dto, extAuthnInfo);
+    }
 
     // sign the default AUP if present
     createAupSignatureForAccountIfNeeded(account);
@@ -311,6 +355,48 @@ public class DefaultRegistrationRequestService
   }
 
 
+  private void certificateSanityCheck(HttpServletRequest request) {
+
+    HttpSession session = request.getSession(false);
+
+    IamX509AuthenticationCredential cred = Optional
+      .ofNullable(
+          (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
+      .orElseThrow(() -> new IllegalArgumentException("No X.509 credential found in session "));
+
+    IamX509Certificate cert = cred.asIamX509Certificate();
+
+    iamAccountRepo.findByCertificateSubject(cert.getSubjectDn()).ifPresent(c -> {
+      throw new CredentialAlreadyBoundException(
+          String.format("X509 certificate with subject '%s' is already bound to another user",
+              cert.getSubjectDn()));
+    });
+  }
+
+  private void linkRequestCertificateToAccount(IamAccount account, HttpServletRequest request) {
+
+    HttpSession session = request.getSession(false);
+
+    IamX509AuthenticationCredential cred =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    IamX509Certificate cert = cred.asIamX509Certificate();
+
+    final Date now = Date.from(clock.instant());
+    cert.setAccount(account);
+    cert.setLabel("cert-0");
+    cert.setPrimary(true);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+
+    Set<IamX509Certificate> certificates = new HashSet<>(List.of(cert));
+
+    account.setX509Certificates(certificates);
+
+    iamX509CertificateRepository.save(cert);
+
+    accountService.saveAccount(account);
+  }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;

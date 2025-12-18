@@ -18,10 +18,10 @@ package it.infn.mw.iam.test.repository;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -29,10 +29,9 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
-public class IamAccountRepositoryTests {
+class IamAccountRepositoryTests {
 
   static final IamSamlId TEST_USER_ID = new IamSamlId("https://idptestbed/idp/shibboleth",
       Saml2Attribute.EPUID.getAttributeName(), "78901@idptestbed");
@@ -41,7 +40,7 @@ public class IamAccountRepositoryTests {
   private IamAccountRepository repo;
 
   @Test
-  public void testSamlIdResolutionWorksAsExpected() {
+  void testSamlIdResolutionWorksAsExpected() {
 
     IamAccount testUserAccount = repo.findBySamlId(TEST_USER_ID)
       .orElseThrow(() -> new AssertionError("Could not lookup test user by SAML id"));

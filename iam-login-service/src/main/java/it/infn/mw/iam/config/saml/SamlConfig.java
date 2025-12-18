@@ -143,7 +143,7 @@ import it.infn.mw.iam.authn.saml.profile.DefaultSSOProfileOptionsResolver;
 import it.infn.mw.iam.authn.saml.profile.IamSSOProfile;
 import it.infn.mw.iam.authn.saml.profile.IamSSOProfileOptions;
 import it.infn.mw.iam.authn.saml.profile.SSOProfileOptionsResolver;
-import it.infn.mw.iam.authn.saml.util.FirstApplicableChainedSamlIdResolver;
+import it.infn.mw.iam.authn.saml.util.ChainedCollectingSamlIdResolver;
 import it.infn.mw.iam.authn.saml.util.IamSamlBootstrap;
 import it.infn.mw.iam.authn.saml.util.IamSamlEntryPoint;
 import it.infn.mw.iam.authn.saml.util.SamlIdResolvers;
@@ -292,7 +292,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
         throw new IllegalStateException("Could not configure SAML id resolvers");
       }
 
-      return new FirstApplicableChainedSamlIdResolver(resolvers);
+      return new ChainedCollectingSamlIdResolver(resolvers);
     }
 
     @Bean

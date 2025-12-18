@@ -15,26 +15,28 @@
  */
 package it.infn.mw.iam.test.notification;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.util.NestedServletException;
 
@@ -44,65 +46,64 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 @WithAnonymousUser
 @TestPropertySource(
     properties = {"notification.disable=false", "spring.freemarker.template-loader-path=/invalid/"})
-public class RegistrationFlowFailTests {
+class RegistrationFlowFailTests {
 
   @Value("${spring.mail.host}")
-  private String mailHost;
+  String mailHost;
 
   @Value("${spring.mail.port}")
-  private Integer mailPort;
+  Integer mailPort;
 
   @Value("${iam.organisation.name}")
-  private String organisationName;
+  String organisationName;
 
   @Value("${iam.baseUrl}")
-  private String baseUrl;
+  String baseUrl;
 
   @Autowired
-  private MockNotificationDelivery notificationDelivery;
+  MockNotificationDelivery notificationDelivery;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
-  private WebApplicationContext context;
+  WebApplicationContext context;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
-  private MockMvc mvc;
+  MockMvc mvc;
 
-  @Before
-  public void setUp() throws InterruptedException {
+  @BeforeEach
+  void setUp() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
   }
 
-  @After
-  public void tearDown() throws InterruptedException {
+  @AfterEach
+  void tearDown() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
 
   @Test
-  public void testSendWithEmptyQueue() {
+  void testSendWithEmptyQueue() {
     notificationDelivery.sendPendingNotifications();
     assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(0));
   }
 
-  @Test(expected = NestedServletException.class)
-  public void testBadTemplateDir() throws Exception {
+  @Test
+  void testBadTemplateDir() {
     String username = "baddir_flow";
 
     RegistrationRequestDto request = new RegistrationRequestDto();
@@ -112,10 +113,10 @@ public class RegistrationFlowFailTests {
     request.setUsername(username);
     request.setNotes("Some short notes...");
 
-    mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(mapper.writeValueAsString(request)))
-      .andExpect(status().isInternalServerError());
-
+    assertThrows(NestedServletException.class,
+        () -> mvc
+          .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(request)))
+          .andExpect(status().isInternalServerError()));
   }
 }

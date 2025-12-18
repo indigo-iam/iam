@@ -33,10 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import org.assertj.core.util.Lists;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -44,10 +44,10 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwt-profile.default-profile=kc",})
-public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
+class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "password-grant";
   private static final String CLIENT_SECRET = "secret";
@@ -79,7 +79,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfileAccessToken() throws Exception {
+  void testKeycloakProfileAccessToken() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
@@ -93,7 +93,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfileAccessTokenForClientWithNoRoles() throws Exception {
+  void testKeycloakProfileAccessTokenForClientWithNoRoles() throws Exception {
     String accessTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
       .clientSecret(CLIENT_SECRET)
@@ -107,7 +107,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfileAccessTokenWithClientCredentials() throws Exception {
+  void testKeycloakProfileAccessTokenWithClientCredentials() throws Exception {
     String accessTokenString = (String) new AccessTokenGetter().grantType("client_credentials")
       .clientId("client-cred")
       .clientSecret("secret")
@@ -119,7 +119,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloackProfileIntrospect() throws Exception {
+  void testKeycloackProfileIntrospect() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
@@ -140,7 +140,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloackProfileIntrospectWithAudience() throws Exception {
+  void testKeycloackProfileIntrospectWithAudience() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenWithAudience("openid profile", "myAudience"));
 
@@ -155,7 +155,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloackProfileForUserNotInGroups() throws Exception {
+  void testKeycloackProfileForUserNotInGroups() throws Exception {
 
     String accessTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)

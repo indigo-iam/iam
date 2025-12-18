@@ -26,13 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,10 +51,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class AupSignatureCheckIntegrationTests extends AupTestSupport {
+class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Autowired
   private ObjectMapper mapper;
@@ -83,18 +83,18 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void noAupDefinedMeansSignatureNotRequired() {
+  void noAupDefinedMeansSignatureNotRequired() {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
@@ -103,7 +103,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
+  void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
     IamAup defaultAup = buildDefaultAup();
     aupRepo.save(defaultAup);
     AupDTO aup = converter.dtoFromEntity(defaultAup);
@@ -155,7 +155,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCanAlwaysBeFetchedTest() throws JsonProcessingException, Exception {
+  void aupCanAlwaysBeFetchedTest() throws JsonProcessingException, Exception {
 
     mvc.perform(get("/iam/aup")).andExpect(status().isNotFound());
 

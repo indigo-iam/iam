@@ -22,39 +22,35 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils {
+class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils {
 
   private String accessToken;
 
   @Autowired
   private IamClientRepository clientRepo;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() throws Exception {
     accessToken = getPasswordToken("openid profile offline_access").accessToken();
   }
 
 
   @Test
-  public void testTokenIntrospectionEndpointBasicAuthentication() throws Exception {
+  void testTokenIntrospectionEndpointBasicAuthentication() throws Exception {
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
@@ -66,7 +62,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointFormAuthentication() throws Exception {
+  void testTokenIntrospectionEndpointFormAuthentication() throws Exception {
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
         .contentType(APPLICATION_FORM_URLENCODED)
@@ -78,7 +74,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointNoAuthenticationFailure() throws Exception {
+  void testTokenIntrospectionEndpointNoAuthenticationFailure() throws Exception {
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
         .contentType(APPLICATION_FORM_URLENCODED)
@@ -88,7 +84,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointWithDisabledClient() throws Exception {
+  void testTokenIntrospectionEndpointWithDisabledClient() throws Exception {
 
     ClientDetailsEntity c = clientRepo.findByClientId(PROTECTED_RESOURCE_ID).orElseThrow();
     c.setActive(false);
@@ -108,7 +104,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointWithClientNotAllowedIntrospection() throws Exception {
+  void testTokenIntrospectionEndpointWithClientNotAllowedIntrospection() throws Exception {
 
     ClientDetailsEntity c = clientRepo.findByClientId(PROTECTED_RESOURCE_ID).orElseThrow();
     c.setAllowIntrospection(false);

@@ -21,6 +21,7 @@ import static it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties
 import static java.util.Objects.isNull;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -166,15 +167,22 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
   public Object loadUserBySAML(SAMLCredential credential) {
     checkNotNull(credential, "null saml credential");
 
-    IamSamlId samlId = resolveSamlId(credential);
+    List<IamSamlId> samlIds = resolveSamlIds(credential);
 
-    Optional<IamAccount> account = repo.findBySamlId(samlId);
+    Optional<IamAccount> account = samlIds.stream()
+      .map(repo::findBySamlId)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .findFirst();
 
     if (account.isPresent()) {
       return buildUserFromIamAccount(account.get());
-    } else {
-      return buildUserFromIamAccount(provisionAccount(credential, samlId));
     }
-  }
 
+    return buildUserFromIamAccount(provisionAccount(credential,
+        samlIds.stream()
+          .findFirst()
+          .orElseThrow(() -> new UsernameNotFoundException(
+              "Could not extract a user identifier from the SAML assertion"))));
+  }
 }

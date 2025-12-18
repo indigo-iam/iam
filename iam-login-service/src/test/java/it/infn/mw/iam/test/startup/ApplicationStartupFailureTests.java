@@ -17,28 +17,24 @@ package it.infn.mw.iam.test.startup;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {IamLoginService.class, DuplicateBeanConfig.class})
-public class ApplicationStartupFailureTests {
+@SpringBootTest(classes = {IamLoginService.class, DuplicateBeanConfig.class})
+class ApplicationStartupFailureTests {
 
   @Autowired
   private ApplicationContext context;
 
   @Test
-  public void testFailOnStartWithDuplicatedBeans() {
+  void testFailOnStartWithDuplicatedBeans() {
     Exception exception = assertThrows(BeansException.class, () -> {
       context.getBean(UserApprovalHandler.class);
     });

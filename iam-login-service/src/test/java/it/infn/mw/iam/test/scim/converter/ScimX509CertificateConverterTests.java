@@ -15,13 +15,13 @@
  */
 package it.infn.mw.iam.test.scim.converter;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -29,14 +29,13 @@ import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
-
-public class ScimX509CertificateConverterTests extends X509TestSupport {
+class ScimX509CertificateConverterTests extends X509TestSupport {
 
   X509CertificateConverter converter =
       new X509CertificateConverter(new X509CertificateChainParserImpl());
 
   @Test
-  public void testScimToEntityConversion() {
+  void testScimToEntityConversion() {
 
     ScimX509Certificate scimCert = ScimX509Certificate.builder()
       .display("A label")
@@ -55,7 +54,7 @@ public class ScimX509CertificateConverterTests extends X509TestSupport {
   }
 
   @Test
-  public void testEntityToScimConversion() {
+  void testEntityToScimConversion() {
 
     IamX509Certificate cert = new IamX509Certificate();
     cert.setSubjectDn(TEST_0_SUBJECT);

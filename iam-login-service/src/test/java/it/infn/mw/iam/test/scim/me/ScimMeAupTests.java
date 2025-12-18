@@ -24,13 +24,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,9 +43,9 @@ import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScimMeAupTests extends AupTestSupport {
+class ScimMeAupTests extends AupTestSupport {
 
   private final static String ME_ENDPOINT = "/scim/Me";
 
@@ -64,21 +64,19 @@ public class ScimMeAupTests extends AupTestSupport {
   @Autowired
   private MockMvc mvc;
 
-
-
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void meEndpointAupSignatureTests() throws Exception {
+  void meEndpointAupSignatureTests() throws Exception {
 
     mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())

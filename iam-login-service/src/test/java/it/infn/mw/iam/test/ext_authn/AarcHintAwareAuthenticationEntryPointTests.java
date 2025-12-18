@@ -27,58 +27,57 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
 import it.infn.mw.iam.authn.DefaultAARCHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AarcHintAwareAuthenticationEntryPointTests {
+@ExtendWith(MockitoExtension.class)
+class AarcHintAwareAuthenticationEntryPointTests {
 
+  private static final String BASE_URL = "";
+  private static final String AUTHORIZE_URL = String.format("%s/authorize", BASE_URL);
 
-    private static final String BASE_URL = "";
-    private static final String AUTHORIZE_URL = String.format("%s/authorize", BASE_URL);
+  private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
 
-    private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
+  @Mock
+  HttpServletRequest authorizeRequest;
 
-    @Mock
-    HttpServletRequest authorizeRequest;
+  @Mock
+  HttpServletResponse response;
 
-    @Mock
-    HttpServletResponse response;
+  @Mock
+  AuthenticationException exception;
 
-    @Mock
-    AuthenticationException exception;
+  @Mock
+  AuthenticationEntryPoint delegateEntryPoint;
 
-    @Mock
-    AuthenticationEntryPoint delegateEntryPoint;
+  @InjectMocks
+  HintAwareAuthenticationEntryPoint entryPoint;
 
-    @InjectMocks
-    HintAwareAuthenticationEntryPoint entryPoint;
+  @Mock
+  DefaultAARCHintService aarcHintService;
 
-    @Mock
-    DefaultAARCHintService aarcHintService;
+  @BeforeEach
+  void before() {
+    when(authorizeRequest.getRequestURI()).thenReturn(AUTHORIZE_URL);
+    when(authorizeRequest.getParameter(AARC_HINT_PARAM)).thenReturn(SAML_ENTITYID);
+    when(aarcHintService.resolve(anyString())).thenReturn("/saml/login?idp=" + SAML_ENTITYID);
+  }
 
-    @Before
-    public void before() {
-        when(authorizeRequest.getRequestURI()).thenReturn(AUTHORIZE_URL);
-        when(authorizeRequest.getParameter(AARC_HINT_PARAM)).thenReturn(SAML_ENTITYID);
-        when(aarcHintService.resolve(anyString())).thenReturn("/saml/login?idp=" + SAML_ENTITYID);
-    }
+  @Test
+  void authorizeRequestWithHintIsUnderstood() throws IOException, ServletException {
 
-    @Test
-    public void authorizeRequestWithHintIsUnderstood() throws IOException, ServletException {
-
-        entryPoint.commence(authorizeRequest, response, exception);
-        verify(delegateEntryPoint, times(0)).commence(authorizeRequest, response, exception);
-        verify(aarcHintService, times(1)).resolve(SAML_ENTITYID);
-        verify(response, times(1)).sendRedirect("/saml/login?idp=" + SAML_ENTITYID);
-    }
+    entryPoint.commence(authorizeRequest, response, exception);
+    verify(delegateEntryPoint, times(0)).commence(authorizeRequest, response, exception);
+    verify(aarcHintService, times(1)).resolve(SAML_ENTITYID);
+    verify(response, times(1)).sendRedirect("/saml/login?idp=" + SAML_ENTITYID);
+  }
 }

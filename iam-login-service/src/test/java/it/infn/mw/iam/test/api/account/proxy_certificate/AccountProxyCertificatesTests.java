@@ -25,13 +25,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
 public class AccountProxyCertificatesTests extends X509TestSupport {
@@ -78,13 +78,13 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
   @Autowired
   private ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -95,7 +95,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void addingProxyRequiresAuthenticatedUser() throws Exception {
+  void addingProxyRequiresAuthenticatedUser() throws Exception {
 
     mvc.perform(put(ACCOUNT_PROXY_CERT_ENDPOINT)).andExpect(UNAUTHORIZED);
 
@@ -103,7 +103,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyRequiresProxyCert() throws Exception {
+  void addingProxyRequiresProxyCert() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
 
@@ -117,7 +117,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyRequiresOwnedCertificate() throws Exception {
+  void addingProxyRequiresOwnedCertificate() throws Exception {
 
     ProxyCertificate pc = proxyHelper.generateProxy(TEST_0_PEM_CREDENTIAL, 300);
     String pcPem = proxyHelper.proxyCertificateToPemString(pc);
@@ -134,7 +134,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyDoesNotWorkForPlainX509Certificate() throws Exception {
+  void addingProxyDoesNotWorkForPlainX509Certificate() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
     dto.setCertificateChain(TEST_0_CERT_STRING);
@@ -148,7 +148,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingJunkFailsNicely() throws Exception {
+  void addingJunkFailsNicely() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
     dto.setCertificateChain("JunkJunk");
@@ -162,7 +162,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyWorks() throws Exception {
+  void addingProxyWorks() throws Exception {
 
     IamAccount account =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));

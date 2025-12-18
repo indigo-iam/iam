@@ -18,14 +18,15 @@ package it.infn.mw.iam.test.oauth.scope;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher.stringEqualsMatcher;
 import static it.infn.mw.iam.core.oauth.scope.matchers.StructuredPathScopeMatcher.structuredPathMatcher;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -37,8 +38,8 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidato
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
-public class OAuthRequestValidatorTests {
+@ExtendWith(MockitoExtension.class)
+class OAuthRequestValidatorTests {
 
   @Spy
   AuthorizationRequest authzRequest = new AuthorizationRequest();
@@ -54,48 +55,47 @@ public class OAuthRequestValidatorTests {
 
   ScopeMatcherOAuthRequestValidator validator;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
-    when(client.getClientId()).thenReturn("exampleClient");
-    // when(client.getScope()).thenReturn(newHashSet("openid", "profile"));
+    lenient().when(client.getClientId()).thenReturn("exampleClient");
     authzRequest.setScope(Sets.newHashSet("openid"));
-    when(registry.findMatchersForClient(client))
+    lenient().when(registry.findMatchersForClient(client))
       .thenReturn(newHashSet(stringEqualsMatcher("openid"), stringEqualsMatcher("profile")));
     validator = new ScopeMatcherOAuthRequestValidator(registry);
   }
 
   @Test
-  public void testSimpleValidationSuccess() {
-    validator.validateScope(authzRequest, client);
-  }
-
-  @Test(expected = InvalidScopeException.class)
-  public void testSimpleValidationFailure() {
-    authzRequest.setScope(Sets.newHashSet("openid", "storage.read:/"));
+  void testSimpleValidationSuccess() {
     validator.validateScope(authzRequest, client);
   }
 
   @Test
-  public void testStructuredScopeValidationSuccess() {
+  void testSimpleValidationFailure() {
+    authzRequest.setScope(Sets.newHashSet("openid", "storage.read:/"));
+    assertThrows(InvalidScopeException.class, () -> validator.validateScope(authzRequest, client));
+  }
+
+  @Test
+  void testStructuredScopeValidationSuccess() {
 
     authzRequest.setScope(Sets.newHashSet("openid", "storage.read:/subdir", "storage.read:/"));
-    when(registry.findMatchersForClient(client)).thenReturn(
-        newHashSet(stringEqualsMatcher("openid"), structuredPathMatcher("storage.read", "/")));
-    
-    validator.validateScope(authzRequest, client);
+    lenient().when(registry.findMatchersForClient(client))
+      .thenReturn(
+          newHashSet(stringEqualsMatcher("openid"), structuredPathMatcher("storage.read", "/")));
 
+    validator.validateScope(authzRequest, client);
   }
-  
-  @Test(expected = InvalidScopeException.class)
-  public void testStructuredScopeValidationFailure() {
+
+  @Test
+  void testStructuredScopeValidationFailure() {
 
     authzRequest.setScope(Sets.newHashSet("openid", "storage.read:/subdir"));
-    when(registry.findMatchersForClient(client)).thenReturn(
-        newHashSet(stringEqualsMatcher("openid"), structuredPathMatcher("storage.read", "/other")));
-    
-    validator.validateScope(authzRequest, client);
+    lenient().when(registry.findMatchersForClient(client))
+      .thenReturn(newHashSet(stringEqualsMatcher("openid"),
+          structuredPathMatcher("storage.read", "/other")));
 
+    assertThrows(InvalidScopeException.class, () -> validator.validateScope(authzRequest, client));
   }
 
 }

@@ -20,33 +20,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"iam.local-resources.enable=true",
-    "iam.local-resources.location=classpath:/local-resources/"})
-public class LocalResourcesEnabledTests {
+  "iam.local-resources.location=classpath:/local-resources/"})
+class LocalResourcesEnabledTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
   @WithAnonymousUser
-  public void getLocalResources() throws Exception {
+  void getLocalResources() throws Exception {
     mvc.perform(get("/local-resources/index.json"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.message").value(is("Hello world!")));

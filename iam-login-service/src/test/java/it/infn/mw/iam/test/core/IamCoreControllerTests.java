@@ -27,60 +27,71 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-public class IamCoreControllerTests {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+class IamCoreControllerTests {
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-  
+  MockOAuth2Filter mockOAuth2Filter;
+
   @Autowired
-  protected MockMvc mvc;
+  MockMvc mvc;
 
   @Value("${iam.baseUrl}")
   String iamBaseUrl;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void startRegistrationRedirectsToRegisterPage() throws Exception {
-    mvc.perform(get("/start-registration")).andExpect(status().isOk()).andExpect(view().name("iam/register"));
+  void startRegistrationRedirectsToRegisterPage() throws Exception {
+    mvc.perform(get("/start-registration"))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/register"));
 
   }
 
   @Test
-  public void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
+  void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
 
     // Here the spring security filter assumes we run on localhost:80
-    mvc.perform(get("/")).andDo(print()).andExpect(status().isFound()).andExpect(
-        redirectedUrl("http://localhost/login"));
+    mvc.perform(get("/"))
+      .andDo(print())
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("http://localhost/login"));
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -90,7 +101,7 @@ public class IamCoreControllerTests {
   }
 
   @Test
-  public void anonymousIsAcceptedAtLoginPage() throws Exception {
+  void anonymousIsAcceptedAtLoginPage() throws Exception {
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -101,7 +112,7 @@ public class IamCoreControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void authenticatedUserIsRedirectedToRoot() throws Exception {
+  void authenticatedUserIsRedirectedToRoot() throws Exception {
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -111,7 +122,7 @@ public class IamCoreControllerTests {
 
   @Test
   @WithMockOIDCUser
-  public void externallyAuthenticatedUserIsRedirectedToRegisterPage() throws Exception {
+  void externallyAuthenticatedUserIsRedirectedToRegisterPage() throws Exception {
     mvc.perform(get("/login"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -120,7 +131,7 @@ public class IamCoreControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void resetSessionClearsSecurityContext() throws Exception {
+  void resetSessionClearsSecurityContext() throws Exception {
     mvc.perform(get("/reset-session"))
       .andDo(print())
       .andExpect(status().isFound())
@@ -129,13 +140,13 @@ public class IamCoreControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void authenticatedAccessToRootLeadsToMitreWebapp() throws Exception {
+  void authenticatedAccessToRootLeadsToMitreWebapp() throws Exception {
     mvc.perform(get("/")).andDo(print()).andExpect(status().isOk()).andExpect(view().name("home"));
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void authenticatedAccessToManageLeadsToMitreManageWebapp() throws Exception {
+  void authenticatedAccessToManageLeadsToMitreManageWebapp() throws Exception {
     mvc.perform(get("/manage"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -144,14 +155,14 @@ public class IamCoreControllerTests {
 
   @Test
   @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
-  public void userinfoDeniesAccessForClientCredentialsClient() throws Exception {
+  void userinfoDeniesAccessForClientCredentialsClient() throws Exception {
 
     mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(scopes = {"openid"}, user = "not-found", authorities = {"ROLE_USER"})
-  public void userinfoReturns404ForUserNotFound() throws Exception {
+  void userinfoReturns404ForUserNotFound() throws Exception {
 
     mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isNotFound());
   }
@@ -161,15 +172,17 @@ public class IamCoreControllerTests {
   @WithMockOAuthUser(scopes = {"openid", "profile", "email"}, user = "test",
       authorities = {"ROLE_USER"}, externallyAuthenticated = true,
       externalAuthenticationType = ExternalAuthenticationType.OIDC)
-  public void userInfoReturnsExternalAuthenticationInfo() throws Exception {
+  void userInfoReturnsExternalAuthenticationInfo() throws Exception {
 
-    mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isOk()).andExpect(
-        jsonPath("$.external_authn.type", equalTo("oidc")));
+    mvc.perform(get("/userinfo"))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")));
   }
 
   @Test
   @WithMockOAuthUser(scopes = {"openid profile"}, user = "test", authorities = {"ROLE_USER"})
-  public void userinfoWithClaims() throws Exception {
+  void userinfoWithClaims() throws Exception {
 
     String userInfoClaimsRequest = "{ \"userinfo\" : { \"groups\": null }}";
 
@@ -180,15 +193,16 @@ public class IamCoreControllerTests {
   }
 
   @Test
-  public void testWebfingerUserFound() throws Exception {
-    mvc.perform(get("/.well-known/webfinger").param("resource", "acct:test@iam.test").param("rel",
-        "http://openid.net/specs/connect/1.0/issuer"))
+  void testWebfingerUserFound() throws Exception {
+    mvc
+      .perform(get("/.well-known/webfinger").param("resource", "acct:test@iam.test")
+        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
       .andExpect(status().isOk());
 
   }
 
   @Test
-  public void testWebfingerUserNotFound() throws Exception {
+  void testWebfingerUserNotFound() throws Exception {
     mvc
       .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
         .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
@@ -197,25 +211,29 @@ public class IamCoreControllerTests {
   }
 
   @Test
-  public void testUnknownUriFormat() throws Exception {
-    mvc.perform(get("/.well-known/webfinger").param("resource", "xyz://not.supported").param("rel",
-        "http://openid.net/specs/connect/1.0/issuer"))
+  void testUnknownUriFormat() throws Exception {
+    mvc
+      .perform(get("/.well-known/webfinger").param("resource", "xyz://not.supported")
+        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
       .andExpect(status().isNotFound());
 
   }
 
   @Test
-  public void testWebfingerNonOidcRel() throws Exception {
-    mvc.perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-      .param("rel", "another.rel")).andExpect(status().isNotFound());
+  void testWebfingerNonOidcRel() throws Exception {
+    mvc
+      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
+        .param("rel", "another.rel"))
+      .andExpect(status().isNotFound());
 
   }
-  
+
   @Test
-  public void testErrorPage() throws Exception {
+  void testErrorPage() {
     Assertions
-        .assertThatThrownBy(
-            () -> mvc.perform(get("/error").contentType(MediaType.APPLICATION_JSON)))
-        .hasCauseInstanceOf(RuntimeException.class).hasMessageContaining("Request processing failed; nested exception is java.lang.NullPointerException");
+      .assertThatThrownBy(() -> mvc.perform(get("/error").contentType(MediaType.APPLICATION_JSON)))
+      .hasCauseInstanceOf(RuntimeException.class)
+      .hasMessageContaining(
+          "Request processing failed; nested exception is java.lang.NullPointerException");
   }
 }

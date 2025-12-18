@@ -18,26 +18,26 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -58,8 +58,8 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
+@ExtendWith(MockitoExtension.class)
+class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   private IamTotpMfaService service;
 
@@ -84,27 +84,29 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
-  @Before
-  public void setup() {
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+  @BeforeEach
+  void setup() {
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt())
+      .thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
-    when(secretGenerator.generate()).thenReturn("test_secret");
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
-    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
+    lenient().when(secretGenerator.generate()).thenReturn("test_secret");
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    lenient().when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT))
+      .thenAnswer(i -> i.getArguments()[0]);
+    lenient().when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
         codeVerifier, eventPublisher, iamTotpMfaProperties);
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     reset(secretGenerator, repository, iamAccountService, codeVerifier);
   }
 
   @Test
-  public void testAssignsTotpMfaToAccount() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  void testAssignsTotpMfaToAccount() {
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
@@ -116,46 +118,41 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     assertThat(totpMfa.getAccount(), equalTo(account));
   }
 
-  @Test(expected = MfaSecretAlreadyBoundException.class)
-  public void testAddMfaSecretWhenMfaSecretAssignedFails() {
+  @Test
+  void testAddMfaSecretWhenMfaSecretAssignedFails() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
-    try {
-      service.addTotpMfaSecret(account);
-    } catch (MfaSecretAlreadyBoundException e) {
-      assertThat(e.getMessage(),
-          equalTo("A multi-factor secret is already assigned to this account"));
-      throw e;
-    }
+    MfaSecretAlreadyBoundException e =
+        assertThrows(MfaSecretAlreadyBoundException.class, () -> service.addTotpMfaSecret(account));
+    assertThat(e.getMessage(),
+        equalTo("A multi-factor secret is already assigned to this account"));
   }
 
   @Test
-  public void testAddMfaSecretWhenTotpIsNotActive() {
+  void testAddMfaSecretWhenTotpIsNotActive() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     TOTP_MFA.setActive(false);
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
     assertFalse(totpMfa.isActive());
   }
 
   @Test
-  public void testAddTotpMfaSecretWhenPasswordIsEmpty() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+  void testAddTotpMfaSecretWhenPasswordIsEmpty() {
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
-    IamTotpMfaInvalidArgumentError thrownException =
-        assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-          // Decrypt the cipherText with empty key
-          service.addTotpMfaSecret(account);
-        });
+    IamTotpMfaInvalidArgumentError e = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      service.addTotpMfaSecret(account);
+    });
 
-    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+    assertTrue(e.getMessage().startsWith("Please ensure that you provide"));
   }
 
   @Test
-  public void testEnablesTotpMfa() throws Exception {
+  void testEnablesTotpMfa() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret("secret",
@@ -163,7 +160,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     totpMfa.setActive(false);
     totpMfa.setAccount(account);
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
 
     service.enableTotpMfa(account);
     verify(repository, times(1)).save(totpMfa);
@@ -177,34 +174,28 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     assertThat(e.getTotpMfa().getAccount(), equalTo(account));
   }
 
-  @Test(expected = TotpMfaAlreadyEnabledException.class)
-  public void testEnableTotpMfaWhenTotpMfaEnabledFails() {
+  @Test
+  void testEnableTotpMfaWhenTotpMfaEnabledFails() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
-    try {
-      service.enableTotpMfa(account);
-    } catch (TotpMfaAlreadyEnabledException e) {
-      assertThat(e.getMessage(), equalTo("TOTP MFA is already enabled on this account"));
-      throw e;
-    }
-  }
-
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testEnablesTotpMfaWhenNoMfaSecretAssignedFails() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    try {
-      service.enableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
+    TotpMfaAlreadyEnabledException e =
+        assertThrows(TotpMfaAlreadyEnabledException.class, () -> service.enableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("TOTP MFA is already enabled on this account"));
   }
 
   @Test
-  public void testDisablesTotpMfa() {
+  void testEnablesTotpMfaWhenNoMfaSecretAssignedFails() {
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    MfaSecretNotFoundException e =
+        assertThrows(MfaSecretNotFoundException.class, () -> service.enableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
+  }
+
+  @Test
+  void testDisablesTotpMfa() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
@@ -220,23 +211,20 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     assertThat(e.getTotpMfa().getAccount(), equalTo(account));
   }
 
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testDisablesTotpMfaWhenNoMfaSecretAssignedFails() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  @Test
+  void testDisablesTotpMfaWhenNoMfaSecretAssignedFails() {
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
-    try {
-      service.disableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
+    MfaSecretNotFoundException e =
+        assertThrows(MfaSecretNotFoundException.class, () -> service.disableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
   }
 
   @Test
-  public void testVerifyTotpWithNoMultiFactorSecretAttached() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  void testVerifyTotpWithNoMultiFactorSecretAttached() {
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -249,10 +237,10 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotp() {
+  void testVerifyTotp() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -260,11 +248,11 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotpWithEmptyPasswordForDecryption() {
+  void testVerifyTotpWithEmptyPasswordForDecryption() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -277,11 +265,11 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotpWithCodeNotValid() {
+  void testVerifyTotpWithCodeNotValid() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
+    lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    lenient().when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 

@@ -27,7 +27,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
-public class ExtendedAuthenticationTokenTests {
+class ExtendedAuthenticationTokenTests {
 
   @Test
   void testEqualsSameObjects() {

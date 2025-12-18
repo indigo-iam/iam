@@ -30,31 +30,27 @@ import java.util.Date;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.request.VOMSResponse;
 import org.italiangrid.voms.request.impl.RESTVOMSResponseParsingStrategy;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("h2")
 @AutoConfigureMockMvc
 @Transactional
 @TestPropertySource(properties = {"voms.aa.use-legacy-fqan-encoding=true"})
-public class VomsAcLegacyEncodingTests extends TestSupport {
+class VomsAcLegacyEncodingTests extends TestSupport {
 
   RESTVOMSResponseParsingStrategy parser = new RESTVOMSResponseParsingStrategy();
 
-
   @Test
-  public void fqansAreCorrectlyEncoded() throws Exception {
+  void fqansAreCorrectlyEncoded() throws Exception {
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
     IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
@@ -76,7 +72,7 @@ public class VomsAcLegacyEncodingTests extends TestSupport {
   }
 
   @Test
-  public void roleFqansAreCorrectlyEncoded() throws Exception {
+  void roleFqansAreCorrectlyEncoded() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
@@ -107,6 +103,4 @@ public class VomsAcLegacyEncodingTests extends TestSupport {
     assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
 
   }
-
-
 }

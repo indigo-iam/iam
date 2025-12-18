@@ -15,19 +15,19 @@
  */
 package it.infn.mw.iam.test.api.mitre;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.openid.connect.web.ProtectedResourceRegistrationEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWTParser;
 
@@ -38,9 +38,9 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
-public class ProtectedResourceIntegrationTests {
+class ProtectedResourceIntegrationTests {
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -112,7 +112,7 @@ public class ProtectedResourceIntegrationTests {
   }
 
   @Test
-  public void protectedResourceLifeCycle() throws Exception {
+  void protectedResourceLifeCycle() throws Exception {
 
     final String NAME = "protected-resource";
     String clientJson = ClientJsonStringBuilder.builder().name(NAME).scopes("openid").build();

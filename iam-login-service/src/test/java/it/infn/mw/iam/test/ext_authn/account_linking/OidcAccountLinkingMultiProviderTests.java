@@ -21,12 +21,12 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcMultiProviderTestConfig.TEST_OIDC_01_ISSUER;
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcMultiProviderTestConfig.TEST_OIDC_02_ISSUER;
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT_ID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,16 +38,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -59,11 +57,10 @@ import it.infn.mw.iam.test.ext_authn.oidc.OidcMultiProviderTestConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcMultiProviderTestConfig.class,
-    FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
-public class OidcAccountLinkingMultiProviderTests {
+  FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
+class OidcAccountLinkingMultiProviderTests {
 
   @Autowired
   private MockOIDCProvider oidcProvider;
@@ -77,8 +74,8 @@ public class OidcAccountLinkingMultiProviderTests {
   private static final String TEST_100_USER = "test_100";
   private static final String OIDC_ACCOUNT_LINKING_ENDPOINT = "/iam/account-linking/OIDC";
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     IamAccount userAccount = iamAccountRepo.findByUsername(TEST_100_USER)
       .orElseThrow(() -> new UsernameNotFoundException("User not found!"));
 
@@ -89,7 +86,7 @@ public class OidcAccountLinkingMultiProviderTests {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void testAccountLinkingWithoutIssuerFails() throws Exception {
+  void testAccountLinkingWithoutIssuerFails() throws Exception {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(post(OIDC_ACCOUNT_LINKING_ENDPOINT).with(csrf().asHeader()))
           .andExpect(status().isFound())
@@ -105,7 +102,7 @@ public class OidcAccountLinkingMultiProviderTests {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void testAccountLinkingWithIssuer() throws Exception {
+  void testAccountLinkingWithIssuer() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post(OIDC_ACCOUNT_LINKING_ENDPOINT).param("id", TEST_OIDC_01_ISSUER)
@@ -168,7 +165,7 @@ public class OidcAccountLinkingMultiProviderTests {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void testAccountLinkingBothIssuer() throws Exception {
+  void testAccountLinkingBothIssuer() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post(OIDC_ACCOUNT_LINKING_ENDPOINT).param("id", TEST_OIDC_01_ISSUER)

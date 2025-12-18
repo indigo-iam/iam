@@ -25,16 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -49,12 +47,11 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
-public class AccountClientEndpointTests {
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
+class AccountClientEndpointTests {
 
   @Autowired
   private IamAccountRepository accountRepo;
@@ -71,13 +68,13 @@ public class AccountClientEndpointTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -130,10 +127,10 @@ public class AccountClientEndpointTests {
     clientRepo.delete(clientAdmin);
     clientRepo.delete(clientTest);
   }
-  
+
 
   @Test
-  public void anonymousAccessToMyClientsEndpointFailsTest() throws Exception {
+  void anonymousAccessToMyClientsEndpointFailsTest() throws Exception {
     mvc.perform(get("/iam/account/me/clients"))
       .andDo(print())
       .andExpect(status().isUnauthorized());
@@ -141,13 +138,13 @@ public class AccountClientEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void myClientsWorksForAdminsTest() throws Exception {
+  void myClientsWorksForAdminsTest() throws Exception {
     getMyClientsWorksForAdmins();
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN", "ROLE_USER"})
-  public void myClientsWorksForAdminsWithTokenTest() throws Exception {
+  void myClientsWorksForAdminsWithTokenTest() throws Exception {
     getMyClientsWorksForAdmins();
   }
 
@@ -170,12 +167,12 @@ public class AccountClientEndpointTests {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void getClientsForAccountWorksForAdminsTest() throws Exception {
+  void getClientsForAccountWorksForAdminsTest() throws Exception {
     getClientsForAccountWorksForAdmins();
   }
 
   @Test
-  public void anonymousAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
+  void anonymousAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
     mvc.perform(get("/iam/account/{id}/clients", "VALID_ID"))
       .andDo(print())
       .andExpect(status().isUnauthorized());
@@ -183,7 +180,7 @@ public class AccountClientEndpointTests {
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void nonAdminAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
+  void nonAdminAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
     mvc.perform(get("/iam/account/{id}/clients", "VALID_ID"))
       .andDo(print())
       .andExpect(status().isForbidden());
@@ -191,7 +188,7 @@ public class AccountClientEndpointTests {
 
   @Test
   @WithMockUser(username = "test", authorities = {"ROLE_USER"})
-  public void userAccessToClientsOwnedByUserEndpointSuccessTest() throws Exception {
+  void userAccessToClientsOwnedByUserEndpointSuccessTest() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     mvc.perform(get("/iam/account/{id}/clients", testAccount.getUuid()))
       .andDo(print())

@@ -30,23 +30,20 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,12 +60,11 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
-public class ScimUserProvisioningTests extends ScimUserTestSupport {
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
+class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -85,19 +81,19 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @InjectMocks
   private ScimUserProvisioning scimUserProvisioning;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() throws Exception {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-  public void testGetUserNotFoundResponse() throws Exception {
+  void testGetUserNotFoundResponse() throws Exception {
 
     String randomUuid = getRandomUUid();
 
@@ -108,7 +104,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUpdateUserNotFoundResponse() throws Exception {
+  void testUpdateUserNotFoundResponse() throws Exception {
 
     String randomUuid = getRandomUUid();
     ScimUser user =
@@ -125,7 +121,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-  public void testExistingUserAccess() throws Exception {
+  void testExistingUserAccess() throws Exception {
 
     // Some existing user as defined in the test db
     String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
@@ -175,7 +171,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testEmptyUsernameValidationError() throws Exception {
+  void testEmptyUsernameValidationError() throws Exception {
 
     ScimUser user = buildUser("", "test@email.test", "Paul", "McCartney").build();
 
@@ -189,7 +185,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testEmptyEmailValidationError() throws Exception {
+  void testEmptyEmailValidationError() throws Exception {
 
     ScimUser user = ScimUser.builder("paul").buildName("Paul", "McCartney").build();
 
@@ -203,7 +199,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testInvalidEmailValidationError() throws Exception {
+  void testInvalidEmailValidationError() throws Exception {
 
     ScimUser user = buildUser("paul", "this_is_not_an_email", "Paul", "McCartney").build();
 
@@ -218,7 +214,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserUpdateChangeUsername() throws Exception {
+  void testUserUpdateChangeUsername() throws Exception {
 
     ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
@@ -240,7 +236,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUpdateUserValidation() throws Exception {
+  void testUpdateUserValidation() throws Exception {
 
     ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
@@ -258,14 +254,14 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testNonExistentUserDeletionReturns404() throws Exception {
+  void testNonExistentUserDeletionReturns404() throws Exception {
 
-    scimUtils.deleteUser(getRandomUUid(), NOT_FOUND);
+    scimUtils.deleteUser(getRandomUUid()).andExpect(status().isNotFound());
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testReplaceUserWithAlreadyUsedUsername() throws Exception {
+  void testReplaceUserWithAlreadyUsedUsername() throws Exception {
 
     ScimUser lennon = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
@@ -293,7 +289,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUniqueUsernameCreationCheck() throws Exception {
+  void testUniqueUsernameCreationCheck() throws Exception {
 
     ScimUser user1 = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
     ScimUser user2 =
@@ -313,7 +309,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testEmailIsNotAlreadyLinkedOnCreate() throws Exception {
+  void testEmailIsNotAlreadyLinkedOnCreate() throws Exception {
 
     ScimUser user0 =
         buildUser("test_same_email_0", "same_email@test.org", "Test", "Same Email 0").build();
@@ -333,7 +329,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testEmailIsNotAlreadyLinkedOnUpdate() throws Exception {
+  void testEmailIsNotAlreadyLinkedOnUpdate() throws Exception {
 
     ScimUser user0 = buildUser("user0", "user0@test.org", "Test", "User 0").build();
     ScimUser user1 = buildUser("user1", "user1@test.org", "Test", "User 1").build();
@@ -355,7 +351,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void userListFilterReference() {
+  void userListFilterReference() {
 
     Exception notimplemented =
         assertThrows(UnsupportedOperationException.class, () -> scimUserProvisioning.list(null));

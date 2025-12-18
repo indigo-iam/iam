@@ -18,7 +18,7 @@ package it.infn.mw.iam.test.oauth;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,16 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,50 +50,48 @@ import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class ResourceOwnerPasswordCredentialsTests {
+class ResourceOwnerPasswordCredentialsTests {
 
-  private static final String GRANT_TYPE = "password";
-  private static final String USERNAME = "test";
-  private static final String PASSWORD = "password";
-  private static final String SCOPE = "openid profile";
-
-  @Autowired
-  private ObjectMapper mapper;
+  static final String GRANT_TYPE = "password";
+  static final String USERNAME = "test";
+  static final String PASSWORD = "password";
+  static final String SCOPE = "openid profile";
 
   @Autowired
-  private IamAupRepository aupRepo;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamAccountService accountService;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountService accountService;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepo;
+  OAuth2TokenEntityService tokenService;
 
   @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepo;
+  IamOAuthAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  private MockMvc mvc;
+  IamOAuthRefreshTokenRepository refreshTokenRepo;
 
-  @Before
-  public void setup() throws Exception {
+  @Autowired
+  MockMvc mvc;
+
+  @BeforeEach
+  void setup() {
     accessTokenRepo.deleteAll();
     refreshTokenRepo.deleteAll();
   }
 
   @Test
-  public void testResourceOwnerPasswordCredentialsFlow() throws Exception {
+  void testResourceOwnerPasswordCredentialsFlow() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -113,7 +109,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testResourceOwnerPasswordCredentialsFailsIfAupIsNotSigned() throws Exception {
+  void testResourceOwnerPasswordCredentialsFailsIfAupIsNotSigned() throws Exception {
 
     IamAup aup = new IamAup();
 
@@ -145,7 +141,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testInvalidResourceOwnerPasswordCredentials() throws Exception {
+  void testInvalidResourceOwnerPasswordCredentials() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -164,7 +160,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testResourceOwnerPasswordCredentialsInvalidClientCredentials() throws Exception {
+  void testResourceOwnerPasswordCredentialsInvalidClientCredentials() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "socret";
@@ -184,7 +180,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testResourceOwnerPasswordCredentialsUnknownClient() throws Exception {
+  void testResourceOwnerPasswordCredentialsUnknownClient() throws Exception {
 
     String clientId = "unknown";
     String clientSecret = "socret";
@@ -205,7 +201,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testResourceOwnerPasswordCredentialAuthenticationTimestamp() throws Exception {
+  void testResourceOwnerPasswordCredentialAuthenticationTimestamp() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -233,7 +229,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   }
 
   @Test
-  public void testTokensAreCleanedUpWhenAccountRemoved() throws Exception {
+  void testTokensAreCleanedUpWhenAccountRemoved() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";

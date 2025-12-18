@@ -24,7 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,22 +32,18 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
-import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
-import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
@@ -286,16 +281,6 @@ public class IamConfig {
   @Bean
   AuthorizationCodeServices authorizationCodeServices() {
     return new DefaultOAuth2AuthorizationCodeService();
-  }
-
-  @Bean
-  @Primary
-  TokenEnhancer iamTokenEnhancer(Clock clock, IamAccountService accountService,
-      ClientService clientService, OIDCTokenService connectTokenService,
-      JWTProfileResolver profileResolver) {
-
-    return new IamTokenEnhancer(clock, accountService, clientService, connectTokenService,
-        profileResolver);
   }
 
   @Bean

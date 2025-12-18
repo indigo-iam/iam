@@ -32,7 +32,6 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
 import org.mitre.openid.connect.service.ApprovedSiteService;
@@ -173,13 +172,6 @@ public class MitreServicesConfig {
   ClientDetailsEntityService clientDetailsEntityService() {
     return new DefaultOAuth2ClientDetailsEntityService();
   }
-
-  @Bean
-  OAuth2TokenEntityService tokenServices() {
-
-    return new DefaultOAuth2ProviderTokenService();
-  }
-
 
   @Bean(name = "mitreUserInfoInterceptor")
   IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {

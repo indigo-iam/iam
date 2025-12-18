@@ -26,8 +26,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,15 +39,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -61,18 +61,17 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
-    "iam.host=example.org",
-    "iam.jwt-profile.default-profile=aarc",
-    "iam.access-token.include-authn-info=true"
-    // @formatter:on
+  "iam.host=example.org",
+  "iam.jwt-profile.default-profile=aarc",
+  "iam.access-token.include-authn-info=true"
+// @formatter:on
 })
 @SuppressWarnings("deprecation")
-public class AarcProfileIntegrationTests extends EndpointsTestUtils {
+class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   private static final String URN_GROUP_ANALYSIS = "urn:geant:iam.example:group:Analysis";
   private static final String URN_GROUP_OPTIONAL = "urn:geant:iam.example:group:Optional";
@@ -86,13 +85,13 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
@@ -118,7 +117,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testEdupersonEntitlementScope() throws Exception {
+  void testEdupersonEntitlementScope() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "entitlements");
     JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
@@ -147,7 +146,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testEdupersonScopedAffiliationScope() throws Exception {
+  void testEdupersonScopedAffiliationScope() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "eduperson_scoped_affiliation");
     JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
@@ -162,7 +161,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testEdupersonAssuranceScope() throws Exception {
+  void testEdupersonAssuranceScope() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "eduperson_assurance");
     JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
@@ -183,7 +182,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testVoPersonIdScope() throws Exception {
+  void testVoPersonIdScope() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid");
     JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
@@ -205,7 +204,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIntrospect() throws Exception {
+  void testAarcProfileIntrospect() throws Exception {
 
     Set<String> scopes = Sets.newHashSet(OidcScopes.OPENID, OidcScopes.PROFILE, OidcScopes.EMAIL,
         AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.ENTITLEMENTS,
@@ -230,7 +229,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIntrospectWithOldEdupersonEntitlementsScope() throws Exception {
+  void testAarcProfileIntrospectWithOldEdupersonEntitlementsScope() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
         "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
@@ -255,7 +254,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIntrospectWithoutScopes() throws Exception {
+  void testAarcProfileIntrospectWithoutScopes() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email");
     String accessToken = getPasswordToken(scopes).accessToken();
@@ -276,7 +275,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIntrospectWithNoUser() throws Exception {
+  void testAarcProfileIntrospectWithNoUser() throws Exception {
 
     String accessToken = getClientCredentialsToken("openid profile").accessToken();
 
@@ -297,8 +296,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
-      authorities = {"ROLE_USER"}, scopes = {"openid aarc"})
-  public void testAarcProfileUserinfo() throws Exception {
+    authorities = {"ROLE_USER"}, scopes = {"openid aarc"})
+  void testAarcProfileUserinfo() throws Exception {
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -317,9 +316,9 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
-      authorities = {"ROLE_USER"}, scopes = {
-          "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
-  public void testAarcProfileUserinfoWithEmail() throws Exception {
+    authorities = {"ROLE_USER"}, scopes = {
+    "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
+  void testAarcProfileUserinfoWithEmail() throws Exception {
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -342,9 +341,9 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
-      authorities = {"ROLE_USER"}, scopes = {
-          "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance voperson_id"})
-  public void testAarcProfileUserinfoWithAllScopes() throws Exception {
+    authorities = {"ROLE_USER"}, scopes = {
+    "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance voperson_id"})
+  void testAarcProfileUserinfoWithAllScopes() throws Exception {
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -368,7 +367,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIdTokenWithNoScopes() throws Exception {
+  void testAarcProfileIdTokenWithNoScopes() throws Exception {
 
     JWTClaimsSet claims = JWTParser.parse(getIdToken("openid")).getJWTClaimsSet();
     assertNotNull(claims.getClaim("sub"));
@@ -376,7 +375,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileIdTokenWithAarcScope() throws Exception {
+  void testAarcProfileIdTokenWithAarcScope() throws Exception {
 
     JWTClaimsSet claims = JWTParser.parse(getIdToken("openid aarc")).getJWTClaimsSet();
     assertNotNull(claims.getClaim("sub"));
@@ -392,7 +391,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testAarcProfileIdTokenWithAllSeparatedAarcScopes() throws Exception {
+  void testAarcProfileIdTokenWithAllSeparatedAarcScopes() throws Exception {
 
     Set<String> scopes =
         Set.of("openid", "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
@@ -418,7 +417,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testAarcProfileIdTokenWithLegacyAarcScopes() throws Exception {
+  void testAarcProfileIdTokenWithLegacyAarcScopes() throws Exception {
 
     Set<String> scopes = Set.of(OidcScopes.OPENID, AarcOidcScopes.EDUPERSON_ENTITLEMENT);
     JWTClaimsSet claims = JWTParser.parse(getPasswordToken(scopes).idToken()).getJWTClaimsSet();
@@ -440,7 +439,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAarcProfileAccessTokenWithAllAarcScopes() throws Exception {
+  void testAarcProfileAccessTokenWithAllAarcScopes() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
         "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");

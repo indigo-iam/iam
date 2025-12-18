@@ -21,31 +21,28 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"iam.account-linking.enable=false"})
-public class AccountLinkingDisabledTests {
+class AccountLinkingDisabledTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
   @WithMockUser(username = "test")
-  public void accountLinkingDisabledWorkAsExpected() throws Throwable {
+  void accountLinkingDisabledWorkAsExpected() throws Throwable {
 
     mvc.perform(post("/iam/account-linking/X509").with(csrf().asHeader()))
       .andExpect(status().isForbidden());

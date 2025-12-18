@@ -28,17 +28,18 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 import java.text.ParseException;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,6 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.mercateo.test.clock.TestClock;
 
@@ -141,17 +141,17 @@ class ClientRegistrationServiceTests {
   void beforeEach() {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
-    when(userAuth.getName()).thenReturn("test");
-    when(userAuth.getAuthorities()).thenAnswer(x -> Sets.newHashSet(Authorities.ROLE_USER));
+    lenient().when(userAuth.getName()).thenReturn("test");
+    lenient().when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
 
     anotherUserAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
-    when(anotherUserAuth.getName()).thenReturn("test_100");
-    when(anotherUserAuth.getAuthorities()).thenAnswer(x -> Sets.newHashSet(Authorities.ROLE_USER));
+    lenient().when(anotherUserAuth.getName()).thenReturn("test_100");
+    lenient().when(anotherUserAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
 
     adminAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
-    when(adminAuth.getName()).thenReturn("admin");
-    when(adminAuth.getAuthorities())
-      .thenAnswer(x -> Sets.newHashSet(Authorities.ROLE_USER, Authorities.ROLE_ADMIN));
+    lenient().when(adminAuth.getName()).thenReturn("admin");
+    lenient().when(adminAuth.getAuthorities())
+      .thenAnswer(x -> Set.of(Authorities.ROLE_USER, Authorities.ROLE_ADMIN));
 
     noAuth = Mockito.mock(AnonymousAuthenticationToken.class);
 
@@ -168,8 +168,8 @@ class ClientRegistrationServiceTests {
     oauthRequest = Mockito.mock(OAuth2Request.class);
     oauthDetails = Mockito.mock(OAuth2AuthenticationDetails.class);
 
-    when(ratAuth.getOAuth2Request()).thenReturn(oauthRequest);
-    when(ratAuth.getDetails()).thenReturn(oauthDetails);
+    lenient().when(ratAuth.getOAuth2Request()).thenReturn(oauthRequest);
+    lenient().when(ratAuth.getDetails()).thenReturn(oauthDetails);
 
     registrationProperties.setAllowFor(ClientRegistrationAuthorizationPolicy.ANYONE);
 
@@ -197,7 +197,7 @@ class ClientRegistrationServiceTests {
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
-          request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+          request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
 
           service.registerClient(request, userAuth);
         });
@@ -213,8 +213,8 @@ class ClientRegistrationServiceTests {
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
-          request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-          request.setScope(Sets.newHashSet(""));
+          request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+          request.setScope(Set.of(""));
 
           service.registerClient(request, userAuth);
         });
@@ -229,8 +229,8 @@ class ClientRegistrationServiceTests {
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
-          request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-          request.setRedirectUris(Sets.newHashSet("not-a-uri"));
+          request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+          request.setRedirectUris(Set.of("not-a-uri"));
 
           service.registerClient(request, userAuth);
         });
@@ -240,8 +240,8 @@ class ClientRegistrationServiceTests {
     exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet(" "));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of(" "));
 
       service.registerClient(request, userAuth);
     });
@@ -251,16 +251,16 @@ class ClientRegistrationServiceTests {
     Assertions.assertDoesNotThrow(() -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet("myapp://redirect"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of("myapp://redirect"));
       service.registerClient(request, userAuth);
     });
 
     Assertions.assertDoesNotThrow(() -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet("edu.kit.data.oidc-agent:/redirect"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of("edu.kit.data.oidc-agent:/redirect"));
       service.registerClient(request, userAuth);
     });
   }
@@ -268,14 +268,14 @@ class ClientRegistrationServiceTests {
   @Test
   void testBlacklistedUriValidation() {
 
-    when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
+    lenient().when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
-          request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-          request.setRedirectUris(Sets.newHashSet("https://deny.example/cb"));
+          request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+          request.setRedirectUris(Set.of("https://deny.example/cb"));
 
           service.registerClient(request, userAuth);
         });
@@ -293,8 +293,8 @@ class ClientRegistrationServiceTests {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
           request.setGrantTypes(
-              Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
-          request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+              Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+          request.setRedirectUris(Set.of("https://example/cb"));
           service.registerClient(request, userAuth);
         });
 
@@ -304,9 +304,9 @@ class ClientRegistrationServiceTests {
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(
-          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      request
+        .setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+      request.setRedirectUris(Set.of("https://example/cb"));
       service.registerClient(request, noAuth);
     });
 
@@ -317,9 +317,8 @@ class ClientRegistrationServiceTests {
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(
-          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
+      request.setRedirectUris(Set.of("https://example/cb"));
       service.registerClient(request, userAuth);
     });
 
@@ -330,9 +329,8 @@ class ClientRegistrationServiceTests {
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(
-          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
+      request.setRedirectUris(Set.of("https://example/cb"));
       service.registerClient(request, noAuth);
     });
 
@@ -344,8 +342,8 @@ class ClientRegistrationServiceTests {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
       request.setGrantTypes(
-          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+          Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+      request.setRedirectUris(Set.of("https://example/cb"));
       service.registerClient(request, noAuth);
     });
 
@@ -356,8 +354,8 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(
-        Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+        Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setRedirectUris(Set.of("https://example/cb"));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     assertThat(exception.getMessage(), containsString(
@@ -375,10 +373,9 @@ class ClientRegistrationServiceTests {
     // ask password, client credentials and exchange grant types as admin
     request = new RegisteredClientDTO();
     request.setClientName("example");
-    request
-      .setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD,
-          AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD,
+        AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setRedirectUris(Set.of("https://example/cb"));
 
     response = service.registerClient(request, adminAuth);
     assertThat(response.getClientName(), is("example"));
@@ -402,9 +399,9 @@ class ClientRegistrationServiceTests {
       final String restrictedScope = ss.getValue();
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName(String.format("test-registration %s", ss.getValue()));
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      request.setScope(Sets.newHashSet(restrictedScope, "openid"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of("https://example/cb"));
+      request.setScope(Set.of(restrictedScope, "openid"));
 
       RegisteredClientDTO response = null;
       try {
@@ -439,9 +436,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    request.setScope(Sets.newHashSet(restrictedScope1, restrictedScope2, "openid"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    request.setScope(Set.of(restrictedScope1, restrictedScope2, "openid"));
 
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
@@ -463,9 +460,9 @@ class ClientRegistrationServiceTests {
       final String reservedScope = ss.getValue();
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      request.setScope(Sets.newHashSet(reservedScope, "openid"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of("https://example/cb"));
+      request.setScope(Set.of(reservedScope, "openid"));
 
       RegisteredClientDTO response = null;
       try {
@@ -494,9 +491,9 @@ class ClientRegistrationServiceTests {
       final String restrictedScope = ss.getValue();
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
-      request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      request.setScope(Sets.newHashSet(restrictedScope, "openid"));
+      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      request.setRedirectUris(Set.of("https://example/cb"));
+      request.setScope(Set.of(restrictedScope, "openid"));
 
       RegisteredClientDTO response = null;
       try {
@@ -526,9 +523,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    request.setScope(Sets.newHashSet("customscope", "openid"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    request.setScope(Set.of("customscope", "openid"));
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
@@ -551,9 +548,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    request.setScope(Sets.newHashSet("customscope", "openid"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    request.setScope(Set.of("customscope", "openid"));
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
@@ -580,9 +577,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    request.setScope(Sets.newHashSet("customscope", "openid"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    request.setScope(Set.of("customscope", "openid"));
     // maybe assert that customscope is not in system scopes
     RegisteredClientDTO response = null;
     try {
@@ -606,9 +603,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    request.setScope(Sets.newHashSet("customscope", "openid"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    request.setScope(Set.of("customscope", "openid"));
 
     RegisteredClientDTO response = null;
     try {
@@ -629,10 +626,10 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
-    Set<String> scopes = Sets.newHashSet("openid");
+    Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
 
@@ -662,10 +659,10 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(new HashSet<>(Set.of("https://example/cb")));
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
-    Set<String> scopes = Sets.newHashSet("openid");
+    Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
 
@@ -696,9 +693,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    Set<String> scopes = Sets.newHashSet("openid");
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
 
@@ -730,9 +727,9 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    Set<String> scopes = Sets.newHashSet("openid");
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://example/cb"));
+    Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
 
@@ -759,7 +756,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO response = service.registerClient(request, noAuth);
 
     assertThat(response.getClientName(), is("example"));
@@ -777,7 +774,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     assertThat(response.getClientName(), is("example"));
@@ -799,7 +796,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     defaultScopes.forEach(s -> assertThat(response.getScope(), hasItem(s)));
@@ -812,7 +809,7 @@ class ClientRegistrationServiceTests {
     registrationProperties.setAllowFor(REGISTERED_USERS);
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () -> {
       service.registerClient(request, noAuth);
@@ -835,7 +832,7 @@ class ClientRegistrationServiceTests {
     registrationProperties.setAllowFor(ADMINISTRATORS);
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () -> {
       service.registerClient(request, noAuth);
@@ -878,7 +875,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO registerResponse = service.registerClient(request, userAuth);
 
     RegisteredClientDTO response = service.retrieveClient(registerResponse.getClientId(), userAuth);
@@ -901,13 +898,13 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
-    when(oauthRequest.getClientId()).thenReturn(registerResponse.getClientId());
-    when(oauthRequest.getScope())
-      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+    lenient().when(oauthRequest.getClientId()).thenReturn(registerResponse.getClientId());
+    lenient().when(oauthRequest.getScope())
+      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
 
     RegisteredClientDTO response = service.retrieveClient(registerResponse.getClientId(), ratAuth);
 
@@ -927,13 +924,13 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
-    when(oauthRequest.getClientId()).thenReturn("some-other-id");
-    when(oauthRequest.getScope())
-      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+    lenient().when(oauthRequest.getClientId()).thenReturn("some-other-id");
+    lenient().when(oauthRequest.getScope())
+      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -942,8 +939,8 @@ class ClientRegistrationServiceTests {
 
     assertThat(exception.getMessage(), containsString("Invalid registration access token"));
 
-    when(oauthRequest.getClientId()).thenReturn(registerResponse.getClientId());
-    when(oauthRequest.getScope()).thenReturn(Sets.newHashSet());
+    lenient().when(oauthRequest.getClientId()).thenReturn(registerResponse.getClientId());
+    lenient().when(oauthRequest.getScope()).thenReturn(Set.of());
 
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       service.retrieveClient(registerResponse.getClientId(), ratAuth);
@@ -957,7 +954,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     InvalidClientRegistrationRequest exception =
@@ -981,7 +978,7 @@ class ClientRegistrationServiceTests {
   void testAccountAuthzForClientManagement() throws ParseException {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     NoSuchClient exception = Assertions.assertThrows(NoSuchClient.class, () -> {
@@ -1002,13 +999,13 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
           RegisteredClientDTO updateRequest = response;
-          updateRequest.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS,
+          updateRequest.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS,
               AuthorizationGrantType.TOKEN_EXCHANGE));
           service.updateClient(response.getClientId(), updateRequest, userAuth);
 
@@ -1020,12 +1017,12 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO reqClient = new RegisteredClientDTO();
     reqClient.setClientName("example2");
-    reqClient.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    reqClient.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO respClient = service.registerClient(reqClient, adminAuth);
 
     RegisteredClientDTO updateReq = respClient;
-    updateReq.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS,
-        AuthorizationGrantType.TOKEN_EXCHANGE));
+    updateReq.setGrantTypes(
+        Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS, AuthorizationGrantType.TOKEN_EXCHANGE));
     RegisteredClientDTO updateResponse =
         service.updateClient(respClient.getClientId(), updateReq, adminAuth);
 
@@ -1039,8 +1036,8 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
@@ -1066,15 +1063,15 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, noAuth);
 
-    when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
-    when(oauthRequest.getClientId()).thenReturn(response.getClientId());
-    when(oauthRequest.getScope())
-      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+    lenient().when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
+    lenient().when(oauthRequest.getClientId()).thenReturn(response.getClientId());
+    lenient().when(oauthRequest.getScope())
+      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
 
     RegisteredClientDTO updateRequest = response;
     response.setClientDescription("Whatever");
@@ -1095,15 +1092,15 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, noAuth);
 
-    when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
-    when(oauthRequest.getClientId()).thenReturn(response.getClientId());
-    when(oauthRequest.getScope())
-      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+    lenient().when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
+    lenient().when(oauthRequest.getClientId()).thenReturn(response.getClientId());
+    lenient().when(oauthRequest.getScope())
+      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
 
     ClientDetailsEntity clientEntity =
         clientRepo.findByClientId(response.getClientId()).orElseThrow();
@@ -1127,20 +1124,20 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, noAuth);
 
-    when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
-    when(oauthRequest.getClientId()).thenReturn(response.getClientId());
-    when(oauthRequest.getScope())
-      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+    lenient().when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
+    lenient().when(oauthRequest.getClientId()).thenReturn(response.getClientId());
+    lenient().when(oauthRequest.getScope())
+      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
           RegisteredClientDTO updateRequest = response;
-          updateRequest.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+          updateRequest.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
           service.updateClient(response.getClientId(), updateRequest, ratAuth);
 
         });
@@ -1153,8 +1150,8 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("restricted-scopes-preserved");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, userAuth);
 
@@ -1187,8 +1184,8 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("redeem-client-test");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://test.example/cb"));
 
     RegisteredClientDTO response = service.registerClient(request, noAuth);
     RegisteredClientDTO response2 = service.registerClient(request, noAuth);
@@ -1240,8 +1237,8 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwk(NOT_A_JSON_STRING);
 
     ParseException e = assertThrows(ParseException.class, () -> {
@@ -1269,8 +1266,8 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwksUri(NOT_A_VALID_URI);
 
     ConstraintViolationException e = assertThrows(ConstraintViolationException.class, () -> {

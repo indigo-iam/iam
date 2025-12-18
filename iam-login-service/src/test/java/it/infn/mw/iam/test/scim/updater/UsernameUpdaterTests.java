@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -49,7 +49,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
 public class UsernameUpdaterTests extends TestTokensUtils {
@@ -67,15 +67,15 @@ public class UsernameUpdaterTests extends TestTokensUtils {
   @Autowired
   private UsernameValidator usernameValidator;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
     accessTokenRepository.deleteAll();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
@@ -100,8 +100,8 @@ public class UsernameUpdaterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testUsernameReplacerWorks() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void testUsernameReplacerWorks() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     account = newAccount(OLD);
 

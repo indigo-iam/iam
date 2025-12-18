@@ -31,13 +31,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -57,10 +57,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class AupIntegrationTests extends AupTestSupport {
+class AupIntegrationTests extends AupTestSupport {
 
   private final String INVALID_AUP_URL =
       "https://iam.local.io/\"</script><script>alert(8);</script>";
@@ -90,17 +90,15 @@ public class AupIntegrationTests extends AupTestSupport {
 
   private MockMvc mvc;
 
-
-
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -148,14 +146,14 @@ public class AupIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  public void noAupDefinedResultsin404() throws Exception {
+  void noAupDefinedResultsin404() throws Exception {
     mvc.perform(get("/iam/aup"))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo(AupNotFoundError.AUP_NOT_DEFINED)));
   }
 
   @Test
-  public void aupIsReturnedIfDefined() throws Exception {
+  void aupIsReturnedIfDefined() throws Exception {
 
     IamAup defaultAup = buildDefaultAup();
     aupRepo.save(defaultAup);
@@ -164,7 +162,7 @@ public class AupIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  public void aupCreationRequiresAuthenticatedUser() throws Exception {
+  void aupCreationRequiresAuthenticatedUser() throws Exception {
     Date now = new Date();
     String reminders = "1,15,30";
     AupDTO aup =
@@ -178,7 +176,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void aupCreationRequiresAdminPrivileges() throws Exception {
+  void aupCreationRequiresAdminPrivileges() throws Exception {
     Date now = new Date();
     String reminders = "1,15,30";
     AupDTO aup =
@@ -193,7 +191,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUrlIsRequired() throws Exception {
+  void aupUrlIsRequired() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
     aup.setUrl(null);
 
@@ -202,7 +200,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUrlIsNotAValidUrl() throws Exception {
+  void aupUrlIsNotAValidUrl() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
     aup.setUrl("Not-a-URL");
 
@@ -211,7 +209,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUrlQueryNotAllowed() throws Exception {
+  void aupUrlQueryNotAllowed() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
     aup.setUrl("http://aup-url.org/with?query=value");
 
@@ -221,7 +219,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUrlInvalidHTMLTags() throws Exception {
+  void aupUrlInvalidHTMLTags() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     aup.setUrl(INVALID_AUP_URL);
@@ -231,7 +229,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDescriptionNoLongerThan128Chars() throws Exception {
+  void aupDescriptionNoLongerThan128Chars() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
     String longDescription = Strings.repeat("xxxx", 33);
     aup.setDescription(longDescription);
@@ -242,7 +240,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresSignatureValidityDays() throws Exception {
+  void aupCreationRequiresSignatureValidityDays() throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, null, null, null, reminders);
 
@@ -254,7 +252,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresPositiveSignatureValidityDays() throws Exception {
+  void aupCreationRequiresPositiveSignatureValidityDays() throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, -1L, null, null, reminders);
     Date now = new Date();
@@ -266,8 +264,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
-      throws Exception {
+  void aupCreationFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
+    throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, reminders);
     Date now = new Date();
@@ -279,8 +277,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero()
-      throws Exception {
+  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero()
+    throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, null);
 
     Date now = new Date();
@@ -291,8 +289,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsNotZero()
-      throws Exception {
+  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsNotZero()
+    throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, null);
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -303,7 +301,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationFailsIfRemindersAreEmptyAndSignatureValidityIsNonZero() throws Exception {
+  void aupCreationFailsIfRemindersAreEmptyAndSignatureValidityIsNonZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -314,7 +312,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationWorksIfRemindersAreEmptyAndSignatureValidityIsZero() throws Exception {
+  void aupCreationWorksIfRemindersAreEmptyAndSignatureValidityIsZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -324,7 +322,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresEmptyOrNullRemindersIfSignatureValidityIsZero() throws Exception {
+  void aupCreationRequiresEmptyOrNullRemindersIfSignatureValidityIsZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "ciao");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -335,7 +333,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoLettersInAupRemindersDays() throws Exception {
+  void aupCreationRequiresNoLettersInAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "ciao");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -346,7 +344,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoZeroInAupRemindersDays() throws Exception {
+  void aupCreationRequiresNoZeroInAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "0");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -357,7 +355,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresPositiveAupRemindersDays() throws Exception {
+  void aupCreationRequiresPositiveAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "-22");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -368,7 +366,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoDuplicationInAupRemindersDays() throws Exception {
+  void aupCreationRequiresNoDuplicationInAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, "30,15,15");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -379,7 +377,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresAupRemindersSmallerThanSignatureValidityDays() throws Exception {
+  void aupCreationRequiresAupRemindersSmallerThanSignatureValidityDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "4");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -390,7 +388,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationWorks() throws Exception {
+  void aupCreationWorks() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     Date now = new Date();
@@ -417,7 +415,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void whiteSpacesAllowedAmongAupRemindersDays() throws Exception {
+  void whiteSpacesAllowedAmongAupRemindersDays() throws Exception {
     AupDTO aup =
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, " 30, 15, 7 ");
 
@@ -445,7 +443,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationFailsIfAupAlreadyDefined() throws Exception {
+  void aupCreationFailsIfAupAlreadyDefined() throws Exception {
 
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
@@ -459,25 +457,25 @@ public class AupIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  public void aupDeletionRequiresAuthenticatedUser() throws Exception {
+  void aupDeletionRequiresAuthenticatedUser() throws Exception {
     mvc.perform(delete("/iam/aup")).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void aupDeletionRequiresAdminUser() throws Exception {
+  void aupDeletionRequiresAdminUser() throws Exception {
     mvc.perform(delete("/iam/aup")).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDeletionReturns404IfAupIsNotDefined() throws Exception {
+  void aupDeletionReturns404IfAupIsNotDefined() throws Exception {
     mvc.perform(delete("/iam/aup")).andExpect(status().isNotFound());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDeletionWorks() throws Exception {
+  void aupDeletionWorks() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -489,7 +487,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateFailsWith404IfAupIsNotDefined() throws Exception {
+  void aupUpdateFailsWith404IfAupIsNotDefined() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
     mvc
       .perform(MockMvcRequestBuilders.patch("/iam/aup")
@@ -501,7 +499,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateFailsIfAupUrlIsNotAValidUrl() throws Exception {
+  void aupUpdateFailsIfAupUrlIsNotAValidUrl() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -513,7 +511,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateFailsIfAupUrlQueryNotAllowed() throws Exception {
+  void aupUpdateFailsIfAupUrlQueryNotAllowed() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -526,7 +524,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresTextContent() throws Exception {
+  void aupUpdateRequiresTextContent() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -543,7 +541,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresSignatureValidityDays() throws Exception {
+  void aupUpdateRequiresSignatureValidityDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -555,7 +553,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresPositiveSignatureValidityDays() throws Exception {
+  void aupUpdateRequiresPositiveSignatureValidityDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -567,8 +565,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
-      throws Exception {
+  void aupUpdateFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
+    throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -581,7 +579,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateFailsIfRemindersAreEmptyAndSignatureValidityIsNonZero() throws Exception {
+  void aupUpdateFailsIfRemindersAreEmptyAndSignatureValidityIsNonZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -594,7 +592,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateWorksIfRemindersAreEmptyAndSignatureValidityIsZero() throws Exception {
+  void aupUpdateWorksIfRemindersAreEmptyAndSignatureValidityIsZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -610,7 +608,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresEmptyOrNullRemindersIfSignatureValidityIsZero() throws Exception {
+  void aupUpdateRequiresEmptyOrNullRemindersIfSignatureValidityIsZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -624,7 +622,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresNoLettersInAupRemindersDays() throws Exception {
+  void aupUpdateRequiresNoLettersInAupRemindersDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -637,7 +635,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresNoZeroInAupRemindersDays() throws Exception {
+  void aupUpdateRequiresNoZeroInAupRemindersDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -650,7 +648,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresPositiveAupRemindersDays() throws Exception {
+  void aupUpdateRequiresPositiveAupRemindersDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -663,7 +661,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresNoDuplicationInAupRemindersDays() throws Exception {
+  void aupUpdateRequiresNoDuplicationInAupRemindersDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -676,7 +674,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresAupRemindersSmallerThanSignatureValidityDays() throws Exception {
+  void aupUpdateRequiresAupRemindersSmallerThanSignatureValidityDays() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -690,8 +688,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateRequiresAupRemindersWhenSignatureValidityIsGreaterThanZero()
-      throws Exception {
+  void aupUpdateRequiresAupRemindersWhenSignatureValidityIsGreaterThanZero()
+    throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -704,7 +702,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateWorksIfRemindersAreNullAndSignatureValidityIsZero() throws Exception {
+  void aupUpdateWorksIfRemindersAreNullAndSignatureValidityIsZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
     createAup(aup);
@@ -720,7 +718,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupUpdateWorks() throws Exception {
+  void aupUpdateWorks() throws Exception {
 
     final String UPDATED_AUP_URL = "http://updated-aup-text.org/";
     final String UPDATED_AUP_DESC = "Updated AUP desc";
@@ -767,7 +765,7 @@ public class AupIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  public void anonymousAupSignLinkRedirectsToLoginPage() throws Exception {
+  void anonymousAupSignLinkRedirectsToLoginPage() throws Exception {
     mvc.perform(get("/iam/aup/sign"))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/login"));
@@ -775,19 +773,19 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "actuator-user", roles = {"ACTUATOR"})
-  public void aupSignLinkForbiddenToActuatorUser() throws Exception {
+  void aupSignLinkForbiddenToActuatorUser() throws Exception {
     mvc.perform(get("/iam/aup/sign")).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void aupSignLinkAllowedToUsers() throws Exception {
+  void aupSignLinkAllowedToUsers() throws Exception {
     mvc.perform(get("/iam/aup/sign")).andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupSignLinkAllowedToAdmins() throws Exception {
+  void aupSignLinkAllowedToAdmins() throws Exception {
     mvc.perform(get("/iam/aup/sign")).andExpect(status().isOk());
   }
 

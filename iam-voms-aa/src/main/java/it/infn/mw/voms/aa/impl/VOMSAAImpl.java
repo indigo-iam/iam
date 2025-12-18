@@ -15,13 +15,13 @@
  */
 package it.infn.mw.voms.aa.impl;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static it.infn.mw.voms.aa.VOMSResponse.Outcome.SUCCESS;
 import static it.infn.mw.voms.aa.VOMSWarningMessage.shortenedAttributeValidity;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -87,10 +87,9 @@ public class VOMSAAImpl implements AttributeAuthority {
 
   private void requestSanityChecks(VOMSRequest request) {
 
-    checkNotNull(request);
-    checkNotNull(request.getRequesterSubject());
-    checkNotNull(request.getHolderSubject());
-
+    Objects.requireNonNull(request, "Null request");
+    Objects.requireNonNull(request.getRequesterSubject(), "Null requester subject");
+    Objects.requireNonNull(request.getHolderSubject(), "Null holder subject");
   }
 
   private void resolveAccount(VOMSRequestContext context) {

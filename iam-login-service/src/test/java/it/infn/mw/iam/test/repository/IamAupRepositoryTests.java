@@ -16,16 +16,16 @@
 package it.infn.mw.iam.test.repository;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Date;
 import java.util.Optional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -33,23 +33,22 @@ import it.infn.mw.iam.test.api.aup.AupTestSupport;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
-public class IamAupRepositoryTests extends AupTestSupport{
+class IamAupRepositoryTests extends AupTestSupport {
 
   @Autowired
   private IamAupRepository aupRepo;
-  
+
   @Test
-  public void defaultAupIsNotDefinedAtStartup() {
+  void defaultAupIsNotDefinedAtStartup() {
 
     Optional<IamAup> aup = aupRepo.findByName(DEFAULT_AUP_NAME);
     assertThat(aup.isPresent(), is(false));
   }
 
   @Test
-  public void aupCreationWorks() {
+  void aupCreationWorks() {
   
     IamAup aup = buildDefaultAup();
     Date creationTime = aup.getCreationTime();    
@@ -67,9 +66,9 @@ public class IamAupRepositoryTests extends AupTestSupport{
     assertThat(aup.getAupRemindersInDays(), equalTo("30,15,1"));
     
   }
-  
+
   @Test
-  public void aupRemovalWorks() {
+  void aupRemovalWorks() {
     
     IamAup aup = buildDefaultAup();
     

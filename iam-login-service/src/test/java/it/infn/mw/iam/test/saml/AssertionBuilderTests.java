@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.test.saml;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,8 +33,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.joda.time.DateTime;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.saml2.core.Assertion;
@@ -57,23 +57,19 @@ import it.infn.mw.iam.test.util.saml.SamlAssertionBuilder;
 import it.infn.mw.iam.test.util.saml.SamlResponseBuilder;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-
-
 public class AssertionBuilderTests {
 
   public static final String KEY_ALIAS = "iam-test";
   public static final String KS_PASSWORD = "iam-test";
 
-
-  @BeforeClass
-  public static void setup() throws ConfigurationException {
+  @BeforeAll
+  static void setup() throws ConfigurationException {
 
     DefaultBootstrap.bootstrap();
   }
 
-
   @Test
-  public void testBuildAssertion() throws Throwable {
+  void testBuildAssertion() throws Throwable {
 
     Credential serviceCredential = serviceCredential();
 
@@ -166,7 +162,7 @@ public class AssertionBuilderTests {
 
     KeyStore ks = testKeyStore();
     JKSKeyManager keyManager =
-	new JKSKeyManager(ks, ImmutableMap.of(KEY_ALIAS, KS_PASSWORD), KEY_ALIAS);
+        new JKSKeyManager(ks, ImmutableMap.of(KEY_ALIAS, KS_PASSWORD), KEY_ALIAS);
 
     return keyManager.getDefaultCredential();
   }

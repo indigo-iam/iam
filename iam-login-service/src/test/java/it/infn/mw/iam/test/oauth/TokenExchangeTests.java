@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,13 +39,11 @@ import java.util.Map;
 import java.util.Random;
 
 import org.json.JSONObject;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -58,13 +56,10 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TokenExchangeTests extends EndpointsTestUtils {
+class TokenExchangeTests extends EndpointsTestUtils {
 
   private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
   private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
@@ -81,7 +76,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   private IamAupRepository aupRepo;
 
   @Test
-  public void testImpersonationFlowWithAudience() throws Exception {
+  void testImpersonationFlowWithAudience() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -152,7 +147,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testImpersonationFlowFailsIfAUPNotSigned() throws Exception {
+  void testImpersonationFlowFailsIfAUPNotSigned() throws Exception {
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
 
@@ -200,7 +195,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testImpersonationFlowWithoutAudience() throws Exception {
+  void testImpersonationFlowWithoutAudience() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -272,7 +267,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testUnauthorizedClient() throws Exception {
+  void testUnauthorizedClient() throws Exception {
 
     String clientId = "client-cred";
     String clientSecret = "secret";
@@ -302,7 +297,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testTokenExchangeWithRefreshToken() throws Exception {
+  void testTokenExchangeWithRefreshToken() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -390,7 +385,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testDelegationFlow() throws Exception {
+  void testDelegationFlow() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -434,7 +429,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWithInvalidSubjectToken() throws Exception {
+  void testWithInvalidSubjectToken() throws Exception {
 
     String actorClientId = "token-exchange-actor";
     String actorClientSecret = "secret";
@@ -454,7 +449,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testTokenExchangeForClientCredentialsClient() throws Exception {
+  void testTokenExchangeForClientCredentialsClient() throws Exception {
 
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId("client-cred")
@@ -500,7 +495,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
+  void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
 
 
     String clientId = "token-exchange-actor";
@@ -538,7 +533,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testActClaimSetting() throws Exception {
+  void testActClaimSetting() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -659,7 +654,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testImpersonationFlowWithLongRequestParamWorks() throws Exception {
+  void testImpersonationFlowWithLongRequestParamWorks() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";

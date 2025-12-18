@@ -24,13 +24,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,10 +48,9 @@ import it.infn.mw.iam.test.util.WithMockSAMLUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class DefaultFieldsValidationTests extends TestSupport {
+class DefaultFieldsValidationTests extends TestSupport {
 
   private final String TEST_USERNAME = "test-attributes";
   private final String TEST_EMAIL = TEST_USERNAME + "@example.org";
@@ -85,13 +84,13 @@ public class DefaultFieldsValidationTests extends TestSupport {
   @Autowired
   private IamRegistrationRequestRepository registrationRequestRepo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
@@ -129,7 +128,7 @@ public class DefaultFieldsValidationTests extends TestSupport {
   }
 
   @Test
-  public void anonymousRequestWithReadOnlyFieldsFails() throws Exception {
+  void anonymousRequestWithReadOnlyFieldsFails() throws Exception {
 
     RegistrationRequestDto request = createTestRegistrationRequest();
     mvc
@@ -160,8 +159,8 @@ public class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
-  public void samlAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
+    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+  void samlAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
     mvc
@@ -192,9 +191,9 @@ public class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-      email = OIDC_EMAIL)
-  public void oidcAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
+    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+    email = OIDC_EMAIL)
+  void oidcAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
     mvc
@@ -225,8 +224,8 @@ public class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
-  public void samlAuthenticatedRequestValidWhenManipulated() throws Exception {
+    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+  void samlAuthenticatedRequestValidWhenManipulated() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
     r.setUsername("custom-username");
@@ -275,9 +274,9 @@ public class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-      email = OIDC_EMAIL)
-  public void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
+    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+    email = OIDC_EMAIL)
+  void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
     r.setUsername("custom-username");

@@ -34,13 +34,13 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.apache.commons.lang.time.DateUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,10 +61,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-public class AupSignatureIntegrationTests extends AupTestSupport {
+class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Autowired
   private ObjectMapper mapper;
@@ -110,33 +110,33 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
     return calendar.getTime();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     initCurrentDate();
     aup = buildDefaultAup();
     aupRepo.save(aup);
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
     aupRepo.delete(aup);
   }
 
   @Test
-  public void getAupSignatureRequiresAuthenticatedUser() throws Exception {
+  void getAupSignatureRequiresAuthenticatedUser() throws Exception {
     mvc.perform(get("/iam/aup/signature")).andExpect(status().isUnauthorized());
   }
 
   @Test
-  public void signAupSignatureRequiresAuthenticatedUser() throws Exception {
+  void signAupSignatureRequiresAuthenticatedUser() throws Exception {
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getAupSignatureWithUndefinedAupReturns404() throws Exception {
+  void getAupSignatureWithUndefinedAupReturns404() throws Exception {
     aupRepo.deleteAll();
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
@@ -145,7 +145,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getAupSignatureWithNoSignatureRecordReturns404() throws Exception {
+  void getAupSignatureWithNoSignatureRecordReturns404() throws Exception {
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
@@ -153,7 +153,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void signatureCreationReturns204() throws Exception {
+  void signatureCreationReturns204() throws Exception {
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
 
     String sigString = mvc.perform(get("/iam/aup/signature"))
@@ -191,8 +191,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void signatureOnBehalfWithoutRequestBodyWorksWhenUserHasNoSignature()
-      throws Exception, NoSuchElementException {
+  void signatureOnBehalfWithoutRequestBodyWorksWhenUserHasNoSignature()
+    throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -224,8 +224,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void signatureOnBehalfWithRequestBodyWorksWhenUserHasNoSignature()
-      throws Exception, NoSuchElementException {
+  void signatureOnBehalfWithRequestBodyWorksWhenUserHasNoSignature()
+    throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -262,8 +262,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockOAuthUser(scopes = "iam:admin.write", clientId = "client-cred")
-  public void signatureOnBehalfWithClientCredentialsWorks()
-      throws Exception, NoSuchElementException {
+  void signatureOnBehalfWithClientCredentialsWorks()
+    throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -293,7 +293,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupRemovalForSingleUser() throws Exception {
+  void aupRemovalForSingleUser() throws Exception {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
 
@@ -312,7 +312,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockOAuthUser(scopes = "iam:admin.write", clientId = "client-cred")
-  public void aupRemovalForSingleUserWithClientCredentialsWorks() throws Exception {
+  void aupRemovalForSingleUserWithClientCredentialsWorks() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -329,7 +329,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupRemovalRemovesSignatureRecords() throws Exception {
+  void aupRemovalRemovesSignatureRecords() throws Exception {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
@@ -346,7 +346,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void accountRemovalRemovesSignatureRecords() throws Exception {
+  void accountRemovalRemovesSignatureRecords() throws Exception {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
 
@@ -358,7 +358,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void normalUserCannotSeeOtherUserAup() throws Exception {
+  void normalUserCannotSeeOtherUserAup() throws Exception {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     mvc.perform(get("/iam/aup/signature")).andExpect(status().isOk());
@@ -367,7 +367,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  public void adminUserCanSeeOtherUserAup() throws Exception {
+  void adminUserCanSeeOtherUserAup() throws Exception {
 
     mvc.perform(post("/iam/aup/signature").with(user("test").roles("USER")))
       .andExpect(status().isCreated());
@@ -385,7 +385,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
-  public void signAupOnBehalfOfUserThatHasAlreadyASignature() throws Exception {
+  void signAupOnBehalfOfUserThatHasAlreadyASignature() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     IamAupSignature signature =
@@ -420,7 +420,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
-  public void signAupOnBehalfOfUserThatHasNoSignature() throws Exception {
+  void signAupOnBehalfOfUserThatHasNoSignature() throws Exception {
 
     mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
       .andExpect(status().isNotFound())
@@ -442,7 +442,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testSignAupThrowExceptionForServiceAccount() throws Exception {
+  void testSignAupThrowExceptionForServiceAccount() throws Exception {
        
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     testAccount.setServiceAccount(true);

@@ -21,8 +21,9 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -37,11 +38,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.Sets;
 
@@ -60,8 +61,8 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ProxyServiceTests extends ProxyCertificateTestSupport {
+@ExtendWith(MockitoExtension.class)
+class ProxyServiceTests extends ProxyCertificateTestSupport {
 
   @Mock
   IamAccountRepository accountRepo;
@@ -95,67 +96,66 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
     return proxyHelper.proxyCertificateToPemString(proxy);
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
     proxyService = new DefaultProxyCertificateService(clock, accountRepo, properties, proxyHelper);
-    when(principal.getName()).thenReturn(TEST_USER_USERNAME);
-    when(account.getUsername()).thenReturn(TEST_USER_USERNAME);
-    // when(properties.getKeySize()).thenReturn(DEFAULT_KEY_SIZE);
-    when(properties.getMaxLifetimeSeconds()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS);
-    when(request.getLifetimeSecs()).thenReturn(null);
-  }
-
-  @Test(expected = NoSuchAccountError.class)
-  public void testPrincipalNotFoundHandled() {
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(empty());
-    proxyService.generateProxy(principal, request);
-  }
-
-  @Test(expected = ProxyNotFoundError.class)
-  public void testPrincipalWithoutCertificateHandled() {
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet());
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
-    proxyService.generateProxy(principal, request);
-  }
-
-  @Test(expected = ProxyNotFoundError.class)
-  public void testPrincipalWithoutProxyHandled() {
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(TEST_0_IAM_X509_CERT));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
-    proxyService.generateProxy(principal, request);
-  }
-
-  @Test(expected = ProxyNotFoundError.class)
-  public void testExpiredProxyHandled() throws InvalidKeyException, CertificateParsingException,
-      SignatureException, NoSuchAlgorithmException, IOException {
-
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(AN_HOUR_AGO));
-
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
-
-    proxyService.generateProxy(principal, request);
+    lenient().when(principal.getName()).thenReturn(TEST_USER_USERNAME);
+    lenient().when(account.getUsername()).thenReturn(TEST_USER_USERNAME);
+    lenient().when(properties.getMaxLifetimeSeconds()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS);
+    lenient().when(request.getLifetimeSecs()).thenReturn(null);
   }
 
   @Test
-  public void testProxyGenerationSuccess() throws InvalidKeyException, CertificateParsingException,
+  void testPrincipalNotFoundHandled() {
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(empty());
+    assertThrows(NoSuchAccountError.class, () -> proxyService.generateProxy(principal, request));
+  }
+
+  @Test
+  void testPrincipalWithoutCertificateHandled() {
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet());
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    assertThrows(ProxyNotFoundError.class, () -> proxyService.generateProxy(principal, request));
+  }
+
+  @Test
+  void testPrincipalWithoutProxyHandled() {
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(TEST_0_IAM_X509_CERT));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    assertThrows(ProxyNotFoundError.class, () -> proxyService.generateProxy(principal, request));
+  }
+
+  @Test
+  void testExpiredProxyHandled() throws InvalidKeyException, CertificateParsingException,
+      SignatureException, NoSuchAlgorithmException, IOException {
+
+    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(AN_HOUR_AGO));
+
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+
+    assertThrows(ProxyNotFoundError.class, () -> proxyService.generateProxy(principal, request));
+  }
+
+  @Test
+  void testProxyGenerationSuccess() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
     String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
-    when(proxyCert.getChain()).thenReturn(pemProxy);
+    lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
 
 
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
 
@@ -163,7 +163,7 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
 
     assertThat(Duration.between(NOW, notAfter)
       .compareTo(Duration.ofSeconds(DEFAULT_PROXY_LIFETIME_SECONDS)), is(0));
-    
+
     assertThat(dto.getIdentity(), is(TEST_0_SUBJECT));
     assertThat(dto.getSubject(), endsWith(TEST_0_SUBJECT));
     assertThat(dto.getIssuer(), endsWith(TEST_0_SUBJECT));
@@ -172,21 +172,21 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  public void testRequestLifetimeIsHonoured() throws InvalidKeyException,
+  void testRequestLifetimeIsHonoured() throws InvalidKeyException,
       CertificateParsingException, SignatureException, NoSuchAlgorithmException, IOException {
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-    when(request.getLifetimeSecs()).thenReturn(TimeUnit.HOURS.toSeconds(6));
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+    lenient().when(request.getLifetimeSecs()).thenReturn(TimeUnit.HOURS.toSeconds(6));
 
     String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
-    when(proxyCert.getChain()).thenReturn(pemProxy);
+    lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
 
 
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
 
@@ -198,21 +198,21 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  public void testRequestLifetimeIsLimitedToDefaultProxyLifetime() throws InvalidKeyException,
+  void testRequestLifetimeIsLimitedToDefaultProxyLifetime() throws InvalidKeyException,
       CertificateParsingException, SignatureException, NoSuchAlgorithmException, IOException {
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-    when(request.getLifetimeSecs()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS + 1);
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+    lenient().when(request.getLifetimeSecs()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS + 1);
 
     String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
-    when(proxyCert.getChain()).thenReturn(pemProxy);
+    lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
 
 
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
 
@@ -223,32 +223,32 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
 
-  @Test(expected = ProxyNotFoundError.class)
-  public void testRequestIssuerIsHonoured() throws InvalidKeyException, CertificateParsingException,
+  @Test
+  void testRequestIssuerIsHonoured() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
-    when(request.getIssuer()).thenReturn("CN=A custom issuer");
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(request.getIssuer()).thenReturn("CN=A custom issuer");
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
-    proxyService.generateProxy(principal, request);
+    assertThrows(ProxyNotFoundError.class, () -> proxyService.generateProxy(principal, request));
 
   }
 
   @Test
-  public void testListProxies() throws InvalidKeyException, CertificateParsingException,
+  void testListProxies() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
+    lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     List<ProxyCertificateDTO> proxies = proxyService.listProxies(principal);
     assertThat(proxies, hasSize(1));
@@ -256,12 +256,12 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  public void testListProxiesNoResults() throws InvalidKeyException, CertificateParsingException,
+  void testListProxiesNoResults() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
-    when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
-    when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
+    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
+    lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     List<ProxyCertificateDTO> proxies = proxyService.listProxies(principal);
     assertThat(proxies, hasSize(0));

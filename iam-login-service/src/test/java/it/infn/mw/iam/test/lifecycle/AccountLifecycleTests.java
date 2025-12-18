@@ -25,17 +25,15 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
@@ -48,16 +46,14 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    AccountLifecycleTests.TestConfig.class})
+  AccountLifecycleTests.TestConfig.class})
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=7",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
-        "lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=true"})
-public class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+  properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=7",
+    "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
+    "lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=true"})
+class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -82,8 +78,8 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   private IamAccount testAccount;
   private Optional<IamLabel> statusLabel;
 
-  @Before
-  public void resetTestAccount() {
+  @BeforeEach
+  void resetTestAccount() {
 
     testAccount = IamAccount.newAccount();
     testAccount.setUuid(USER_UUID);
@@ -102,14 +98,14 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     assertThat(statusLabel.isPresent(), is(false));
   }
 
-  @After
-  public void deleteAccount() {
+  @AfterEach
+  void deleteAccount() {
 
     accountService.deleteAccount(testAccount);
   }
 
   @Test
-  public void testUserSuspensionAtLastMidnight() {
+  void testUserSuspensionAtLastMidnight() {
 
     accountService.setAccountEndTime(testAccount, Date.from(LAST_MIDNIGHT));
     handler.handleExpiredAccounts();
@@ -123,7 +119,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   }
 
   @Test
-  public void testSuspensionGracePeriodWorks() {
+  void testSuspensionGracePeriodWorks() {
 
     accountService.setAccountEndTime(testAccount, Date.from(DAY_BEFORE));
     testAccount = accountService.findByUuid(USER_UUID)
@@ -153,7 +149,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   }
 
   @Test
-  public void testRemovalGracePeriodWorks() {
+  void testRemovalGracePeriodWorks() {
 
     accountService.setAccountEndTime(testAccount, Date.from(EIGHT_DAYS_AGO));
     Date lastUpdateTime = testAccount.getLastUpdateTime();
@@ -182,7 +178,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   }
 
   @Test
-  public void testAccountRemovalWorks() {
+  void testAccountRemovalWorks() {
 
     accountService.setAccountEndTime(testAccount, Date.from(THIRTY_ONE_DAYS_AGO));
 
@@ -192,7 +188,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   }
 
   @Test
-  public void testNoAccountsRemoved() {
+  void testNoAccountsRemoved() {
 
     long accountBefore = repo.count();
 

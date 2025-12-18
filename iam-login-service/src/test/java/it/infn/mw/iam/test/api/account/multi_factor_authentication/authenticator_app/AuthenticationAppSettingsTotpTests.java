@@ -31,14 +31,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -57,9 +57,9 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
+class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
 
   private MockMvc mvc;
 
@@ -79,13 +79,13 @@ public class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
   private QrGenerator qrGenerator;
 
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
@@ -96,7 +96,7 @@ public class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testAddSecretThrowsQrGenerationException() throws Exception {
+  void testAddSecretThrowsQrGenerationException() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(account));
 
@@ -116,10 +116,10 @@ public class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
     verify(totpMfaService, times(1)).addTotpMfaSecret(account);
     verify(qrGenerator, times(1)).generate(any(QrData.class));
   }
-  
+
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, authorities = "ROLE_USER")
-  public void testEnableAuthenticatorAppViaOauthAuthn() throws Exception {
+  void testEnableAuthenticatorAppViaOauthAuthn() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
 
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);

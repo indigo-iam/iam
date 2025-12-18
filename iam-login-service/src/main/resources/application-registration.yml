@@ -47,3 +47,6 @@ iam:
       notes:
         read-only: false
         field-behaviour: mandatory
+      certificate:
+        read-only: false
+        field-behaviour: hidden

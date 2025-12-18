@@ -20,9 +20,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -42,19 +42,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,10 +79,10 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-public class ScimGroupProvisioningTests {
+class ScimGroupProvisioningTests {
 
   private final static String GROUP_URI = ScimUtils.getGroupsLocation();
 
@@ -122,18 +121,18 @@ public class ScimGroupProvisioningTests {
   @InjectMocks
   private ScimGroupProvisioning scimGroupProvisioning;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testGetGroupNotFoundResponse() throws Exception {
+  void testGetGroupNotFoundResponse() throws Exception {
 
     String randomUuid = UUID.randomUUID().toString();
 
@@ -145,7 +144,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateGroupNotFoundResponse() throws Exception {
+  void testUpdateGroupNotFoundResponse() throws Exception {
 
     String randomUuid = UUID.randomUUID().toString();
     ScimGroup group = ScimGroup.builder("engineers").id(randomUuid).build();
@@ -160,7 +159,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testGetExistingGroup() throws Exception {
+  void testGetExistingGroup() throws Exception {
 
     // Some existing group as defined in the test db
     String groupId = "c617d586-54e6-411d-8e38-64967798fa8a";
@@ -181,7 +180,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testCreateAndDeleteGroupSuccessResponse() throws Exception {
+  void testCreateAndDeleteGroupSuccessResponse() throws Exception {
 
     String name = "engineers";
     ScimGroup group = ScimGroup.builder(name).build();
@@ -207,7 +206,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateGroupDisplaynameSuccessResponse() throws Exception {
+  void testUpdateGroupDisplaynameSuccessResponse() throws Exception {
 
     ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
@@ -232,7 +231,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testCreateGroupEmptyDisplayNameValidationError() throws Exception {
+  void testCreateGroupEmptyDisplayNameValidationError() throws Exception {
 
     String displayName = "";
     ScimGroup group = ScimGroup.builder(displayName).build();
@@ -245,7 +244,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateGroupEmptyDisplayNameValidationError() throws Exception {
+  void testUpdateGroupEmptyDisplayNameValidationError() throws Exception {
 
     ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
@@ -270,7 +269,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateGroupAlreadyUsedDisplaynameError() throws Exception {
+  void testUpdateGroupAlreadyUsedDisplaynameError() throws Exception {
 
     String result = mvc
       .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
@@ -300,7 +299,7 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void groupDescriptionIsRendered() throws Exception {
+  void groupDescriptionIsRendered() throws Exception {
     final String groupId = UUID.randomUUID().toString();
     final String groupName = "group-with-description";
     final String groupDesc = "A group description";
@@ -325,7 +324,7 @@ public class ScimGroupProvisioningTests {
 
 
   @Test
-  public void groupListFilterReference() {
+  void groupListFilterReference() {
 
     Logger logger = (Logger) LoggerFactory.getLogger(ScimGroupProvisioning.class);
 

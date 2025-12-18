@@ -37,8 +37,6 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
-import com.google.common.base.Preconditions;
-
 @Entity
 @Table(name = "iam_group")
 public class IamGroup implements Serializable {
@@ -183,7 +181,6 @@ public class IamGroup implements Serializable {
   }
 
   public boolean isSubgroupOf(IamGroup otherGroup) {
-    Preconditions.checkNotNull(otherGroup, "Cannot check subgroup status of a null group");
 
     if (this.equals(otherGroup)) {
       return false;

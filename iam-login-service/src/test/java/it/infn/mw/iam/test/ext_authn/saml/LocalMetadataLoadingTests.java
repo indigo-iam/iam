@@ -20,25 +20,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.xpath;
 
-import javax.xml.xpath.XPathExpressionException;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.MockMvcTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.local-metadata.generated=false",
     "saml.local-metadata.locationUrl=classpath:/saml/metadata/iam-md.xml"})
-public class LocalMetadataLoadingTests extends MockMvcTestSupport {
+class LocalMetadataLoadingTests extends MockMvcTestSupport {
 
   @Test
-  public void testLocalMetadataLoading() throws XPathExpressionException, Exception {
+  void testLocalMetadataLoading() throws Exception {
     mvc.perform(get("/saml/metadata"))
       .andExpect(status().isOk())
       .andExpect(xpath("/EntityDescriptor/@entityID").string(is("urn:iam:iam-local-devel")));

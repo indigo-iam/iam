@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,7 +51,7 @@ import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 
-public class MultiFactorVerificationFilterTests {
+class MultiFactorVerificationFilterTests {
 
   @Mock
   private AuthenticationManager authenticationManager;
@@ -75,17 +75,17 @@ public class MultiFactorVerificationFilterTests {
   private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     MockitoAnnotations.openMocks(this);
   }
 
   @AfterEach
-  public void tearDown() {
+  void tearDown() {
     SecurityContextHolder.clearContext();
   }
 
   @Test
-  public void testAuthenticationSuccess() throws Exception {
+  void testAuthenticationSuccess() throws Exception {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 
@@ -106,7 +106,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testOidcAuthenticationSuccess() throws Exception {
+  void testOidcAuthenticationSuccess() throws Exception {
     OIDCAuthenticationToken mockOidcToken = mock(OIDCAuthenticationToken.class);
     Authentication mockAuth = mock(OidcExternalAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
@@ -128,7 +128,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testSamlAuthenticationSuccess() throws Exception {
+  void testSamlAuthenticationSuccess() throws Exception {
     ExpiringUsernameAuthenticationToken mockSamlToken =
         mock(ExpiringUsernameAuthenticationToken.class);
     Authentication mockAuth = mock(SamlExternalAuthenticationToken.class);
@@ -152,7 +152,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testAuthenticationFailureDueToUnsupportedAuthnMethod() throws Exception {
+  void testAuthenticationFailureDueToUnsupportedAuthnMethod() throws Exception {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 
@@ -170,7 +170,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testAuthenticationFailureDueToBadAuthn() throws Exception {
+  void testAuthenticationFailureDueToBadAuthn() throws Exception {
     Authentication mockAuth = mock(UsernamePasswordAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 
@@ -188,7 +188,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testAuthenticationFailureDueToInvalidTOTP() throws Exception {
+  void testAuthenticationFailureDueToInvalidTOTP() throws Exception {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 
@@ -205,7 +205,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testAuthenticationFailureWhenTotpIsNull() {
+  void testAuthenticationFailureWhenTotpIsNull() {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 

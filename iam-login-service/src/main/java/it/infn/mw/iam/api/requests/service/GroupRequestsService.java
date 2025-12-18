@@ -34,4 +34,7 @@ public interface GroupRequestsService {
   ListResponseDTO<GroupRequestDto> listGroupRequests(String username, String groupName,
       String status, OffsetPageable pageRequest);
 
+  ListResponseDTO<GroupRequestDto> searchGroupRequests(String username, String userFullName, String groupName, String notes,
+      String status, OffsetPageable pageRequest);
+
 }

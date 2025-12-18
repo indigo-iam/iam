@@ -73,6 +73,13 @@ public class X509TestSupport {
   public static final String TEST_1_V_START = "Sep 26 15:39:36 2012 GMT";
   public static final String TEST_1_V_END = "Sep 24 15:39:36 2022 GMT";
 
+  public static final String TEST_2_CERT_PATH = "src/test/resources/x509/test2.cert.pem";
+  public static final String TEST_2_SUBJECT = "CN=test01,O=IGI,C=IT";
+  public static final String TEST_2_ISSUER = "CN=test01,O=IGI,C=IT";
+  public static final String TEST_2_SERIAL = "10";
+  public static final String TEST_2_V_START = "Jul 01 13:28:00 2025 GMT";
+  public static final String TEST_2_V_END = "Jun 29 13:28:00 2035 GMT";
+
   public static final String TEST_NEW_ISSUER = "CN=Test1 CA,O=IGI,C=IT";
 
   public static final String RCAUTH_CA_CERT_PATH = "src/test/resources/x509/rcauth-mock-ca.p12";
@@ -84,14 +91,17 @@ public class X509TestSupport {
   protected X509Certificate OLD_TEST_0_CERT;
   protected X509Certificate TEST_1_CERT;
   protected X509Certificate TEST_0_DER_CERT;
+  protected X509Certificate TEST_2_CERT;
 
   protected String TEST_0_CERT_STRING;
   protected String OLD_TEST_0_CERT_STRING;
   protected String TEST_1_CERT_STRING;
+  protected String TEST_2_CERT_STRING;
   protected byte[] TEST_0_DER_CERT_BYTES;
 
   protected String TEST_0_CERT_STRING_NGINX;
   protected String TEST_1_CERT_STRING_NGINX;
+  protected String TEST_2_CERT_STRING_NGINX;
   protected String TEST_0_CERT_STRING_NGINX_NEW;
   protected String TEST_0_CERT_STRING_HAPROXY;
 
@@ -99,11 +109,13 @@ public class X509TestSupport {
   protected IamX509Certificate OLD_TEST_0_IAM_X509_CERT;
   protected IamX509Certificate TEST_1_IAM_X509_CERT;
   protected IamX509Certificate TEST_2_IAM_X509_CERT;
+  protected IamX509Certificate TEST_3_IAM_X509_CERT;
 
   protected PEMCredential TEST_0_PEM_CREDENTIAL;
 
   protected String TEST_0_CERT_LABEL = "TEST 0 cert label";
   protected String TEST_1_CERT_LABEL = "TEST 1 cert label";
+  protected String TEST_2_CERT_LABEL = "TEST 2 cert label";
   protected String OLD_TEST_0_CERT_LABEL = "Old TEST 0 cert label";
 
   protected String TEST_USERNAME = "test";
@@ -137,6 +149,12 @@ public class X509TestSupport {
           new ByteArrayInputStream(OLD_TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
           Encoding.PEM);
 
+      TEST_2_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_2_CERT_PATH)));
+
+      TEST_2_CERT = CertificateUtils.loadCertificate(
+          new ByteArrayInputStream(TEST_2_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
+          Encoding.PEM);
+
       TEST_0_IAM_X509_CERT = new IamX509Certificate();
       TEST_0_IAM_X509_CERT.setCertificate(TEST_0_CERT_STRING);
       TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
@@ -165,9 +183,17 @@ public class X509TestSupport {
       TEST_2_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
       TEST_2_IAM_X509_CERT.setPrimary(false);
 
+      TEST_3_IAM_X509_CERT = new IamX509Certificate();
+      TEST_3_IAM_X509_CERT.setCertificate(TEST_2_CERT_STRING);
+      TEST_3_IAM_X509_CERT.setSubjectDn(TEST_2_SUBJECT);
+      TEST_3_IAM_X509_CERT.setIssuerDn(TEST_2_ISSUER);
+      TEST_3_IAM_X509_CERT.setLabel(TEST_2_CERT_LABEL);
+      TEST_3_IAM_X509_CERT.setPrimary(false);
+
       // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
       TEST_0_CERT_STRING_NGINX = TEST_0_CERT_STRING.replace('\n', '\t');
       TEST_1_CERT_STRING_NGINX = TEST_1_CERT_STRING.replace('\n', '\t');
+      TEST_2_CERT_STRING_NGINX = TEST_2_CERT_STRING.replace('\n', '\t');
 
       // This is how NGINX encodes certificate in the header when $ssl_client_escaped_cert is used
       TEST_0_CERT_STRING_NGINX_NEW = URLEncoder.encode(TEST_0_CERT_STRING, StandardCharsets.UTF_8);

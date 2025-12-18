@@ -16,12 +16,14 @@
 package it.infn.mw.iam;
 
 import org.mitre.discovery.web.DiscoveryEndpoint;
+import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
+import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.view.UserInfoView;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
@@ -91,7 +93,11 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=UserInfoView.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-    value=AuthorizationRequestFilter.class)
+        value=AuthorizationRequestFilter.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=ConnectTokenEnhancer.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=DefaultOAuth2ProviderTokenService.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

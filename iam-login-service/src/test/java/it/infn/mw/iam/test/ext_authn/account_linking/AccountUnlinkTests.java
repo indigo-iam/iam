@@ -32,13 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 import java.util.UUID;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -49,8 +47,6 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class AccountUnlinkTests {
@@ -60,7 +56,7 @@ public class AccountUnlinkTests {
 
   @Autowired
   private MockMvc mvc;
-  
+
   public static final String SAML_ATTRIBUTE_ID = EPUID.getAttributeName();
 
   public static final String UNLINKED_ISSUER = UUID.randomUUID().toString();
@@ -72,11 +68,10 @@ public class AccountUnlinkTests {
   public static final String SAML_LINKED_ISSUER = DEFAULT_IDP_ID;
   public static final String SAML_LINKED_SUBJECT = T2_EPUID;
 
-  public static final IamSamlId UNLINKED_SAML_ID = new IamSamlId(UNLINKED_ISSUER, 
-      SAML_ATTRIBUTE_ID, UNLINKED_SUBJECT);
-  
-  public static final IamOidcId UNLINKED_OIDC_ID = new IamOidcId(UNLINKED_ISSUER, 
-      UNLINKED_SUBJECT);
+  public static final IamSamlId UNLINKED_SAML_ID =
+      new IamSamlId(UNLINKED_ISSUER, SAML_ATTRIBUTE_ID, UNLINKED_SUBJECT);
+
+  public static final IamOidcId UNLINKED_OIDC_ID = new IamOidcId(UNLINKED_ISSUER, UNLINKED_SUBJECT);
 
   public static final IamSamlId LINKED_SAML_ID =
       new IamSamlId(SAML_LINKED_ISSUER, SAML_ATTRIBUTE_ID, SAML_LINKED_SUBJECT);
@@ -97,7 +92,7 @@ public class AccountUnlinkTests {
   }
 
   @Test
-  public void accountUnlinkEndpointFailsForUnauthenticatedUsers() throws Exception {
+  void accountUnlinkEndpointFailsForUnauthenticatedUsers() throws Exception {
     mvc
       .perform(delete(accountLinkingResourceOidc()).param("iss", LINKED_OIDC_ID.getIssuer())
         .param("sub", LINKED_OIDC_ID.getSubject()))
@@ -113,7 +108,7 @@ public class AccountUnlinkTests {
 
   @Test
   @WithMockUser(username = "test")
-  public void oidcAccountUnlinkSucceedsSilentlyForUnlinkedAccount() throws Throwable {
+  void oidcAccountUnlinkSucceedsSilentlyForUnlinkedAccount() throws Throwable {
 
     IamAccount user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
@@ -124,7 +119,8 @@ public class AccountUnlinkTests {
       .perform(delete(accountLinkingResourceOidc()).param("iss", UNLINKED_OIDC_ID.getIssuer())
         .param("sub", UNLINKED_OIDC_ID.getSubject())
         .with(csrf().asHeader()))
-      .andDo(print()).andExpect(status().isNoContent());
+      .andDo(print())
+      .andExpect(status().isNoContent());
 
     user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
@@ -135,7 +131,7 @@ public class AccountUnlinkTests {
 
   @Test
   @WithMockUser(username = "test")
-  public void oidcAccountUnlinkWorks() throws Throwable {
+  void oidcAccountUnlinkWorks() throws Throwable {
 
 
     IamAccount user = iamAccountRepo.findByUsername("test")
@@ -149,7 +145,8 @@ public class AccountUnlinkTests {
       .perform(delete(accountLinkingResourceOidc()).param("iss", LINKED_OIDC_ID.getIssuer())
         .param("sub", LINKED_OIDC_ID.getSubject())
         .with(csrf().asHeader()))
-      .andDo(print()).andExpect(status().isNoContent());
+      .andDo(print())
+      .andExpect(status().isNoContent());
 
     user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
@@ -165,7 +162,7 @@ public class AccountUnlinkTests {
 
   @Test
   @WithMockUser(username = "test")
-  public void samlAccountUnlinkSucceedsSilentlyForUnlinkedAccount() throws Exception {
+  void samlAccountUnlinkSucceedsSilentlyForUnlinkedAccount() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
 
@@ -175,7 +172,8 @@ public class AccountUnlinkTests {
       .perform(delete(accountLinkingResourceSaml()).param("iss", UNLINKED_SAML_ID.getIdpId())
         .param("sub", UNLINKED_SAML_ID.getUserId())
         .with(csrf().asHeader()))
-      .andDo(print()).andExpect(status().isNoContent());
+      .andDo(print())
+      .andExpect(status().isNoContent());
 
     assertThat(UNLINKED_SAML_ID, not(is(in(user.getSamlIds()))));
     assertThat(lastUpdateTime, equalTo(user.getLastUpdateTime()));
@@ -184,7 +182,7 @@ public class AccountUnlinkTests {
 
   @Test
   @WithMockUser(username = "test")
-  public void samlAccountUnlinkWorks() throws Exception {
+  void samlAccountUnlinkWorks() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
 
@@ -197,7 +195,8 @@ public class AccountUnlinkTests {
         .param("sub", SAML_LINKED_SUBJECT)
         .param("attr", LINKED_SAML_ID.getAttributeId())
         .with(csrf().asHeader()))
-      .andDo(print()).andExpect(status().isNoContent());
+      .andDo(print())
+      .andExpect(status().isNoContent());
 
     assertThat(LINKED_SAML_ID, not(is(in(user.getSamlIds()))));
     assertThat(lastUpdateTime, not(equalTo(user.getLastUpdateTime())));
@@ -208,7 +207,7 @@ public class AccountUnlinkTests {
     iamAccountRepo.save(user);
 
   }
-  
-  
+
+
 
 }

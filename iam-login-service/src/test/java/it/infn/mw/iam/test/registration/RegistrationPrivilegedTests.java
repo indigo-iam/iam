@@ -23,7 +23,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,14 +34,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,10 +55,8 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-public class RegistrationPrivilegedTests {
+class RegistrationPrivilegedTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
@@ -82,13 +79,13 @@ public class RegistrationPrivilegedTests {
   @Autowired
   private IamAccountRepository repo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     requestRepo.deleteAll();
     mockOAuth2Filter.cleanupSecurityContext();
   }
@@ -140,11 +137,9 @@ public class RegistrationPrivilegedTests {
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
 
-
-
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:read"})
-  public void testListNewRequests() throws Exception {
+  void testListNewRequests() throws Exception {
 
     createRegistrationRequest("test_list_new");
 
@@ -159,7 +154,7 @@ public class RegistrationPrivilegedTests {
   @Test
   @WithMockOAuthUser(clientId = "registration-client",
       scopes = {"registration:read", "registration:write"})
-  public void testListPendingRequest() throws Exception {
+  void testListPendingRequest() throws Exception {
 
     createRegistrationRequest("test_1");
     createRegistrationRequest("test_2");
@@ -180,7 +175,7 @@ public class RegistrationPrivilegedTests {
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:read"})
-  public void testListAllRequests() throws Exception {
+  void testListAllRequests() throws Exception {
 
     createRegistrationRequest("test_list_1");
     createRegistrationRequest("test_list_2");
@@ -199,7 +194,7 @@ public class RegistrationPrivilegedTests {
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
-  public void testApproveRequest() throws Exception {
+  void testApproveRequest() throws Exception {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_approve");
     assertNotNull(reg);
@@ -226,7 +221,7 @@ public class RegistrationPrivilegedTests {
   @Test
   @WithMockOAuthUser(clientId = "registration-client",
       scopes = {"scim:write", "scim:read", "registration:write"})
-  public void testRejectRequest() throws Exception {
+  void testRejectRequest() throws Exception {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_reject");
     assertNotNull(reg);
@@ -254,7 +249,7 @@ public class RegistrationPrivilegedTests {
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
-  public void testApproveRequestNotConfirmed() throws Exception {
+  void testApproveRequestNotConfirmed() throws Exception {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_not_confirmed");
@@ -269,7 +264,7 @@ public class RegistrationPrivilegedTests {
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
-  public void testConfirmAfterApprovation() throws Exception {
+  void testConfirmAfterApprovation() throws Exception {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_confirm_after_approve");
     assertNotNull(reg);
@@ -287,7 +282,7 @@ public class RegistrationPrivilegedTests {
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
-  public void confirmAlreadyConfirmedRequest() throws Exception {
+  void confirmAlreadyConfirmedRequest() throws Exception {
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_multiple_confirm");
     assertNotNull(reg);
@@ -295,25 +290,27 @@ public class RegistrationPrivilegedTests {
     String confirmationKey = generator.getLastToken();
     approveRequest(reg.getUuid());
 
-    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationFailure"));
 
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
-  public void approveAlreadyManagedRequest() throws Exception {
+  void approveAlreadyManagedRequest() throws Exception {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_multiple_approve");
     assertNotNull(reg);
+    String regUuid = reg.getUuid();
 
     // first approval works fine
-    registrationService.approveRequest(reg.getUuid());
+    registrationService.approveRequest(regUuid);
 
-    // second one raises exception, due to unallowed transition
-    registrationService.approveRequest(reg.getUuid());
+    // second one raises exception, due to a not allowed transition
+    assertThrows(IllegalArgumentException.class, () -> registrationService.approveRequest(regUuid));
   }
 }

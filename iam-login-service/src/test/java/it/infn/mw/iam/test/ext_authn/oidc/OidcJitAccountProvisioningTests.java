@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.test.ext_authn.oidc;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -27,15 +27,15 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
@@ -43,8 +43,8 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class OidcJitAccountProvisioningTests {
+@ExtendWith(MockitoExtension.class)
+class OidcJitAccountProvisioningTests {
 
   @Mock
   private IamAccountRepository repo;
@@ -57,15 +57,15 @@ public class OidcJitAccountProvisioningTests {
   @InjectMocks
   private OidcAccountProvisioningService service;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     MockitoAnnotations.openMocks(this);
     trustedIdpEntityIds = Optional.of(Set.of("https://trusted-idp.com"));
     service = new OidcAccountProvisioningService(repo, accountService, trustedIdpEntityIds);
   }
 
   @Test
-  public void provisionAccountWithValidTokenAndAvailableUsernameCreatesNewAccount() {
+  void provisionAccountWithValidTokenAndAvailableUsernameCreatesNewAccount() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     UserInfo userInfo = mock(UserInfo.class);
 
@@ -90,7 +90,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountWhenAccountNotFoundPerformsJustInTimeProvisioning() {
+  void provisionAccountWhenAccountNotFoundPerformsJustInTimeProvisioning() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -115,7 +115,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountUsesPreferredUsernameWhenAvailable() {
+  void provisionAccountUsesPreferredUsernameWhenAvailable() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -143,7 +143,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountUsesRandomUUIDWhenPreferredUsernameUnavailable() {
+  void provisionAccountUsesRandomUUIDWhenPreferredUsernameUnavailable() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -170,7 +170,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountThrowsExceptionWhenIdpIsUntrusted() {
+  void provisionAccountThrowsExceptionWhenIdpIsUntrusted() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
@@ -179,7 +179,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountThrowsExceptionWhenEmailIsAlreadyBound() {
+  void provisionAccountThrowsExceptionWhenEmailIsAlreadyBound() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
@@ -195,7 +195,7 @@ public class OidcJitAccountProvisioningTests {
   }
 
   @Test
-  public void provisionAccountThrowsExceptionWhenRequiredClaimsAreMissing() {
+  void provisionAccountThrowsExceptionWhenRequiredClaimsAreMissing() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");

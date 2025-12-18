@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
-
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static com.nimbusds.jwt.JWTClaimNames.EXPIRATION_TIME;
 import static com.nimbusds.jwt.JWTClaimNames.ISSUED_AT;
@@ -35,7 +34,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
@@ -49,10 +48,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -65,7 +64,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -85,10 +84,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
-
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2", "wlcg-scopes"})
 @TestPropertySource(properties = {
@@ -140,21 +137,20 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
     repo.touchLastLoginTimeForUserWithUsername(USERNAME);
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
   }
-
 
   private void setOAuthAdminSecurityContext() {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -175,7 +171,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfile() throws Exception {
+  void testWlcgProfile() throws Exception {
 
     TokenEndpointResponse response = getPasswordTokenResponse("openid profile");
     JWTClaimsSet claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
@@ -266,7 +262,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getClaim(WlcgExtraClaimNames.AUTH_TIME), notNullValue());
 
     String subjectToken = response.accessToken();
-    response = getExchangeTokenResponse(subjectToken, "openid profile wlcg.groups:/Optional", "https://new.audience.example/");
+    response = getExchangeTokenResponse(subjectToken, "openid profile wlcg.groups:/Optional",
+        "https://new.audience.example/");
     claims = JWTParser.parse(response.accessToken()).getJWTClaimsSet();
     scopes = List.of(claims.getStringClaim(IamExtraClaimNames.SCOPE).split(" "));
     assertThat(scopes, hasItems("openid", "profile", "wlcg.groups:/Optional"));
@@ -282,7 +279,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileIdToken() throws Exception {
+  void testWlcgProfileIdToken() throws Exception {
 
     String idTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
@@ -318,7 +315,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileAudience() throws Exception {
+  void testWlcgProfileAudience() throws Exception {
 
 
     String accessToken = new AccessTokenGetter().grantType("password")
@@ -362,7 +359,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileResourceIndicator() throws Exception {
+  void testWlcgProfileResourceIndicator() throws Exception {
 
 
     String accessToken = new AccessTokenGetter().grantType("password")
@@ -427,7 +424,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileGroups() throws Exception {
+  void testWlcgProfileGroups() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups");
     JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
@@ -441,7 +438,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileGroupRequest() throws Exception {
+  void testWlcgProfileGroupRequest() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups:/Analysis");
     JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
@@ -473,7 +470,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileOptionalGroupRequest() throws Exception {
+  void testWlcgProfileOptionalGroupRequest() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile wlcg.groups:/Optional");
     JWTClaimsSet claims = JWTParser.parse(tokens.accessToken()).getJWTClaimsSet();
@@ -488,7 +485,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileClientCredentials() throws Exception {
+  void testWlcgProfileClientCredentials() throws Exception {
 
     String response = mvc
       .perform(post("/token")
@@ -519,7 +516,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileGroupRequestClientCredentials() throws Exception {
+  void testWlcgProfileGroupRequestClientCredentials() throws Exception {
 
     String response = mvc
       .perform(post("/token")
@@ -546,7 +543,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testWlcgProfileServiceIdentityTokenExchange() throws Exception {
+  void testWlcgProfileServiceIdentityTokenExchange() throws Exception {
 
     String subjectToken = new AccessTokenGetter().grantType(CLIENT_CREDENTIALS_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
@@ -632,7 +629,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testWlcgProfileUserIdentityTokenExchangeNoScopeParameter() throws Exception {
+  void testWlcgProfileUserIdentityTokenExchangeNoScopeParameter() throws Exception {
     String subjectToken = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
       .clientSecret(SUBJECT_CLIENT_SECRET)
@@ -653,7 +650,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWlcgProfileUserIdentityTokenExchange() throws Exception {
+  void testWlcgProfileUserIdentityTokenExchange() throws Exception {
 
     String subjectToken = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
       .clientId(SUBJECT_CLIENT_ID)
@@ -747,7 +744,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAudiencePreservedAcrossRefresh() throws Exception {
+  void testAudiencePreservedAcrossRefresh() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", CLIENT_ID)
@@ -785,7 +782,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAudienceRequestRefreshTokenFlow() throws Exception {
+  void testAudienceRequestRefreshTokenFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", CLIENT_ID)
@@ -844,8 +841,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid"})
-  public void testUserInfoEndpointRetursMinimalInformation() throws Exception {
+    scopes = {"openid"})
+  void testUserInfoEndpointRetursMinimalInformation() throws Exception {
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -862,7 +859,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
+  void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -917,7 +914,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void attributesAreNotIncludedInAccessTokenWhenNotRequested() throws Exception {
+  void attributesAreNotIncludedInAccessTokenWhenNotRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -943,7 +940,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void attributesAreIncludedInAccessTokenWhenRequested() throws Exception {
+  void attributesAreIncludedInAccessTokenWhenRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -970,7 +967,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
+  void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -997,7 +994,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
+  void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")

@@ -20,20 +20,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class RefreshTokenAuthenticatedTests extends TestTokensUtils {
+class RefreshTokenAuthenticatedTests extends TestTokensUtils {
 
   private static final String TESTUSER_USERNAME = "test_102";
   private static final int FAKE_TOKEN_ID = 12345;
@@ -41,26 +41,26 @@ public class RefreshTokenAuthenticatedTests extends TestTokensUtils {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-  
-  @After
-  public void teardown() {
+
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(user = TESTUSER_USERNAME, authorities = {"ROLE_USER"})
-  public void forbiddenOnGettingListTest() throws Exception {
+  void forbiddenOnGettingListTest() throws Exception {
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE)).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = TESTUSER_USERNAME, authorities = {"ROLE_USER"})
-  public void forbiddenOnRevokingTest() throws Exception {
+  void forbiddenOnRevokingTest() throws Exception {
 
     String path = String.format("%s/%d", REFRESH_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
     mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE)).andExpect(status().isForbidden());

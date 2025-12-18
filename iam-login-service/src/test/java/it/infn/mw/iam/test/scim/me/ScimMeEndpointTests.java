@@ -26,23 +26,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScimMeEndpointTests {
+class ScimMeEndpointTests {
 
   private final static String ME_ENDPOINT = "/scim/Me";
 
@@ -52,13 +51,13 @@ public class ScimMeEndpointTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -84,30 +83,30 @@ public class ScimMeEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"scim:read"},
-      authorities = {"ROLE_USER"})
-  public void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
+    authorities = {"ROLE_USER"})
+  void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
 
     getScimMeAsUserIsOk();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void meEndpointUserInfoNoToken() throws Exception {
+  void meEndpointUserInfoNoToken() throws Exception {
 
     getScimMeAsUserIsOk();
   }
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"scim:read"})
-  public void meEndpointFailsWithClientCredentials() throws Exception {
+  void meEndpointFailsWithClientCredentials() throws Exception {
 
     getScimMeAsUserIsError(400, "No user linked to the current OAuth token");
   }
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"opeind", "profile"},
-      authorities = {"ROLE_USER"})
-  public void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
+    authorities = {"ROLE_USER"})
+  void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
 
     getScimMeAsUserIsOk();
   }

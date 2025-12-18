@@ -16,18 +16,18 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,8 +37,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AudienceTests {
 
@@ -58,7 +57,7 @@ public class AudienceTests {
   private MockMvc mvc;
 
   @Test
-  public void testAudienceRequestPasswordFlow() throws Exception {
+  void testAudienceRequestPasswordFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -85,7 +84,7 @@ public class AudienceTests {
   }
 
   @Test
-  public void testMultipleAudiencesRequestPasswordFlow() throws Exception {
+  void testMultipleAudiencesRequestPasswordFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -114,7 +113,7 @@ public class AudienceTests {
   }
 
   @Test
-  public void testAudienceRequestClientCredentialsFlow() throws Exception {
+  void testAudienceRequestClientCredentialsFlow() throws Exception {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -137,7 +136,7 @@ public class AudienceTests {
   }
 
   @Test
-  public void testAudienceRequestRefreshTokenFlow() throws Exception {
+  void testAudienceRequestRefreshTokenFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)
@@ -191,7 +190,7 @@ public class AudienceTests {
   }
 
   @Test
-  public void testAudienceRequestRefreshTokenAudiencePreservedFlow() throws Exception {
+  void testAudienceRequestRefreshTokenAudiencePreservedFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)
