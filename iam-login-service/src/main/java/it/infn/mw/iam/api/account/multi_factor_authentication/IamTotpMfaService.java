@@ -70,6 +70,15 @@ public interface IamTotpMfaService {
    */
   String generateQRCodeFromSecret(String secret, String username) throws QrGenerationException;
 
+  
+  /**
+   * Checks whether the authenticator application is active for the specified IAM
+   * account.
+   *
+   * @param account the IamAccount instance to check; must not be  null
+   * @return true if the authenticator app is active for the account;
+   *         false otherwise
+   */
   boolean isAuthenticatorAppActive(IamAccount account);
 
 }

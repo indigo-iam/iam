@@ -130,7 +130,7 @@ public class AuthenticatorAppSettingsController {
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
-      BindingResult validationResult, HttpServletResponse response, HttpSession session) throws IOException {
+      BindingResult validationResult, HttpSession session) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
     }

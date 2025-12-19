@@ -91,7 +91,6 @@ public class MfaVerifyController {
     if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
       setAuthentication(preAuthenticatedAuthenticationToken);
     }
-
     return "iam/activateMfa";
   }
 
