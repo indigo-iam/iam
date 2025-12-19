@@ -225,4 +225,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     return getDataUriForImage(imageData, mimeType);
   }
 
+  public boolean isAuthenticatorAppActive(IamAccount account) {
+    return totpMfaRepository.findByAccount(account).map(IamTotpMfa::isActive).orElse(false);
+  }
+
 }

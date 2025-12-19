@@ -129,8 +129,7 @@ public class AuthenticatorAppSettingsController {
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code, 
-    @RequestParam(required = false, defaultValue = "false") boolean redirect,
+  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult, HttpServletResponse response, HttpSession session) throws IOException {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
@@ -155,10 +154,6 @@ public class AuthenticatorAppSettingsController {
     service.enableTotpMfa(account);
     notificationFactory.createMfaEnableMessage(account);
     session.removeAttribute(REQUESTING_MFA);
-
-    if(redirect){
-      response.sendRedirect("/dashboard");
-    }
   }
 
 

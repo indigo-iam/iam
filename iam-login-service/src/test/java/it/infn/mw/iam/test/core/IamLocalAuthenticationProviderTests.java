@@ -35,15 +35,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IamLocalAuthenticationProviderTests {
@@ -57,7 +57,7 @@ public class IamLocalAuthenticationProviderTests {
     @Mock
     IamAccountRepository accountRepo;
     @Mock
-    IamTotpMfaRepository totpMfaRepository;
+    IamTotpMfaService iamTotpMfaService;
     @Mock
     LocalAuthenticationProperties localAuthn;
 
@@ -67,7 +67,7 @@ public class IamLocalAuthenticationProviderTests {
     public void setup() {
         when(properties.getLocalAuthn()).thenReturn(localAuthn);
         iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds, passwordEncoder,
-                accountRepo, totpMfaRepository));
+                accountRepo, iamTotpMfaService));
     }
 
     private IamAccount newAccount(String username) {
@@ -85,10 +85,7 @@ public class IamLocalAuthenticationProviderTests {
         token.setPreAuthenticated(true);
         IamAccount account = newAccount("test-user");
         when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
-
-        IamTotpMfa iamTotpMfa = new IamTotpMfa();
-        iamTotpMfa.setActive(true);
-        when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+        when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
 
         ExtendedAuthenticationToken newToken = (ExtendedAuthenticationToken) iamLocalAuthenticationProvider
                 .authenticate(token);

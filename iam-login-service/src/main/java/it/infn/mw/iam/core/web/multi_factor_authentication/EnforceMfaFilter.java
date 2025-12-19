@@ -32,10 +32,9 @@ import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class EnforceMfaFilter implements Filter {
 
@@ -43,11 +42,13 @@ public class EnforceMfaFilter implements Filter {
 
   public static final String MFA_API_PATH = "/iam/mfa";
   public static final String ENABLE_MFA_PATH = "/iam/authenticator-app/enable";
+  public static final String ADD_SECRET_PATH = "/iam/authenticator-app/add-secret";
   public static final String ACTIVATE_MFA_PATH = "/iam/mfa/acivate";
   public static final String ACTIVATE_MFA_JSP = "activateMfa.jsp";
 
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
       ENABLE_MFA_PATH,
+      ADD_SECRET_PATH,
       ACTIVATE_MFA_PATH,
       MFA_API_PATH);
 
@@ -60,16 +61,15 @@ public class EnforceMfaFilter implements Filter {
       "/webjars/");
 
   public static final String REQUESTING_MFA = "iam.mfa.requesting-mfa";
-  public static final String POST_MFA_TARGET = "POST_MFA_TARGET";
 
   private final AccountUtils accountUtils;
-  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public EnforceMfaFilter(AccountUtils accountUtils,
-      IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountUtils = accountUtils;
-    this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
@@ -130,10 +130,8 @@ public class EnforceMfaFilter implements Filter {
       return;
     }
 
-    if (!isMfaActive(authenticatedUserOpt)) {
+    if (!iamTotpMfaService.isAuthenticatorAppActive(authenticatedUserOpt.get())) {
       session.setAttribute(REQUESTING_MFA, true);
-      String originalTarget = buildOriginalTarget(req);
-      session.setAttribute(POST_MFA_TARGET, originalTarget);
 
       if (!res.isCommitted()) {
         res.sendRedirect(ACTIVATE_MFA_PATH);
@@ -160,18 +158,6 @@ public class EnforceMfaFilter implements Filter {
         || path.equals(ACTIVATE_MFA_PATH)
         || path.equals(ACTIVATE_MFA_JSP)
         || path.equals(MFA_API_PATH);
-  }
-
-  private String buildOriginalTarget(HttpServletRequest req) {
-    String uri = req.getRequestURI();
-    String qs = req.getQueryString();
-    return (qs == null || qs.isBlank()) ? uri : (uri + "?" + qs);
-  }
-
-  private boolean isMfaActive(Optional<IamAccount> authenticatedUserOpt) {
-    return authenticatedUserOpt.flatMap(totpMfaRepository::findByAccount)
-        .map(IamTotpMfa::isActive)
-        .orElse(false);
   }
 
   @Override

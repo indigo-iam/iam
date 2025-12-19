@@ -45,6 +45,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -315,9 +316,9 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AccountUtils utils, IamTotpMfaRepository totpMfaRepository,
+  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
       IamTotpMfaProperties iamTotpMfaProperties) {
-    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, totpMfaRepository, iamTotpMfaProperties);
+    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
     FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;

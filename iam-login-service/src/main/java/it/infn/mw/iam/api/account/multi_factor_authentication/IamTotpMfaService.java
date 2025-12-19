@@ -70,5 +70,7 @@ public interface IamTotpMfaService {
    */
   String generateQRCodeFromSecret(String secret, String username) throws QrGenerationException;
 
+  boolean isAuthenticatorAppActive(IamAccount account);
+
 }
 ;

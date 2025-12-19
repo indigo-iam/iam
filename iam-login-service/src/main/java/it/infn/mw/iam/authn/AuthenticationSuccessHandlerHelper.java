@@ -17,8 +17,6 @@ package it.infn.mw.iam.authn;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Optional;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,13 +30,12 @@ import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
@@ -52,17 +49,17 @@ public class AuthenticationSuccessHandlerHelper {
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public AuthenticationSuccessHandlerHelper(AccountUtils accountUtils, String iamBaseUrl,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
-    IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
+    IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
-    this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
@@ -86,11 +83,7 @@ public class AuthenticationSuccessHandlerHelper {
     IamAccount account = accountRepo.findByUsername(username)
         .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    if (totpMfaOptional.isPresent()) {
-      return totpMfaOptional.get().isActive();
-    }
-    return false;
+    return iamTotpMfaService.isAuthenticatorAppActive(account);
   }
 
   /**
