@@ -242,8 +242,8 @@ function RegistrationController(
 
 	function populateValue(info, name) {
 		const fieldName = name.toUpperCase();
-		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined' 
-			&& typeof $scope.config.fields[fieldName] != 'undefined' 
+		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined'
+			&& typeof $scope.config.fields[fieldName] != 'undefined'
 			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
 		if (hasExternalAttributeDefined) {
 			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
@@ -359,7 +359,6 @@ function RegistrationController(
 					$scope.fields[field.toLowerCase()].showField = true;
 					$scope.fields[field.toLowerCase()].required = false;
 				} else {
-					//Think it is failing, because certificate isn't properly a part
 					$scope.fields[field.toLowerCase()].showField = false;
 					$scope.fields[field.toLowerCase()].required = false;
 				}
