@@ -16,12 +16,16 @@
 package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
@@ -33,9 +37,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.IamDeliveryStatus;
+import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
@@ -50,7 +57,7 @@ import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 @TestPropertySource(properties = {"notification.disable=false"})
 class AupReminderTaskTests extends AupTestSupport {
@@ -119,7 +126,6 @@ class AupReminderTaskTests extends AupTestSupport {
     notificationDelivery.sendPendingNotifications();
     assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
         tomorrowDate), equalTo(1));
-
   }
 
   @Test
@@ -157,7 +163,6 @@ class AupReminderTaskTests extends AupTestSupport {
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(1));
-
   }
 
   @Test
@@ -192,7 +197,6 @@ class AupReminderTaskTests extends AupTestSupport {
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
@@ -219,7 +223,6 @@ class AupReminderTaskTests extends AupTestSupport {
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
@@ -241,7 +244,7 @@ class AupReminderTaskTests extends AupTestSupport {
 
     signatureRepo.createSignatureForAccount(aup, testAccount, date);
 
-    testAccount.setServiceAccount(true);  
+    testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
 
     assertThat(
@@ -253,7 +256,6 @@ class AupReminderTaskTests extends AupTestSupport {
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
@@ -281,7 +283,7 @@ class AupReminderTaskTests extends AupTestSupport {
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
-    testAccount.setServiceAccount(true);  
+    testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
@@ -293,6 +295,47 @@ class AupReminderTaskTests extends AupTestSupport {
     notificationDelivery.sendPendingNotifications();
     assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
         tomorrowDate), equalTo(0));
+  }
 
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void aupReminderIsCreatedMultipleTimesBeforeDelivery() {
+    IamAup aup = buildDefaultAup();
+    aup.setSignatureValidityInDays(30L);
+    aupRepo.save(aup);
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    LocalDate today = LocalDate.now();
+    LocalDate tomorrow = today.plusDays(1);
+    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+
+    signatureRepo.createSignatureForAccount(aup, testAccount,
+        new Date(mockTimeProvider.currentTimeMillis()));
+
+    assertEquals(0L, notificationRepo.count());
+
+    // WHEN: reminder task runs multiple times
+    aupReminderTask.sendAupReminders();
+    aupReminderTask.sendAupReminders();
+    aupReminderTask.sendAupReminders();
+
+    // THEN: multiple PENDING reminders exist
+    List<IamEmailNotification> reminders =
+        notificationRepo.findByNotificationType(IamNotificationType.AUP_REMINDER);
+
+    assertThat(reminders.size(), greaterThan(1));
+
+    reminders.forEach(n -> {
+      assertThat(n.getDeliveryStatus(), is(IamDeliveryStatus.PENDING));
+      assertThat(n.getLastUpdate(), is(nullValue()));
+    });
+
+    // AND: the count query still returns 0
+    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
+        tomorrowDate), equalTo(0));
   }
 }
