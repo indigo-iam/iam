@@ -20,7 +20,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -50,7 +49,6 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
   final NotificationProperties properties;
   final TimeProvider timeProvider;
 
-  @Autowired
   public JavaMailNotificationDelivery(JavaMailSender mailSender,
       IamEmailNotificationRepository repo, NotificationProperties properties,
       TimeProvider timeProvider) {
@@ -66,13 +64,13 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
     message.setFrom(properties.getMailFrom());
     message.setSubject(notification.getSubject());
     message.setText(notification.getBody());
-    
+
     List<String> emailAddresses = Lists.newArrayList();
-    
-    for (IamNotificationReceiver r: notification.getReceivers()) {
+
+    for (IamNotificationReceiver r : notification.getReceivers()) {
       emailAddresses.add(r.getEmailAddress());
     }
-    
+
     message.setTo(emailAddresses.stream().toArray(String[]::new));
     return message;
   }
@@ -97,8 +95,7 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
         e.setDeliveryStatus(IamDeliveryStatus.DELIVERED);
 
         LOG.info(
-            "Email message delivered. "
-                + "message_id:{} message_type:{} rcpt_to:{} subject:{}",
+            "Email message delivered. " + "message_id:{} message_type:{} rcpt_to:{} subject:{}",
             e.getUuid(), e.getType(), message.getTo(), message.getSubject());
 
 
