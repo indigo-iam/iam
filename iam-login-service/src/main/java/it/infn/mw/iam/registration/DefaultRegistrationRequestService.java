@@ -178,7 +178,7 @@ public class DefaultRegistrationRequestService
           .get(RegistrationField.CERTIFICATE)
           .getFieldBehaviour()
           .equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
-            && dto.getRegisterCertificate().equals("true"))) {
+            && dto.getCertificate().equals("true"))) {
 
       certificateSanityCheck(request);
 
