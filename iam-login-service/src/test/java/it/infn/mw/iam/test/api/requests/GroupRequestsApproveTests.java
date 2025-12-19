@@ -16,11 +16,11 @@
 package it.infn.mw.iam.test.api.requests;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,14 +29,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,11 +51,9 @@ import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
+class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   private final static String APPROVE_URL = "/iam/group_requests/{uuid}/approve";
 
@@ -70,14 +66,14 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     emailRepository.deleteAll();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveGroupRequestAsAdmin() throws Exception {
+  void approveGroupRequestAsAdmin() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -109,7 +105,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"})
-  public void approveGroupRequestAsUser() throws Exception {
+  void approveGroupRequestAsUser() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -119,7 +115,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithAnonymousUser
-  public void approveGroupRequestAsAnonymous() throws Exception {
+  void approveGroupRequestAsAnonymous() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -131,7 +127,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveNotExitingGroupRequest() throws Exception {
+  void approveNotExitingGroupRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
     // @formatter:off
@@ -143,7 +139,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveAlreadyApprovedRequest() throws Exception {
+  void approveAlreadyApprovedRequest() throws Exception {
     GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -154,7 +150,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void approveRejectedRequest() throws Exception {
+  void approveRejectedRequest() throws Exception {
     GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -165,7 +161,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
-  public void approveGroupRequestAsUserWithBothRoles() throws Exception {
+  void approveGroupRequestAsUserWithBothRoles() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
@@ -182,7 +178,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Transactional
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void autoApproveParentGroupRequest() throws Exception {
+  void autoApproveParentGroupRequest() throws Exception {
     // Setup: Create parent-child group hierarchy
     IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
     IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();
@@ -240,7 +236,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Transactional
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void autoRejectChildGroupRequest() throws Exception {
+  void autoRejectChildGroupRequest() throws Exception {
     // Setup: parent-child relationship
     IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
     IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();

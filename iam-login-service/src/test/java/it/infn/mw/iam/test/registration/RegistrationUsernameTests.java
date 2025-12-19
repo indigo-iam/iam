@@ -16,17 +16,17 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,10 +38,9 @@ import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class RegistrationUsernameTests extends TestSupport {
+class RegistrationUsernameTests extends TestSupport {
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -55,13 +54,13 @@ public class RegistrationUsernameTests extends TestSupport {
   @Autowired
   private IamAccountRepository iamAccountRepo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     oauth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
 
@@ -79,8 +78,8 @@ public class RegistrationUsernameTests extends TestSupport {
   }
 
   @Test
-  public void validUsernames() throws Exception {
-    final String[] validUsernames = {"bob","test$", "root", "test1234", "test_", "_test",
+  void validUsernames() throws Exception {
+    final String[] validUsernames = {"bob", "test$", "root", "test1234", "test_", "_test",
         "username1@example.com", "username2@domain"};
 
     for (String u : validUsernames) {
@@ -100,8 +99,8 @@ public class RegistrationUsernameTests extends TestSupport {
   }
 
   @Test
-  public void invalidUsernames() throws Exception {
-    final String[] invalidUsernames = {"a","£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
+  void invalidUsernames() throws Exception {
+    final String[] invalidUsernames = {"a", "£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
 
     for (String u : invalidUsernames) {

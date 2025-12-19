@@ -20,40 +20,34 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.in;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties;
 
-public class JitPropertiesTests {
+class JitPropertiesTests {
 
   @Test
-  public void testTrustedIdpsListIsByDefaultEmpty() {
-    IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
+  void testTrustedIdpsListIsByDefaultEmpty() {
 
-    Assert.assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
-    
+    IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
+    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
     props.setTrustedIdps("all");
-    
-    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent()); 
+    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
   }
 
   @Test
-  public void testTrustedIdpsListParsing() {
+  void testTrustedIdpsListParsing() {
+
     IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
-    
     props.setTrustedIdps("idp1,idp2,idp3,,,    ");
-    
-    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet(); 
-    
+    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet();
     assertTrue(trustedIdps.isPresent());
-    
     assertThat(trustedIdps.get(), hasSize(3));
     assertThat("idp1", is(in(trustedIdps.get())));
     assertThat("idp2", is(in(trustedIdps.get())));
@@ -61,12 +55,11 @@ public class JitPropertiesTests {
   }
 
   @Test
-  public void testTrustedIdpsEmptyListYeldsEmptyOptional() {
+  void testTrustedIdpsEmptyListYeldsEmptyOptional() {
+
     IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
-    
     props.setTrustedIdps("");
-    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet(); 
+    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet();
     assertFalse(trustedIdps.isPresent());
-    
   }
 }

@@ -44,7 +44,7 @@ public class ClientRegistrationDisabledTests extends ClientRegistrationTestSuppo
   private MockMvc mvc;
 
   @Test
-  public void testClientRegistrationDisabled() throws Exception {
+  void testClientRegistrationDisabled() throws Exception {
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
     mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))

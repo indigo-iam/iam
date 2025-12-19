@@ -30,5 +30,7 @@ public class ApplicationFailedEventListener implements ApplicationListener<Appli
   public void onApplicationEvent(ApplicationFailedEvent event) {
 
     LOG.error("Application failed to start: {}", event.getException().getMessage());
+    LOG.error("Cause: {}", event.getException().getCause().getMessage(),
+        event.getException().getCause());
   }
 }

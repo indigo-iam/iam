@@ -19,15 +19,15 @@ import static it.infn.mw.iam.test.TestUtils.passwordTokenGetter;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -38,9 +38,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
-public class PasswordUpdateTests {
+class PasswordUpdateTests {
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -58,13 +58,13 @@ public class PasswordUpdateTests {
   @Autowired
   private IamAccountRepository accountRepository;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void testSetup() {
+  @BeforeEach
+  void testSetup() {
 
     IamAccount account = IamAccount.newAccount();
     account.setActive(true);
@@ -77,8 +77,8 @@ public class PasswordUpdateTests {
     testUser = accountService.createAccount(account);
   }
 
-  @After
-  public void testTeardown() {
+  @AfterEach
+  void testTeardown() {
 
     accountService.deleteAccount(testUser);
   }
@@ -118,7 +118,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePassword() {
+  void testUpdatePassword() {
 
     String currentPassword = "password";
     String newPassword = "Secure_p@ssw0rd";
@@ -137,7 +137,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordWithMinLength() {
+  void testUpdatePasswordWithMinLength() {
 
     String currentPassword = "password";
     String newPassword = "S3crP@ss";
@@ -160,7 +160,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordFullAuthenticationRequired() {
+  void testUpdatePasswordFullAuthenticationRequired() {
 
     String currentPassword = "password";
     String newPassword = "Secure_P@ssw0rd!";
@@ -172,7 +172,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdateWrongPasswordProvided() {
+  void testUpdateWrongPasswordProvided() {
 
     String currentPassword = "password";
     String newPassword = "Secure_P@ssw0rd!";
@@ -186,7 +186,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordForbiddenAccess() {
+  void testUpdatePasswordForbiddenAccess() {
 
     String currentPassword = "password";
     String newPassword = "Secure_P@ssw0rd!";
@@ -196,7 +196,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordNullPasswordAccess() {
+  void testUpdatePasswordNullPasswordAccess() {
 
     String currentPassword = "password";
     String newPassword = null;
@@ -209,7 +209,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordEmptyPasswordAccess() {
+  void testUpdatePasswordEmptyPasswordAccess() {
 
     String currentPassword = "password";
     String newPassword = "";
@@ -222,7 +222,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordTooShortPasswordAccess() {
+  void testUpdatePasswordTooShortPasswordAccess() {
 
     String currentPassword = "password";
     String newPassword = "pass";
@@ -235,7 +235,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordWithWeakPasswordAccess() {
+  void testUpdatePasswordWithWeakPasswordAccess() {
 
     String currentPassword = "password";
     String newPassword = "newweakpassword";
@@ -248,7 +248,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordWithWeakPasswordWithoutSpecialChars() {
+  void testUpdatePasswordWithWeakPasswordWithoutSpecialChars() {
 
     String currentPassword = "password";
     String newPassword = "Password1";
@@ -261,7 +261,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordWithWeakPasswordWithoutNumbers() {
+  void testUpdatePasswordWithWeakPasswordWithoutNumbers() {
 
     String currentPassword = "password";
     String newPassword = "Sjfyt-hdddW!";
@@ -274,7 +274,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordUserNotActive() throws Exception {
+  void testUpdatePasswordUserNotActive() throws Exception {
 
     String currentPassword = "password";
     String newPassword = "newP@ssw0rd";

@@ -17,8 +17,8 @@ package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,14 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin.read", "iam:admin.write"})
 public class AccessTokenGetRevokeTests extends TestTokensUtils {
@@ -68,21 +68,21 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void getAccessToken() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getAccessToken() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     IamAccount user = loadTestUser(TESTUSER_USERNAME);
@@ -118,8 +118,8 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenNotFound() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getAccessTokenNotFound() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
     mvc.perform(get(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
@@ -127,8 +127,8 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
   }
 
   @Test
-  public void revokeAccessToken() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void revokeAccessToken() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     OAuth2AccessTokenEntity at = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
@@ -141,8 +141,8 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
   }
 
   @Test
-  public void revokeAccessTokenNotFound() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void revokeAccessTokenNotFound() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
     mvc.perform(delete(path))
@@ -150,7 +150,7 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRevokeAllTokens() throws Exception {
+  void testRevokeAllTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     buildAccessToken(client, TESTUSER_USERNAME, SCOPES);

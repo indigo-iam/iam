@@ -21,47 +21,42 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {
-// @formatter:off
-    "iam.jwt-profile.default-profile=kc",
-    // @formatter:on
-})
-public class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
+@TestPropertySource(properties = {"iam.jwt-profile.default-profile=kc",})
+class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
-      authorities = {"ROLE_USER"}, scopes = {"openid profile"})
-  public void testUserinfoResponseWithGroups() throws Exception {
+    authorities = {"ROLE_USER"}, scopes = {"openid profile"})
+  void testUserinfoResponseWithGroups() throws Exception {
 
-    // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.sub").exists())
@@ -69,31 +64,25 @@ public class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.roles").exists())
       .andExpect(jsonPath("$.roles", hasSize(3)))
       .andExpect(jsonPath("$.roles", hasItems("Analysis", "Production", "Optional")));
-    // @formatter:on
   }
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = ADMIN_USERNAME,
-      authorities = {"ROLE_USER"}, scopes = {"openid profile"})
-  public void testUserinfoResponseForUserWithoutGroups() throws Exception {
+    authorities = {"ROLE_USER"}, scopes = {"openid profile"})
+  void testUserinfoResponseForUserWithoutGroups() throws Exception {
 
-    // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.sub").exists())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.roles").doesNotExist());
-    // @formatter:on
   }
 
   @Test
   @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, authorities = {"ROLE_CLIENT"},
-      scopes = {"openid"})
-  public void testUserinfoResponseWithoutUser() throws Exception {
+    scopes = {"openid"})
+  void testUserinfoResponseWithoutUser() throws Exception {
 
-    // @formatter:off
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isForbidden());
-    // @formatter:on
+    mvc.perform(get("/userinfo")).andExpect(status().isForbidden());
   }
 }

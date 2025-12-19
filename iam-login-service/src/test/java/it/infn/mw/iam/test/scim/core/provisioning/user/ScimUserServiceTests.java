@@ -17,16 +17,16 @@ package it.infn.mw.iam.test.scim.core.provisioning.user;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
@@ -49,9 +49,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamNoMvcTest
-public class ScimUserServiceTests {
+class ScimUserServiceTests {
 
   @Autowired
   private ScimUserProvisioning userService;
@@ -95,8 +95,8 @@ public class ScimUserServiceTests {
 
   private ScimGroupRef TESTUSER_GROUP_REF;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     TESTUSER_GROUP_REF = ScimGroupRef.builder()
       .value(PRODUCTION_GROUP_UUID)
       .display("Production")
@@ -115,7 +115,7 @@ public class ScimUserServiceTests {
   }
 
   @Test
-  public void createUserTest() {
+  void createUserTest() {
 
     ScimUser scimUser = ScimUser.builder()
       .active(true)
@@ -183,7 +183,7 @@ public class ScimUserServiceTests {
   }
 
   @Test
-  public void createAndReplaceUserCheckingNotWritableFieldsAreIgnoredTest() {
+  void createAndReplaceUserCheckingNotWritableFieldsAreIgnoredTest() {
 
     ScimUser scimUser = ScimUser.builder()
       .userName(TESTUSER_USERNAME) // mandatory

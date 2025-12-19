@@ -28,8 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,7 +39,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.saml.SAMLCredential;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 import it.infn.mw.iam.IamLoginService;
@@ -50,13 +48,11 @@ import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, SamlValidatorIntegrationTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+  webEnvironment = WebEnvironment.MOCK)
 @WebAppConfiguration
-public class SamlValidatorIntegrationTests extends SamlAuthenticationTestSupport {
+class SamlValidatorIntegrationTests extends SamlAuthenticationTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -70,7 +66,7 @@ public class SamlValidatorIntegrationTests extends SamlAuthenticationTestSupport
   }
 
   @Test
-  public void testValidatorFailure() throws Throwable {
+  void testValidatorFailure() throws Throwable {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
           .andExpect(status().isOk())

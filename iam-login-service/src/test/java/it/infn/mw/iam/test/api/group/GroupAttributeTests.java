@@ -29,13 +29,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -48,7 +48,7 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
 public class GroupAttributeTests {
@@ -76,13 +76,13 @@ public class GroupAttributeTests {
   @Autowired
   private ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -91,7 +91,7 @@ public class GroupAttributeTests {
   }
 
   @Test
-  public void managingAttributesRequiresAuthenticatedUser() throws Exception {
+  void managingAttributesRequiresAuthenticatedUser() throws Exception {
 
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -109,7 +109,7 @@ public class GroupAttributeTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingAttributesRequiresPrivilegedUser() throws Exception {
+  void managingAttributesRequiresPrivilegedUser() throws Exception {
 
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -127,7 +127,7 @@ public class GroupAttributeTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void gettingAttributesWorksForAdminUser() throws Exception {
+  void gettingAttributesWorksForAdminUser() throws Exception {
 
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -140,7 +140,7 @@ public class GroupAttributeTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void setAttributeWorks() throws Exception {
+  void setAttributeWorks() throws Exception {
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
@@ -170,7 +170,7 @@ public class GroupAttributeTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void deleteAttributeWorks() throws Exception {
+  void deleteAttributeWorks() throws Exception {
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
@@ -189,7 +189,7 @@ public class GroupAttributeTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void nonExistingGroupIsHandledCorrectly() throws Exception {
+  void nonExistingGroupIsHandledCorrectly() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 

@@ -17,12 +17,13 @@ package it.infn.mw.iam.test.ext_authn.saml.profile;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -31,7 +32,7 @@ import it.infn.mw.iam.authn.saml.DefaultMappingPropertiesResolver;
 import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties.AttributeMappingProperties;
 import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties.EntityAttributeMappingProperties;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MappingPropertiesResolverTests {
 
   public static final String ENTITY_ID_1 = "urn:example:entityId1";
@@ -43,7 +44,7 @@ public class MappingPropertiesResolverTests {
   List<EntityAttributeMappingProperties> entityProperties = Lists.newArrayList();
 
   @Test
-  public void testUnmatchedYeldsDefault() {
+  void testUnmatchedYeldsDefault() {
 
     DefaultMappingPropertiesResolver resolver =
         new DefaultMappingPropertiesResolver(defaultProperties, entityProperties);
@@ -52,30 +53,24 @@ public class MappingPropertiesResolverTests {
     assertThat(resolver.resolveMappingProperties(ENTITY_ID_2), is(defaultProperties));
   }
 
-  @Test(expected = NullPointerException.class)
-  public void testNullProperties() {
+  @Test
+  void testNullProperties() {
 
-    try {
-      new DefaultMappingPropertiesResolver(null, entityProperties);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("default properties cannot be null"));
-      throw e;
-    }
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void testNullProperties2() {
-
-    try {
-      new DefaultMappingPropertiesResolver(defaultProperties, null);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("entity properties cannot be null"));
-      throw e;
-    }
+    NullPointerException e = assertThrows(NullPointerException.class,
+        () -> new DefaultMappingPropertiesResolver(null, entityProperties));
+    assertThat(e.getMessage(), is("default properties cannot be null"));
   }
 
   @Test
-  public void testEntityMapping() {
+  void testNullProperties2() {
+
+    NullPointerException e = assertThrows(NullPointerException.class,
+        () -> new DefaultMappingPropertiesResolver(defaultProperties, null));
+    assertThat(e.getMessage(), is("entity properties cannot be null"));
+  }
+
+  @Test
+  void testEntityMapping() {
     AttributeMappingProperties customMp = new AttributeMappingProperties();
     EntityAttributeMappingProperties entityMp = new EntityAttributeMappingProperties();
     entityMp.setEntityIds(ENTITY_ID_1);
@@ -91,7 +86,7 @@ public class MappingPropertiesResolverTests {
   }
 
   @Test
-  public void testMultipleEntityMapping() {
+  void testMultipleEntityMapping() {
     AttributeMappingProperties customMp = new AttributeMappingProperties();
     EntityAttributeMappingProperties entityMp = new EntityAttributeMappingProperties();
     entityMp.setEntityIds(Joiner.on(',').join(ENTITY_ID_1, ENTITY_ID_2));

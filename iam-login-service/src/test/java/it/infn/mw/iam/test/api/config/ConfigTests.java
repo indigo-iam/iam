@@ -18,26 +18,22 @@ package it.infn.mw.iam.test.api.config;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
-//@formatter:off
-@TestPropertySource(properties = {
-  "lifecycle.account.read-only-end-time=true"
-})
-//@formatter:on}
-public class ConfigTests extends TestSupport {
+@TestPropertySource(properties = {"lifecycle.account.read-only-end-time=true"})
+class ConfigTests extends TestSupport {
 
   private static final String ENDPOINT = "/iam/config/lifecycle/account/read-only-end-time";
 
@@ -45,7 +41,7 @@ public class ConfigTests extends TestSupport {
   private MockMvc mvc;
 
   @Test
-  public void testGetReadOnlyEndTime() throws Exception { 
+  void testGetReadOnlyEndTime() throws Exception {
     mvc.perform(get((ENDPOINT))).andExpect(OK).andExpect(jsonPath("$").value(true));
   }
 

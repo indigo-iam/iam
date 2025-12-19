@@ -33,7 +33,6 @@ import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -64,8 +63,10 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Service
 @Primary
@@ -78,27 +79,29 @@ public class IamOIDCTokenService implements OIDCTokenService {
   private final JWTProfileResolver profileResolver;
   private final IamAccountRepository accountRepository;
   private final JWTSigningAndValidationService jwtService;
+  private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final AuthenticationHolderRepository authenticationHolderRepository;
+  private final TokenRevocationService revocationService;
   private final ConfigurationPropertiesBean configBean;
   private final ClientKeyCacheService encrypters;
   private final SymmetricKeyJWTValidatorCacheService symmetricCacheService;
-  private final OAuth2TokenEntityService tokenService;
 
   public IamOIDCTokenService(Clock clock, JWTProfileResolver profileResolver,
       IamAccountRepository accountRepository, JWTSigningAndValidationService jwtService,
+      IamOAuthAccessTokenRepository accessTokenRepo,
       AuthenticationHolderRepository authenticationHolderRepository,
-      ConfigurationPropertiesBean configBean, ClientKeyCacheService encrypters,
-      SymmetricKeyJWTValidatorCacheService symmetricCacheService,
-      OAuth2TokenEntityService tokenService) {
+      TokenRevocationService revocationService, ConfigurationPropertiesBean configBean,
+      ClientKeyCacheService encrypters, SymmetricKeyJWTValidatorCacheService symmetricCacheService) {
     this.clock = clock;
     this.profileResolver = profileResolver;
     this.accountRepository = accountRepository;
     this.jwtService = jwtService;
+    this.accessTokenRepo = accessTokenRepo;
     this.authenticationHolderRepository = authenticationHolderRepository;
+    this.revocationService = revocationService;
     this.configBean = configBean;
     this.encrypters = encrypters;
     this.symmetricCacheService = symmetricCacheService;
-    this.tokenService = tokenService;
   }
 
 
@@ -235,21 +238,21 @@ public class IamOIDCTokenService implements OIDCTokenService {
   public OAuth2AccessTokenEntity rotateRegistrationAccessTokenForClient(
       ClientDetailsEntity client) {
 
-    OAuth2AccessTokenEntity oldToken = tokenService.getRegistrationAccessTokenForClient(client);
-    if (oldToken != null) {
-      Set<String> scope = oldToken.getScope();
-      tokenService.revokeAccessToken(oldToken);
-      return buildRegistrationAccessToken(client, scope);
-    } else {
+    Optional<OAuth2AccessTokenEntity> oldToken = accessTokenRepo.findRegistrationToken(client.getId());
+    if (oldToken.isEmpty()) {
       return null;
     }
+    Set<String> scope = oldToken.get().getScope();
+    revocationService.revokeAccessToken(oldToken.get());
+    return buildRegistrationAccessToken(client, scope);
   }
 
   private OAuth2AccessTokenEntity buildRegistrationAccessToken(ClientDetailsEntity client,
       Set<String> scope) {
-    OAuth2AccessTokenEntity oldToken = tokenService.getRegistrationAccessTokenForClient(client);
-    if (oldToken != null) {
-      tokenService.revokeAccessToken(oldToken);
+
+    Optional<OAuth2AccessTokenEntity> oldToken = accessTokenRepo.findRegistrationToken(client.getId());
+    if (oldToken.isPresent()) {
+      revocationService.revokeAccessToken(oldToken.get());
     }
 
     Map<String, String> authorizationParameters = Maps.newHashMap();

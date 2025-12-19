@@ -26,15 +26,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.MultiValueMap;
 
 import com.google.common.collect.Lists;
@@ -51,7 +51,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
 public class AccessTokenGetListTests extends TestTokensUtils {
@@ -85,20 +85,20 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void getEmptyAccessTokenList() throws Exception {
+  void getEmptyAccessTokenList() throws Exception {
 
     assertThat(tokenRepository.count(), equalTo(0L));
 
@@ -122,7 +122,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getNotEmptyAccessTokenListWithCountZero() throws Exception {
+  void getNotEmptyAccessTokenListWithCountZero() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -140,7 +140,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithAttributes() throws Exception {
+  void getAccessTokenListWithAttributes() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     IamAccount user = loadTestUser(TESTUSER_USERNAME);
@@ -172,7 +172,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithClientIdFilter() throws Exception {
+  void getAccessTokenListWithClientIdFilter() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -211,7 +211,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithUserIdFilter() throws Exception {
+  void getAccessTokenListWithUserIdFilter() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -249,7 +249,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithFullClientIdAndUserIdFilter() throws Exception {
+  void getAccessTokenListWithFullClientIdAndUserIdFilter() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -290,7 +290,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
+  void getAccessTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -309,7 +309,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListLimitedToPageSizeFirstPage() throws Exception {
+  void getAccessTokenListLimitedToPageSizeFirstPage() throws Exception {
 
     for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
       buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
@@ -325,7 +325,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListLimitedToPageSizeSecondPage() throws Exception {
+  void getAccessTokenListLimitedToPageSizeSecondPage() throws Exception {
 
     for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
       buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
@@ -344,7 +344,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAccessTokenListFilterUserIdInjection() throws Exception {
+  void getAccessTokenListFilterUserIdInjection() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -367,7 +367,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
 
 
   @Test
-  public void getAccessTokenListWithOneClientCredentialAccessToken() throws Exception {
+  void getAccessTokenListWithOneClientCredentialAccessToken() throws Exception {
 
     buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
     buildAccessToken(loadTestClient(TEST_CLIENT_ID), SCOPES);
@@ -380,7 +380,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidAccessTokensCountWithExpiredTokens() throws Exception {
+  void getAllValidAccessTokensCountWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -397,7 +397,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidAccessTokensCountForUserWithExpiredTokens() throws Exception {
+  void getAllValidAccessTokensCountForUserWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -427,7 +427,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   }
 
   @Test
-  public void getAllValidAccessTokensCountForClientWithExpiredTokens() throws Exception {
+  void getAllValidAccessTokensCountForClientWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -459,7 +459,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
 
 
   @Test
-  public void getAllValidAccessTokensCountForUserAndClientWithExpiredTokens() throws Exception {
+  void getAllValidAccessTokensCountForUserAndClientWithExpiredTokens() throws Exception {
 
     ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
@@ -493,9 +493,9 @@ public class AccessTokenGetListTests extends TestTokensUtils {
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(0));
   }
-  
+
   @Test
-  public void getAccessTokenListWithoutRegistrationTokens() throws Exception {
+  void getAccessTokenListWithoutRegistrationTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
     
@@ -530,7 +530,9 @@ public class AccessTokenGetListTests extends TestTokensUtils {
     
     
   }
-    @Test public void getAccessTokenListWithoutResourceTokens() throws
+
+  @Test
+  void getAccessTokenListWithoutResourceTokens() throws
     Exception {
     
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID); 

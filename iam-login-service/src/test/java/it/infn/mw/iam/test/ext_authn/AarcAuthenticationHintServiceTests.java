@@ -15,19 +15,19 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.authn.DefaultAARCHintService;
 import it.infn.mw.iam.authn.error.InvalidAARCHintError;
@@ -36,73 +36,70 @@ import it.infn.mw.iam.authn.saml.model.IdpDescription;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 
-@RunWith(MockitoJUnitRunner.class)
-public class AarcAuthenticationHintServiceTests {
+@ExtendWith(MockitoExtension.class)
+class AarcAuthenticationHintServiceTests {
 
-    private static final String BASE_URL = "http://localhost:8080";
-    private static final String OIDC_ISSUER = "https://accounts.google.com";
-    private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
+  private static final String BASE_URL = "http://localhost:8080";
+  private static final String OIDC_ISSUER = "https://accounts.google.com";
+  private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
 
-    @Mock
-    private OidcValidatedProviders oidcProviders;
+  @Mock
+  private OidcValidatedProviders oidcProviders;
 
-    @InjectMocks
-    private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL, oidcProviders);
+  @InjectMocks
+  private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL, oidcProviders);
 
-    @Mock
-    private DefaultMetadataLookupService samlProviders;
+  @Mock
+  private DefaultMetadataLookupService samlProviders;
 
+  @BeforeEach
+  void setUp() {
 
-    @Before
-    public void setUp() {
+    // Populating known Oidc's
+    OidcProvider oidcProvider = new OidcProvider();
+    oidcProvider.setIssuer(OIDC_ISSUER);
+    List<OidcProvider> oidcProvidersTemp = List.of(oidcProvider);
 
-        // Populating known Oidc's
-        OidcProvider oidcProvider = new OidcProvider();
-        oidcProvider.setIssuer(OIDC_ISSUER);
-        List<OidcProvider> oidcProvidersTemp = List.of(oidcProvider);
+    lenient().when(oidcProviders.getValidatedProviders()).thenReturn(oidcProvidersTemp);
 
-        when(oidcProviders.getValidatedProviders()).thenReturn(oidcProvidersTemp);
+    // Populating known Saml's
+    IdpDescription idpDescription = new IdpDescription();
+    idpDescription.setEntityId(SAML_ENTITYID);
+    List<IdpDescription> idpDescriptionsTemp = List.of(idpDescription);
 
-        // Populating known Saml's
-        IdpDescription idpDescription = new IdpDescription();
-        idpDescription.setEntityId(SAML_ENTITYID);
-        List<IdpDescription> idpDescriptionsTemp = List.of(idpDescription);
+    lenient().when(samlProviders.listIdps()).thenReturn(idpDescriptionsTemp);
+  }
 
-        when(samlProviders.listIdps()).thenReturn(idpDescriptionsTemp);
-    }
+  @Test
+  void testNullAarcHint() {
+    assertThrows(InvalidAARCHintError.class, () -> service.resolve(null));
+  }
 
+  @Test
+  void testEmptyAarcHint() {
+    assertThrows(InvalidAARCHintError.class, () -> service.resolve(""));
+  }
 
-    @Test(expected = InvalidAARCHintError.class)
-    public void testNullAarcHint() {
-        service.resolve(null);
-    }
+  @Test
+  void testSpacesAarcHint() {
+    assertThrows(InvalidAARCHintError.class, () -> service.resolve("   "));
+  }
 
-    @Test(expected = InvalidAARCHintError.class)
-    public void testEmptyAarcHint() {
-        service.resolve("");
-    }
+  @Test
+  void testInvalidSchemeHint() {
+    assertThrows(InvalidAARCHintError.class, () -> service.resolve("whatever:sdsdad"));
+  }
 
-    @Test(expected = InvalidAARCHintError.class)
-    public void testSpacesAarcHint() {
-        service.resolve("   ");
-    }
+  @Test
+  void testSamlWorks() {
+    String url = service.resolve(SAML_ENTITYID);
+    assertThat(url, is(String.format("%s/saml/login?idp=%s", BASE_URL, SAML_ENTITYID)));
+  }
 
-
-    @Test(expected = InvalidAARCHintError.class)
-    public void testInvalidSchemeHint() {
-        service.resolve("whatever:sdsdad");
-    }
-
-    @Test
-    public void testSamlWorks() {
-        String url = service.resolve(SAML_ENTITYID);
-        assertThat(url, is(String.format("%s/saml/login?idp=%s", BASE_URL, SAML_ENTITYID)));
-    }
-
-    @Test
-    public void testOidcWorks() {
-        String url = service.resolve(OIDC_ISSUER);
-        assertThat(url, is(String.format("%s/openid_connect_login?iss=%s", BASE_URL, OIDC_ISSUER)));
-    }
+  @Test
+  void testOidcWorks() {
+    String url = service.resolve(OIDC_ISSUER);
+    assertThat(url, is(String.format("%s/openid_connect_login?iss=%s", BASE_URL, OIDC_ISSUER)));
+  }
 
 }

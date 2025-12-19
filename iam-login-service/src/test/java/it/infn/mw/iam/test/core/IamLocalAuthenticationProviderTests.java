@@ -16,7 +16,7 @@
 
 package it.infn.mw.iam.test.core;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -27,15 +27,14 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
@@ -45,8 +44,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamLocalAuthenticationProviderTests {
+@ExtendWith(MockitoExtension.class)
+class IamLocalAuthenticationProviderTests {
 
     @Mock
     IamProperties properties;
@@ -63,8 +62,8 @@ public class IamLocalAuthenticationProviderTests {
 
     IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
 
-    @Before
-    public void setup() {
+  @BeforeEach
+  void setup() {
         when(properties.getLocalAuthn()).thenReturn(localAuthn);
         iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds, passwordEncoder,
                 accountRepo, iamTotpMfaService));
@@ -79,8 +78,8 @@ public class IamLocalAuthenticationProviderTests {
         return result;
     }
 
-    @Test
-    public void testWhenPreAuthenticatedThenAuthenticateSetFalseToAuthenticated() {
+  @Test
+  void testWhenPreAuthenticatedThenAuthenticateSetFalseToAuthenticated() {
         ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("test-principal", "test-credentials");
         token.setPreAuthenticated(true);
         IamAccount account = newAccount("test-user");

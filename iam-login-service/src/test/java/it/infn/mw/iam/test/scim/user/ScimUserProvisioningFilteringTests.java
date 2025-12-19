@@ -15,25 +15,25 @@
  */
 package it.infn.mw.iam.test.scim.user;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimListResponse.SCHEMA;
+import static it.infn.mw.iam.test.TestUtils.TOTAL_USERS_COUNT;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.http.HttpStatus;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -44,21 +44,12 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
-import static it.infn.mw.iam.api.scim.model.ScimListResponse.SCHEMA;
-import static it.infn.mw.iam.test.TestUtils.TOTAL_USERS_COUNT;
-
-
-import org.springframework.http.HttpStatus;
-
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-public class ScimUserProvisioningFilteringTests {
+class ScimUserProvisioningFilteringTests {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -66,20 +57,18 @@ public class ScimUserProvisioningFilteringTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-
-
 
   @Test
-  public void testFilteringGivenNameEqPositive() throws Exception {
+  void testFilteringGivenNameEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("givenName eq Admin").build())
       .andExpect(jsonPath("$.totalResults", equalTo(1)))
@@ -101,7 +90,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringGivenNameEqNegative() throws Exception {
+  void testFilteringGivenNameEqNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("givenName eq Madonna").build(),
@@ -112,7 +101,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringGivenNameCoPositive() throws Exception {
+  void testFilteringGivenNameCoPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("givenName co tEs").build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -132,7 +121,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringGivenNameCoNegative() throws Exception {
+  void testFilteringGivenNameCoNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("givenName co xyz").build(), HttpStatus.NOT_FOUND)
@@ -143,7 +132,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringFamilyNameEqPositive() throws Exception {
+  void testFilteringFamilyNameEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("familyName eq User").build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -165,7 +154,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringFamilyNameEqNegative() throws Exception {
+  void testFilteringFamilyNameEqNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("familyName eq Medici").build(),
@@ -176,7 +165,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringFamilyNameCoPositive() throws Exception {
+  void testFilteringFamilyNameCoPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("familyName co uS").build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -196,7 +185,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringFamilyNameCoNegative() throws Exception {
+  void testFilteringFamilyNameCoNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("familyName co Ham").build(), HttpStatus.NOT_FOUND)
@@ -206,7 +195,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringUsernameEqPositive() throws Exception {
+  void testFilteringUsernameEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("Username eq admin").build())
       .andExpect(jsonPath("$.totalResults", equalTo(1)))
@@ -226,7 +215,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringUsernameEqNegative() throws Exception {
+  void testFilteringUsernameEqNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("username eq mrWorldWide").build(),
@@ -238,7 +227,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringUsernameCoPositive() throws Exception {
+  void testFilteringUsernameCoPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("username co est").build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -260,7 +249,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringUsernameCoNegative() throws Exception {
+  void testFilteringUsernameCoNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("username co supreme").build(),
@@ -272,7 +261,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringEmailsEqPositive() throws Exception {
+  void testFilteringEmailsEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("emails eq 1_admin@iam.test").build())
       .andExpect(jsonPath("$.totalResults", equalTo(1)))
@@ -293,7 +282,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringEmailsEqNegative() throws Exception {
+  void testFilteringEmailsEqNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("emails eq Bill.Nye@cern.ch").build(),
@@ -304,7 +293,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringEmailsCoPositive() throws Exception {
+  void testFilteringEmailsCoPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("emails co @iam.test").build())
       .andExpect(jsonPath("$.totalResults", equalTo(7)))
@@ -330,7 +319,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringEmailsCoNegative() throws Exception {
+  void testFilteringEmailsCoNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("emails co @google.com").build(),
@@ -342,7 +331,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringActivesEqPositive() throws Exception {
+  void testFilteringActivesEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("active eq true").build())
       .andExpect(jsonPath("$.totalResults", equalTo(256)))
@@ -366,7 +355,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringActiveEqNegative() throws Exception {
+  void testFilteringActiveEqNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("active eq false").build(), HttpStatus.NOT_FOUND)
@@ -376,7 +365,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringActiveCoNegative() throws Exception {
+  void testFilteringActiveCoNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("active co ue").build(), HttpStatus.BAD_REQUEST)
@@ -387,7 +376,7 @@ public class ScimUserProvisioningFilteringTests {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testFilteringActivesEqPositive2() throws Exception {
+  void testFilteringActivesEqPositive2() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_samlId")
       .buildEmail("test_user@test.org")
@@ -420,7 +409,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringAttributesCountIndexPosititve() throws Exception {
+  void testFilteringAttributesCountIndexPosititve() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder()
@@ -454,7 +443,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringAttributesCountIndexNegative() throws Exception {
+  void testFilteringAttributesCountIndexNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder()
@@ -470,7 +459,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringNegative() throws Exception {
+  void testFilteringNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters(" ").build(), HttpStatus.BAD_REQUEST)
@@ -481,7 +470,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringNegative2() throws Exception {
+  void testFilteringNegative2() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters("Something wrong").build(),
@@ -493,7 +482,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringNegative3() throws Exception {
+  void testFilteringNegative3() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters("givenName wrong true").build(),
@@ -505,7 +494,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringNegative4() throws Exception {
+  void testFilteringNegative4() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters("active eq correct").build(),
@@ -516,7 +505,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringNegative5() throws Exception {
+  void testFilteringNegative5() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters("eq eq something").build(),
@@ -527,7 +516,7 @@ public class ScimUserProvisioningFilteringTests {
   }
 
   @Test
-  public void testFilteringEvalutationNegative() throws Exception {
+  void testFilteringEvalutationNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().count(2).filters("eq eq something").build(),
@@ -538,9 +527,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringParseFiltersNegative() throws Exception {
+  void testFilteringParseFiltersNegative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("eqeqcoco co something").build(),
@@ -551,9 +539,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringGivenNameEqCount0Positive() throws Exception {
+  void testFilteringGivenNameEqCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("givenName eq Admin").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(1)))
@@ -566,7 +553,7 @@ public class ScimUserProvisioningFilteringTests {
 
 
   @Test
-  public void testFilteringGivenNameEqCount0Negative() throws Exception {
+  void testFilteringGivenNameEqCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("givenName eq Madonna").count(0).build(),
@@ -577,9 +564,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringGivenNameCoCount0Positive() throws Exception {
+  void testFilteringGivenNameCoCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("givenName co tEs").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -591,9 +577,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringGivenNameCoCount0Negative() throws Exception {
+  void testFilteringGivenNameCoCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("givenName co xyz").count(0).build(),
@@ -604,9 +589,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringFamilyNameEqCount0Positive() throws Exception {
+  void testFilteringFamilyNameEqCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("familyName eq User").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -617,9 +601,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringFamilyNameEqCount0Negative() throws Exception {
+  void testFilteringFamilyNameEqCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("familyName eq Medici").count(0).build(),
@@ -630,9 +613,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringFamilyNameCoCount0Positive() throws Exception {
+  void testFilteringFamilyNameCoCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("familyName co uS").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -643,9 +625,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringFamilyNameCoCount0Negative() throws Exception {
+  void testFilteringFamilyNameCoCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("familyName co Ham").count(0).build(),
@@ -656,9 +637,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringUsernameEqCount0Positive() throws Exception {
+  void testFilteringUsernameEqCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("Username eq admin").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(1)))
@@ -669,9 +649,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringUsernameEqCount0Negative() throws Exception {
+  void testFilteringUsernameEqCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("username eq mrWorldWide").count(0).build(),
@@ -682,9 +661,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringUsernameCoCount0Positive() throws Exception {
+  void testFilteringUsernameCoCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("username co est").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -695,9 +673,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringUsernameCoCount0Negative() throws Exception {
+  void testFilteringUsernameCoCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("username co supreme").count(0).build(),
@@ -708,9 +685,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringEmailsEqCount0Positive() throws Exception {
+  void testFilteringEmailsEqCount0Positive() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("emails eq 1_admin@iam.test").count(0).build())
@@ -722,9 +698,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringEmailsEqCount0Negative() throws Exception {
+  void testFilteringEmailsEqCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("emails eq Bill.Nye@cern.ch").count(0).build(),
@@ -735,9 +710,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringEmailsCoCount0Positive() throws Exception {
+  void testFilteringEmailsCoCount0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("emails co @iam.test").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(7)))
@@ -748,9 +722,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringEmailsCoCount0Negative() throws Exception {
+  void testFilteringEmailsCoCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("emails co @google.com").count(0).build(),
@@ -761,9 +734,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringActivesEqCoun0Positive() throws Exception {
+  void testFilteringActivesEqCoun0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("active eq true").count(0).build())
       .andExpect(jsonPath("$.totalResults", equalTo(256)))
@@ -775,9 +747,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringActiveEqCount0Negative() throws Exception {
+  void testFilteringActiveEqCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("active eq false").count(0).build(),
@@ -788,9 +759,8 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
-  public void testFilteringActiveCoCount0Negative() throws Exception {
+  void testFilteringActiveCoCount0Negative() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("active co ue").count(0).build(),
@@ -801,10 +771,9 @@ public class ScimUserProvisioningFilteringTests {
   }
 
 
-
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testFilteringActivesEqCount0Positive2() throws Exception {
+  void testFilteringActivesEqCount0Positive2() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_samlId")
       .buildEmail("test_user@test.org")

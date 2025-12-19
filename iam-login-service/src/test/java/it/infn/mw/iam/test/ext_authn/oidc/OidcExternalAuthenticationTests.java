@@ -19,16 +19,15 @@ import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpEntity;
@@ -36,7 +35,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -52,21 +50,20 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
-    webEnvironment = WebEnvironment.RANDOM_PORT)
-public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSupport {
+  webEnvironment = WebEnvironment.RANDOM_PORT)
+class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSupport {
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     MockRestTemplateFactory tf = (MockRestTemplateFactory) restTemplateFactory;
     tf.resetTemplate();
   }
 
   @Test
-  public void testOidcUnregisteredUserRedirectedToRegisterPage()
-      throws JOSEException, JsonProcessingException, RestClientException {
+  void testOidcUnregisteredUserRedirectedToRegisterPage()
+    throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -114,8 +111,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcRegisteredUserRedirectToHome() throws JOSEException, JsonProcessingException,
-      RestClientException, UnsupportedEncodingException {
+  void testOidcRegisteredUserRedirectToHome() throws JOSEException, JsonProcessingException,
+    RestClientException, UnsupportedEncodingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -143,8 +140,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa()
-      throws JOSEException, JsonProcessingException, RestClientException {
+  void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa()
+    throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -173,7 +170,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testAcrValuesClaimIsNotAddedWhenMfaProfileIsNotActive() throws RestClientException {
+  void testAcrValuesClaimIsNotAddedWhenMfaProfileIsNotActive() throws RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -185,7 +182,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testExternalAuthenticationErrorHandling() throws JsonProcessingException {
+  void testExternalAuthenticationErrorHandling() throws JsonProcessingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -211,8 +208,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcUserRedirectToMfaVerifyPageIfMfaIsActive()
-      throws JOSEException, JsonProcessingException, RestClientException {
+  void testOidcUserRedirectToMfaVerifyPageIfMfaIsActive()
+    throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -240,8 +237,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcUserRedirectToHomeIfMfaIsActiveAndAcrPresentInIdToken()
-      throws JOSEException, JsonProcessingException, RestClientException {
+  void testOidcUserRedirectToHomeIfMfaIsActiveAndAcrPresentInIdToken()
+    throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);

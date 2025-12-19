@@ -25,14 +25,15 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.NameID;
@@ -52,19 +53,19 @@ import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 
-public class ResolverTests {
+class ResolverTests {
 
   @Test
-  public void testSamlIdResolverAttributeResolution() {
+  void testSamlIdResolverAttributeResolution() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
     for (Saml2Attribute a : Saml2Attribute.values()) {
-      Assert.assertNotNull(resolvers.byName(a.getAlias()));
+      assertNotNull(resolvers.byName(a.getAlias()));
     }
   }
 
   @Test
-  public void emptyNameIdResolverTest() {
+  void emptyNameIdResolverTest() {
 
     SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getNameID()).thenReturn(null);
@@ -74,11 +75,11 @@ public class ResolverTests {
     Optional<IamSamlId> resolvedId =
         resolver.resolveSamlUserIdentifier(cred).getResolvedIds().stream().findFirst();
 
-    Assert.assertFalse(resolvedId.isPresent());
+    assertFalse(resolvedId.isPresent());
   }
 
   @Test
-  public void nameIdResolverTest() {
+  void nameIdResolverTest() {
     NameID nameId = Mockito.mock(NameID.class);
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn("format");
@@ -102,7 +103,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void persistentNameIdResolverTest() {
+  void persistentNameIdResolverTest() {
     NameID nameId = Mockito.mock(NameID.class);
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn("format");
@@ -121,7 +122,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void persistentNameIdResolverTestNoNameId() {
+  void persistentNameIdResolverTestNoNameId() {
 
     SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -136,7 +137,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void persistentNameIdResolverTestResolutionSuccess() {
+  void persistentNameIdResolverTestResolutionSuccess() {
     NameID nameId = Mockito.mock(NameID.class);
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn(NameIDType.PERSISTENT);
@@ -154,7 +155,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void mailIdResolverTest() {
+  void mailIdResolverTest() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.MAIL);
@@ -179,7 +180,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void attributeNotFoundResolverTest() {
+  void attributeNotFoundResolverTest() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
@@ -200,7 +201,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void ChainedResolverReturnsErrorsIfNoMatchedSamlIds() {
+  void ChainedResolverReturnsErrorsIfNoMatchedSamlIds() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
@@ -236,7 +237,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void ChainedResolverTestSuccess() {
+  void ChainedResolverTestSuccess() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
@@ -261,7 +262,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void returnAllMatchedSamlIdResolvers() {
+  void returnAllMatchedSamlIdResolvers() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
@@ -289,7 +290,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void getNameTest() {
+  void getNameTest() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
     NamedSamlUserIdentifierResolver subjectIdResolver =
@@ -299,7 +300,7 @@ public class ResolverTests {
 
 
   @Test
-  public void epitdAttributeIsRegisteredInResolversTest() {
+  void epitdAttributeIsRegisteredInResolversTest() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.EPTID);
@@ -307,7 +308,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void eptidAttributeNotFoundTest() {
+  void eptidAttributeNotFoundTest() {
 
     SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -323,7 +324,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void eptidAttributeValuesSanityChecksTest() {
+  void eptidAttributeValuesSanityChecksTest() {
 
     Attribute attribute = mock(Attribute.class);
     SAMLCredential cred = mock(SAMLCredential.class);
@@ -410,7 +411,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void eptidResolutionSuccess() {
+  void eptidResolutionSuccess() {
     Attribute attribute = mock(Attribute.class);
     SAMLCredential cred = mock(SAMLCredential.class);
     XSAny attributeValue = mock(XSAny.class);
@@ -437,7 +438,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void eptidResolutionSuccessNameidWithoutFormatAttribute() {
+  void eptidResolutionSuccessNameidWithoutFormatAttribute() {
     Attribute attribute = mock(Attribute.class);
     SAMLCredential cred = mock(SAMLCredential.class);
     XSAny attributeValue = mock(XSAny.class);

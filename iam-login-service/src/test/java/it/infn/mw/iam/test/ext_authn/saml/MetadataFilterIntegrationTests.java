@@ -21,30 +21,27 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = {"saml.idp-metadata[0].require-sirtfi=true",
-        "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.xml"
-    })
-public class MetadataFilterIntegrationTests {
+  properties = {"saml.idp-metadata[0].require-sirtfi=true",
+    "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.xml"
+  })
+class MetadataFilterIntegrationTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void sirtfiFilteringWorkAsExpected() throws Exception {
+  void sirtfiFilteringWorkAsExpected() throws Exception {
 
     mvc.perform(get("/saml/idps"))
       .andExpect(status().isOk())

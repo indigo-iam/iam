@@ -15,17 +15,17 @@
  */
 package it.infn.mw.iam.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 
-public class InvalidSshKeyExceptionTests {
-  
+class InvalidSshKeyExceptionTests {
+
   @Test
-  public void sshKeyExceptionWithMessageThrowableTest(){
-    
+  void sshKeyExceptionWithMessageThrowableTest(){
+
       NullPointerException e = new NullPointerException();
       InvalidSshKeyException exception = new InvalidSshKeyException("Testing the exception with message", e);
       assertEquals("Testing the exception with message", exception.getMessage());

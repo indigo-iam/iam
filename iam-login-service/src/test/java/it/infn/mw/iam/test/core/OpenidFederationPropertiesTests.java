@@ -23,14 +23,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Map;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -39,15 +37,14 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @TestPropertySource(properties = {
-    "openid-federation.entity-configuration.federation-entity.logo-uri=https://logo-example.com",
-    "openid-federation.entity-configuration.federation-entity.organization-name=INDIGO IAM",
-    "openid-federation.entity-configuration.federation-entity.contacts=iam-support@lists.infn.it"})
-public class OpenidFederationPropertiesTests {
+  "openid-federation.entity-configuration.federation-entity.logo-uri=https://logo-example.com",
+  "openid-federation.entity-configuration.federation-entity.organization-name=INDIGO IAM",
+  "openid-federation.entity-configuration.federation-entity.contacts=iam-support@lists.infn.it"})
+class OpenidFederationPropertiesTests {
 
   private String endpoint = "/.well-known/openid-federation";
 
@@ -56,7 +53,7 @@ public class OpenidFederationPropertiesTests {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testFederationEntityPropertiesNotEmpty() throws Exception {
+  void testFederationEntityPropertiesNotEmpty() throws Exception {
 
     MvcResult result = mvc.perform(get(endpoint))
       .andExpect(status().isOk())

@@ -13,22 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.db;
+package it.infn.mw.iam.persistence.repository;
 
-import org.testcontainers.containers.MySQLContainer;
+import org.mitre.oauth2.model.AuthorizationCodeEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public class MySQL80TestContainer extends MySQLContainer<MySQL80TestContainer> {
-
-  public static final String DEFAULT_IMAGE = "mysql:8.0";
-  public static final String DEFAULT_DATABASE_NAME = "iam";
-  public static final String DEFAULT_USERNAME = "iam";
-  public static final String DEFAULT_PASSWORD = "pwd";
-
-  public MySQL80TestContainer() {
-    super(DEFAULT_IMAGE);
-    withDatabaseName(DEFAULT_DATABASE_NAME);
-    withPassword(DEFAULT_PASSWORD);
-    withUsername(DEFAULT_USERNAME);
-  }
-
+public interface IamAuthorizationCodeRepository
+    extends JpaRepository<AuthorizationCodeEntity, Long> {
 }

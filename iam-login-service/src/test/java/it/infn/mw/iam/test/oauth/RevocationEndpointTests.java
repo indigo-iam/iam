@@ -24,23 +24,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class RevocationEndpointTests extends EndpointsTestUtils {
+class RevocationEndpointTests extends EndpointsTestUtils {
 
   private static final String REVOKE_ENDPOINT = "/revoke";
 
@@ -49,9 +45,9 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Autowired
   private IamTokenService iamTokenService;
-  
+
   @Test
-  public void testRevocationEnpointRequiresClientAuth() throws Exception {
+  void testRevocationEnpointRequiresClientAuth() throws Exception {
     mvc
     .perform(post(REVOKE_ENDPOINT)
       .contentType(APPLICATION_FORM_URLENCODED)
@@ -60,7 +56,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeInvalidTokenReturns200() throws Exception {
+  void testRevokeInvalidTokenReturns200() throws Exception {
     mvc
       .perform(post(REVOKE_ENDPOINT)
         .with(httpBasic(PASSWORD_GRANT_CLIENT_ID, PASSWORD_GRANT_CLIENT_SECRET))
@@ -70,7 +66,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void accessTokenRevocationWorks() throws Exception {
+  void accessTokenRevocationWorks() throws Exception {
 
     Set<OAuth2AccessTokenEntity> accessTokens = iamTokenService.getAllAccessTokensForUser("test");
 
@@ -97,7 +93,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void accessTokenRevocationRevokesTheRightToken() throws Exception {
+  void accessTokenRevocationRevokesTheRightToken() throws Exception {
     Set<OAuth2AccessTokenEntity> accessTokens = iamTokenService.getAllAccessTokensForUser("test");
 
     // Start clean
@@ -123,7 +119,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void refreshTokenRevocationWorks() throws Exception {
+  void refreshTokenRevocationWorks() throws Exception {
 
     // Start clean
     iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
@@ -144,7 +140,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void refreshTokenRevocationRevokesTheRightToken() throws Exception {
+  void refreshTokenRevocationRevokesTheRightToken() throws Exception {
     // Start clean
     iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
     iamTokenService.getAllRefreshTokensForUser("test").forEach(iamTokenService::revokeRefreshToken);

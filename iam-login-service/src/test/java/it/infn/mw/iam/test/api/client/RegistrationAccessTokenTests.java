@@ -15,17 +15,14 @@
  */
 package it.infn.mw.iam.test.api.client;
 
+import java.text.ParseException;
+
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-
-import java.text.ParseException;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -46,7 +44,7 @@ import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSuppo
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @IamRandomPortIntegrationTest
-public class RegistrationAccessTokenTests extends TestSupport {
+class RegistrationAccessTokenTests extends TestSupport {
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -60,21 +58,20 @@ public class RegistrationAccessTokenTests extends TestSupport {
   private String ownedClientsUrl;
 
 
-
   @BeforeAll
-  public static void init() {
+  static void init() {
     TestUtils.initRestAssured();
   }
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     RestAssured.port = iamPort;
     registerUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/api/client-registration", iamPort);
     ownedClientsUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/account/me/clients", iamPort);
   }
 
   @Test
-  public void testRatWorkAsExpected() throws ParseException {
+  void testRatWorkAsExpected() throws ParseException {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
@@ -110,7 +107,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
       .body()
       .as(RegisteredClientDTO.class);
 
-    assertThat(getResponse.getClientSecret(), is(registerResponse.getClientSecret()));
+    assertThat(getResponse.getClientSecret(), nullValue());
     assertThat(getResponse.getRegistrationAccessToken(), nullValue());
 
     RegisteredClientDTO rotatedRatClient =
@@ -162,7 +159,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
   }
 
   @Test
-  public void testRedeemClientFlow() {
+  void testRedeemClientFlow() {
 
     // 1. Register a client
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();

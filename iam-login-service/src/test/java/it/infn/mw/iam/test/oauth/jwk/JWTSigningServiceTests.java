@@ -20,21 +20,21 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -46,8 +46,8 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 
-@RunWith(MockitoJUnitRunner.class)
-public class JWTSigningServiceTests implements JWKTestSupport {
+@ExtendWith(MockitoExtension.class)
+class JWTSigningServiceTests implements JWKTestSupport {
 
   @Mock
   JWKProperties properties;
@@ -57,49 +57,34 @@ public class JWTSigningServiceTests implements JWKTestSupport {
 
   IamJWTSigningService service;
 
-  @Before
-  public void before() {
+  @Test
+  void nullKeystoreIsNotAccepted() {
 
-  }
-
-
-  @Test(expected = NullPointerException.class)
-  public void nullKeystoreIsNotAccepted() {
-    try {
-      service = new IamJWTSigningService(null);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("null keystore"));
-      throw e;
-    }
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyKeystoreIsNotAccepted() {
-
-
-    when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
-    try {
-      service = new IamJWTSigningService(mockKeystore);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("null keystore"));
-      throw e;
-    }
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyKeystoreIsNotAcceptedWhenProvidingProperties() {
-
-    when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
-    try {
-      service = new IamJWTSigningService(properties, mockKeystore);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), is("null keystore"));
-      throw e;
-    }
+    NullPointerException e =
+        assertThrows(NullPointerException.class, () -> service = new IamJWTSigningService(null));
+    assertThat(e.getMessage(), is("null keystore"));
   }
 
   @Test
-  public void rsaSignatureAndVerificationWorks() throws ParseException, IOException {
+  void emptyKeystoreIsNotAccepted() {
+
+    lenient().when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> service = new IamJWTSigningService(mockKeystore));
+    assertThat(e.getMessage(), is("Please provide a non-empty keystore"));
+  }
+
+  @Test
+  void emptyKeystoreIsNotAcceptedWhenProvidingProperties() {
+
+    lenient().when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> service = new IamJWTSigningService(properties, mockKeystore));
+    assertThat(e.getMessage(), is("empty keystore"));
+  }
+
+  @Test
+  void rsaSignatureAndVerificationWorks() throws ParseException, IOException {
 
     service = new IamJWTSigningService(loadKeystore(KS1_LOCATION));
 
@@ -110,7 +95,6 @@ public class JWTSigningServiceTests implements JWKTestSupport {
 
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("iam1").build();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject("sub").build();
-
 
     SignedJWT signedJwt1 = new SignedJWT(header, claimsSet);
     service.signJwt(signedJwt1);
@@ -130,8 +114,8 @@ public class JWTSigningServiceTests implements JWKTestSupport {
     assertThat(service.validateSignature(signedJwt2), is(true));
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void signerReportsUnknownKey() throws ParseException, IOException {
+  @Test
+  void signerReportsUnknownKey() throws ParseException, IOException {
 
     JWKSetKeyStore ks = loadKeystore(KS1_LOCATION);
     service = new IamJWTSigningService(ks);
@@ -140,34 +124,28 @@ public class JWTSigningServiceTests implements JWKTestSupport {
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject("sub").build();
     SignedJWT signedJwt = new SignedJWT(header, claimsSet);
 
-    try {
-      service.signJwt(signedJwt);
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), is("Signer not found for key unknown"));
-      throw e;
-    }
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void verifyFailsForUnknownKey() throws ParseException, IOException {
-
-    JWKSetKeyStore ks = loadKeystore(KS1_LOCATION);
-    service = new IamJWTSigningService(ks);
-
-    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("unknown").build();
-    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject("sub").build();
-    SignedJWT signedJwt = new SignedJWT(header, claimsSet);
-
-    try {
-      service.signJwt(signedJwt);
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage(), is("Signer not found for key unknown"));
-      throw e;
-    }
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> service.signJwt(signedJwt));
+    assertThat(e.getMessage(), is("Signer not found for key unknown"));
   }
 
   @Test
-  public void verifyFailsForInvalidKey() throws ParseException, IOException {
+  void verifyFailsForUnknownKey() throws ParseException, IOException {
+
+    JWKSetKeyStore ks = loadKeystore(KS1_LOCATION);
+    service = new IamJWTSigningService(ks);
+
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("unknown").build();
+    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject("sub").build();
+    SignedJWT signedJwt = new SignedJWT(header, claimsSet);
+
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> service.signJwt(signedJwt));
+    assertThat(e.getMessage(), is("Signer not found for key unknown"));
+  }
+
+  @Test
+  void verifyFailsForInvalidKey() throws ParseException, IOException {
 
     IamJWTSigningService signer1 = new IamJWTSigningService(loadKeystore(KS1_LOCATION));
     IamJWTSigningService signer2 = new IamJWTSigningService(loadKeystore(KS2_LOCATION));
@@ -182,7 +160,7 @@ public class JWTSigningServiceTests implements JWKTestSupport {
   }
 
   @Test
-  public void exceptionDuringVerifyIsHandled() throws ParseException, IOException, JOSEException {
+  void exceptionDuringVerifyIsHandled() throws ParseException, IOException, JOSEException {
 
     IamJWTSigningService signer = new IamJWTSigningService(loadKeystore(KS1_LOCATION));
 
@@ -200,7 +178,7 @@ public class JWTSigningServiceTests implements JWKTestSupport {
   }
 
   @Test
-  public void exceptionDuringSignIsHandled() throws ParseException, IOException, JOSEException {
+  void exceptionDuringSignIsHandled() throws ParseException, IOException, JOSEException {
     IamJWTSigningService signer = new IamJWTSigningService(loadKeystore(KS1_LOCATION));
 
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("iam1").build();
@@ -214,9 +192,9 @@ public class JWTSigningServiceTests implements JWKTestSupport {
   }
 
   @Test
-  public void propertiesParsedCorrectly() throws IOException, ParseException {
-    when(properties.getDefaultJwsAlgorithm()).thenReturn(JWSAlgorithm.RS384.getName());
-    when(properties.getDefaultKeyId()).thenReturn("iam2");
+  void propertiesParsedCorrectly() throws IOException, ParseException {
+    lenient().when(properties.getDefaultJwsAlgorithm()).thenReturn(JWSAlgorithm.RS384.getName());
+    lenient().when(properties.getDefaultKeyId()).thenReturn("iam2");
 
     JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
     service = new IamJWTSigningService(properties, ks);
@@ -227,7 +205,7 @@ public class JWTSigningServiceTests implements JWKTestSupport {
   }
 
   @Test
-  public void signWithAlgoWorksAsExpected() throws IOException, ParseException {
+  void signWithAlgoWorksAsExpected() throws IOException, ParseException {
 
     JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
     service = new IamJWTSigningService(ks);
@@ -243,7 +221,7 @@ public class JWTSigningServiceTests implements JWKTestSupport {
   }
 
   @Test
-  public void getAllAlgosWorkAsExpected() throws IOException, ParseException {
+  void getAllAlgosWorkAsExpected() throws IOException, ParseException {
 
     JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
     service = new IamJWTSigningService(ks);

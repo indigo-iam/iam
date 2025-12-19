@@ -26,10 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.text.ParseException;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
@@ -37,11 +37,11 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwk.default-key-id=iam",
-    "iam.jwk.default-jws-algorithm=ES256", "iam.jwk.keystore-location=classpath:/jwk/ec.jwks"})
-public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport {
+  "iam.jwk.default-jws-algorithm=ES256", "iam.jwk.keystore-location=classpath:/jwk/ec.jwks"})
+class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport {
 
   private String getAccessTokenForUser() throws Exception {
 
@@ -55,14 +55,14 @@ public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport 
   }
 
   @Test
-  public void testAccessTokenKey() throws ParseException, Exception {
+  void testAccessTokenKey() throws ParseException, Exception {
 
     SignedJWT token = (SignedJWT) JWTParser.parse(getAccessTokenForUser());
     assertThat(token.getHeader().getKeyID(), is("iam"));
   }
 
   @Test
-  public void testJwkEndpointResult() throws Exception {
+  void testJwkEndpointResult() throws Exception {
 
     mvc.perform(get(JWK_ENDPOINT))
       .andExpect(status().isOk())

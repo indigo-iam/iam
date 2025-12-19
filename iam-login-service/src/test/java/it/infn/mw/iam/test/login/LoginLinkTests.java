@@ -15,16 +15,14 @@
  */
 package it.infn.mw.iam.test.login;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
@@ -33,10 +31,9 @@ import it.infn.mw.iam.config.IamProperties.LoginLink;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
-@SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.RANDOM_PORT)
-public class LoginLinkTests {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
+class LoginLinkTests {
 
   @Value("${local.server.port}")
   private Integer serverPort;
@@ -44,13 +41,13 @@ public class LoginLinkTests {
   @Autowired
   private IamProperties iamProperties;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
   @Test
-  public void testPrivacyPolicyLink() {
+  void testPrivacyPolicyLink() {
     String oldResponseBody = RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200)
         .extract()
         .body()
@@ -69,7 +66,7 @@ public class LoginLinkTests {
   }
 
   @Test
-  public void testSupportLink() {
+  void testSupportLink() {
     String oldResponseBody = RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200)
         .extract()
         .body()

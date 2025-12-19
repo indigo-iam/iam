@@ -15,7 +15,7 @@
  */
 package it.infn.mw.voms.properties;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -26,35 +26,36 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.voms.properties.VomsProperties.VOMSAAProperties;
 
-public class VomsPropertiesValidatorTests {
-  private static ValidatorFactory validatorFactory;
-  private static Validator validator;
-  private static final List<String> invalidExampleVONames = List.of("VO-name.test", "vo_name.test", "1vo-name.test",
-      "_vo-name.test", "vo_name.test", "vo_name.test1");
-  private static final String validVOName = "vo1-name.test";
-  private static final String validVOHost = "vo-host";
+class VomsPropertiesValidatorTests {
 
-  @BeforeClass
-  public static void createValidator() {
+  static ValidatorFactory validatorFactory;
+  static Validator validator;
+  static final List<String> invalidExampleVONames = List.of("VO-name.test", "vo_name.test",
+      "1vo-name.test", "_vo-name.test", "vo_name.test", "vo_name.test1");
+  static final String validVoName = "vo1-name.test";
+  static final String validVoHost = "vo-host";
+
+  @BeforeAll
+  static void createValidator() {
     validatorFactory = Validation.buildDefaultValidatorFactory();
     validator = validatorFactory.getValidator();
   }
 
-  @AfterClass
-  public static void close() {
+  @AfterAll
+  static void close() {
     validatorFactory.close();
   }
 
   @Test
-  public void invalidVoName() {
+  void invalidVoName() {
     VOMSAAProperties vomsaa = new VOMSAAProperties();
-    vomsaa.setHost(validVOHost);
+    vomsaa.setHost(validVoHost);
     for (String voName : invalidExampleVONames) {
       vomsaa.setVoName(voName);
       Set<ConstraintViolation<VOMSAAProperties>> violations = validator.validate(vomsaa);
@@ -63,10 +64,10 @@ public class VomsPropertiesValidatorTests {
   }
 
   @Test
-  public void validVoName() {
+  void validVoName() {
     VOMSAAProperties vomsaa = new VOMSAAProperties();
-    vomsaa.setHost(validVOHost);
-    vomsaa.setVoName(validVOName);
+    vomsaa.setHost(validVoHost);
+    vomsaa.setVoName(validVoName);
     Set<ConstraintViolation<VOMSAAProperties>> violations = validator.validate(vomsaa);
     assertTrue(violations.isEmpty());
   }

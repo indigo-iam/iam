@@ -24,23 +24,22 @@ import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.NOTES;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
@@ -50,9 +49,8 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.validation.RegistrationFieldsValidationService;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest()
-public class RegistrationFieldsValidationServiceTests {
+@ExtendWith(SpringExtension.class)
+class RegistrationFieldsValidationServiceTests {
 
   private final String TEST_USERNAME = "unregistereduser";
   private final String TEST_EMAIL = TEST_USERNAME + "@example.com";
@@ -74,8 +72,8 @@ public class RegistrationFieldsValidationServiceTests {
 
   private RegistrationFieldsValidationService service;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     MockitoAnnotations.openMocks(this);
 
     // Mock the registration properties and fields map
@@ -103,7 +101,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testAllMandatoryFieldsAreProvided() {
+  void testAllMandatoryFieldsAreProvided() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;
@@ -125,7 +123,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testGivenNameWithDifferentBehaviours() {
+  void testGivenNameWithDifferentBehaviours() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;
@@ -171,7 +169,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testFamilyNameWithDifferentBehaviours() {
+  void testFamilyNameWithDifferentBehaviours() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;
@@ -217,7 +215,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testEmailWithDifferentBehaviours() {
+  void testEmailWithDifferentBehaviours() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;
@@ -263,7 +261,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testUsernameWithDifferentBehaviours() {
+  void testUsernameWithDifferentBehaviours() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;
@@ -309,7 +307,7 @@ public class RegistrationFieldsValidationServiceTests {
   }
 
   @Test
-  public void testNotesWithDifferentBehaviours() {
+  void testNotesWithDifferentBehaviours() {
 
     RegistrationRequestDto request;
     RegistrationRequestValidationResult result;

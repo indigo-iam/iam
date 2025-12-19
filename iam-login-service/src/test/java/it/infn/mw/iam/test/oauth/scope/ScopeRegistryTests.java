@@ -29,13 +29,13 @@ import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
@@ -44,9 +44,8 @@ import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
-public class ScopeRegistryTests {
-
+@ExtendWith(MockitoExtension.class)
+class ScopeRegistryTests {
 
   @Mock
   ClientDetails client;
@@ -54,14 +53,14 @@ public class ScopeRegistryTests {
   @Mock
   SystemScopeRepository scopeRepo;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     SystemScope testScope = new SystemScope("test:/whatever");
     when(scopeRepo.getAll()).thenReturn(Sets.newHashSet(testScope));
   }
 
   @Test
-  public void testEmptyScopes() {
+  void testEmptyScopes() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
         new DefaultScopeMatcherRegistry(emptySet(), scopeRepo);
@@ -76,7 +75,7 @@ public class ScopeRegistryTests {
   }
 
   @Test
-  public void testNonMatchingScope() {
+  void testNonMatchingScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
         new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")), scopeRepo);
@@ -91,7 +90,7 @@ public class ScopeRegistryTests {
   }
 
   @Test
-  public void testMatchingScope() {
+  void testMatchingScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
         new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);

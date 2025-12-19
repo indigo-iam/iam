@@ -38,61 +38,61 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.oidc.FullyMockedOidcClientConfiguration;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
     FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
-public class OidcAccountLinkingTests {
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+class OidcAccountLinkingTests {
+
+  static final String TEST_100_USER = "test_100";
 
   @Autowired
-  private MockOIDCProvider oidcProvider;
+  MockOIDCProvider oidcProvider;
 
   @Autowired
-  private IamAccountRepository iamAccountRepo;
+  IamAccountRepository iamAccountRepo;
 
   @Autowired
-  private MockMvc mvc;
-
-  private static final String TEST_100_USER = "test_100";
+  MockMvc mvc;
 
   @Test
-  public void accessToAccountLinkingApiFailsForAnonymousUsers() throws Exception {
+  void accessToAccountLinkingApiFailsForAnonymousUsers() throws Exception {
 
     mvc.perform(get("/iam/account-linking/OIDC")).andExpect(status().isUnauthorized());
     mvc.perform(get("/iam/account-linking/SAML")).andExpect(status().isUnauthorized());
-    
   }
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void accountLinkingFinalizationFailsForUserWithoutExternalAuthToken() throws Exception {
+  void accountLinkingFinalizationFailsForUserWithoutExternalAuthToken() throws Exception {
 
   }
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void oidcAccountLinkingWorks() throws Exception {
+  void oidcAccountLinkingWorks() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
@@ -121,16 +121,14 @@ public class OidcAccountLinkingTests {
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").param("state", state)
-            .param("code", "1234")
-            .session(session))
-          .andExpect(status().isOk())
-          .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(
+          get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     session = (MockHttpSession) mvc.perform(get("/iam/account-linking/OIDC/done").session(session))
       .andExpect(status().isFound())
@@ -158,7 +156,7 @@ public class OidcAccountLinkingTests {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void oidcAccountLinkingFailsSinceOidcIdIsAlreadyBoundToAnotherUser() throws Exception {
+  void oidcAccountLinkingFailsSinceOidcIdIsAlreadyBoundToAnotherUser() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
@@ -187,16 +185,14 @@ public class OidcAccountLinkingTests {
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
 
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").param("state", state)
-            .param("code", "1234")
-            .session(session))
-          .andExpect(status().isOk())
-          .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(
+          get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
 
     String expectedErrorMessage =
@@ -218,8 +214,7 @@ public class OidcAccountLinkingTests {
 
   @Test
   @WithMockUser(username = "test")
-  public void oidcAccountLinkingFailsSinceOidcIdIsAlreadyBoundToAuthenticatedUser()
-      throws Exception {
+  void oidcAccountLinkingFailsSinceOidcIdIsAlreadyBoundToAuthenticatedUser() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
@@ -247,16 +242,14 @@ public class OidcAccountLinkingTests {
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").param("state", state)
-            .param("code", "1234")
-            .session(session))
-          .andExpect(status().isOk())
-          .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(
+          get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/iam/account-linking/OIDC/done"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
 
     String expectedErrorMessage =
@@ -278,7 +271,7 @@ public class OidcAccountLinkingTests {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void oidcAccountLinkingExternalAuthnFailureRedirectsToDashboard() throws Exception {
+  void oidcAccountLinkingExternalAuthnFailureRedirectsToDashboard() throws Exception {
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
       .andExpect(status().isFound())

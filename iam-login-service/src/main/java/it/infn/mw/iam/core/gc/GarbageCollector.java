@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.db;
+package it.infn.mw.iam.core.gc;
 
-import org.testcontainers.containers.MySQLContainer;
+public interface GarbageCollector {
 
-public class MySQL57TestContainer extends MySQLContainer<MySQL57TestContainer> {
+  void clearExpiredApprovedSites(int count);
 
-  public static final String DEFAULT_IMAGE = "mysql:5.7";
-  public static final String DEFAULT_DATABASE_NAME = "iam";
-  public static final String DEFAULT_USERNAME = "iam";
-  public static final String DEFAULT_PASSWORD = "pwd";
+  void clearExpiredAuthorizationCodes(int count);
 
-  public MySQL57TestContainer() {
-    super(DEFAULT_IMAGE);
-    withDatabaseName(DEFAULT_DATABASE_NAME);
-    withPassword(DEFAULT_PASSWORD);
-    withUsername(DEFAULT_USERNAME);
-  }
+  void clearExpiredDeviceCodes(int count);
 
+  void clearExpiredRevokedTokens(int count);
+
+  void clearExpiredAccessTokens(int count);
+
+  void clearExpiredRefreshTokens(int count);
+
+  void clearOrphanedAuthenticationHolder(int count);
 }

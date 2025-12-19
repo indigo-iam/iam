@@ -23,20 +23,20 @@ import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -49,7 +49,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class JavamailNotificationDeliveryTests {
 
   public static final String TEST_0_EMAIL = "test0@test.example";
@@ -80,41 +80,33 @@ public class JavamailNotificationDeliveryTests {
 
   @Captor
   ArgumentCaptor<SimpleMailMessage> messageArgumentCaptor;
-  
-  @Before
-  public void setup() {
 
-    when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
-    // when(properties.getAdminAddress()).thenReturn(IAM_ADMIN_ADDRESS);
+  @BeforeEach
+  void setup() {
+
+    lenient().when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
   }
 
 
   @Test
-  public void testNoMessageDelivery() {
-    when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING)).thenReturn(emptyList());
+  void testNoMessageDelivery() {
 
+    lenient().when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING)).thenReturn(emptyList());
     delivery.sendPendingNotifications();
     verifyNoInteractions(mailSender);
   }
 
   @Test
-  public void testMessageIsDelivered() {
+  void testMessageIsDelivered() {
 
-    
     IamEmailNotification notification = mock(IamEmailNotification.class);
     IamNotificationReceiver receiver = mock(IamNotificationReceiver.class);
 
-    // when(receiver.getIamEmailNotification()).thenReturn(notification);
-    when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
-
-    when(notification.getBody()).thenReturn("Body");
-    when(notification.getSubject()).thenReturn("Subject");
-    // when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
-
-
-    when(notification.getReceivers()).thenReturn(asList(receiver));
-
-    when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING))
+    lenient().when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
+    lenient().when(notification.getBody()).thenReturn("Body");
+    lenient().when(notification.getSubject()).thenReturn("Subject");
+    lenient().when(notification.getReceivers()).thenReturn(asList(receiver));
+    lenient().when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING))
       .thenReturn(asList(notification));
 
     delivery.sendPendingNotifications();
@@ -128,35 +120,28 @@ public class JavamailNotificationDeliveryTests {
     assertThat(messageArgumentCaptor.getValue().getText(), equalTo(TEST_EMAIL_BODY));
     assertThat(messageArgumentCaptor.getValue().getTo(), arrayWithSize(1));
     assertThat(messageArgumentCaptor.getValue().getTo(), hasItemInArray(TEST_0_EMAIL));
-
   }
 
   @Test
-  public void testDeliveryErrorIsPropagated() {
+  void testDeliveryErrorIsPropagated() {
+
     IamEmailNotification notification = Mockito.mock(IamEmailNotification.class);
     IamNotificationReceiver receiver = Mockito.mock(IamNotificationReceiver.class);
 
-    // when(receiver.getIamEmailNotification()).thenReturn(notification);
-    // when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
-
-    when(notification.getBody()).thenReturn("Body");
-    when(notification.getSubject()).thenReturn("Subject");
-    // when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
-    // when(notification.getCreationTime()).thenReturn(currentTime);
-    // when(notification.getUuid()).thenReturn(randomUuid);
+    lenient().when(notification.getBody()).thenReturn("Body");
+    lenient().when(notification.getSubject()).thenReturn("Subject");
 
     doThrow(new MailSendException("Error sending email")).when(mailSender)
       .send(Mockito.any(SimpleMailMessage.class));
 
-    when(notification.getReceivers()).thenReturn(asList(receiver));
-
-    when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING))
+    lenient().when(notification.getReceivers()).thenReturn(asList(receiver));
+    lenient().when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING))
       .thenReturn(asList(notification));
 
     delivery.sendPendingNotifications();
     verify(notification).setDeliveryStatus(statusArgumentCaptor.capture());
     verify(mailSender).send(messageArgumentCaptor.capture());
-    
+
     assertThat(statusArgumentCaptor.getValue(), is(IamDeliveryStatus.DELIVERY_ERROR));
   }
 

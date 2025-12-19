@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.notification;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
@@ -24,14 +25,13 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.account_linking.DefaultAccountLinkingService;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
@@ -54,10 +54,9 @@ import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class AccountLinkCertificateNotificationTests extends X509TestSupport {
+class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   private static final String USERNAME = "event_user";
   private static final String GIVENNAME = "Event";
@@ -106,8 +105,8 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
   DefaultX509AuthenticationCredentialExtractor extractor =
       new DefaultX509AuthenticationCredentialExtractor(certChainParser);
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
     when(principal.getName()).thenReturn(USERNAME);
 
@@ -138,7 +137,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenLinkingCertificatePositive() {
+  void notificationwhenLinkingCertificatePositive() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADMINS);
     notificationProperties.setCertificateUpdate(true);
@@ -151,7 +150,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
         notificationProperties.getSubjectPrefix() + " New X.509 certificate linked"));
 
@@ -170,7 +169,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenLinkingCertificateAlternativeAdminNotificationPositive() {
+  void notificationwhenLinkingCertificateAlternativeAdminNotificationPositive() {
 
 
     notificationProperties.setCertificateUpdate(true);
@@ -185,7 +184,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
         notificationProperties.getSubjectPrefix() + " New X.509 certificate linked"));
 
@@ -204,7 +203,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is false
   @Test
-  public void notificationwhenLinkingCertificateNegative() {
+  void notificationwhenLinkingCertificateNegative() {
 
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADMINS);
@@ -218,12 +217,12 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(0, pending.size());
+    assertEquals(0, pending.size());
   }
 
   // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenLinkingCertificateNotificationPolicy() {
+  void notificationwhenLinkingCertificateNotificationPolicy() {
 
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS);
@@ -238,12 +237,12 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
   }
 
   // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenUnlinkingCertificatePositive() {
+  void notificationwhenUnlinkingCertificatePositive() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADMINS);
     notificationProperties.setCertificateUpdate(true);
@@ -252,7 +251,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
 
     assertThat(pending.get(0).getSubject(),
         containsString(notificationProperties.getSubjectPrefix() + " Unlinked X.509 certificate"));
@@ -272,7 +271,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenUnlinkingCertificateAlternativeAdminNotificationPositive() {
+  void notificationwhenUnlinkingCertificateAlternativeAdminNotificationPositive() {
 
     notificationProperties
       .setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS);
@@ -281,7 +280,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
     linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
 
     assertThat(pending.get(0).getSubject(),
         containsString(notificationProperties.getSubjectPrefix() + " Unlinked X.509 certificate"));
@@ -302,7 +301,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
   // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is false
   @Test
-  public void notificationwhenUnlinkingCertificateFalse() {
+  void notificationwhenUnlinkingCertificateFalse() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADMINS);
     notificationProperties.setCertificateUpdate(false);
@@ -312,12 +311,12 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(0, pending.size());
+    assertEquals(0, pending.size());
   }
 
   // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
   @Test
-  public void notificationwhenUnlinkingCertificateNotificationPolicy() {
+  void notificationwhenUnlinkingCertificateNotificationPolicy() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS);
     notificationProperties.setCertificateUpdate(true);
@@ -327,7 +326,6 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
-
+    assertEquals(1, pending.size());
   }
 }

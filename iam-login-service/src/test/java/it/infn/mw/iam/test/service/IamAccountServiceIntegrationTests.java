@@ -18,11 +18,11 @@ package it.infn.mw.iam.test.service;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -32,9 +32,9 @@ import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
+class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
 
   private IamAccount testUser;
 
@@ -47,9 +47,8 @@ public class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
   @Autowired
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
 
-  @Before
-  public void setupUser() {
-
+  @BeforeEach
+  void setupUser() {
 
     testUser = IamAccount.newAccount();
     testUser.setActive(true);
@@ -75,7 +74,7 @@ public class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testTokensAreRemovedWhenAccountIsRemoved() throws Exception {
+  void testTokensAreRemovedWhenAccountIsRemoved() throws Exception {
 
     TokenEndpointResponse tokenResponse = requestTokens("openid offline_access");
     String at1 = IamTokenService.sha256(tokenResponse.accessToken());

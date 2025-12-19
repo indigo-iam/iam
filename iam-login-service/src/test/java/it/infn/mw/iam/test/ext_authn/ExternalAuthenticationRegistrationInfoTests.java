@@ -15,9 +15,8 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
-
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,8 +27,7 @@ import java.security.cert.CertificateException;
 import java.util.List;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
 import org.opensaml.saml2.core.Assertion;
@@ -42,7 +40,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 import org.springframework.security.saml.SAMLCredential;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
 
@@ -58,8 +55,6 @@ import it.infn.mw.iam.test.ext_authn.saml.SamlTestConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlAssertionBuilder;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, SamlTestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -68,9 +63,9 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
   public static final String ENTITY_ID = "https://assertion-consumer.example";
   public static final String ASSERTION_CONSUMER_URL = "https://assertion-consumer.example/saml";
 
-
   @Test
-  public void testOidcMinimalInfoConversion() {
+  void testOidcMinimalInfoConversion() {
+
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
 
     when(token.getSub()).thenReturn("test-oidc-subject");
@@ -88,11 +83,11 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getEmail(), Matchers.nullValue());
     assertThat(uri.getSubject(), equalTo("test-oidc-subject"));
     assertThat(uri.getIssuer(), equalTo("test-oidc-issuer"));
-
   }
 
   @Test
-  public void testOidcEmailAndNameReturnedIfPresent() {
+  void testOidcEmailAndNameReturnedIfPresent() {
+
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
 
     UserInfo userinfo = mock(UserInfo.class);
@@ -118,13 +113,11 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getGivenName(), equalTo("Test Given Name"));
     assertThat(uri.getFamilyName(), equalTo("Test Family Name"));
     assertThat(uri.getEmail(), equalTo("test@test.org"));
-
-
-
   }
 
   @Test
-  public void testSamlMinimalInfoConversion() {
+  void testSamlMinimalInfoConversion() {
+
     ExpiringUsernameAuthenticationToken token = mock(ExpiringUsernameAuthenticationToken.class);
     SAMLCredential cred = mock(SAMLCredential.class);
 
@@ -148,11 +141,11 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getGivenName(), Matchers.nullValue());
     assertThat(uri.getFamilyName(), Matchers.nullValue());
     assertThat(uri.getEmail(), Matchers.nullValue());
-
   }
 
   @Test
-  public void testSamlEmailAndNameReturnedIfPresent() {
+  void testSamlEmailAndNameReturnedIfPresent() {
+
     ExpiringUsernameAuthenticationToken token = mock(ExpiringUsernameAuthenticationToken.class);
 
     SAMLCredential cred = mock(SAMLCredential.class);
@@ -184,15 +177,14 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getGivenName(), equalTo("Test Given Name"));
     assertThat(uri.getFamilyName(), equalTo("Test Family Name"));
     assertThat(uri.getEmail(), equalTo("test@test.org"));
-
   }
 
 
   @Test
-  public void testSamlAdditionalAttributes() throws NoSuchAlgorithmException, CertificateException,
-      KeyStoreException, IOException, SecurityException, SignatureException, MarshallingException {
-    ExpiringUsernameAuthenticationToken token = mock(ExpiringUsernameAuthenticationToken.class);
+  void testSamlAdditionalAttributes() throws NoSuchAlgorithmException, CertificateException,
+    KeyStoreException, IOException, SecurityException, SignatureException, MarshallingException {
 
+    ExpiringUsernameAuthenticationToken token = mock(ExpiringUsernameAuthenticationToken.class);
 
     SamlAssertionBuilder sab = samlAssertionBuilder();
 
@@ -208,7 +200,6 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
       .requestId("01")
       .audience(metadataGenerator.getEntityId())
       .build();
-
 
     List<Attribute> attributes = Lists.newArrayList();
 
@@ -235,8 +226,6 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getSubject(), equalTo(T1_EPUID));
     assertThat(uri.getEmail(), equalTo(T1_MAIL));
     assertThat(uri.getAdditionalAttributes().get("urn:oid:1.2.3.4.5"), equalTo("12345"));
-
-
   }
 
 }

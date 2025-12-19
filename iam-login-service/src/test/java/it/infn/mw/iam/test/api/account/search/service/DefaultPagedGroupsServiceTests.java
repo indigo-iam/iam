@@ -20,15 +20,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.OffsetPageable;
@@ -36,11 +34,9 @@ import it.infn.mw.iam.api.common.PagedResourceService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
+class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
 
   public final int ITEMS_PER_PAGE = 10;
   public final long TOTAL_TEST_GROUPS = 23L;
@@ -67,7 +63,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByNameAsc() {
+  void getAllPagesSortedByNameAsc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Pageable current = op.first();
@@ -80,7 +76,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void getAllPagesSortedByNameDesc() {
+  void getAllPagesSortedByNameDesc() {
 
     Pageable op = new OffsetPageable(ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Pageable current = op.first();
@@ -93,7 +89,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void testGetFirstPageSortByNameAsc() {
+  void testGetFirstPageSortByNameAsc() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamGroup> page = groupService.getPage(op);
@@ -101,7 +97,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void testGetFirstPageSortByNameDesc() {
+  void testGetFirstPageSortByNameDesc() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Page<IamGroup> page = groupService.getPage(op);
@@ -109,7 +105,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void testGetLastPageSortByNameAsc() {
+  void testGetLastPageSortByNameAsc() {
 
     OffsetPageable op = new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamGroup> page = groupService.getPage(op);
@@ -118,7 +114,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
 
 
   @Test
-  public void testGetLastPageSortByNameDesc() {
+  void testGetLastPageSortByNameDesc() {
 
     OffsetPageable op = new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Page<IamGroup> page = groupService.getPage(op);
@@ -126,7 +122,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void testFilter() {
+  void testFilter() {
 
     OffsetPageable op = new OffsetPageable(0, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamGroup> page = groupService.getPage(op, "Production");
@@ -138,7 +134,7 @@ public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
   }
 
   @Test
-  public void testFilterCount() {
+  void testFilterCount() {
 
     long totalResults = groupService.count("Production");
     assertThat(totalResults, equalTo(1L));

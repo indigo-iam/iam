@@ -15,25 +15,21 @@
  */
 package it.infn.mw.iam.test.audit.event;
 
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
-
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -54,14 +50,13 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK,
-    properties = {"notification.admin-notification-policy = notify-admins"})
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK,
+  properties = {"notification.admin-notification-policy = notify-admins"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-public class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
+class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
 
   private static final String USERNAME = "event_user";
   private static final String GIVENNAME = "Event";
@@ -88,8 +83,8 @@ public class CertificateLinkingNotificationAdminDisabledTests extends X509TestSu
   private IamAccount account;
   private ScimUser user;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
@@ -110,14 +105,14 @@ public class CertificateLinkingNotificationAdminDisabledTests extends X509TestSu
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     userProvisioning.delete(account.getUuid());
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testAddX509CertificateEventNotificationUpdateFalse() {
+  void testAddX509CertificateEventNotificationUpdateFalse() {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
@@ -144,7 +139,7 @@ public class CertificateLinkingNotificationAdminDisabledTests extends X509TestSu
 
 
   @Test
-  public void testRemoveX509CertificateEventEventNotificationUpdateFalse() {
+  void testRemoveX509CertificateEventEventNotificationUpdateFalse() {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)

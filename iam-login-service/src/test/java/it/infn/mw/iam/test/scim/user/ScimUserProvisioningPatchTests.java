@@ -22,13 +22,14 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,18 +37,18 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
@@ -61,53 +62,54 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
 
-  @Autowired
-  private ScimRestUtilsMvc scimUtils;
-
-  @Autowired
-  private IamAccountRepository accountRepo;
-
-  @Autowired
-  private PasswordEncoder encoder;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-  private static final String PICTURE_URL =
+  static final String PICTURE_URL =
       "https://cdn.jim-nielsen.com/ios/512/angry-birds-2-2024-09-01.png?rf=1024";
 
-  private ScimUser lennon;
-  private ScimUser lincoln;
+  @Autowired
+  ScimRestUtilsMvc scimUtils;
 
-  @Before
-  public void setup() throws Exception {
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @Autowired
+  PasswordEncoder encoder;
+
+  @Autowired
+  MockOAuth2Filter mockOAuth2Filter;
+
+  ScimUser lennon;
+  ScimUser lincoln;
+
+  @BeforeEach
+  void setup() {
 
     lennon = createScimUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = createScimUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() throws Exception {
+  @AfterEach
+  void teardown() {
 
-    deleteScimUser(lennon);
-    deleteScimUser(lincoln);
+    /*
+     * @Transactional annotation ensures the created test users won't exist after the test
+     */
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testPatchUserInfo() throws Exception {
+  void testPatchUserInfo() throws Exception {
 
     ScimName name = ScimName.builder().givenName("John jr.").familyName("Lennon II").build();
 
@@ -120,7 +122,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
       .name(name)
       .build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennon_updates);
+    scimUtils.patchUser(lennon.getId(), add, lennon_updates).andExpect(status().isNoContent());
 
     ScimUser u = scimUtils.getUser(lennon.getId());
     assertThat(u.getId(), equalTo(lennon.getId()));
@@ -137,11 +139,11 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddReassignAndRemoveOidcId() throws Exception {
+  void testAddReassignAndRemoveOidcId() throws Exception {
 
     ScimUser updateOidcId = ScimUser.builder().addOidcId(OIDCID_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updateOidcId);
+    scimUtils.patchUser(lennon.getId(), add, updateOidcId).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getOidcIds(), hasSize(equalTo(1)));
@@ -151,21 +153,21 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
         equalTo(OIDCID_TEST.getSubject()));
 
     /* lincoln tryes to add the oidc account: */
-    scimUtils.patchUser(lincoln.getId(), add, updateOidcId, HttpStatus.CONFLICT);
+    scimUtils.patchUser(lincoln.getId(), add, updateOidcId).andExpect(status().isConflict());
 
     /* Remove oidc account */
-    scimUtils.patchUser(lennon.getId(), remove, updateOidcId);
+    scimUtils.patchUser(lennon.getId(), remove, updateOidcId).andExpect(status().isNoContent());
 
     updatedUser = scimUtils.getUser(lennon.getId());
     assertTrue(updatedUser.getIndigoUser().getOidcIds().isEmpty());
   }
 
   @Test
-  public void testAddReassignAndRemoveSamlId() throws Exception {
+  void testAddReassignAndRemoveSamlId() throws Exception {
 
     ScimUser updateSamlId = ScimUser.builder().addSamlId(SAMLID_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updateSamlId);
+    scimUtils.patchUser(lennon.getId(), add, updateSamlId).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getSamlIds(), hasSize(equalTo(1)));
@@ -175,10 +177,10 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
         equalTo(SAMLID_TEST.getUserId()));
 
     /* lincoln tryes to add the oidc account: */
-    scimUtils.patchUser(lincoln.getId(), add, updateSamlId, HttpStatus.CONFLICT);
+    scimUtils.patchUser(lincoln.getId(), add, updateSamlId).andExpect(status().isConflict());
 
     /* Remove oidc account */
-    scimUtils.patchUser(lennon.getId(), remove, updateSamlId);
+    scimUtils.patchUser(lennon.getId(), remove, updateSamlId).andExpect(status().isNoContent());
 
     updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getId(), equalTo(lennon.getId()));
@@ -186,15 +188,15 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testRemoveNotExistingOidcId() throws Exception {
+  void testRemoveNotExistingOidcId() throws Exception {
 
     ScimUser updates = ScimUser.builder().addOidcId(OIDCID_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), remove, updates);
+    scimUtils.patchUser(lennon.getId(), remove, updates).andExpect(status().isNoContent());
   }
 
   @Test
-  public void testAddInvalidBase64X509Certificate() throws Exception {
+  void testAddInvalidBase64X509Certificate() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display("Personal Certificate")
@@ -204,11 +206,11 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
 
     ScimUser lennon_update = ScimUser.builder().addX509Certificate(cert).build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennon_update, HttpStatus.BAD_REQUEST);
+    scimUtils.patchUser(lennon.getId(), add, lennon_update).andExpect(status().isBadRequest());
   }
 
   @Test
-  public void testAddInvalidX509Certificate() throws Exception {
+  void testAddInvalidX509Certificate() throws Exception {
 
     String certificate = Base64.getEncoder().encodeToString("this is not a certificate".getBytes());
 
@@ -220,15 +222,15 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
 
     ScimUser lennon_update = ScimUser.builder().addX509Certificate(cert).build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennon_update, HttpStatus.BAD_REQUEST);
+    scimUtils.patchUser(lennon.getId(), add, lennon_update).andExpect(status().isBadRequest());
   }
 
   @Test
-  public void testAddAndRemoveX509Certificate() throws Exception {
+  void testAddAndRemoveX509Certificate() throws Exception {
 
     ScimUser lennon_update = ScimUser.builder().addX509Certificate(X509CERT_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennon_update);
+    scimUtils.patchUser(lennon.getId(), add, lennon_update).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -254,14 +256,14 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddAndRemoveMultipleX509Certificate() throws Exception {
+  void testAddAndRemoveMultipleX509Certificate() throws Exception {
 
     ScimUser lennonUpdate = ScimUser.builder()
       .addX509Certificate(X509CERT_TEST)
       .addX509Certificate(X509CERT_TEST2)
       .build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennonUpdate);
+    scimUtils.patchUser(lennon.getId(), add, lennonUpdate).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -297,17 +299,17 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchUserPassword() throws Exception {
+  void testPatchUserPassword() throws Exception {
 
     final String NEW_PASSWORD = "new_password";
 
     ScimUser patchedPasswordUser = ScimUser.builder().password(NEW_PASSWORD).build();
 
-    scimUtils.patchUser(lennon.getId(), add, patchedPasswordUser);
+    scimUtils.patchUser(lennon.getId(), add, patchedPasswordUser).andExpect(status().isNoContent());
 
     Optional<IamAccount> lennonAccount = accountRepo.findByUuid(lennon.getId());
     if (!lennonAccount.isPresent()) {
-      Assert.fail("Account not found");
+      fail("Account not found");
     }
 
     assertThat(lennonAccount.get().getPassword(), notNullValue());
@@ -315,11 +317,11 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddReassignAndRemoveSshKey() throws Exception {
+  void testAddReassignAndRemoveSshKey() throws Exception {
 
     ScimUser updateSshKey = ScimUser.builder().addSshKey(SSHKEY_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updateSshKey);
+    scimUtils.patchUser(lennon.getId(), add, updateSshKey).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
@@ -331,36 +333,35 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
         equalTo(SSHKEY_TEST_FINGERPRINT));
     assertThat(updatedUser.getIndigoUser().getSshKeys().get(0).isPrimary(), equalTo(true));
 
-    /* lincoln tryes to add the lennon ssh key: */
-    scimUtils.patchUser(lincoln.getId(), add, updateSshKey, HttpStatus.CONFLICT);
+    /* Lincoln tries to add Lennon's SSH key: */
+    scimUtils.patchUser(lincoln.getId(), add, updateSshKey).andExpect(status().isConflict());
 
-    scimUtils.patchUser(lennon.getId(), remove, updateSshKey);
+    scimUtils.patchUser(lennon.getId(), remove, updateSshKey).andExpect(status().isNoContent());
   }
 
-
   @Test
-  public void testRemoveSshKeyWithValue() throws Exception {
+  void testRemoveSshKeyWithValue() throws Exception {
 
     ScimUser updateSshKey = ScimUser.builder().addSshKey(SSHKEY_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updateSshKey);
+    scimUtils.patchUser(lennon.getId(), add, updateSshKey).andExpect(status().isNoContent());
 
     updateSshKey = ScimUser.builder()
       .addSshKey(ScimSshKey.builder().value(SSHKEY_TEST.getValue()).build())
       .build();
 
-    scimUtils.patchUser(lennon.getId(), remove, updateSshKey);
+    scimUtils.patchUser(lennon.getId(), remove, updateSshKey).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertTrue(updatedUser.getIndigoUser().getSshKeys().isEmpty());
   }
 
   @Test
-  public void testAddOidcIdDuplicateInASingleRequest() throws Exception {
+  void testAddOidcIdDuplicateInASingleRequest() throws Exception {
 
     ScimUser updates = ScimUser.builder().addOidcId(OIDCID_TEST).addOidcId(OIDCID_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getId(), equalTo(lennon.getId()));
@@ -372,11 +373,11 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddSshKeyDuplicateInASingleRequest() throws Exception {
+  void testAddSshKeyDuplicateInASingleRequest() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSshKey(SSHKEY_TEST).addSshKey(SSHKEY_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
@@ -390,11 +391,11 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddSamlIdDuplicateInASingleRequest() throws Exception {
+  void testAddSamlIdDuplicateInASingleRequest() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSamlId(SAMLID_TEST).addSamlId(SAMLID_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getSamlIds(), hasSize(equalTo(1)));
@@ -405,14 +406,14 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testAddX509DuplicateInASingleRequest() throws Exception {
+  void testAddX509DuplicateInASingleRequest() throws Exception {
 
     ScimUser updates = ScimUser.builder()
       .addX509Certificate(X509CERT_TEST)
       .addX509Certificate(X509CERT_TEST)
       .build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -424,7 +425,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testPatchAddOidIdAndSshKeyAndSamlId() throws Exception {
+  void testPatchAddOidIdAndSshKeyAndSamlId() throws Exception {
 
     ScimUser updates = ScimUser.builder()
       .addX509Certificate(X509CERT_TEST)
@@ -433,7 +434,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
       .addSamlId(SAMLID_TEST)
       .build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -463,22 +464,23 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  public void testEmailIsNotAlreadyLinkedOnPatch() throws Exception {
+  void testEmailIsNotAlreadyLinkedOnPatch() throws Exception {
 
     String alreadyBoundEmail = lincoln.getEmails().get(0).getValue();
     ScimUser lennonUpdates = ScimUser.builder().buildEmail(alreadyBoundEmail).build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennonUpdates, HttpStatus.CONFLICT)
+    scimUtils.patchUser(lennon.getId(), add, lennonUpdates)
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail",
           containsString("Email " + alreadyBoundEmail + " already bound to another user")));
   }
 
   @Test
-  public void testAddPicture() throws Exception {
+  void testAddPicture() throws Exception {
 
     ScimUser updates = ScimUser.builder().buildPhoto(PICTURE_URL).build();
 
-    scimUtils.patchUser(lennon.getId(), add, updates);
+    scimUtils.patchUser(lennon.getId(), add, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getPhotos(), hasSize(equalTo(1)));
@@ -486,32 +488,32 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockUser(username = "john_lennon", roles = { "USER" })
-  public void testUserCanNotChangeAccountType() throws Exception {
+  @WithMockUser(username = "john_lennon", roles = {"USER"})
+  void testUserCanNotChangeAccountType() throws Exception {
     ScimUser updates = ScimUser.builder().serviceAccount(true).build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
-        .andExpect(status().isBadRequest());
+    scimUtils.patchUser(lennon.getId(), replace, updates).andExpect(status().isBadRequest());
   }
 
   @Test
-  @WithMockUser(username = "john_lennon", roles = { "USER" })
-  public void testUserCanChangeEmail() throws Exception {
+  @WithMockUser(username = "john_lennon", roles = {"USER"})
+  void testUserCanChangeEmail() throws Exception {
     ScimUser updates = ScimUser.builder()
-        .addEmail(ScimEmail.builder()
-            .email("TestUser@example.com")
-            .type(ScimEmailType.home)
-            .primary(false).build())
-        .build();
+      .addEmail(ScimEmail.builder()
+        .email("TestUser@example.com")
+        .type(ScimEmailType.home)
+        .primary(false)
+        .build())
+      .build();
 
-    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.NO_CONTENT)
-        .andExpect(status().isNoContent());
+    scimUtils.patchUser(lennon.getId(), replace, updates).andExpect(status().isNoContent());
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
-    ScimEmail updatedEmail = updatedUser.getEmails().stream()
-        .filter(e -> "TestUser@example.com".equals(e.getValue()))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("Email not found"));
+    ScimEmail updatedEmail = updatedUser.getEmails()
+      .stream()
+      .filter(e -> "TestUser@example.com".equals(e.getValue()))
+      .findFirst()
+      .orElseThrow(() -> new AssertionError("Email not found"));
     // Values of Type and Primary are unchanged
     assertThat(updatedEmail.getPrimary(), is(true));
     assertThat(updatedEmail.getType(), is(ScimEmailType.work));

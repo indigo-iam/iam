@@ -21,13 +21,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -40,8 +40,7 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.token-enhancer.include-labels[0].label.name=test",
     "iam.token-enhancer.include-labels[0].label.prefix=iam",
@@ -74,18 +73,18 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
     return () -> new AssertionError(message);
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void labelsAreProperlyEncodedIfConfigurationAllows() throws Exception {
+  void labelsAreProperlyEncodedIfConfigurationAllows() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -99,7 +98,7 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void getTokenSucceedsForUserWithoutLabel() throws Exception {
+  void getTokenSucceedsForUserWithoutLabel() throws Exception {
 
     repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 

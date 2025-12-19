@@ -18,9 +18,9 @@ package it.infn.mw.iam.test.api.account.search;
 import static it.infn.mw.iam.api.account.search.AbstractSearchController.DEFAULT_ITEMS_PER_PAGE;
 import static it.infn.mw.iam.api.account.search.AccountSearchController.ACCOUNT_SEARCH_ENDPOINT;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
@@ -28,14 +28,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -55,7 +55,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AccountSearchControllerTests {
 
@@ -78,22 +78,22 @@ public class AccountSearchControllerTests {
   @Autowired
   private UserConverter userConverter;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     mockOAuth2Filter.cleanupSecurityContext();
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstPageOfAllUsers() throws Exception {
+  void getFirstPageOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -112,7 +112,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getSecondPageOfAllUsers() throws Exception {
+  void getSecondPageOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -131,7 +131,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithCustomStartIndexAndCount() throws Exception {
+  void getUsersWithCustomStartIndexAndCount() throws Exception {
 
     long expectedSize = accountRepository.count();
     int startIndex = 3;
@@ -153,7 +153,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getCountOfAllUsers() throws Exception {
+  void getCountOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -172,7 +172,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstFilteredPageOfUsers() throws Exception {
+  void getFirstFilteredPageOfUsers() throws Exception {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     Page<IamAccount> page = accountRepository.findByFilter("admin", op);
@@ -197,7 +197,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstFilteredPageOfUsersSubjectDN() throws Exception {
+  void getFirstFilteredPageOfUsersSubjectDN() throws Exception {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     Page<IamAccount> page = accountRepository.findByFilter("test2,", op);
@@ -222,7 +222,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstFilteredPageOfUsersNegative() throws Exception {
+  void getFirstFilteredPageOfUsersNegative() throws Exception {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     Page<IamAccount> page = accountRepository.findByFilter("No one", op);
@@ -248,7 +248,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getCountOfFilteredUsers() throws Exception {
+  void getCountOfFilteredUsers() throws Exception {
 
     long expectedSize = accountRepository.countByFilter("admin");
 
@@ -267,42 +267,42 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  public void getUsersAsAnonymousUser() throws Exception {
+  void getUsersAsAnonymousUser() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = "GM")
-  public void getUsersAsGroupManager() throws Exception {
+  void getUsersAsGroupManager() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(scopes = "iam:admin.read")
-  public void getUsersWithAdminScope() throws Exception {
+  void getUsersWithAdminScope() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void getUsersAsReader() throws Exception {
+  void getUsersAsReader() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isOk());
   }
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
-  public void getUsersAsAuthenticatedUser() throws Exception {
+  void getUsersAsAuthenticatedUser() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithNegativeStartIndex() throws Exception {
+  void getUsersWithNegativeStartIndex() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -321,7 +321,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithStartIndexZero() throws Exception {
+  void getUsersWithStartIndexZero() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -340,7 +340,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithCountBiggerThanPageSize() throws Exception {
+  void getUsersWithCountBiggerThanPageSize() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -359,7 +359,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithNegativeCount() throws Exception {
+  void getUsersWithNegativeCount() throws Exception {
 
     long expectedSize = accountRepository.count();
 

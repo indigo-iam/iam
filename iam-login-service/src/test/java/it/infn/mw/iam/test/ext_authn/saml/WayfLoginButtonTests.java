@@ -20,30 +20,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.wayf-login-button.text=Sign in with EduGAIN",
-    "saml.wayf-login-button.image.url=https://example.org/test.png"
-})
+  "saml.wayf-login-button.image.url=https://example.org/test.png"})
 @WithAnonymousUser
-public class WayfLoginButtonTests {
+class WayfLoginButtonTests {
 
   @Autowired
   private MockMvc mvc;
-  
+
   @Test
-  public void getWayfLoginButtonConfiguration() throws Exception {
-    
+  void getWayfLoginButtonConfiguration() throws Exception {
+
     mvc.perform(get("/iam/config/saml/wayf-login-button"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.text", is("Sign in with EduGAIN")))

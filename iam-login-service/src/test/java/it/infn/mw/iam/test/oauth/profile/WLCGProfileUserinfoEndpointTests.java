@@ -18,15 +18,15 @@ package it.infn.mw.iam.test.oauth.profile;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.nullValue;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,25 +34,25 @@ import io.restassured.RestAssured;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
-    "iam.jwt-profile.default-profile=wlcg",
-    "scope.matchers[0].name=storage.read",
-    "scope.matchers[0].type=path",
-    "scope.matchers[0].prefix=storage.read",
-    "scope.matchers[0].path=/",
-    "scope.matchers[1].name=storage.write",
-    "scope.matchers[1].type=path",
-    "scope.matchers[1].prefix=storage.write",
-    "scope.matchers[1].path=/",
-    "scope.matchers[2].name=wlcg.groups",
-    "scope.matchers[2].type=regexp",
-    "scope.matchers[2].regexp=^wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$",
+  "iam.jwt-profile.default-profile=wlcg",
+  "scope.matchers[0].name=storage.read",
+  "scope.matchers[0].type=path",
+  "scope.matchers[0].prefix=storage.read",
+  "scope.matchers[0].path=/",
+  "scope.matchers[1].name=storage.write",
+  "scope.matchers[1].type=path",
+  "scope.matchers[1].prefix=storage.write",
+  "scope.matchers[1].path=/",
+  "scope.matchers[2].name=wlcg.groups",
+  "scope.matchers[2].type=regexp",
+  "scope.matchers[2].regexp=^wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$",
     // @formatter:on
 })
-public class WLCGProfileUserinfoEndpointTests {
+class WLCGProfileUserinfoEndpointTests {
 
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
@@ -66,20 +66,20 @@ public class WLCGProfileUserinfoEndpointTests {
   @Autowired
   ObjectMapper mapper;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     RestAssured.port = iamPort;
     userinfoUrl = String.format(USERINFO_URL_TEMPLATE, iamPort);
   }
 
   @Test
-  public void testUserinfoResponseWithGroups() {
+  void testUserinfoResponseWithGroups() {
     String accessToken = TestUtils.passwordTokenGetter()
       .port(iamPort)
       .username(USERNAME)
@@ -97,7 +97,7 @@ public class WLCGProfileUserinfoEndpointTests {
   }
 
   @Test
-  public void testUserinfoResponseWithoutGroups() {
+  void testUserinfoResponseWithoutGroups() {
     String accessToken = TestUtils.passwordTokenGetter()
       .port(iamPort)
       .username(USERNAME)

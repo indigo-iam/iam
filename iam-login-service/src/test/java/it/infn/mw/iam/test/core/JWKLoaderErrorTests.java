@@ -15,24 +15,23 @@
  */
 package it.infn.mw.iam.test.core;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
 import it.infn.mw.iam.util.JWKKeystoreLoader;
 
-@RunWith(JUnit4.class)
-public class JWKLoaderErrorTests {
+class JWKLoaderErrorTests {
 
   DefaultResourceLoader rl = new DefaultResourceLoader();
 
-  @Test(expected = IAMJWTKeystoreError.class)
-  public void testStartupError() {
-    JWKKeystoreLoader kl = new JWKKeystoreLoader(rl);
+  @Test
+  void testStartupError() {
 
-    kl.loadKeystoreFromLocation("/does/not/exists");
+    JWKKeystoreLoader kl = new JWKKeystoreLoader(rl);
+    assertThrows(IAMJWTKeystoreError.class, () -> kl.loadKeystoreFromLocation("/does/not/exists"));
   }
 
 }

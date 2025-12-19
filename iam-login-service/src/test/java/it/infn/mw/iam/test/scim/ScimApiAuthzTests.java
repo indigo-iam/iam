@@ -21,18 +21,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class ScimApiAuthzTests {
+class ScimApiAuthzTests {
 
   @Autowired
   private MockMvc mvc;
@@ -42,7 +42,7 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void testAdminGroupsListRequestFailure() throws Exception {
+  void testAdminGroupsListRequestFailure() throws Exception {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
@@ -52,7 +52,7 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void testAdminUsersListRequestFailure() throws Exception {
+  void testAdminUsersListRequestFailure() throws Exception {
 
     mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
@@ -62,7 +62,7 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
-  public void testGMGroupsListRequestFailure() throws Exception {
+  void testGMGroupsListRequestFailure() throws Exception {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
@@ -72,7 +72,7 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
-  public void testGMUsersListRequestFailure() throws Exception {
+  void testGMUsersListRequestFailure() throws Exception {
 
     mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
@@ -82,7 +82,7 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void testAdminScimUserRequestFailure() throws Exception {
+  void testAdminScimUserRequestFailure() throws Exception {
 
     // Some existing user as defined in the test db
     String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";

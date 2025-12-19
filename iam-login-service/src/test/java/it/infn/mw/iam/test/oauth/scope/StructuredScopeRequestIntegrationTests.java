@@ -32,17 +32,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,13 +53,14 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@ActiveProfiles({"h2", "wlcg-scopes"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+})
+@ActiveProfiles({"h2", "wlcg-scopes", "registration"})
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 
@@ -85,7 +87,6 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     // @formatter:on
   }
 
-
   @Test
   void testIntrospectionResponse() throws Exception {
     // @formatter:off
@@ -107,6 +108,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     String accessToken = tokenResponseObject.getValue();
     mvc
       .perform(post("/introspect")
+        .contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -205,7 +207,6 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getRequest()
       .getSession();
 
-
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -236,6 +237,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())

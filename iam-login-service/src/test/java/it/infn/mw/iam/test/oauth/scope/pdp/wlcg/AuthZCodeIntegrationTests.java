@@ -19,8 +19,8 @@ import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PAT
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -28,17 +28,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -58,17 +56,9 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
-@TestPropertySource(
-// @formatter:off
-  properties = {
-    "iam.access_token.include_scope=true"
-  }
-  // @formatter:on
-)
-@ActiveProfiles({"h2", "wlcg-scopes"})
+@TestPropertySource(properties = {"iam.access_token.include_scope=true"})
+@ActiveProfiles({"h2", "wlcg-scopes", "registration"})
 class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired
@@ -97,13 +87,13 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
   }
 
-  @BeforeClass
+  @BeforeAll
   static void init() {
     TestUtils.initRestAssured();
 
   }
 
-  @Before
+  @BeforeEach
   void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);

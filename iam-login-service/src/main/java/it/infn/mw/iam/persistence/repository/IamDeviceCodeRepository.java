@@ -13,23 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.redis;
+package it.infn.mw.iam.persistence.repository;
 
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.mitre.oauth2.model.DeviceCode;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public class RedisContainer extends GenericContainer<RedisContainer> {
-  public static final String DEFAULT_REDIS_IMAGE = "redis:6-alpine";
-  public static final int DEFAULT_REDIS_PORT = 6379;
-
-  public RedisContainer(String dockerImageName) {
-    super(DockerImageName.parse(dockerImageName));
-    withExposedPorts(DEFAULT_REDIS_PORT);
-  }
-
-  public RedisContainer() {
-    super(DEFAULT_REDIS_IMAGE);
-    withExposedPorts(DEFAULT_REDIS_PORT);
-  }
+public interface IamDeviceCodeRepository extends JpaRepository<DeviceCode, Long> {
 
 }

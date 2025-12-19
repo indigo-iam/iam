@@ -36,13 +36,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -59,7 +59,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AccountAttributesTests {
 
@@ -99,13 +99,13 @@ public class AccountAttributesTests {
   @Autowired
   private ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -115,7 +115,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithAnonymousUser
-  public void managingAttributesRequiresAuthenticatedUser() throws Exception {
+  void managingAttributesRequiresAuthenticatedUser() throws Exception {
 
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -138,7 +138,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void aUserCanListHisAttributes() throws Exception {
+  void aUserCanListHisAttributes() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -147,7 +147,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingAttributesRequiresPrivilegedUser() throws Exception {
+  void managingAttributesRequiresPrivilegedUser() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_100_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -169,13 +169,13 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void gettingAttributesWorksForAdminUser() throws Exception {
+  void gettingAttributesWorksForAdminUser() throws Exception {
     gettingAttributesWorks();
   }
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
-  public void gettingAttributesWorksForReaderUser() throws Exception {
+  void gettingAttributesWorksForReaderUser() throws Exception {
     gettingAttributesWorks();
   }
 
@@ -196,7 +196,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void setAttributeWorks() throws Exception {
+  void setAttributeWorks() throws Exception {
 
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -233,7 +233,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void setAttributeDoesNotWork() throws Exception {
+  void setAttributeDoesNotWork() throws Exception {
 
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -252,7 +252,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
-  public void setAttributeWorksWithCorrectScope() throws Exception {
+  void setAttributeWorksWithCorrectScope() throws Exception {
 
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -269,7 +269,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void deleteAttributeWorks() throws Exception {
+  void deleteAttributeWorks() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -292,7 +292,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
-  public void deleteAttributeDoesNotWork() throws Exception {
+  void deleteAttributeDoesNotWork() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -310,7 +310,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void nonExistingAccountIsHandledCorrectly() throws Exception {
+  void nonExistingAccountIsHandledCorrectly() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
@@ -333,7 +333,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void multiAttributeSetTest() throws Exception {
+  void multiAttributeSetTest() throws Exception {
 
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -380,7 +380,7 @@ public class AccountAttributesTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void attributeValidationTests() throws Exception {
+  void attributeValidationTests() throws Exception {
     
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));

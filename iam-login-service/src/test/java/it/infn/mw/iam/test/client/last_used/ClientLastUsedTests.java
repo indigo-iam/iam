@@ -16,30 +16,30 @@
 package it.infn.mw.iam.test.client.last_used;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.TokenRequest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class ClientLastUsedTests extends TestTokensUtils {
 
@@ -51,8 +51,8 @@ public class ClientLastUsedTests extends TestTokensUtils {
     @Autowired
     IamProperties iamProperties;
 
-    @Test
-    public void testClientLastUsedCreationOnTokenCreation() {
+  @Test
+  void testClientLastUsedCreationOnTokenCreation() {
         // Initially, the last used is null
         ClientDetailsEntity client = loadTestClient(TOKEN_LOOKUP_CLIENT);
         assertNull(client.getClientLastUsed());
@@ -71,8 +71,8 @@ public class ClientLastUsedTests extends TestTokensUtils {
         assertEquals(today, lastUsed);
     }
 
-    @Test
-    public void testLastUsedUpdateOnTokenCreation() {
+  @Test
+  void testLastUsedUpdateOnTokenCreation() {
         iamProperties.getClient().setTrackLastUsed(true);
 
         // Initially, the last used date is set to the default value
@@ -90,8 +90,8 @@ public class ClientLastUsedTests extends TestTokensUtils {
         assertEquals(today, lastUsed);
     }
 
-    @Test
-    public void testClientLastUsedCreationOnTokenRefresh() {
+  @Test
+  void testClientLastUsedCreationOnTokenRefresh() {
         iamProperties.getClient().setTrackLastUsed(false);
 
         ClientDetailsEntity client = loadTestClient(TOKEN_LOOKUP_CLIENT);
@@ -113,8 +113,8 @@ public class ClientLastUsedTests extends TestTokensUtils {
         assertEquals(today, lastUsed);
     }
 
-    @Test
-    public void testClientLastUsedUpdateOnTokenRefresh() {
+  @Test
+  void testClientLastUsedUpdateOnTokenRefresh() {
         iamProperties.getClient().setTrackLastUsed(false);
 
         // Get a client with a default last used date and able to generate refresh

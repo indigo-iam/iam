@@ -25,13 +25,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.sql.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,16 +44,15 @@ import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
+  webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
-    "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
-    "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
-    "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
-public class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
+  "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
+  "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
+  "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
+class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
   IamProperties iamProperties;
@@ -86,7 +83,7 @@ public class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  public void clientAuthReallyRequired() throws Exception {
+  void clientAuthReallyRequired() throws Exception {
 
     linkProxyToTestAccount();
 

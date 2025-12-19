@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.test.ext_authn.saml;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.saml.SAMLCredential;
 
@@ -43,8 +43,8 @@ import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class DefaultSAMLUserDetailsServiceTests {
+@ExtendWith(MockitoExtension.class)
+class DefaultSAMLUserDetailsServiceTests {
 
   @Mock
   private IamAccountRepository repo;
@@ -57,13 +57,13 @@ public class DefaultSAMLUserDetailsServiceTests {
 
   private DefaultSAMLUserDetailsService service;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     service = new DefaultSAMLUserDetailsService(resolver, repo, handler);
   }
 
   @Test
-  public void loadUserBySAMLFindsAccountRegardlessOfSamlIdOrder() {
+  void loadUserBySAMLFindsAccountRegardlessOfSamlIdOrder() {
     SAMLCredential credential = mock(SAMLCredential.class);
 
     IamSamlId firstId = new IamSamlId("first", "first", "first");

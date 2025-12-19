@@ -15,14 +15,14 @@
 #
 
 spring:
-    
+
   main:
     allow-bean-definition-overriding: true
     banner-mode: off
-  
+
   mail:
     port: ${IAM_MAIL_PORT:8125}
-  
+
   flyway:
     locations:
       - classpath:db/migration/h2
@@ -33,7 +33,13 @@ spring:
     url: jdbc:h2:mem:iam;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
     username: sa
     password:
-      
+
+  jpa:
+    database-platform: org.eclipse.persistence.platform.database.H2Platform
+    properties:
+      eclipselink.ddl-generation: none
+      eclipselink.ddl-generation.output-mode: none
+
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:true}
 

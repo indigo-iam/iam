@@ -17,10 +17,10 @@ package it.infn.mw.iam.test.api.account.search;
 
 import static it.infn.mw.iam.api.account.search.AbstractSearchController.DEFAULT_ITEMS_PER_PAGE;
 import static it.infn.mw.iam.api.account.search.AccountSearchController.ACCOUNT_SEARCH_ENDPOINT;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
@@ -30,12 +30,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -53,7 +53,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class AccountSearchControllerSortTests {
 
@@ -73,23 +73,23 @@ public class AccountSearchControllerSortTests {
   @Autowired
   private IamAccountRepository accountRepository;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     mockOAuth2Filter.cleanupSecurityContext();
     mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log())
         .build();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithInvalidSortDirection() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersWithInvalidSortDirection() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -106,8 +106,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByNameAsc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByNameAsc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -124,8 +124,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByNameDesc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByNameDesc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -142,8 +142,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByEmailAsc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByEmailAsc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -160,8 +160,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByEmailDesc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByEmailDesc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -178,8 +178,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByCreationTimeAsc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByCreationTimeAsc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
@@ -196,8 +196,8 @@ public class AccountSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersSortByCreationTimeDesc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  void getUsersSortByCreationTimeDesc() throws JsonParseException, JsonMappingException,
+    UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
         .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)

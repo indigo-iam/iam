@@ -21,19 +21,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class IamStatisticalEndpointTests {
+class IamStatisticalEndpointTests {
 
   @Autowired
   protected MockMvc mvc;
@@ -42,7 +42,7 @@ public class IamStatisticalEndpointTests {
   private IamAccountRepository accountRepo;
 
   @Test
-  public void anonymousIsAcceptedAtStatEndpoint() throws Exception {
+  void anonymousIsAcceptedAtStatEndpoint() throws Exception {
 
     final int TOTAL_USERS = (int) accountRepo.count();
 

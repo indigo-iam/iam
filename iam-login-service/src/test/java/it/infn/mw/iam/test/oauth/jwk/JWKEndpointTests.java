@@ -23,24 +23,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class JWKEndpointTests extends EndpointsTestUtils implements JWKTestSupport {
+class JWKEndpointTests extends EndpointsTestUtils implements JWKTestSupport {
 
   @Value("${spring.web.resources.cache.cachecontrol.max-age}")
   private int maxAge;
 
   @Test
-  public void jwkEndpointReturnsKeyMaterial() throws Exception {
+  void jwkEndpointReturnsKeyMaterial() throws Exception {
 
     // @formatter:off
     mvc.perform(get(JWK_ENDPOINT))
@@ -53,7 +52,6 @@ public class JWKEndpointTests extends EndpointsTestUtils implements JWKTestSuppo
     .andExpect(jsonPath("$.keys[0].n").value("4GRvJuFantVV3JdjwQOAkfREnwUFp2znRBTOIJhPamyH4gf4YlI5PQT79415NV4_HrWYzgooH5AK6-7WE-TLLGEAVK5vdk4vv79bG7ukvjvBPxAjEhQn6-Amln88iXtvicEGbh--3CKbQj1jryVU5aWM6jzweaabFSeCILVEd6ZT7ofXaAqan9eLzU5IEtTPy5MfrrOvWw5Q7D2yzMqc5LksmaQSw8XtmhA8gnENnIqjAMmPtRltf93wjtmiamgVENOVPdN-93Nd5w-pnMwEyoO6Q9JqXxV6lD6qBRxI7_5t4_vmVxcbbxcZbSAMoHqA2pbSMJ4Jcw-27Hct9jesLQ"))
     .andExpect(header().string("Cache-Control","max-age=" + maxAge +", must-revalidate, no-transform"));
     // @formatter:on
-
   }
 
 }

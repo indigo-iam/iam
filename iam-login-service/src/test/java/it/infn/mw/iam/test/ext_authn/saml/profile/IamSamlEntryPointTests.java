@@ -17,39 +17,34 @@ package it.infn.mw.iam.test.ext_authn.saml.profile;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.UnsupportedEncodingException;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.ext_authn.saml.SamlTestConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, SamlTestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+  webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {
-    "saml.custom-profile[0].entityIds=" + SamlAuthenticationTestSupport.DEFAULT_IDP_ID,
-    "saml.custom-profile[0].options.spid-idp=true",
-    "saml.custom-profile[0].options.spid-authentication-level=SpidL2"})
-public class IamSamlEntryPointTests extends SamlAuthenticationTestSupport {
+  "saml.custom-profile[0].entityIds=" + SamlAuthenticationTestSupport.DEFAULT_IDP_ID,
+  "saml.custom-profile[0].options.spid-idp=true",
+  "saml.custom-profile[0].options.spid-authentication-level=SpidL2"})
+class IamSamlEntryPointTests extends SamlAuthenticationTestSupport {
 
   @Test
-  public void testResolution() throws UnsupportedEncodingException, Exception {
+  void testResolution() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
       .andExpect(status().isOk())

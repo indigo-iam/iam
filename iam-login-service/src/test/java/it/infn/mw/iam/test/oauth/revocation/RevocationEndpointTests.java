@@ -21,28 +21,28 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class RevocationEndpointTests extends EndpointsTestUtils {
+class RevocationEndpointTests extends EndpointsTestUtils {
 
   private static final String INVALID_TOKEN_VALUE = "not-a-token";
 
   private String accessToken;
   private String refreshToken;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeEach
+  void setup() throws Exception {
 
     TokenEndpointResponse tokenResponse = getPasswordToken("openid profile offline_access");
     accessToken = tokenResponse.accessToken();
@@ -50,7 +50,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevocationEnpointRequiresClientAuth() throws Exception {
+  void testRevocationEnpointRequiresClientAuth() throws Exception {
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -59,7 +59,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeInvalidTokenReturns200() throws Exception {
+  void testRevokeInvalidTokenReturns200() throws Exception {
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
@@ -69,7 +69,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeAccessTokenUnauthorizedForUsersAndAdmins() throws Exception {
+  void testRevokeAccessTokenUnauthorizedForUsersAndAdmins() throws Exception {
 
     mvc
       .perform(
@@ -96,7 +96,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeRefreshTokenUnauthorizedForUsersAndAdmins() throws Exception {
+  void testRevokeRefreshTokenUnauthorizedForUsersAndAdmins() throws Exception {
 
     mvc
       .perform(
@@ -123,7 +123,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeAccessTokenWorks() throws Exception {
+  void testRevokeAccessTokenWorks() throws Exception {
 
     mvc
       .perform(
@@ -152,7 +152,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeAccessTokenWorksWithInvalidToken() throws Exception {
+  void testRevokeAccessTokenWorksWithInvalidToken() throws Exception {
 
     mvc
       .perform(
@@ -172,7 +172,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeAccessTokenIsForbiddenForNonIssuerClients() throws Exception {
+  void testRevokeAccessTokenIsForbiddenForNonIssuerClients() throws Exception {
 
     mvc
       .perform(
@@ -193,7 +193,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeRefreshTokenWorks() throws Exception {
+  void testRevokeRefreshTokenWorks() throws Exception {
 
     mvc
       .perform(
@@ -222,7 +222,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeRefreshTokenWorksWithInvalidToken() throws Exception {
+  void testRevokeRefreshTokenWorksWithInvalidToken() throws Exception {
 
     mvc
       .perform(
@@ -242,7 +242,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeRefreshTokenIsDisabledButOkForNonIssuerClients() throws Exception {
+  void testRevokeRefreshTokenIsDisabledButOkForNonIssuerClients() throws Exception {
 
     mvc
       .perform(

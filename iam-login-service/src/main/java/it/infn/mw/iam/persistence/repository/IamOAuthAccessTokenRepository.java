@@ -22,12 +22,12 @@ import java.util.Optional;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
 public interface IamOAuthAccessTokenRepository
-    extends PagingAndSortingRepository<OAuth2AccessTokenEntity, Long> {
+    extends JpaRepository<OAuth2AccessTokenEntity, Long> {
 
   // @formatter:off
   @Query("select t from OAuth2AccessTokenEntity t "
@@ -152,6 +152,9 @@ public interface IamOAuthAccessTokenRepository
       + " )"
       + ")")
   List<OAuth2AccessTokenEntity> findOrphanedTokens();
+
+  @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= CURRENT_DATE")
+  Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op);
   // @formatter:on
 
 }

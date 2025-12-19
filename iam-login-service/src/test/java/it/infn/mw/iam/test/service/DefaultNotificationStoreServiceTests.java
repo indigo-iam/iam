@@ -21,10 +21,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,15 +32,15 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.Lists;
 
@@ -51,7 +51,7 @@ import it.infn.mw.iam.notification.service.DefaultNotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultNotificationStoreServiceTests {
 
   public static final String TEST_0_EMAIL = "test0@test.example";
@@ -85,39 +85,38 @@ public class DefaultNotificationStoreServiceTests {
   @Captor
   private ArgumentCaptor<Iterable<IamEmailNotification>> notificationCaptor;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
-    // when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
-    // when(properties.getAdminAddress()).thenReturn(IAM_ADMIN_ADDRESS);
-    when(properties.getCleanupAge()).thenReturn(1);
+    lenient().when(properties.getCleanupAge()).thenReturn(1);
   }
 
   @Test
-  public void clearAllNotificationsClearsAllNotifications() {
+  void clearAllNotificationsClearsAllNotifications() {
+
     service.clearAllNotifications();
     verify(notificationRepo).deleteAll();
   }
 
   @Test
-  public void countPendingNotificationsCallsTheRightRepo() {
-    when(notificationRepo.countByDeliveryStatus(IamDeliveryStatus.PENDING)).thenReturn(15);
-    assertThat(service.countPendingNotifications(), is(15));
+  void countPendingNotificationsCallsTheRightRepo() {
 
+    lenient().when(notificationRepo.countByDeliveryStatus(IamDeliveryStatus.PENDING))
+      .thenReturn(15);
+    assertThat(service.countPendingNotifications(), is(15));
   }
 
   @Test
-  public void clearExpiredNotificationsClearsTheRightNotifications() {
+  void clearExpiredNotificationsClearsTheRightNotifications() {
 
     Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
     Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
 
     IamEmailNotification notification = mock(IamEmailNotification.class);
 
-    when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
+    lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
       .thenReturn(Arrays.asList(notification));
-
-    when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
+    lenient().when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
 
     service.clearExpiredNotifications();
 
@@ -129,22 +128,21 @@ public class DefaultNotificationStoreServiceTests {
 
     verify(notificationRepo).deleteAll(notificationCaptor.capture());
 
-    List<IamEmailNotification> removedNotifications = Lists.newArrayList(notificationCaptor.getValue());
+    List<IamEmailNotification> removedNotifications =
+        Lists.newArrayList(notificationCaptor.getValue());
     assertThat(removedNotifications, hasSize(1));
     assertThat(removedNotifications, hasItem(notification));
-    
   }
-  
+
   @Test
-  public void clearExpiredNotificationsDoesNotClearAnythingWhenThereAreNoExpiredNotifications() {
-    
+  void clearExpiredNotificationsDoesNotClearAnythingWhenThereAreNoExpiredNotifications() {
+
     Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
     Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
 
-    when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
+    lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
       .thenReturn(emptyList());
-
-    when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
+    lenient().when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
 
     service.clearExpiredNotifications();
 
@@ -155,9 +153,5 @@ public class DefaultNotificationStoreServiceTests {
     assertThat(dateArgumentCaptor.getValue(), equalTo(oneDayAfterNow));
 
     verify(notificationRepo, never()).deleteAll(notificationCaptor.capture());
-    
-    
   }
-
-
 }

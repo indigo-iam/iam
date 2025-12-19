@@ -67,6 +67,7 @@ class ScopeAwareProfileResolverTests {
 
   @BeforeEach
   void setup() {
+
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
 
     profileMap.put(AarcOidcScopes.AARC, aarcProfile);

@@ -21,13 +21,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -42,9 +42,9 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class TokenRevocationServiceTests extends EndpointsTestUtils {
+class TokenRevocationServiceTests extends EndpointsTestUtils {
 
   @Autowired
   private TokenRevocationService revokeService;
@@ -62,7 +62,7 @@ public class TokenRevocationServiceTests extends EndpointsTestUtils {
   private ObjectMapper mapper;
 
   @Test
-  public void registrationTokenUntouchedWhenRevokingClientTokens() throws Exception {
+  void registrationTokenUntouchedWhenRevokingClientTokens() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid profile offline_access")

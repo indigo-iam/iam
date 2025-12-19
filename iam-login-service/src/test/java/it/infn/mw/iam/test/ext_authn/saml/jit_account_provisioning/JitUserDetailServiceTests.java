@@ -24,19 +24,20 @@ import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
@@ -55,8 +56,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 
-@RunWith(MockitoJUnitRunner.class)
-public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
+@ExtendWith(MockitoExtension.class)
+class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
 
   @Mock
   private IamAccountRepository accountRepo;
@@ -78,103 +79,92 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
   @Mock
   private SAMLCredential cred;
 
-  @Before
-  public void setup() {
-    when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
-    // when(accountRepo.findBySamlId(anyString(), anyString(), anyString()))
-    // .thenReturn(Optional.empty());
+  @BeforeEach
+  void setup() {
 
-    when(accountService.createAccount(any())).thenAnswer(invocation -> {
+    lenient().when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
+    lenient().when(accountService.createAccount(any())).thenAnswer(invocation -> {
       IamAccount account = (IamAccount) invocation.getArguments()[0];
       account.setPassword("password");
       return account;
     });
 
-    when(resolver.resolveSamlUserIdentifier(any()))
+    lenient().when(resolver.resolveSamlUserIdentifier(any()))
       .thenReturn(SamlUserIdentifierResolutionResult.failure(List.of("No suitable user id found")));
 
     AttributeMappingProperties defaultMappingProps = new AttributeMappingProperties();
 
-    when(mpResolver.resolveMappingProperties(Mockito.any())).thenReturn(defaultMappingProps);
+    lenient().when(mpResolver.resolveMappingProperties(Mockito.any()))
+      .thenReturn(defaultMappingProps);
 
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.empty(), mpResolver);
   }
 
-  @Test(expected = NullPointerException.class)
-  public void testNullSamlCredential() {
-    try {
-      userDetailsService.loadUserBySAML(null);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), equalTo("null saml credential"));
-      throw e;
-    }
-  }
-
-  @Test(expected = UsernameNotFoundException.class)
-  public void testUnresolvedSamlIdSanityChecks() {
-
-    try {
-      userDetailsService.loadUserBySAML(cred);
-    } catch (UsernameNotFoundException e) {
-      assertThat(e.getMessage(),
-          equalTo("Could not extract a user identifier from the SAML assertion"));
-      throw e;
-    }
-  }
-
-  @Test(expected = UsernameNotFoundException.class)
-  public void testMissingEmailSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    try {
-      userDetailsService.loadUserBySAML(cred);
-    } catch (UsernameNotFoundException e) {
-
-      assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
-          Saml2Attribute.MAIL.getAlias(), Saml2Attribute.MAIL.getAttributeName())));
-      throw e;
-    }
-  }
-
-  @Test(expected = UsernameNotFoundException.class)
-  public void testMissingGivenNameSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-
-    try {
-      userDetailsService.loadUserBySAML(cred);
-    } catch (UsernameNotFoundException e) {
-
-      assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
-          Saml2Attribute.GIVEN_NAME.getAlias(), Saml2Attribute.GIVEN_NAME.getAttributeName())));
-      throw e;
-    }
-  }
-
-  @Test(expected = UsernameNotFoundException.class)
-  public void testMissingFamilyNameSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-    when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
-      .thenReturn(T1_GIVEN_NAME);
-
-    try {
-      userDetailsService.loadUserBySAML(cred);
-    } catch (UsernameNotFoundException e) {
-
-      assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
-          Saml2Attribute.SN.getAlias(), Saml2Attribute.SN.getAttributeName())));
-      throw e;
-    }
+  @Test
+  void testNullSamlCredential() {
+    NullPointerException e =
+        assertThrows(NullPointerException.class, () -> userDetailsService.loadUserBySAML(null));
+    assertThat(e.getMessage(), equalTo("null saml credential"));
   }
 
   @Test
-  public void testSamlIdIsUsedForUsername() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-    when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
+  void testUnresolvedSamlIdSanityChecks() {
+
+    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+        () -> userDetailsService.loadUserBySAML(cred));
+    assertThat(e.getMessage(),
+        equalTo("Could not extract a user identifier from the SAML assertion"));
+  }
+
+  @Test
+  void testMissingEmailSamlCredentialSanityCheck() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+        () -> userDetailsService.loadUserBySAML(cred));
+    assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
+        Saml2Attribute.MAIL.getAlias(), Saml2Attribute.MAIL.getAttributeName())));
+  }
+
+  @Test
+  void testMissingGivenNameSamlCredentialSanityCheck() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(T1_MAIL);
+
+    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+        () -> userDetailsService.loadUserBySAML(cred));
+    assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
+        Saml2Attribute.GIVEN_NAME.getAlias(), Saml2Attribute.GIVEN_NAME.getAttributeName())));
+  }
+
+  @Test
+  void testMissingFamilyNameSamlCredentialSanityCheck() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(T1_MAIL);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
-    when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName())).thenReturn(T1_SN);
+
+    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+        () -> userDetailsService.loadUserBySAML(cred));
+    assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
+        Saml2Attribute.SN.getAlias(), Saml2Attribute.SN.getAttributeName())));
+  }
+
+  @Test
+  void testSamlIdIsUsedForUsername() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(T1_MAIL);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
+      .thenReturn(T1_GIVEN_NAME);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
+      .thenReturn(T1_SN);
 
     User user = (User) userDetailsService.loadUserBySAML(cred);
     assertThat(user.getUsername(), equalTo(T1_EPUID));
@@ -182,52 +172,56 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
   }
 
   @Test
-  public void uuidIsUsedForAccountUsernameIfResolvedIdLongerThan128Chars() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(LONG_SAML_ID)));
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-    when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
+  void uuidIsUsedForAccountUsernameIfResolvedIdLongerThan128Chars() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(LONG_SAML_ID)));
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(T1_MAIL);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
-    when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName())).thenReturn(T1_SN);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
+      .thenReturn(T1_SN);
 
     User user = (User) userDetailsService.loadUserBySAML(cred);
     assertThat(user.getUsername().length(), equalTo(36));
   }
 
-  @Test(expected = UsernameNotFoundException.class)
-  public void testEntityIdSanityChecksWorkForUntrustedIdp() {
+  @Test
+  void testEntityIdSanityChecksWorkForUntrustedIdp() {
     Set<String> trustedIdps = Sets.newHashSet("http://trusted.idp.example");
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.of(trustedIdps), mpResolver);
 
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    when(cred.getRemoteEntityID()).thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getRemoteEntityID())
+      .thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
 
-    try {
-      userDetailsService.loadUserBySAML(cred);
-    } catch (UsernameNotFoundException e) {
-      assertThat(e.getMessage(),
-          containsString(String.format("SAML credential issuer '%s' is not trusted",
-              SamlAuthenticationTestSupport.DEFAULT_IDP_ID)));
-      throw e;
-    }
+    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+        () -> userDetailsService.loadUserBySAML(cred));
+    assertThat(e.getMessage(),
+        containsString(String.format("SAML credential issuer '%s' is not trusted",
+            SamlAuthenticationTestSupport.DEFAULT_IDP_ID)));
   }
 
   @Test
-  public void testEntityIdSanityChecksWorkForTrustedIdp() {
+  void testEntityIdSanityChecksWorkForTrustedIdp() {
     Set<String> trustedIdps = Sets.newHashSet("http://trusted.idp.example", DEFAULT_IDP_ID);
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.of(trustedIdps), mpResolver);
 
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
-    when(cred.getRemoteEntityID()).thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-    when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getRemoteEntityID())
+      .thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(T1_MAIL);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
-    when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName())).thenReturn(T1_SN);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
+      .thenReturn(T1_SN);
 
     User user = (User) userDetailsService.loadUserBySAML(cred);
     assertThat(user.getUsername(), equalTo(T1_EPUID));
-
   }
-
 }

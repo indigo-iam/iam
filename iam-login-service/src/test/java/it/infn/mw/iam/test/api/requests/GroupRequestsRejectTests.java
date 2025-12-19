@@ -28,15 +28,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
@@ -49,10 +47,9 @@ import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
+class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   private final static String REJECT_URL = "/iam/group_requests/{uuid}/reject";
 
@@ -65,15 +62,15 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Autowired
   private MockMvc mvc;
- 
-  @Before
-  public void setup() {
+
+  @BeforeEach
+  void setup() {
     emailRepository.deleteAll();
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void rejectGroupRequestAsAdmin() throws Exception {
+  void rejectGroupRequestAsAdmin() throws Exception {
     
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
@@ -111,7 +108,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
-  public void rejectGroupRequestAsUser() throws Exception {
+  void rejectGroupRequestAsUser() throws Exception {
     
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
@@ -125,7 +122,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithAnonymousUser
-  public void rejectGroupRequestAsAnonymous() throws Exception {
+  void rejectGroupRequestAsAnonymous() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -137,7 +134,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void rejectNotExitingGroupRequest() throws Exception {
+  void rejectNotExitingGroupRequest() throws Exception {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     String fakeRequestUuid = UUID.randomUUID().toString();
@@ -152,7 +149,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void rejectAlreadyRejectedRequest() throws Exception {
+  void rejectAlreadyRejectedRequest() throws Exception {
     GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
@@ -165,7 +162,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void rejectAlreadyApprovedRequest() throws Exception {
+  void rejectAlreadyApprovedRequest() throws Exception {
 
     GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
@@ -179,7 +176,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
-  public void rejectRequestWithoutMotivation() throws Exception {
+  void rejectRequestWithoutMotivation() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
     // @formatter:off
@@ -196,7 +193,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
-  public void rejectGroupRequestAsUserWithBothRoles() throws Exception {
+  void rejectGroupRequestAsUserWithBothRoles() throws Exception {
     
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off

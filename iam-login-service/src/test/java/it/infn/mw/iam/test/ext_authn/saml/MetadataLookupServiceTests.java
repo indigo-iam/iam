@@ -18,21 +18,21 @@ package it.infn.mw.iam.test.ext_authn.saml;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.lenient;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.common.Extensions;
 import org.opensaml.saml2.metadata.EntityDescriptor;
@@ -48,17 +48,17 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.authn.saml.DefaultMetadataLookupService;
 import it.infn.mw.iam.authn.saml.model.IdpDescription;
 
-@RunWith(MockitoJUnitRunner.class)
-public class MetadataLookupServiceTests {
+@ExtendWith(MockitoExtension.class)
+class MetadataLookupServiceTests {
 
-  public static final String IDP1_ENTITY_ID = "urn:test:idp1";
-  public static final String IDP2_ENTITY_ID = "urn:test:idp2";
-  public static final String IDP3_ENTITY_ID = "urn:test:idp3";
-  public static final String IDP4_ENTITY_ID = "urn:test:idp4";
+  static final String IDP1_ENTITY_ID = "urn:test:idp1";
+  static final String IDP2_ENTITY_ID = "urn:test:idp2";
+  static final String IDP3_ENTITY_ID = "urn:test:idp3";
+  static final String IDP4_ENTITY_ID = "urn:test:idp4";
 
-  public static final String IDP1_ORGANIZATION_NAME = "IDP1 organization";
-  public static final String IDP2_ORGANIZATION_NAME = "IDP2 organization";
-  public static final String IDP4_ORGANIZATION_NAME = "IDP4 organization";
+  static final String IDP1_ORGANIZATION_NAME = "IDP1 organization";
+  static final String IDP2_ORGANIZATION_NAME = "IDP2 organization";
+  static final String IDP4_ORGANIZATION_NAME = "IDP4 organization";
 
   @Mock
   MetadataManager manager;
@@ -82,61 +82,61 @@ public class MetadataLookupServiceTests {
   LocalizedString idp1LocalizedString, idp1ItLocalizedString, idp2LocalizedString,
       idp4LocalizedString;
 
-  @Before
-  public void setup() throws MetadataProviderException {
+  @BeforeEach
+  void setup() throws MetadataProviderException {
 
-    when(idp1LocalizedString.getLocalString()).thenReturn(IDP1_ORGANIZATION_NAME);
-    when(idp1ItLocalizedString.getLocalString()).thenReturn("IDP1 organizzazione");
-    when(idp1DisplayName.getName()).thenReturn(idp1LocalizedString);
-    when(idp1ItDisplayName.getName()).thenReturn(idp1ItLocalizedString);
-    when(idp1UIInfo.getDisplayNames()).thenReturn(asList(idp1DisplayName, idp1ItDisplayName));
+    lenient().when(idp1LocalizedString.getLocalString()).thenReturn(IDP1_ORGANIZATION_NAME);
+    lenient().when(idp1ItLocalizedString.getLocalString()).thenReturn("IDP1 organizzazione");
+    lenient().when(idp1DisplayName.getName()).thenReturn(idp1LocalizedString);
+    lenient().when(idp1ItDisplayName.getName()).thenReturn(idp1ItLocalizedString);
+    lenient().when(idp1UIInfo.getDisplayNames())
+      .thenReturn(asList(idp1DisplayName, idp1ItDisplayName));
 
-    when(idp2LocalizedString.getLocalString()).thenReturn(IDP2_ORGANIZATION_NAME);
-    when(idp2DisplayName.getName()).thenReturn(idp2LocalizedString);
-    when(idp2UIInfo.getDisplayNames()).thenReturn(asList(idp2DisplayName));
+    lenient().when(idp2LocalizedString.getLocalString()).thenReturn(IDP2_ORGANIZATION_NAME);
+    lenient().when(idp2DisplayName.getName()).thenReturn(idp2LocalizedString);
+    lenient().when(idp2UIInfo.getDisplayNames()).thenReturn(asList(idp2DisplayName));
 
-    when(idp4LocalizedString.getLocalString()).thenReturn(IDP4_ORGANIZATION_NAME);
-    when(idp4DisplayName.getName()).thenReturn(idp4LocalizedString);
-    when(idp4UIInfo.getDisplayNames()).thenReturn(asList(idp4DisplayName));
+    lenient().when(idp4LocalizedString.getLocalString()).thenReturn(IDP4_ORGANIZATION_NAME);
+    lenient().when(idp4DisplayName.getName()).thenReturn(idp4LocalizedString);
+    lenient().when(idp4UIInfo.getDisplayNames()).thenReturn(asList(idp4DisplayName));
 
-    when(idp1SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
+    lenient().when(idp1SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
       .thenReturn(asList(idp1UIInfo));
 
-    when(idp2SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
+    lenient().when(idp2SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
       .thenReturn(asList(idp2UIInfo));
 
-    when(idp4SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
+    lenient().when(idp4SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
       .thenReturn(asList(idp4UIInfo));
 
-    when(idp1SsoDesc.getExtensions()).thenReturn(idp1SsoExtensions);
+    lenient().when(idp1SsoDesc.getExtensions()).thenReturn(idp1SsoExtensions);
 
-    when(idp2SsoDesc.getExtensions()).thenReturn(idp2SsoExtensions);
+    lenient().when(idp2SsoDesc.getExtensions()).thenReturn(idp2SsoExtensions);
 
-    when(idp4SsoDesc.getExtensions()).thenReturn(idp4SsoExtensions);
+    lenient().when(idp4SsoDesc.getExtensions()).thenReturn(idp4SsoExtensions);
 
-    when(idp1Desc.getEntityID()).thenReturn(IDP1_ENTITY_ID);
-    when(idp1Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp1SsoDesc);
+    lenient().when(idp1Desc.getEntityID()).thenReturn(IDP1_ENTITY_ID);
+    lenient().when(idp1Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp1SsoDesc);
 
-    when(idp2Desc.getEntityID()).thenReturn(IDP2_ENTITY_ID);
-    when(idp2Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp2SsoDesc);
+    lenient().when(idp2Desc.getEntityID()).thenReturn(IDP2_ENTITY_ID);
+    lenient().when(idp2Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp2SsoDesc);
 
-    when(idp3Desc.getEntityID()).thenReturn(IDP3_ENTITY_ID);
+    lenient().when(idp3Desc.getEntityID()).thenReturn(IDP3_ENTITY_ID);
 
-    when(idp4Desc.getEntityID()).thenReturn(IDP4_ENTITY_ID);
-    when(idp4Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp4SsoDesc);
+    lenient().when(idp4Desc.getEntityID()).thenReturn(IDP4_ENTITY_ID);
+    lenient().when(idp4Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp4SsoDesc);
 
-    when(manager.getEntityDescriptor(IDP1_ENTITY_ID)).thenReturn(idp1Desc);
-    when(manager.getEntityDescriptor(IDP2_ENTITY_ID)).thenReturn(idp2Desc);
-    when(manager.getEntityDescriptor(IDP3_ENTITY_ID)).thenReturn(idp3Desc);
-    when(manager.getEntityDescriptor(IDP4_ENTITY_ID)).thenReturn(idp4Desc);
+    lenient().when(manager.getEntityDescriptor(IDP1_ENTITY_ID)).thenReturn(idp1Desc);
+    lenient().when(manager.getEntityDescriptor(IDP2_ENTITY_ID)).thenReturn(idp2Desc);
+    lenient().when(manager.getEntityDescriptor(IDP3_ENTITY_ID)).thenReturn(idp3Desc);
+    lenient().when(manager.getEntityDescriptor(IDP4_ENTITY_ID)).thenReturn(idp4Desc);
 
-    when(manager.getIDPEntityNames())
+    lenient().when(manager.getIDPEntityNames())
       .thenReturn(Sets.newHashSet(IDP1_ENTITY_ID, IDP2_ENTITY_ID, IDP3_ENTITY_ID, IDP4_ENTITY_ID));
   }
 
-
   @Test
-  public void testServiceInitialization() throws MetadataProviderException {
+  void testServiceInitialization() {
 
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
 
@@ -160,23 +160,23 @@ public class MetadataLookupServiceTests {
 
 
   @Test
-  public void testEmptyMetadataInitialization() {
-    when(manager.getIDPEntityNames()).thenReturn(emptySet());
+  void testEmptyMetadataInitialization() {
+    lenient().when(manager.getIDPEntityNames()).thenReturn(emptySet());
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
 
     assertThat(service.listIdps(), hasSize(0));
   }
-  
+
   @Test
-  public void testEmptyTextToFind() {
+  void testEmptyTextToFind() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
-    
+
     List<IdpDescription> idps = service.lookupIdp("noMatchOnTextToFind");
     assertThat(idps, hasSize(0));
   }
 
   @Test
-  public void testLookupByOrganizationNameWorks() {
+  void testLookupByOrganizationNameWorks() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
 
     List<IdpDescription> idpsIt = service.lookupIdp("organizz");
@@ -193,7 +193,7 @@ public class MetadataLookupServiceTests {
   }
 
   @Test
-  public void testPartialLookupWorks() {
+  void testPartialLookupWorks() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
 
     List<IdpDescription> idps = service.lookupIdp("idp");
@@ -213,7 +213,7 @@ public class MetadataLookupServiceTests {
   }
 
   @Test
-  public void testEntityIdLookupWorks() {
+  void testEntityIdLookupWorks() {
 
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
     List<IdpDescription> idps = service.lookupIdp(IDP1_ENTITY_ID);

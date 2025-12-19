@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -32,10 +32,10 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoProcessor;
 
 @SuppressWarnings("deprecation")
-public class ExternalAuthenticationInfoProcessorTests {
+class ExternalAuthenticationInfoProcessorTests {
 
   @Test
-  public void processorReturnsEmptyMapForClientAuthentication() {
+  void processorReturnsEmptyMapForClientAuthentication() {
 
     OAuth2Authentication oAuth = mock(OAuth2Authentication.class);
 
@@ -46,7 +46,7 @@ public class ExternalAuthenticationInfoProcessorTests {
   }
 
   @Test
-  public void processorReturnsUserInfoIfPresent() {
+  void processorReturnsUserInfoIfPresent() {
 
     Map<String, String> info = Maps.newHashMap();
     info.put("key", "val");
@@ -64,7 +64,7 @@ public class ExternalAuthenticationInfoProcessorTests {
   }
 
   @Test
-  public void processorReturnsEmtpyCollectionForEmptyUserInfo() {
+  void processorReturnsEmtpyCollectionForEmptyUserInfo() {
 
     Map<String, String> info = Maps.newHashMap();
 

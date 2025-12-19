@@ -15,25 +15,24 @@
  */
 package it.infn.mw.iam.test.audit.event;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
-import java.util.List;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
@@ -59,17 +58,16 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK,
-    properties = {"notification.certificateUpdate = true",
-        "notification.admin-notification-policy = notify-address"})
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK,
+  properties = {"notification.certificateUpdate = true",
+    "notification.admin-notification-policy = notify-address"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 @Transactional
-public class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
-    implements CertificateLinkingNotificationUtil {
+class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
+  implements CertificateLinkingNotificationUtil {
 
   private static final String USERNAME = "event_user";
   private static final String GIVENNAME = "Event";
@@ -101,8 +99,8 @@ public class CertificateLinkingNotificationAddressEnabledTests extends X509TestS
   private IamAccount account;
   private ScimUser user;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
@@ -123,15 +121,14 @@ public class CertificateLinkingNotificationAddressEnabledTests extends X509TestS
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     userProvisioning.delete(account.getUuid());
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testAddX509CertificateEventNotificationPolicy() {
-
+  void testAddX509CertificateEventNotificationPolicy() {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
@@ -157,9 +154,9 @@ public class CertificateLinkingNotificationAddressEnabledTests extends X509TestS
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
 
-    Assert.assertEquals(pending.get(0).getBody(),
+    assertEquals(pending.get(0).getBody(),
         getLinkMessage(account.getUserInfo().getName(), account.getUsername(),
             account.getUserInfo().getEmail(), TEST_0_SUBJECT, TEST_0_ISSUER,
             properties.getOrganisation().getName()));
@@ -173,7 +170,7 @@ public class CertificateLinkingNotificationAddressEnabledTests extends X509TestS
   }
 
   @Test
-  public void testRemoveX509CertificateEventEventNotificationPolicy() {
+  void testRemoveX509CertificateEventEventNotificationPolicy() {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
@@ -199,9 +196,9 @@ public class CertificateLinkingNotificationAddressEnabledTests extends X509TestS
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(1, pending.size());
+    assertEquals(1, pending.size());
 
-    Assert.assertEquals(pending.get(0).getBody(),
+    assertEquals(pending.get(0).getBody(),
         getUnLinkMessage(account.getUserInfo().getName(), account.getUsername(),
             account.getUserInfo().getEmail(), TEST_1_SUBJECT, TEST_1_ISSUER,
             properties.getOrganisation().getName()));

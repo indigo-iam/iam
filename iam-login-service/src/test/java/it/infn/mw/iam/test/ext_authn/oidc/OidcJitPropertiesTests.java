@@ -19,25 +19,24 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.in;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 
-public class OidcJitPropertiesTests {
+class OidcJitPropertiesTests {
 
   @Test
-  public void testTrustedIdpsListIsByDefaultEmpty() {
+  void testTrustedIdpsListIsByDefaultEmpty() {
     IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
 
-    Assert.assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
+    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
     assertEquals("all", props.getTrustedIdps());
 
     props.setTrustedIdps("all");
@@ -46,7 +45,7 @@ public class OidcJitPropertiesTests {
   }
 
   @Test
-  public void testTrustedIdpsListParsing() {
+  void testTrustedIdpsListParsing() {
     IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
 
     props.setTrustedIdps("idp1,idp2,idp3,,,    ");
@@ -62,7 +61,7 @@ public class OidcJitPropertiesTests {
   }
 
   @Test
-  public void testTrustedIdpsEmptyListYeldsEmptyOptional() {
+  void testTrustedIdpsEmptyListYeldsEmptyOptional() {
     IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
 
     props.setTrustedIdps("");

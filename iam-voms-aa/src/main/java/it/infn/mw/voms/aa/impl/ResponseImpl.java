@@ -17,12 +17,11 @@ package it.infn.mw.voms.aa.impl;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.italiangrid.voms.VOMSGenericAttribute;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.voms.aa.VOMSErrorMessage;
 import it.infn.mw.voms.aa.VOMSResponse;
@@ -34,7 +33,7 @@ public class ResponseImpl implements VOMSResponse {
 
     warnings = new ArrayList<>();
     errorMessages = new ArrayList<>();
-    issuedFQANs = Sets.newLinkedHashSet();
+    issuedFQANs = new LinkedHashSet<>();
     issuedGAs = new ArrayList<>();
     targets = new ArrayList<>();
     outcome = Outcome.SUCCESS;

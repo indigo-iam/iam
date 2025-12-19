@@ -22,15 +22,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -39,10 +39,10 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @SuppressWarnings("deprecation")
-public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils {
+class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils {
 
   static final String PROTECTED_RESOURCE_ID = "protected-resource-test";
   static final String PROTECTED_RESOURCE_SECRET = "secret";
@@ -52,8 +52,8 @@ public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils
 
   private ClientDetailsEntity protectedResource;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
     protectedResource = new ClientDetailsEntity();
     protectedResource.setGrantTypes(Set.of());
@@ -64,14 +64,14 @@ public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils
     protectedResource = clientService.saveNewClient(protectedResource);
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
 
     clientService.deleteClient(protectedResource);
   }
 
   @Test
-  public void testProtectedResourceGetsNoTokenWithClientCredentials() throws Exception {
+  void testProtectedResourceGetsNoTokenWithClientCredentials() throws Exception {
 
     new AccessTokenGetter().grantType("client_credentials")
       .clientId(PROTECTED_RESOURCE_ID)
@@ -81,7 +81,7 @@ public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testProtectedResourceGetsNoTokenWithPassword() throws Exception {
+  void testProtectedResourceGetsNoTokenWithPassword() throws Exception {
 
     new AccessTokenGetter().grantType("password")
       .clientId(PROTECTED_RESOURCE_ID)
@@ -92,7 +92,7 @@ public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testProtectedResourceGetsNoTokenWithImplicitFlow() throws Exception {
+  void testProtectedResourceGetsNoTokenWithImplicitFlow() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl("http://localhost/authorize")
       .queryParam("response_type", "token")
@@ -119,7 +119,7 @@ public class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testProtectedResourceGetsNoTokenWithAuthorizationCode() throws Exception {
+  void testProtectedResourceGetsNoTokenWithAuthorizationCode() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl("http://localhost/authorize")
       .queryParam("response_type", "code")

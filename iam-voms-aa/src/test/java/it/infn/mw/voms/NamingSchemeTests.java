@@ -19,25 +19,25 @@ import static it.infn.mw.voms.aa.VOMSNamingScheme.isQualifiedRole;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
-public class NamingSchemeTests {
+@ExtendWith(MockitoExtension.class)
+class NamingSchemeTests {
 
   @Test
-  public void namingSchemeTests() {
+  void namingSchemeTests() {
 
     String[] roleFqans = {"/test/Role=production", "/test/subgroup/Role=VO-Admin"};
-    
+
     String[] groupFqans = {"/test", "/test/subgroup", "/dteam"};
 
-    for (String fqan: roleFqans) {
+    for (String fqan : roleFqans) {
       assertThat(isQualifiedRole(fqan), is(true));
     }
-    
-    for (String fqan: groupFqans) {
+
+    for (String fqan : groupFqans) {
       assertThat(isQualifiedRole(fqan), is(false));
     }
   }

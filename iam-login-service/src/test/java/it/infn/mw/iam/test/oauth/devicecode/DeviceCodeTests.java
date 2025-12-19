@@ -19,10 +19,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -39,15 +39,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.openid.connect.web.ApprovedSiteAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -66,10 +64,9 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeTests extends EndpointsTestUtils {
+class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -158,7 +155,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testDeviceCodeEndpointRequiresClientWithDeviceCodeGrantEnabled() throws Exception {
+  void testDeviceCodeEndpointRequiresClientWithDeviceCodeGrantEnabled() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -178,7 +175,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testDeviceCodeWithoutAllowedScope() throws Exception {
+  void testDeviceCodeWithoutAllowedScope() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -194,7 +191,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testDeviceCodeNoApproval() throws Exception {
+  void testDeviceCodeNoApproval() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -307,7 +304,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testDevideCodeFlowWithAudience() throws Exception {
+  void testDevideCodeFlowWithAudience() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -405,7 +402,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testDeviceCodeApprovalFlowWorks() throws Exception {
+  void testDeviceCodeApprovalFlowWorks() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -527,7 +524,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testDeviceCodeFlowDoesNotWorkIfScopeNotAllowed() throws Exception {
+  void testDeviceCodeFlowDoesNotWorkIfScopeNotAllowed() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -540,8 +537,8 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
-      throws UnsupportedEncodingException, Exception {
+  void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
+    throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -580,8 +577,8 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void deviceCodeWorksForDynamicallyRegisteredClient()
-      throws UnsupportedEncodingException, Exception {
+  void deviceCodeWorksForDynamicallyRegisteredClient()
+    throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -630,7 +627,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void publicClientDeviceCodeWorks() throws Exception {
+  void publicClientDeviceCodeWorks() throws Exception {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(PUBLIC_DEVICE_CODE_CLIENT_ID);
     Set<String> scopes = Sets.newHashSet();
@@ -742,7 +739,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRefreshedTokenAfterDeviceCodeApprovalFlowWorks() throws Exception {
+  void testRefreshedTokenAfterDeviceCodeApprovalFlowWorks() throws Exception {
 
     final String SCIM_DEVICE_CLIENT_ID = "scim-client-rw";
     final String SCIM_DEVICE_CLIENT_SECRET = "secret";
@@ -819,7 +816,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAdminScopesAllowedToAdmins() throws Exception {
+  void testAdminScopesAllowedToAdmins() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "admin", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -831,7 +828,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testFilteredAdminScopes() throws Exception {
+  void testFilteredAdminScopes() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "test", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -842,7 +839,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testAdminScopesWithRefreshedTokenAllowedToAdmins() throws Exception {
+  void testAdminScopesWithRefreshedTokenAllowedToAdmins() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "admin", "password",
         "offline_access iam:admin.read iam:admin.write");
@@ -860,7 +857,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testFilteredAdminScopesWithRefreshedToken() throws Exception {
+  void testFilteredAdminScopesWithRefreshedToken() throws Exception {
 
     String tokenResponse = getTokenResponse("scim-client-rw", "secret", "test", "password",
         "offline_access iam:admin.read iam:admin.write");

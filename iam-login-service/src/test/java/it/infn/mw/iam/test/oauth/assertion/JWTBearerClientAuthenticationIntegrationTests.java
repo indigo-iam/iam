@@ -24,10 +24,10 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -37,13 +37,13 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class JWTBearerClientAuthenticationIntegrationTests
-    extends JWTBearerClientAuthenticationIntegrationTestSupport {
+class JWTBearerClientAuthenticationIntegrationTests
+  extends JWTBearerClientAuthenticationIntegrationTestSupport {
 
   @Test
-  public void testSymmetricJwtAuth() throws Exception {
+  void testSymmetricJwtAuth() throws Exception {
 
     JWT jwt = createSymmetricClientAuthToken(CLIENT_ID_SECRET_JWT, Instant.now().plusSeconds(600));
     String serializedToken = jwt.serialize();
@@ -58,7 +58,7 @@ public class JWTBearerClientAuthenticationIntegrationTests
   }
 
   @Test
-  public void testAsymmetricJwtAuth() throws Exception {
+  void testAsymmetricJwtAuth() throws Exception {
 
     JWTSigningAndValidationService signer = loadSignerService();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(CLIENT_ID_PRIVATE_KEY_JWT)

@@ -21,14 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -39,11 +34,10 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
+import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
-import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
-import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -63,53 +57,38 @@ public class TaskConfig implements SchedulingConfigurer {
   public static final long ONE_HOUR_MSEC = 60 * ONE_MINUTE_MSEC;
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
-  @Autowired
-  OAuth2TokenEntityService tokenEntityService;
-
-  @Autowired
-  ApprovedSiteService approvedSiteService;
-
-  @Autowired
-  NotificationStoreService notificationStoreService;
-
-  @Autowired
-  NotificationDelivery notificationDelivery;
-
-  @Autowired
-  IamAccountService accountService;
-
-  @Autowired
-  DeviceCodeService deviceCodeService;
-
-  @Autowired
-  NotificationDeliveryTask deliveryTask;
-
-  @Autowired
-  LifecycleProperties lifecycleProperties;
-
-  @Autowired
-  ExpiredAccountsHandler expiredAccountsHandler;
-
-  @Autowired
-  AupReminderTask aupReminderTask;
-
-  @Autowired
-  CacheManager cacheManager;
-
-  @Autowired
-  ExecutorService taskScheduler;
-
-  @Autowired
-  IamClientRepository clientRepo;
-
-  @Autowired
-  ClientService clientService;
+  private NotificationStoreService notificationStoreService;
+  private NotificationDeliveryTask deliveryTask;
+  private LifecycleProperties lifecycleProperties;
+  private ExpiredAccountsHandler expiredAccountsHandler;
+  private AupReminderTask aupReminderTask;
+  private ExecutorService taskScheduler;
+  private IamClientRepository clientRepo;
+  private ClientService clientService;
+  private GarbageCollector garbageCollector;
 
   @Value("${notification.disable}")
   boolean notificationDisabled;
 
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
+
+  public TaskConfig(NotificationStoreService notificationStoreService,
+      NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
+      ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
+      ExecutorService taskScheduler, IamClientRepository clientRepo, ClientService clientService,
+      GarbageCollector garbageCollector) {
+
+    this.notificationStoreService = notificationStoreService;
+    this.deliveryTask = deliveryTask;
+    this.lifecycleProperties = lifecycleProperties;
+    this.expiredAccountsHandler = expiredAccountsHandler;
+    this.aupReminderTask = aupReminderTask;
+    this.taskScheduler = taskScheduler;
+    this.clientRepo = clientRepo;
+    this.clientService = clientService;
+    this.garbageCollector = garbageCollector;
+  }
 
   @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
       timeUnit = TimeUnit.SECONDS)
@@ -121,30 +100,35 @@ public class TaskConfig implements SchedulingConfigurer {
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredTokens() {
 
-    tokenEntityService.clearExpiredTokens();
+    garbageCollector.clearExpiredAccessTokens(100);
+    garbageCollector.clearExpiredRefreshTokens(100);
+    garbageCollector.clearOrphanedAuthenticationHolder(100);
   }
 
   @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}",
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredSites() {
 
-    approvedSiteService.clearExpiredSites();
+    garbageCollector.clearExpiredApprovedSites(100);
   }
 
   @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredNotifications() {
+
     notificationStoreService.clearExpiredNotifications();
   }
 
   @Scheduled(fixedDelayString = "${task.deviceCodeCleanupPeriodMsec}",
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredDeviceCodes() {
-    deviceCodeService.clearExpiredDeviceCodes();
+
+    garbageCollector.clearExpiredDeviceCodes(100);
   }
 
   @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS,
       initialDelay = ONE_MINUTE_MSEC)
   public void scheduledAupRemindersTask() {
+
     aupReminderTask.sendAupReminders();
   }
 

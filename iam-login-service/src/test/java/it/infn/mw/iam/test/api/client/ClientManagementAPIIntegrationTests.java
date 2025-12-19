@@ -15,32 +15,34 @@
  */
 package it.infn.mw.iam.test.api.client;
 
+import java.util.Optional;
+
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
-import java.util.Optional;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithAnonymousUser;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -55,10 +58,6 @@ import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSuppo
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-
-import it.infn.mw.iam.api.tokens.Constants;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
@@ -198,13 +197,46 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
 
     RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     assertThat(client.getRegistrationAccessToken(), nullValue());
+    assertThat(client.getClientSecret(), notNullValue());
 
     final String url =
         String.format("%s/%s/rat", ClientManagementAPIController.ENDPOINT, client.getClientId());
 
-    responseJson = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
-    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    String responseJson2 = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
+    client = mapper.readValue(responseJson2, RegisteredClientDTO.class);
+    assertThat(client.getClientSecret(), nullValue());
     assertThat(client.getRegistrationAccessToken(), notNullValue());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void testUpdateClientWithForbiddenParams() throws Exception {
+
+    String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
+
+    String responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO clientDto = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertThat(clientDto.getClientSecret(), not(containsString("secret")));
+    assertThat(clientDto.getClientSecret(), notNullValue());
+
+    responseJson = mvc
+      .perform(put(ClientManagementAPIController.ENDPOINT + "/" + clientDto.getClientId())
+        .contentType("application/json")
+        .content(mapper.writeValueAsString(clientDto)))
+      .andExpect(status().is2xxSuccessful())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    RegisteredClientDTO clientUpdatedDto =
+        mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertThat(clientUpdatedDto.getClientSecret(), nullValue());
   }
 
   @Test
@@ -232,10 +264,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(600, client.getDeviceCodeValiditySeconds());
 
     Optional<ClientDetailsEntity> clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -256,10 +291,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(0, client.getRefreshTokenValiditySeconds());
 
     clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -280,10 +318,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(10, client.getRefreshTokenValiditySeconds());
 
     clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
   }
 
@@ -323,8 +364,8 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client")
-    ).andExpect(OK);
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client"))
+      .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
@@ -339,8 +380,8 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client")
-    ).andExpect(OK);
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client"))
+      .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
@@ -358,12 +399,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.totalResults").value(1));
 
     mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
-       .andExpect(OK)
-       .andExpect(jsonPath("$.totalResults").value(2));
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").value(2));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT
-      + "/{clientId}/revoke-refresh-tokens", TEST_CLIENT_ID))
-       .andExpect(OK);
+    mvc
+      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-refresh-tokens",
+          TEST_CLIENT_ID))
+      .andExpect(OK);
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
@@ -390,8 +432,9 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT
-      + "/{clientId}/revoke-access-tokens", TEST_CLIENT_ID))
+    mvc
+      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-access-tokens",
+          TEST_CLIENT_ID))
       .andExpect(OK);
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
@@ -421,12 +464,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.totalResults").value(2));
 
     String oldSecret = client.getClientSecret();
-    String newSecret = mvc.perform(patch(ClientManagementAPIController.ENDPOINT
-      + "/{clientId}/reset-client", TEST_CLIENT_ID))
+    String newSecret = mvc
+      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/reset-client",
+          TEST_CLIENT_ID))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
-      .getContentAsString(); 
+      .getContentAsString();
 
     assertNotEquals(oldSecret, newSecret);
 

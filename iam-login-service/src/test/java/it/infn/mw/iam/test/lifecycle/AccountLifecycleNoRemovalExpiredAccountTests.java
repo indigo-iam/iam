@@ -22,12 +22,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Date;
 import java.util.Optional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
@@ -39,23 +37,22 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    AccountLifecycleTests.TestConfig.class})
+  AccountLifecycleTests.TestConfig.class})
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
-public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport implements LifecycleTestSupport {
+  properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
+class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport
+  implements LifecycleTestSupport {
 
   @Autowired
   private IamAccountRepository repo;
 
   @Autowired
   private ExpiredAccountsHandler handler;
-  
-  
+
   @Test
-  public void testSuspendedLabelWorks() {
+  void testSuspendedLabelWorks() {
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
@@ -86,9 +83,9 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
     assertThat(statusLabel.get().getValue(),
         is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
   }
-  
+
   @Test
-  public void testNoRemovalWorks() {
+  void testNoRemovalWorks() {
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 

@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.redis;
+package it.infn.mw.iam.persistence.repository;
 
-public class AbstractRedisIntegrationTestSetup {
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
-  static final String REDIS_IMAGE = "redis:6-alpine";
-  static final int REDIS_PORT = 6379;
-
-  static final RedisContainer REDIS;
-
-  static {
-    REDIS = new RedisContainer(REDIS_IMAGE).withExposedPorts(REDIS_PORT);
-    REDIS.start();
-
-    System.setProperty("spring.redis.host", REDIS.getContainerIpAddress());
-    System.setProperty("spring.redis.port", String.valueOf(REDIS.getFirstMappedPort()));
-  }
+public interface IamAuthenticationHolderRepository
+    extends PagingAndSortingRepository<AuthenticationHolderEntity, Long> {
 }
