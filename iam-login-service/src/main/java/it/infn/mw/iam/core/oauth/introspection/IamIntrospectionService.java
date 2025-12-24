@@ -112,6 +112,9 @@ public class IamIntrospectionService
             // Calls the introspector and gets the OAuth2AuthenticatedPrincipal
             OAuth2AuthenticatedPrincipal introspectionResult = introspector.introspect(tokenValue);
 
+            LOG.info("Introspection result for token issued by {}: active={}",
+                issuer, introspectionResult.getAttribute("active"));
+                
             // Converts the attributes of the principal to IntrospectionResponse
             response = convertIntrospectionResponse(introspectionResult);
           }

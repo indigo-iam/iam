@@ -103,7 +103,12 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
     }
 
     OpaqueTokenIntrospector introspector = new SpringOpaqueTokenIntrospector(introspectionEndpoint, restTemplate);
-    return introspector.introspect(token);
+    try{
+      return introspector.introspect(token);
+    } catch (Throwable t) {
+      LOG.error("Failed introspection of token issued by {}: {}", issuer, t.getMessage());
+      return inactive();
+    }
   }
 
   private OAuth2AuthenticatedPrincipal inactive(){
