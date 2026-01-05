@@ -127,4 +127,8 @@ function getClientTrackLastUsed() {
 function getMfaSettingsBtnEnabled() {
   return ${loginPageConfiguration.mfaSettingsBtnEnabled};
 }
+
+function getMfaMandatory() {
+  return ${mfaMandatory};
+}
 </script>
