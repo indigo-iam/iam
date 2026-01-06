@@ -19,7 +19,6 @@ import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilt
 
 import java.io.IOException;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
@@ -33,12 +32,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import dev.samstevens.totp.exceptions.QrGenerationException;
-import dev.samstevens.totp.qr.QrGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -70,20 +67,15 @@ public class AuthenticatorAppSettingsController {
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
-  private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
-  private final IamProperties iamProperties;
   private final NotificationFactory notificationFactory;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
-      IamAccountRepository accountRepository, QrGenerator qrGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties, IamProperties iamProperties,
+      IamAccountRepository accountRepository, IamTotpMfaProperties iamTotpMfaProperties,
       NotificationFactory notificationFactory) {
     this.service = service;
     this.accountRepository = accountRepository;
-    this.qrGenerator = qrGenerator;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
-    this.iamProperties = iamProperties;
     this.notificationFactory = notificationFactory;
   }
 

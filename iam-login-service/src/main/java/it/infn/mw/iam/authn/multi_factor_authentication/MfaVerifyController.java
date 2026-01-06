@@ -50,6 +50,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
+  public static final String MFA_ACTIVATE_URL = "/iam/mfa/acivate";
   final IamAccountRepository accountRepository;
   private final IamTotpMfaService iamTotpMfaService;
 
@@ -86,11 +87,8 @@ public class MfaVerifyController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @GetMapping(value = "/iam/mfa/acivate")
-  public String getActivateMfaView(Authentication authentication, ModelMap model) {
-    if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
-      setAuthentication(preAuthenticatedAuthenticationToken);
-    }
+  @GetMapping(value = MFA_ACTIVATE_URL)
+  public String getActivateMfaView() {
     return "iam/activateMfa";
   }
 
