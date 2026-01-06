@@ -112,9 +112,6 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
       .thenAnswer(i -> i.getArguments()[0]);
     lenient().when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
-    when(iamProperties.getOrganisation()).thenReturn(organisation);
-    when(organisation.getName()).thenReturn("Test Corp");
-
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
         codeVerifier, eventPublisher, iamTotpMfaProperties, qrGenerator, iamProperties);
   }
@@ -304,6 +301,8 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     byte[] pngBytes = "PNG_IMAGE_BYTES".getBytes(StandardCharsets.UTF_8);
     when(qrGenerator.generate(any(QrData.class))).thenReturn(pngBytes);
     when(qrGenerator.getImageMimeType()).thenReturn("image/png");
+    when(iamProperties.getOrganisation()).thenReturn(organisation);
+    when(organisation.getName()).thenReturn("Test Corp");
 
     
     String dataUri = service.generateQRCodeFromSecret(secret, username);
