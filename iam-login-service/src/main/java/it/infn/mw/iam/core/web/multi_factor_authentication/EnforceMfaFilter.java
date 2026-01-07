@@ -16,6 +16,8 @@
 package it.infn.mw.iam.core.web.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
@@ -41,17 +43,14 @@ public class EnforceMfaFilter implements Filter {
 
   public static final Logger LOG = LoggerFactory.getLogger(EnforceMfaFilter.class);
 
-  public static final String MFA_API_PATH = "/iam/mfa";
-  public static final String ENABLE_MFA_PATH = "/iam/authenticator-app/enable";
-  public static final String ADD_SECRET_PATH = "/iam/authenticator-app/add-secret";
+  public static final String ENABLE_MFA_PATH = ENABLE_URL;
+  public static final String ADD_SECRET_PATH = ADD_SECRET_URL;
   public static final String ACTIVATE_MFA_PATH = MFA_ACTIVATE_URL;
-  public static final String ACTIVATE_MFA_JSP = "activateMfa.jsp";
 
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
       ENABLE_MFA_PATH,
       ADD_SECRET_PATH,
-      ACTIVATE_MFA_PATH,
-      MFA_API_PATH);
+      ACTIVATE_MFA_PATH);
 
   private static final Set<String> ALLOWLIST_PREFIXES = Set.of(
       "/login",
@@ -120,11 +119,6 @@ public class EnforceMfaFilter implements Filter {
 
     final boolean requestingMfa = Boolean.TRUE.equals(session.getAttribute(REQUESTING_MFA));
     if (requestingMfa) {
-      if (isMfaFlowPath(path)) {
-        chain.doFilter(req, res);
-        return;
-      }
-
       if (!res.isCommitted()) {
         res.sendRedirect(ACTIVATE_MFA_PATH);
       }
@@ -152,13 +146,6 @@ public class EnforceMfaFilter implements Filter {
         return true;
     }
     return false;
-  }
-
-  private boolean isMfaFlowPath(String path) {
-    return path.equals(ENABLE_MFA_PATH)
-        || path.equals(ACTIVATE_MFA_PATH)
-        || path.equals(ACTIVATE_MFA_JSP)
-        || path.equals(MFA_API_PATH);
   }
 
   @Override

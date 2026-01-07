@@ -58,6 +58,14 @@ public class EnforceMfaFilterTests {
     }
 
     @Test
+    @WithMockUser(username = "test", roles = "USER")
+    public void testWhenPrefixAllowedThenNoRedirection() throws Exception {
+        mvc.perform(get("/login")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isFound());
+    }
+
+    @Test
     @WithAnonymousUser
     public void testWhenNotAuthenticatedThenNoRedirection() throws Exception {
         mvc.perform(get("/dashboard")
