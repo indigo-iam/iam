@@ -50,7 +50,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
-  public static final String MFA_ACTIVATE_URL = "/iam/mfa/acivate";
+  public static final String MFA_ACTIVATE_URL = "/iam/mfa/activate";
   final IamAccountRepository accountRepository;
   private final IamTotpMfaService iamTotpMfaService;
 

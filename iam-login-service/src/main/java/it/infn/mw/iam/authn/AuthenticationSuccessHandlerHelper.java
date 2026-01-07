@@ -39,6 +39,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 
 public class AuthenticationSuccessHandlerHelper {
 
@@ -72,7 +73,7 @@ public class AuthenticationSuccessHandlerHelper {
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
     } else if (iamTotpMfaProperties.isMultiFactorMandatory() && !isMfaActive(authentication)) {
-      response.sendRedirect("/iam/mfa/acivate");
+      response.sendRedirect(MFA_ACTIVATE_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }

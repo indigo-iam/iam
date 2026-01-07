@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.web.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
@@ -43,7 +44,7 @@ public class EnforceMfaFilter implements Filter {
   public static final String MFA_API_PATH = "/iam/mfa";
   public static final String ENABLE_MFA_PATH = "/iam/authenticator-app/enable";
   public static final String ADD_SECRET_PATH = "/iam/authenticator-app/add-secret";
-  public static final String ACTIVATE_MFA_PATH = "/iam/mfa/acivate";
+  public static final String ACTIVATE_MFA_PATH = MFA_ACTIVATE_URL;
   public static final String ACTIVATE_MFA_JSP = "activateMfa.jsp";
 
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
