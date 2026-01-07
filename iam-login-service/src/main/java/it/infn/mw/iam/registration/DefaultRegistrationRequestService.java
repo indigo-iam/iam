@@ -60,6 +60,7 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
+import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -168,16 +169,15 @@ public class DefaultRegistrationRequestService
 
     IamAccount account;
 
-    if (iamProperties.getRegistration()
-      .getFields()
-      .get(RegistrationField.CERTIFICATE)
-      .getFieldBehaviour()
-      .equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
-        || (iamProperties.getRegistration()
-          .getFields()
-          .get(RegistrationField.CERTIFICATE)
-          .getFieldBehaviour()
-          .equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
+    ExternalAuthAttributeSectionBehaviour ceritificateVisability =
+        Optional.ofNullable(iamProperties.getRegistration())
+          .map(IamProperties.RegistrationProperties::getFields)
+          .map(f -> f.get(RegistrationField.CERTIFICATE))
+          .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+          .orElse(ExternalAuthAttributeSectionBehaviour.HIDDEN);
+
+    if (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
+        || (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
             && dto.getCertificate().equals("true"))) {
 
       certificateSanityCheck(request);
