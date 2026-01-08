@@ -38,8 +38,6 @@ import org.springframework.security.oauth2.common.exceptions.InvalidRequestExcep
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import com.nimbusds.jose.JWSAlgorithm;
-
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -201,7 +199,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,
           clientDTO.getExpiration(), clientDTO.getEntityId());
       newClient.setClientRelyingParty(clientRelyingParty);
-      newClient.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
+      newClient.setRequestObjectSigningAlg(clientDTO.getRequestObjectSigningAlgorithm());
     }
 
     newClient = clientService.updateClient(newClient);

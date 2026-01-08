@@ -175,7 +175,9 @@ public class ClientConverter {
     if (entity.getClientRelyingParty() != null) {
       clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
       clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
+      clientDTO.setRequestObjectSigningAlgorithm(entity.getRequestObjectSigningAlg());
     }
+
     return clientDTO;
   }
 
