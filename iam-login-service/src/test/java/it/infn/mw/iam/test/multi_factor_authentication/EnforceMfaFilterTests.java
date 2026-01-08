@@ -122,9 +122,11 @@ public class EnforceMfaFilterTests {
     @WithMockUser(username = "test", roles = "USER")
     public void testWhenMultiFactorIsNotMandatoryThenNoRedirection() throws Exception {
         iamTotpMfaProperties.setMultiFactorMandatory(false);
-        
+
         mvc.perform(get("/dashboard")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
+
+        iamTotpMfaProperties.setMultiFactorMandatory(true);
     }
 }
