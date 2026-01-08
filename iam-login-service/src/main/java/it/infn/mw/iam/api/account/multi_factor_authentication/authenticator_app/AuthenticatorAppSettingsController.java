@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
-import java.io.IOException;
-
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
@@ -115,7 +113,6 @@ public class AuthenticatorAppSettingsController {
    * @param code the TOTP to verify
    * @param validationResult result of validation checks on the code
    * @return nothing
-   * @throws IOException 
    */
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
