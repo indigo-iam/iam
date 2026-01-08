@@ -82,4 +82,3 @@ public interface IamTotpMfaService {
   boolean isAuthenticatorAppActive(IamAccount account);
 
 }
-;

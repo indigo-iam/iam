@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter.ACTIVATE_MFA_PATH;
-import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter.REQUESTING_MFA;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,7 +44,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = "mfa.multi-factor-mandatory=true")
-public class EnforceMfaFilterTests {
+class EnforceMfaFilterTests {
     @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
 
@@ -53,15 +53,15 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
-    public void testWhenPathAllowedThenNoRedirection() throws Exception {
-        mvc.perform(get(ACTIVATE_MFA_PATH)
+    void testWhenPathAllowedThenNoRedirection() throws Exception {
+        mvc.perform(get(MFA_ACTIVATE_URL)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
-    public void testWhenPrefixAllowedThenNoRedirection() throws Exception {
+    void testWhenPrefixAllowedThenNoRedirection() throws Exception {
         mvc.perform(get("/login")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isFound());
@@ -69,7 +69,7 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithAnonymousUser
-    public void testWhenNotAuthenticatedThenNoRedirection() throws Exception {
+    void testWhenNotAuthenticatedThenNoRedirection() throws Exception {
         mvc.perform(get("/dashboard")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isFound());
@@ -77,7 +77,7 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "Unknown", roles = "USER")
-    public void testWhenNoAuthenticatedUserFoundThenNoRedirection() throws Exception {
+    void testWhenNoAuthenticatedUserFoundThenNoRedirection() throws Exception {
         mvc.perform(get("/dashboard")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -85,7 +85,7 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
-    public void testWhenRequestingMfaThenRedirection() throws Exception {
+    void testWhenRequestingMfaThenRedirection() throws Exception {
 
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(REQUESTING_MFA, Boolean.TRUE);
@@ -100,7 +100,7 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
-    public void testWhenAuthenticatorAppNotActiveThenRedirection() throws Exception {
+    void testWhenAuthenticatorAppNotActiveThenRedirection() throws Exception {
 
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(REQUESTING_MFA, Boolean.FALSE);
@@ -120,7 +120,7 @@ public class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
-    public void testWhenMultiFactorIsNotMandatoryThenNoRedirection() throws Exception {
+    void testWhenMultiFactorIsNotMandatoryThenNoRedirection() throws Exception {
         iamTotpMfaProperties.setMultiFactorMandatory(false);
 
         mvc.perform(get("/dashboard")

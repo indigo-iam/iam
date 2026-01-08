@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter.ACTIVATE_MFA_PATH;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 
 import java.time.Instant;
 import java.util.Date;
@@ -140,7 +140,7 @@ class LoginTests implements LoginTestSupport {
             .param("password", ADMIN_PASSWORD)
             .param("submit", "Login"))
         .andExpect(status().isFound())
-        .andExpect(redirectedUrl(ACTIVATE_MFA_PATH));
+        .andExpect(redirectedUrl(MFA_ACTIVATE_URL));
 
     iamTotpMfaProperties.setMultiFactorMandatory(false);    
   }

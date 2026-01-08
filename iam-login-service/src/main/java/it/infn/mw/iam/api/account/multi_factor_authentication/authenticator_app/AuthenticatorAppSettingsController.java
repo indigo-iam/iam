@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
-import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter.REQUESTING_MFA;
-
 import java.io.IOException;
 
 import javax.servlet.http.HttpSession;
@@ -64,6 +62,7 @@ public class AuthenticatorAppSettingsController {
   public static final String CODE_GENERATION_ERROR = "Could not generate QR code";
   public static final String MFA_SECRET_NOT_FOUND_MESSAGE =
       "No multi-factor secret is attached to this account";
+  public static final String REQUESTING_MFA = "iam.mfa.requesting-mfa";    
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;

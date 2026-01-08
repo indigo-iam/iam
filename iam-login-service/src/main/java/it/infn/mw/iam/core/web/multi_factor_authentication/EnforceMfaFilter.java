@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.web.multi_factor_authentication;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
@@ -43,14 +44,10 @@ public class EnforceMfaFilter implements Filter {
 
   public static final Logger LOG = LoggerFactory.getLogger(EnforceMfaFilter.class);
 
-  public static final String ENABLE_MFA_PATH = ENABLE_URL;
-  public static final String ADD_SECRET_PATH = ADD_SECRET_URL;
-  public static final String ACTIVATE_MFA_PATH = MFA_ACTIVATE_URL;
-
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
-      ENABLE_MFA_PATH,
-      ADD_SECRET_PATH,
-      ACTIVATE_MFA_PATH);
+      ENABLE_URL,
+      ADD_SECRET_URL,
+      MFA_ACTIVATE_URL);
 
   private static final Set<String> ALLOWLIST_PREFIXES = Set.of(
       "/login",
@@ -59,8 +56,6 @@ public class EnforceMfaFilter implements Filter {
       "/js/",
       "/images/",
       "/webjars/");
-
-  public static final String REQUESTING_MFA = "iam.mfa.requesting-mfa";
 
   private final AccountUtils accountUtils;
   private final IamTotpMfaService iamTotpMfaService;
@@ -120,7 +115,7 @@ public class EnforceMfaFilter implements Filter {
     final boolean requestingMfa = Boolean.TRUE.equals(session.getAttribute(REQUESTING_MFA));
     if (requestingMfa) {
       if (!res.isCommitted()) {
-        res.sendRedirect(ACTIVATE_MFA_PATH);
+        res.sendRedirect(MFA_ACTIVATE_URL);
       }
       return;
     }
@@ -129,7 +124,7 @@ public class EnforceMfaFilter implements Filter {
       session.setAttribute(REQUESTING_MFA, true);
 
       if (!res.isCommitted()) {
-        res.sendRedirect(ACTIVATE_MFA_PATH);
+        res.sendRedirect(MFA_ACTIVATE_URL);
       }
       return;
     }
