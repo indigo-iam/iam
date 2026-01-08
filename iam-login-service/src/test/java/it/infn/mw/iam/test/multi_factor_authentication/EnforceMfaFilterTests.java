@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import javax.servlet.http.HttpSession;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -45,6 +45,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = "mfa.multi-factor-mandatory=true")
 public class EnforceMfaFilterTests {
+    @Autowired
+    private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
     private MockMvc mvc;
@@ -116,20 +118,13 @@ public class EnforceMfaFilterTests {
 
     }
 
-    @Nested
-    @IamMockMvcIntegrationTest
-    @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
-    @TestPropertySource(properties = "mfa.multi-factor-mandatory=false")
-    class EnforceMfaFilterMfaNotMandatoryTests {
-        @Autowired
-        private MockMvc mvc;
-
-        @Test
-        @WithMockUser(username = "test", roles = "USER")
-        public void testWhenMultiFactorIsNotMandatoryThenNoRedirection() throws Exception {
-            mvc.perform(get("/dashboard")
-                    .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-        }
+    @Test
+    @WithMockUser(username = "test", roles = "USER")
+    public void testWhenMultiFactorIsNotMandatoryThenNoRedirection() throws Exception {
+        iamTotpMfaProperties.setMultiFactorMandatory(false);
+        
+        mvc.perform(get("/dashboard")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 }
