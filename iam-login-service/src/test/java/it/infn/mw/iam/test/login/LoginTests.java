@@ -141,5 +141,7 @@ class LoginTests implements LoginTestSupport {
             .param("submit", "Login"))
         .andExpect(status().isFound())
         .andExpect(redirectedUrl(ACTIVATE_MFA_PATH));
+
+    iamTotpMfaProperties.setMultiFactorMandatory(false);    
   }
 }
