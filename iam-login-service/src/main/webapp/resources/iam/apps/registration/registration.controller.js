@@ -57,6 +57,8 @@ function RegistrationController(
 
 	$scope.config = undefined;
 
+	$scope.extAuthInfo = undefined;
+
 	// Form `fields` with necessary properties and validations.
 	$scope.fields = {
 		name: {
@@ -224,6 +226,17 @@ function RegistrationController(
 					'Error fetching privacy policy: ' + res.status + ' ' +
 					res.statusText);
 			});
+
+		AuthnInfo.getInfo()
+			.then(function (res) {
+				if (res != null) {
+					$scope.extAuthInfo = res.data;
+				}
+			})
+			.catch(function (res) {
+				console.error(
+					'Error fetching external authentication info : ' + res.status + ' ' + res.statusText);
+			});
 	}
 
 	function userIsExternallyAuthenticated() {
@@ -241,25 +254,22 @@ function RegistrationController(
 	}
 
 	function populateValue(info, name) {
-		const fieldName = name.toUpperCase();
 		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined' 
-			&& typeof $scope.config.fields[fieldName] != 'undefined' 
-			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
+			&& typeof $scope.config.fields[name] != 'undefined' 
+			&& typeof $scope.config.fields[name].externalAuthAttribute != 'undefined');
 		if (hasExternalAttributeDefined) {
-			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
+			return lookupAuthInfo(info, $scope.config.fields[name].externalAuthAttribute);
 		}
 	}
 
 	function populateRequest() {
 		var success = function (res) {
-			var info = res.data;
-			$scope.extAuthInfo = info;
 			$scope.request = {
-				givenname: populateValue(info, 'name'),
-				familyname: populateValue(info, 'surname'),
-				username: populateValue(info, 'username'),
-				email: populateValue(info, 'email'),
-				affiliation: populateValue(info, 'affiliation'),
+				givenname: populateValue($scope.extAuthInfo, 'name'),
+				familyname: populateValue($scope.extAuthInfo, 'surname'),
+				username: populateValue($scope.extAuthInfo, 'username'),
+				email: populateValue($scope.extAuthInfo, 'email'),
+				affiliation: populateValue($scope.extAuthInfo, 'affiliation'),
 				notes: '',
 				registerCertificate: true,
 			};
@@ -349,18 +359,18 @@ function RegistrationController(
 		if ($scope.config.fields) {
 			for (let field in $scope.config.fields) {
 				if (
-					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() == "mandatory"
+					field.fieldBehaviour.toLowerCase() == "mandatory"
 				) {
-					$scope.fields[field.toLowerCase()].showField = true;
-					$scope.fields[field.toLowerCase()].required = true;
+					field.showField = true;
+					field.required = true;
 				} else if (
-					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() === "optional"
+					field.fieldBehaviour.toLowerCase() === "optional"
 				) {
-					$scope.fields[field.toLowerCase()].showField = true;
-					$scope.fields[field.toLowerCase()].required = false;
+					field.showField = true;
+					field.required = false;
 				} else {
-					$scope.fields[field.toLowerCase()].showField = false;
-					$scope.fields[field.toLowerCase()].required = false;
+					field.showField = false;
+					field.required = false;
 				}
 			}
 		}

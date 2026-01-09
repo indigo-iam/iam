@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.Lists;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -40,7 +41,12 @@ public class IamProperties {
   }
 
   public enum RegistrationField {
-    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE;
+
+    @JsonValue
+    public String toJson() {
+      return name().toLowerCase();
+    }
   }
 
   public enum LocalAuthenticationAllowedUsers {
