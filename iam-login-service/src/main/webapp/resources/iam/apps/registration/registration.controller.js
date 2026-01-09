@@ -130,7 +130,7 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate: {
+		certificate: {
 			type: "certificate",
 			required: false,
 			showField: true,
@@ -151,7 +151,7 @@ function RegistrationController(
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
 	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
-	vm.registerCertificate = true;
+	vm.certificate = true;
 
 	vm.activate();
 	vm.openExpiringCertificateDialog();
@@ -194,6 +194,17 @@ function RegistrationController(
 	};
 
 	function activate() {
+		AuthnInfo.getInfo()
+			.then(function (res) {
+				if (res != null) {
+					$scope.extAuthInfo = res.data;
+				}
+			})
+			.catch(function (res) {
+				console.error(
+					'Error fetching external authentication info : ' + res.status + ' ' + res.statusText);
+			});
+
 		RegistrationRequestService.getConfig()
 			.then(function (res) {
 				$scope.config = res.data;
@@ -227,16 +238,6 @@ function RegistrationController(
 					res.statusText);
 			});
 
-		AuthnInfo.getInfo()
-			.then(function (res) {
-				if (res != null) {
-					$scope.extAuthInfo = res.data;
-				}
-			})
-			.catch(function (res) {
-				console.error(
-					'Error fetching external authentication info : ' + res.status + ' ' + res.statusText);
-			});
 	}
 
 	function userIsExternallyAuthenticated() {
@@ -271,10 +272,10 @@ function RegistrationController(
 				email: populateValue($scope.extAuthInfo, 'email'),
 				affiliation: populateValue($scope.extAuthInfo, 'affiliation'),
 				notes: '',
-				registerCertificate: true,
+				certificate: true,
 			};
 
-			if (info.type === 'OIDC') {
+			if ($scope.extAuthInfo.type === 'OIDC') {
 				$scope.extAuthProviderName = 'an OIDC identity provider';
 			} else {
 				$scope.extAuthProviderName = 'a SAML identity provider';
@@ -326,7 +327,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
-			registerCertificate: true,
+			certificate: true,
 			affiliation: '',
 		};
 	}
@@ -359,18 +360,18 @@ function RegistrationController(
 		if ($scope.config.fields) {
 			for (let field in $scope.config.fields) {
 				if (
-					field.fieldBehaviour.toLowerCase() == "mandatory"
+					$scope.config.fields[field]["fieldBehaviour"] === "MANDATORY"
 				) {
-					field.showField = true;
-					field.required = true;
+					$scope.fields[field].showField = true;
+					$scope.fields[field].required = true;
 				} else if (
-					field.fieldBehaviour.toLowerCase() === "optional"
+					$scope.config.fields[field]["fieldBehaviour"] === "OPTIONAL"
 				) {
-					field.showField = true;
-					field.required = false;
+					$scope.fields[field].showField = true;
+					$scope.fields[field].required = false;
 				} else {
-					field.showField = false;
-					field.required = false;
+					$scope.fields[field].showField = false;
+					$scope.fields[field].required = false;
 				}
 			}
 		}
