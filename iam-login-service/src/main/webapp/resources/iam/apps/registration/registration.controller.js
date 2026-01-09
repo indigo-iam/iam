@@ -255,11 +255,12 @@ function RegistrationController(
 	}
 
 	function populateValue(info, name) {
+		const fieldName = name.toUpperCase();
 		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined' 
-			&& typeof $scope.config.fields[name] != 'undefined' 
-			&& typeof $scope.config.fields[name].externalAuthAttribute != 'undefined');
+			&& typeof $scope.config.fields[fieldName] != 'undefined'
+			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
 		if (hasExternalAttributeDefined) {
-			return lookupAuthInfo(info, $scope.config.fields[name].externalAuthAttribute);
+			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
 		}
 	}
 
@@ -353,7 +354,7 @@ function RegistrationController(
 	}
 
 	function fieldReadonly(name) {
-		return $scope.config?.fields?.[name]?.readOnly === true;
+		return $scope.config?.fields?.[name.toUpperCase()]?.readOnly === true;
 	}
 
 	function populateFieldsWithAdminPreference() {
@@ -362,16 +363,16 @@ function RegistrationController(
 				if (
 					$scope.config.fields[field]["fieldBehaviour"] === "MANDATORY"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = true;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = true;
 				} else if (
 					$scope.config.fields[field]["fieldBehaviour"] === "OPTIONAL"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = false;
 				} else {
-					$scope.fields[field].showField = false;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = false;
+					$scope.fields[field.toLowerCase()].required = false;
 				}
 			}
 		}
