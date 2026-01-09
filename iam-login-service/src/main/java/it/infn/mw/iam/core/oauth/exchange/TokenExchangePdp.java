@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.exchange;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
@@ -24,7 +23,7 @@ public interface TokenExchangePdp {
 
   public void reloadPolicies();
 
-  TokenExchangePdpResult validateTokenExchange(TokenRequest request,
-      ClientDetailsEntity originClient, ClientDetails destinationClient);
+  TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetails originClient,
+      ClientDetails destinationClient);
 
 }

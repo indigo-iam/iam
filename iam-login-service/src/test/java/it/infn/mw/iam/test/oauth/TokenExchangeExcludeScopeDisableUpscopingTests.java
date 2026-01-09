@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

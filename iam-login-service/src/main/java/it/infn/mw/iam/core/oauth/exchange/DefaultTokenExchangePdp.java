@@ -133,7 +133,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   }
 
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
-      ClientDetailsEntity origin) {
+      ClientDetails origin, ClientDetails destination) {
 
     if (p.isDeny() || request.getScope().isEmpty()) {
       return fromPolicy(p);
@@ -142,13 +142,13 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-
-
-
-    if (!origin.isUpScopingEnabled() && !subjectToken.isBlank()) {
+    
+    // Assumption that the destination is ClientDetailsEntity'
+    // Should I make an automatic fail if that's not the case?
+    if (destination instanceof ClientDetailsEntity
+        && !((ClientDetailsEntity) destination).isUpScopingEnabled() && !subjectToken.isBlank()) {
       scopeMatchers = extractScopesFromToken(subjectToken);
       invalidScopeMessage = "scope not allowed by subject token configuration";
-
     }
 
     for (String scope : request.getScope()) {
@@ -172,14 +172,14 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
 
   @Override
-  public TokenExchangePdpResult validateTokenExchange(TokenRequest request,
-      ClientDetailsEntity origin, ClientDetails destination) {
+  public TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetails origin,
+      ClientDetails destination) {
 
     try {
       readLock.lock();
       return applicablePolicies(origin, destination).stream()
         .max(comparing(TokenExchangePolicy::rank).thenComparing(TokenExchangePolicy::getRule))
-        .map(p -> verifyScopes(p, request, origin))
+        .map(p -> verifyScopes(p, request, origin, destination))
         .orElse(notApplicable());
     } finally {
       readLock.unlock();
