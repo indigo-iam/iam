@@ -57,7 +57,7 @@ class X509PreauthenticationProcessingFilterTests {
     private static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
     private static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
 
-    // "Sat Sep 24 17:39:34 CEST 2022";
+    // "Sat Sep 24 17:39:34 CEST 2022"
     private static final Date TEST_0_END_DATE = new Date(1664033974000L);
     private static final String TEST_0_CERT = """
             -----BEGIN CERTIFICATE-----
