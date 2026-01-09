@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.AUP_SIGN_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +56,14 @@ class EnforceMfaFilterTests {
     @WithMockUser(username = "test", roles = "USER")
     void testWhenPathAllowedThenNoRedirection() throws Exception {
         mvc.perform(get(MFA_ACTIVATE_URL)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "test", roles = "USER")
+    void testWhenAupPathAllowedThenNoRedirection() throws Exception {
+        mvc.perform(get(AUP_SIGN_PATH)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }

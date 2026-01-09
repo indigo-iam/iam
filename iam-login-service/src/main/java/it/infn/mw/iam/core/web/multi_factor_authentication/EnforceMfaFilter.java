@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.AUP_SIGN_PATH;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
@@ -47,7 +48,8 @@ public class EnforceMfaFilter implements Filter {
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
       ENABLE_URL,
       ADD_SECRET_URL,
-      MFA_ACTIVATE_URL);
+      MFA_ACTIVATE_URL,
+      AUP_SIGN_PATH);
 
   private static final Set<String> ALLOWLIST_PREFIXES = Set.of(
       "/login",
