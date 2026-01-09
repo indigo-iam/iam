@@ -40,28 +40,24 @@ public class IamProperties {
   }
 
   public enum RegistrationField {
-    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE;
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE
   }
 
   public enum LocalAuthenticationAllowedUsers {
     ALL, VO_ADMINS, NONE
   }
 
-
   public enum LoginPageLayoutOptions {
     LOGIN_FORM, LOGIN_EXTERNAL_AUTHN
   }
-
 
   public enum LocalAuthenticationLoginPageMode {
     VISIBLE, HIDDEN, HIDDEN_WITH_LINK
   }
 
-
   public enum ExternalAuthAttributeSectionBehaviour {
     MANDATORY, OPTIONAL, HIDDEN
   }
-
 
   public static class AccountLinkingProperties {
     boolean enable = true;
@@ -74,7 +70,6 @@ public class IamProperties {
       return enable;
     }
   }
-
 
   public static class ActuatorUserProperties {
 
@@ -98,7 +93,6 @@ public class IamProperties {
     }
 
   }
-
 
   public static class ExternalConnectivityProbeProperties {
 
@@ -132,7 +126,6 @@ public class IamProperties {
     }
   }
 
-
   public static class VersionedStaticResourcesProperties {
     boolean enableVersioning = true;
 
@@ -144,7 +137,6 @@ public class IamProperties {
       this.enableVersioning = enableVersioning;
     }
   }
-
 
   public static class CustomizationProperties {
     boolean includeCustomLoginPageContent = false;
@@ -168,7 +160,6 @@ public class IamProperties {
     }
   }
 
-
   public static class LocalAuthenticationProperties {
 
     LocalAuthenticationLoginPageMode loginPageVisibility;
@@ -191,7 +182,6 @@ public class IamProperties {
     }
   }
 
-
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class UserProfileProperties {
     private List<EditableFields> editableFields = Lists.newArrayList();
@@ -204,7 +194,6 @@ public class IamProperties {
       this.editableFields = editableFields;
     }
   }
-
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationFieldProperties {
@@ -236,7 +225,6 @@ public class IamProperties {
       this.fieldBehaviour = fieldBehaviour;
     }
   }
-
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationProperties {
@@ -333,7 +321,6 @@ public class IamProperties {
     }
   }
 
-
   public static class DeviceCodeProperties {
     Boolean allowCompleteVerificationUri = true;
 
@@ -346,7 +333,6 @@ public class IamProperties {
     }
 
   }
-
 
   public static class JWKProperties {
     String keystoreLocation;
@@ -407,7 +393,6 @@ public class IamProperties {
     }
   }
 
-
   public static class JWTProfile {
 
     public enum Profile {
@@ -424,7 +409,6 @@ public class IamProperties {
       this.defaultProfile = defaultProfile;
     }
   }
-
 
   public static class LoginLink {
     String url;
@@ -446,7 +430,6 @@ public class IamProperties {
       this.text = text;
     }
   }
-
 
   public static class LoginPageLayout {
 
@@ -474,7 +457,6 @@ public class IamProperties {
     }
   }
 
-
   public static class RegistractionAccessToken {
     long lifetime = -1;
 
@@ -486,7 +468,6 @@ public class IamProperties {
       this.lifetime = lifetime;
     }
   }
-
 
   public static class AccessToken {
 
@@ -532,7 +513,6 @@ public class IamProperties {
     }
   }
 
-
   public static class Organisation {
     private String name = "indigo-dc";
 
@@ -544,7 +524,6 @@ public class IamProperties {
       this.name = name;
     }
   }
-
 
   public static class Logo {
     private String url = "resources/images/indigo-logo.png";
@@ -586,7 +565,6 @@ public class IamProperties {
 
   }
 
-
   public static class LocalResources {
 
     private boolean enable = false;
@@ -609,7 +587,6 @@ public class IamProperties {
     }
   }
 
-
   public static class ClientProperties {
     private boolean trackLastUsed = false;
 
@@ -621,7 +598,6 @@ public class IamProperties {
       this.trackLastUsed = trackLastUsed;
     }
   }
-
 
   public static class DefaultGroup {
     private String name;
@@ -643,7 +619,6 @@ public class IamProperties {
       this.enrollment = enrollment;
     }
   }
-
 
   public static class AarcProfile {
 
