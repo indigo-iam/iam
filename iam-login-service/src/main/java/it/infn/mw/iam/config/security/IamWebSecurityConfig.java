@@ -342,14 +342,18 @@ public class IamWebSecurityConfig {
     OidcAuthenticationProvider authProvider;
 
     @Autowired
-    @Qualifier("OIDCAuthenticationFilter")
-    private OidcClientFilter oidcFilter;
+    private IamProperties iamProperties;
 
-    @Autowired
+    private OidcClientFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
 
     @Autowired
-    private IamProperties iamProperties;
+    public ExternalOidcLogin(
+        @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
+        UserLoginConfig userLoginConfig) {
+      this.oidcFilter = oidcClientFilter;
+      this.userLoginConfig = userLoginConfig;
+    }
 
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {

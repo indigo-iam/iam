@@ -187,7 +187,13 @@ function RegistrationController(
 				}
 			});
 
-			modalInstance.result.then(self.handleSuccess);
+			modalInstance.result.then(self.handleSuccess)
+				.catch(function (reason) {
+					if (reason === 'Dismissed') {
+						return;
+					}
+					console.error('Modal dismissed with error:', reason);
+				});
 		}
 	};
 
