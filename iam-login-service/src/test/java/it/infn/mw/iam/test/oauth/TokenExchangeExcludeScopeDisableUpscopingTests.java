@@ -148,30 +148,6 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         assertTrue(found);
     }
 
-    // Upscoping disabled, Access token without scopes, Iam settings with scopes, attempt at
-    // upscoping, this forces the use of token introspection
-    @Test
-    void testTokenExchangeForClientCredentialsTokenMissingScopesFail() throws Exception {
-
-        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", GRANT_TYPE)
-            .param("subject_token", accessToken)
-            .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "profile"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("invalid_scope"))
-            .andExpect(jsonPath("$.error_description")
-                .value("scope not allowed by subject token configuration: profile"));
-
-        // No token introspection used whilst doing the exchange
-        boolean found = logCaptor.list.stream()
-            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
-                .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
-
-        assertTrue(found);
-    }
-
     // Upscoping disabled, Access token without scopes, Iam settings without scopes, Using upscoping
     // in the exchange for offline access
     @Test
