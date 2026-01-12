@@ -36,7 +36,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class SearchClientControllerTests {
+class SearchClientControllerTests {
 
   @Autowired
   private MockMvc mvc;
@@ -46,7 +46,7 @@ public class SearchClientControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void searchForTestClient() throws Exception {
+  void searchForTestClient() throws Exception {
 
     ListResponseDTO<RegisteredClientDTO> response = mapper
       .readValue(mvc.perform(get(ENDPOINT).param("search", "test").param("searchType", "name"))
