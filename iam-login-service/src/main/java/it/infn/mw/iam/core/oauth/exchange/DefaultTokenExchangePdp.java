@@ -146,7 +146,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     // Assumption that the destination is ClientDetailsEntity'
     // Should I make an automatic fail if that's not the case?
     if (destination instanceof ClientDetailsEntity destinationsEntity) {
-      if (destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank()) {
+      if (!destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank()) {
         scopeMatchers = extractScopesFromToken(subjectToken);
         invalidScopeMessage = "scope not allowed by subject token configuration";
       }
