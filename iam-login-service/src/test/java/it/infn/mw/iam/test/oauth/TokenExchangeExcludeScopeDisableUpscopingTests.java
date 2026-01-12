@@ -21,6 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,7 +42,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.config.IamProperties;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -59,18 +63,19 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
     private static final String ACTOR_CLIENT_SECRET = "secret";
 
     private String accessToken;
+    private ListAppender<ILoggingEvent> logCaptor;
 
     @Autowired
     private ObjectMapper mapper;
-
-    @Autowired
-    private IamProperties properties;
 
     @Autowired
     private IamClientRepository clientRepository;
 
     @BeforeEach
     void setup() throws Exception {
+
+        logCaptor = attachLogCaptor(DefaultTokenExchangePdp.class);
+
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
             .clientSecret("secret")
@@ -109,6 +114,14 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
 
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertTrue(found);
     }
 
     // Upscoping disabled, Access token without scopes, Iam settings without scopes, attempt at
@@ -125,14 +138,20 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
                 .value("scope not allowed by subject token configuration: profile"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertTrue(found);
     }
 
     // Upscoping disabled, Access token without scopes, Iam settings with scopes, attempt at
-    // upscoping
+    // upscoping, this forces the use of token introspection
     @Test
     void testTokenExchangeForClientCredentialsTokenMissingScopesFail() throws Exception {
-
-        properties.getAccessToken().setIncludeScope(true);
 
         mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
             .param("grant_type", GRANT_TYPE)
@@ -140,11 +159,17 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
             .param("subject_token_type", TOKEN_TYPE)
             .param("scope", "profile"))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("invalid_request"))
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("cannot verify requested scopes with subject token"));
+                .value("scope not allowed by subject token configuration: profile"));
 
-        properties.getAccessToken().setIncludeScope(false);
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertTrue(found);
     }
 
     // Upscoping disabled, Access token without scopes, Iam settings without scopes, Using upscoping
@@ -174,5 +199,14 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
 
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
+
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertTrue(found);
     }
 }

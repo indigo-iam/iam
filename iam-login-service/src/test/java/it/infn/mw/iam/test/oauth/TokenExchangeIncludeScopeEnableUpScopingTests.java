@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +39,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
@@ -55,12 +60,16 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     private static final String ACTOR_CLIENT_SECRET = "secret";
 
     private String accessToken;
+    private ListAppender<ILoggingEvent> logCaptor;
 
     @Autowired
     private ObjectMapper mapper;
 
     @BeforeEach
     void setup() throws Exception {
+
+        logCaptor = attachLogCaptor(DefaultTokenExchangePdp.class);
+
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
             .clientSecret("secret")
@@ -93,6 +102,14 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
         // Scopes should be present in access token
         assertEquals("read-tasks", exchangedToken.getJWTClaimsSet().getClaim("scope"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertFalse(found);
     }
 
     // Upscoping Enabled, Access token with scopes, Iam settings with scopes, using upscoping in
@@ -121,6 +138,14 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
 
         // Scopes should be present in access token
         assertEquals("storage.read:/", exchangedToken.getJWTClaimsSet().getClaim("scope"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertFalse(found);
     }
 
     // Upscoping Enabled, Access token without scopes, Iam settings without scopes, Using upscoping
@@ -153,5 +178,13 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 containsString("offline_access"));
         assertThat((String) exchangedToken.getJWTClaimsSet().getClaim("scope"),
                 containsString("read-tasks"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        assertFalse(found);
     }
 }

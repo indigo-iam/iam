@@ -32,7 +32,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
@@ -41,7 +40,6 @@ import com.google.common.collect.Lists;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
@@ -65,8 +63,6 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
-  private final IamProperties properties;
-
   private List<TokenExchangePolicy> policies = Lists.newArrayList();
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -74,11 +70,9 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties,
-      IamTokenService tokenService) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
-    this.properties = properties;
     this.tokenService = tokenService;
   }
 
@@ -112,19 +106,20 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
    */
 
   private Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
-    if (properties.getAccessToken().isIncludeScope()) {
-      try {
-        JWT token = JWTParser.parse(subjectToken);
-        String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
-        Set<ScopeMatcher> result = new HashSet<>();
-        for (String scope : scopes) {
-          result.add(scopeMatcherRegistry.findMatcherForScope(scope));
-        }
-        return result;
-      } catch (NullPointerException | ParseException e) {
-        throw new InvalidRequestException("cannot verify requested scopes with subject token");
+
+    // First attempt to use scopes from token and potentially fall back to token introspection
+    try {
+      JWT token = JWTParser.parse(subjectToken);
+      String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
+      Set<ScopeMatcher> result = new HashSet<>();
+      for (String scope : scopes) {
+        result.add(scopeMatcherRegistry.findMatcherForScope(scope));
       }
-    } else {
+      return result;
+
+    } catch (NullPointerException | ParseException e) {
+      LOG.warn(
+          "cannot verify requested scopes with subject token. Attempting token introspection instead.");
       OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
       Set<ScopeMatcher> result = new HashSet<>();
       at.getScope().forEach(s -> result.add(scopeMatcherRegistry.findMatcherForScope(s)));
@@ -145,11 +140,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
     // Assumption that the destination is ClientDetailsEntity'
     // Should I make an automatic fail if that's not the case?
-    if (destination instanceof ClientDetailsEntity destinationsEntity) {
-      if (!destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank()) {
-        scopeMatchers = extractScopesFromToken(subjectToken);
-        invalidScopeMessage = "scope not allowed by subject token configuration";
-      }
+    if (destination instanceof ClientDetailsEntity destinationsEntity
+        && (!destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank())) {
+      scopeMatchers = extractScopesFromToken(subjectToken);
+      invalidScopeMessage = "scope not allowed by subject token configuration";
     }
 
     for (String scope : request.getScope()) {
@@ -209,5 +203,4 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   public void afterPropertiesSet() throws Exception {
     reloadPolicies();
   }
-
 }
