@@ -75,7 +75,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
             .scope("read-tasks")
             .getAccessTokenValue();
 
-        ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
+        ClientDetailsEntity client = clientRepository.findByClientId(ACTOR_CLIENT_ID)
             .orElseThrow(NoSuchElementException::new);
         client.setUpScopingEnabled(false);
         clientRepository.save(client);
