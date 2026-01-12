@@ -142,13 +142,14 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-    
+
     // Assumption that the destination is ClientDetailsEntity'
     // Should I make an automatic fail if that's not the case?
-    if (destination instanceof ClientDetailsEntity
-        && !((ClientDetailsEntity) destination).isUpScopingEnabled() && !subjectToken.isBlank()) {
-      scopeMatchers = extractScopesFromToken(subjectToken);
-      invalidScopeMessage = "scope not allowed by subject token configuration";
+    if (destination instanceof ClientDetailsEntity destinationsEntity) {
+      if (destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank()) {
+        scopeMatchers = extractScopesFromToken(subjectToken);
+        invalidScopeMessage = "scope not allowed by subject token configuration";
+      }
     }
 
     for (String scope : request.getScope()) {
