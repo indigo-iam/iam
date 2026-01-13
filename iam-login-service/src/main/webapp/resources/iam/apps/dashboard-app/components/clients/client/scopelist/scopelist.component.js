@@ -25,7 +25,6 @@
         self.customScopes = customScopes;
         self.visibleSystemScopes = visibleSystemScopes;
         self.isRestrictedSystemScope = isRestrictedSystemScope;
-        self.changeUpScopingValue = changeUpScopingValue;
 
         self.limited = true;
         self.scopeMap = {};
@@ -90,10 +89,6 @@
             }
 
             updateScopeMap();
-        }
-
-        function changeUpScopingValue() {
-            self.client.up_scoping_enabled = !self.client.up_scoping_enabled;
         }
 
         function isCustomScope(scope) {

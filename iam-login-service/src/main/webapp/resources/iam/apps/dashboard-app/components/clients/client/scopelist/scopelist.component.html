@@ -56,13 +56,14 @@
             </div>
         </div>
         <!-- Upscoping check-box  -->
-        <div ng-show="$root.loggedUser.isAdmin">
+        <div>
             <label>Up scoping</label>
-            <div class="checkbox"
-                ng-attr-title="{{($ctrl.client.up_scoping_enabled) ? 'Un-check to disable upcoping': 'Check to enable upscoping'}}"
-                ng-click="$ctrl.changeUpScopingValue()">
-                <label>
-                    <input type="checkbox" ng-model="$ctrl.client.up_scoping_enabled">
+            <div class="checkbox">
+                <label
+                    uib-tooltip="{{($ctrl.client.up_scoping_enabled) ? 'Un-check to disable upscoping': 'Check to enable upscoping'}}"
+                    tooltip-append-to-body="true">
+                    <input type="checkbox" ng-model="$ctrl.client.up_scoping_enabled"
+                        ng-disabled="!$root.loggedUser.isAdmin">
                     Up scoping for token-exchange is allowed
                 </label>
             </div>
