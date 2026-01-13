@@ -154,8 +154,6 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       invalidScopeMessage = "scope not allowed by subject token configuration";
     }
 
-    // I could maybe move this into the if statement above at this is now a check
-    // only for the token scopes
     for (String scope : request.getScope()) {
       if (!scope.equals("offline_access")
           && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
@@ -173,8 +171,6 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
     return fromPolicy(p);
   }
-
-
 
   @Override
   public TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetails origin,
