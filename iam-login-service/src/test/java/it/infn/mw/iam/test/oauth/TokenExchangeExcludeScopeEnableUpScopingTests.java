@@ -90,11 +90,11 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
             .scope("read-tasks")
             .getAccessTokenValue();
 
-        ClientDetailsEntity client_no_offline =
+        ClientDetailsEntity clientNoOffline =
                 clientRepository.findByClientId(ACTOR_CLIENT_ID_NO_OFFLINE)
                     .orElseThrow(NoSuchElementException::new);
-        client_no_offline.getScope().remove("offline_access");
-        clientRepository.save(client_no_offline);
+        clientNoOffline.getScope().remove("offline_access");
+        clientRepository.save(clientNoOffline);
     }
 
     // Upscoping Enabled, Access token without scopes, same scope in exchange, upscoping enabled so

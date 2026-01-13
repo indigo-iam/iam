@@ -32,7 +32,8 @@ import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
@@ -99,12 +100,12 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         client.setUpScopingEnabled(false);
         clientRepository.save(client);
 
-        ClientDetailsEntity client_no_offline =
+        ClientDetailsEntity clientNoOffline =
                 clientRepository.findByClientId(ACTOR_CLIENT_ID_NO_OFFLINE)
                     .orElseThrow(NoSuchElementException::new);
-        client_no_offline.getScope().remove("offline_access");
-        client_no_offline.setUpScopingEnabled(false);
-        clientRepository.save(client_no_offline);
+        clientNoOffline.getScope().remove("offline_access");
+        clientNoOffline.setUpScopingEnabled(false);
+        clientRepository.save(clientNoOffline);
     }
 
     // Upscoping disabled, Access token with scopes, same scopes, Scopes in token so no need for
@@ -145,18 +146,23 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
 
     // Upscoping disabled, Access token with scopes, attempt at upscoping, Scopes in token so no
     // need for token introspection
-    @Test
-    void testTokenExchangeUpScopingFail() throws Exception {
+    // 1. Upscoping fail - both actor and client has the scope, but upscoping isn't enabled
+    // 2. Upscoping fail - subject missing the upscoping value
+    // 3. Upscoping fail - actor missing the upscoping value
+    @ParameterizedTest
+    @CsvSource({"profile,scope not allowed by subject token configuration: profile",
+            "email, Scope 'email' not allowed for client 'client-cred'",
+            "write-tasks, Scope 'write-tasks' not allowed for client 'token-exchange-actor'"})
+    void testTokenExchangeUpScopingFail(String scope, String errorMessage) throws Exception {
 
         mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
             .param("grant_type", GRANT_TYPE)
             .param("subject_token", accessToken)
             .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "profile"))
+            .param("scope", scope))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
-            .andExpect(jsonPath("$.error_description")
-                .value("scope not allowed by subject token configuration: profile"));
+            .andExpect(jsonPath("$.error_description").value(errorMessage));
 
         // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
@@ -204,54 +210,6 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        assertFalse(found);
-    }
-
-    // Token Exchange, but only subject missing the scope requested
-    @Test
-    void testSubjectMissingScopeDuringExchangeFail() throws Exception {
-
-        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", GRANT_TYPE)
-            .param("subject_token", accessToken)
-            .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "email"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("invalid_scope"))
-            .andExpect(jsonPath("$.error_description")
-                .value("Scope 'email' not allowed for client 'client-cred'"));
-
-        // No token introspection used whilst doing the exchange
-        boolean found = logCaptor.list.stream()
-            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
-                .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
-
-        // The error happens before it reaches this part
-        assertFalse(found);
-    }
-
-    // Token exchange, but only actor missing the scope requested
-    @Test
-    void testActorMissingScopeDuringExchangeFail() throws Exception {
-
-        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", GRANT_TYPE)
-            .param("subject_token", accessToken)
-            .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "write-tasks"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("invalid_scope"))
-            .andExpect(jsonPath("$.error_description")
-                .value("Scope 'write-tasks' not allowed for client 'token-exchange-actor'"));
-
-        // No token introspection used whilst doing the exchange
-        boolean found = logCaptor.list.stream()
-            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
-                .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
-
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 

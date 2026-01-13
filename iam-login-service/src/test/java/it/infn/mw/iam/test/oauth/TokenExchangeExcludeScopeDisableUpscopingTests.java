@@ -97,12 +97,12 @@ class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         client.setUpScopingEnabled(false);
         clientRepository.save(client);
 
-        ClientDetailsEntity client_no_offline =
+        ClientDetailsEntity clientNoOffline =
                 clientRepository.findByClientId(ACTOR_CLIENT_ID_NO_OFFLINE)
                     .orElseThrow(NoSuchElementException::new);
-        client_no_offline.getScope().remove("offline_access");
-        client_no_offline.setUpScopingEnabled(false);
-        clientRepository.save(client_no_offline);
+        clientNoOffline.getScope().remove("offline_access");
+        clientNoOffline.setUpScopingEnabled(false);
+        clientRepository.save(clientNoOffline);
     }
 
     // Upscoping Disabled, Access token without scopes, same scope in exchange, token introspection
