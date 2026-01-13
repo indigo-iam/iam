@@ -42,6 +42,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 import it.infn.mw.iam.core.IamTokenService;
@@ -63,6 +64,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
+  private final ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
+
   private List<TokenExchangePolicy> policies = Lists.newArrayList();
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -70,10 +73,12 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
+      ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
     this.tokenService = tokenService;
+    this.scopeMatcherOAuthRequestValidator = scopeMatcherOAuthRequestValidator;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
@@ -134,11 +139,14 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       return fromPolicy(p);
     }
 
+    // This should be the necessary validation for the origin
+    scopeMatcherOAuthRequestValidator.validateScope(request, origin);
+
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
 
-    // Assumption that the destination is ClientDetailsEntity'
+    // Assumption that the destination is ClientDetailsEntity
     // Should I make an automatic fail if that's not the case?
     if (destination instanceof ClientDetailsEntity destinationsEntity
         && (!destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank())) {
@@ -146,6 +154,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       invalidScopeMessage = "scope not allowed by subject token configuration";
     }
 
+    // I could maybe move this into the if statement above at this is now a check
+    // only for the token scopes
     for (String scope : request.getScope()) {
       if (!scope.equals("offline_access")
           && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {

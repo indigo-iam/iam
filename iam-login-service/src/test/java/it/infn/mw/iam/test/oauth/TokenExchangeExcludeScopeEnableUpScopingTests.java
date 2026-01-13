@@ -27,10 +27,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.NoSuchElementException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -43,6 +45,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
@@ -58,11 +61,23 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     private static final String ACTOR_CLIENT_ID = "token-exchange-actor";
     private static final String ACTOR_CLIENT_SECRET = "secret";
 
+    private static final String SUBJECT_CLIENT_ID = "client-cred";
+    private static final String SUBJECT_CLIENT_SECRET = "secret";
+
+    private static final String ACTOR_CLIENT_ID_NO_OFFLINE = "token-lookup-client";
+    private static final String ACTOR_CLIENT_SECRET_NO_OFFLINE = "secret";
+
+    private static final String SUBJECT_CLIENT_ID_NO_OFFLINE = "post-client";
+    private static final String SUBJECT_CLIENT_SECRET_NO_OFFLINE = "secret";
+
     private String accessToken;
     private ListAppender<ILoggingEvent> logCaptor;
 
     @Autowired
     private ObjectMapper mapper;
+
+    @Autowired
+    private IamClientRepository clientRepository;
 
     @BeforeEach
     void setup() throws Exception {
@@ -70,16 +85,22 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         logCaptor = attachLogCaptor(DefaultTokenExchangePdp.class);
 
         accessToken = new AccessTokenGetter().grantType("client_credentials")
-            .clientId("client-cred")
-            .clientSecret("secret")
+            .clientId(SUBJECT_CLIENT_ID)
+            .clientSecret(SUBJECT_CLIENT_SECRET)
             .scope("read-tasks")
             .getAccessTokenValue();
+
+        ClientDetailsEntity client_no_offline =
+                clientRepository.findByClientId(ACTOR_CLIENT_ID_NO_OFFLINE)
+                    .orElseThrow(NoSuchElementException::new);
+        client_no_offline.getScope().remove("offline_access");
+        clientRepository.save(client_no_offline);
     }
 
-    // Upscoping Enabled, Access token without scopes, Iam settings without scopes, same scope in
-    // exchange
+    // Upscoping Enabled, Access token without scopes, same scope in exchange, upscoping enabled so
+    // no need for token introspection
     @Test
-    void testTokenExchangeForClientCredentialsSuccess() throws Exception {
+    void testTokenExchangeSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -98,7 +119,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(SUBJECT_CLIENT_ID));
 
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
@@ -112,10 +133,10 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         assertFalse(found);
     }
 
-    // Upscoping Enabled, Access token without scopes, Iam settings without scopes, Using upscoping
-    // in the exchange
+    // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange, upscoping
+    // enabled so no need for token introspection
     @Test
-    void testTokenExchangeForClientCredentialsUpScopingSuccess() throws Exception {
+    void testTokenExchangeUpScopingSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -133,7 +154,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(SUBJECT_CLIENT_ID));
 
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
@@ -147,46 +168,10 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         assertFalse(found);
     }
 
-    // Upscoping Enabled, Access token without scopes, Iam settings with scopes, Using upscoping in
-    // the exchange, this forces the use of token introspection
+    // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange for offline
+    // access, upscoping enabled so no need for token introspection
     @Test
-    void testTokenExchangeForClientCredentialsUpScopingIncludeScopes() throws Exception {
-
-        String tokenResponse = mvc
-            .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-                .param("grant_type", GRANT_TYPE)
-                .param("subject_token", accessToken)
-                .param("subject_token_type", TOKEN_TYPE)
-                .param("scope", "profile"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", containsString("profile")))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-        DefaultOAuth2AccessToken tokenResponseObject =
-                mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
-
-        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
-
-        // No scopes should be present in access token
-        assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
-
-        // No token introspection used whilst doing the exchange
-        boolean found = logCaptor.list.stream()
-            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
-                .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
-
-        assertFalse(found);
-    }
-
-    // Upscoping Enabled, Access token without scopes, Iam settings without scopes, Using upscoping
-    // in the exchange for offline access
-    @Test
-    void testTokenExchangeForClientCredentialsUpscopingOfflineAccess() throws Exception {
+    void testTokenExchangeUpscopingOfflineAccessSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -206,7 +191,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(SUBJECT_CLIENT_ID));
 
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
@@ -217,6 +202,140 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
+        assertFalse(found);
+    }
+
+    // Token Exchange, but only subject missing the scope requested
+    @Test
+    void testSubjectMissingScopeDuringExchangeFail() throws Exception {
+
+        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessToken)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "email"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
+            .andExpect(jsonPath("$.error_description")
+                .value("Scope 'email' not allowed for client 'client-cred'"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        // The error happens before it reaches this part
+        assertFalse(found);
+    }
+
+    // Token exchange, but only actor missing the scope requested
+    @Test
+    void testActorMissingScopeDuringExchangeFail() throws Exception {
+
+        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessToken)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "write-tasks"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
+            .andExpect(jsonPath("$.error_description")
+                .value("Scope 'write-tasks' not allowed for client 'token-exchange-actor'"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        // The error happens before it reaches this part
+        assertFalse(found);
+    }
+
+    // Token exchange, but only subject missing the requested offline_access scope
+    @Test
+    void testSubjectMissingOfflineScopeDuringExchangeFail() throws Exception {
+
+        accessToken = new AccessTokenGetter().grantType("client_credentials")
+            .clientId(SUBJECT_CLIENT_ID_NO_OFFLINE)
+            .clientSecret(SUBJECT_CLIENT_SECRET_NO_OFFLINE)
+            .scope("profile")
+            .getAccessTokenValue();
+
+        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessToken)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "offline_access"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
+            .andExpect(jsonPath("$.error_description")
+                .value("Scope 'offline_access' not allowed for client 'post-client'"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        // The error happens before it reaches this part
+        assertFalse(found);
+    }
+
+    // Token exchange, but only Actor missing the requested offline_access scope
+    @Test
+    void testActorMissingOfflineScopeDuringExchangeFail() throws Exception {
+
+        mvc.perform(post(TOKEN_ENDPOINT)
+            .with(httpBasic(ACTOR_CLIENT_ID_NO_OFFLINE, ACTOR_CLIENT_SECRET_NO_OFFLINE))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessToken)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "offline_access"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
+            .andExpect(jsonPath("$.error_description")
+                .value("Scope 'offline_access' not allowed for client 'token-lookup-client'"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        // The error happens before it reaches this part
+        assertFalse(found);
+    }
+
+    // Token exchange, Subject and Actor missing the offline scope
+    @Test
+    void testSubjectAndActorMissingOfflineScopeDuringExchangeFail() throws Exception {
+
+        accessToken = new AccessTokenGetter().grantType("client_credentials")
+            .clientId(SUBJECT_CLIENT_ID_NO_OFFLINE)
+            .clientSecret(SUBJECT_CLIENT_SECRET_NO_OFFLINE)
+            .scope("profile")
+            .getAccessTokenValue();
+
+        mvc.perform(post(TOKEN_ENDPOINT)
+            .with(httpBasic(ACTOR_CLIENT_ID_NO_OFFLINE, ACTOR_CLIENT_SECRET_NO_OFFLINE))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessToken)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "offline_access"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_scope"))
+            .andExpect(jsonPath("$.error_description")
+                .value("Scope 'offline_access' not allowed for client 'token-lookup-client'"));
+
+        // No token introspection used whilst doing the exchange
+        boolean found = logCaptor.list.stream()
+            .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
+                .contains(
+                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+
+        // The error happens before it reaches this part
         assertFalse(found);
     }
 }

@@ -44,6 +44,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher;
 import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
@@ -72,6 +73,9 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
   @InjectMocks
   DefaultTokenExchangePdp pdp;
+
+  @Mock
+  ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
 
   private TokenRequest buildTokenRequest() {
     return new TokenRequest(emptyMap(), "destination", Collections.emptySet(),
