@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
@@ -59,8 +60,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final ScopeFilter scopeFilter;
 
   public IamTokenService(IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientService clientService, ApplicationEventPublisher eventPublisher,
-      IamProperties iamProperties, ScopeFilter scopeFilter) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientService clientService,
+      ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
+      ScopeFilter scopeFilter) {
 
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
@@ -99,14 +101,15 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
-    if (authentication.getUserAuthentication() != null && 
-      authentication.getUserAuthentication().getAuthorities() != null &&
-      authentication.getUserAuthentication()
-      .getAuthorities()
-      .contains(Authorities.ROLE_PRE_AUTHENTICATED)) {
+    if (authentication.getUserAuthentication() != null
+        && authentication.getUserAuthentication().getAuthorities() != null
+        && authentication.getUserAuthentication()
+          .getAuthorities()
+          .contains(Authorities.ROLE_PRE_AUTHENTICATED)) {
       throw new InvalidGrantException("User is not fully authenticated.");
-    } 
-    OAuth2AccessTokenEntity token = super.createAccessToken(scopeFilter.filterScopes(authentication));
+    }
+    OAuth2AccessTokenEntity token =
+        super.createAccessToken(scopeFilter.filterScopes(authentication));
 
     if (iamProperties.getClient().isTrackLastUsed()) {
       clientService.useClient(token.getClient());
@@ -120,7 +123,8 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
       AuthenticationHolderEntity authHolder) {
 
-    OAuth2RefreshTokenEntity token = super.createRefreshToken(client, scopeFilter.filterScopes(authHolder));
+    OAuth2RefreshTokenEntity token =
+        super.createRefreshToken(client, scopeFilter.filterScopes(authHolder));
 
     eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, token));
     return token;
@@ -138,6 +142,24 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
+  }
+
+  @Override
+  public OAuth2AccessTokenEntity readAccessToken(String accessTokenValue) {
+
+    String hValue = sha256(accessTokenValue);
+    return accessTokenRepo.findByTokenValue(hValue)
+      .orElseThrow(() -> new InvalidTokenException("Access token not found:" + accessTokenValue));
+  }
+
+  @Override
+  public OAuth2Authentication loadAuthentication(String accessTokenValue) {
+
+    OAuth2AccessTokenEntity accessToken = readAccessToken(accessTokenValue);
+    if (accessToken.isExpired()) {
+      throw new InvalidTokenException("The access token is expired");
+    }
+    return accessToken.getAuthenticationHolder().getAuthentication();
   }
 
   public static String sha256(String tokenString) {
