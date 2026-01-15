@@ -37,6 +37,7 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -146,6 +147,10 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
     String subjectTokenValue = tokenRequest.getRequestParameters().get("subject_token");
     OAuth2AccessTokenEntity subjectToken = tokenServices.readAccessToken(subjectTokenValue);
+
+    if (subjectToken == null) {
+      throw new InvalidTokenException("Access token not found");
+    }
 
     OAuth2Authentication authentication;
 
