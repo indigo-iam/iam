@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -148,14 +149,17 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2AccessTokenEntity readAccessToken(String accessTokenValue) {
 
     String hValue = sha256(accessTokenValue);
-    return accessTokenRepo.findByTokenValue(hValue)
-      .orElseThrow(() -> new InvalidTokenException("Access token not found:" + accessTokenValue));
+    return accessTokenRepo.findByTokenValue(hValue).orElse(null);
   }
 
   @Override
-  public OAuth2Authentication loadAuthentication(String accessTokenValue) {
+  public OAuth2Authentication loadAuthentication(String accessTokenValue)
+      throws AuthenticationException {
 
     OAuth2AccessTokenEntity accessToken = readAccessToken(accessTokenValue);
+    if (accessToken == null) {
+      throw new InvalidTokenException("Access token not found");
+    }
     if (accessToken.isExpired()) {
       throw new InvalidTokenException("The access token is expired");
     }
