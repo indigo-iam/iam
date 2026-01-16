@@ -89,6 +89,11 @@ public class IamRevocationEndpoint {
     }
     if (jwt instanceof SignedJWT) {
       OAuth2AccessTokenEntity accessToken = tokenService.readAccessToken(tokenValue);
+      
+      if (accessToken == null) {
+        throw new InvalidTokenException("Access token not found");
+      }
+      
       ClientDetailsEntity tokenClient = accessToken.getClient();
       verifyClient(tokenClient, authenticatedClient);
       revocationService.revokeAccessToken(accessToken);

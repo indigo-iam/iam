@@ -182,7 +182,7 @@ public class IamIntrospectionService
   private IntrospectionResponse introspectAccessToken(ClientDetailsEntity authenticatedClient,
       OAuth2AccessTokenEntity at, TokenInfo info) throws InvalidTokenException {
 
-    if (at.isExpired() || notYetValid(info.claims)) {
+    if (at == null || at.isExpired() || notYetValid(info.claims)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
