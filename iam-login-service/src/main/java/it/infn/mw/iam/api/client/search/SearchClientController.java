@@ -50,7 +50,7 @@ public class SearchClientController {
     this.service = service;
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ClientViews.NoSecretDynamicRegistration.class})
   @GetMapping
   public ListResponseDTO<RegisteredClientDTO> searchClients(
       ClientSearchForm searchForm) {
