@@ -99,7 +99,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     }
 
     // Upscoping Enabled, Access token with scopes, no upscoping, No token introspection as there're
-    // scopes in the token (and also that upscoping is enabled)
+    // scopes in the token
     @Test
     void testTokenExchangeSuccess() throws Exception {
 
@@ -135,7 +135,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     }
 
     // Upscoping Enabled, Access token with scopes, using upscoping in exchange, No token
-    // introspection as there're scopes in the token (and also that upscoping is enabled)
+    // introspection as there're scopes in the token
     @Test
     void testTokenExchangeUpscopingSuccess() throws Exception {
 
@@ -171,8 +171,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
     }
 
     // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange for offline
-    // access, No token introspection as there're scopes in the token (and also that upscoping is
-    // enabled)
+    // access, No token introspection as there're scopes in the token
     @Test
     void testTokenExchangeUpscopingOfflineScope() throws Exception {
 
@@ -224,7 +223,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("Scope 'email' not allowed for client 'client-cred'"));
+                .value("scope not allowed by origin client configuration: email"));
 
         // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
@@ -232,7 +231,6 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 
@@ -256,7 +254,6 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 
@@ -278,7 +275,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("Scope 'offline_access' not allowed for client 'post-client'"));
+                .value("scope not allowed by origin client configuration: offline_access"));
 
         // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
@@ -286,7 +283,6 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 
@@ -311,7 +307,6 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 
@@ -342,7 +337,6 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
         assertFalse(found);
     }
 }

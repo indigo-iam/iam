@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth.exchange;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.fromPolicy;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.invalidScope;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notApplicable;
+import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.deny;
 import static java.util.Comparator.comparing;
 
 import java.text.ParseException;
@@ -64,8 +65,6 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
-  private final ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
-
   private List<TokenExchangePolicy> policies = Lists.newArrayList();
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -78,7 +77,6 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
     this.tokenService = tokenService;
-    this.scopeMatcherOAuthRequestValidator = scopeMatcherOAuthRequestValidator;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
@@ -110,9 +108,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
    * @return a decision result
    */
 
-  private Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
+  protected Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
 
-    // First attempt to use scopes from token and potentially fall back to token introspection
+    // First it should attempt to use scopes from the token
+    // If it can't then it should fall back to token introspection
     try {
       JWT token = JWTParser.parse(subjectToken);
       String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
@@ -139,25 +138,43 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       return fromPolicy(p);
     }
 
-    // This should be the necessary validation for the origin
-    scopeMatcherOAuthRequestValidator.validateScope(request, origin);
-
-    Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
-    String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
+    Set<ScopeMatcher> tokenScopeMatchers = null;
+
+    // Actually, there's another way out
+    // I call the clientRepository and get the ClientDetailsEntity object from there
+    // But I'd rather avoid an expensive DB call
 
     // Assumption that the destination is ClientDetailsEntity
-    // Should I make an automatic fail if that's not the case?
-    if (destination instanceof ClientDetailsEntity destinationsEntity
-        && (!destinationsEntity.isUpScopingEnabled() && !subjectToken.isBlank())) {
-      scopeMatchers = extractScopesFromToken(subjectToken);
-      invalidScopeMessage = "scope not allowed by subject token configuration";
+    if (destination instanceof ClientDetailsEntity destinationsEntity) {
+      // Must be present and should already have been verified by OAuth2Authentication
+      if (!subjectToken.isBlank()) {
+        tokenScopeMatchers = extractScopesFromToken(subjectToken);
+        // If no token present, then the request is not elligble for token exchange
+      } else {
+        return deny("Subject token not present in request");
+      }
+      // If not then then it is denied automatically as it can't be properly evaluated
+    } else {
+      return deny("Destination client type not supported for token exchange");
     }
 
+    Set<ScopeMatcher> originClientMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+
     for (String scope : request.getScope()) {
-      if (!scope.equals("offline_access")
-          && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
-        return invalidScope(p, scope, invalidScopeMessage);
+
+      // Check requested scope is permitted by client configuration
+      if (originClientMatchers.stream().noneMatch(m -> m.matches(scope))) {
+        return invalidScope(p, scope, "scope not allowed by origin client configuration");
+      }
+
+      // If upscoping is disabled for the actor and scopes can and has been extracted from the token
+      if (!destinationsEntity.isUpScopingEnabled() && tokenScopeMatchers != null) {
+        // Allow offline access during token scope evaluation pr. default
+        if (!scope.equals("offline_access")
+            && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+          return invalidScope(p, scope, "scope not allowed by subject token configuration");
+        }
       }
 
       // Check requested scope is compliant with policies

@@ -151,7 +151,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
     // 3. Upscoping fail - actor missing the upscoping value
     @ParameterizedTest
     @CsvSource({"profile,scope not allowed by subject token configuration: profile",
-            "email, Scope 'email' not allowed for client 'client-cred'",
+            "email, scope not allowed by origin client configuration: email",
             "write-tasks, Scope 'write-tasks' not allowed for client 'token-exchange-actor'"})
     void testTokenExchangeUpScopingFail(String scope, String errorMessage) throws Exception {
 
@@ -231,7 +231,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("Scope 'offline_access' not allowed for client 'post-client'"));
+                .value("scope not allowed by origin client configuration: offline_access"));
 
         // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
@@ -239,7 +239,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
+        // No need for token introspection, when scopes are present in token
         assertFalse(found);
     }
 

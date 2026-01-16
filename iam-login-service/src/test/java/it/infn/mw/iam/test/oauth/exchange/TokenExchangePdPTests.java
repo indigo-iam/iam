@@ -30,20 +30,25 @@ import static org.mockito.Mockito.lenient;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher;
@@ -71,15 +76,46 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Mock
   ScopeMatcherRegistry scopeMatchersRegistry;
 
+  @Spy
   @InjectMocks
   DefaultTokenExchangePdp pdp;
 
   @Mock
   ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
 
+  @Mock
+  IamTokenService tokenService;
+
+  // These are not tests of the Upscoping, thus the scopes extracted from the token is not what is
+  // in question. Therefore, it should always make the static scopematchers for the token.
+  class TestableDefaultTokenExchangePdp extends DefaultTokenExchangePdp {
+
+    TestableDefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
+        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
+        ScopeMatcherOAuthRequestValidator validator) {
+
+      super(repo, scopeMatcherRegistry, tokenService, validator);
+    }
+
+    @Override
+    protected Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
+      return FIXED_MATCHERS;
+    }
+  }
+
+  static final Set<ScopeMatcher> FIXED_MATCHERS =
+      Set.of(StringEqualsScopeMatcher.stringEqualsMatcher("s1"),
+          StringEqualsScopeMatcher.stringEqualsMatcher("s2"));
+
   private TokenRequest buildTokenRequest() {
     return new TokenRequest(emptyMap(), "destination", Collections.emptySet(),
         TOKEN_EXCHANGE_GRANT_TYPE);
+  }
+
+  @BeforeEach
+  void setup() {
+    pdp = new TestableDefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService,
+        scopeMatcherOAuthRequestValidator);
   }
 
   @BeforeEach
@@ -94,7 +130,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         .collect(toSet()));
     lenient().when(repo.findAll()).thenReturn(emptyList());
     pdp.reloadPolicies();
-    lenient().when(request.getRequestParameters()).thenReturn(Map.of("subject_token", ""));
+    lenient().when(request.getRequestParameters()).thenReturn(Map.of("subject_token", "Not empty"));
   }
 
   @Test
@@ -319,5 +355,42 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
     assertThat(result.invalidScope().get(), is("s2"));
     assertThat(result.message().isPresent(), is(true));
     assertThat(result.message().get(), is("scope exchange not allowed by policy"));
+  }
+
+  @Test
+  void tokenExchangeWrongClientType() {
+
+    ClientDetails destinationClientWrongType = Mockito.mock(ClientDetails.class);
+
+    IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
+    request.setScope(asList("s1", "s2"));
+
+    lenient().when(repo.findAll()).thenReturn(asList(p1));
+    pdp.reloadPolicies();
+
+    TokenExchangePdpResult result =
+        pdp.validateTokenExchange(request, originClient, destinationClientWrongType);
+
+    assertThat(result.decision(), is(Decision.DENY));
+    assertThat(result.message().get(),
+        is("Destination client type not supported for token exchange"));
+  }
+
+  @Test
+  void tokenExchangeWrongNoSubjectToken() {
+
+    IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
+    request.setScope(asList("s1", "s2"));
+
+    lenient().when(repo.findAll()).thenReturn(asList(p1));
+    pdp.reloadPolicies();
+
+    lenient().when(request.getRequestParameters()).thenReturn(Map.of("subject_token", ""));
+
+    TokenExchangePdpResult result =
+        pdp.validateTokenExchange(request, originClient, destinationClient);
+
+    assertThat(result.decision(), is(Decision.DENY));
+    assertThat(result.message().get(), is("Subject token not present in request"));
   }
 }

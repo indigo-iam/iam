@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -97,8 +98,8 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         clientRepository.save(clientNoOffline);
     }
 
-    // Upscoping Enabled, Access token without scopes, same scope in exchange, upscoping enabled so
-    // no need for token introspection
+    // Upscoping Enabled, Access token without scopes, same scope in exchange, token introspection
+    // as there are no scopes in token
     @Test
     void testTokenExchangeSuccess() throws Exception {
 
@@ -124,17 +125,16 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
-        // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        assertFalse(found);
+        assertTrue(found);
     }
 
-    // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange, upscoping
-    // enabled so no need for token introspection
+    // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange,token
+    // introspection as there are no scopes in token
     @Test
     void testTokenExchangeUpScopingSuccess() throws Exception {
 
@@ -159,17 +159,16 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
-        // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        assertFalse(found);
+        assertTrue(found);
     }
 
     // Upscoping Enabled, Access token without scopes, Using upscoping in the exchange for offline
-    // access, upscoping enabled so no need for token introspection
+    // access, token introspection as there are no scopes in token
     @Test
     void testTokenExchangeUpscopingOfflineAccessSuccess() throws Exception {
 
@@ -196,13 +195,12 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
         // No scopes should be present in access token
         assertEquals(null, exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
-        // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        assertFalse(found);
+        assertTrue(found);
     }
 
     // Token Exchange, but only subject missing the scope requested
@@ -217,16 +215,14 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("Scope 'email' not allowed for client 'client-cred'"));
+                .value("scope not allowed by origin client configuration: email"));
 
-        // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
-        assertFalse(found);
+        assertTrue(found);
     }
 
     // Token exchange, but only actor missing the scope requested
@@ -271,16 +267,14 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
-                .value("Scope 'offline_access' not allowed for client 'post-client'"));
+                .value("scope not allowed by origin client configuration: offline_access"));
 
-        // No token introspection used whilst doing the exchange
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
                         "cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
-        // The error happens before it reaches this part
-        assertFalse(found);
+        assertTrue(found);
     }
 
     // Token exchange, but only Actor missing the requested offline_access scope
