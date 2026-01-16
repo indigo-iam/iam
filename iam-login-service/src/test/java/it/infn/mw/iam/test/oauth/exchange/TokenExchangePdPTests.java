@@ -49,7 +49,6 @@ import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher;
 import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
@@ -81,9 +80,6 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   DefaultTokenExchangePdp pdp;
 
   @Mock
-  ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
-
-  @Mock
   IamTokenService tokenService;
 
   // These are not tests of the Upscoping, thus the scopes extracted from the token is not what is
@@ -91,10 +87,9 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   class TestableDefaultTokenExchangePdp extends DefaultTokenExchangePdp {
 
     TestableDefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
-        ScopeMatcherOAuthRequestValidator validator) {
+        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
 
-      super(repo, scopeMatcherRegistry, tokenService, validator);
+      super(repo, scopeMatcherRegistry, tokenService);
     }
 
     @Override
@@ -114,8 +109,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
   @BeforeEach
   void setup() {
-    pdp = new TestableDefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService,
-        scopeMatcherOAuthRequestValidator);
+    pdp = new TestableDefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService);
   }
 
   @BeforeEach

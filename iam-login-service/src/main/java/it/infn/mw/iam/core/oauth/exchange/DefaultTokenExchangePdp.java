@@ -43,7 +43,6 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 import it.infn.mw.iam.core.IamTokenService;
@@ -72,8 +71,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
-      ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
     this.tokenService = tokenService;
@@ -131,6 +129,23 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     }
   }
 
+  private Boolean evaluateUpscoping(ClientDetailsEntity destinationsEntity, String scope,
+      Set<ScopeMatcher> tokenScopeMatchers) {
+
+    // If upscoping is disabled for the actor and scopes can and has been extracted from the token
+    if (!destinationsEntity.isUpScopingEnabled() && tokenScopeMatchers != null) {
+      // Allow offline access during token scope evaluation pr. default
+      if (!scope.equals("offline_access")
+          && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
+
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
       ClientDetails origin, ClientDetails destination) {
 
@@ -169,12 +184,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       }
 
       // If upscoping is disabled for the actor and scopes can and has been extracted from the token
-      if (!destinationsEntity.isUpScopingEnabled() && tokenScopeMatchers != null) {
-        // Allow offline access during token scope evaluation pr. default
-        if (!scope.equals("offline_access")
-            && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
-          return invalidScope(p, scope, "scope not allowed by subject token configuration");
-        }
+      if (!evaluateUpscoping(destinationsEntity, scope, tokenScopeMatchers)) {
+        return invalidScope(p, scope, "scope not allowed by subject token configuration");
       }
 
       // Check requested scope is compliant with policies

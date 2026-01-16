@@ -51,7 +51,6 @@ import it.infn.mw.iam.api.exchange_policy.ExchangePolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangeScopePolicyDTO;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
@@ -73,14 +72,11 @@ class ExchangePolicyApiIntegrationTests {
     @Autowired
     private IamTokenService tokenService;
 
-    private ScopeMatcherOAuthRequestValidator scopeMatcherOAuthRequestValidator;
-
     @Bean
     @Primary
     TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
-      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, tokenService,
-          scopeMatcherOAuthRequestValidator);
+      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, tokenService);
       return Mockito.spy(pdp);
     }
   }
