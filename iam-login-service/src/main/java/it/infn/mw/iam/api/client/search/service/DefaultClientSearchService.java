@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.client.search.service;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -52,7 +51,6 @@ public class DefaultClientSearchService implements ClientSearchService {
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
 
-  @Autowired
   public DefaultClientSearchService(IamClientRepository clientRepo,
       IamAccountClientRepository accountClientRepo, AccountUtils accountUtils,
       ClientConverter converter) {

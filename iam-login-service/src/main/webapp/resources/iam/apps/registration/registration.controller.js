@@ -342,7 +342,7 @@ function RegistrationController(
 	}
 
 	function fieldReadonly(name) {
-		return $scope.config?.fields?.[name]?.readOnly === true;
+		return $scope.config?.fields?.[name?.toUpperCase()]?.readOnly === true;
 	}
 
 	function populateFieldsWithAdminPreference() {
