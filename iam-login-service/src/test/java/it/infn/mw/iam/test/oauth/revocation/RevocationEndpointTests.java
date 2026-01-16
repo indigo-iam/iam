@@ -81,8 +81,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   @Test
   public void testRevokeTokenNotInDBReturnsIsUnauthorized() throws Exception {
 
-    TokenEndpointResponse tokenResponse = getPasswordToken("openid");
-    String accessToken = tokenResponse.accessToken();
     String hValue = Hashing.sha256().hashString(accessToken, StandardCharsets.UTF_8).toString();
     OAuth2AccessTokenEntity entity = accessTokenRepo.findByTokenValue(hValue).get();
     accessTokenRepo.delete(entity);
