@@ -36,7 +36,7 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-  webEnvironment = WebEnvironment.NONE)
+    webEnvironment = WebEnvironment.NONE)
 class ClientSearchServiceTests {
 
   @Autowired
@@ -44,7 +44,7 @@ class ClientSearchServiceTests {
 
   @Test
   void testParamValidation() {
-    
+
     assertThrows(ConstraintViolationException.class, () -> {
       ClientSearchForm form = new ClientSearchForm();
       form.setSearch(null);
@@ -63,7 +63,6 @@ class ClientSearchServiceTests {
       form.setSearch("term");
       service.searchClients(form);
     });
-
   }
 
   @Test
@@ -72,12 +71,8 @@ class ClientSearchServiceTests {
     ClientSearchForm form = new ClientSearchForm();
     form.setSearch("scim");
 
-    ListResponseDTO<RegisteredClientDTO> result =
-        service.searchClients(form);
+    ListResponseDTO<RegisteredClientDTO> result = service.searchClients(form);
 
     assertThat(result.getTotalResults(), is(2L));
-
-
   }
-
 }
