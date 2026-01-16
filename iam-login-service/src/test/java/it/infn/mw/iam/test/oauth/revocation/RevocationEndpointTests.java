@@ -21,20 +21,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.google.common.hash.Hashing;
+
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 public class RevocationEndpointTests extends EndpointsTestUtils {
+
+  @Autowired
+  IamOAuthAccessTokenRepository accessTokenRepo;
 
   private static final String INVALID_TOKEN_VALUE = "not-a-token";
 
@@ -65,6 +75,22 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param(OAuth2ParameterNames.TOKEN, INVALID_TOKEN_VALUE))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  public void testRevokeTokenNotInDBReturnsIsUnauthorized() throws Exception {
+
+    TokenEndpointResponse tokenResponse = getPasswordToken("openid");
+    String accessToken = tokenResponse.accessToken();
+    String hValue = Hashing.sha256().hashString(accessToken, StandardCharsets.UTF_8).toString();
+    OAuth2AccessTokenEntity entity = accessTokenRepo.findByTokenValue(hValue).get();
+    accessTokenRepo.delete(entity);
+
+    mvc
+      .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param(OAuth2ParameterNames.TOKEN, accessToken))
       .andExpect(status().isOk());
   }
 
