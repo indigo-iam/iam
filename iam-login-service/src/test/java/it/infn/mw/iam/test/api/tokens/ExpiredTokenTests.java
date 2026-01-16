@@ -63,7 +63,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TestExpiredToken extends TestTokensUtils {
+public class ExpiredTokenTests extends TestTokensUtils {
 
   @Autowired
   IamClientRepository clientRepository;
