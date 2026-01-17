@@ -21,12 +21,9 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notAppli
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.deny;
 import static java.util.Comparator.comparing;
 
-import java.text.ParseException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -155,12 +152,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
     // If upscoping is disabled for the actor and scopes can and has been extracted from the token
     // also allow offline access during token scope evaluation pr. default
-    if (!destinationsEntity.isUpScopingEnabled() && !scope.equals("offline_access")
-        && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
-      return false;
-    } else {
-      return true;
-    }
+    return !destinationsEntity.isUpScopingEnabled() && !scope.equals("offline_access")
+        && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope));
   }
 
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
@@ -201,7 +194,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       }
 
       // If upscoping is disabled for the actor and scopes can and has been extracted from the token
-      if (Boolean.FALSE.equals(evaluateUpscoping(destinationsEntity, scope, tokenScopeMatchers))) {
+      if (Boolean.TRUE.equals(evaluateUpscoping(destinationsEntity, scope, tokenScopeMatchers))) {
         return invalidScope(p, scope, "scope not allowed by subject token configuration");
       }
 
