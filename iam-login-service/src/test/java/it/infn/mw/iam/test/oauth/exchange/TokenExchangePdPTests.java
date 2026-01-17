@@ -36,7 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
@@ -75,8 +74,6 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Mock
   ScopeMatcherRegistry scopeMatchersRegistry;
 
-  @Spy
-  @InjectMocks
   DefaultTokenExchangePdp pdp;
 
   @Mock
@@ -86,15 +83,19 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   // in question. Therefore, it should always make the static scopematchers for the token.
   class TestableDefaultTokenExchangePdp extends DefaultTokenExchangePdp {
 
+    private final Set<ScopeMatcher> scopesToReturn;
+
     TestableDefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
+        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
+        Set<ScopeMatcher> scopesToReturn) {
 
       super(repo, scopeMatcherRegistry, tokenService);
+      this.scopesToReturn = scopesToReturn;
     }
 
     @Override
     protected Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
-      return FIXED_MATCHERS;
+      return scopesToReturn;
     }
   }
 
@@ -107,13 +108,12 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         TOKEN_EXCHANGE_GRANT_TYPE);
   }
 
-  @BeforeEach
-  void setup() {
-    pdp = new TestableDefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService);
-  }
 
   @BeforeEach
   void before() {
+
+    pdp = new TestableDefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService,
+        FIXED_MATCHERS);
 
     lenient().when(originClient.getClientId()).thenReturn(ORIGIN_CLIENT_ID);
     lenient().when(originClient.getScope()).thenReturn(ORIGIN_CLIENT_SCOPES);

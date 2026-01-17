@@ -22,12 +22,16 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.deny;
 import static java.util.Comparator.comparing;
 
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.apache.velocity.exception.ParseErrorException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
@@ -109,23 +113,40 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   protected Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
 
     // First it should attempt to use scopes from the token
-    // If it can't then it should fall back to token introspection
     try {
       JWT token = JWTParser.parse(subjectToken);
-      String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
-      Set<ScopeMatcher> result = new HashSet<>();
-      for (String scope : scopes) {
-        result.add(scopeMatcherRegistry.findMatcherForScope(scope));
-      }
-      return result;
 
-    } catch (NullPointerException | ParseException e) {
+      Object scopeClaim = token.getJWTClaimsSet().getClaim(SCOPE_CLAIM);
+      if (scopeClaim instanceof String scopeString && !scopeString.isBlank()) {
+
+        return Arrays.stream(scopeString.split(" "))
+          .map(scopeMatcherRegistry::findMatcherForScope)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toSet());
+      }
       LOG.warn(
-          "cannot verify requested scopes with subject token. Attempting token introspection instead.");
+          "Cannot verify requested scopes with subject token. Attempting token introspection instead.");
+    } catch (Exception e) {
+      LOG.warn("JWT parsing failed, attempting token introspection", e);
+    }
+    // Token introspection as a backup
+    try {
       OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
-      Set<ScopeMatcher> result = new HashSet<>();
-      at.getScope().forEach(s -> result.add(scopeMatcherRegistry.findMatcherForScope(s)));
-      return result;
+
+      if (at == null || at.getScope() == null || at.getScope().isEmpty()) {
+        throw new IllegalStateException("Token introspection returned no scopes");
+      }
+
+      return at.getScope()
+        .stream()
+        .map(scopeMatcherRegistry::findMatcherForScope)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+
+      // Stop the exchange with the error if the scopes can not be parsed
+    } catch (Exception e) {
+      throw new ParseErrorException(
+          "Error whilst extracting scopes from the token and failed token introspection");
     }
   }
 
@@ -133,14 +154,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       Set<ScopeMatcher> tokenScopeMatchers) {
 
     // If upscoping is disabled for the actor and scopes can and has been extracted from the token
-    if (!destinationsEntity.isUpScopingEnabled() && tokenScopeMatchers != null) {
-      // Allow offline access during token scope evaluation pr. default
-      if (!scope.equals("offline_access")
-          && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
-        return false;
-      } else {
-        return true;
-      }
+    // also allow offline access during token scope evaluation pr. default
+    if (!destinationsEntity.isUpScopingEnabled() && !scope.equals("offline_access")
+        && tokenScopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+      return false;
     } else {
       return true;
     }
@@ -184,7 +201,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       }
 
       // If upscoping is disabled for the actor and scopes can and has been extracted from the token
-      if (!evaluateUpscoping(destinationsEntity, scope, tokenScopeMatchers)) {
+      if (Boolean.FALSE.equals(evaluateUpscoping(destinationsEntity, scope, tokenScopeMatchers))) {
         return invalidScope(p, scope, "scope not allowed by subject token configuration");
       }
 

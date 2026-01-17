@@ -139,7 +139,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         assertFalse(found);
     }
@@ -168,7 +168,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         assertFalse(found);
     }
@@ -208,7 +208,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         assertFalse(found);
     }
@@ -237,7 +237,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         // No need for token introspection, when scopes are present in token
         assertFalse(found);
@@ -262,7 +262,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         // The error happens before it reaches this part
         assertFalse(found);
@@ -293,7 +293,7 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
         boolean found = logCaptor.list.stream()
             .anyMatch(event -> event.getLevel() == Level.WARN && event.getFormattedMessage()
                 .contains(
-                        "cannot verify requested scopes with subject token. Attempting token introspection instead."));
+                        "Cannot verify requested scopes with subject token. Attempting token introspection instead."));
 
         // The error happens before it reaches this part
         assertFalse(found);
