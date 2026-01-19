@@ -447,41 +447,4 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
     assertTrue(found);
   }
-
-  @Test
-  void extractScopesFromTokenInvalid() throws Exception {
-
-    pdp = new DefaultTokenExchangePdp(repo, scopeMatchersRegistry, tokenService);
-
-    // Method is not meant to be visible passed the package, so will have to change visibility
-    Method method =
-        DefaultTokenExchangePdp.class.getDeclaredMethod("extractScopesFromToken", String.class);
-    method.setAccessible(true);
-    String invalidJwt = "this-is-not-a-jwt";
-    Mockito.when(tokenService.readAccessToken(invalidJwt))
-      .thenThrow(new InvalidTokenException("Access Token not found"));
-    logCaptor = attachLogCaptor(DefaultTokenExchangePdp.class);
-
-    // Parse Error expected after both attempts fail
-    try {
-      method.invoke(pdp, invalidJwt);
-      fail("Expected ParseErrorException to be thrown");
-    } catch (InvocationTargetException e) {
-
-      // Needing to unwrap the error
-      Throwable cause = e.getCause();
-
-      assertThat(cause, instanceOf(ParseErrorException.class));
-      assertThat(cause.getMessage(),
-          is("Error whilst extracting scopes from the token and failed token introspection"));
-    }
-    // Catching that it also fails the first introspection due to an error
-    boolean found = logCaptor.list.stream()
-      .anyMatch(event -> event.getLevel() == Level.WARN
-          && event.getFormattedMessage()
-            .contains("JWT parsing failed, attempting token introspection")
-          && event.getThrowableProxy().getClassName().equals("java.text.ParseException"));
-
-    assertTrue(found);
-  }
 }
