@@ -43,7 +43,8 @@ public class ProxyCertificateTestSupport extends X509TestSupport {
 
   public static final String TEST_USER_USERNAME = "test";
 
-  public static final Instant NOW = Calendar.getInstance().toInstant();
+  public static final Instant NOW =
+      Calendar.getInstance().toInstant().truncatedTo(ChronoUnit.SECONDS);
 
   public static final Instant A_WEEK_AGO = NOW.minus(7, ChronoUnit.DAYS);
   public static final Instant AN_HOUR_AGO = NOW.minus(1, ChronoUnit.HOURS);
