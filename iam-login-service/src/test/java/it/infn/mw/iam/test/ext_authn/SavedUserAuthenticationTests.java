@@ -25,12 +25,9 @@ import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
-import it.infn.mw.iam.IamLoginService;
-
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest
 class SavedUserAuthenticationTests {
 
   @Autowired
