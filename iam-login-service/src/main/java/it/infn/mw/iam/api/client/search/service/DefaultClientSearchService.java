@@ -96,12 +96,8 @@ public class DefaultClientSearchService implements ClientSearchService {
       .build();
   }
 
-  @Override
-  public ListResponseDTO<RegisteredClientDTO> findOwnedClients(PaginatedRequestForm form) {
-
-    IamAccount account =
-        accountUtils.getAuthenticatedUserAccount().orElseThrow(NoAuthenticatedUserError::new);
-
+  private ListResponseDTO<RegisteredClientDTO> findClientsByAccount(IamAccount account,
+      PaginatedRequestForm form) {
     Pageable pageable =
         PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(), MAX_PAGE_SIZE);
 
@@ -120,26 +116,23 @@ public class DefaultClientSearchService implements ClientSearchService {
   }
 
   @Override
+  public ListResponseDTO<RegisteredClientDTO> findOwnedClients(PaginatedRequestForm form) {
+
+    IamAccount account = accountUtils //
+      .getAuthenticatedUserAccount()
+      .orElseThrow(NoAuthenticatedUserError::new);
+
+    return findClientsByAccount(account, form);
+  }
+
+  @Override
   public ListResponseDTO<RegisteredClientDTO> findClientsOwnedByAccount(String accountId,
       PaginatedRequestForm form) {
 
-    IamAccount account =
-        accountUtils.getByAccountId(accountId).orElseThrow(NoAuthenticatedUserError::new);
+    IamAccount account = accountUtils //
+      .getByAccountId(accountId)
+      .orElseThrow(NoAuthenticatedUserError::new);
 
-    Pageable pageable =
-        PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(), MAX_PAGE_SIZE);
-
-    Page<IamAccountClient> pagedResults = accountClientRepo.findByAccount(account, pageable);
-
-    ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
-
-    return resultBuilder
-      .resources(pagedResults.getContent()
-        .stream()
-        .map(IamAccountClient::getClient)
-        .map(converter::registeredClientDtoFromEntity)
-        .toList())
-      .fromPage(pagedResults, pageable)
-      .build();
+    return findClientsByAccount(account, form);
   }
 }

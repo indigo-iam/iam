@@ -15,21 +15,27 @@
  */
 package it.infn.mw.iam.api.account.client;
 
+import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
 import it.infn.mw.iam.api.client.search.service.ClientSearchService;
 import it.infn.mw.iam.api.common.ClientViews;
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.error.NoAuthenticatedUserError;
 import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
-import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
 
 @RestController
 public class AccountClientController {
@@ -55,11 +61,16 @@ public class AccountClientController {
   @JsonView(ClientViews.NoSecretManagementRegistration.class)
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
   @GetMapping("/iam/account/{id}/clients")
-  public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable("id") String id,
+  public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable String id,
       @Validated PaginatedRequestForm form, final BindingResult validationResult) {
 
     handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
     return clientSearchService.findClientsOwnedByAccount(id, form);
   }
 
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoAuthenticatedUserError.class)
+  public ErrorDTO userNotFoundError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
 }
