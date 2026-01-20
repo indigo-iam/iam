@@ -185,7 +185,7 @@ class RegistrationRequestCertificateOffTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -237,7 +237,7 @@ class RegistrationRequestCertificateOffTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -309,7 +309,7 @@ class RegistrationRequestCertificateOffTests {
     request1.setEmail(email);
     request1.setUsername(USERNAME);
     request1.setNotes("Some short notes...");
-    request1.setRegisterCertificate("true");
+    request1.setCertificate("true");
 
     MockHttpServletRequest req1 = new MockHttpServletRequest();
     MockHttpSession session1 = new MockHttpSession();
@@ -339,7 +339,7 @@ class RegistrationRequestCertificateOffTests {
     request2.setEmail(email2);
     request2.setUsername(USERNAME_2);
     request2.setNotes("Some short notes...");
-    request2.setRegisterCertificate("true");
+    request2.setCertificate("true");
 
     MockHttpServletRequest req2 = new MockHttpServletRequest();
     MockHttpSession session2 = new MockHttpSession();
