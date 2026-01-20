@@ -24,6 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -32,6 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -62,6 +65,7 @@ class ClientManagementAPIControllerTests {
   static final ResultMatcher BAD_REQUEST = status().isBadRequest();
   static final ResultMatcher CREATED = status().isCreated();
   static final ResultMatcher OK = status().isOk();
+  static final ResultMatcher FORBIDDEN = status().isForbidden();
 
   @Autowired
   MockMvc mvc;
@@ -102,6 +106,45 @@ class ClientManagementAPIControllerTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void createClientWithUser() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    Optional<ClientDetailsEntity> newClient =
+        clientRepository.findByClientId("test-client-creation");
+
+    assertThrows(NoSuchElementException.class, newClient::get);
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(FORBIDDEN);
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void updateClientWithUser() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("client");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    ClientDetailsEntity clientEntity = clientRepository.findByClientId("client").get();
+
+    assertEquals("client", clientEntity.getClientId());
+
+    mvc.perform(put(IAM_CLIENTS_API_URL + clientEntity.getClientId()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(client))).andExpect(FORBIDDEN);
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void updateAuthMethodToNone() throws Exception {
 
@@ -128,6 +171,112 @@ class ClientManagementAPIControllerTests {
     ClientDetailsEntity clientEntity =
         clientRepository.findByClientId("test-client-creation").get();
     assertEquals(NONE, clientEntity.getTokenEndpointAuthMethod());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void createClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+    client.setUpScopingEnabled(false);
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
+
+    ClientDetailsEntity clientEntity =
+        clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(false, clientEntity.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void createClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
+
+    ClientDetailsEntity clientEntity =
+        clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(true, clientEntity.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void updateClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
+
+    ClientDetailsEntity clientEntity =
+        clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(true, clientEntity.isUpScopingEnabled());
+
+    client.setUpScopingEnabled(false);
+
+    mvc
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK);
+
+    clientEntity = clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(false, clientEntity.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void updateClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+    client.setUpScopingEnabled(false);
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
+
+    ClientDetailsEntity clientEntity =
+        clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(false, clientEntity.isUpScopingEnabled());
+
+    client.setUpScopingEnabled(true);
+
+    mvc
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK);
+
+    clientEntity = clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(true, clientEntity.isUpScopingEnabled());
   }
 
   @Test

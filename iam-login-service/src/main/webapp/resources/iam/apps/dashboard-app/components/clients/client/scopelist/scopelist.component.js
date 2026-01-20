@@ -30,6 +30,10 @@
         self.scopeMap = {};
 
         self.$onInit = function () {
+            if (self.client.up_scoping_enabled == null) {
+                self.client.up_scoping_enabled = true;
+            }
+
             updateScopeMap();
             $scope.$watch('$ctrl.client.scope', function (newVal, oldVal) {
                 updateScopeMap();
