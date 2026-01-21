@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.13.4 (2025-01-22)
+
+## What's Changed
+
+* Fix missing validation check for tokens 
+* Fix multiple AUP reminder emails sent
+* Fix read-only registration fields
+
+
 ## 1.13.3 (2025-12-09)
 
 ## What's Changed
