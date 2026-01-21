@@ -56,7 +56,7 @@ class TokenExiprationTests extends TestTokensUtils {
     private IamClientRepository clientRepository;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
 
         ClientDetailsEntity client =
                 clientRepository.findByClientId(SUBJECT_CLIENT_ID).orElseThrow();
