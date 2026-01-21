@@ -19,34 +19,50 @@ import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
+import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.ResponseType;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
+import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -89,7 +105,20 @@ public class TestTokensUtils extends EndpointsTestUtils {
   @Autowired
   protected PasswordEncoder encoder;
 
-  private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
+  @Autowired
+  protected AuthenticationHolderRepository authenticationHolderRepository;
+
+  @Autowired
+  protected JWTProfileResolver profileResolver;
+
+  @Autowired
+  protected JWTSigningAndValidationService jwtSigningService;
+
+  protected Date yesterday() {
+    return Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+  }
+
+  protected OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
       String[] scopes) {
 
     Authentication userAuth = null;
@@ -198,5 +227,56 @@ public class TestTokensUtils extends EndpointsTestUtils {
         .getResponse()
         .getContentAsString(), new TypeReference<ListResponseDTO<RefreshToken>>() {});
     /* @formatter:on */
+  }
+
+  private OAuth2Authentication oauth2AuthenticationClient(ClientDetailsEntity client,
+      Set<GrantedAuthority> authorities, String[] scopes) {
+
+    Authentication userAuth =
+        new UsernamePasswordAuthenticationToken(client.getClientId(), client.getClientSecret());
+    Map<String, String> requestParameters = new HashMap<String, String>();
+    requestParameters.put("grant_type", "client_credentials");
+
+    OAuth2Request req = new OAuth2Request(requestParameters, client.getClientId(), authorities,
+        true, Set.of(scopes), Set.of(), null, Set.of(ResponseType.TOKEN.toString()), Map.of());
+    return new OAuth2Authentication(req, userAuth);
+  }
+
+  protected OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
+      Set<GrantedAuthority> authorities, String[] scopes) {
+
+    OAuth2AccessTokenEntity token = new OAuth2AccessTokenEntity();
+    token.setClient(client);
+    token.setScope(Set.of(scopes));
+    token.setExpiration(yesterday());
+    OAuth2Authentication authn = oauth2AuthenticationClient(client, authorities, scopes);
+
+    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
+    authHolder.setAuthentication(authn);
+    authHolder = authenticationHolderRepository.save(authHolder);
+
+    token.setAuthenticationHolder(authHolder);
+
+    JWTProfile profile = profileResolver.resolveProfile(Set.of(scopes));
+
+    JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
+      .buildAccessToken(token, authn, Optional.empty(), yesterday().toInstant());
+
+    token.setJwt(signClaims(atClaims));
+    token.hashMe();
+    accessTokenRepository.save(token);
+
+    return token;
+  }
+
+  private SignedJWT signClaims(JWTClaimsSet claims) {
+    JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
+
+    JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null,
+        null, jwtSigningService.getDefaultSignerKeyId(), null, null);
+    SignedJWT signedJWT = new SignedJWT(header, claims);
+
+    jwtSigningService.signJwt(signedJWT);
+    return signedJWT;
   }
 }

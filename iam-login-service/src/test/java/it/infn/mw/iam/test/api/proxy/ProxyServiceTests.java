@@ -174,6 +174,7 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
   @Test
   public void testRequestLifetimeIsHonoured() throws InvalidKeyException,
       CertificateParsingException, SignatureException, NoSuchAlgorithmException, IOException {
+
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
     when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
     when(request.getLifetimeSecs()).thenReturn(TimeUnit.HOURS.toSeconds(6));

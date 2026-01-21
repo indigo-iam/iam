@@ -33,6 +33,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
@@ -100,6 +101,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
+  @Transactional(value = "defaultTransactionManager")
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
     if (authentication.getUserAuthentication() != null
@@ -149,21 +151,21 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2AccessTokenEntity readAccessToken(String accessTokenValue) {
 
     String hValue = sha256(accessTokenValue);
-    return accessTokenRepo.findByTokenValue(hValue).orElse(null);
+    OAuth2AccessTokenEntity accessToken = accessTokenRepo.findByTokenValue(hValue)
+      .orElseThrow(() -> new InvalidTokenException("Access token not found"));
+
+    if (accessToken.isExpired()) {
+      throw new InvalidTokenException("The access token is expired");
+    }
+
+    return accessToken;
   }
 
   @Override
   public OAuth2Authentication loadAuthentication(String accessTokenValue)
       throws AuthenticationException {
 
-    OAuth2AccessTokenEntity accessToken = readAccessToken(accessTokenValue);
-    if (accessToken == null) {
-      throw new InvalidTokenException("Access token not found");
-    }
-    if (accessToken.isExpired()) {
-      throw new InvalidTokenException("The access token is expired");
-    }
-    return accessToken.getAuthenticationHolder().getAuthentication();
+    return readAccessToken(accessTokenValue).getAuthenticationHolder().getAuthentication();
   }
 
   public static String sha256(String tokenString) {
