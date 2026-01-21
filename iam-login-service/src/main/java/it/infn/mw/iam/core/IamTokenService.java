@@ -196,8 +196,7 @@ public class IamTokenService implements OAuth2TokenEntityService {
     OAuth2AccessTokenEntity accessToken = accessTokenRepo.findByTokenValue(hValue)
       .orElseThrow(() -> new InvalidTokenException("Access token not found"));
 
-    Instant now = clock.instant();
-    if (accessToken.getExpiration().toInstant().isBefore(now)) {
+    if (accessToken.isExpired()) {
       throw new InvalidTokenException("The access token is expired");
     }
 
