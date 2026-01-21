@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -34,7 +35,7 @@ class SavedUserAuthenticationTests {
   private AuthenticationHolderRepository authHolderRepo;
 
   @Test
-  void testIntegrityViolationWithMultipleCaseSensitiveAdditionalInfo() {
+  void testMultipleCaseSensitiveAdditionalInfoAreInserted() {
     SavedUserAuthentication userAuth =
         new SavedUserAuthentication(new UsernamePasswordAuthenticationToken("test", "password"));
     userAuth.setAdditionalInfo(Map.of("MAIL", "mail@example.com", "mail", "another@example.com"));
@@ -42,9 +43,10 @@ class SavedUserAuthenticationTests {
     authHolder.setUserAuth(userAuth);
     assertTrue(authHolder.getUserAuth().getAdditionalInfo().containsKey("MAIL"));
     assertTrue(authHolder.getUserAuth().getAdditionalInfo().containsKey("mail"));
-    assertTrue(authHolder.getUserAuth().getAdditionalInfo().get("MAIL").equals("mail@example.com"));
-    assertTrue(
-        authHolder.getUserAuth().getAdditionalInfo().get("mail").equals("another@example.com"));
-    authHolderRepo.save(authHolder);
+    assertEquals("mail@example.com", authHolder.getUserAuth().getAdditionalInfo().get("MAIL"));
+    assertEquals("another@example.com", authHolder.getUserAuth().getAdditionalInfo().get("mail"));
+    AuthenticationHolderEntity saved = authHolderRepo.save(authHolder);
+    assertEquals("mail@example.com", saved.getUserAuth().getAdditionalInfo().get("MAIL"));
+    assertEquals("another@example.com", saved.getUserAuth().getAdditionalInfo().get("mail"));
   }
 }
