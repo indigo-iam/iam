@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.introspection.model;
 
 import java.text.ParseException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -43,7 +42,8 @@ import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 @Component
 public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospector {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DelegatingOpaqueTokenIntrospector.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DelegatingOpaqueTokenIntrospector.class);
 
   private static final String INTROSPECTION_ENDPOINT_KEY = "introspection_endpoint";
 
@@ -68,42 +68,30 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
     try {
       issuer = JWTParser.parse(token).getJWTClaimsSet().getIssuer();
     } catch (ParseException e) {
-        LOG.info("Failed introspection of token, parsing exception {}", e.getMessage());
-        return inactive();
+      LOG.info("Failed introspection of token, parsing exception {}", e.getMessage());
+      return inactive();
     }
 
-    OidcProvider provider = properties.getProviders().stream().filter(c -> c.getIssuer().equals(issuer))
-        .findFirst()
-        .orElseThrow(() -> new InvalidTokenException("Invalid issuer: " + issuer));
+    OidcProvider provider = properties.getProviders()
+      .stream()
+      .filter(c -> c.getIssuer().equals(issuer))
+      .findFirst()
+      .orElseThrow(() -> new InvalidTokenException("Invalid issuer: " + issuer));
 
     RestTemplate restTemplate = restTemplateMapper.apply(provider.getClient());
-
-    /** 
-    * Declaration of the JSON node that contains the discovery document of the
-    * issuer.
-    * Makes a GET call to issuer/.well-known/openid-configuration or,
-    * /.well-known/oauth-authorization-server and gives the OIDC configuration in
-    * JSON
-    */
     JsonNode discovery = discoveryService.getDiscoveryDocument(issuer, restTemplate);
-    /**
-    * Verifies that the discovery document has an introspection_endpoint field
-    * and extracts it as a string
-    */   
     String introspectionEndpoint = discovery.has(INTROSPECTION_ENDPOINT_KEY)
         ? discovery.get(INTROSPECTION_ENDPOINT_KEY).asText()
         : null;
-    /** 
-    * If the field doesn't exist or is blank, the token is invalid and the issuer
-    * doesnt't support introspection
-    */ 
+
     if (introspectionEndpoint == null || introspectionEndpoint.isBlank()) {
-        LOG.info("Failed introspection of token, no introspection endpoint found for {}", issuer);
-        return inactive();
+      LOG.info("Failed introspection of token, no introspection endpoint found for {}", issuer);
+      return inactive();
     }
 
-    OpaqueTokenIntrospector introspector = new SpringOpaqueTokenIntrospector(introspectionEndpoint, restTemplate);
-    try{
+    OpaqueTokenIntrospector introspector =
+        new SpringOpaqueTokenIntrospector(introspectionEndpoint, restTemplate);
+    try {
       return introspector.introspect(token);
     } catch (Throwable t) {
       LOG.error("Failed introspection of token issued by {}: {}", issuer, t.getMessage());
@@ -111,9 +99,9 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
     }
   }
 
-  private OAuth2AuthenticatedPrincipal inactive(){
+  private OAuth2AuthenticatedPrincipal inactive() {
     return new DefaultOAuth2AuthenticatedPrincipal(Map.of("active", false), List.of());
   }
-  
+
 }
 

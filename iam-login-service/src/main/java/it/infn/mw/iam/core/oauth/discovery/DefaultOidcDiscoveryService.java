@@ -40,7 +40,6 @@ public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  //@Cacheable(cacheNames = "oidcDiscovery", key = "#issuer")
   @Override
   public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
       throws RestClientException {
@@ -52,13 +51,13 @@ public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
     for (String url : DISCOVERY_URLS) {
       try {
         ResponseEntity<String> resp = restTemplate.getForEntity(base + url, String.class);
-        LOG.info("Discover response: {} {}",  resp.getStatusCode(), resp.getBody());
+        LOG.info("Discover response: {} {}", resp.getStatusCode(), resp.getBody());
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
           return objectMapper.readTree(resp.getBody());
         }
       } catch (Throwable e) {
-        // try the next one
-        LOG.error("Error fetching discovery document from {} for issuer {}: {}", url, issuer, e.getMessage());
+        LOG.error("Error fetching discovery document from {} for issuer {}: {}", url, issuer,
+            e.getMessage());
       }
     }
 

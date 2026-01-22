@@ -22,7 +22,7 @@ $ AT=eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJ3bGNnLnZlciI6IjEuMCIsInN1YiI6Ijcz
 Check the content of the access token with:
 
 ```bash
-$ echo $AT | cut -d . -f2 | base64 -d 2>/dev/null | jq
+$ echo $AT | cut -d . -f2 | base64 -d 2>/dev/null | jq .
 {
   "wlcg.ver": "1.0",
   "sub": "73f16d93-2441-4a50-88ff-85360d78c6b5",

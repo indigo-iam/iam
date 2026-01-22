@@ -52,13 +52,14 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 
 @SuppressWarnings("deprecation")
 @Service
-public class IamIntrospectionService
-    implements IntrospectionService {
+public class IamIntrospectionService implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
-  private static final String NOT_ALLOWED_CLIENT_ERROR = "Client %s is not allowed to call introspection endpoint";
-  private static final String SUSPENDED_CLIENT_ERROR = "Client %s has been suspended and is not allowed to call introspection endpoint";
+  private static final String NOT_ALLOWED_CLIENT_ERROR =
+      "Client %s is not allowed to call introspection endpoint";
+  private static final String SUSPENDED_CLIENT_ERROR =
+      "Client %s has been suspended and is not allowed to call introspection endpoint";
 
   private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
@@ -69,7 +70,8 @@ public class IamIntrospectionService
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
       OAuth2TokenEntityService tokenService, ClientService clientService,
-      ApplicationEventPublisher eventPublisher, IamProperties iamProperties, OpaqueTokenIntrospector introspector) {
+      ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
+      OpaqueTokenIntrospector introspector) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
@@ -95,7 +97,6 @@ public class IamIntrospectionService
       info = getTokenInfo(tokenValue, tokenTypeHint);
       validateClient(authenticatedClient);
 
-      // Token issued by this server
       switch (info.tokenType) {
         case REFRESH_TOKEN:
           OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(tokenValue);
@@ -109,13 +110,11 @@ public class IamIntrospectionService
             OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
             response = introspectAccessToken(authenticatedClient, at, info);
           } else {
-            // Calls the introspector and gets the OAuth2AuthenticatedPrincipal
             OAuth2AuthenticatedPrincipal introspectionResult = introspector.introspect(tokenValue);
 
-            LOG.info("Introspection result for token issued by {}: active={}",
-                issuer, introspectionResult.getAttribute("active"));
-                
-            // Converts the attributes of the principal to IntrospectionResponse
+            LOG.info("Introspection result for token issued by {}: active={}", issuer,
+                introspectionResult.getAttribute("active"));
+
             response = convertIntrospectionResponse(introspectionResult);
           }
           break;
@@ -172,14 +171,12 @@ public class IamIntrospectionService
   private void validateClient(ClientDetailsEntity c)
       throws UnauthorizedClientException, InvalidTokenException {
 
-    // check if client has been suspended
     if (!c.isActive()) {
       String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
     }
 
-    // check if client is allowed to introspect tokens
     if (!c.isAllowIntrospection()) {
       String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
@@ -197,9 +194,8 @@ public class IamIntrospectionService
     JWTProfile profile = profileResolver.resolveProfile(rt.getClient().getScope(),
         rt.getAuthenticationHolder().getAuthentication().getOAuth2Request().getScope());
     profile.getIntrospectionResultHelper()
-        .assembleIntrospectionResult(rt, authenticatedClient)
-        .forEach(builder::addField);
-    // add all the others avoiding duplicates/override
+      .assembleIntrospectionResult(rt, authenticatedClient)
+      .forEach(builder::addField);
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
@@ -213,9 +209,8 @@ public class IamIntrospectionService
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
     JWTProfile profile = profileResolver.resolveProfile(at.getClient().getScope(), at.getScope());
     profile.getIntrospectionResultHelper()
-        .assembleIntrospectionResult(at, authenticatedClient)
-        .forEach(builder::addField);
-    // add all the others avoiding duplicates/override
+      .assembleIntrospectionResult(at, authenticatedClient)
+      .forEach(builder::addField);
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
@@ -229,27 +224,23 @@ public class IamIntrospectionService
   private ClientDetailsEntity loadClient(Authentication auth) {
 
     return clientService
-        .findClientByClientId(
-            auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
-                : auth.getName())
-        .orElseThrow();
+      .findClientByClientId(
+          auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
+              : auth.getName())
+      .orElseThrow();
   }
 
   public record TokenInfo(String tokenValue, TokenTypeHint tokenType, JWTClaimsSet claims,
       String jti) {
   }
 
-  private IntrospectionResponse convertIntrospectionResponse(OAuth2AuthenticatedPrincipal principal) {
-    // Creates a builder for costructing the IntrospectionResponse
-    IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(principal.getAttribute("active"));
-    /**
-     * Returns a map which contains all the claims associated to the principal
-     * and iterates over them calling builder.addField(key, value)
-     * Every claim gets copied as additional field
-     */
+  private IntrospectionResponse convertIntrospectionResponse(
+      OAuth2AuthenticatedPrincipal principal) {
+    IntrospectionResponse.Builder builder =
+        new IntrospectionResponse.Builder(principal.getAttribute("active"));
+
     principal.getAttributes().forEach(builder::addField);
-    // Creates the final IntrospectionResponse object from the builder and returns
-    // it
+
     return builder.build();
   }
 }
