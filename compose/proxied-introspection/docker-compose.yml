@@ -68,6 +68,7 @@ services:
     environment:
       TZ: Europe/Rome
       IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test,oidc-dev
+      IAM_ORGANISATION_NAME: proxy
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
       IAM_FORWARD_HEADERS_STRATEGY: native
@@ -81,11 +82,6 @@ services:
       IAM_JWT_DEFAULT_PROFILE: wlcg
       IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
       IAM_ACCESS_TOKEN_INCLUDE_NBF: "true"
-      
-      # IAM_RCAUTH_ENABLED: "true"
-      # IAM_RCAUTH_CLIENT_ID: ${IAM_RCAUTH_CLIENT_ID}
-      # IAM_RCAUTH_CLIENT_SECRET: ${IAM_RCAUTH_CLIENT_SECRET}
-      # IAM_RCAUTH_ISSUER: ${IAM_RCAUTH_ISSUER}
 
     depends_on:
       db:
@@ -96,7 +92,7 @@ services:
     volumes:
       - trust:/etc/grid-security/certificates
       - /dev/urandom:/dev/random
-      # - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
+      - ./scripts:/scripts:ro
       - ./../../:/indigo-iam:ro
       - ./../../target:/indigo-iam/target:rw
       - ./../../iam-common/target:/indigo-iam/iam-common/target:rw
@@ -105,6 +101,8 @@ services:
       - ./../../iam-test-client/target:/indigo-iam/iam-test-client/target:rw
       - ./../../iam-voms-aa/target:/indigo-iam/iam-voms-aa/target:rw
 
+    entrypoint: /scripts/setup-and-start-iam.sh
+
   iam-remote:
     container_name: iam-remote
     image: ${IAM_REMOTE_IMAGE}
@@ -112,6 +110,7 @@ services:
     environment:
       TZ: Europe/Rome
       IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test
+      IAM_ORGANISATION_NAME: proxy-remote
       IAM_BASE_URL: https://iam-remote.local.io
       IAM_ISSUER: https://iam-remote.local.io/
       IAM_FORWARD_HEADERS_STRATEGY: native
@@ -139,12 +138,13 @@ services:
     volumes:
       - trust:/etc/grid-security/certificates
       - /dev/urandom:/dev/random
+      - ./scripts:/scripts:ro
       - ./keystore.jwks:/indigo-iam/config/keystore.jwks:ro
 
+    entrypoint: /scripts/setup-and-start-iam-remote.sh
+
   client:
-    build:
-      context: .
-      dockerfile: ./../../iam-test-client/docker/Dockerfile
+    image: ${IAM_CLIENT_IMAGE}
 
     container_name: client
 
@@ -191,8 +191,6 @@ services:
       IAM_CLIENT_SCOPES: openid profile email offline_access
       IAM_CLIENT_RESOURCE: http://example1.com http://example2.com http://example3.com
       IAM_CLIENT_HIDE_TOKENS: false
-
-      #IAM_CLIENT_EXT_AUTHN_HINT: saml:exampleIdp
 
     depends_on:
       trust:
