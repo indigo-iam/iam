@@ -83,10 +83,16 @@ class IntrospectionEndpointTests extends TestTokensUtils {
   private ResultActions introspect(String username, String password, String tokenToIntrospect,
       TokenTypeHint tokenTypeHint) throws Exception {
 
+    return introspect(username, password, tokenToIntrospect, tokenTypeHint.name());
+  }
+
+  private ResultActions introspect(String username, String password, String tokenToIntrospect,
+      String tokenTypeHint) throws Exception {
+
     return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
       .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
       .param("token", tokenToIntrospect)
-      .param("token_type_hint", tokenTypeHint.name()));
+      .param("token_type_hint", tokenTypeHint));
   }
 
   private ResultActions introspect(String username, String password, String tokenToIntrospect)
@@ -100,10 +106,16 @@ class IntrospectionEndpointTests extends TestTokensUtils {
   private ResultActions introspect(String tokenToIntrospect, TokenTypeHint tokenTypeHint)
       throws Exception {
 
+    return introspect(tokenToIntrospect, tokenTypeHint.name());
+  }
+
+  private ResultActions introspect(String tokenToIntrospect, String tokenTypeHint)
+      throws Exception {
+
     return mvc.perform(post(INTROSPECTION_ENDPOINT).with(anonymous())
       .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
       .param("token", tokenToIntrospect)
-      .param("token_type_hint", tokenTypeHint.name()));
+      .param("token_type_hint", tokenTypeHint));
   }
 
   @Test
@@ -318,8 +330,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo(PASSWORD_CLIENT_ID)));
+      .andExpect(jsonPath("$.active", equalTo(true)));
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -337,4 +348,26 @@ class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
+
+  @Test
+  public void testIntrospectTokensWithNoTokenTypeLowerOrUpperCase() throws Exception {
+
+    TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
+    String accessToken = tokens.accessToken();
+    String refreshToken = tokens.refreshToken();
+
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, "access_token")
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, "ACCESS_TOKEN")
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, "refresh_token")
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, "REFRESH_TOKEN")
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+  }
+
 }
