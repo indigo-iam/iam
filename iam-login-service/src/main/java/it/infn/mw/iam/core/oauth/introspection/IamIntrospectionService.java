@@ -90,11 +90,11 @@ public class IamIntrospectionService
       validateClient(authenticatedClient);
 
       switch (info.tokenType) {
-        case REFRESH_TOKEN:
+        case refresh_token:
           OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(tokenValue);
           response = introspectRefreshToken(authenticatedClient, rt, info);
           break;
-        case ACCESS_TOKEN:
+        case access_token:
         default:
           OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
           response = introspectAccessToken(authenticatedClient, at, info);
@@ -135,10 +135,10 @@ public class IamIntrospectionService
   private TokenTypeHint getTokenType(JWT jwt) {
 
     if (jwt instanceof PlainJWT) {
-      return TokenTypeHint.REFRESH_TOKEN;
+      return TokenTypeHint.refresh_token;
     }
     if (jwt instanceof SignedJWT) {
-      return TokenTypeHint.ACCESS_TOKEN;
+      return TokenTypeHint.access_token;
     }
     throw new InvalidTokenException(
         "Token introspection error: expected a SignedJWT or PlainJWT object");

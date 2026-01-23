@@ -90,7 +90,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
       .perform(post("/introspect").with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", token.getValue())
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.acr").exists())
       .andExpect(jsonPath("$.acr", containsString("https://refeds.org/profile/mfa")));

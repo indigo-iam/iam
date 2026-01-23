@@ -518,7 +518,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken)
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
@@ -620,7 +620,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken)
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
@@ -762,7 +762,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
         .with(httpBasic(SCIM_DEVICE_CLIENT_ID, SCIM_DEVICE_CLIENT_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken)
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 

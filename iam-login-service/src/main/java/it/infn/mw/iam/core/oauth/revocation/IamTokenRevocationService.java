@@ -97,7 +97,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
     }
     clientService.useClient(at.getClient());
     accessTokenRepo.delete(at);
-    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.ACCESS_TOKEN));
+    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.access_token));
   }
 
   @Override
@@ -113,7 +113,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
     }
     refreshTokenRepo.delete(rt);
     clientService.useClient(rt.getClient());
-    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.REFRESH_TOKEN));
+    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.refresh_token));
   }
 
   private String getJwtId(JWT jwt) {

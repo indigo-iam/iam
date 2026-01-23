@@ -136,7 +136,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .with(httpBasic(actorClientId, actorClientSecret))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", actorAccessToken)
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud", equalTo("tasks-app")))
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -378,7 +378,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", refreshedToken.getValue())
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
@@ -614,7 +614,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", refreshedToken.getValue())
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token_type_hint", TokenTypeHint.access_token.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     

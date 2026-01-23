@@ -17,5 +17,5 @@ package it.infn.mw.iam.core.oauth.introspection.model;
 
 public enum TokenTypeHint {
 
-  ACCESS_TOKEN, REFRESH_TOKEN;
+  access_token, refresh_token;
 }

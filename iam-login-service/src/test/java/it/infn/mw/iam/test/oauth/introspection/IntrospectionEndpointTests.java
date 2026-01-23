@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.oauth.introspection;
 
-import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.ACCESS_TOKEN;
-import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.REFRESH_TOKEN;
+import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.access_token;
+import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.refresh_token;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -111,7 +111,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
 
     String accessToken = getPasswordToken("openid").accessToken();
 
-    introspect(accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
+    introspect(accessToken, access_token).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -119,7 +119,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
 
     String accessToken = getPasswordToken("openid").accessToken();
 
-    introspect("bad", "credentials", accessToken, ACCESS_TOKEN)
+    introspect("bad", "credentials", accessToken, access_token)
       .andExpect(status().isUnauthorized());
   }
 
@@ -127,10 +127,10 @@ class IntrospectionEndpointTests extends TestTokensUtils {
   void testIntrospectionEndpointInactiveWithEmptyStringToken() throws Exception {
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", refresh_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -143,7 +143,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = getExpiredAccessToken(client).getValue();
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -163,7 +163,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.sub", equalTo(account.getUuid())))
@@ -183,7 +183,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     String refreshToken = getPasswordToken("openid profile offline_access").refreshToken();
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, refresh_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
@@ -206,7 +206,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     assertThat(a.getGroups().size(), is(3));
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.sub", equalTo(a.getUuid())))
@@ -234,7 +234,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     assertThat(a.getGroups().size(), is(3));
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.sub", equalTo(CLIENT_CREDENTIALS_CLIENT_ID)))
@@ -253,7 +253,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = getPasswordToken("openid profile").accessToken();
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -262,7 +262,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     revokeService.revokeAccessToken(at);
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -276,10 +276,10 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     String refreshToken = tokens.refreshToken();
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, refresh_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -288,10 +288,10 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     revokeService.revokeRefreshToken(rt);
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, refresh_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -302,7 +302,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = "invalid-token";
 
     // @formatter:off
-    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, access_token)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
