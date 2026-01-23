@@ -4,10 +4,10 @@
 
 ## What's Changed
 
-* Fix missing validation check for tokens 
+* Fix invalid lower case introspection token_type_hint parameter
+* Fix missing validation check for token
 * Fix multiple AUP reminder emails sent
 * Fix read-only registration fields
-
 
 ## 1.13.3 (2025-12-09)
 
