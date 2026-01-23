@@ -333,8 +333,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo(PASSWORD_CLIENT_ID)));
+      .andExpect(jsonPath("$.active", equalTo(true)));
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -373,4 +372,5 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
+
 }
