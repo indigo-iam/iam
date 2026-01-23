@@ -276,6 +276,10 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
+  private boolean upScopingEnabled = true;
+
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Date statusChangedOn;
 
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
@@ -565,6 +569,14 @@ public class RegisteredClientDTO {
 
   public void setActive(boolean active) {
     this.active = active;
+  }
+
+  public boolean isUpScopingEnabled() {
+    return upScopingEnabled;
+  }
+
+  public void setUpScopingEnabled(boolean upScopingEnabled) {
+    this.upScopingEnabled = upScopingEnabled;
   }
 
   public Date getStatusChangedOn() {

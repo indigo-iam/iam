@@ -20,6 +20,8 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
+import java.util.Optional;
+
 import javax.servlet.RequestDispatcher;
 
 import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
@@ -253,15 +255,10 @@ public class IamWebSecurityConfig {
 
 
     private UserLoginConfig userLoginConfig;
-    private GenericFilterBean authorizationRequestFilter;
     private IamProperties iamProperties;
 
-
-    public RegistrationConfig(UserLoginConfig userLoginConfig,
-        @Qualifier("iamAuthzRequestFilter") GenericFilterBean authorizationRequestFilter,
-        IamProperties iamProperties) {
+    public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
-      this.authorizationRequestFilter = authorizationRequestFilter;
       this.iamProperties = iamProperties;
     }
 
@@ -289,31 +286,22 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      boolean registrationCertField = iamProperties.getRegistration().getFields() != null
-          && !iamProperties.getRegistration().getFields().isEmpty()
-          && iamProperties.getRegistration().getFields().get(RegistrationField.CERTIFICATE) != null
-          && iamProperties.getRegistration()
-            .getFields()
-            .get(RegistrationField.CERTIFICATE)
-            .getFieldBehaviour() != null;
+      // One can not assume the certificate registration field is provided
 
-      if (registrationCertField && !iamProperties.getRegistration()
-        .getFields()
-        .get(RegistrationField.CERTIFICATE)
-        .getFieldBehaviour()
-        .equals(ExternalAuthAttributeSectionBehaviour.HIDDEN)) {
+      boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
+        .map(IamProperties.RegistrationProperties::getFields)
+        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+        .orElse(
+            ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
+
+      if (certificateVisible) {
         http.requestMatchers()
           .antMatchers(START_REGISTRATION_ENDPOINT)
           .and()
           .sessionManagement()
           .enableSessionUrlRewriting(false)
           .and()
-          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
-          .anonymous()
-          .and()
-          .csrf()
-          .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize"))
-          .disable()
           .addFilter(userLoginConfig.iamX509Filter());
       } else {
         http.requestMatchers()
@@ -322,8 +310,6 @@ public class IamWebSecurityConfig {
           .sessionManagement()
           .enableSessionUrlRewriting(false);
       }
-
-
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()
@@ -354,8 +340,18 @@ public class IamWebSecurityConfig {
     OidcAuthenticationProvider authProvider;
 
     @Autowired
-    @Qualifier("OIDCAuthenticationFilter")
+    private IamProperties iamProperties;
+
     private OidcClientFilter oidcFilter;
+    private UserLoginConfig userLoginConfig;
+
+    @Autowired
+    public ExternalOidcLogin(
+        @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
+        UserLoginConfig userLoginConfig) {
+      this.oidcFilter = oidcClientFilter;
+      this.userLoginConfig = userLoginConfig;
+    }
 
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
@@ -375,7 +371,33 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
+      boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
+        .map(IamProperties.RegistrationProperties::getFields)
+        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+        .orElse(
+            ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
+
+      if (certificateVisible) {
+        // @formatter:off
+      http
+        .antMatcher("/openid_connect_login**")
+          .exceptionHandling()
+            .authenticationEntryPoint(authenticationEntryPoint())
+        .and()
+          .addFilter(userLoginConfig.iamX509Filter())
+          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
+          .authorizeRequests()
+        .antMatchers("/openid_connect_login**")
+          .permitAll()
+        .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
+      // @formatter:on
+
+      } else {
+        // @formatter:off
       http
         .antMatcher("/openid_connect_login**")
           .exceptionHandling()
@@ -390,6 +412,7 @@ public class IamWebSecurityConfig {
           .enableSessionUrlRewriting(false)
           .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
+      }
     }
   }
 

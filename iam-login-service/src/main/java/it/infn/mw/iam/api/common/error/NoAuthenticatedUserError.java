@@ -16,7 +16,7 @@
 package it.infn.mw.iam.api.common.error;
 
 public class NoAuthenticatedUserError extends RuntimeException {
-  public static final String MSG = "No authenticated user found";
+  public static final String MSG = "User not found";
   private static final long serialVersionUID = 1L;
 
   public NoAuthenticatedUserError() {

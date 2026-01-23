@@ -49,8 +49,8 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 class AccountClientEndpointTests {
 
   @Autowired
@@ -131,9 +131,7 @@ class AccountClientEndpointTests {
 
   @Test
   void anonymousAccessToMyClientsEndpointFailsTest() throws Exception {
-    mvc.perform(get("/iam/account/me/clients"))
-      .andDo(print())
-      .andExpect(status().isUnauthorized());
+    mvc.perform(get("/iam/account/me/clients")).andDo(print()).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -155,10 +153,10 @@ class AccountClientEndpointTests {
 
     try {
       mvc.perform(get("/iam/account/{id}/clients", testAccount.getUuid()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.totalResults", is(1)))
-          .andExpect(jsonPath("$.Resources", not(empty())))
-          .andExpect(jsonPath("$.Resources[0].client_id", is("client-test")));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", is(1)))
+        .andExpect(jsonPath("$.Resources", not(empty())))
+        .andExpect(jsonPath("$.Resources[0].client_id", is("client-test")));
     } finally {
       accountClientRepo.delete(accountClient);
       clientRepo.delete(testClient);
@@ -193,5 +191,14 @@ class AccountClientEndpointTests {
     mvc.perform(get("/iam/account/{id}/clients", testAccount.getUuid()))
       .andDo(print())
       .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void searchClientsOfNotExistingUser() throws Exception {
+    mvc.perform(get("/iam/account/fakeUuid/clients"))
+      .andDo(print())
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", is("User not found")));
   }
 }

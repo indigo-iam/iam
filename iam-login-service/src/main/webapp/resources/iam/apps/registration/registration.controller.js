@@ -128,7 +128,7 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate: {
+		certificate: {
 			type: "certificate",
 			required: false,
 			showField: true,
@@ -149,7 +149,7 @@ function RegistrationController(
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
 	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
-	vm.registerCertificate = true;
+	vm.certificate = true;
 
 	vm.activate();
 	vm.openExpiringCertificateDialog();
@@ -187,7 +187,13 @@ function RegistrationController(
 				}
 			});
 
-			modalInstance.result.then(self.handleSuccess);
+			modalInstance.result.then(self.handleSuccess)
+				.catch(function (reason) {
+					if (reason === 'Dismissed') {
+						return;
+					}
+					console.error('Modal dismissed with error:', reason);
+				});
 		}
 	};
 
@@ -242,8 +248,8 @@ function RegistrationController(
 
 	function populateValue(info, name) {
 		const fieldName = name.toUpperCase();
-		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined' 
-			&& typeof $scope.config.fields[fieldName] != 'undefined' 
+		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined'
+			&& typeof $scope.config.fields[fieldName] != 'undefined'
 			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
 		if (hasExternalAttributeDefined) {
 			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
@@ -261,7 +267,7 @@ function RegistrationController(
 				email: populateValue(info, 'email'),
 				affiliation: populateValue(info, 'affiliation'),
 				notes: '',
-				registerCertificate: true,
+				certificate: true,
 			};
 
 			if (info.type === 'OIDC') {
@@ -316,7 +322,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
-			registerCertificate: true,
+			certificate: true,
 			affiliation: '',
 		};
 	}

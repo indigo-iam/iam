@@ -124,7 +124,7 @@ class RegistrationRequestCertificateTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -173,7 +173,7 @@ class RegistrationRequestCertificateTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     httpRequest.getSession();
 
@@ -218,7 +218,7 @@ class RegistrationRequestCertificateTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -244,7 +244,7 @@ class RegistrationRequestCertificateTests {
     email = USERNAME_2 + "@example.org";
     request.setEmail(email);
     request.setUsername(USERNAME_2);
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     httpRequest.getSession();
 

@@ -46,12 +46,12 @@ import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
-  webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
-  "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
-  "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
-  "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
+    "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
+    "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
+    "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
