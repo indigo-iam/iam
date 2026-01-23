@@ -200,6 +200,7 @@ public class DefaultClientManagementService implements ClientManagementService {
           clientDTO.getExpiration(), clientDTO.getEntityId());
       newClient.setClientRelyingParty(clientRelyingParty);
       newClient.setRequestObjectSigningAlg(clientDTO.getRequestObjectSigningAlgorithm());
+      newClient.setActive(true);
     }
 
     newClient = clientService.updateClient(newClient);

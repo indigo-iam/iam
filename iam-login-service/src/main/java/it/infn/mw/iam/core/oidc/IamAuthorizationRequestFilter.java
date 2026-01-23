@@ -223,8 +223,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       dtoClient.setRequestObjectSigningAlgorithm(jwt.getHeader().getAlgorithm());
 
       Optional<ClientDetailsEntity> maybeClient = clientRepo.findByClientId(clientId);
-      if (maybeClient.isPresent()
-          && maybeClient.get().getClientRelyingParty().getExpiration().after(new Date())) {
+      if (maybeClient.isPresent()) {
         clientManagementService.updateClient(clientId, dtoClient);
       } else {
         clientManagementService.saveNewClient(dtoClient);

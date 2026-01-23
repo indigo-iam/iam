@@ -273,6 +273,61 @@ class AutomaticClientRegistrationTests {
   }
 
   @Test
+  void testClientUpdateIfExpired() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
+
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
+        null);
+    List<EntityStatement> statements = new ArrayList<>();
+    statements.add(fakeChain.getLeafSelfStatement());
+    statements.addAll(fakeChain.getSuperiorStatements());
+    statements.add(taEC);
+    List<String> trustChainStrings =
+        statements.stream().map(es -> es.getSignedStatement().serialize()).toList();
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, trustChainStrings);
+
+    when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
+
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(rpEntityId);
+    assertTrue(client.isPresent());
+    client.get().getClientRelyingParty().setExpiration(new Date());
+    client.get().setActive(false);
+
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
+    client = clientRepo.findByClientId(rpEntityId);
+    assertTrue(client.isPresent());
+    assertTrue(client.get().isActive());
+  }
+
+  @Test
   void testRegistrationWithoutRedirectUri() throws Exception {
     String rpEntityId = "https://rp.example";
     String requestJwt = generateRequestJWT(rpEntityId, null, null);
