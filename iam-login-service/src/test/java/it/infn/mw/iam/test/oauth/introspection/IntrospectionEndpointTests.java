@@ -350,7 +350,7 @@ class IntrospectionEndpointTests extends TestTokensUtils {
   }
 
   @Test
-  public void testIntrospectTokensWithNoTokenTypeLowerOrUpperCase() throws Exception {
+  void testIntrospectTokensWithNoTokenTypeLowerOrUpperCase() throws Exception {
 
     TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
     String accessToken = tokens.accessToken();
