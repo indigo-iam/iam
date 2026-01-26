@@ -20,23 +20,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 class SearchClientControllerTests {
 
   @Autowired
@@ -44,6 +48,14 @@ class SearchClientControllerTests {
 
   @Autowired
   private ObjectMapper mapper;
+
+  @Autowired
+  private MockOAuth2Filter filter;
+
+  @AfterEach
+  void tearDown() {
+    filter.cleanupSecurityContext();
+  }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
@@ -64,7 +76,7 @@ class SearchClientControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  void searchForAdminClientsByNamePrefix() throws Exception {
+  void searchForClientsByNamePrefix() throws Exception {
 
     ListResponseDTO<RegisteredClientDTO> response = mapper
       .readValue(mvc.perform(get(ENDPOINT).param("search", "Adm").param("searchType", "name"))
@@ -90,7 +102,7 @@ class SearchClientControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  void searchForAdminClientByScope() throws Exception {
+  void searchForAdminClientsByScope() throws Exception {
 
     ListResponseDTO<RegisteredClientDTO> response = mapper
       .readValue(mvc.perform(get(ENDPOINT).param("search", "admin").param("searchType", "scope"))
@@ -102,8 +114,32 @@ class SearchClientControllerTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void searchClientsWithAdminUserAndAdminScope() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  void searchClientsWithAdminUserWithoutAdminScope() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN"})
+  void searchClientsWithAdminUser() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  void normalUsersCannotAccessClientSearchApi() throws Exception {
+  void searchClientsWithTestUser() throws Exception {
 
     mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
       .andExpect(status().isForbidden());
