@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS client_details (
 	refresh_token_validity_seconds BIGINT,
 	
 	application_type VARCHAR(256),
-	client_name VARCHAR(256),
+	client_name VARCHAR_IGNORECASE(256),
 	token_endpoint_auth_method VARCHAR(256),
 	subject_type VARCHAR(256),
 	

@@ -31,7 +31,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -46,7 +45,6 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.profiles.active=mysql-test"})
 class SearchClientControllerTests {
 
   @Autowired
