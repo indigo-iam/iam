@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.profiles.active=mysql-test",})
+@TestPropertySource(properties = {"spring.profiles.active=mysql-test"})
 class SearchClientControllerTests {
 
   @Autowired
