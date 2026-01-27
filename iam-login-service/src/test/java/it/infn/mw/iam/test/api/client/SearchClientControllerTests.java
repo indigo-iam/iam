@@ -17,8 +17,12 @@ package it.infn.mw.iam.test.api.client;
 
 import static it.infn.mw.iam.api.client.search.SearchClientController.ENDPOINT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -41,6 +46,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.profiles.active=mysql-test",})
 class SearchClientControllerTests {
 
   @Autowired
@@ -59,7 +65,7 @@ class SearchClientControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  void searchForTestClientByName() throws Exception {
+  void searchForPublicClientByName() throws Exception {
 
     ListResponseDTO<RegisteredClientDTO> response = mapper.readValue(
         mvc.perform(get(ENDPOINT).param("search", "Public client").param("searchType", "name"))
@@ -70,6 +76,31 @@ class SearchClientControllerTests {
         new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
     assertEquals(1, response.getTotalResults());
     assertEquals("Public client", response.getResources().get(0).getClientName());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void clientSearchIsCaseInsensitive() throws Exception {
+
+    ListResponseDTO<RegisteredClientDTO> response =
+        mapper
+          .readValue(
+              mvc.perform(get(ENDPOINT).param("search", "Test Client").param("searchType", "name"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(),
+              new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+
+    assertEquals(2, response.getTotalResults());
+
+    List<String> names = response.getResources()
+      .stream()
+      .map(RegisteredClientDTO::getClientName)
+      .collect(Collectors.toList());
+
+    assertTrue(names.contains("Test Client"));
+    assertTrue(names.contains("Registration service test client"));
   }
 
   @Test
