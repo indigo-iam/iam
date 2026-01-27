@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -92,10 +91,8 @@ class SearchClientControllerTests {
 
     assertEquals(2, response.getTotalResults());
 
-    List<String> names = response.getResources()
-      .stream()
-      .map(RegisteredClientDTO::getClientName)
-      .collect(Collectors.toList());
+    List<String> names =
+        response.getResources().stream().map(RegisteredClientDTO::getClientName).toList();
 
     assertTrue(names.contains("Test Client"));
     assertTrue(names.contains("Registration service test client"));
