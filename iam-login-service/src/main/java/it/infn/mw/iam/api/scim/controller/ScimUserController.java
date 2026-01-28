@@ -59,7 +59,6 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 @Transactional
 public class ScimUserController extends ScimControllerSupport {
 
-
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
@@ -85,13 +84,12 @@ public class ScimUserController extends ScimControllerSupport {
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes,
-      @RequestParam(required = false) final String filters) {
+      @RequestParam(required = false) final String filter) {
 
 
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
 
-    ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filters);
-
+    ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filter);
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
@@ -99,11 +97,12 @@ public class ScimUserController extends ScimControllerSupport {
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
-      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
+      filterProvider.addFilter("attributeFilter",
+          SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
     } else {
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.serializeAll());
     }
-    
+
     filterProvider.addFilter("pemEncodedCertificateFilter",
         SimpleBeanPropertyFilter.serializeAllExcept("pemEncodedCertificate"));
 
@@ -143,7 +142,6 @@ public class ScimUserController extends ScimControllerSupport {
     handleValidationError("Invalid Scim User", validationResult);
 
     return userProvisioningService.replace(id, user);
-
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.isUser(#id) or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -156,7 +154,6 @@ public class ScimUserController extends ScimControllerSupport {
     handleValidationError("Invalid Scim Patch Request", validationResult);
 
     userProvisioningService.update(id, patchRequest.getOperations());
-
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -166,5 +163,4 @@ public class ScimUserController extends ScimControllerSupport {
 
     userProvisioningService.delete(id);
   }
-
 }
