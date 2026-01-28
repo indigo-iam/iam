@@ -139,7 +139,7 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
   }
 
   @Test
-  @WithMockUser(roles = "USER")
+  @WithMockUser(roles = "PRE_AUTHENTICATED")
   void getActivateMfaViewAuthorizedReturnsView() throws Exception {
     mvc.perform(get(MFA_ACTIVATE_URL))
         .andExpect(status().isOk())

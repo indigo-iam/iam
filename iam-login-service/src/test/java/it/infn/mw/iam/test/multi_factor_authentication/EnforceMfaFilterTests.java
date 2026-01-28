@@ -54,6 +54,14 @@ class EnforceMfaFilterTests {
 
     @Test
     @WithMockUser(username = "test", roles = "USER")
+    void testMfaActivateUrlNotAccessableWithUserRole() throws Exception {
+        mvc.perform(get(MFA_ACTIVATE_URL)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "test", roles = "PRE_AUTHENTICATED")
     void testWhenPathAllowedThenNoRedirection() throws Exception {
         mvc.perform(get(MFA_ACTIVATE_URL)
                 .contentType(MediaType.APPLICATION_JSON))

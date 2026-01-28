@@ -70,11 +70,11 @@ public class AuthenticationSuccessHandlerHelper {
 
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
-    } else if (isPreAuthenticated) {
-      response.sendRedirect(MFA_VERIFY_URL);
     } else if (iamTotpMfaProperties.isMultiFactorMandatory() && !isMfaActive(authentication)) {
       response.sendRedirect(MFA_ACTIVATE_URL);
-    } else {
+    } else if (isPreAuthenticated) {
+      response.sendRedirect(MFA_VERIFY_URL);
+    }  else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }
   }

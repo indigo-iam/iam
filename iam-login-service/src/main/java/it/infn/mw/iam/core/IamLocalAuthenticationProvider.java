@@ -40,6 +40,7 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -50,6 +51,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   private final LocalAuthenticationAllowedUsers allowedUsers;
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService iamTotpMfaService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
@@ -57,12 +59,13 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaService iamTotpMfaService) {
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
     this.iamTotpMfaService = iamTotpMfaService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   /**
@@ -105,7 +108,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     // Checking to see if we can find an active MFA secret attached to the user's account. If so,
     // MFA is enabled on the account
-    if (iamTotpMfaService.isAuthenticatorAppActive(account)) {
+    if (iamTotpMfaService.isAuthenticatorAppActive(account) || iamTotpMfaProperties.isMultiFactorMandatory()) {
       List<GrantedAuthority> currentAuthorities = new ArrayList<>();
       // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
       currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);

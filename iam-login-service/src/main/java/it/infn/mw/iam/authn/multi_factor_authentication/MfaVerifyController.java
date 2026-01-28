@@ -86,7 +86,7 @@ public class MfaVerifyController {
     }
   }
 
-  @PreAuthorize("hasRole('USER')")
+  @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @GetMapping(value = MFA_ACTIVATE_URL)
   public String getActivateMfaView() {
     return "iam/activateMfa";

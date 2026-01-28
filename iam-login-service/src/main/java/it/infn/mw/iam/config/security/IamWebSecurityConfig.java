@@ -150,7 +150,7 @@ public class IamWebSecurityConfig {
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
       // @formatter:on
     }
 

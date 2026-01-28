@@ -153,6 +153,7 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -218,6 +219,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private HttpFirewall firewall;
+
+  @Autowired
+  private IamTotpMfaProperties iamTotpMfaProperties;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -410,7 +414,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
       IamSamlJITAccountProvisioningProperties jitProperties) {
 
     IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
-        resolver, validator, helper, accountRepo, totpMfaRepository);
+        resolver, validator, helper, accountRepo, totpMfaRepository, iamTotpMfaProperties);
 
     samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo,
         accountService, handler, mpResolver, jitProperties));
