@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.13.4 (2025-01-26)
+
+## What's Changed
+
+* Fix SCIM filtering query parameter name
+* Fix invalid lower case introspection token_type_hint parameter
+* Fix missing validation check for token
+* Fix multiple AUP reminder emails sent
+* Fix read-only registration fields
+
 ## 1.13.3 (2025-12-09)
 
 ## What's Changed
