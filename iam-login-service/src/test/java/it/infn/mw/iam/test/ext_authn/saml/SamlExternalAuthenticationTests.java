@@ -157,13 +157,12 @@ class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
     aupRepo.deleteAll();    
   }
 
-  private MockHttpSession performInitialLogin() throws Exception, UnsupportedEncodingException {
-    MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
+  private MockHttpSession performInitialLogin() throws Exception {
+    return (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
         .andExpect(status().isOk())
         .andReturn()
         .getRequest()
         .getSession();
-    return session;
   }
 
   private MockHttpSession postMfaResponseAndExpectRedirect(Response response, AuthnRequest authnRequest,
