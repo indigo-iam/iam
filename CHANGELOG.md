@@ -4,6 +4,7 @@
 
 ## What's Changed
 
+* Fix SCIM filtering query parameter name
 * Fix invalid lower case introspection token_type_hint parameter
 * Fix missing validation check for token
 * Fix multiple AUP reminder emails sent
