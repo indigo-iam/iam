@@ -301,7 +301,7 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
+  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
       IamTotpMfaProperties iamTotpMfaProperties) {
     EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
     FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);

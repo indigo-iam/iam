@@ -83,33 +83,49 @@ public class EnforceMfaFilter implements Filter {
     HttpServletResponse res = (HttpServletResponse) response;
 
     final String path = req.getRequestURI();
+    HttpSession session = req.getSession(false);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("[ENFORCE_MFA] Incoming request: method={} path={} session={}",
+          req.getMethod(), path, (session != null ? session.getId() : "none"));
+    }
 
     if (isAllowListed(path)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[ENFORCE_MFA] Skipping enforcement (allow‑listed): {}", path);
+      }
       chain.doFilter(req, res);
       return;
     }
 
     final boolean mfaMandatory = iamTotpMfaProperties.isMultiFactorMandatory();
     if (!mfaMandatory) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[ENFORCE_MFA] Skipping enforcement (MFA not mandatory)");
+      }
       chain.doFilter(req, res);
       return;
     }
 
     final boolean authenticated = accountUtils.isAuthenticated();
     if (!authenticated) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[ENFORCE_MFA] Skipping enforcement (user not authenticated)");
+      }
       chain.doFilter(req, res);
       return;
     }
 
     Optional<IamAccount> authenticatedUserOpt = accountUtils.getAuthenticatedUserAccount();
     if (authenticatedUserOpt.isEmpty()) {
+      LOG.warn("[ENFORCE_MFA] Authenticated user cannot be resolved");
       chain.doFilter(req, res);
       return;
     }
 
-    HttpSession session = req.getSession(false);
     final boolean sessionExists = (session != null);
     if (!sessionExists) {
+      LOG.warn("[ENFORCE_MFA] Authenticated user '{}' but no session found", authenticatedUserOpt.get().getUsername());
       chain.doFilter(req, res);
       return;
     }
@@ -117,18 +133,31 @@ public class EnforceMfaFilter implements Filter {
     final boolean requestingMfa = Boolean.TRUE.equals(session.getAttribute(REQUESTING_MFA));
     if (requestingMfa) {
       if (!res.isCommitted()) {
+        LOG.info("[ENFORCE_MFA] User '{}' is already in MFA activation flow -> redirecting to {}",
+            authenticatedUserOpt.get().getUsername(), MFA_ACTIVATE_URL);
         res.sendRedirect(MFA_ACTIVATE_URL);
+      } else {
+        LOG.warn("[ENFORCE_MFA] Wanted to redirect but response already committed");
       }
       return;
     }
 
     if (!iamTotpMfaService.isAuthenticatorAppActive(authenticatedUserOpt.get())) {
+      LOG.info("[ENFORCE_MFA] User '{}' has MFA disabled -> starting MFA activation flow",
+          authenticatedUserOpt.get().getUsername());
       session.setAttribute(REQUESTING_MFA, true);
 
       if (!res.isCommitted()) {
+        LOG.info("[ENFORCE_MFA] Redirecting '{}' to {}", authenticatedUserOpt.get().getUsername(), MFA_ACTIVATE_URL);
         res.sendRedirect(MFA_ACTIVATE_URL);
+      } else {
+        LOG.warn("[ENFORCE_MFA] Unable to redirect to MFA activation page — response already committed");
       }
       return;
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("[ENFORCE_MFA] User '{}' already has MFA active -> continuing request",
+          authenticatedUserOpt.get().getUsername());
     }
 
     chain.doFilter(req, res);

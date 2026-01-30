@@ -28,6 +28,8 @@ import javax.servlet.http.HttpSession;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
@@ -40,9 +42,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = "mfa.multi-factor-mandatory=true")
 class EnforceMfaFilterTests {
