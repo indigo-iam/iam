@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -54,6 +55,9 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
+@TestPropertySource(properties = {"logging.level.root=DEBUG",
+        "logging.level.it.infn.mw.iam.core.web.aup.EnforceAupFilter=DEBUG"
+})
 class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Autowired

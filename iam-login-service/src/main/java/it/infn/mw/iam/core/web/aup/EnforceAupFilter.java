@@ -137,7 +137,7 @@ public class EnforceAupFilter implements Filter {
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(
-          "[ENFORCE_AUP] Enforcement evaluation: needsSignature={} sessionOlderThanAupCreation={} responseCommitted={} {}",
+          "[ENFORCE_AUP] Enforcement evaluation: needsSignature={} sessionOlderThanAupCreation={} responseCommitted={}",
           needsSignature,
           !sessionOk,
           committed);
