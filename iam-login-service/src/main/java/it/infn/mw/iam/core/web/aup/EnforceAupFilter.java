@@ -87,7 +87,8 @@ public class EnforceAupFilter implements Filter {
     String requestURL = req.getRequestURL().toString();
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("[ENFORCE_AUP] Enter filter: {}", reqSummary(req, session));
+       LOG.debug("[ENFORCE_AUP] Incoming request: method={} path={} session={}",
+          req.getMethod(), requestURL, (session != null ? session.getId() : "none"));
     }
 
     if (!accountUtils.isAuthenticated() || isNull(session) || requestURL.endsWith(AUP_API_PATH)) {
@@ -105,10 +106,9 @@ public class EnforceAupFilter implements Filter {
     Optional<IamAup> defaultAup = aupRepo.findDefaultAup();
 
     if (!authenticatedUser.isPresent() || !defaultAup.isPresent()) {
-      LOG.warn("[ENFORCE_AUP] Skip enforcement due to missing prerequisites: userPresent={} defaultAupPresent={} {}",
+      LOG.warn("[ENFORCE_AUP] Skip enforcement due to missing prerequisites: userPresent={} defaultAupPresent={}",
           authenticatedUser.isPresent(),
-          defaultAup.isPresent(),
-          reqSummary(req, session));
+          defaultAup.isPresent());
       chain.doFilter(request, response);
       return;
     }
@@ -116,14 +116,13 @@ public class EnforceAupFilter implements Filter {
     if (!isNull(session.getAttribute(REQUESTING_SIGNATURE))) {
       if (requestURL.endsWith(AUP_SIGN_PATH) || requestURL.endsWith(SIGN_AUP_JSP)) {
         if (LOG.isDebugEnabled()) {
-          LOG.debug("[ENFORCE_AUP] Signature flow active; allowing sign page: {}", reqSummary(req, session));
+          LOG.debug("[ENFORCE_AUP] Signature flow active; allowing sign page");
         }
         chain.doFilter(request, response);
         return;
       }
       if (res.isCommitted()) {
-        LOG.warn("[ENFORCE_AUP] Wanted to redirect to AUP_SIGN_PATH but response already committed: {}",
-            reqSummary(req, session));
+        LOG.warn("[ENFORCE_AUP] Wanted to redirect to AUP_SIGN_PATH but response already committed");
         return;
       }
 
@@ -141,8 +140,7 @@ public class EnforceAupFilter implements Filter {
           "[ENFORCE_AUP] Enforcement evaluation: needsSignature={} sessionOlderThanAupCreation={} responseCommitted={} {}",
           needsSignature,
           !sessionOk,
-          committed,
-          reqSummary(req, session));
+          committed);
     }
 
     if (needsSignature && sessionOk && !committed) {
@@ -153,7 +151,7 @@ public class EnforceAupFilter implements Filter {
     }
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("[ENFORCE_AUP] Continue filter chain: {}", reqSummary(req, session));
+      LOG.debug("[ENFORCE_AUP] Continue filter chain");
     }
 
     chain.doFilter(request, response);
@@ -163,20 +161,4 @@ public class EnforceAupFilter implements Filter {
   public void destroy() {
     // Empty method
   }
-
-  private static String safeSessionId(HttpSession session) {
-    if (session == null)
-      return "none";
-    String id = session.getId();
-    return (id == null || id.length() < 8) ? "present" : id.substring(0, 8) + "...";
-  }
-
-  private static String reqSummary(HttpServletRequest req, HttpSession session) {
-    String method = req.getMethod();
-    String uri = req.getRequestURI();
-    String qs = req.getQueryString();
-    String full = (qs == null) ? uri : (uri + "?" + qs);
-    return String.format("method=%s uri=%s session=%s", method, full, safeSessionId(session));
-  }
-
 }

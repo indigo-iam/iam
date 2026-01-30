@@ -45,7 +45,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = "mfa.multi-factor-mandatory=true")
+@TestPropertySource(properties = { "mfa.multi-factor-mandatory=true",
+        "logging.level.root=DEBUG",
+        "logging.level.it.infn.mw.iam.core.web.aup.EnforceAupFilter=DEBUG"
+})
 class EnforceMfaFilterTests {
     @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
