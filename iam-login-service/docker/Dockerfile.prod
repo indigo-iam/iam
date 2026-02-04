@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17 as builder
+FROM eclipse-temurin:17 AS builder
 
 RUN apt-get update && apt-get upgrade -y && \
   mkdir /indigo-iam
@@ -19,4 +19,4 @@ RUN apt-get update && apt-get upgrade -y && \
   zip -d WEB-INF/lib/angular-ui-bootstrap-2.5.6.jar META-INF/resources/webjars/angular-ui-bootstrap/2.5.6/dist/.DS_Store && \
   rm -f WEB-INF/classes/keystore.jwks
 
-CMD java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher
+CMD ["/bin/sh", "-c", "java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher"]
