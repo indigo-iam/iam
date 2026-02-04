@@ -1,6 +1,7 @@
 FROM eclipse-temurin:17 as builder
 
-RUN mkdir /indigo-iam
+RUN apt-get update && apt-get upgrade -y && \
+  mkdir /indigo-iam
 WORKDIR /indigo-iam
 COPY iam-login-service.war /indigo-iam/
 RUN java -Djarmode=layertools -jar iam-login-service.war extract
@@ -13,9 +14,9 @@ COPY --from=builder indigo-iam/spring-boot-loader/ ./
 COPY --from=builder indigo-iam/snapshot-dependencies/ ./
 COPY --from=builder indigo-iam/application/ ./
 
-RUN apt-get update
-RUN apt-get install -y zip
-RUN zip -d WEB-INF/lib/angular-ui-bootstrap-2.5.6.jar META-INF/resources/webjars/angular-ui-bootstrap/2.5.6/dist/.DS_Store
-RUN rm -f WEB-INF/classes/keystore.jwks
+RUN apt-get update && apt-get upgrade -y && \
+  apt-get install -y zip && \
+  zip -d WEB-INF/lib/angular-ui-bootstrap-2.5.6.jar META-INF/resources/webjars/angular-ui-bootstrap/2.5.6/dist/.DS_Store && \
+  rm -f WEB-INF/classes/keystore.jwks
 
 CMD java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher
