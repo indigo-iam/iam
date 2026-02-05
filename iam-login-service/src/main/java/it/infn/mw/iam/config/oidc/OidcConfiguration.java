@@ -42,6 +42,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -53,6 +54,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -192,7 +194,8 @@ public class OidcConfiguration {
   }
 
   @Bean
-  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
+  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers,
+      Environment env) {
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -206,10 +209,14 @@ public class OidcConfiguration {
       clients.put(provider.getIssuer(), rc);
     });
 
+    if (clients.isEmpty()
+        && Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals)) {
+      return new FederationClientConfigurationService();
+    }
+
     if (clients.isEmpty()) {
       return new NullClientConfigurationService();
     }
-
 
     StaticClientConfigurationService config = new StaticClientConfigurationService();
     config.setClients(clients);

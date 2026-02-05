@@ -203,6 +203,16 @@
             </div>
         </c:if>
 
+        <!-- OpenID Federation -->
+        <form method="get" action="/openid_connect_login">
+            <div id="login-registration">
+                <div class="registration-preamble text-muted">
+                    OpenID Federation
+                </div>
+                <input type="url" name="iss" placeholder="Type your OP" required/>
+            </div>
+        </form>
+
         <c:if test="${loginPageConfiguration.privacyPolicyUrl.isPresent()}">
             <div id="privacy-policy">
                 <a class="btn btn-link btn-block" target="_blank" rel="noopener noreferrer"
