@@ -29,12 +29,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.ParsedAccessToken;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -49,21 +53,25 @@ public class IamUserInfoEndpoint {
   private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
   private static final String CLIENT_NOT_FOUND_ERROR = "Client '%s' not found";
 
+  private final IamProperties iamProperties;
   private final JWTProfileResolver profileResolver;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
   private final IamAccountRepository accountRepo;
   private final IamClientRepository clientRepo;
+  private final TokenUtils tokenUtils;
 
-  public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
+  public IamUserInfoEndpoint(IamProperties iamProperties, JWTProfileResolver profileResolver,
       OAuth2AuthenticationScopeResolver scopeResolver, IamAccountRepository accountRepo,
-      IamClientRepository clientRepo) {
+      IamClientRepository clientRepo, TokenUtils tokenUtils) {
+    this.iamProperties = iamProperties;
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
     this.accountRepo = accountRepo;
     this.clientRepo = clientRepo;
+    this.tokenUtils = tokenUtils;
   }
 
-  @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('openid')")
+  @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping(path = "/userinfo", produces = {MediaType.APPLICATION_JSON_VALUE})
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
@@ -91,7 +99,20 @@ public class IamUserInfoEndpoint {
     Map<String, Object> claims =
         profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
 
+    addExternalAuthN(auth, claims);
     return new UserInfoResponse(claims);
+  }
+
+  private void addExternalAuthN(OAuth2Authentication auth, Map<String, Object> claims) {
+
+    if (!iamProperties.getAccessToken().isStoreOnDatabase()
+        && auth.getDetails() instanceof OAuth2AuthenticationDetails details
+        && details.getTokenValue() != null) {
+      ParsedAccessToken parsedToken = tokenUtils.parseAccessToken(details.getTokenValue());
+      if (parsedToken.external() != null) {
+        claims.put("external_authn", parsedToken.external());
+      }
+    }
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)

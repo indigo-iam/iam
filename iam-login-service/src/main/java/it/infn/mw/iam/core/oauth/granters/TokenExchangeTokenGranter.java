@@ -31,12 +31,12 @@ import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -44,6 +44,9 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.ParsedAccessToken;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -62,51 +65,68 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
   private final OAuth2TokenEntityService tokenServices;
 
+  private IamProperties iamProperties;
   private AccountUtils accountUtils;
   private AUPSignatureCheckService signatureCheckService;
   private TokenExchangePdp exchangePdp;
+  private ClientDetailsEntityService clientDetailsService;
+  private TokenUtils tokenUtils;
 
-
-  @Autowired
   public TokenExchangeTokenGranter(final OAuth2TokenEntityService tokenServices,
       final ClientDetailsEntityService clientDetailsService,
-      final OAuth2RequestFactory requestFactory) {
+      final OAuth2RequestFactory requestFactory, IamProperties iamProperties,
+      TokenUtils tokenUtils) {
     super(tokenServices, clientDetailsService, requestFactory, TOKEN_EXCHANGE_GRANT_TYPE);
+    this.iamProperties = iamProperties;
+    this.clientDetailsService = clientDetailsService;
     this.tokenServices = tokenServices;
+    this.tokenUtils = tokenUtils;
   }
 
-
-
-  protected void validateExchange(final ClientDetails actorClient, final TokenRequest tokenRequest,
-      OAuth2AccessTokenEntity subjectToken) {
+  private void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
+      OAuth2Authentication authentication, Set<String> subjectTokenScopes,
+      String subjectTokenClientId) {
 
     String audience = tokenRequest.getRequestParameters().get(AUDIENCE_FIELD);
-    ClientDetailsEntity subjectClient = subjectToken.getClient();
     Set<String> requestedScopes = tokenRequest.getScope();
 
     if (Objects.isNull(requestedScopes) || requestedScopes.isEmpty()) {
       LOG.debug(
           "No scope parameter found in token exchange request, defaulting to scopes linked to the suject token");
-      requestedScopes = subjectToken.getScope();
+      requestedScopes = subjectTokenScopes;
     }
 
-    if (!isNull(subjectToken.getAuthenticationHolder().getUserAuth())) {
+    if (!isNull(authentication.getUserAuthentication())) {
+
+      Optional<IamAccount> account =
+          accountUtils.getAuthenticatedUserAccount(authentication.getUserAuthentication());
+
+      if (account.isPresent() && signatureCheckService.needsAupSignature(account.get())) {
+        throw new InvalidGrantException(
+            format("User %s needs to sign AUP for this organization in order to proceed.",
+                account.get().getUsername()));
+      }
+
       LOG.info(
           "Client '{}' requests token exchange from client '{}' to impersonate user '{}' on audience '{}' with scopes '{}'",
-          actorClient.getClientId(), subjectClient.getClientId(),
-          subjectToken.getAuthenticationHolder().getUserAuth().getName(), audience,
-          requestedScopes);
+          actorClient.getClientId(), subjectTokenClientId,
+          authentication.getUserAuthentication().getName(), audience, requestedScopes);
+
     } else {
+
       LOG.info(
           "Client '{}' requests token exchange from client '{}' on audience '{}' with scopes '{}'",
-          actorClient.getClientId(), subjectClient.getClientId(), audience, requestedScopes);
+          actorClient.getClientId(), subjectTokenClientId, audience, requestedScopes);
     }
 
-    if (subjectClient.equals(actorClient) && requestedScopes.contains(OFFLINE_ACCESS_SCOPE)) {
+    if (subjectTokenClientId.equals(actorClient.getClientId())
+        && requestedScopes.contains(OFFLINE_ACCESS_SCOPE)) {
       throw new OAuth2AccessDeniedException(
           "Token exchange not allowed: the actor and the subject are the same client and offline_access is in the requested scopes");
     }
 
+    ClientDetailsEntity subjectClient =
+        clientDetailsService.loadClientByClientId(subjectTokenClientId);
     TokenExchangePdpResult result =
         exchangePdp.validateTokenExchange(tokenRequest, subjectClient, actorClient);
 
@@ -133,7 +153,20 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
     }
   }
 
+  protected void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
+      OAuth2AccessTokenEntity accessToken) {
 
+    validateExchange(actorClient, tokenRequest,
+        accessToken.getAuthenticationHolder().getAuthentication(), accessToken.getScope(),
+        accessToken.getClient().getClientId());
+  }
+
+  protected void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
+      OAuth2Authentication authentication, ParsedAccessToken subjectToken) {
+
+    validateExchange(actorClient, tokenRequest, authentication, subjectToken.scopes(),
+        subjectToken.clientId());
+  }
 
   @Override
   protected OAuth2Authentication getOAuth2Authentication(final ClientDetails actorClient,
@@ -144,32 +177,35 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
       throw new InvalidRequestException("Delegation not supported");
     }
 
+    if (!(actorClient instanceof ClientDetailsEntity actorClientEntity)) {
+      throw new IllegalStateException("Invalid client entity");
+    }
+
     String subjectTokenValue = tokenRequest.getRequestParameters().get("subject_token");
-    OAuth2AccessTokenEntity subjectToken = tokenServices.readAccessToken(subjectTokenValue);
 
     OAuth2Authentication authentication;
 
-    if (subjectToken.getAuthenticationHolder().getUserAuth() == null) {
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
 
-      validateExchange(actorClient, tokenRequest, subjectToken);
-      authentication = new OAuth2Authentication(
-          getRequestFactory().createOAuth2Request(actorClient, tokenRequest), null);
+      Optional<OAuth2AccessTokenEntity> accessTokenOnDb =
+          tokenUtils.loadFromDatabase(subjectTokenValue);
+      if (accessTokenOnDb.isEmpty()) {
+        throw new InvalidTokenException("Invalid subject token: not found on database");
+      }
+      validateExchange(actorClientEntity, tokenRequest, accessTokenOnDb.get());
+      authentication = accessTokenOnDb.get().getAuthenticationHolder().getAuthentication();
+
     } else {
 
-      Optional<IamAccount> account = accountUtils
-        .getAuthenticatedUserAccount(subjectToken.getAuthenticationHolder().getUserAuth());
-
-      if (account.isPresent() && signatureCheckService.needsAupSignature(account.get())) {
-        throw new InvalidGrantException(
-            format("User %s needs to sign AUP for this organization " + "in order to proceed.",
-                account.get().getUsername()));
-      }
-
-      validateExchange(actorClient, tokenRequest, subjectToken);
-      authentication = new OAuth2Authentication(
-          getRequestFactory().createOAuth2Request(actorClient, tokenRequest),
-          subjectToken.getAuthenticationHolder().getAuthentication().getUserAuthentication());
+      ParsedAccessToken subjectToken = tokenUtils.parseAccessToken(subjectTokenValue);
+      authentication = tokenUtils.getAuthentication(subjectToken);
+      validateExchange(actorClientEntity, tokenRequest, authentication, subjectToken);
+      tokenUtils.validate(subjectToken);
     }
+
+    authentication =
+        new OAuth2Authentication(getRequestFactory().createOAuth2Request(actorClient, tokenRequest),
+            authentication.getUserAuthentication());
 
     String audience = tokenRequest.getRequestParameters().get(AUDIENCE_FIELD);
     if (!isNullOrEmpty(audience)) {

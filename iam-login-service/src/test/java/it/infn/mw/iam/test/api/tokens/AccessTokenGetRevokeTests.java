@@ -16,150 +16,92 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.tokens.model.AccessToken;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.test.util.DateEqualModulo1Second;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
+    "iam.access_token.store_on_database=true"})
+class AccessTokenGetRevokeTests extends TokenGetterUtils {
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin.read", "iam:admin.write"})
-public class AccessTokenGetRevokeTests extends TestTokensUtils {
-
-  public static final String[] SCOPES = {"openid", "profile"};
-
-  public static final String TEST_CLIENT_ID = "token-lookup-client";
-  public static final String TEST_CLIENT2_ID = "password-grant";
-  public static final int FAKE_TOKEN_ID = 12345;
-  private static final String TESTUSER_USERNAME = "test_102";
-
-  @Autowired
-  private ScimResourceLocationProvider scimResourceLocationProvider;
+  static final int FAKE_TOKEN_ID = 12345;
 
   @Autowired
-  private ObjectMapper mapper;
+  IamOAuthAccessTokenRepository accessTokenRepository;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
+    accessTokenRepository.deleteAll();
   }
 
   @Test
-  void getAccessToken() throws JsonParseException, JsonMappingException,
-    UnsupportedEncodingException, IOException, Exception {
+  void revokeAccessTokenForbiddenForUser() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-    IamAccount user = loadTestUser(TESTUSER_USERNAME);
+    assertThat(accessTokenRepository.count(), is(0L));
+    context.useLocalTestUser();
+    getPasswordToken();
+    assertThat(accessTokenRepository.count(), is(1L));
+    Long id = accessTokenRepository.findAll().get(0).getId();
+    String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, id);
 
-    OAuth2AccessTokenEntity at = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
+    mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
 
-    String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, at.getId());
-
-    AccessToken remoteAt =
-        mapper.readValue(mvc.perform(get(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
-          .andExpect(status().isOk())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(), AccessToken.class);
-
-    System.out.println(remoteAt);
-
-    assertThat(remoteAt.getId(), equalTo(at.getId()));
-    assertThat(remoteAt.getValue(), nullValue()); 
-    assertThat(remoteAt.getExpiration(), new DateEqualModulo1Second(at.getExpiration()));
-
-    assertThat(remoteAt.getScopes().contains("openid"), equalTo(true));
-    assertThat(remoteAt.getScopes().contains("profile"), equalTo(true));
-
-    assertThat(remoteAt.getClient().getId(), equalTo(client.getId()));
-    assertThat(remoteAt.getClient().getClientId(), equalTo(client.getClientId()));
-
-    assertThat(remoteAt.getUser().getId(), equalTo(user.getUuid()));
-    assertThat(remoteAt.getUser().getUserName(), equalTo(user.getUsername()));
-    assertThat(remoteAt.getUser().getRef(),
-        equalTo(scimResourceLocationProvider.userLocation(user.getUuid())));
-
+    context.useBearerTestToken(new String[] {"openid", "profile"});
+    mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
   }
 
   @Test
-  void getAccessTokenNotFound() throws JsonParseException, JsonMappingException,
-    UnsupportedEncodingException, IOException, Exception {
+  void revokeAccessTokenAllowedForAdmin() throws Exception {
 
-    String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
-    mvc.perform(get(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
-      .andExpect(status().isNotFound());
-  }
+    assertThat(accessTokenRepository.count(), is(0L));
+    context.useLocalTestUser();
+    getPasswordToken();
+    assertThat(accessTokenRepository.count(), is(1L));
+    Long id = accessTokenRepository.findAll().get(0).getId();
+    String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, id);
 
-  @Test
-  void revokeAccessToken() throws JsonParseException, JsonMappingException,
-    UnsupportedEncodingException, IOException, Exception {
-
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-    OAuth2AccessTokenEntity at = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, at.getId());
+    context.useBearerAdminToken();
 
     mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isNoContent());
-
-    assertThat(tokenService.getAccessTokenById(at.getId()), equalTo(null));
+    assertThat(accessTokenRepository.count(), is(0L));
   }
 
   @Test
-  void revokeAccessTokenNotFound() throws JsonParseException, JsonMappingException,
-    UnsupportedEncodingException, IOException, Exception {
+  void revokeFakeAccessTokenGetsNoContent() throws Exception {
 
+    assertThat(accessTokenRepository.count(), is(0L));
     String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
-    mvc.perform(delete(path))
-      .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void testRevokeAllTokens() throws Exception {
-
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    
-    assertThat(accessTokenRepository.count(), equalTo(2L));
-    
-    mvc.perform(delete(ACCESS_TOKENS_BASE_PATH)).andExpect(status().isNoContent());
-    
-    assertThat(accessTokenRepository.count(), equalTo(0L));
+    context.useBearerAdminToken();
+    mvc.perform(delete(path)).andExpect(status().isNoContent());
   }
 }

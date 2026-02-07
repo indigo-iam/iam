@@ -15,28 +15,15 @@
  */
 package it.infn.mw.iam.test.api.client;
 
-import java.util.Optional;
-
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import org.springframework.security.test.context.support.WithAnonymousUser;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -45,6 +32,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
@@ -52,16 +54,20 @@ import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-class ClientManagementAPIIntegrationTests extends TestSupport {
+@TestPropertySource(properties = {
+    "iam.access_token.store_on_database=true",
+})
+class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
 
   public static final String[] REFRESH_SCOPES = {"openid", "profile", "offline_access"};
 
@@ -90,9 +96,12 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   @Autowired
   private ClientDetailsEntityService clientDetailsService;
 
+  @Autowired
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
+    context.cleanupSecurityContext();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -389,11 +398,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   }
 
   @Test
-  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+//  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void testClientRevokeAllRefreshTokensWorks() throws Exception {
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-    buildAccessToken(client, TESTUSER_USERNAME, REFRESH_SCOPES);
-    buildAccessToken(client, TESTUSER_USERNAME, ACCESS_SCOPES);
+
+    context.useBearerAdminToken();
+    getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password", "openid profile");
+
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(1));
@@ -411,19 +422,21 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
 
+    /* It was 1 before changing the effects of the refresh token revocation:
+     * access-token now are not deleted when the refresh token is revoked, 
+     * same behavior of the token-not-in-database solution */
     mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(1));
+      .andExpect(jsonPath("$.totalResults").value(2));
   }
 
   @Test
-  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void testClientRevokeAllAccessTokensWorks() throws Exception {
 
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-
-    buildAccessToken(client, TESTUSER_USERNAME, REFRESH_SCOPES);
-    buildAccessToken(client, TESTUSER_USERNAME, ACCESS_SCOPES);
+    context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
+    context.useBearerAdminToken();
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
@@ -447,13 +460,14 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   }
 
   @Test
-  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void testResetClient() throws Exception {
 
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
 
-    buildAccessToken(client, TESTUSER_USERNAME, REFRESH_SCOPES);
-    buildAccessToken(client, TESTUSER_USERNAME, ACCESS_SCOPES);
+    context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
+    context.useBearerAdminToken();
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)

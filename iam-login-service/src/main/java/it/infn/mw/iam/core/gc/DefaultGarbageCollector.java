@@ -15,7 +15,9 @@
  */
 package it.infn.mw.iam.core.gc;
 
+import java.time.Clock;
 import java.util.Collection;
+import java.util.Date;
 
 import org.mitre.data.DefaultPageCriteria;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
@@ -44,6 +46,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultGarbageCollector.class);
 
+  private final Clock clock;
   private final ApprovedSiteService approvedSiteService;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
@@ -52,13 +55,14 @@ public class DefaultGarbageCollector implements GarbageCollector {
   private final IamRevokedAccessTokenRepository revokedAccessTokenRepo;
   private final AuthorizationCodeRepository authzCodeRepo;
 
-  public DefaultGarbageCollector(ApprovedSiteService approvedSiteService,
+  public DefaultGarbageCollector(Clock clock, ApprovedSiteService approvedSiteService,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, DeviceCodeRepository deviceCodeRepo,
       AuthenticationHolderRepository authenticationHolderRepository,
       IamRevokedAccessTokenRepository revokedAccessTokenRepo,
       AuthorizationCodeRepository authzCodeRepo) {
 
+    this.clock = clock;
     this.approvedSiteService = approvedSiteService;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
@@ -107,7 +111,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
   public void clearExpiredAccessTokens(int count) {
 
     Page<OAuth2AccessTokenEntity> expiredAccessTokens =
-        accessTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
+        accessTokenRepo.findExpiredTokens(new OffsetPageable(0, 100), Date.from(clock.instant()));
     expiredAccessTokens.forEach(accessTokenRepo::delete);
     LOG.debug("Removed {} expired access tokens", expiredAccessTokens.getNumberOfElements());
   }
@@ -116,7 +120,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
   public void clearExpiredRefreshTokens(int count) {
 
     Page<OAuth2RefreshTokenEntity> expiredRefreshTokens =
-        refreshTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
+        refreshTokenRepo.findExpiredTokens(new OffsetPageable(0, 100), Date.from(clock.instant()));
     expiredRefreshTokens.forEach(refreshTokenRepo::delete);
     LOG.debug("Removed {} expired refresh tokens", expiredRefreshTokens.getNumberOfElements());
   }

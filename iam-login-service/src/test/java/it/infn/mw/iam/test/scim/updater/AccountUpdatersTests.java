@@ -34,15 +34,17 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -64,11 +66,14 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
 public class AccountUpdatersTests extends X509TestSupport {
 
   public static final String OLD = "old";

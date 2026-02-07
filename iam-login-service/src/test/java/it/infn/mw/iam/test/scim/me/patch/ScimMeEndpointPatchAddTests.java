@@ -41,13 +41,13 @@ import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.X509Utils;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
 @Transactional

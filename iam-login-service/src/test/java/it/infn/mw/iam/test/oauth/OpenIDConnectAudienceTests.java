@@ -32,13 +32,16 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -48,42 +51,30 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class OpenIDConnectAudienceTests {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@Transactional
+public class OpenIDConnectAudienceTests extends TokenGetterUtils {
 
-  public static final String TEST_CLIENT_ID = "client";
-  public static final String TEST_CLIENT_SECRET = "secret";
-  public static final String TEST_CLIENT_REDIRECT_URI =
-      "https://iam.local.io/iam-test-client/openid_connect_login";
-
-  public static final String LOGIN_URL = "http://localhost/login";
-  public static final String AUTHORIZE_URL = "http://localhost/authorize";
-
-  public static final String RESPONSE_TYPE_CODE = "code";
-  public static final String AUTHORIZATION_ENDPOINT = "/authorize";
   public static final String SCOPE = "openid profile";
-
-  public static final String TEST_USER_ID = "test";
-  public static final String TEST_USER_PASSWORD = "password";
 
   @Autowired
   ObjectMapper objectMapper;
 
-  @Autowired
-  MockMvc mvc;
-
   @Test
   void testOidcAuthorizationRequestWithAudience() throws Exception {
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZATION_ENDPOINT).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_ENDPOINT).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -151,11 +142,11 @@ public class OpenIDConnectAudienceTests {
   @Test
   void testOidcAuthorizationRequestWithMultipleAudiences() throws Exception {
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZATION_ENDPOINT).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_ENDPOINT).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)

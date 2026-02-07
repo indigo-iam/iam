@@ -30,59 +30,68 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockUser(username = "admin", roles = "ADMIN")
-class AccountLabelsTests extends TestSupport {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
+class AccountLabelsTests implements StructuredScopeTestSupportConstants {
 
-  private static final ResultMatcher ACCOUNT_NOT_FOUND_ERROR_MESSAGE =
+  static final String RANDOM_UUID = UUID.randomUUID().toString();
+
+  static final String LABEL_PREFIX = "indigo-iam.github.io";
+  static final String LABEL_NAME = "example.label";
+  static final String LABEL_VALUE = "example-label-value";
+
+  static final ResultMatcher ACCOUNT_NOT_FOUND_ERROR_MESSAGE =
       jsonPath("$.error", containsString("Account not found"));
 
-  private static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
+
+  static final LabelDTO TEST_LABEL =
+      LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(LABEL_VALUE).build();
 
   @Autowired
-  private IamAccountRepository repo;
+  IamAccountRepository repo;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  SecurityContextUtils context;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -107,7 +116,7 @@ class AccountLabelsTests extends TestSupport {
   @Test
   @WithMockUser(username = "test", roles = "USER")
   void aUserCanListHisLabels() throws Exception {
-    mvc.perform(get(RESOURCE, TEST_USER_UUID)).andExpect(OK);
+    mvc.perform(get(RESOURCE, TEST_UUID)).andExpect(OK);
   }
 
   @Test
@@ -126,6 +135,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void gettingLabelsWorksForAdminUser() throws Exception {
     gettingLabelsWorks();
   }
@@ -147,6 +157,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void setLabelWorks() throws Exception {
 
     mvc
@@ -188,9 +199,9 @@ class AccountLabelsTests extends TestSupport {
       .andExpect(OK);
 
     mvc
-    .perform(delete(RESOURCE, TEST_100_USER_UUID).param("name", TEST_LABEL.getName())
-      .param("prefix", TEST_LABEL.getPrefix()))
-    .andExpect(NO_CONTENT);
+      .perform(delete(RESOURCE, TEST_100_USER_UUID).param("name", TEST_LABEL.getName())
+        .param("prefix", TEST_LABEL.getPrefix()))
+      .andExpect(NO_CONTENT);
   }
 
   @Test
@@ -204,6 +215,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
@@ -264,6 +276,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void nonExistingResourceHandledCorrectly() throws Exception {
     mvc.perform(get(RESOURCE, RANDOM_UUID))
       .andExpect(NOT_FOUND)
@@ -283,6 +296,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void multipleLabelsHandledCorrectly() throws Exception {
     List<LabelDTO> labels = Lists.newArrayList();
 
@@ -298,12 +312,12 @@ class AccountLabelsTests extends TestSupport {
         .andExpect(OK);
 
       mvc
-        .perform(put(RESOURCE, TEST_USER_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(OK);
     }
 
-    for (String uuid : asList(TEST_100_USER_UUID, TEST_USER_UUID)) {
+    for (String uuid : asList(TEST_100_USER_UUID, TEST_UUID)) {
       String resultString = mvc.perform(get(RESOURCE, uuid))
         .andExpect(OK)
         .andExpect(jsonPath("$").isArray())
@@ -316,14 +330,14 @@ class AccountLabelsTests extends TestSupport {
       labels.forEach(l -> assertThat(results, hasItem(l)));
     }
 
-    repo.delete(
-        repo.findByUuid(TEST_100_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND)));
+    repo.delete(repo.findByUuid(TEST_100_USER_UUID)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND)));
 
     mvc.perform(get(RESOURCE, TEST_100_USER_UUID))
       .andExpect(NOT_FOUND)
       .andExpect(ACCOUNT_NOT_FOUND_ERROR_MESSAGE);
 
-    String resultString = mvc.perform(get(RESOURCE, TEST_USER_UUID))
+    String resultString = mvc.perform(get(RESOURCE, TEST_UUID))
       .andExpect(OK)
       .andExpect(jsonPath("$").isArray())
       .andExpect(jsonPath("$", hasSize(10)))
@@ -337,6 +351,7 @@ class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
   void labelValidationTests() throws Exception {
 
     final String[] SOME_INVALID_PREFIXES = {"aword", "-starts-with-dash.com", "ends-with-dash-.com",
@@ -374,7 +389,8 @@ class AccountLabelsTests extends TestSupport {
     final String SOME_INVALID_VALUES[] = {"carriage\nreturn", "another\rreturn"};
 
     for (String v : SOME_INVALID_VALUES) {
-      LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
+      LabelDTO invalidNameLabel =
+          LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
       mvc
         .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidNameLabel)))

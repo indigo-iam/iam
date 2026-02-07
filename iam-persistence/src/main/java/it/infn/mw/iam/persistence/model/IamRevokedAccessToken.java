@@ -27,27 +27,21 @@ import javax.persistence.Table;
 public class IamRevokedAccessToken {
 
   @Id
-  @Column(nullable = false, unique = true)
-  private String jti;
+  @Column(name = "hash_value", nullable = false, unique = true, length = 36)
+  private String hashValue;
 
-  @Column(nullable = false)
+  @Column(name = "expiration")
   private Date expiration;
 
-  @Column(nullable = false)
+  @Column(name = "revoked_at", nullable = false)
   private Date revokedAt;
 
-  @Column(nullable = false)
-  private String clientId;
-
-  @Column(nullable = false)
-  private String sub;
-
-  public String getJti() {
-    return jti;
+  public String getHashValue() {
+    return hashValue;
   }
 
-  public void setJti(String jti) {
-    this.jti = jti;
+  public void setHashValue(String hashValue) {
+    this.hashValue = hashValue;
   }
 
   public Date getExpiration() {
@@ -66,19 +60,4 @@ public class IamRevokedAccessToken {
     this.revokedAt = revokedAt;
   }
 
-  public String getClientId() {
-    return clientId;
-  }
-
-  public void setClientId(String clientId) {
-    this.clientId = clientId;
-  }
-
-  public String getSub() {
-    return sub;
-  }
-
-  public void setSub(String sub) {
-    this.sub = sub;
-  }
 }

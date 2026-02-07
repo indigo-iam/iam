@@ -26,58 +26,59 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-public class ScimX509Tests extends X509TestSupport implements ScimConstants {
+class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
-  public static final Logger LOG = LoggerFactory.getLogger(ScimX509Tests.class);
-  public static final String JP_INDIGO_USER = "$." + INDIGO_USER_SCHEMA;
-
-  @Autowired
-  private IamAccountRepository iamAccountRepo;
+  static final Logger LOG = LoggerFactory.getLogger(ScimX509Tests.class);
+  static final String JP_INDIGO_USER = "$." + INDIGO_USER_SCHEMA;
 
   @Autowired
-  private ObjectMapper mapper;
-  
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamAccountRepository iamAccountRepo;
 
   @Autowired
-  private MockMvc mvc;
+  ObjectMapper mapper;
+
+  @Autowired
+  MockMvc mvc;
+
+  @Autowired
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   @Test

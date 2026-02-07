@@ -23,6 +23,7 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
 import static java.lang.String.format;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -74,13 +75,15 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
 
+  private final Clock clock;
   private final CernProperties cernProperties;
   private final IamAccountRepository accountRepo;
   private final IamAccountService accountService;
   private final CernHrDBApiService hrDb;
 
-  public CernHrLifecycleHandler(CernProperties cernProperties, IamAccountRepository accountRepo,
+  public CernHrLifecycleHandler(Clock clock, CernProperties cernProperties, IamAccountRepository accountRepo,
       IamAccountService accountService, CernHrDBApiService hrDb) {
+    this.clock = clock;
     this.cernProperties = cernProperties;
     this.accountRepo = accountRepo;
     this.accountService = accountService;
@@ -239,6 +242,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   }
 
   private void expireAccount(IamAccount a) {
-    accountService.setAccountEndTime(a, new Date());
+    accountService.setAccountEndTime(a, Date.from(clock.instant()));
   }
 }

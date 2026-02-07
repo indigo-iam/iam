@@ -20,10 +20,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -37,39 +38,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 @WebAppConfiguration
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @Transactional
-class UsernameErrorMessageTests extends TestSupport {
+class UsernameErrorMessageTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
   ObjectMapper objectMapper;
 
   @Autowired
-  WebApplicationContext context;
-
-  @Autowired
-  MockOAuth2Filter oauth2Filter;
+  WebApplicationContext webContext;
 
   @Autowired
   IamAccountRepository repo;
 
-  private MockMvc mvc;
+  @Autowired
+  SecurityContextUtils securityContext;
+
+  @Autowired
+  MockMvc mvc;
 
   @BeforeEach
   void setup() {
-    oauth2Filter.cleanupSecurityContext();
+    securityContext.cleanupSecurityContext();
     mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
-
-  @AfterEach
-  void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+        MockMvcBuilders.webAppContextSetup(webContext).apply(springSecurity()).alwaysDo(log()).build();
   }
 
   private RegistrationRequestDto createRegistrationRequest(String username) {

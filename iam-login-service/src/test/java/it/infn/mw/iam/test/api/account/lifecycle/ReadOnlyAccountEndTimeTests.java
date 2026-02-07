@@ -21,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,33 +33,29 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.account.lifecycle.AccountLifecycleDTO;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"lifecycle.account.read-only-end-time=true"})
-public class ReadOnlyAccountEndTimeTests extends TestSupport {
-  public static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
+class ReadOnlyAccountEndTimeTests implements StructuredScopeTestSupportConstants {
+
+  static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  MockMvc mvc;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   @Test

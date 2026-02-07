@@ -20,6 +20,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +64,8 @@ class GarbageCollectorTests {
   private IamRevokedAccessTokenRepository revokedAccessTokenRepo;
   @Mock
   private AuthorizationCodeRepository authzCodeRepo;
+  @Mock
+  private Clock clock;
 
   private DefaultGarbageCollector gc;
 
@@ -69,7 +73,7 @@ class GarbageCollectorTests {
   void setup() {
     MockitoAnnotations.openMocks(this);
 
-    gc = new DefaultGarbageCollector(approvedSiteService, accessTokenRepo, refreshTokenRepo,
+    gc = new DefaultGarbageCollector(clock, approvedSiteService, accessTokenRepo, refreshTokenRepo,
         deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo, authzCodeRepo);
   }
 
@@ -117,7 +121,8 @@ class GarbageCollectorTests {
     OAuth2AccessTokenEntity tok = mock(OAuth2AccessTokenEntity.class);
     Page<OAuth2AccessTokenEntity> page = new PageImpl<>(Collections.singletonList(tok));
 
-    when(accessTokenRepo.findExpiredTokens(any(OffsetPageable.class))).thenReturn(page);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(accessTokenRepo.findExpiredTokens(any(), any())).thenReturn(page);
 
     gc.clearExpiredAccessTokens(10);
 
@@ -129,7 +134,8 @@ class GarbageCollectorTests {
     OAuth2RefreshTokenEntity tok = mock(OAuth2RefreshTokenEntity.class);
     Page<OAuth2RefreshTokenEntity> page = new PageImpl<>(Collections.singletonList(tok));
 
-    when(refreshTokenRepo.findExpiredTokens(any(OffsetPageable.class))).thenReturn(page);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(refreshTokenRepo.findExpiredTokens(any(), any())).thenReturn(page);
 
     gc.clearExpiredRefreshTokens(10);
 

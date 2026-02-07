@@ -23,23 +23,18 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,33 +42,25 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-  CoreControllerTestSupport.class, RegistrationLifecycleTests.TestConfig.class},
+  CoreControllerTestSupport.class, ClockConfig.class},
   webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @TestPropertySource(properties = {
 // @formatter:off
   "lifecycle.account.accountLifetimeDays=7"
 // @formatter:on
 })
+@Transactional
 class RegistrationLifecycleTests extends EndpointsTestUtils {
-  static Instant NOW = Instant.parse("2020-01-01T00:00:00.00Z");
-  static Instant SEVEN_DAYS_FROM_NOW = NOW.plus(7, ChronoUnit.DAYS);
-
-  @Configuration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-  }
 
   @Autowired
   ObjectMapper objectMapper;
@@ -84,14 +71,15 @@ class RegistrationLifecycleTests extends EndpointsTestUtils {
   @Autowired
   IamAccountRepository repo;
 
+  @Autowired
+  SecurityContextUtils sc;
+
+  @Autowired
+  MutableClock clock;
+
   @BeforeEach
   void setup() {
-    oauth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+    sc.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -126,7 +114,7 @@ class RegistrationLifecycleTests extends EndpointsTestUtils {
   void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
     IamAccount account = approveRegistrationAndGetAccount("test_create");
 
-    assertThat(account.getEndTime(), is(from(SEVEN_DAYS_FROM_NOW)));
+    assertThat(account.getEndTime(), is(from(clock.daysAfter(7))));
   }
 
   @Test

@@ -23,23 +23,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.password_reset.PasswordUpdateController;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamRandomPortIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 class PasswordUpdateTests {
 
   @Value("${local.server.port}")
@@ -87,34 +86,34 @@ class PasswordUpdateTests {
       String newPassword) {
 
     return RestAssured.given()
-        .port(iamPort)
-        .auth()
-        .preemptive()
-        .oauth2(accessToken)
-        .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
-        .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
-        .log()
-        .all(true)
-        .when()
-        .post(PasswordUpdateController.BASE_URL)
-        .then()
-        .log()
-        .all(true);
+      .port(iamPort)
+      .auth()
+      .preemptive()
+      .oauth2(accessToken)
+      .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
+      .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
+      .log()
+      .all(true)
+      .when()
+      .post(PasswordUpdateController.BASE_URL)
+      .then()
+      .log()
+      .all(true);
   }
 
   private ValidatableResponse doPost(String currentPassword, String newPassword) {
 
     return RestAssured.given()
-        .port(iamPort)
-        .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
-        .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
-        .log()
-        .all(true)
-        .when()
-        .post(PasswordUpdateController.BASE_URL)
-        .then()
-        .log()
-        .all(true);
+      .port(iamPort)
+      .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
+      .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
+      .log()
+      .all(true)
+      .when()
+      .post(PasswordUpdateController.BASE_URL)
+      .then()
+      .log()
+      .all(true);
   }
 
   @Test
@@ -124,16 +123,16 @@ class PasswordUpdateTests {
     String newPassword = "Secure_p@ssw0rd";
 
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
 
     passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(newPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(newPassword)
+      .getAccessToken();
   }
 
   @Test
@@ -143,16 +142,16 @@ class PasswordUpdateTests {
     String newPassword = "S3crP@ss";
 
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
 
     passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(newPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(newPassword)
+      .getAccessToken();
 
     currentPassword = newPassword;
     newPassword = "T0S#ort";
@@ -166,9 +165,9 @@ class PasswordUpdateTests {
     String newPassword = "Secure_P@ssw0rd!";
 
     doPost(currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
-        .body("error", equalTo("unauthorized"))
-        .body("error_description",
-            equalTo("Full authentication is required to access this resource"));
+      .body("error", equalTo("unauthorized"))
+      .body("error_description",
+          equalTo("Full authentication is required to access this resource"));
   }
 
   @Test
@@ -177,12 +176,12 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Secure_P@ssw0rd!";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, "thisisnotthecurrentpassword", newPassword)
-        .statusCode(HttpStatus.BAD_REQUEST.value());
+      .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -201,9 +200,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = null;
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -214,9 +213,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -227,9 +226,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "pass";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -240,9 +239,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "newweakpassword";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -253,9 +252,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Password1";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -266,9 +265,9 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Sjfyt-hdddW!";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
   }
@@ -279,16 +278,16 @@ class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "newP@ssw0rd";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUsername())
-        .password(currentPassword)
-        .getAccessToken();
+      .username(testUser.getUsername())
+      .password(currentPassword)
+      .getAccessToken();
 
     IamAccount account = accountRepository.findByUsername(testUser.getUsername())
-        .orElseThrow(() -> new Exception("Test user not found"));
+      .orElseThrow(() -> new Exception("Test user not found"));
     account.setActive(false);
     accountRepository.save(account);
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.CONFLICT.value())
-        .body(containsString("Account is not active or email is not verified"));
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
+      .body(containsString("User password_tester_user is not active"));
   }
 }

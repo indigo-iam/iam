@@ -28,9 +28,12 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
@@ -42,24 +45,34 @@ import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
+        ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"spring.main.allow-bean-definition-overriding=true"})
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 class ScimMeEndpointPatchRemoveTests {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
+
   @Autowired
-  private ScimUserProvisioning provider;
+  ScimUserProvisioning provider;
+
+  @Autowired
+  SecurityContextUtils context;
 
   @BeforeEach
   void init() throws Exception {
+
+    context.cleanupSecurityContext();
 
     String uuid = scimUtils.getMe().getId();
 

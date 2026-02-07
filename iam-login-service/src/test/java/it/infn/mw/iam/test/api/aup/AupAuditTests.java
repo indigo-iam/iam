@@ -25,24 +25,27 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.audit.events.aup.AupCreatedEvent;
@@ -51,60 +54,59 @@ import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.aup.AupUpdatedEvent;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.test.util.MockTimeProvider;
-import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithAnonymousUser
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+})
+@Transactional
 class AupAuditTests extends AupTestSupport {
 
-  private final String UPDATED_AUP_URL = "http://updated-aup.org/";
+  static final String UPDATED_AUP_URL = "http://updated-aup.org/";
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private AupConverter converter;
+  AupConverter converter;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ApplicationEventPublisher eventPublisher;
 
   @Autowired
-  private MockTimeProvider mockTimeProvider;
+  MockMvc mvc;
 
   @Autowired
-  private ApplicationEventPublisher eventPublisher;
+  SecurityContextUtils context;
 
   @Autowired
-  private MockMvc mvc;
+  MutableClock clock;
 
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
     eventCaptor = ArgumentCaptor.forClass(ApplicationEvent.class);
     reset(eventPublisher);
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupCreationRaisesAupCreatedEvent() throws JsonProcessingException, Exception {
-    AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
 
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
+    AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     mvc
       .perform(
@@ -120,11 +122,8 @@ class AupAuditTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupDeletionRaisesAupDeletedEvent() throws JsonProcessingException, Exception {
 
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.saveDefaultAup(aup);
-
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
 
     mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
 
@@ -137,17 +136,13 @@ class AupAuditTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupUpdateRaisesAupUpdatedEvent() throws JsonProcessingException, Exception {
 
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
-
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.saveDefaultAup(aup);
 
     aup.setUrl(UPDATED_AUP_URL);
 
     // Time travel 1 minute in the future
-    Date then = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(1));
-    mockTimeProvider.setTime(then.getTime());
+    clock.advance(Duration.ofMinutes(1L));
 
     mvc
       .perform(
@@ -162,10 +157,8 @@ class AupAuditTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupSignatureRaisesAupSignedEvent() throws JsonProcessingException, Exception {
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
 
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.saveDefaultAup(aup);
     
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());

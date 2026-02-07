@@ -37,9 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.time.Clock;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
@@ -60,6 +57,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
@@ -75,12 +73,13 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+@Transactional
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
   CernAccountLifecycleTests.TestConfig.class})
 @TestPropertySource(properties = {
 // @formatter:off
@@ -90,16 +89,12 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 // @formatter:on
 })
 @ActiveProfiles(value = {"h2-test", "cern"})
-class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+class CernAccountLifecycleTests implements LifecycleTestSupport {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @TestConfiguration
   public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-
     @Bean
     @Primary
     CernHrDBApiService hrDb() {
@@ -123,7 +118,10 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   CernHrDBApiService hrDb;
 
   @Autowired
-  Clock clock;
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   IamAccount cernUser;
 
@@ -134,7 +132,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
     cernUser.setUsername(CERN_USER);
     cernUser.setUuid(CERN_USER_UUID);
     cernUser.setActive(true);
-    cernUser.setEndTime(Date.from(NOW.plus(365, ChronoUnit.DAYS)));
+    cernUser.setEndTime(Date.from(clock.daysAfter(365)));
     cernUser.getUserInfo().setEmail(CERN_USER + "@example");
     cernUser.getUserInfo().setGivenName("cern");
     cernUser.getUserInfo().setFamilyName("user");

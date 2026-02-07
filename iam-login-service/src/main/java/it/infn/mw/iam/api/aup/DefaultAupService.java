@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.api.aup;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,6 @@ import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.audit.events.aup.AupCreatedEvent;
 import it.infn.mw.iam.audit.events.aup.AupDeletedEvent;
 import it.infn.mw.iam.audit.events.aup.AupUpdatedEvent;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
@@ -40,16 +39,15 @@ public class DefaultAupService implements AupService {
   private final IamAupSignatureRepository signatureRepo;
   private final AupConverter converter;
 
-  private final TimeProvider timeProvider;
+  private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultAupService(IamAupRepository repo, IamAupSignatureRepository signatureRepo,
-      AupConverter converter, TimeProvider timeProvider, ApplicationEventPublisher eventPublisher) {
+      AupConverter converter, Clock clock, ApplicationEventPublisher eventPublisher) {
     this.repo = repo;
     this.signatureRepo = signatureRepo;
     this.converter = converter;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
     this.eventPublisher = eventPublisher;
   }
 
@@ -60,10 +58,9 @@ public class DefaultAupService implements AupService {
 
   @Override
   public IamAup saveAup(AupDTO aupDto) {
-    IamAup aup = converter.entityFromDto(aupDto);
-    long currentTimeMillis = timeProvider.currentTimeMillis();
 
-    Date now = new Date(currentTimeMillis);
+    IamAup aup = converter.entityFromDto(aupDto);
+    Date now = Date.from(clock.instant());
     aup.setCreationTime(now);
     aup.setLastUpdateTime(now);
 
@@ -105,8 +102,7 @@ public class DefaultAupService implements AupService {
   @Override
   public IamAup touchAup() {
 
-    long currentTimeMillis = timeProvider.currentTimeMillis();
-    Date now = new Date(currentTimeMillis);
+    Date now = Date.from(clock.instant());
 
     IamAup aup = repo.findDefaultAup().orElseThrow(AupNotFoundError::new);
 

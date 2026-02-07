@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.introspection;
 
 import java.text.ParseException;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,6 +62,7 @@ public class IamIntrospectionService implements IntrospectionService {
   private static final String SUSPENDED_CLIENT_ERROR =
       "Client %s has been suspended and is not allowed to call introspection endpoint";
 
+  private final Clock clock;
   private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
   private final ClientService clientService;
@@ -68,11 +70,12 @@ public class IamIntrospectionService implements IntrospectionService {
   private final IamProperties iamProperties;
   private final OpaqueTokenIntrospector introspector;
 
-  public IamIntrospectionService(JWTProfileResolver profileResolver,
+  public IamIntrospectionService(Clock clock, JWTProfileResolver profileResolver,
       OAuth2TokenEntityService tokenService, ClientService clientService,
       ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
       OpaqueTokenIntrospector introspector) {
 
+    this.clock = clock;
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
@@ -184,10 +187,26 @@ public class IamIntrospectionService implements IntrospectionService {
     }
   }
 
+  private boolean isExpired(OAuth2AccessTokenEntity at) {
+
+    if (at.getExpiration() == null) {
+      return false;
+    }
+    return at.getExpiration().toInstant().isBefore(clock.instant());
+  }
+
+  private boolean isExpired(OAuth2RefreshTokenEntity rt) {
+
+    if (rt.getExpiration() == null) {
+      return false;
+    }
+    return rt.getExpiration().toInstant().isBefore(clock.instant());
+  }
+
   private IntrospectionResponse introspectRefreshToken(ClientDetailsEntity authenticatedClient,
       OAuth2RefreshTokenEntity rt, TokenInfo info) throws InvalidTokenException {
 
-    if (rt.isExpired() || notYetValid(info.claims)) {
+    if (isExpired(rt) || notYetValid(info.claims)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
@@ -203,7 +222,7 @@ public class IamIntrospectionService implements IntrospectionService {
   private IntrospectionResponse introspectAccessToken(ClientDetailsEntity authenticatedClient,
       OAuth2AccessTokenEntity at, TokenInfo info) throws InvalidTokenException {
 
-    if (at.isExpired() || notYetValid(info.claims)) {
+    if (isExpired(at) || notYetValid(info.claims)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);

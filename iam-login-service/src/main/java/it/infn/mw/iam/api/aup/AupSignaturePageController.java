@@ -20,6 +20,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
@@ -41,7 +42,6 @@ import org.springframework.web.servlet.ModelAndView;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -56,16 +56,16 @@ public class AupSignaturePageController {
   final IamAupRepository repo;
   final IamAupSignatureRepository signatureRepo;
   final AccountUtils accountUtils;
-  final TimeProvider timeProvider;
+  final Clock clock;
   final ApplicationEventPublisher publisher;
 
   public AupSignaturePageController(IamAupRepository aupRepo,
-      IamAupSignatureRepository aupSignatureRepo, AccountUtils accountUtils,
-      TimeProvider timeProvider, ApplicationEventPublisher publisher) {
+      IamAupSignatureRepository aupSignatureRepo, AccountUtils accountUtils, Clock clock,
+      ApplicationEventPublisher publisher) {
     this.repo = aupRepo;
     this.signatureRepo = aupSignatureRepo;
     this.accountUtils = accountUtils;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
     this.publisher = publisher;
   }
 
@@ -112,9 +112,10 @@ public class AupSignaturePageController {
     }
 
     if (aup.isPresent()) {
-      Date now = new Date(timeProvider.currentTimeMillis());
-      IamAccount account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
-          () -> new IllegalStateException("No iam account found for authenticated user"));
+      Date now = Date.from(clock.instant());
+      IamAccount account = accountUtils.getAuthenticatedUserAccount()
+        .orElseThrow(
+            () -> new IllegalStateException("No iam account found for authenticated user"));
 
       IamAupSignature signature = signatureRepo.createSignatureForAccount(aup.get(), account, now);
 

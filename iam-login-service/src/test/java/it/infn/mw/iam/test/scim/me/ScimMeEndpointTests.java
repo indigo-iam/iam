@@ -26,39 +26,43 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-class ScimMeEndpointTests {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+})
+@Transactional
+class ScimMeEndpointTests extends TokenGetterUtils {
 
-  private final static String ME_ENDPOINT = "/scim/Me";
+  static final String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-  @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private void getScimMeAsUserIsOk() throws Exception {
@@ -83,7 +87,7 @@ class ScimMeEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"scim:read"},
-    authorities = {"ROLE_USER"})
+      authorities = {"ROLE_USER"})
   void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
 
     getScimMeAsUserIsOk();
@@ -105,7 +109,7 @@ class ScimMeEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"opeind", "profile"},
-    authorities = {"ROLE_USER"})
+      authorities = {"ROLE_USER"})
   void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
 
     getScimMeAsUserIsOk();

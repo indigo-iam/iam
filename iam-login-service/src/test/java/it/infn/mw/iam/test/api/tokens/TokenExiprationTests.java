@@ -15,69 +15,63 @@
  */
 package it.infn.mw.iam.test.api.tokens;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
-import java.util.Set;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class TokenExiprationTests extends TestTokensUtils {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
+@Transactional
+class TokenExiprationTests extends TokenGetterUtils {
 
-    private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
-    private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
+  @Autowired
+  SecurityContextUtils context;
 
-    private static final String TOKEN_ENDPOINT = "/token";
+  @Autowired
+  MutableClock clock;
 
-    private static final String ACTOR_CLIENT_ID = "token-exchange-actor";
-    private static final String ACTOR_CLIENT_SECRET = "secret";
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
+  }
 
-    private static final String SUBJECT_CLIENT_ID = "client-cred";
+  @Test
+  void tokenExchangeUpscopingExpiredTokenFail() throws Exception {
 
-    private String accessToken;
+    context.useLocalTestUser();
+    String subjectToken = getPasswordToken().accessToken();
+    clock.advance(Duration.ofHours(12));
 
-    @Autowired
-    private IamClientRepository clientRepository;
-
-    @BeforeEach
-    void setup() {
-
-        ClientDetailsEntity client =
-                clientRepository.findByClientId(SUBJECT_CLIENT_ID).orElseThrow();
-
-        OAuth2AccessTokenEntity accessTokenEntity = buildExpiredAccessToken(client,
-                Set.of(new SimpleGrantedAuthority("ROLE_CLIENT")), new String[] {"read-tasks"});
-
-        assertTrue(accessTokenEntity.isExpired());
-        accessToken = accessTokenEntity.getValue();
-    }
-
-    @Test
-    void tokenExchangeUpscopingExpiredTokenFail() throws Exception {
-
-        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", GRANT_TYPE)
-            .param("subject_token", accessToken)
-            .param("subject_token_type", TOKEN_TYPE)
-            .param("scope", "profile"))
-            .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.error").value("invalid_token"))
-            .andExpect(jsonPath("$.error_description").value("The access token is expired"));
-    }
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET))
+        .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", TOKEN_TYPE_JWT)
+        .param("scope", "profile"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error").value("invalid_token"))
+      .andExpect(jsonPath("$.error_description").value("The access token is expired"));
+  }
 }

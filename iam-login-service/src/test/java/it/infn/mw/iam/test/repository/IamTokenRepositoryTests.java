@@ -18,173 +18,156 @@ package it.infn.mw.iam.test.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Calendar;
+import java.time.Duration;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.commons.lang.time.DateUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SuppressWarnings("deprecation")
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
-public class IamTokenRepositoryTests {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
+class IamTokenRepositoryTests extends TokenGetterUtils {
 
-  public static final String TEST_347_USER = "test_347";
-  public static final String TEST_346_USER = "test_346";
+  static final String TEST_347_USER = "test_347";
+  static final String TEST_346_USER = "test_346";
 
-  public static final String ISSUER = "issuer";
-  public static final String TEST_CLIEND_ID = "token-lookup-client";
+  static final String ISSUER = "issuer";
+  static final String TEST_CLIEND_ID = "token-lookup-client";
 
-  public static final String[] SCOPES = {"openid", "profile", "offline_access", "iam:admin.read"};
-
-  @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepo;
-
-  @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepo;
-
-  @Autowired
-  private AuthenticationHolderRepository authenticationHolderRepo;
+  static final String[] SCOPES = {"openid", "profile", "offline_access", "iam:admin.read"};
 
   @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  IamOAuthAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  private IamTokenService tokenService;
+  IamOAuthRefreshTokenRepository refreshTokenRepo;
+
+  @Autowired
+  AuthenticationHolderRepository authenticationHolderRepo;
+
+  @Autowired
+  ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  IamTokenService tokenService;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
+
+  @Autowired
+  TokenUtils tokenUtils;
 
   @BeforeEach
   void setup() {
-    accessTokenRepo.deleteAll();
     refreshTokenRepo.deleteAll();
-  }
-
-  private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username) {
-
-    String[] scopes = {};
-    Authentication userAuth = null;
-    Map<String, String> requestParameters = new HashMap<String, String>();
-    requestParameters.put("grant_type", "authorization_code");
-
-    if (username != null) {
-      scopes = SCOPES;
-      userAuth = new UsernamePasswordAuthenticationToken(username, "");
-    }
-
-    MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
-    req.setRequestParameters(requestParameters);
-    return new OAuth2Authentication(req, userAuth);
-
-  }
-
-  private ClientDetailsEntity loadTestClient() {
-    return clientDetailsService.loadClientByClientId(TEST_CLIEND_ID);
-  }
-
-  private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username) {
-    return tokenService.createAccessToken(oauth2Authentication(client, username));
-  }
-
-  private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client) {
-    return buildAccessToken(client, null);
+    accessTokenRepo.deleteAll();
   }
 
   @Test
-  void testTokenResolutionCorrectlyEnforcesUsernameChecks() {
+  void testTokenResolutionCorrectlyEnforcesUsernameChecks() throws Exception {
 
-    buildAccessToken(loadTestClient(), TEST_347_USER);
-    Date currentTimestamp = new Date();
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_347_USER, "password",
+        "openid offline_access");
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_346_USER, currentTimestamp),
-        hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_346_USER, currentTimestamp),
-        hasSize(0));
+    Date now = clock.now();
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(1));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_346_USER, now).size(), is(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_346_USER, now).size(), is(0));
 
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(1));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now).size(), is(1));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now).size(), is(1));
   }
 
   @Test
-  void testExpiredTokensAreNotReturned() {
+  void testExpiredTokensAreNotReturned() throws Exception {
 
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_347_USER, "password",
+        "openid offline_access");
 
-    Calendar cal = Calendar.getInstance();
+    clock.advance(Duration.ofHours(25L));
 
-    cal.add(Calendar.DAY_OF_YEAR, -1);
+    Date now = clock.now();
 
-    Date yesterday = cal.getTime();
-
-    at.setExpiration(yesterday);
-
-    at.getRefreshToken().setExpiration(yesterday);
-
-    tokenService.saveAccessToken(at);
-    tokenService.saveRefreshToken(at.getRefreshToken());
-
-    Date currentTimestamp = new Date();
-
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(0));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now).size(), is(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now).size(), is(0));
   }
 
   @Test
-  void testClientTokensNotBoundToUsersAreIgnored() {
-    buildAccessToken(loadTestClient());
-    Date currentTimestamp = new Date();
+  void testClientTokensNotBoundToUsersAreIgnored() throws Exception {
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(0));
+    // create token as test user
+    context.useLocalTestUser();
+    getPasswordToken("openid offline_access");
+
+    Date now = new Date();
+
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now).size(), is(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now).size(), is(0));
   }
 
   @Test
-  void testRepositoryDoesntRelyOnDbTime() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+  void testRepositoryDoesntRelyOnDbTime() throws Exception {
 
-    Date now = DateUtils.addHours(new Date(), -2);
-    Date exp = DateUtils.addHours(now, +1);
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_347_USER, "password",
+        "openid offline_access");
 
-    at.setExpiration(exp);
-    at.getRefreshToken().setExpiration(exp);
+    clock.advance(Duration.ofDays(2L));
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(1));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now), hasSize(1));
+    Date current = clock.now();
+    Date before = Date.from(clock.daysBefore(2));
+
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, before).size(), is(1));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, before).size(), is(1));
+
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, current).size(), is(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, current).size(),
+        is(0));
   }
 
   @Test
-  void testTokenNoCascadeDeletion() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+  void testTokenNoCascadeDeletion() throws Exception {
+
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    TokenEndpointResponse response = getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        TEST_347_USER, "password", "openid offline_access");
+
+    OAuth2AccessTokenEntity at =
+        accessTokenRepo.findByTokenValue(tokenUtils.sha256(response.accessToken())).orElseThrow();
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
     accessTokenRepo.delete(at);
@@ -198,13 +181,15 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  void testTokenCascadeDeletion() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
-    accessTokenRepo.save(at);
-    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    refreshTokenRepo.save(rt);
+  void testTokenCascadeDeletion() throws Exception {
+
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    TokenEndpointResponse response = getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        TEST_347_USER, "password", "openid offline_access");
+
+    OAuth2AccessTokenEntity at =
+        accessTokenRepo.findByTokenValue(tokenUtils.sha256(response.accessToken())).orElseThrow();
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
-    authenticationHolderRepo.save(ah);
     assertThat(accessTokenRepo.findAll()).hasSize(1);
     assertThat(refreshTokenRepo.findAll()).hasSize(1);
     assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
@@ -215,24 +200,29 @@ public class IamTokenRepositoryTests {
   }
 
   @Test
-  void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
-    accessTokenRepo.save(at);
-    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    refreshTokenRepo.save(rt);
+  void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() throws Exception {
+
+    context.useLocalUser(TEST_347_USER, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    TokenEndpointResponse response = getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        TEST_347_USER, "password", "openid profile offline_access");
+
+    OAuth2AccessTokenEntity at =
+        accessTokenRepo.findByTokenValue(tokenUtils.sha256(response.accessToken())).orElseThrow();
     AuthenticationHolderEntity aht = at.getAuthenticationHolder();
-    authenticationHolderRepo.save(aht);
+
+    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
+    AuthenticationHolderEntity ahr = rt.getAuthenticationHolder();
+
     assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("openid"));
     assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("profile"));
     assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("offline_access"));
-    assertFalse(
-        authenticationHolderRepo.getById(aht.getId()).getScope().contains("iam:admin.read"));
-    AuthenticationHolderEntity ahr = rt.getAuthenticationHolder();
-    authenticationHolderRepo.save(ahr);
+    assertFalse(authenticationHolderRepo.getById(aht.getId()).getScope().contains("email"));
+
     assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("openid"));
     assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("profile"));
     assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("offline_access"));
-    assertFalse(
-        authenticationHolderRepo.getById(ahr.getId()).getScope().contains("iam:admin.read"));
+    assertFalse(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("email"));
+
+    assertEquals(aht, ahr);
   }
 }

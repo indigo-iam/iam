@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -44,10 +45,11 @@ import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
-class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
+class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
 
   @Mock
   OidcProviderProperties properties;
@@ -61,10 +63,13 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
   @Mock
   RestTemplate restTemplate;
 
+  Clock clock;
+
   OpaqueTokenIntrospector introspector;
 
   @BeforeEach
   void setup() {
+    clock = Clock.systemUTC();
     introspector =
         new DelegatingOpaqueTokenIntrospector(properties, restTemplateMapper, discoveryService);
   }
@@ -145,7 +150,8 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     String issuer = "https://einstein.example.com";
     String clientId = "external-client";
-    String token = buildPlainJwt(issuer, "external-subject-123", clientId, "penid profile");
+    String token =
+        buildPlainJwt(issuer, "external-subject-123", clientId, "penid profile", clock.instant());
 
     OidcClient client = new OidcClient();
     client.setClientId(clientId);
@@ -177,7 +183,8 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
   @Test
   void introspectFailsWhithUnknownIssuer() {
 
-    String token = buildPlainJwt("https://unknown.example.com", "1234", "unknown", "openid");
+    String token =
+        buildPlainJwt("https://unknown.example.com", "1234", "unknown", "openid", clock.instant());
 
     when(properties.getProviders()).thenReturn(List.of());
 
@@ -188,7 +195,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
   void introspectReturnsInactiveWhenMissingIntrospectionEndpoint() throws Exception {
 
     String issuer = "https://einstein.example.com";
-    String token = buildPlainJwt(issuer, "1234", "unknown", "openid");
+    String token = buildPlainJwt(issuer, "1234", "unknown", "openid", clock.instant());
 
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
@@ -219,7 +226,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
   void introspectReturnsInactiveWhenDiscoveryThrows() {
 
     String issuer = "https://einstein.example.com";
-    String token = buildPlainJwt(issuer, "1234", "client", "openid");
+    String token = buildPlainJwt(issuer, "1234", "client", "openid", clock.instant());
 
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);

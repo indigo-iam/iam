@@ -16,8 +16,8 @@
 package it.infn.mw.iam.persistence.repository;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface IamAuthenticationHolderRepository
-    extends PagingAndSortingRepository<AuthenticationHolderEntity, Long> {
+    extends JpaRepository<AuthenticationHolderEntity, Long> {
 }

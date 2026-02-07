@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,47 +35,48 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
+        ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"spring.main.allow-bean-definition-overriding=true"})
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
-@WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 @Transactional
+@WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Autowired
   ScimRestUtilsMvc scimUtils;
 
   @Autowired
-  MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
+
+  @Autowired
+  MockMvc mvc;
 
   ScimUser testUser;
 
   @BeforeEach
   void setup() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
     testUser = createLennonTestUser();
-  }
-
-  @AfterEach
-  void teardown() {
-    /*
-     * @Transactional annotation ensures the created test user won't exist after the test
-     */
-    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test

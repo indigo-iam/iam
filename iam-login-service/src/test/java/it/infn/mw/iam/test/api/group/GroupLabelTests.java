@@ -30,58 +30,70 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-class GroupLabelTests extends TestSupport {
+class GroupLabelTests implements StructuredScopeTestSupportConstants {
 
-  private static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
+  static final String RANDOM_UUID = UUID.randomUUID().toString();
+
+  static final String LABEL_PREFIX = "indigo-iam.github.io";
+  static final String LABEL_NAME = "example.label";
+  static final String LABEL_VALUE = "example-label-value";
+
+  static final LabelDTO TEST_LABEL =
+      LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(LABEL_VALUE).build();
+
+  static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
       jsonPath("$.error", containsString("Group not found"));
 
-  private static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
+  static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
 
   @Autowired
-  private IamGroupRepository repo;
+  IamGroupRepository repo;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  SecurityContextUtils context;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {

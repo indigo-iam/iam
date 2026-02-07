@@ -40,6 +40,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -47,8 +49,10 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,34 +70,45 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(
+    classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+})
+@Transactional
 class RegistrationUnprivilegedTests extends AupTestSupport {
 
   @Autowired
-  private WebApplicationContext context;
+  WebApplicationContext context;
 
   @Autowired
-  private PersistentUUIDTokenGenerator generator;
+  PersistentUUIDTokenGenerator generator;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private IamAupSignatureRepository aupSignatureRepo;
+  IamAupSignatureRepository aupSignatureRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private ObjectMapper objectMapper;
+  ObjectMapper objectMapper;
 
   @MockBean
-  private RegistrationProperties registrationProperties;
+  RegistrationProperties registrationProperties;
 
-  private MockMvc mvc;
+  @Autowired
+  MockMvc mvc;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
@@ -117,7 +132,7 @@ class RegistrationUnprivilegedTests extends AupTestSupport {
   @Test
   void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
 
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
 
     RegistrationRequestDto reg = createRegistrationRequest("test_create");
@@ -250,7 +265,8 @@ class RegistrationUnprivilegedTests extends AupTestSupport {
     // @formatter:on
   }
 
-  private Authentication anonymousAuthenticationToken() {
+  @Override
+  public Authentication anonymousAuthenticationToken() {
     return new AnonymousAuthenticationToken("key", "anonymous",
         AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
   }

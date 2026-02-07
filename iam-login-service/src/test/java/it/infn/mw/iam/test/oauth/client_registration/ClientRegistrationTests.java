@@ -42,9 +42,12 @@ import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,23 +55,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private ClientDetailsEntityService clientService;
+  ClientDetailsEntityService clientService;
 
   @Autowired
-  private OAuth2ClientRepository clientRepo;
+  OAuth2ClientRepository clientRepo;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Test
   void testClientRegistrationWorksForLegacyEndpoint() throws Exception {
@@ -298,7 +301,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
   @Test
   void deviceCodeTimeoutNotAffectedWhenCreatingAndUpdatingClient()
-    throws UnsupportedEncodingException, Exception {
+      throws UnsupportedEncodingException, Exception {
     String jsonInString =
         ClientJsonStringBuilder.builder().grantTypes("authorization_code").scopes("openid").build();
 
@@ -333,7 +336,4 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     assertThat(clientModel.getDeviceCodeValiditySeconds(), greaterThan(0));
 
   }
-
-
-
 }

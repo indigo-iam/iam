@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.time;
+package it.infn.mw.iam.test.config;
 
-/**
- * Time provider interface.
- *
- */
-@FunctionalInterface
-public interface TimeProvider {
+import java.time.Clock;
 
-  /**
-   * Returns the current time in milliseconds
-   * 
-   * @return the difference, measured in milliseconds, between the current time and midnight,
-   * January 1, 1970 UTC.
-   * 
-   * @see System#currentTimeMillis()
-   */
-  public long currentTimeMillis();
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
+import it.infn.mw.iam.test.util.clock.MutableClock;
+
+@TestConfiguration
+public class ClockConfig {
+
+  @Bean
+  @Primary
+  Clock testClock() {
+    return new MutableClock(Clock.systemDefaultZone());
+  }
 }

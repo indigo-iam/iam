@@ -27,4 +27,6 @@ public interface BaseExtraClaimNames extends StandardClaimNames {
 
   String SCOPE = "scope";
 
+  String EXTERNAL_AUTHN = "external_authn";
+
 }

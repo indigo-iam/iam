@@ -35,8 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
-import java.time.Clock;
-import java.util.Date;
 import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
@@ -53,6 +51,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -66,29 +65,30 @@ import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamNoMvcTest
-@SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.NONE)
+@Transactional
 class ClientManagementServiceTests {
 
   @Autowired
-  private ClientManagementService managementService;
+  ClientManagementService managementService;
 
   @Autowired
-  private ClientService clientService;
+  ClientService clientService;
 
   @Autowired
-  private ClientRegistrationService registrationService;
+  ClientRegistrationService registrationService;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private Clock clock;
+  MutableClock clock;
 
-  private Authentication userAuth;
+  Authentication userAuth;
 
   @Test
   void testPagedClientLookup() {
@@ -392,17 +392,18 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertTrue(client.getStatusChangedOn().equals(clock.now()));
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 
   @Test
   void testClientStatusChangeWithContacts() {
     managementService.updateClientStatus("device-code-client", false, "userUUID");
-    RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
+    RegisteredClientDTO client =
+        managementService.retrieveClientByClientId("device-code-client").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals(client.getStatusChangedOn(), clock.now());
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 
@@ -412,7 +413,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client-cred").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals(client.getStatusChangedOn(), clock.now());
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 }

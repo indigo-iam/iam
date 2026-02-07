@@ -20,48 +20,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-class RegistrationUsernameTests extends TestSupport {
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  private MockOAuth2Filter oauth2Filter;
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
+class RegistrationUsernameTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
-  private MockMvc mvc;
+  ObjectMapper objectMapper;
 
   @Autowired
-  private IamAccountRepository iamAccountRepo;
+  MockMvc mvc;
+
+  @Autowired
+  IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    oauth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private RegistrationRequestDto createRegistrationRequest(String username) {

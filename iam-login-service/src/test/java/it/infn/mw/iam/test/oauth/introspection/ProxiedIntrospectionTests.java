@@ -22,11 +22,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -39,13 +41,17 @@ import org.springframework.web.client.RestClientException;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @AutoConfigureMockMvc
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
+class ProxiedIntrospectionTests extends TokenGetterUtils {
 
   @MockBean
   private OpaqueTokenIntrospector opaqueTokenIntrospector;
+
+  @Autowired
+  Clock clock;
 
   @Test
   void testProxiedIntrospectionWithKnownProvider() throws Exception {
@@ -63,7 +69,7 @@ class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
     OAuth2AuthenticatedPrincipal principal =
         new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
 
-    String token = buildPlainJwt(externalIssuer, "1234", clientId, scopes);
+    String token = buildPlainJwt(externalIssuer, "1234", clientId, scopes, clock.instant());
 
     when(opaqueTokenIntrospector.introspect(token)).thenReturn(principal);
 
@@ -85,7 +91,7 @@ class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
   void testTokenInactiveWhenIntrospectionTrowsException() throws Exception {
 
     String issuer = "https://oppenheimer.example.com";
-    String token = buildPlainJwt(issuer, "1234", "unknown", "openid");
+    String token = buildPlainJwt(issuer, "1234", "unknown", "openid", clock.instant());
 
     when(opaqueTokenIntrospector.introspect(token)).thenThrow(new RestClientException("Error"));
 

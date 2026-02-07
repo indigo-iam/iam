@@ -17,6 +17,7 @@ package it.infn.mw.iam.service.aup;
 
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -38,20 +38,21 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
 
   final IamAupRepository aupRepo;
   final IamAupSignatureRepository signatureRepo;
-  final TimeProvider timeProvider;
+  final Clock clock;
 
   public DefaultAupSignatureCheckService(IamAupRepository aupRepo,
-      IamAupSignatureRepository signatureRepo, TimeProvider timeProvider) {
+      IamAupSignatureRepository signatureRepo, Clock clock) {
     this.aupRepo = aupRepo;
     this.signatureRepo = signatureRepo;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
   }
 
   @Override
   public boolean needsAupSignature(IamAccount account) {
+
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    Date now = new Date(timeProvider.currentTimeMillis());
+    Date now = Date.from(clock.instant());
 
     if (!aup.isPresent()) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",

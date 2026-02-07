@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -46,6 +46,9 @@ class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
 
   @Autowired
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
+
+  @Autowired
+  TokenUtils tokenUtils;
 
   @BeforeEach
   void setupUser() {
@@ -77,9 +80,9 @@ class IamAccountServiceIntegrationTests extends EndpointsTestUtils {
   void testTokensAreRemovedWhenAccountIsRemoved() throws Exception {
 
     TokenEndpointResponse tokenResponse = requestTokens("openid offline_access");
-    String at1 = IamTokenService.sha256(tokenResponse.accessToken());
+    String at1 = tokenUtils.sha256(tokenResponse.accessToken());
     tokenResponse = requestTokens("openid offline_access");
-    String at2 = IamTokenService.sha256(tokenResponse.accessToken());
+    String at2 = tokenUtils.sha256(tokenResponse.accessToken());
 
     accountService.deleteAccount(testUser);
     assertThat(accessTokenRepo.findByTokenValue(at1).isPresent(), is(false));

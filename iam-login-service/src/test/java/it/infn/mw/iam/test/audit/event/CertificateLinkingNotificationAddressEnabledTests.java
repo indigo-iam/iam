@@ -27,10 +27,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,53 +52,56 @@ import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStr
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK,
-  properties = {"notification.certificateUpdate = true",
-    "notification.admin-notification-policy = notify-address"})
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
+        ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"notification.certificateUpdate = true",
+        "notification.admin-notification-policy = notify-address",
+        "spring.main.allow-bean-definition-overriding = true"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 @Transactional
 class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
-  implements CertificateLinkingNotificationUtil {
+    implements CertificateLinkingNotificationUtil {
 
-  private static final String USERNAME = "event_user";
-  private static final String GIVENNAME = "Event";
-  private static final String FAMILYNAME = "User";
-  private static final String EMAIL = "event_user@localhost";
+  static final String USERNAME = "event_user";
+  static final String GIVENNAME = "Event";
+  static final String FAMILYNAME = "User";
+  static final String EMAIL = "event_user@localhost";
 
-  private static final String USERNAME_MESSAGE_CHECK = String.format("username: '%s'", USERNAME);
-
-  @Autowired
-  private IamAuditEventLogger logger;
+  static final String USERNAME_MESSAGE_CHECK = String.format("username: '%s'", USERNAME);
 
   @Autowired
-  private IamAccountService accountService;
+  IamAuditEventLogger logger;
 
   @Autowired
-  private ScimUserProvisioning userProvisioning;
-  @Autowired
-  private IamEmailNotificationRepository emailRepo;
+  IamAccountService accountService;
 
   @Autowired
-  private IamProperties properties;
+  ScimUserProvisioning userProvisioning;
 
   @Autowired
-  private AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
+  IamEmailNotificationRepository emailRepo;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamProperties properties;
 
-  private IamAccount account;
-  private ScimUser user;
+  @Autowired
+  AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  IamAccount account;
+  ScimUser user;
 
   @BeforeEach
   void setup() {
@@ -118,13 +122,7 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
 
     assertNotNull(account);
 
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    userProvisioning.delete(account.getUuid());
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   @Test

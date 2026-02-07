@@ -50,6 +50,7 @@ import org.springframework.security.oauth2.provider.error.DefaultWebResponseExce
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
@@ -104,6 +105,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   @Autowired
   private TokenExchangePdp tokenExchangePdp;
 
+  @Autowired
+  TokenUtils tokenUtils;
+
+  @Autowired
+  IamProperties iamProperties;
+
   @Bean
   WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
 
@@ -131,7 +138,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   }
 
   @Bean
-  public TokenGranter tokenGranter() {
+  TokenGranter tokenGranter() {
 
     AuthenticationManager authenticationManager = authenticationManager();
 
@@ -147,24 +154,26 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     refreshTokenGranter.setAccountUtils(accountUtils);
     refreshTokenGranter.setSignatureCheckService(signatureCheckService);
 
-    TokenExchangeTokenGranter tokenExchangeGranter =
-        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory);
+    TokenExchangeTokenGranter tokenExchangeGranter = new TokenExchangeTokenGranter(tokenServices,
+        clientDetailsService, requestFactory, iamProperties, tokenUtils);
 
     tokenExchangeGranter.setAccountUtils(accountUtils);
     tokenExchangeGranter.setSignatureCheckService(signatureCheckService);
     tokenExchangeGranter.setExchangePdp(tokenExchangePdp);
 
-    return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
-        new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
-            clientDetailsService, requestFactory),
-        new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        refreshTokenGranter,
-        new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        resourceOwnerPasswordCredentialGranter,
-        new JWTAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenServices, clientDetailsService,
-            requestFactory, deviceCodeService)));
+    return new CompositeTokenGranter(
+        Arrays.<TokenGranter>asList(
+            new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+                clientDetailsService, requestFactory),
+            new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            refreshTokenGranter,
+            new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService,
+                requestFactory),
+            resourceOwnerPasswordCredentialGranter,
+            new JWTAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenServices, clientDetailsService,
+                requestFactory, deviceCodeService)));
   }
 
   @Override

@@ -153,8 +153,8 @@ public interface IamOAuthAccessTokenRepository
       + ")")
   List<OAuth2AccessTokenEntity> findOrphanedTokens();
 
-  @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= CURRENT_DATE")
-  Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op);
+  @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= :timestamp")
+  Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op, @Param("timestamp") Date timestamp);
   // @formatter:on
 
 }

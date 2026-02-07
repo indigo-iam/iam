@@ -27,14 +27,17 @@ import java.time.Duration;
 import java.time.Instant;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
@@ -42,37 +45,38 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@TestPropertySource(properties = {"proxycert.enabled=true"})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+    "proxycert.enabled=true"
+})
+@Transactional
 class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
   IamProperties iamProperties;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  MockMvc mvc;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private void linkProxyToTestAccount() throws Exception {

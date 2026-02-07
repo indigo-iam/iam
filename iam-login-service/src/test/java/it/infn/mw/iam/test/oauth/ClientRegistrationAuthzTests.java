@@ -20,31 +20,34 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"client-registration.allow-for=REGISTERED_USERS"})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
+    "client-registration.allow-for=REGISTERED_USERS"})
 class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport {
-
-  @Autowired
-  private MockMvc mvc;
 
   @Autowired
   private IamAccountClientRepository accountClientRepo;
