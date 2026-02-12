@@ -41,6 +41,7 @@ public class VOPersonDTO {
   private String email;
   private String physicalEmail;
   private Set<ParticipationDTO> participations;
+  private boolean blocked;
 
   public Long getId() {
     return id;
@@ -177,4 +178,13 @@ public class VOPersonDTO {
   public void setParticipations(Set<ParticipationDTO> participations) {
     this.participations = participations;
   }
+
+  public boolean getBlocked() {
+    return blocked;
+  }
+  
+  public void setBlocked(boolean blocked) {
+    this.blocked = blocked;
+  }
+
 }

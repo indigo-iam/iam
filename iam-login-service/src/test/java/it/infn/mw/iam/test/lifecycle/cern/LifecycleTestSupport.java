@@ -177,4 +177,15 @@ public interface LifecycleTestSupport {
     return () -> new AssertionError(message);
   }
 
+  default VOPersonDTO voPersonSecurityDto(String personId, IamAccount account,boolean blocked) {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
+    dto.setId(Long.parseLong(personId));
+    dto.setBlocked(blocked);
+    return dto;
+  }
+
+
 }

@@ -100,6 +100,109 @@ public class CernProperties {
     }
   }
 
+  public static class CernBlockingProperties {
+
+    boolean enabled = true;
+
+    @NotBlank
+    String tokenUrl = "http://access.test.example";
+
+    @NotBlank
+    String authorizationUrl = "http://authorization.test.example";
+
+
+    @NotBlank
+    String cronSchedule = "0 0 */12 * * *";
+
+    @Min(value = 5L)
+    int pageSize = 50;
+
+
+    @NotBlank
+    String audience = "authorization";
+    
+    @NotBlank
+    String clientId = "client-id";    
+    
+    @NotBlank
+    String clientSecret = "client-secret";
+
+    @Min(value = 5L)
+    int gracePeriod = 30;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getCronSchedule() {
+      return cronSchedule;
+    }
+
+    public void setCronSchedule(String cronSchedule) {
+      this.cronSchedule = cronSchedule;
+    }
+
+    public String getTokenUrl() {
+      return tokenUrl;
+    }
+
+    public void setTokenUrl(String tokenUrl) {
+      this.tokenUrl = tokenUrl;
+    }
+
+    public String getAuthorizationUrl() {
+      return authorizationUrl;
+    }
+
+    public void setAuthorizationUrl(String authorizationUrl) {
+      this.authorizationUrl = authorizationUrl;
+    }
+
+    public String getAudience() {
+      return audience;
+    }
+
+    public void setAudience(String audience) {
+      this.audience = audience;
+    }
+
+    public String getClientId() {
+      return clientId;
+    }
+
+    public void setClientId(String clientId) {
+      this.clientId = clientId;
+    }
+
+    public int getPageSize() {
+      return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
+      this.pageSize = pageSize;
+    }
+
+    public String getClientSecret() {
+      return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+      this.clientSecret = clientSecret;
+    }
+
+    public int getGracePeriod() {
+      return gracePeriod;
+    }
+
+    public void setGracePeriod(int gracePeriod) {
+      this.gracePeriod = gracePeriod;
+    }
+  }
+
   @NotBlank
   private String ssoIssuer = "https://auth.cern.ch/auth/realms/cern";
 
@@ -114,6 +217,18 @@ public class CernProperties {
 
   @Valid
   private HrSynchTaskProperties task = new HrSynchTaskProperties();
+
+  @Valid
+  private CernBlockingProperties blocking = new CernBlockingProperties();
+
+  public CernBlockingProperties getBlocking() {
+    return blocking;
+  }
+
+  public void setBlocking(CernBlockingProperties blocking) {
+    this.blocking = blocking;
+  }
+
 
   public HrDbApiProperties getHrApi() {
     return hrApi;
