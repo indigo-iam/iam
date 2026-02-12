@@ -1,1 +1,1 @@
-ALTER TABLE saved_user_auth_info MODIFY info_key varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+ALTER TABLE saved_user_auth_info MODIFY info_key varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
