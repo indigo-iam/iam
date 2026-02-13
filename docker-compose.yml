@@ -46,7 +46,7 @@ services:
 
     environment:
       TZ: Europe/Rome
-      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test,oidc-dev
+      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
       IAM_FORWARD_HEADERS_STRATEGY: native

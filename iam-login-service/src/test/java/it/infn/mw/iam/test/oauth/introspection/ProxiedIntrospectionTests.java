@@ -43,7 +43,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles({"h2", "oidc-test"})
+@ActiveProfiles({"h2"})
 public class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
 
   @MockBean

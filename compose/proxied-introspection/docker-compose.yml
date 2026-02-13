@@ -94,6 +94,7 @@ services:
       - /dev/urandom:/dev/random
       - ./scripts:/scripts:ro
       - ./../../:/indigo-iam:ro
+      - ./application-oidc-dev.yml:/indigo-iam/iam-login-service/src/main/resources/application-oidc-dev.yml:rw
       - ./../../target:/indigo-iam/target:rw
       - ./../../iam-common/target:/indigo-iam/iam-common/target:rw
       - ./../../iam-login-service/target:/indigo-iam/iam-login-service/target:rw

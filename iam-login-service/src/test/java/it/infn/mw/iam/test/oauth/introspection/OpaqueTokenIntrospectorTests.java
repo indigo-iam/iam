@@ -45,7 +45,7 @@ import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
 
-@ActiveProfiles({"h2", "oidc-test"})
+@ActiveProfiles({"h2"})
 @ExtendWith(MockitoExtension.class)
 class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
