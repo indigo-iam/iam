@@ -34,17 +34,16 @@ jobs:
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test -q package install
+        mvn -Dspring.profiles.active=mysql-test -q clean install
 
     - name: Copy artifacts to docker dir
       run: |
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
 
-    - name: Disable Docker BuildKit
-      run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
-
     - name: Generate buildpacks
+      env:
+        DOCKER_BUILDKIT: 0
       run: mvn -DskipTests -U -B -q spring-boot:build-image -Dspring-boot.build-image.builder=paketobuildpacks/builder:tiny
 
     - name: Setup QEMU
