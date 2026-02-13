@@ -41,6 +41,9 @@ jobs:
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
 
+    - name: Disable Docker BuildKit
+      run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
+
     - name: Generate buildpacks
       run: mvn -DskipTests -U -B -q spring-boot:build-image -Dspring-boot.build-image.builder=paketobuildpacks/builder:tiny
 
