@@ -40,9 +40,7 @@ jobs:
       run: |
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
-
-    - name: Generate buildpacks
-      run: mvn -DskipTests -U -B -q spring-boot:build-image -Dspring-boot.build-image.builder=paketobuildpacks/builder:tiny
+        cp iam-voms-aa/target/iam-voms-aa.jar iam-voms-aa/docker
 
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v3
@@ -81,6 +79,15 @@ jobs:
           type=sha
           type=ref,event=tag
 
+    - name: Docker metainformation for iam-voms-aa
+      id: va-meta
+      uses: docker/metadata-action@v5
+      with:
+        images: indigoiam/iam-voms-aa
+        tags: |
+          type=sha
+          type=ref,event=tag
+
     - name: Build & push iam-login-service docker image
       uses: docker/build-push-action@v6
       with:
@@ -98,5 +105,15 @@ jobs:
         labels: ${{ steps.tc-meta.outputs.labels }}
         context: iam-test-client/docker/
         file: iam-test-client/docker/Dockerfile.prod
+        platforms: linux/amd64,linux/arm64
+        push: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+    - name: Build & push iam-voms-aa docker image
+      uses: docker/build-push-action@v6
+      with:
+        tags: ${{ steps.va-meta.outputs.tags }}
+        labels: ${{ steps.va-meta.outputs.labels }}
+        context: iam-voms-aa/docker/
+        file: iam-voms-aa/docker/Dockerfile.prod
         platforms: linux/amd64,linux/arm64
         push: ${{ startsWith(github.ref, 'refs/tags/') }}
