@@ -11,6 +11,6 @@ WORKDIR /workspace
 COPY --from=builder workspace/dependencies/ ./
 COPY --from=builder workspace/spring-boot-loader/ ./
 COPY --from=builder workspace/snapshot-dependencies/ ./
-COPY --from=builder workspace/workspace/ ./
+COPY --from=builder workspace/application/ ./
 
 CMD java ${JAVA_OPTS} org.springframework.boot.loader.JarLauncher
