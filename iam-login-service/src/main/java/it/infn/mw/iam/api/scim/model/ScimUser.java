@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.model;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
+import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -34,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonFilter("attributeFilter")
@@ -416,7 +416,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addGroupRef(ScimGroupRef scimGroupRef) {
 
-      Preconditions.checkNotNull(scimGroupRef, "Null group ref");
+      requireNonNull(scimGroupRef, "Null group ref");
 
       groups.add(scimGroupRef);
       return this;
@@ -442,7 +442,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addPhoto(ScimPhoto scimPhoto) {
 
-      Preconditions.checkNotNull(scimPhoto, "Null photo");
+      requireNonNull(scimPhoto, "Null photo");
 
       photos.add(scimPhoto);
       return this;
@@ -450,7 +450,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addEmail(ScimEmail scimEmail) {
 
-      Preconditions.checkNotNull(scimEmail, "Null email");
+      requireNonNull(scimEmail, "Null email");
 
       emails.add(scimEmail);
       return this;
@@ -464,7 +464,7 @@ public class ScimUser extends ScimResource {
 
     public Builder aupSignatureTime(Date signatureTime) {
 
-      Preconditions.checkNotNull(signatureTime, "Null signature time");
+      requireNonNull(signatureTime, "Null signature time");
 
       indigoUserBuilder.aupSignatureTime(signatureTime);
       return this;
@@ -472,7 +472,7 @@ public class ScimUser extends ScimResource {
 
     public Builder endTime(Date endTime) {
 
-      Preconditions.checkNotNull(endTime, "Null membership end-time");
+      requireNonNull(endTime, "Null membership end-time");
 
       indigoUserBuilder.endTime(endTime);
       return this;
@@ -490,7 +490,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addAuthority(String authority) {
 
-      Preconditions.checkNotNull(authority, "Null authority");
+      requireNonNull(authority, "Null authority");
 
       indigoUserBuilder.addAuthority(authority);
       return this;
@@ -498,7 +498,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addX509Certificate(ScimX509Certificate scimX509Certificate) {
 
-      Preconditions.checkNotNull(scimX509Certificate, "Null x509 certificate");
+      requireNonNull(scimX509Certificate, "Null x509 certificate");
 
       indigoUserBuilder.addCertificate(scimX509Certificate);
       return this;
@@ -506,7 +506,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addOidcId(ScimOidcId oidcId) {
 
-      Preconditions.checkNotNull(oidcId, "Null OpenID Connect ID");
+      requireNonNull(oidcId, "Null OpenID Connect ID");
 
       indigoUserBuilder.addOidcId(oidcId);
       return this;
@@ -519,7 +519,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addSshKey(ScimSshKey sshKey) {
 
-      Preconditions.checkNotNull(sshKey, "Null ssh key");
+      requireNonNull(sshKey, "Null ssh key");
 
       indigoUserBuilder.addSshKey(sshKey);
       return this;
@@ -537,7 +537,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addSamlId(ScimSamlId samlId) {
 
-      Preconditions.checkNotNull(samlId, "Null saml id");
+      requireNonNull(samlId, "Null saml id");
 
       indigoUserBuilder.addSamlId(samlId);
       return this;
@@ -550,7 +550,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addLabel(ScimLabel label) {
 
-      Preconditions.checkNotNull(label, "Null label");
+      requireNonNull(label, "Null label");
 
       indigoUserBuilder.addLabel(label);
       return this;
@@ -558,7 +558,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addAttribute(ScimAttribute attribute) {
 
-      Preconditions.checkNotNull(attribute, "Null attribute");
+      requireNonNull(attribute, "Null attribute");
 
       indigoUserBuilder.addAttribute(attribute);
       return this;
@@ -571,7 +571,7 @@ public class ScimUser extends ScimResource {
 
     public Builder addManagedGroup(ScimGroupRef groupRef) {
 
-      Preconditions.checkNotNull(groupRef, "Null group reference");
+      requireNonNull(groupRef, "Null group reference");
 
       indigoUserBuilder.addManagedGroup(groupRef);
       return this;

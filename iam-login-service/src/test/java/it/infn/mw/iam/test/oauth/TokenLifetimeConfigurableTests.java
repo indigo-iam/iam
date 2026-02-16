@@ -33,7 +33,6 @@ import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -47,7 +46,8 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
+import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
@@ -66,7 +66,6 @@ public class TokenLifetimeConfigurableTests {
 
   private static final String SCOPE = "openid profile offline_access";
   private static final String CUSTOM_LIFETIME = "300";
-  private static final String INVALID_PARAMETER = IamTokenEnhancer.INVALID_PARAMETER;
 
   private static final long TOLERANCE = 5;
   private static final long DEFAULT_ACCESS_TOKEN_LIFETIME = 3600L;
@@ -213,11 +212,12 @@ public class TokenLifetimeConfigurableTests {
         .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
         .param("expires_in", "test"))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error_description", equalTo(INVALID_PARAMETER)));
+      .andExpect(jsonPath("$.error_description", equalTo(IamTokenService.INVALID_PARAMETER)));
   }
 
   @Test
   void testParameterRequestedDuringAccessTokenRequest() throws Exception {
+
     String configuredAccessTokenResponse = mvc
       .perform(
           post("/token").with(httpBasic(PASSWORD_GRANT_CLIENT_ID, PASSWORD_GRANT_CLIENT_SECRET))

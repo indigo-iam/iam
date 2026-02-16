@@ -23,16 +23,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -43,6 +39,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -67,7 +66,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
     savedAuth.setName(TESTUSER_USERNAME);
     savedAuth.setAuthenticated(true);
-    savedAuth.setAuthorities(List.of(new SimpleGrantedAuthority("ROLE_USER")));
+    savedAuth.setAuthorities(Set.of(new SimpleGrantedAuthority("ROLE_USER")));
     savedAuth.getAdditionalInfo().put("acr", "https://refeds.org/profile/mfa");
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);

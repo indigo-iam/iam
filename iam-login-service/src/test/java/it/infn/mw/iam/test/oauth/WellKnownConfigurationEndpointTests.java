@@ -31,8 +31,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -46,13 +44,15 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
+import it.infn.mw.iam.persistence.model.SystemScope;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = "task.wellKnownCacheCleanupPeriodSecs=1")
-@ActiveProfiles({"h2-test", "dev"})
+@ActiveProfiles({"h2-test"})
 class WellKnownConfigurationEndpointTests {
 
   private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;

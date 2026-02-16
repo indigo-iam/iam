@@ -21,8 +21,6 @@ import javax.validation.ConstraintValidatorContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Strings;
-
 @Component
 @Scope("prototype")
 public class IamGroupRequestNotesValidator
@@ -35,6 +33,6 @@ public class IamGroupRequestNotesValidator
 
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {
-    return value != null && !Strings.isNullOrEmpty(value.trim());
+    return value != null && !value.isBlank();
   }
 }

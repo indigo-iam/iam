@@ -26,25 +26,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.util.JvmProfilesSupport;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
-  webEnvironment = WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"h2", "mfa"})
-class OidcExternalAuthenticationWithMfaProfileTests
-  extends OidcExternalAuthenticationTestsSupport {
+    webEnvironment = WebEnvironment.RANDOM_PORT)
+//@ContextConfiguration(initializers = {JvmProfilesSupport.OidcProfileInitializer.class,
+//    JvmProfilesSupport.MfaProfileInitializer.class})
+class OidcExternalAuthenticationWithMfaProfileTests extends OidcExternalAuthenticationTestsSupport {
 
   @Test
   void testAcrValuesClaimIsAddedWhenMfaProfileIsActive()
-    throws RestClientException, UnsupportedEncodingException {
+      throws RestClientException, UnsupportedEncodingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);

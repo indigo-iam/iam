@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 
@@ -94,8 +93,7 @@ public class ScimIndigoUser {
       @JsonProperty("samlIds") List<ScimSamlId> samlIds,
       @JsonProperty("x509Certificates") List<ScimX509Certificate> certs,
       @JsonProperty("aupSignatureTime") Date aupSignatureTime,
-      @JsonProperty("endTime") Date endTime, 
-      @JsonProperty("serviceAccount") Boolean serviceAccount,
+      @JsonProperty("endTime") Date endTime, @JsonProperty("serviceAccount") Boolean serviceAccount,
       @JsonProperty("affiliation") String affiliation) {
 
     this.oidcIds = oidcIds != null ? oidcIds : new LinkedList<>();
@@ -185,20 +183,20 @@ public class ScimIndigoUser {
 
   public static class Builder {
 
-    private List<ScimSshKey> sshKeys = Lists.newLinkedList();
-    private List<ScimOidcId> oidcIds = Lists.newLinkedList();
-    private List<ScimSamlId> samlIds = Lists.newLinkedList();
-    private List<ScimX509Certificate> certificates = Lists.newLinkedList();
-    private List<ScimLabel> labels = Lists.newLinkedList();
+    private List<ScimSshKey> sshKeys = new LinkedList<>();
+    private List<ScimOidcId> oidcIds = new LinkedList<>();
+    private List<ScimSamlId> samlIds = new LinkedList<>();
+    private List<ScimX509Certificate> certificates = new LinkedList<>();
+    private List<ScimLabel> labels = new LinkedList<>();
 
     private Date aupSignatureTime;
     private Date endTime;
     private Boolean serviceAccount;
     private String affiliation;
 
-    private List<String> authorities = Lists.newLinkedList();
-    private List<ScimAttribute> attributes = Lists.newLinkedList();
-    private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
+    private List<String> authorities = new LinkedList<>();
+    private List<ScimAttribute> attributes = new LinkedList<>();
+    private List<ScimGroupRef> managedGroups = new LinkedList<>();
 
     public Builder addSshKey(ScimSshKey sshKey) {
 

@@ -24,7 +24,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenidFederationProperties {
 
+  private boolean enabled;
+
   private List<String> trustAnchors;
+
+  private EntityConfigurationProperties entityConfiguration = new EntityConfigurationProperties();
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
 
   public List<String> getTrustAnchors() {
     return trustAnchors;
@@ -33,8 +45,6 @@ public class OpenidFederationProperties {
   public void setTrustAnchors(List<String> trustAnchors) {
     this.trustAnchors = trustAnchors;
   }
-
-  private EntityConfigurationProperties entityConfiguration = new EntityConfigurationProperties();
 
   public EntityConfigurationProperties getEntityConfiguration() {
     return entityConfiguration;

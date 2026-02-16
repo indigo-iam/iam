@@ -22,7 +22,6 @@ import java.util.Set;
 import javax.security.auth.message.AuthException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -37,13 +36,16 @@ import org.springframework.web.bind.annotation.RestController;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @RestController
 public class IamUserInfoEndpoint {
+
+  public static final String URL = "/userinfo";
 
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
   private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
@@ -64,7 +66,7 @@ public class IamUserInfoEndpoint {
   }
 
   @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('openid')")
-  @GetMapping(path = "/userinfo", produces = {MediaType.APPLICATION_JSON_VALUE})
+  @GetMapping(path = URL, produces = {MediaType.APPLICATION_JSON_VALUE})
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
     String username = auth.getName();

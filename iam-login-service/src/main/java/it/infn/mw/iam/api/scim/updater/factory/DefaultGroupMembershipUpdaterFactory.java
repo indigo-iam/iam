@@ -19,11 +19,10 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
@@ -55,7 +54,7 @@ public class DefaultGroupMembershipUpdaterFactory
   public List<AccountUpdater> getUpdatersForPatchOperation(IamGroup group,
       ScimPatchOperation<List<ScimMemberRef>> op) {
 
-    final List<AccountUpdater> updaters = Lists.newArrayList();
+    final List<AccountUpdater> updaters = new ArrayList<>();
 
     final List<IamAccount> members = memberRefToAccountConverter(op.getValue());
 
@@ -73,7 +72,7 @@ public class DefaultGroupMembershipUpdaterFactory
       long totalUsers = accountRepo.count();
       OffsetPageable pr = new OffsetPageable(0, (int) totalUsers);
       Page<IamAccount> accounts = accountService.findGroupMembers(group, pr);
-      List<IamAccount> oldMembers = Lists.newArrayList();
+      List<IamAccount> oldMembers = new ArrayList<>();
 
       for (IamAccount a : accounts.getContent()) {
         oldMembers.add(a);
@@ -107,7 +106,7 @@ public class DefaultGroupMembershipUpdaterFactory
 
   private List<IamAccount> memberRefToAccountConverter(List<ScimMemberRef> members) {
 
-    List<IamAccount> newAccounts = Lists.newArrayList();
+    List<IamAccount> newAccounts = new ArrayList<>();
     if (members == null) {
       return newAccounts;
     }

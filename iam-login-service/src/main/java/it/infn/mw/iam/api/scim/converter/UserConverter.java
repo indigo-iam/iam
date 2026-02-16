@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import org.springframework.stereotype.Service;
 
@@ -76,10 +75,12 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   @Override
   public IamAccount entityFromDto(ScimUser scimUser) {
 
-    checkNotNull(scimUser);
-    checkNotNull(scimUser.getEmails(), "Missing mandatory e-mail");
-    checkArgument(!scimUser.getEmails().isEmpty(), "Missing mandatory e-mail");
-    checkNotNull(scimUser.getName(), "Missing mandatory user given and family name");
+    requireNonNull(scimUser);
+    requireNonNull(scimUser.getEmails(), "Missing mandatory e-mail");
+    if (scimUser.getEmails().isEmpty()) {
+      throw new IllegalArgumentException("Missing mandatory e-mail");
+    }
+    requireNonNull(scimUser.getName(), "Missing mandatory user given and family name");
 
     IamAccount account = new IamAccount();
 

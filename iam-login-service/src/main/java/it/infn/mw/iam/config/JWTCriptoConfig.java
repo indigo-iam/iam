@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.config;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +23,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
-import it.infn.mw.iam.core.jwk.IamJWTEncryptionService;
-import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwt.IamJwtEncryptionAndDecryptionService;
+import it.infn.mw.iam.core.jwt.IamJwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
+import it.infn.mw.iam.core.jwt.JwtEncryptionAndDecryptionService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 import it.infn.mw.iam.util.JWKKeystoreLoader;
 
 @Configuration
@@ -42,22 +42,22 @@ public class JWTCriptoConfig {
   ResourceLoader resourceLoader;
 
   @Bean
-  public JWKKeystoreLoader loader() {
+  JWKKeystoreLoader loader() {
     return new JWKKeystoreLoader(resourceLoader);
   }
 
   @Bean(name = "defaultKeyStore")
-  public JWKSetKeyStore defaultKeyStore(JWKKeystoreLoader loader) {
+  JwkSetKeyStore defaultKeyStore(JWKKeystoreLoader loader) {
     LOG.info("Loading JWT keystore from: {}", iamProperties.getJwk().getKeystoreLocation());
     return loader.loadKeystoreFromLocation(iamProperties.getJwk().getKeystoreLocation());
   }
 
   @Bean(name = "defaultsignerService")
-  public JWTSigningAndValidationService defaultSignerService(JWKSetKeyStore keystore) {
+  JwtSigningAndValidationService defaultSignerService(JwkSetKeyStore keystore) {
     try {
 
-      IamJWTSigningService signerService =
-          new IamJWTSigningService(iamProperties.getJwk(), keystore);
+      JwtSigningAndValidationService signerService =
+          new IamJwtSigningAndValidationService(iamProperties.getJwk(), keystore);
 
       LOG.info("Default JWK key id: {}", iamProperties.getJwk().getDefaultKeyId());
       LOG.info("Default JWS algorithm: {}", iamProperties.getJwk().getDefaultJwsAlgorithm());
@@ -69,13 +69,13 @@ public class JWTCriptoConfig {
   }
 
   @Bean(name = "defaultEncryptionService")
-  public JWTEncryptionAndDecryptionService defaultEncryptionService(
-      JWKSetKeyStore keystore) {
+  JwtEncryptionAndDecryptionService defaultEncryptionService(
+      JwkSetKeyStore keystore) {
 
     try {
 
-      IamJWTEncryptionService encryptionService =
-          new IamJWTEncryptionService(iamProperties, keystore);
+      JwtEncryptionAndDecryptionService encryptionService =
+          new IamJwtEncryptionAndDecryptionService(iamProperties, keystore);
 
       LOG.info("Default JWE key encrypt key id: {}",
           iamProperties.getJwk().getDefaultJweEncryptKeyId());

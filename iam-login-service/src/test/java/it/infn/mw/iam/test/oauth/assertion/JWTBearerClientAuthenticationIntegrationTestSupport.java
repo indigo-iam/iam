@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
@@ -35,7 +34,8 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwt.IamJwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.util.JWKKeystoreLoader;
 
@@ -73,13 +73,13 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
     return signedJWT;
   }
 
-  public JWTSigningAndValidationService loadSignerService()
+  public JwtSigningAndValidationService loadSignerService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JWKKeystoreLoader keystoreLoader = new JWKKeystoreLoader(loader);
 
-    JWTSigningAndValidationService svc =
-        new IamJWTSigningService(keystoreLoader.loadKeystoreFromLocation(TEST_KEYSTORE_LOCATION),
+    JwtSigningAndValidationService svc =
+        new IamJwtSigningAndValidationService(keystoreLoader.loadKeystoreFromLocation(TEST_KEYSTORE_LOCATION),
             "rsa1", JWSAlgorithm.RS256.getName());
 
     return svc;

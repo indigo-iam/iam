@@ -15,10 +15,7 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -36,7 +33,6 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
   private final IamAccountRepository accountRepo;
   private final IamGroupRepository groupRepo;
 
-  @Autowired
   public DefaultScopePolicyConverter(ScimResourceLocationProvider locationProvider,
       IamAccountRepository accountRepo, IamGroupRepository groupRepo) {
     this.resourceLocationProvider = locationProvider;
@@ -55,8 +51,7 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
     dto.setMatchingPolicy(sp.getMatchingPolicy().name());
 
     if (!sp.getScopes().isEmpty()) {
-      dto.setScopes(Sets.newHashSet());
-      dto.getScopes().addAll(sp.getScopes());
+      dto.setScopes(sp.getScopes());
     }
 
     if (sp.getAccount() != null) {

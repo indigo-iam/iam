@@ -18,14 +18,13 @@ package it.infn.mw.iam.authn.common;
 import static it.infn.mw.iam.authn.common.ValidatorResult.error;
 import static it.infn.mw.iam.authn.common.ValidatorResult.failure;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class Disjunction<T> extends CompositeValidatorCheck<T> {
-
-  static final Joiner JOINER = Joiner.on(',').skipNulls();
 
   public Disjunction(List<ValidatorCheck<T>> checks, String message) {
     super(checks, message);
@@ -34,10 +33,10 @@ public class Disjunction<T> extends CompositeValidatorCheck<T> {
   @Override
   public ValidatorResult validate(T credential) {
 
-    List<String> messages = Lists.newArrayList();
+    List<String> messages = new ArrayList<>();
 
     boolean hadErrors = false;
-    
+
     for (ValidatorCheck<T> c : getChecks()) {
 
       ValidatorResult result = c.validate(credential);
@@ -50,8 +49,14 @@ public class Disjunction<T> extends CompositeValidatorCheck<T> {
       }
     }
 
-    final String errorMsg = JOINER.join(messages);
+    final String errorMsg = joinSkippingNulls(messages);
     return handleFailure(hadErrors ? error(errorMsg) : failure(errorMsg));
   }
 
+  static String joinSkippingNulls(Iterable<?> items) {
+    return StreamSupport.stream(items.spliterator(), false)
+      .filter(Objects::nonNull)
+      .map(String::valueOf)
+      .collect(Collectors.joining(","));
+  }
 }

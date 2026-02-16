@@ -19,7 +19,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
-public class MultiFactorTestSupport extends IamTotpMfaCommons{
+public class MultiFactorTestSupport extends IamTotpMfaCommons {
+
   public static final String TEST_USERNAME = "test-user";
   public static final String TEST_UUID = "a23deabf-88a7-47af-84b5-1d535a1b267c";
   public static final String TEST_EMAIL = "test@example.org";

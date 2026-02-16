@@ -46,6 +46,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -54,12 +55,14 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.oidc.FullyMockedOidcClientConfiguration;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcMultiProviderTestConfig;
+import it.infn.mw.iam.test.util.JvmProfilesSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcMultiProviderTestConfig.class,
   FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
+//@ContextConfiguration(initializers = JvmProfilesSupport.OidcProfileInitializer.class)
 class OidcAccountLinkingMultiProviderTests {
 
   @Autowired

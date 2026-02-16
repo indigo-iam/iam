@@ -15,12 +15,10 @@
  */
 package it.infn.mw.iam.test.oauth.assertion;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.lenient;
 
@@ -28,17 +26,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -52,8 +45,14 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.jwt.JwtBearerAssertionAuthenticationToken;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
+import it.infn.mw.iam.core.jwt.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @ExtendWith(MockitoExtension.class)
 class IAMJWTBearerAuthenticationProviderTests
@@ -62,7 +61,7 @@ class IAMJWTBearerAuthenticationProviderTests
   static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
   @Mock
-  ClientDetailsEntityService clientService;
+  IamClientDetailsService clientService;
 
   @Mock
   ClientKeyCacheService validators;
@@ -71,10 +70,10 @@ class IAMJWTBearerAuthenticationProviderTests
   IamProperties iamProperties;
 
   @Mock
-  JWTBearerAssertionAuthenticationToken authentication;
+  JwtBearerAssertionAuthenticationToken authentication;
 
   @Mock
-  JWTSigningAndValidationService validator;
+  JwtSigningAndValidationService validator;
 
   @Mock
   ClientDetailsEntity client;
@@ -389,7 +388,7 @@ class IAMJWTBearerAuthenticationProviderTests
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
         .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
-        .audience(singletonList("invalid-audience"))
+        .audience(List.of("invalid-audience"))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getJwt()).thenReturn(jws);
@@ -413,7 +412,7 @@ class IAMJWTBearerAuthenticationProviderTests
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
         .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
-        .audience(singletonList(ISSUER_TOKEN_ENDPOINT))
+        .audience(List.of(ISSUER_TOKEN_ENDPOINT))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getJwt()).thenReturn(jws);
@@ -437,19 +436,19 @@ class IAMJWTBearerAuthenticationProviderTests
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
         .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
-        .audience(singletonList(ISSUER_TOKEN_ENDPOINT))
+        .audience(List.of(ISSUER_TOKEN_ENDPOINT))
         .jwtID(UUID.randomUUID().toString())
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getJwt()).thenReturn(jws);
 
 
-      JWTBearerAssertionAuthenticationToken authToken =
-          (JWTBearerAssertionAuthenticationToken) provider.authenticate(authentication);
+      JwtBearerAssertionAuthenticationToken authToken =
+          (JwtBearerAssertionAuthenticationToken) provider.authenticate(authentication);
       assertThat(authToken.isAuthenticated(), is(true));
       assertThat(authToken.getName(), is(JWT_AUTH_NAME));
       assertThat(authToken.getAuthorities(), hasItem(ROLE_CLIENT_AUTHORITY));
-      assertThat(authToken.getAuthorities(), hasSize(1));
+      assertThat(authToken.getAuthorities().size(), is(1));
     });
   }
 

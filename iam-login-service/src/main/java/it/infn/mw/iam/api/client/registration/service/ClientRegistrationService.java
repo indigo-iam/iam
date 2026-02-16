@@ -29,10 +29,16 @@ public interface ClientRegistrationService {
   RegisteredClientDTO registerClient(@Valid RegisteredClientDTO request,
       Authentication authentication) throws ParseException;
 
+  RegisteredClientDTO registerProtectedResource(@Valid RegisteredClientDTO request,
+      Authentication authentication) throws ParseException;
+
   RegisteredClientDTO retrieveClient(@NotBlank String clientId,
       Authentication authentication);
 
   RegisteredClientDTO updateClient(@NotBlank String clientId, @Valid RegisteredClientDTO request,
+      Authentication authentication) throws ParseException;
+
+  RegisteredClientDTO updateProtectedResource(@NotBlank String clientId, @Valid RegisteredClientDTO request,
       Authentication authentication) throws ParseException;
 
   void deleteClient(@NotBlank String clientId, Authentication authentication);

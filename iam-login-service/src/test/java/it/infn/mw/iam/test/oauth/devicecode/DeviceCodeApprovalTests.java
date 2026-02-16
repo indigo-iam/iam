@@ -39,11 +39,6 @@ import java.util.Date;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
-import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -54,7 +49,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.approvedsite.ApprovedSiteService;
+import it.infn.mw.iam.persistence.model.ApprovedSite;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -66,7 +68,10 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   private IamClientRepository clientRepo;
 
   @Autowired
-  private ConfigurationPropertiesBean config;
+  private IamAccountRepository accountRepo;
+
+  @Autowired
+  private IamProperties config;
 
   @Autowired
   private ApprovedSiteService approvedSiteService;
@@ -104,7 +109,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   @Test
   void testDeviceCodeNotReturnCompleteUri() throws Exception {
 
-    config.setAllowCompleteDeviceCodeUri(false);
+    config.getDeviceCode().setAllowCompleteVerificationUri(false);
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -116,8 +121,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.verification_uri_complete").doesNotExist())
       .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)));
 
-    config.setAllowCompleteDeviceCodeUri(true);
-
+    config.getDeviceCode().setAllowCompleteVerificationUri(true);
   }
 
   @Test
@@ -772,8 +776,11 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"));
 
+    ClientDetailsEntity client = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    IamAccount account = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
+
     Collection<ApprovedSite> approvedSites =
-        approvedSiteService.getByClientIdAndUserId(DEVICE_CODE_CLIENT_ID, TEST_USERNAME);
+        approvedSiteService.getByClientAndUser(client, account);
 
     assertTrue(approvedSites.isEmpty());
 

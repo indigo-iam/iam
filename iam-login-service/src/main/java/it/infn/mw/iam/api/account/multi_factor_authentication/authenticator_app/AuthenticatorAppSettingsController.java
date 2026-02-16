@@ -19,15 +19,23 @@ import static dev.samstevens.totp.util.Utils.getDataUriForImage;
 
 import javax.validation.Valid;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
 import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
@@ -53,7 +61,8 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
  * feature through POST requests to the relevant endpoints
  */
 @SuppressWarnings("deprecation")
-@Controller
+@RestController
+@Profile("mfa")
 public class AuthenticatorAppSettingsController {
 
   public static final String BASE_URL = "/iam/authenticator-app";
@@ -93,7 +102,6 @@ public class AuthenticatorAppSettingsController {
    */
   @PreAuthorize("hasRole('USER')")
   @PutMapping(value = ADD_SECRET_URL, produces = MediaType.APPLICATION_JSON_VALUE)
-  @ResponseBody
   public SecretAndDataUriDTO addSecret() throws IamTotpMfaInvalidArgumentError {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
@@ -125,7 +133,6 @@ public class AuthenticatorAppSettingsController {
    */
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
-  @ResponseBody
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult) {
     if (validationResult.hasErrors()) {
@@ -163,7 +170,6 @@ public class AuthenticatorAppSettingsController {
    */
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = DISABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
-  @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
@@ -197,7 +203,6 @@ public class AuthenticatorAppSettingsController {
    */
   @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping(value = DISABLE_URL_FOR_ACCOUNT_ID, produces = MediaType.TEXT_PLAIN_VALUE)
-  @ResponseBody
   public void disableAuthenticatorAppForAccount(@PathVariable String accountId) {
     IamAccount account = accountRepository.findByUuid(accountId)
       .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
@@ -254,7 +259,6 @@ public class AuthenticatorAppSettingsController {
    */
   @ResponseStatus(code = HttpStatus.CONFLICT)
   @ExceptionHandler(MfaSecretNotFoundException.class)
-  @ResponseBody
   public ErrorDTO handleMfaSecretNotFoundException(MfaSecretNotFoundException e) {
     return ErrorDTO.fromString(e.getMessage());
   }
@@ -267,7 +271,6 @@ public class AuthenticatorAppSettingsController {
    */
   @ResponseStatus(code = HttpStatus.CONFLICT)
   @ExceptionHandler(MfaSecretAlreadyBoundException.class)
-  @ResponseBody
   public ErrorDTO handleMfaSecretAlreadyBoundException(MfaSecretAlreadyBoundException e) {
     return ErrorDTO.fromString(e.getMessage());
   }
@@ -280,7 +283,6 @@ public class AuthenticatorAppSettingsController {
    */
   @ResponseStatus(code = HttpStatus.CONFLICT)
   @ExceptionHandler(TotpMfaAlreadyEnabledException.class)
-  @ResponseBody
   public ErrorDTO handleTotpMfaAlreadyEnabledException(TotpMfaAlreadyEnabledException e) {
     return ErrorDTO.fromString(e.getMessage());
   }
@@ -294,7 +296,6 @@ public class AuthenticatorAppSettingsController {
    */
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(BadMfaCodeError.class)
-  @ResponseBody
   public ErrorDTO handleBadCodeError(BadMfaCodeError e) {
     return ErrorDTO.fromString(e.getMessage());
   }

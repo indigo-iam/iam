@@ -19,8 +19,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.function.Consumer;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -30,6 +28,9 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public interface IAMJWTBearerAuthenticationProviderTestSupport {
 

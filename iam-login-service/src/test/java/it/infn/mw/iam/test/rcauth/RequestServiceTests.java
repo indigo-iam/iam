@@ -44,8 +44,6 @@ import javax.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -56,6 +54,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nimbusds.jose.JOSEException;
 
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.DefaultRcAuthRequestService;
 import it.infn.mw.iam.rcauth.RCAuthAuthorizationResponse;

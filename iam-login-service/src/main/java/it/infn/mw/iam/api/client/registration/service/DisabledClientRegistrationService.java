@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.client.registration.service;
 
+import java.text.ParseException;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 
@@ -71,6 +73,18 @@ public class DisabledClientRegistrationService implements ClientRegistrationServ
   @Override
   public RegisteredClientDTO redeemClient(@NotBlank String clientId,
       @NotBlank String registrationAccessToken, Authentication authentication) {
+    return registrationDisabled();
+  }
+
+  @Override
+  public RegisteredClientDTO registerProtectedResource(@Valid RegisteredClientDTO request,
+      Authentication authentication) throws ParseException {
+    return registrationDisabled();
+  }
+
+  @Override
+  public RegisteredClientDTO updateProtectedResource(@NotBlank String clientId,
+      @Valid RegisteredClientDTO request, Authentication authentication) throws ParseException {
     return registrationDisabled();
   }
 }

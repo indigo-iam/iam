@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.test.rcauth;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 
 import com.nimbusds.jose.JWSAlgorithm;
 
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.oidc.IdTokenBuilder;
 
@@ -63,15 +63,13 @@ public class RCAuthTestSupport extends X509TestSupport {
 
   public static final MediaType APPLICATION_FORM_URLENCODED_UTF8 =
       MediaType.valueOf(APPLICATION_FORM_URLENCODED_UTF8_VALUE);
-  protected JWKSetKeyStore rcAuthKeyStore = rcAuthKeyStore();
+  protected JwkSetKeyStore rcAuthKeyStore = rcAuthKeyStore();
   protected JWSAlgorithm jwsAlgo = JWSAlgorithm.RS256;
 
   protected IdTokenBuilder tokenBuilder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
 
-  public JWKSetKeyStore rcAuthKeyStore() {
-    JWKSetKeyStore ks = new JWKSetKeyStore();
-    ks.setLocation(new ClassPathResource("/oidc/mock_op_keys.jks"));
-    return ks;
+  public JwkSetKeyStore rcAuthKeyStore() {
+    return new JwkSetKeyStore(new ClassPathResource("/oidc/mock_op_keys.jks"));
   }
 
 }

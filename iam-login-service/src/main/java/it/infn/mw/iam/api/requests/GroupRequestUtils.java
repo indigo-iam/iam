@@ -27,8 +27,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.api.requests.exception.GroupRequestValidationError;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
@@ -80,7 +78,7 @@ public class GroupRequestUtils {
       value = motivation.trim();
     }
 
-    if (Strings.isNullOrEmpty(value)) {
+    if (value == null || value.isBlank()) {
       throw new GroupRequestValidationError("Reject motivation cannot be empty");
     }
   }

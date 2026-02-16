@@ -17,8 +17,10 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import dev.samstevens.totp.code.CodeVerifier;
@@ -38,10 +40,12 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
+@Profile("mfa")
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
 
   public static final int RECOVERY_CODE_QUANTITY = 6;
-  private static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
+  private static final String MFA_SECRET_NOT_FOUND_MESSAGE =
+      "No multi-factor secret is attached to this account";
 
   private final IamAccountService iamAccountService;
   private final IamTotpMfaRepository totpMfaRepository;
@@ -51,9 +55,10 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   private ApplicationEventPublisher eventPublisher;
 
   public DefaultIamTotpMfaService(IamAccountService iamAccountService,
-      IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
-      CodeVerifier codeVerifier, ApplicationEventPublisher eventPublisher,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaRepository totpMfaRepository,
+      @Qualifier("secretGenerator") SecretGenerator secretGenerator,
+      @Qualifier("codeVerifier") CodeVerifier codeVerifier,
+      ApplicationEventPublisher eventPublisher, IamTotpMfaProperties iamTotpMfaProperties) {
     this.iamAccountService = iamAccountService;
     this.totpMfaRepository = totpMfaRepository;
     this.secretGenerator = secretGenerator;
@@ -80,9 +85,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
   /**
-   * Generates and attaches a TOTP MFA secret to a user account
-   * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
-   * server-side TOTP verification during the user's enabling of MFA on their account
+   * Generates and attaches a TOTP MFA secret to a user account This is pre-emptive to actually
+   * enabling TOTP MFA on the account - the secret is written for server-side TOTP verification
+   * during the user's enabling of MFA on their account
    * 
    * @param account the account to add the secret to
    * @return the new TOTP secret
@@ -176,8 +181,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
-    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(totpMfa.getSecret(),
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {

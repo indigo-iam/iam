@@ -47,6 +47,13 @@ iam:
   versioned-static-resources:
     enable-versioning: false
 
+task:
+  aupReminder: -1
+  tokenCleanupPeriodMsec: -1
+  approvalCleanupPeriodMsec: -1
+  deviceCodeCleanupPeriodMsec: -1
+  wellKnownCacheCleanupPeriodSecs: 300
+
 management:
   health:
       mail:

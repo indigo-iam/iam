@@ -40,10 +40,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Table;
-
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
@@ -95,12 +91,6 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   @Autowired
   private ApplicationEventPublisher eventPublisher;
 
-  private static final Table<IamGroupRequestStatus, IamGroupRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS =
-      new ImmutableTable.Builder<IamGroupRequestStatus, IamGroupRequestStatus, Boolean>()
-        .put(PENDING, APPROVED, true)
-        .put(PENDING, REJECTED, true)
-        .build();
-
   private static String GROUP = "group";
   private static String ACCOUNT = "account";
 
@@ -126,11 +116,11 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       iamGroupRequest.setGroup(group.get());
       iamGroupRequest.setNotes(groupRequest.getNotes());
       iamGroupRequest.setStatus(PENDING);
-      
+
       Date creationTime = new Date(timeProvider.currentTimeMillis());
       iamGroupRequest.setCreationTime(creationTime);
       iamGroupRequest.setLastUpdateTime(creationTime);
-      
+
       result = groupRequestRepository.save(iamGroupRequest);
       notificationFactory.createAdminHandleGroupRequestMessage(iamGroupRequest);
       eventPublisher.publishEvent(new GroupRequestCreatedEvent(this, result));
@@ -159,12 +149,13 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     notificationFactory.createGroupMembershipApprovedMessage(request);
     eventPublisher.publishEvent(new GroupRequestApprovedEvent(this, request));
 
-    while(!isNull(group)) {
+    while (!isNull(group)) {
       // Approve all other PENDING requests for any intermediate groups up to the root
-      Optional<IamGroupRequest> hasPendingRequest = 
-          groupRequestRepository.findByGroupIdAndAccountIdAndStatus(group.getId(), account.getId(), PENDING);
+      Optional<IamGroupRequest> hasPendingRequest = groupRequestRepository
+        .findByGroupIdAndAccountIdAndStatus(group.getId(), account.getId(), PENDING);
 
-      if (hasPendingRequest.isPresent() && !hasPendingRequest.get().getId().equals(request.getId())) {
+      if (hasPendingRequest.isPresent()
+          && !hasPendingRequest.get().getId().equals(request.getId())) {
         IamGroupRequest pendingRequest = hasPendingRequest.get();
         updateGroupRequestStatus(pendingRequest, APPROVED);
         notificationFactory.createGroupMembershipApprovedMessage(pendingRequest);
@@ -196,10 +187,11 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     while (!queue.isEmpty()) {
       IamGroup child = queue.poll();
 
-      Optional<IamGroupRequest> hasPendingRequest = 
-          groupRequestRepository.findByGroupIdAndAccountIdAndStatus(child.getId(), account.getId(), PENDING);
+      Optional<IamGroupRequest> hasPendingRequest = groupRequestRepository
+        .findByGroupIdAndAccountIdAndStatus(child.getId(), account.getId(), PENDING);
 
-      if (hasPendingRequest.isPresent() && !hasPendingRequest.get().getId().equals(request.getId())) {
+      if (hasPendingRequest.isPresent()
+          && !hasPendingRequest.get().getId().equals(request.getId())) {
         IamGroupRequest pendingRequest = hasPendingRequest.get();
         pendingRequest.setMotivation(motivation);
         updateGroupRequestStatus(pendingRequest, REJECTED);
@@ -240,7 +232,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       }
     }
 
-    List<GroupRequestDto> results = Lists.newArrayList();
+    List<GroupRequestDto> results = new ArrayList<>();
 
     Page<IamGroupRequest> pagedResults = lookupGroupRequests(usernameFilter, groupNameFilter,
         statusFilter, managedGroups, pageRequest);
@@ -252,8 +244,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   @Override
-  public ListResponseDTO<GroupRequestDto> searchGroupRequests(String username, String userFullName, String groupName,
-      String notes, String status, OffsetPageable pageRequest) {
+  public ListResponseDTO<GroupRequestDto> searchGroupRequests(String username, String userFullName,
+      String groupName, String notes, String status, OffsetPageable pageRequest) {
     Optional<String> usernameFilter = Optional.ofNullable(username);
     Optional<String> userFullNameFilter = Optional.ofNullable(userFullName);
     Optional<String> groupNameFilter = Optional.ofNullable(groupName);
@@ -270,10 +262,10 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       }
     }
 
-    List<GroupRequestDto> results = Lists.newArrayList();
+    List<GroupRequestDto> results = new ArrayList<>();
 
-    Page<IamGroupRequest> pagedResults = lookupGroupRequests(usernameFilter, userFullNameFilter, groupNameFilter, notesFilter,
-        statusFilter, managedGroups, pageRequest);
+    Page<IamGroupRequest> pagedResults = lookupGroupRequests(usernameFilter, userFullNameFilter,
+        groupNameFilter, notesFilter, statusFilter, managedGroups, pageRequest);
 
     pagedResults.getContent().forEach(request -> results.add(converter.fromEntity(request)));
 
@@ -284,13 +276,13 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   private IamGroupRequest updateGroupRequestStatus(IamGroupRequest request,
       IamGroupRequestStatus status) {
 
-    if (!ALLOWED_STATE_TRANSITIONS.contains(request.getStatus(), status)) {
-      throw new InvalidGroupRequestStatusError(
-          String.format("Invalid group request transition: %s -> %s", request.getStatus(), status));
+    if (PENDING.equals(request.getStatus()) && Set.of(APPROVED, REJECTED).contains(status)) {
+      request.setStatus(status);
+      request.setLastUpdateTime(new Date(timeProvider.currentTimeMillis()));
+      return groupRequestRepository.save(request);
     }
-    request.setStatus(status);
-    request.setLastUpdateTime(new Date(timeProvider.currentTimeMillis()));
-    return groupRequestRepository.save(request);
+    throw new InvalidGroupRequestStatusError(
+        String.format("Invalid group request transition: %s -> %s", request.getStatus(), status));
   }
 
   static Specification<IamGroupRequest> baseSpec() {
@@ -302,7 +294,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> forUserNameLike(String username) {
-    return (req, cq, cb) -> cb.like(cb.lower(req.get(ACCOUNT).get("username")), "%" + username.toLowerCase() + "%");
+    return (req, cq, cb) -> cb.like(cb.lower(req.get(ACCOUNT).get("username")),
+        "%" + username.toLowerCase() + "%");
   }
 
   static Specification<IamGroupRequest> forUserFullNameLike(String userFullName) {
@@ -318,19 +311,16 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       Expression<String> familyName = cb.lower(familyNamePath);
 
       Expression<String> middleName = cb.selectCase()
-          .when(cb.isNotNull(middleNamePath), cb.concat(" ", cb.lower(middleNamePath)))
-          .otherwise("")
-          .as(String.class);
+        .when(cb.isNotNull(middleNamePath), cb.concat(" ", cb.lower(middleNamePath)))
+        .otherwise("")
+        .as(String.class);
 
-      Expression<String> fullName = cb.concat(
-          cb.concat(cb.coalesce(cb.lower(givenNamePath), ""), middleName),
-          cb.concat(" ", cb.coalesce(cb.lower(familyNamePath), "")));
+      Expression<String> fullName =
+          cb.concat(cb.concat(cb.coalesce(cb.lower(givenNamePath), ""), middleName),
+              cb.concat(" ", cb.coalesce(cb.lower(familyNamePath), "")));
 
-      return cb.or(
-          cb.like(givenName, searchTerm),
-          cb.like(middleName, searchTerm),
-          cb.like(familyName, searchTerm),
-          cb.like(fullName, searchTerm));
+      return cb.or(cb.like(givenName, searchTerm), cb.like(middleName, searchTerm),
+          cb.like(familyName, searchTerm), cb.like(fullName, searchTerm));
     };
   }
 
@@ -339,7 +329,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> forGroupNameLike(String groupName) {
-    return (req, cq, cb) -> cb.like(cb.lower(req.get(GROUP).get("name")), "%" + groupName.toLowerCase() + "%");
+    return (req, cq, cb) -> cb.like(cb.lower(req.get(GROUP).get("name")),
+        "%" + groupName.toLowerCase() + "%");
   }
 
   static Specification<IamGroupRequest> forNotesLike(String notes) {
@@ -380,8 +371,9 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   private Page<IamGroupRequest> lookupGroupRequests(Optional<String> usernameFilter,
-      Optional<String> userFullnameFilter, Optional<String> groupNameFilter, Optional<String> notesFilter,
-      Optional<String> statusFilter, Set<String> managedGroups, OffsetPageable pageRequest) {
+      Optional<String> userFullnameFilter, Optional<String> groupNameFilter,
+      Optional<String> notesFilter, Optional<String> statusFilter, Set<String> managedGroups,
+      OffsetPageable pageRequest) {
 
     Specification<IamGroupRequest> spec = baseSpec();
     List<Specification<IamGroupRequest>> orSpecs = new ArrayList<>();
@@ -396,9 +388,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     notesFilter.ifPresent(n -> orSpecs.add(forNotesLike(n)));
 
     if (!orSpecs.isEmpty()) {
-      Specification<IamGroupRequest> combinedOrSpec = orSpecs.stream()
-          .reduce(Specification::or)
-          .orElse(null);
+      Specification<IamGroupRequest> combinedOrSpec =
+          orSpecs.stream().reduce(Specification::or).orElse(null);
 
       if (combinedOrSpec != null) {
         spec = spec.and(combinedOrSpec);

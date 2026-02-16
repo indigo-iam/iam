@@ -35,14 +35,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,16 +47,20 @@ import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.oidc.TrustChainService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
+@TestPropertySource(properties = {
+    "openid-federation.enabled=true",
+})
+//@ContextConfiguration(initializers = JvmProfilesSupport.OpenIDFederationProfileInitializer.class)
 class FederationRegistrationControllerTests {
 
   private static final String IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT =
@@ -78,7 +78,7 @@ class FederationRegistrationControllerTests {
   private IamClientRepository clientRepo;
 
   @Autowired
-  private TaskConfig taskConfig;
+  private ClientService clientService;
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -235,7 +235,7 @@ class FederationRegistrationControllerTests {
 
     assertEquals(0, countInactiveClients());
 
-    taskConfig.disableExpiredClients();
+    clientService.disableExpiredClients();
     client = clientRepo.findByClientId("client-cred").orElseThrow();
     Date lastUpdate = client.getStatusChangedOn();
 
@@ -248,9 +248,9 @@ class FederationRegistrationControllerTests {
         .param("client_secret", "secret"))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
-      .andExpect(jsonPath("$.error_description", equalTo("Client is suspended: client-cred")));
+      .andExpect(jsonPath("$.error_description", equalTo("Client client-cred is not active")));
 
-    taskConfig.disableExpiredClients();
+    clientService.disableExpiredClients();
     client = clientRepo.findByClientId("client-cred").orElseThrow();
 
     // check that the client has been disabled only once

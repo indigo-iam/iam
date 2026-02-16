@@ -25,13 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.revocation.IamTokenRevocationService;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
@@ -45,6 +46,9 @@ class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Autowired
   private IamTokenService iamTokenService;
+
+  @Autowired
+  private IamTokenRevocationService revocationService;
 
   @Test
   void testRevocationEnpointRequiresClientAuth() throws Exception {
@@ -71,7 +75,7 @@ class RevocationEndpointTests extends EndpointsTestUtils {
     Set<OAuth2AccessTokenEntity> accessTokens = iamTokenService.getAllAccessTokensForUser("test");
 
     // Start clean
-    accessTokens.forEach(iamTokenService::revokeAccessToken);
+    accessTokens.forEach(revocationService::revokeAccessToken);
 
     String accessToken = getPasswordToken().accessToken();
 
@@ -97,7 +101,7 @@ class RevocationEndpointTests extends EndpointsTestUtils {
     Set<OAuth2AccessTokenEntity> accessTokens = iamTokenService.getAllAccessTokensForUser("test");
 
     // Start clean
-    accessTokens.forEach(iamTokenService::revokeAccessToken);
+    accessTokens.forEach(revocationService::revokeAccessToken);
 
     String tokenOne = getPasswordToken().accessToken();
     String tokenTwo = getPasswordToken().accessToken();
@@ -122,8 +126,8 @@ class RevocationEndpointTests extends EndpointsTestUtils {
   void refreshTokenRevocationWorks() throws Exception {
 
     // Start clean
-    iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
-    iamTokenService.getAllRefreshTokensForUser("test").forEach(iamTokenService::revokeRefreshToken);
+    iamTokenService.getAllAccessTokensForUser("test").forEach(revocationService::revokeAccessToken);
+    iamTokenService.getAllRefreshTokensForUser("test").forEach(revocationService::revokeRefreshToken);
 
     String refreshToken = getPasswordToken("openid profile offline_access").refreshToken();
 
@@ -142,8 +146,8 @@ class RevocationEndpointTests extends EndpointsTestUtils {
   @Test
   void refreshTokenRevocationRevokesTheRightToken() throws Exception {
     // Start clean
-    iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
-    iamTokenService.getAllRefreshTokensForUser("test").forEach(iamTokenService::revokeRefreshToken);
+    iamTokenService.getAllAccessTokensForUser("test").forEach(revocationService::revokeAccessToken);
+    iamTokenService.getAllRefreshTokensForUser("test").forEach(revocationService::revokeRefreshToken);
 
     final String SCOPES = "openid profile offline_access";
     String rt1 = getPasswordToken(SCOPES).refreshToken();

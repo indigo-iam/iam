@@ -19,14 +19,13 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
@@ -250,7 +249,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   public List<AccountUpdater> getUpdatersForPatchOperation(IamAccount account,
       ScimPatchOperation<ScimUser> op) throws ScimPatchOperationNotSupported {
 
-    final List<AccountUpdater> updaters = Lists.newArrayList();
+    final List<AccountUpdater> updaters = new ArrayList<>();
 
     final ScimUser user = op.getValue();
 

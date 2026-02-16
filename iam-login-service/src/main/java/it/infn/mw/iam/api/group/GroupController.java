@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.group;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,8 +34,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.AttributeDTO;
 import it.infn.mw.iam.api.common.AttributeDTOConverter;
@@ -107,7 +106,7 @@ public class GroupController {
     
     IamGroup entity = groupService.findByUuid(id).orElseThrow(()->NoSuchGroupError.forUuid(id));
     
-    List<AttributeDTO> results = Lists.newArrayList();
+    List<AttributeDTO> results = new ArrayList<>();
     entity.getAttributes().forEach(a -> results.add(attributeConverter.dtoFromEntity(a)));
     
     return results;

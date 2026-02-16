@@ -40,8 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.openid.connect.web.ApprovedSiteAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -59,7 +57,8 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -473,7 +472,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get("/" + ApprovedSiteAPI.URL).session(session))
+    mvc.perform(get("/api/approved").session(session))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
       .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)));

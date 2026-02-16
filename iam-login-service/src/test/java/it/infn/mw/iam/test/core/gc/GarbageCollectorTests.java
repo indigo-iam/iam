@@ -24,15 +24,6 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,8 +31,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.core.AuthenticationHolderService;
 import it.infn.mw.iam.core.gc.DefaultGarbageCollector;
+import it.infn.mw.iam.core.oauth.approvedsite.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
@@ -55,13 +54,13 @@ class GarbageCollectorTests {
   @Mock
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
   @Mock
-  private DeviceCodeRepository deviceCodeRepo;
+  private DeviceCodeService deviceCodeService;
   @Mock
-  private AuthenticationHolderRepository authenticationHolderRepository;
+  private AuthenticationHolderService authHolderService;
   @Mock
   private IamRevokedAccessTokenRepository revokedAccessTokenRepo;
   @Mock
-  private AuthorizationCodeRepository authzCodeRepo;
+  private IamAuthorizationCodeRepository authzCodeRepo;
 
   private DefaultGarbageCollector gc;
 
@@ -70,7 +69,7 @@ class GarbageCollectorTests {
     MockitoAnnotations.openMocks(this);
 
     gc = new DefaultGarbageCollector(approvedSiteService, accessTokenRepo, refreshTokenRepo,
-        deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo, authzCodeRepo);
+        deviceCodeService, authHolderService, revokedAccessTokenRepo, authzCodeRepo);
   }
 
   @Test
@@ -83,21 +82,19 @@ class GarbageCollectorTests {
   @Test
   void testClearExpiredAuthorizationCodes() {
     AuthorizationCodeEntity code = mock(AuthorizationCodeEntity.class);
-    when(authzCodeRepo.getExpiredCodes()).thenReturn(Collections.singletonList(code));
+    when(authzCodeRepo.findExpired()).thenReturn(Collections.singletonList(code));
 
     gc.clearExpiredAuthorizationCodes(10);
 
-    verify(authzCodeRepo).remove(code);
+    verify(authzCodeRepo).delete(code);
   }
 
   @Test
   void testClearExpiredDeviceCodes() {
-    DeviceCode dc = mock(DeviceCode.class);
-    when(deviceCodeRepo.getExpiredCodes()).thenReturn(Collections.singletonList(dc));
 
+    when(deviceCodeService.clearExpired()).thenReturn(1);
     gc.clearExpiredDeviceCodes(10);
-
-    verify(deviceCodeRepo).remove(dc);
+    verify(deviceCodeService).clearExpired();
   }
 
   @Test
@@ -139,11 +136,11 @@ class GarbageCollectorTests {
   @Test
   void testClearOrphanedAuthenticationHolder() {
     AuthenticationHolderEntity holder = mock(AuthenticationHolderEntity.class);
-    when(authenticationHolderRepository.getOrphanedAuthenticationHolders(ArgumentMatchers.any()))
-      .thenReturn(Collections.singletonList(holder));
+    when(authHolderService.getOrphanedAuthenticationHolders(ArgumentMatchers.any()))
+      .thenReturn(new PageImpl<>(Collections.singletonList(holder)));
 
     gc.clearOrphanedAuthenticationHolder(10);
 
-    verify(authenticationHolderRepository).remove(holder);
+    verify(authHolderService).remove(holder);
   }
 }

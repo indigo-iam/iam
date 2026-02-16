@@ -21,12 +21,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import com.google.common.cache.Cache;
@@ -41,7 +38,6 @@ import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
-@SuppressWarnings("deprecation")
 @Component
 public class DefaultScopeFilter implements ScopeFilter {
 
@@ -87,24 +83,6 @@ public class DefaultScopeFilter implements ScopeFilter {
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
     return filteredScopes;
-  }
-
-  @Override
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {
-
-    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication()));
-    return authHolder;
-  }
-
-  @Override
-  public OAuth2Authentication filterScopes(OAuth2Authentication authn) {
-
-    OAuth2Request oldRequest = authn.getOAuth2Request();
-    OAuth2Request updatedRequest = new OAuth2Request(oldRequest.getRequestParameters(), oldRequest.getClientId(),
-        oldRequest.getAuthorities(), oldRequest.isApproved(), filterScopes(oldRequest.getScope(), authn),
-        oldRequest.getResourceIds(), oldRequest.getRedirectUri(), oldRequest.getResponseTypes(),
-        oldRequest.getExtensions());
-    return new OAuth2Authentication(updatedRequest, authn.getUserAuthentication());
   }
 
   private Set<String> excludedScopes(Set<String> requestedScopes) {

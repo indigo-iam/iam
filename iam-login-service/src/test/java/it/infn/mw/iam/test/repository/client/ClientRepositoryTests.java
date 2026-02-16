@@ -37,8 +37,6 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,18 +45,22 @@ import org.springframework.orm.jpa.JpaSystemException;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @IamNoMvcTest
 class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
+  @Autowired
+  private ClientService clientService;
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -71,9 +73,6 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
   @Autowired
   private IamAccountService accountService;
-
-  @Autowired
-  private OAuth2ClientRepository mitreClientRepo;
 
   @Autowired
   private Clock clock;
@@ -263,7 +262,7 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
     assertThat(test001Clients.getSize(), is(1));
     assertThat(test001Clients.getContent(), hasItem(testClient));
 
-    mitreClientRepo.deleteClient(testClient);
+    clientService.deleteClient(testClient);
 
     assertThat(accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged()).isEmpty(),
         is(true));

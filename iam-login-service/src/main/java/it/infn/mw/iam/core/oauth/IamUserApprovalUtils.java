@@ -19,36 +19,40 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.mitre.openid.connect.service.StatsService;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.stats.StatsService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
+@SuppressWarnings("deprecation")
 @Component
 public class IamUserApprovalUtils {
 
   private final SystemScopeService scopeService;
   private final StatsService statsService;
-  private final UserInfoService userInfoService;
+  private final IamAccountService accountService;
   private final JWTProfileResolver profileResolver;
 
   public IamUserApprovalUtils(SystemScopeService scopeService, StatsService statsService,
-      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
+      IamAccountService accountService, JWTProfileResolver profileResolver) {
     this.scopeService = scopeService;
     this.statsService = statsService;
-    this.userInfoService = userInfoService;
+    this.accountService = accountService;
     this.profileResolver = profileResolver;
   }
 
@@ -68,28 +72,20 @@ public class IamUserApprovalUtils {
     return scopeService.toStrings(sortedScopes);
   }
 
-  public Map<String, Map<String, String>> claimsForScopes(Authentication authUser,
+  public Map<String, Map<String, Object>> claimsForScopes(Authentication authUser,
       Set<SystemScope> scopes) {
 
-    UserInfo user = userInfoService.getByUsername(authUser.getName());
+    JWTProfile jwtProfile = profileResolver.resolveProfile(scopeService.toStrings(scopes));
+    Optional<IamAccount> account = accountService.findByUsername(authUser.getName());
     ScopeClaimTranslationService scopeClaimTranslationService =
-        profileResolver.resolveProfile(scopeService.toStrings(scopes))
-          .getScopeClaimTranslationService();
+        jwtProfile.getScopeClaimTranslationService();
+    ClaimValueHelper claimValueHelper = jwtProfile.getClaimValueHelper();
 
-    Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
-    if (user != null) {
-      JsonObject userJson = user.toJson();
-
+    Map<String, Map<String, Object>> claimsForScopes = new HashMap<>();
+    if (account.isPresent()) {
       for (SystemScope systemScope : scopes) {
-        Map<String, String> claimValues = new HashMap<>();
-
         Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
-        for (String claim : claims) {
-          if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            claimValues.put(claim, userJson.get(claim).getAsString());
-          }
-        }
-
+        Map<String, Object> claimValues = claimValueHelper.resolveClaims(claims, authUser, account);
         claimsForScopes.put(systemScope.getValue(), claimValues);
       }
     }

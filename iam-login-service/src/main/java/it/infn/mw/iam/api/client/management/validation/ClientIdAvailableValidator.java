@@ -18,18 +18,16 @@ package it.infn.mw.iam.api.client.management.validation;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 
 @Component
 @Scope("prototype")
 public class ClientIdAvailableValidator implements ConstraintValidator<ClientIdAvailable, String> {
   private final IamClientRepository clientRepo;
 
-  @Autowired
   public ClientIdAvailableValidator(IamClientRepository clientRepo) {
     this.clientRepo = clientRepo;
   }

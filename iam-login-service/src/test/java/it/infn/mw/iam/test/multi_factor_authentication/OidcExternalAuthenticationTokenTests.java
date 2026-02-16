@@ -18,10 +18,10 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mockito.Mockito;
 
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
 
 class OidcExternalAuthenticationTokenTests {
 

@@ -28,13 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -60,13 +53,20 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
-import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
@@ -85,7 +85,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
   protected IamOAuthRefreshTokenRepository refreshTokenRepository;
 
   @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  private IamClientDetailsService clientDetailsService;
 
   @Autowired
   protected IamAccountRepository accountRepository;
@@ -106,13 +106,13 @@ public class TestTokensUtils extends EndpointsTestUtils {
   protected PasswordEncoder encoder;
 
   @Autowired
-  protected AuthenticationHolderRepository authenticationHolderRepository;
+  protected IamAuthenticationHolderRepository authenticationHolderRepository;
 
   @Autowired
   protected JWTProfileResolver profileResolver;
 
   @Autowired
-  protected JWTSigningAndValidationService jwtSigningService;
+  protected JwtSigningAndValidationService jwtSigningService;
 
   protected Date yesterday() {
     return Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -146,6 +146,10 @@ public class TestTokensUtils extends EndpointsTestUtils {
   protected OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
       String[] scopes) {
     return tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
+  }
+
+  protected OAuth2AccessTokenEntity buildRegistrationAccessToken(ClientDetailsEntity client) {
+    return tokenService.createRegistrationAccessToken(client);
   }
 
   protected OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
@@ -248,8 +252,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
     token.setExpiration(yesterday());
     OAuth2Authentication authn = oauth2AuthenticationClient(client, authorities, scopes);
 
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(authn);
+    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity(client, authn);
     authHolder = authenticationHolderRepository.save(authHolder);
 
     token.setAuthenticationHolder(authHolder);
@@ -259,8 +262,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(token, authn, Optional.empty(), yesterday().toInstant());
 
-    token.setJwt(signClaims(atClaims));
-    token.hashMe();
+    token.setTokenJwtValue(signClaims(atClaims));
     accessTokenRepository.save(token);
 
     return token;

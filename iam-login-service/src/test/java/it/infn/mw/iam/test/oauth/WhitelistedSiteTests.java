@@ -29,20 +29,20 @@ import java.util.Set;
 
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.WhitelistedSite;
-import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.core.oauth.IamWhitelistedSiteService;
+import it.infn.mw.iam.persistence.model.WhitelistedSite;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 class WhitelistedSiteTests extends EndpointsTestUtils {
 
   @Autowired
-  DefaultWhitelistedSiteService whitelistedSiteService;
+  IamWhitelistedSiteService whitelistedSiteService;
 
   protected WhitelistedSite getApprovedSiteFor(String creator, String clientId, Set<String> scopes) {
 

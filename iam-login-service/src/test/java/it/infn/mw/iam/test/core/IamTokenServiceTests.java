@@ -19,14 +19,11 @@ package it.infn.mw.iam.test.core;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -35,6 +32,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -54,7 +53,7 @@ public class IamTokenServiceTests extends TestTokensUtils {
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
     savedAuth.setName(TESTUSER_USERNAME);
     savedAuth.setAuthenticated(true);
-    savedAuth.setAuthorities(List.of(Authorities.ROLE_PRE_AUTHENTICATED));
+    savedAuth.setAuthorities(Set.of(Authorities.ROLE_PRE_AUTHENTICATED));
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 

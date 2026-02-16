@@ -17,21 +17,14 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Set;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public interface ScopeFilter {
 
   public Set<String> filterScopes(Set<String> scopes, Authentication authn);
 
   public Set<String> filterScopes(Set<String> scopes, IamAccount account);
-
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
-
-  public OAuth2Authentication filterScopes(OAuth2Authentication authHolder);
 
 }

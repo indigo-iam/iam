@@ -20,9 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -41,9 +40,10 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.jwk.JWKUtils;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 
 @Service
-@Profile("openid-federation")
+@ConditionalOnProperty(prefix = "openid-federation", name = "enabled", havingValue = "true")
 public class FederationResponseBuilder {
 
   @Value("${iam.issuer}")
@@ -53,7 +53,7 @@ public class FederationResponseBuilder {
   private final RSAKey signingKey;
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
 
-  public FederationResponseBuilder(JWKSetKeyStore keyStore) {
+  public FederationResponseBuilder(JwkSetKeyStore keyStore) {
     this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())

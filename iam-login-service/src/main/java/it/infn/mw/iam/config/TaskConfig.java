@@ -15,36 +15,33 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.FixedRateTask;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
+import it.infn.mw.iam.api.aup.AupService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
+import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
+import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableScheduling
-@Profile({"prod", "dev"})
 public class TaskConfig implements SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(TaskConfig.class);
@@ -57,35 +54,40 @@ public class TaskConfig implements SchedulingConfigurer {
   public static final long ONE_HOUR_MSEC = 60 * ONE_MINUTE_MSEC;
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
+  private final TaskProperties taskProperties;
+  private final OpenidFederationProperties oidFedProperties;
+  private final NotificationProperties notificationProperties;
+  private final AupService aupService;
+
   private NotificationStoreService notificationStoreService;
   private NotificationDeliveryTask deliveryTask;
   private LifecycleProperties lifecycleProperties;
   private ExpiredAccountsHandler expiredAccountsHandler;
   private AupReminderTask aupReminderTask;
   private ExecutorService taskScheduler;
-  private IamClientRepository clientRepo;
   private ClientService clientService;
   private GarbageCollector garbageCollector;
 
-  @Value("${notification.disable}")
-  boolean notificationDisabled;
-
-  @Value("${notification.taskDelay}")
-  long notificationTaskPeriodMsec;
-
-  public TaskConfig(NotificationStoreService notificationStoreService,
-      NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
-      ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
-      ExecutorService taskScheduler, IamClientRepository clientRepo, ClientService clientService,
+  public TaskConfig(TaskProperties taskProperties,
+      OpenidFederationProperties oidFedProperties, 
+      NotificationProperties notificationProperties,
+      AupService aupService,
+      NotificationStoreService notificationStoreService, NotificationDeliveryTask deliveryTask,
+      LifecycleProperties lifecycleProperties, ExpiredAccountsHandler expiredAccountsHandler,
+      AupReminderTask aupReminderTask, ExecutorService taskScheduler,
+      ClientService clientService,
       GarbageCollector garbageCollector) {
 
+    this.taskProperties = taskProperties;
+    this.oidFedProperties = oidFedProperties;
+    this.notificationProperties = notificationProperties;
+    this.aupService = aupService;
     this.notificationStoreService = notificationStoreService;
     this.deliveryTask = deliveryTask;
     this.lifecycleProperties = lifecycleProperties;
     this.expiredAccountsHandler = expiredAccountsHandler;
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
-    this.clientRepo = clientRepo;
     this.clientService = clientService;
     this.garbageCollector = garbageCollector;
   }
@@ -97,61 +99,61 @@ public class TaskConfig implements SchedulingConfigurer {
     LOG.debug("well-known config cache evicted");
   }
 
-  @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
-  public void clearExpiredTokens() {
-
-    garbageCollector.clearExpiredAccessTokens(100);
-    garbageCollector.clearExpiredRefreshTokens(100);
-    garbageCollector.clearOrphanedAuthenticationHolder(100);
-  }
-
-  @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}",
-      initialDelay = TEN_MINUTES_MSEC)
-  public void clearExpiredSites() {
-
-    garbageCollector.clearExpiredApprovedSites(100);
-  }
-
   @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredNotifications() {
 
     notificationStoreService.clearExpiredNotifications();
   }
 
-  @Scheduled(fixedDelayString = "${task.deviceCodeCleanupPeriodMsec}",
-      initialDelay = TEN_MINUTES_MSEC)
-  public void clearExpiredDeviceCodes() {
-
-    garbageCollector.clearExpiredDeviceCodes(100);
+  @Override
+  public void configureTasks(final ScheduledTaskRegistrar taskRegistrar) {
+    taskRegistrar.setScheduler(taskScheduler);
+    schedulePendingNotificationsDelivery(taskRegistrar);
+    scheduledExpiredAccountsTask(taskRegistrar);
+    scheduleGarbageCollectorTasks(taskRegistrar);
+    scheduleExpiredClientsTask(taskRegistrar);
+    scheduleAupRemindersTask(taskRegistrar);
   }
 
-  @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS,
-      initialDelay = ONE_MINUTE_MSEC)
-  public void scheduledAupRemindersTask() {
+  private void scheduleAupRemindersTask(ScheduledTaskRegistrar taskRegistrar) {
 
-    aupReminderTask.sendAupReminders();
-  }
+    Runnable aupRemindersTask = () -> {
+      aupReminderTask.sendAupReminders();
+    };
 
-  @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
-  public void disableExpiredClients() {
-    List<ClientDetailsEntity> clients = clientRepo.findActiveClientsExpiredBefore(new Date());
-    for (ClientDetailsEntity client : clients) {
-      clientService.updateClientStatus(client, false, "expired_client_task");
+    if (aupService.findAup().isEmpty()) {
+      LOG.info("Period AUP reminders delivery task will NOT be scheduled, since "
+          + "an AUP is not defined");
+      return;
     }
+    if (taskProperties.getAupReminder() < 0) {
+      LOG.info("Period AUP reminders delivery task will NOT be scheduled, since "
+          + "task.aupReminders is a negative number: {}", taskProperties.getAupReminder());
+      return;
+    }
+    LOG.info("Scheduling AUP reminders delivery task to run every {} sec",
+        TimeUnit.MILLISECONDS.toSeconds(taskProperties.getAupReminder()));
+
+    taskRegistrar.addFixedRateTask(
+        new FixedRateTask(aupRemindersTask, taskProperties.getAupReminder(), ONE_MINUTE_MSEC));
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {
 
-    if (notificationTaskPeriodMsec < 0) {
+    if (notificationProperties.getDisable()) {
+      LOG.info("Period notification delivery task is disabled");
+      return;
+    }
+    if (notificationProperties.getTaskDelay() < 0) {
       LOG.info("Period notification delivery task will NOT be scheduled, since "
-          + "notificationTaskPeriodMsec is a negative number: {}", notificationTaskPeriodMsec);
+          + "notificationTaskPeriodMsec is a negative number: {}", notificationProperties.getTaskDelay());
       return;
     }
 
     LOG.info("Scheduling pending notification delivery task to run every {} sec",
-        TimeUnit.MILLISECONDS.toSeconds(notificationTaskPeriodMsec));
+        TimeUnit.MILLISECONDS.toSeconds(notificationProperties.getTaskDelay()));
 
-    taskRegistrar.addFixedRateTask(deliveryTask, notificationTaskPeriodMsec);
+    taskRegistrar.addFixedRateTask(deliveryTask, notificationProperties.getTaskDelay());
   }
 
   public void scheduledExpiredAccountsTask(final ScheduledTaskRegistrar taskRegistrar) {
@@ -165,10 +167,71 @@ public class TaskConfig implements SchedulingConfigurer {
     }
   }
 
-  @Override
-  public void configureTasks(final ScheduledTaskRegistrar taskRegistrar) {
-    taskRegistrar.setScheduler(taskScheduler);
-    schedulePendingNotificationsDelivery(taskRegistrar);
-    scheduledExpiredAccountsTask(taskRegistrar);
+  private void scheduleExpiredClientsTask(ScheduledTaskRegistrar taskRegistrar) {
+
+    Runnable expiredClientsTask = () -> {
+      clientService.disableExpiredClients();
+    };
+
+    if (oidFedProperties.isEnabled()) {
+      LOG.info("Scheduling disable expired clients task to run every {} sec",
+          TimeUnit.MILLISECONDS.toSeconds(ONE_DAY_MSEC));
+      taskRegistrar
+        .addFixedRateTask(new FixedRateTask(expiredClientsTask, ONE_DAY_MSEC, TEN_MINUTES_MSEC));
+    }
+  }
+
+  private void scheduleGarbageCollectorTasks(ScheduledTaskRegistrar taskRegistrar) {
+
+    Runnable expiredTokensTask = () -> {
+      garbageCollector.clearExpiredAccessTokens(100);
+      garbageCollector.clearExpiredRefreshTokens(100);
+      garbageCollector.clearOrphanedAuthenticationHolder(100);
+    };
+    Runnable expiredApprovedSitesTask = () -> {
+      garbageCollector.clearExpiredApprovedSites(100);
+    };
+    Runnable expiredDeviceCodesTask = () -> {
+      garbageCollector.clearExpiredDeviceCodes(100);
+    };
+
+    // Expired Tokens Task
+    if (taskProperties.getTokenCleanupPeriodMsec() < 0) {
+      LOG.info(
+          "Period expired token cleanup task will NOT be scheduled, since "
+              + "task.tokenCleanupPeriodMsec is a negative number: {}",
+          taskProperties.getTokenCleanupPeriodMsec());
+    } else {
+      LOG.info("Scheduling expired token cleanup task to run every {} sec",
+          TimeUnit.MILLISECONDS.toSeconds(taskProperties.getTokenCleanupPeriodMsec()));
+      taskRegistrar.addFixedRateTask(new FixedRateTask(expiredTokensTask,
+          taskProperties.getTokenCleanupPeriodMsec(), TEN_MINUTES_MSEC));
+    }
+
+    // Expired Approved Sites Task
+    if (taskProperties.getApprovalCleanupPeriodMsec() < 0) {
+      LOG.info(
+          "Period approved sites cleanup task will NOT be scheduled, since "
+              + "task.approvalCleanupPeriodMsec is a negative number: {}",
+          taskProperties.getTokenCleanupPeriodMsec());
+    } else {
+      LOG.info("Scheduling approved sites cleanup task to run every {} sec",
+          TimeUnit.MILLISECONDS.toSeconds(taskProperties.getApprovalCleanupPeriodMsec()));
+      taskRegistrar.addFixedRateTask(new FixedRateTask(expiredApprovedSitesTask,
+          taskProperties.getApprovalCleanupPeriodMsec(), TEN_MINUTES_MSEC));
+    }
+
+    // Expired Device Codes Task
+    if (taskProperties.getDeviceCodeCleanupPeriodMsec() < 0) {
+      LOG.info(
+          "Period device codes cleanup task will NOT be scheduled, since "
+              + "task.deviceCodeCleanupPeriodMsec is a negative number: {}",
+          taskProperties.getTokenCleanupPeriodMsec());
+    } else {
+      LOG.info("Scheduling device codes cleanup task to run every {} sec",
+          TimeUnit.MILLISECONDS.toSeconds(taskProperties.getDeviceCodeCleanupPeriodMsec()));
+      taskRegistrar.addFixedRateTask(new FixedRateTask(expiredDeviceCodesTask,
+          taskProperties.getDeviceCodeCleanupPeriodMsec(), TEN_MINUTES_MSEC));
+    }
   }
 }

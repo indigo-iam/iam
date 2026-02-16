@@ -19,8 +19,6 @@ import static java.lang.String.format;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
@@ -31,20 +29,25 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
   private final OAuth2TokenEntityService tokenServices;
-  private AUPSignatureCheckService signatureCheckService;
-  private AccountUtils accountUtils;
+  private final AUPSignatureCheckService signatureCheckService;
+  private final AccountUtils accountUtils;
 
   public IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices,
-      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
+      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory,
+      AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils) {
     super(tokenServices, clientDetailsService, requestFactory);
     this.tokenServices = tokenServices;
+    this.signatureCheckService = signatureCheckService;
+    this.accountUtils = accountUtils;
   }
 
   @Override
@@ -67,14 +70,5 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
     return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
   }
-
-  public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
-    this.signatureCheckService = signatureCheckService;
-  }
-
-  public void setAccountUtils(AccountUtils accountUtils) {
-    this.accountUtils = accountUtils;
-  }
-
 }
 

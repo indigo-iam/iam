@@ -25,8 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.authn.error.InvalidAARCHintError;
 import it.infn.mw.iam.authn.saml.DefaultMetadataLookupService;
 import it.infn.mw.iam.authn.saml.model.IdpDescription;
@@ -41,8 +39,6 @@ public class DefaultAARCHintService implements AARCHintService {
 
   private DefaultMetadataLookupService samlProviders;
 
-
-  @Autowired
   public DefaultAARCHintService(@Value("${iam.baseUrl}") String url,
       OidcValidatedProviders oidcProvicers) {
     this.baseUrl = url;
@@ -54,7 +50,7 @@ public class DefaultAARCHintService implements AARCHintService {
       throw new InvalidAARCHintError("null hint");
     }
 
-    if (Strings.isNullOrEmpty(hint.trim())) {
+    if (hint.isBlank()) {
       throw new InvalidAARCHintError("empty hint");
     }
   }

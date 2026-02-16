@@ -21,12 +21,12 @@ import static it.infn.mw.iam.audit.utils.JsonSerializerUtils.serializeStringArra
 import java.io.IOException;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class IamClientSerializer extends JsonSerializer<ClientDetailsEntity> {
 

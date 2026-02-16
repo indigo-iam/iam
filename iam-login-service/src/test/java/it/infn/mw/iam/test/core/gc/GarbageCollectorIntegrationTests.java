@@ -23,16 +23,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.AuthenticationHolderEntityService;
-import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
@@ -41,10 +31,24 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.AuthenticationHolderService;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
+import it.infn.mw.iam.core.oauth.approvedsite.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeCreationException;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -70,7 +74,7 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   private IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
-  private AuthenticationHolderEntityService authenticationHolderService;
+  private AuthenticationHolderService authenticationHolderService;
 
   @Autowired
   private IamAuthenticationHolderRepository authenticationHolderRepository;
@@ -90,10 +94,18 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   @Autowired
   private IamDeviceCodeRepository deviceCodeRepository;
 
+  @Autowired
+  private IamClientRepository clientRepository;
+
+  @Autowired
+  private IamAccountRepository accountRepository;
+
   private AuthorizationCodeEntity createAuthorizationCode() {
+
+    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
     OAuth2Authentication auth = getOAuth2Authentication();
     RandomValueStringGenerator generator = new RandomValueStringGenerator(22);
-    AuthenticationHolderEntity authHolder = authenticationHolderService.create(auth);
+    AuthenticationHolderEntity authHolder = authenticationHolderService.create(client, auth);
     return new AuthorizationCodeEntity(generator.generate(), authHolder, yesterday());
   }
 
@@ -120,9 +132,10 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   @Transactional
   void clearExpiredApprovedSites() {
 
+    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
+    IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
     assertThat(siteRepository.count(), equalTo(0L));
-    approvedSiteService.createApprovedSite(PASSWORD_CLIENT_ID, TEST_USERNAME, yesterday(),
-        Set.of("openid"));
+    approvedSiteService.createApprovedSite(client, account, yesterday(), Set.of("openid"));
     assertThat(siteRepository.count(), equalTo(1L));
     gc.clearExpiredApprovedSites(1);
     assertThat(siteRepository.count(), equalTo(0L));
@@ -172,8 +185,8 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   void clearExpiredDeviceCodes() throws DeviceCodeCreationException {
 
     assertThat(deviceCodeRepository.count(), equalTo(0L));
-    DeviceCode dc = codeService.createNewDeviceCode(Set.of("openid"),
-        loadTestClient(DEVICE_CODE_CLIENT_ID), Map.of());
+    DeviceCode dc =
+        codeService.createNew(Set.of("openid"), loadTestClient(DEVICE_CODE_CLIENT_ID), Map.of());
     dc.setExpiration(yesterday());
     deviceCodeRepository.save(dc);
     assertThat(deviceCodeRepository.count(), equalTo(1L));

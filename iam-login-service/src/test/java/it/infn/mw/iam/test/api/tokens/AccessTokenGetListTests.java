@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.TOKENS_MAX_PAGE_SIZE;
+
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,8 +31,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -44,7 +43,9 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
@@ -264,7 +265,9 @@ public class AccessTokenGetListTests extends TestTokensUtils {
     accessTokens.add(buildAccessToken(client2, TESTUSER2_USERNAME, SCOPES));
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder()
-        .userId(user1.getUsername()).clientId(client1.getClientId()).build();
+      .userId(user1.getUsername())
+      .clientId(client1.getClientId())
+      .build();
 
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
@@ -484,8 +487,11 @@ public class AccessTokenGetListTests extends TestTokensUtils {
         TEST_CLIENT_ID, new Date(), new OffsetPageable(0, 10));
     assertThat(tokens.getTotalElements(), equalTo(1L));
 
-    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0)
-        .userId(TESTUSER_USERNAME).clientId(TEST_CLIENT_ID).build();
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder()
+      .count(0)
+      .userId(TESTUSER_USERNAME)
+      .clientId(TEST_CLIENT_ID)
+      .build();
 
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
@@ -498,18 +504,17 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   void getAccessTokenListWithoutRegistrationTokens() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-    
+
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
-    
+
     List<OAuth2AccessTokenEntity> accessTokens = Lists.newArrayList();
-    
-    OAuth2AccessTokenEntity at = buildAccessToken(client, null,
-      SCOPES_REGISTRATION);
-    
+
+    OAuth2AccessTokenEntity at = buildRegistrationAccessToken(client);
+
     accessTokens.add(at);
-    
+
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
-    
+
     assertThat(tokenRepository.count(), equalTo(1L));
     assertThat(atl.getTotalResults(), equalTo(0L));
     assertThat(atl.getStartIndex(), equalTo(1));
@@ -517,59 +522,57 @@ public class AccessTokenGetListTests extends TestTokensUtils {
     assertThat(atl.getResources().size(), equalTo(0));
 
     accessTokens.add(buildAccessToken(client2, TESTUSER_USERNAME, SCOPES));
-    
+
     atl = getAccessTokenList();
-    
+
     assertThat(tokenRepository.count(), equalTo(2L));
     assertThat(atl.getTotalResults(), equalTo(1L));
-  
+
     Page<OAuth2AccessTokenEntity> tokens =
         tokenRepository.findAllValidAccessTokens(new Date(), new OffsetPageable(0, 10));
-    
+
     tokens.forEach(t -> assertThat(t.getScope(), not(hasItem("registration-token"))));
-    
-    
+
+
   }
 
   @Test
-  void getAccessTokenListWithoutResourceTokens() throws
-    Exception {
-    
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID); 
-    
+  void getAccessTokenListWithoutResourceTokens() throws Exception {
+
+    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+
     ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
-    
+
     List<OAuth2AccessTokenEntity> accessTokens = Lists.newArrayList();
-    
-    OAuth2AccessTokenEntity at = buildAccessToken(client, null,
-    SCOPES_RESOURCE);
+
+    OAuth2AccessTokenEntity at = buildAccessToken(client, null, SCOPES_RESOURCE);
     Set<String> scopes = new HashSet<String>();
     scopes.add("resource-token");
     at.setScope(scopes);
 
     accessTokens.add(at);
-    
+
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
-    
+
     assertThat(tokenRepository.count(), equalTo(1L));
     assertThat(atl.getTotalResults(), equalTo(0L));
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources() .size(), equalTo(0));
-    
+    assertThat(atl.getResources().size(), equalTo(0));
+
     accessTokens.add(buildAccessToken(client2, TESTUSER_USERNAME, SCOPES));
-    
+
     atl = getAccessTokenList();
-   
+
     assertThat(tokenRepository.count(), equalTo(2L));
     assertThat(atl.getTotalResults(), equalTo(1L));
-    
+
     Page<OAuth2AccessTokenEntity> tokens =
-      tokenRepository.findAllValidAccessTokens(new Date(), new OffsetPageable(0, 10));
-  
+        tokenRepository.findAllValidAccessTokens(new Date(), new OffsetPageable(0, 10));
+
     tokens.forEach(t -> assertThat(t.getScope(), not(hasItem("resource-token"))));
 
     clientService.deleteClient(client);
-    
-    }
+
+  }
 }

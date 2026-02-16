@@ -15,26 +15,11 @@
  */
 package it.infn.mw.iam.config.oidc;
 
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.http.client.HttpClient;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
-import org.mitre.openid.connect.client.UserInfoFetcher;
-import org.mitre.openid.connect.client.service.AuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.AuthRequestUrlBuilder;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
-import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.DynamicServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
-import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -42,14 +27,12 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
@@ -58,21 +41,33 @@ import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.AuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
-import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
+import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
+import it.infn.mw.iam.authn.oidc.RegisteredClient;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
-import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.configuration.ClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.NullClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.StaticClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.mapper.OidcAuthoritiesMapper;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.provisioning.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.userinfo.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
-import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.SymmetricKeyJWTValidatorCacheService;
+import it.infn.mw.iam.core.oidc.service.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.oidc.service.IssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
+@Profile("oidc")
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
 public class OidcConfiguration {
 
@@ -80,6 +75,21 @@ public class OidcConfiguration {
   private String iamBaseUrl;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
+
+  @Bean
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
+      @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
+      AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler,
+      ServerConfigurationService serverConfigService,
+      ClientConfigurationService clientConfigService,
+      SymmetricKeyJWTValidatorCacheService symmetricKeyJwtValidatorCacheService,
+      JwkSetCacheService validationServices, IssuerService issuerService,
+      AuthRequestUrlBuilder authRequestUrlBuilder, Environment env) {
+
+    return new OidcClientFilter(oidcAuthenticationManager, serverConfigService, clientConfigService,
+        symmetricKeyJwtValidatorCacheService, validationServices, tokenRequestor, issuerService,
+        authRequestUrlBuilder, env);
+  }
 
   @Bean
   FilterRegistrationBean<OidcClientFilter> disabledAutomaticOidcFilterRegistration(
@@ -90,53 +100,13 @@ public class OidcConfiguration {
     return b;
   }
 
-  @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
-      @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
-      @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
-      @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
-      IssuerService issuerService, ServerConfigurationService serverConfigurationService,
-      ClientConfigurationService clientConfigurationService,
-      AuthRequestUrlBuilder authRequestUrlBuilder,
-      AuthRequestOptionsService authRequestOptionsService, JWKSetCacheService validationServices) {
-
-    OidcClientFilter filter = new OidcClientFilter();
-    filter.setAuthenticationManager(oidcAuthenticationManager);
-    filter.setIssuerService(issuerService);
-    filter.setServerConfigurationService(serverConfigurationService);
-    filter.setClientConfigurationService(clientConfigurationService);
-    filter.setAuthRequestOptionsService(authRequestOptionsService);
-    filter.setAuthRequestUrlBuilder(authRequestUrlBuilder);
-    filter.setAuthenticationSuccessHandler(successHandler);
-    filter.setAuthenticationFailureHandler(failureHandler);
-    filter.setValidationServices(validationServices);
-    filter.setTokenRequestor(tokenRequestor);
-
-    return filter;
-  }
-
   @Bean
-  @Profile("!canl")
-  RestTemplateFactory restTemplateFactory() {
-
-    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory());
-  }
-
-  @Bean
-  @Profile("canl")
-  RestTemplateFactory canlRestTemplateFactory(
-      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf) {
-
-    return new DefaultRestTemplateFactory(rf);
-  }
-
-  @Bean(name = "OIDCExternalAuthenticationFailureHandler")
   AuthenticationFailureHandler failureHandler() {
 
     return new ExternalAuthenticationFailureHandler(new OidcExceptionMessageHelper());
   }
 
-  @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
+  @Bean
   AuthenticationSuccessHandler successHandler(AuthenticationSuccessHandlerHelper helper) {
 
     return new ExternalAuthenticationSuccessHandler("/", helper);
@@ -144,47 +114,28 @@ public class OidcConfiguration {
 
   @Bean(name = "OIDCAuthenticationManager")
   AuthenticationManager authenticationManager(
-      OIDCAuthenticationProvider oidcAuthenticationProvider) {
+      OidcAuthenticationProvider oidcAuthenticationProvider) {
     return new ProviderManager(Arrays.asList(oidcAuthenticationProvider));
   }
 
   @Bean
-  OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
-      SessionTimeoutHelper timeoutHelper,
+  OidcAuthenticationProvider openIdConnectAuthenticationProvider(
+      AuthenticationValidator<OIDCAuthenticationToken> authnValidator,
+      SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
-      IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService) {
+      IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
+      OidcAccountProvisioningService oidcProvisioningService, UserInfoFetcher userInfoFetcher,
+      OidcAuthoritiesMapper authoritiesMapper) {
 
-    OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
-            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService);
-
-    provider.setUserInfoFetcher(userInfoFetcher);
-
-    return provider;
+    return new OidcAuthenticationProvider(authnValidator, sessionTimeoutHelper, accountRepo,
+        inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService,
+        userInfoFetcher, authoritiesMapper);
   }
 
   @Bean
   IssuerService oidcIssuerService() {
 
     return new IamThirdPartyIssuerService();
-  }
-
-  @Bean
-  @Profile("!canl")
-  ServerConfigurationService dynamicServerConfiguration() {
-
-    return new DynamicServerConfigurationService();
-  }
-
-  @Bean
-  @Profile("canl")
-  ServerConfigurationService canlDynamicServerConfiguration(
-      @Qualifier("canlHttpClient") HttpClient client) {
-
-    return new DynamicServerConfigurationService(client);
   }
 
   public boolean configuredProvider(OidcProvider provider) {
@@ -210,17 +161,7 @@ public class OidcConfiguration {
       return new NullClientConfigurationService();
     }
 
-
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
-  }
-
-  @Bean
-  AuthRequestOptionsService authOptions() {
-
-    return new StaticAuthRequestOptionsService();
+    return new StaticClientConfigurationService(clients);
   }
 
   @Bean
@@ -231,11 +172,12 @@ public class OidcConfiguration {
 
   @Bean
   UserInfoFetcher userInfoFetcher() {
-    return new UserInfoFetcher();
+
+    return new UserInfoFetcher(HttpClientBuilder.create().useSystemProperties().build());
   }
 
   @Bean
-  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
-    return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
+  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory) {
+    return new DefaultOidcTokenRequestor(restTemplateFactory);
   }
 }

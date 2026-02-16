@@ -17,9 +17,6 @@ package it.infn.mw.iam.core.oauth.revocation;
 
 import java.text.ParseException;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,7 +28,10 @@ import com.nimbusds.jwt.JWT;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
@@ -65,7 +65,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) {
 
-    return refreshTokenRepo.findByTokenValue(token.getJwt()).isEmpty();
+    return refreshTokenRepo.findByTokenValue(token.getValue()).isEmpty();
   }
 
   @Override

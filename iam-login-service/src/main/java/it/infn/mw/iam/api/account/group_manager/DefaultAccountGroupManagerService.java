@@ -21,10 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.account.authority.AccountAuthorityService;
 import it.infn.mw.iam.api.account.group_manager.error.InvalidManagedGroupError;
@@ -40,13 +37,11 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 public class DefaultAccountGroupManagerService implements AccountGroupManagerService {
 
   public static final String ROLE_GM_TEMPLATE = "ROLE_GM:%s";
-  
+
   final IamAccountRepository accountRepo;
   final IamGroupRepository groupRepo;
   final AccountAuthorityService authorityService;
 
-
-  @Autowired
   public DefaultAccountGroupManagerService(IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, AccountAuthorityService authorityService) {
     this.accountRepo = accountRepo;
@@ -94,10 +89,10 @@ public class DefaultAccountGroupManagerService implements AccountGroupManagerSer
 
     result.managedGroups(iamGroupsToDTO(managedGroups));
 
-    List<IamGroup> unmanagedGroups = null;
+    List<IamGroup> unmanagedGroups = new ArrayList<>();
 
     if (managedGroups.isEmpty()) {
-      unmanagedGroups = Lists.newArrayList(groupRepo.findAll());
+      unmanagedGroups.addAll(groupRepo.findAll());
     } else {
       unmanagedGroups = groupRepo
         .findByUuidNotIn(managedGroups.stream().map(IamGroup::getUuid).collect(Collectors.toSet()));

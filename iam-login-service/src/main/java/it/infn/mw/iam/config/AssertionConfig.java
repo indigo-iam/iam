@@ -18,39 +18,46 @@ package it.infn.mw.iam.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.mitre.jwt.assertion.AssertionValidator;
-import org.mitre.jwt.assertion.impl.NullAssertionValidator;
-import org.mitre.jwt.assertion.impl.WhitelistedIssuerAssertionValidator;
-import org.mitre.oauth2.assertion.AssertionOAuth2RequestFactory;
-import org.mitre.oauth2.assertion.impl.DirectCopyRequestFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.assertion.AssertionOAuth2RequestFactory;
+import it.infn.mw.iam.core.jwt.assertion.AssertionValidator;
+import it.infn.mw.iam.core.jwt.assertion.DirectCopyRequestFactory;
+import it.infn.mw.iam.core.jwt.assertion.SelfAssertionValidator;
+import it.infn.mw.iam.core.jwt.assertion.WhitelistedIssuerAssertionValidator;
 
 @Configuration
 public class AssertionConfig {
 
   @Bean
-  @Qualifier("jwtAssertionValidator")
-  public AssertionValidator jwtAssertionValidator() {
-    return new NullAssertionValidator();
-  }
-
-  @Bean
-  @Qualifier("jwtAssertionTokenFactory")
-  public AssertionOAuth2RequestFactory jwtAssertionTokenFactory() {
+  AssertionOAuth2RequestFactory jwtAssertionTokenFactory() {
     return new DirectCopyRequestFactory();
   }
 
   @Bean
   @Qualifier("clientAssertionValidator")
-  public AssertionValidator clientAssertionValidator() {
+  AssertionValidator clientAssertionValidator(JwkSetCacheService jwkSetCacheService) {
     Map<String, String> whitelist = new LinkedHashMap<>();
     whitelist.put("http://artemesia.local", "http://localhost:8080/jwk");
 
-    WhitelistedIssuerAssertionValidator validator = new WhitelistedIssuerAssertionValidator();
+    WhitelistedIssuerAssertionValidator validator =
+        new WhitelistedIssuerAssertionValidator(jwkSetCacheService);
     validator.setWhitelist(whitelist);
 
     return validator;
+  }
+
+  @Bean
+  @Primary
+  @Qualifier("selfAssertionValidator")
+  AssertionValidator selfAssertionValidator(IamProperties properties,
+      JwtSigningAndValidationService jwtService) {
+
+    return new SelfAssertionValidator(properties, jwtService);
   }
 }

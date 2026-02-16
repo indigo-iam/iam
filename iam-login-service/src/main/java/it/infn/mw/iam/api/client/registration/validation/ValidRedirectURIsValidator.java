@@ -22,11 +22,11 @@ import java.util.Objects;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.oauth.BlacklistedSiteService;
 
 @Component
 @Scope("prototype")

@@ -27,10 +27,6 @@ import java.text.ParseException;
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,7 +45,11 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
@@ -214,7 +214,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
         .param("refresh_token", refreshToken))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error").value("invalid_client"))
-      .andExpect(jsonPath("$.error_description").value("Suspended client '" + clientId + "'"));
+      .andExpect(jsonPath("$.error_description").value("Client " + clientId + " is not active"));
     // @formatter:on
 
     client.setActive(true);

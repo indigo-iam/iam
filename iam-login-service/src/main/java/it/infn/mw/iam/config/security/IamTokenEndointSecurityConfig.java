@@ -20,8 +20,6 @@ import static org.springframework.http.HttpMethod.OPTIONS;
 
 import java.time.Clock;
 
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +30,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
@@ -40,8 +39,10 @@ import org.springframework.security.web.authentication.preauth.AbstractPreAuthen
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import it.infn.mw.iam.authn.jwt.JwtBearerClientAssertionTokenEndpointFilter;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
+import it.infn.mw.iam.core.jwt.ClientKeyCacheService;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
 
 @SuppressWarnings("deprecation")
@@ -56,7 +57,7 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
 
   @Autowired
   @Qualifier("clientUserDetailsService")
-  private ClientUserDetailsService userDetailsService;
+  private UserDetailsService userDetailsService;
 
   @Autowired
   private Clock clock;
@@ -67,15 +68,17 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   @Autowired
   private IamProperties iamProperties;
 
+  @Autowired
+  private IamClientDetailsService clientService;
+
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
-    auth.userDetailsService(userDetailsService)
-      .passwordEncoder(NoOpPasswordEncoder.getInstance());
+    auth.userDetailsService(userDetailsService).passwordEncoder(NoOpPasswordEncoder.getInstance());
   }
 
   @Bean
-  public ClientCredentialsTokenEndpointFilter ccFilter() throws Exception {
+  ClientCredentialsTokenEndpointFilter ccFilter() throws Exception {
     ClientCredentialsTokenEndpointFilter filter =
         new ClientCredentialsTokenEndpointFilter(TOKEN_ENDPOINT);
     filter.setAllowOnlyPost(true);
@@ -84,13 +87,13 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   }
 
   @Bean
-  public JWTBearerClientAssertionTokenEndpointFilter jwtBearerFilter() {
+  JwtBearerClientAssertionTokenEndpointFilter jwtBearerFilter() {
 
-    JWTBearerClientAssertionTokenEndpointFilter filter =
-        new JWTBearerClientAssertionTokenEndpointFilter(new AntPathRequestMatcher(TOKEN_ENDPOINT));
+    JwtBearerClientAssertionTokenEndpointFilter filter =
+        new JwtBearerClientAssertionTokenEndpointFilter(new AntPathRequestMatcher(TOKEN_ENDPOINT));
 
-    IAMJWTBearerAuthenticationProvider authProvider = new IAMJWTBearerAuthenticationProvider(clock,
-        iamProperties, userDetailsService.getClientDetailsService(), validators);
+    IAMJWTBearerAuthenticationProvider authProvider =
+        new IAMJWTBearerAuthenticationProvider(clock, iamProperties, clientService, validators);
 
     filter.setAuthenticationManager(new ProviderManager(singletonList(authProvider)));
 

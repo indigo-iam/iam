@@ -22,12 +22,13 @@ import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.WLCG_VE
 
 import java.util.Optional;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -40,15 +41,17 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, OAuth2Authentication auth,
-      Optional<IamAccount> account) {
+  public Object resolveClaim(String claimName, Authentication auth, Optional<IamAccount> account) {
 
     switch (claimName) {
       case WLCG_VER:
         return WlcgJWTProfile.PROFILE_VERSION;
       case WLCG_GROUPS:
-        return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
-            account.get().getUserInfo().getGroups()) : null;
+        if (account.isPresent() && auth instanceof OAuth2Authentication oAuth2) {
+          return WlcgGroupHelper.resolveGroupNames(oAuth2.getOAuth2Request().getScope(),
+              account.get().getUserInfo().getGroups());
+        }
+        return null;
       case AUTH_TIME:
         return account.isPresent() && account.get().getLastLoginTime() != null
             ? account.get().getLastLoginTime().getTime() / 1000

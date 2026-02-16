@@ -15,12 +15,6 @@
  */
 package it.infn.mw.iam.api.tokens.converter;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,15 +23,21 @@ import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.ClientRef;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.model.UserRef;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Component
 public class TokensConverter {
 
   @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  private IamClientDetailsService clientDetailsService;
 
   @Autowired
   private IamAccountRepository accountRepository;
@@ -49,7 +49,7 @@ public class TokensConverter {
 
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
 
-    ClientRef clientRef = buildClientRef(ah.getClientId());
+    ClientRef clientRef = buildClientRef(ah.getClient().getClientId());
     UserRef userRef = buildUserRef(ah.getUserAuth());
     
     return AccessToken.builder()
@@ -65,7 +65,7 @@ public class TokensConverter {
 
     AuthenticationHolderEntity ah = rt.getAuthenticationHolder();
 
-    ClientRef clientRef = buildClientRef(ah.getClientId());
+    ClientRef clientRef = buildClientRef(ah.getClient().getClientId());
     
     UserRef userRef = buildUserRef(ah.getUserAuth());
 

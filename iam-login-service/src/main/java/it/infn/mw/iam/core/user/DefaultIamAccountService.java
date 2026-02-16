@@ -28,6 +28,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -43,8 +44,16 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,18 +100,20 @@ import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.TokenGenerator;
 
 @Service
+@Primary
 @Transactional
-public class DefaultIamAccountService implements IamAccountService, ApplicationEventPublisherAware {
+public class DefaultIamAccountService
+    implements UserDetailsService, IamAccountService, ApplicationEventPublisherAware {
 
   private final Clock clock;
   private final IamAccountRepository accountRepo;
@@ -800,6 +811,35 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         iamAupSignatureRepo.createSignatureForAccount(aup, account, Date.from(clock.instant()));
     eventPublisher.publishEvent(new AupSignedEvent(this, signature));
     return account;
+  }
+
+  List<GrantedAuthority> convertAuthorities(final IamAccount a) {
+
+    List<GrantedAuthority> authorities = new ArrayList<>();
+    for (IamAuthority auth : a.getAuthorities()) {
+      authorities.add(new SimpleGrantedAuthority(auth.getAuthority()));
+    }
+    return authorities;
+  }
+
+  @Override
+  public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+
+    IamAccount a = findByUsername(username)
+      .orElseThrow(() -> new UsernameNotFoundException("User '" + username + "' not found."));
+
+    if (!a.isActive()) {
+
+      throw new DisabledException("User '" + username + "' is not active.");
+    }
+
+    return new User(a.getUsername(), a.getPassword(), convertAuthorities(a));
+  }
+
+  @Override
+  public Optional<IamAccount> findByEmail(String email) {
+
+    return accountRepo.findByEmail(email);
   }
 
 }

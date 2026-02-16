@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
 import java.net.MalformedURLException;
@@ -31,14 +30,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -49,22 +40,31 @@ import org.springframework.security.oauth2.common.exceptions.InvalidRequestExcep
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
 import it.infn.mw.iam.core.error.InvalidResourceError;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.web.util.AuthenticationTimeStamper;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 
 @SuppressWarnings("deprecation")
-public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
+public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
@@ -86,15 +86,14 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   private final JWTProfileResolver profileResolver;
 
   private final Joiner joiner = Joiner.on(' ');
-  private final ClientDetailsEntityService clientDetailsService;
+  private final ClientDetailsService clientDetailsService;
   private final DeviceCodeService deviceCodeService;
-  private final AuthorizationCodeRepository authzCodeRepository;
+  private final IamAuthorizationCodeRepository authzCodeRepository;
   private final OAuth2TokenEntityService tokenServices;
 
-  public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
-      ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
-      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
-      OAuth2TokenEntityService tokenServices) {
+  public IamOAuth2RequestFactory(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
+      JWTProfileResolver profileResolver, DeviceCodeService deviceCodeService,
+      IamAuthorizationCodeRepository authzCodeRepository, OAuth2TokenEntityService tokenServices) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
@@ -217,16 +216,16 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     switch (grantType) {
 
       case AUTHZ_CODE_GRANT:
-        authzRequestParams = Optional
-          .ofNullable(authzCodeRepository.getByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY)))
-          .map(AuthorizationCodeEntity::getAuthenticationHolder)
-          .map(holder -> holder.getRequestParameters());
+        authzRequestParams =
+            authzCodeRepository.findByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY))
+              .map(AuthorizationCodeEntity::getAuthenticationHolder)
+              .map(holder -> holder.getRequestParameters());
         break;
 
       case DEVICE_CODE_GRANT:
         authzRequestParams = Optional
           .ofNullable(
-              deviceCodeService.findDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client))
+              deviceCodeService.findByDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client))
           .map(DeviceCode::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
         break;
@@ -260,11 +259,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         // Required by RT flow after device
         tokenRequestParameters.put(RESOURCE, arp.get(RESOURCE));
       }
-
     });
-
     return tokenRequestParameters;
-
   }
 
   private void validateAndUpdateAudienceRequest(Map<String, String> params) {
@@ -281,7 +277,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   private String getFirstNotEmptyAudience(Map<String, String> params) {
     return AUD_KEYS.stream()
       .map(params::get)
-      .filter(aud -> !isNullOrEmpty(aud))
+      .filter(aud -> !Strings.isNullOrEmpty(aud))
       .findFirst()
       .orElse(null);
   }

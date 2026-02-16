@@ -19,10 +19,6 @@ import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -45,11 +41,17 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 
 @SuppressWarnings("deprecation")
 @RestController
 public class IamRevocationEndpoint {
+
+  public static final String URL = "/revoke";
 
   public static final Logger LOG = LoggerFactory.getLogger(IamRevocationEndpoint.class);
 
@@ -59,11 +61,11 @@ public class IamRevocationEndpoint {
       "Client %s is not allowed to revoke a not owned token";
 
   private final TokenRevocationService revocationService;
-  private final ClientDetailsEntityService clientService;
+  private final IamClientDetailsService clientService;
   private final IamTokenService tokenService;
 
   public IamRevocationEndpoint(TokenRevocationService revocationService,
-      ClientDetailsEntityService clientService, IamTokenService tokenService) {
+      IamClientDetailsService clientService, IamTokenService tokenService) {
     this.revocationService = revocationService;
     this.clientService = clientService;
     this.tokenService = tokenService;

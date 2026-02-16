@@ -28,9 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Strings;
-import static com.google.common.collect.Lists.newArrayList;
-
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
@@ -142,7 +139,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   }
 
   private void displayNameSanityChecks(String displayName) {
-    if (Strings.isNullOrEmpty(displayName)) {
+    if (displayName == null || displayName.isBlank()) {
       throw new IllegalArgumentException("Group displayName cannot be empty");
     }
 
@@ -282,7 +279,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
     Page<IamAccount> accounts = accountService.findGroupMembers(iamGroup, pr);
 
-    List<ScimMemberRef> resources = newArrayList();
+    List<ScimMemberRef> resources = new ArrayList<>();
 
     for (IamAccount a : accounts.getContent()) {
       resources.add(ScimMemberRef.builder()
@@ -305,7 +302,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
     Page<IamGroup> subgroups = groupService.findSubgroups(iamGroup, pr);
 
-    List<ScimMemberRef> resources = newArrayList();
+    List<ScimMemberRef> resources = new ArrayList<>();
     for (IamGroup g : subgroups.getContent()) {
       resources.add(ScimMemberRef.builder()
         .value(g.getUuid())

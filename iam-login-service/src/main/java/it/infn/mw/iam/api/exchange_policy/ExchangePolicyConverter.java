@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.api.exchange_policy;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -98,7 +98,7 @@ public class ExchangePolicyConverter
 
     dto.setDestinationClient(destination);
 
-    List<ExchangeScopePolicyDTO> scopePolicies = newArrayList();
+    List<ExchangeScopePolicyDTO> scopePolicies = new ArrayList<>();
 
     for (IamTokenExchangeScopePolicy p : entity.getScopePolicies()) {
       scopePolicies.add(dtoFromScopePolicy(p));

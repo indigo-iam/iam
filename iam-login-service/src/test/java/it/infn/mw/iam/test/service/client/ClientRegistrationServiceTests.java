@@ -49,9 +49,6 @@ import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,7 +62,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 
 import com.mercateo.test.clock.TestClock;
 
@@ -81,17 +78,21 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.core.oauth.BlacklistedSiteService;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
+import it.infn.mw.iam.test.util.JvmProfilesSupport;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @SuppressWarnings("deprecation")
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
     webEnvironment = WebEnvironment.NONE)
-@ActiveProfiles({"h2", "wlcg-scopes"})
+//@ContextConfiguration(initializers = JvmProfilesSupport.WlcgScopesProfileInitializer.class)
 class ClientRegistrationServiceTests {
 
   @Autowired

@@ -217,6 +217,7 @@ notification:
     resetPassword: Reset your ${iam.organisation.name} account password
 
 task:
+  aupReminder: ${IAM_AUP_REMINDER_PERIOD_MSEC:14400}
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}

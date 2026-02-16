@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.client.search.service;
 
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -34,11 +33,13 @@ import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.error.NoAuthenticatedUserError;
 import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+
 
 @Service
 @Validated

@@ -23,12 +23,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Strings;
 import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
@@ -38,6 +34,9 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 @Component
 public class ClientConverter {
@@ -190,9 +189,9 @@ public class ClientConverter {
 
     client.setClientUri(dto.getClientUri());
 
-    if (!Strings.isNullOrEmpty(dto.getJwksUri())) {
+    if (dto.getJwksUri() != null && !dto.getJwksUri().isBlank()) {
       client.setJwksUri(dto.getJwksUri());
-    } else if (!Strings.isNullOrEmpty(dto.getJwk())) {
+    } else if (dto.getJwk() != null && !dto.getJwk().isBlank()) {
       client.setJwks(JWKSet.parse(dto.getJwk()));
     }
 

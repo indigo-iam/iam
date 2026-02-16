@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Component

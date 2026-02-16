@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.test.util.oauth;
 
+import java.util.HashSet;
 import java.util.Map;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +34,7 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 
 @SuppressWarnings("deprecation")
@@ -52,7 +53,8 @@ public class WithMockOAuth2SecurityContextFactory
     SavedUserAuthentication userAuth = new SavedUserAuthentication();
 
     userAuth.setAuthenticated(true);
-    userAuth.setAuthorities(AuthorityUtils.createAuthorityList(annotation.authorities()));
+    userAuth
+      .setAuthorities(new HashSet<>(AuthorityUtils.createAuthorityList(annotation.authorities())));
     userAuth.setName(annotation.user());
     Map<String, String> additionalInfo = Maps.newHashMap();
 

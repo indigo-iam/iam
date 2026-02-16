@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.util.test.saml;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_FIRST_NAME;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_PERSON_ID;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.EPPN;
@@ -29,8 +28,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 import org.springframework.security.saml.SAMLCredential;
-
-import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
@@ -53,7 +50,7 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
 
   public SamlSecurityContextBuilder notNullOrEmptySamlAttribute(Saml2Attribute attribute,
       String attributeValue) {
-    if (!isNullOrEmpty(attributeValue)) {
+    if (attributeValue != null && !attributeValue.isBlank()) {
       samlAttribute(attribute, attributeValue);
     }
     return this;
@@ -79,7 +76,7 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
   @Override
   public SecurityContextBuilderSupport name(String givenName, String familyName) {
 
-    if (!Strings.isNullOrEmpty(givenName) && !Strings.isNullOrEmpty(familyName)) {
+    if (givenName != null && !givenName.isBlank() && familyName != null && !familyName.isBlank()) {
       when(samlCredential.getAttributeAsString(GIVEN_NAME.getAttributeName()))
         .thenReturn(givenName);
       when(samlCredential.getAttributeAsString(SN.getAttributeName())).thenReturn(familyName);
@@ -90,9 +87,8 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
   @Override
   public SecurityContextBuilderSupport username(String username) {
 
-    if (!Strings.isNullOrEmpty(username)) {
-      when(samlCredential.getAttributeAsString(EPPN.getAttributeName()))
-        .thenReturn(username);
+    if (username != null && !username.isBlank()) {
+      when(samlCredential.getAttributeAsString(EPPN.getAttributeName())).thenReturn(username);
     }
     return this;
   }

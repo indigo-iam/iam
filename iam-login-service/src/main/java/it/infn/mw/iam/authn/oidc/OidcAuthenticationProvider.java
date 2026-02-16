@@ -29,33 +29,38 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.mitre.openid.connect.model.PendingOIDCAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
-import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.mapper.OidcAuthoritiesMapper;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.model.PendingOIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.provisioning.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.userinfo.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
+public class OidcAuthenticationProvider implements AuthenticationProvider {
 
   public static final Logger LOG = LoggerFactory.getLogger(OidcAuthenticationProvider.class);
 
@@ -68,13 +73,16 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
   private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamOidcJITAccountProvisioningProperties jitProperties;
   private final OidcAccountProvisioningService oidcProvisioningService;
+  private final UserInfoFetcher userInfoFetcher;
+  private final OidcAuthoritiesMapper authoritiesMapper;
 
   public OidcAuthenticationProvider(
       AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService) {
+      OidcAccountProvisioningService oidcProvisioningService, UserInfoFetcher userInfoFetcher,
+      OidcAuthoritiesMapper authoritiesMapper) {
 
     this.tokenValidatorService = tokenValidatorService;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
@@ -83,30 +91,53 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     this.totpMfaRepository = totpMfaRepository;
     this.jitProperties = jitProperties;
     this.oidcProvisioningService = oidcProvisioningService;
+    this.userInfoFetcher = userInfoFetcher;
+    this.authoritiesMapper = authoritiesMapper;
   }
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    OIDCAuthenticationToken token = (OIDCAuthenticationToken) super.authenticate(authentication);
-
-    if (token == null) {
+    if (!supports(authentication.getClass())) {
       return null;
     }
 
-    tokenValidatorService.validateAuthentication(token);
+    if (authentication instanceof PendingOIDCAuthenticationToken pendingToken) {
 
-    Optional<IamAccount> account = accountRepo.findByOidcId(token.getIssuer(), token.getSub());
-    if (account.isEmpty()) {
-      if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
-        IamAccount newAccount = oidcProvisioningService.provisionAccount(token);
-        return registeredOidcAuthentication(newAccount, token);
-      } else {
+      JWT idToken = pendingToken.getIdToken();
+      IamUserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken);
+
+      if (userInfo != null) {
+
+        if (!Strings.isNullOrEmpty(userInfo.getSub())
+            && !userInfo.getSub().equals(pendingToken.getSub())) {
+
+          throw new UsernameNotFoundException(
+              "user_id mismatch between id_token and user_info call: " + pendingToken.getSub()
+                  + " / " + userInfo.getSub());
+        }
+      }
+
+      OIDCAuthenticationToken token =
+          new OIDCAuthenticationToken(pendingToken.getSub(), pendingToken.getIssuer(), userInfo,
+              authoritiesMapper.mapAuthorities(idToken, userInfo), pendingToken.getIdToken(),
+              pendingToken.getAccessTokenValue(), pendingToken.getRefreshTokenValue());
+
+      tokenValidatorService.validateAuthentication(token);
+
+      Optional<IamAccount> account = accountRepo.findByOidcId(token.getIssuer(), token.getSub());
+      if (account.isEmpty()) {
+        if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
+          IamAccount newAccount = oidcProvisioningService.provisionAccount(token);
+          return registeredOidcAuthentication(newAccount, token);
+        }
         return unregisteredOidcAuthentication(token);
       }
+      inactiveAccountHandler.handleInactiveAccount(account.get());
+      return registeredOidcAuthentication(account.get(), token);
     }
-    inactiveAccountHandler.handleInactiveAccount(account.get());
-    return registeredOidcAuthentication(account.get(), token);
+
+    return null;
   }
 
   private Authentication registeredOidcAuthentication(IamAccount account,

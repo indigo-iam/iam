@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -65,20 +60,6 @@ public class ScimUserController extends ScimControllerSupport {
   FilterProvider excludePasswordFilter = new SimpleFilterProvider().addFilter("passwordFilter",
       SimpleBeanPropertyFilter.serializeAllExcept("password"));
 
-  private Set<String> parseAttributes(final String attributesParameter) {
-
-    Set<String> result = new HashSet<>();
-    if (!Strings.isNullOrEmpty(attributesParameter)) {
-      result = Sets.newHashSet(Splitter.on(CharMatcher.anyOf(".,"))
-        .trimResults()
-        .omitEmptyStrings()
-        .split(attributesParameter));
-    }
-    result.add("schemas");
-    result.add("id");
-    return result;
-  }
-
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
@@ -86,14 +67,12 @@ public class ScimUserController extends ScimControllerSupport {
       @RequestParam(required = false) final String attributes,
       @RequestParam(required = false) final String filter) {
 
-
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
 
     ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filter);
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
-
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);

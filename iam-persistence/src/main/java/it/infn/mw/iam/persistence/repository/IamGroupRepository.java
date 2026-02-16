@@ -21,13 +21,13 @@ import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
 import it.infn.mw.iam.persistence.model.IamGroup;
 
-public interface IamGroupRepository extends PagingAndSortingRepository<IamGroup, Long> {
+public interface IamGroupRepository extends JpaRepository<IamGroup, Long> {
 
   Optional<IamGroup> findByUuid(@Param("uuid") String uuid);
 

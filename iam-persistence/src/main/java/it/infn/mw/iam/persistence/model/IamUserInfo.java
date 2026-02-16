@@ -52,13 +52,13 @@ public class IamUserInfo implements Serializable {
   @OneToOne(mappedBy = "userInfo")
   private IamAccount iamAccount;
 
-  @Column(name="givenname", nullable = false, length = 64)
+  @Column(name = "givenname", nullable = false, length = 64)
   private String givenName;
 
-  @Column(name="familyname", nullable = false, length = 64)
+  @Column(name = "familyname", nullable = false, length = 64)
   private String familyName;
 
-  @Column(name="middlename", length = 64)
+  @Column(name = "middlename", length = 64)
   private String middleName;
 
   private String nickname;
@@ -72,21 +72,21 @@ public class IamUserInfo implements Serializable {
   @Column(nullable = false, length = 128)
   private String email;
 
-  @Column(name="emailverified")
+  @Column(name = "emailverified")
   private Boolean emailVerified;
 
   private String gender;
   private String zoneinfo;
   private String locale;
-  
-  @Column(name="phonenumber")
+
+  @Column(name = "phonenumber")
   private String phoneNumber;
 
-  @Column(name="phonenumberverified")
+  @Column(name = "phonenumberverified")
   private Boolean phoneNumberVerified;
-  
-  @OneToOne(optional=true, cascade=CascadeType.ALL)
-  @JoinColumn(name="address_id")
+
+  @OneToOne(optional = true, cascade = CascadeType.ALL)
+  @JoinColumn(name = "address_id")
   private IamAddress address;
 
   private String birthdate;
@@ -399,22 +399,17 @@ public class IamUserInfo implements Serializable {
       }
 
       return obj;
-    } else {
-      return src;
     }
-
+    return src;
   }
-  
-  
+
   public String getName() {
 
     return getFormatted(this.givenName, this.middleName, this.familyName);
   }
-  
+
   public void setName(String name) {
-
     // NO-OP
-
   }
 
   public String getAffiliation() {
@@ -432,4 +427,49 @@ public class IamUserInfo implements Serializable {
         + "]";
   }
 
+
+  public static IamUserInfo fromJson(JsonObject obj) {
+
+    IamUserInfo ui = new IamUserInfo();
+    ui.setSrc(obj);
+    ui.setSub(nullSafeGetString(obj, "sub"));
+    ui.setName(nullSafeGetString(obj, "name"));
+    ui.setPreferredUsername(nullSafeGetString(obj, "preferred_username"));
+    ui.setGivenName(nullSafeGetString(obj, "given_name"));
+    ui.setFamilyName(nullSafeGetString(obj, "family_name"));
+    ui.setMiddleName(nullSafeGetString(obj, "middle_name"));
+    ui.setNickname(nullSafeGetString(obj, "nickname"));
+    ui.setProfile(nullSafeGetString(obj, "profile"));
+    ui.setPicture(nullSafeGetString(obj, "picture"));
+    ui.setWebsite(nullSafeGetString(obj, "website"));
+    ui.setGender(nullSafeGetString(obj, "gender"));
+    ui.setZoneinfo(nullSafeGetString(obj, "zoneinfo"));
+    ui.setLocale(nullSafeGetString(obj, "locale"));
+    ui.setUpdatedTime(nullSafeGetString(obj, "updated_at"));
+    ui.setBirthdate(nullSafeGetString(obj, "birthdate"));
+    ui.setEmail(nullSafeGetString(obj, "email"));
+    ui.setEmailVerified(obj.has("email_verified") && obj.get("email_verified").isJsonPrimitive()
+        ? obj.get("email_verified").getAsBoolean()
+        : null);
+    ui.setPhoneNumber(nullSafeGetString(obj, "phone_number"));
+    ui.setPhoneNumberVerified(
+        obj.has("phone_number_verified") && obj.get("phone_number_verified").isJsonPrimitive()
+            ? obj.get("phone_number_verified").getAsBoolean()
+            : null);
+    if (obj.has("address") && obj.get("address").isJsonObject()) {
+      JsonObject addr = obj.get("address").getAsJsonObject();
+      ui.setAddress(new IamAddress());
+      ui.getAddress().setFormatted(nullSafeGetString(addr, "formatted"));
+      ui.getAddress().setStreetAddress(nullSafeGetString(addr, "street_address"));
+      ui.getAddress().setLocality(nullSafeGetString(addr, "locality"));
+      ui.getAddress().setRegion(nullSafeGetString(addr, "region"));
+      ui.getAddress().setPostalCode(nullSafeGetString(addr, "postal_code"));
+      ui.getAddress().setCountry(nullSafeGetString(addr, "country"));
+    }
+    return ui;
+  }
+
+  private static String nullSafeGetString(JsonObject obj, String field) {
+    return obj.has(field) && obj.get(field).isJsonPrimitive() ? obj.get(field).getAsString() : null;
+}
 }

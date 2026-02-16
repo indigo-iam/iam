@@ -15,29 +15,25 @@
  */
 package it.infn.mw.iam.authn.common.config;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import javax.validation.constraints.NotBlank;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 public class ValidatorProperties {
 
   @NotBlank
   private String kind;
 
-  private Map<String, String> params = Maps.newHashMap();
+  private Map<String, String> params = new HashMap<>();
 
-  private List<ValidatorProperties> childrens = Lists.newArrayList();
+  private List<ValidatorProperties> childrens = new ArrayList<>();
 
   public String getKind() {
     return kind;
@@ -68,8 +64,11 @@ public class ValidatorProperties {
   }
 
   public String getRequiredNonEmptyParam(String paramName) {
-    checkArgument(nonNull(getParams()), "params required");
-    checkArgument(!isNullOrEmpty(getParams().get(paramName)), format("%s param required", paramName));
+
+    Objects.requireNonNull(getParams(), "params required");
+    if (getParams().get(paramName) == null || getParams().get(paramName).isBlank()) {
+      throw new IllegalArgumentException(format("%s param required", paramName));
+    }
     return getParams().get(paramName);
   }
 

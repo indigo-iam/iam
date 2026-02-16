@@ -15,12 +15,8 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import org.mitre.discovery.util.WebfingerURLNormalizer;
-import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.UserInfoService;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonEntityView;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,13 +24,17 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.base.Strings;
+
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.web.view.HttpCodeView;
+import it.infn.mw.iam.core.web.view.JsonEntityView;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @Controller
 public class IamDiscoveryEndpoint {
@@ -45,44 +45,41 @@ public class IamDiscoveryEndpoint {
   public static final String OPENID_CONFIGURATION_URL = WELL_KNOWN_URL + "/openid-configuration";
   private static final String WEBFINGER_URL = WELL_KNOWN_URL + "/webfinger";
 
-  private final ConfigurationPropertiesBean config;
-  private final UserInfoService userService;
+  private final IamProperties config;
+  private final IamAccountService accountService;
   private final WellKnownInfoProvider wellKnownInfoProvider;
 
-  public IamDiscoveryEndpoint(ConfigurationPropertiesBean config, UserInfoService userService,
+  public IamDiscoveryEndpoint(IamProperties config, IamAccountService accountService,
       WellKnownInfoProvider wellKnownInfoProvider) {
     this.config = config;
-    this.userService = userService;
+    this.accountService = accountService;
     this.wellKnownInfoProvider = wellKnownInfoProvider;
   }
 
   @GetMapping(value = {"/" + WEBFINGER_URL}, produces = MediaType.APPLICATION_JSON_VALUE)
-  public String webfinger(@RequestParam("resource") String resource,
-      @RequestParam(value = "rel", required = false) String rel, Model model) {
+  public String webfinger(@RequestParam String resource, @RequestParam(required = false) String rel,
+      Model model) {
 
     if (!Strings.isNullOrEmpty(rel) && !"http://openid.net/specs/connect/1.0/issuer".equals(rel)) {
       LOG.warn("Responding to webfinger request for non-OIDC relation: {}", rel);
     }
 
     if (!resource.equals(config.getIssuer())) {
-      // it's not the issuer directly, need to check other methods
 
       UriComponents resourceUri = WebfingerURLNormalizer.normalizeResource(resource);
+
       if (resourceUri != null && resourceUri.getScheme() != null
           && "acct".equals(resourceUri.getScheme())) {
-        // acct: URI (email address format)
 
-        // check on email addresses first
-        UserInfo user =
-            userService.getByEmailAddress(resourceUri.getUserInfo() + "@" + resourceUri.getHost());
+        Optional<IamAccount> user =
+            accountService.findByEmail(resourceUri.getUserInfo() + "@" + resourceUri.getHost());
 
-        if (user == null) {
-          // user wasn't found, see if the local part of the username matches, plus our issuer iamHost
+        if (user.isEmpty()) {
 
-          user = userService.getByUsername(resourceUri.getUserInfo()); // first part is the username
+          user = accountService.findByUsername(resourceUri.getUserInfo());
 
-          if (user != null) {
-            // username matched, check the iamHost component
+          if (user.isPresent()) {
+
             UriComponents issuerComponents =
                 UriComponentsBuilder.fromHttpUrl(config.getIssuer()).build();
             if (!Strings.nullToEmpty(issuerComponents.getHost())
@@ -114,7 +111,7 @@ public class IamDiscoveryEndpoint {
     return "webfingerView";
   }
 
-  @RequestMapping(value = {"/" + OPENID_CONFIGURATION_URL}, method = RequestMethod.GET)
+  @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL})
   public String providerConfiguration(Model model) {
     model.addAttribute(JsonEntityView.ENTITY, wellKnownInfoProvider.getWellKnownInfo());
     return JsonEntityView.VIEWNAME;

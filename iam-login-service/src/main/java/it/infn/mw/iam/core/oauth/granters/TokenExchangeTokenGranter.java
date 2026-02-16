@@ -25,28 +25,27 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -66,16 +65,11 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   private AUPSignatureCheckService signatureCheckService;
   private TokenExchangePdp exchangePdp;
 
-
-  @Autowired
   public TokenExchangeTokenGranter(final OAuth2TokenEntityService tokenServices,
-      final ClientDetailsEntityService clientDetailsService,
-      final OAuth2RequestFactory requestFactory) {
+      final ClientDetailsService clientDetailsService, final OAuth2RequestFactory requestFactory) {
     super(tokenServices, clientDetailsService, requestFactory, TOKEN_EXCHANGE_GRANT_TYPE);
     this.tokenServices = tokenServices;
   }
-
-
 
   protected void validateExchange(final ClientDetails actorClient, final TokenRequest tokenRequest,
       OAuth2AccessTokenEntity subjectToken) {

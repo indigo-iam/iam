@@ -22,8 +22,6 @@ import static org.mockito.Mockito.doReturn;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,13 +36,15 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
@@ -72,7 +72,7 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   ClientService clientService;
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  IamClientDetailsService clientDetailsService;
 
   @Autowired
   AccountUtils accountUtils;

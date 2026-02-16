@@ -22,18 +22,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class AarcClaimValueHelper extends IamClaimValueHelper {
@@ -78,7 +79,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+  public Object resolveClaim(String claimName, Authentication auth,
       Optional<IamAccount> account) {
 
     final String SCOPED_FORMAT = "%s@%s";
@@ -98,21 +99,23 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
               properties.getOrganisation().getName());
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
-          Optional<SavedUserAuthentication> userAuth =
-              AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
-          if (userAuth.isPresent()) {
-            Set<String> scopedAffiliations = new HashSet<>();
-            if (account.get().getUserInfo().getAffiliation() != null) {
-              scopedAffiliations
-                .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
-                    properties.getOrganisation().getName()));
+          if (auth instanceof OAuth2Authentication oAuth2) {
+            Optional<SavedUserAuthentication> userAuth =
+                AuthenticationUtils.getExternalAuthenticationInfo(oAuth2.getUserAuthentication());
+            if (userAuth.isPresent()) {
+              Set<String> scopedAffiliations = new HashSet<>();
+              if (account.get().getUserInfo().getAffiliation() != null) {
+                scopedAffiliations
+                  .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
+                      properties.getOrganisation().getName()));
+              }
+              String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
+                  Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+              if (externalScopedAffiliation != null) {
+                scopedAffiliations.add(externalScopedAffiliation);
+              }
+              return scopedAffiliations;
             }
-            String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
-                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
-            if (externalScopedAffiliation != null) {
-              scopedAffiliations.add(externalScopedAffiliation);
-            }
-            return scopedAffiliations;
           }
           return null;
         default:

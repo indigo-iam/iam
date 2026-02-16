@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -35,6 +34,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
@@ -60,7 +60,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   @Test
   void testAsymmetricJwtAuth() throws Exception {
 
-    JWTSigningAndValidationService signer = loadSignerService();
+    JwtSigningAndValidationService signer = loadSignerService();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(CLIENT_ID_PRIVATE_KEY_JWT)
       .issuer(CLIENT_ID_PRIVATE_KEY_JWT)
       .expirationTime(Date.from(Instant.now().plusSeconds(600)))

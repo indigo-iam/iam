@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.exchange_policy;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -24,7 +25,6 @@ import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 import it.infn.mw.iam.persistence.model.PolicyRule;
@@ -55,8 +55,8 @@ public class ExchangePolicyDTO {
   private ClientMatchingPolicyDTO destinationClient;
 
   @Valid
-  private List<ExchangeScopePolicyDTO> scopePolicies = Lists.newArrayList();
-  
+  private List<ExchangeScopePolicyDTO> scopePolicies = new ArrayList<>();
+
   public ExchangePolicyDTO() {
     // empty on purpose
   }

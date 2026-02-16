@@ -599,6 +599,18 @@ public class IamProperties {
     }
   }
 
+  public static class GarbageCollectorProperties {
+    private boolean enabled = true;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+  }
+
   public static class DefaultGroup {
     private String name;
     private String enrollment = "INSERT";
@@ -726,6 +738,10 @@ public class IamProperties {
   private ClientProperties client = new ClientProperties();
 
   private AarcProfile aarcProfile = new AarcProfile();
+
+  private List<String> languageNamespaces = Lists.newArrayList("messages");
+
+  private GarbageCollectorProperties garbageCollector = new GarbageCollectorProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -975,6 +991,11 @@ public class IamProperties {
 
   public void setAarcProfile(AarcProfile aarcProfile) {
     this.aarcProfile = aarcProfile;
+  }
+
+  public List<String> getLanguageNamespaces() {
+
+    return languageNamespaces;
   }
 
 }

@@ -15,12 +15,10 @@
  */
 package it.infn.mw.iam.authn.common.config;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.saml.validator.check.SamlHasAttributeCheck.hasAttribute;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -98,8 +96,10 @@ public class DefaultValidatorConfigParser implements ValidatorConfigParser {
   @Override
   public ValidatorCheck<?> parseValidatorProperties(ValidatorProperties p) {
     try {
-      checkNotNull(p, "p must be non-null");
-      checkArgument(!isNullOrEmpty(p.getKind()), "kind must be non-null and not empty");
+      Objects.requireNonNull(p, "p must be non-null");
+      if (p.getKind() == null || p.getKind().isEmpty()) {
+        throw new IllegalArgumentException("kind must be non-null and not empty");
+      }
 
       if (!KIND.contains(p.getKind())) {
         throw new ValidatorConfigError("Unsupported validator kind: " + p.getKind());

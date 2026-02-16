@@ -17,12 +17,11 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_AUTHZ_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.AUTHZ_CODE_URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.STATE_PARAMETER_KEY;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_AUTHZ_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUTHZ_CODE_URL;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.STATE_PARAMETER_KEY;
+
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -31,10 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonErrorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -52,7 +47,11 @@ import org.springframework.web.bind.support.SessionStatus;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.web.view.HttpCodeView;
+import it.infn.mw.iam.core.web.view.JsonErrorView;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -70,8 +69,9 @@ public class IamOAuthConfirmationController {
 
   private IamUserApprovalUtils userApprovalUtils;
 
-  public IamOAuthConfirmationController(IamClientRepository clientRepository, SystemScopeService scopeService,
-      RedirectResolver redirectResolver, IamUserApprovalUtils userApprovalUtils) {
+  public IamOAuthConfirmationController(IamClientRepository clientRepository,
+      SystemScopeService scopeService, RedirectResolver redirectResolver,
+      IamUserApprovalUtils userApprovalUtils) {
 
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
@@ -85,8 +85,9 @@ public class IamOAuthConfirmationController {
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {
 
-    String prompt = (String) authRequest.getExtensions().get(PROMPT);
-    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
+    String prompt = (String) authRequest.getExtensions().get(IamOAuth2ParameterNames.PROMPT);
+    List<String> prompts = Splitter.on(IamOAuth2ParameterNames.PROMPT_SEPARATOR)
+      .splitToList(Strings.nullToEmpty(prompt));
 
     String clientId = authRequest.getClientId();
     if (clientId == null || clientId.isBlank()) {
@@ -153,10 +154,9 @@ public class IamOAuthConfirmationController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
 
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
-    
+
     if (authRequest.getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources",
-          splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
+      model.put("resources", splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
     }
 
   }

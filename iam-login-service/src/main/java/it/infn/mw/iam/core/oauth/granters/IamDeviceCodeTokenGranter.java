@@ -18,10 +18,6 @@ package it.infn.mw.iam.core.oauth.granters;
 import java.util.Collection;
 import java.util.Date;
 
-import org.mitre.oauth2.exception.AuthorizationPendingException;
-import org.mitre.oauth2.exception.DeviceCodeExpiredException;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -31,6 +27,11 @@ import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeExpiredException;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exceptions.AuthorizationPendingException;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 
 @SuppressWarnings("deprecation")
 public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
@@ -56,7 +57,7 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
     String deviceCode = tokenRequest.getRequestParameters().get("device_code");
 
     // look up the device code and consume it
-    DeviceCode dc = deviceCodeService.findDeviceCode(deviceCode, client);
+    DeviceCode dc = deviceCodeService.findByDeviceCode(deviceCode, client);
 
     if (dc == null) {
       throw new InvalidGrantException("Invalid device code: " + deviceCode);

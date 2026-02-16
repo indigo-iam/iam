@@ -28,8 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
@@ -37,10 +36,12 @@ import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class IamClaimValueHelper extends BaseClaimValueHelper {
@@ -59,8 +60,7 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, OAuth2Authentication auth,
-      Optional<IamAccount> account) {
+  public Object resolveClaim(String claimName, Authentication auth, Optional<IamAccount> account) {
 
     switch (claimName) {
       case ORGANISATION_NAME:
@@ -80,10 +80,12 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
             ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
             : null;
       case EXTERNAL_AUTHN:
-        Optional<SavedUserAuthentication> userAuth =
-            AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
-        if (userAuth.isPresent()) {
-          return userAuth.get().getAdditionalInfo();
+        if (auth instanceof OAuth2Authentication oauth2) {
+          Optional<SavedUserAuthentication> userAuth =
+            AuthenticationUtils.getExternalAuthenticationInfo(oauth2.getUserAuthentication());
+          if (userAuth.isPresent()) {
+            return userAuth.get().getAdditionalInfo();
+          }
         }
         return null;
       default:

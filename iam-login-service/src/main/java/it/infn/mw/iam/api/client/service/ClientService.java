@@ -17,10 +17,10 @@ package it.infn.mw.iam.api.client.service;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 
@@ -50,4 +50,6 @@ public interface ClientService {
   void deleteClient(ClientDetailsEntity client);
 
   void useClient(ClientDetailsEntity client);
+
+  void disableExpiredClients();
 }

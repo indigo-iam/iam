@@ -15,10 +15,13 @@
  */
 package it.infn.mw.iam.api.client.service;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public interface ClientDefaultsService {
 
   ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client);
+
+  ClientDetailsEntity setupProtectedResourceDefaults(ClientDetailsEntity client);
+
   String generateClientSecret();
 }

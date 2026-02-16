@@ -21,10 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.mitre.oauth2.model.RegisteredClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -35,7 +33,6 @@ import org.springframework.web.client.RestOperations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
 
 public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
@@ -45,12 +42,9 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
   public static final String REDIRECT_URI_SESSION_VARIABLE = "redirect_uri";
 
   final RestTemplateFactory restTemplateFactory;
-  final ObjectMapper jacksonObjectMapper;
 
-  @Autowired
-  public DefaultOidcTokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
+  public DefaultOidcTokenRequestor(RestTemplateFactory restTemplateFactory) {
     this.restTemplateFactory = restTemplateFactory;
-    this.jacksonObjectMapper = mapper;
   }
 
   private void basicAuthRequest(RegisteredClient clientConfig, HttpHeaders headers) {
@@ -86,19 +80,19 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     HttpHeaders headers = new HttpHeaders();
 
-    switch (config.clientConfig.getTokenEndpointAuthMethod()) {
+    switch (config.getClientConfig().getTokenEndpointAuthMethod()) {
 
       case SECRET_BASIC:
-        basicAuthRequest(config.clientConfig, headers);
+        basicAuthRequest(config.getClientConfig(), headers);
         break;
       case SECRET_JWT:
-        jwtAuthRequest(config.clientConfig);
+        jwtAuthRequest(config.getClientConfig());
         break;
       case PRIVATE_KEY:
-        jwtPrivateKeyAuthRequest(config.clientConfig);
+        jwtPrivateKeyAuthRequest(config.getClientConfig());
         break;
       case SECRET_POST:
-        formAuthRequest(config.clientConfig, tokenRequestParams);
+        formAuthRequest(config.getClientConfig(), tokenRequestParams);
         break;
       case NONE:
         break;
@@ -108,14 +102,13 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
             "Unsupported token endpoint authentication method");
     }
 
-    return
-        new HttpEntity<>(tokenRequestParams, headers);
+    return new HttpEntity<>(tokenRequestParams, headers);
 
   }
 
   Optional<TokenEndpointErrorResponse> parseErrorResponse(HttpClientErrorException e) {
     try {
-      TokenEndpointErrorResponse response = jacksonObjectMapper
+      TokenEndpointErrorResponse response = (new ObjectMapper())
         .readValue(e.getResponseBodyAsByteArray(), TokenEndpointErrorResponse.class);
 
       return Optional.of(response);
@@ -136,7 +129,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     try {
 
-      return restTemplate.postForObject(conf.serverConfig.getTokenEndpointUri(),
+      return restTemplate.postForObject(conf.getServerConfig().getTokenEndpointUri(),
           prepareTokenRequest(conf, tokenRequestParams), String.class);
 
     } catch (HttpClientErrorException e) {

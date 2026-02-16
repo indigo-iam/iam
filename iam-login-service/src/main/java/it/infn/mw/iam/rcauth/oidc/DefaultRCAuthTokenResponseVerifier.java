@@ -21,17 +21,16 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.config.ServerConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 import it.infn.mw.iam.rcauth.RCAuthError;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
 import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
@@ -40,13 +39,12 @@ import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 @ConditionalOnProperty(name="rcauth.enabled", havingValue="true")
 public class DefaultRCAuthTokenResponseVerifier implements RCAuthTokenResponseVerifier {
 
-  final JWKSetCacheService jwkService;
+  final JwkSetCacheService jwkService;
   final RCAuthProperties rcAuthProperties;
   final IamProperties iamProperties;
   final Clock clock;
 
-  @Autowired
-  public DefaultRCAuthTokenResponseVerifier(Clock clock, JWKSetCacheService jwkService,
+  public DefaultRCAuthTokenResponseVerifier(Clock clock, JwkSetCacheService jwkService,
       RCAuthProperties rcAuthProperties, IamProperties iamProperties) {
     this.clock = clock;
     this.jwkService = jwkService;
@@ -74,7 +72,7 @@ public class DefaultRCAuthTokenResponseVerifier implements RCAuthTokenResponseVe
   protected void validateTokenSignature(ServerConfiguration serverConfiguration,
       SignedJWT idToken) {
 
-    JWTSigningAndValidationService validator =
+    JwtSigningAndValidationService validator =
         jwkService.getValidator(serverConfiguration.getJwksUri());
 
     if (isNull(validator)) {

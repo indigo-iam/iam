@@ -15,13 +15,14 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.base.Preconditions;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 
@@ -123,8 +124,8 @@ public class ScimMeta {
 
     public ScimMeta build() {
 
-      Preconditions.checkNotNull(resourceType, "resourceType must be non-null");
-      Preconditions.checkNotNull(location, "location must be non-null");
+      requireNonNull(resourceType, "resourceType must be non-null");
+      requireNonNull(location, "location must be non-null");
 
       return new ScimMeta(this);
     }

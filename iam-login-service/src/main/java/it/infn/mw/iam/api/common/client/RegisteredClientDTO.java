@@ -17,13 +17,13 @@ package it.infn.mw.iam.api.common.client;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Null;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -37,7 +37,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.client.management.validation.ClientIdAvailable;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
@@ -130,7 +129,6 @@ public class RegisteredClientDTO {
   private Set<@Email(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class}) String> contacts;
 
-  @NotEmpty(message = "Invalid client: empty grant type")
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<AuthorizationGrantType> grantTypes;
@@ -175,7 +173,7 @@ public class RegisteredClientDTO {
       message = "must not include blank strings") @Size(min = 1, max = 2048,
           message = "string size must be between 1 and 2048",
           groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-              OnClientCreation.class, OnClientUpdate.class}) String> scope = Sets.newHashSet();
+              OnClientCreation.class, OnClientUpdate.class}) String> scope = new HashSet<>();
 
   @Min(value = 0, groups = OnClientCreation.class)
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
@@ -228,10 +226,6 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String registrationClientUri;
-
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private Date clientSecretExpiresAt;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -484,14 +478,6 @@ public class RegisteredClientDTO {
 
   public void setRegistrationClientUri(String registrationClientUri) {
     this.registrationClientUri = registrationClientUri;
-  }
-
-  public Date getClientSecretExpiresAt() {
-    return clientSecretExpiresAt;
-  }
-
-  public void setClientSecretExpiresAt(Date clientSecretExpiresAt) {
-    this.clientSecretExpiresAt = clientSecretExpiresAt;
   }
 
   public Date getClientIdIssuedAt() {

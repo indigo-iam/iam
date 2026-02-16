@@ -21,11 +21,9 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +46,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
+import it.infn.mw.iam.core.web.ServerConfigInterceptor;
 import it.infn.mw.iam.core.web.util.IamViewInfoInterceptor;
 
 @Configuration
@@ -56,11 +55,9 @@ public class MvcConfig implements WebMvcConfigurer {
   public static final Logger LOG = LoggerFactory.getLogger(MvcConfig.class);
 
   @Autowired
-  @Qualifier("mitreUserInfoInterceptor")
   IamUserInfoInterceptor userInfoInterceptor;
 
   @Autowired
-  @Qualifier("mitreServerConfigInterceptor")
   ServerConfigInterceptor serverConfigInterceptor;
 
   @Autowired
@@ -147,7 +144,7 @@ public class MvcConfig implements WebMvcConfigurer {
   }
 
   @Bean
-  public LocaleResolver localeResolver() {
+  LocaleResolver localeResolver() {
 
     SessionLocaleResolver slr = new SessionLocaleResolver();
     slr.setDefaultLocale(Locale.US);
@@ -155,7 +152,7 @@ public class MvcConfig implements WebMvcConfigurer {
   }
 
   @Bean
-  public MessageSource messageSource() {
+  MessageSource messageSource() {
 
     DefaultResourceLoader loader = new DefaultResourceLoader();
 

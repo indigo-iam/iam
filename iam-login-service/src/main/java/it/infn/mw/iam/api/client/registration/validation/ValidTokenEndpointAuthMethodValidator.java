@@ -20,8 +20,6 @@ import static java.util.Objects.isNull;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 
@@ -35,7 +33,7 @@ public class ValidTokenEndpointAuthMethodValidator
       value.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     } else if (value.getTokenEndpointAuthMethod()
       .equals(TokenEndpointAuthenticationMethod.private_key_jwt)
-        && (Strings.isNullOrEmpty(value.getJwksUri()) && Strings.isNullOrEmpty(value.getJwk()))) {
+        && (isNullOrEmpty(value.getJwksUri()) && isNullOrEmpty(value.getJwk()))) {
       context.disableDefaultConstraintViolation();
       context
         .buildConstraintViolationWithTemplate("private_key_jwt requires a jwks uri or a jwk value")
@@ -44,6 +42,10 @@ public class ValidTokenEndpointAuthMethodValidator
     }
 
     return true;
+  }
+
+  private boolean isNullOrEmpty(String s) {
+    return s == null || s.isBlank();
   }
 
 }

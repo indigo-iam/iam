@@ -22,9 +22,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,10 +51,11 @@ import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 
 @RestController
-@Profile("openid-federation")
+@ConditionalOnProperty(prefix = "openid-federation", name = "enabled", havingValue = "true")
 public class FederationRegistrationController {
 
   @Value("${iam.issuer}")

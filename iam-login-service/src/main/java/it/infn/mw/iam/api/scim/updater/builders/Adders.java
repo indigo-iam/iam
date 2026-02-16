@@ -29,8 +29,6 @@ import java.util.function.Predicate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
@@ -117,15 +115,13 @@ public class Adders extends Replacers {
     Predicate<Collection<IamSamlId>> samlIdWellFormed = c -> {
       c.removeIf(Objects::isNull);
       c.stream().forEach(id -> {
-        if (Strings.isNullOrEmpty(id.getIdpId())) {
+        if (id.getIdpId() == null || id.getIdpId().isBlank()) {
           throw new IllegalArgumentException("idpId cannot be null or empty!");
         }
-
-        if (Strings.isNullOrEmpty(id.getAttributeId())) {
+        if (id.getAttributeId() == null || id.getAttributeId().isBlank()) {
           throw new IllegalArgumentException("attributeId cannot be null or empty!");
         }
-
-        if (Strings.isNullOrEmpty(id.getUserId())) {
+        if (id.getUserId() == null || id.getUserId().isBlank()) {
           throw new IllegalArgumentException("userId cannot be null or empty!");
         }
       });

@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.api.client.management.service;
 
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
@@ -24,9 +27,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,8 +40,6 @@ import it.infn.mw.iam.api.client.service.ClientConverter;
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -55,11 +53,15 @@ import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @Service
 @Validated
 public class DefaultClientManagementService implements ClientManagementService {
@@ -70,15 +72,15 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientDefaultsService defaultsService;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
-  private final OIDCTokenService oidcTokenService;
   private final IamTokenService tokenService;
+  private final TokenRevocationService revocationService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
-      IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep,
+      IamAccountRepository accountRepo,
+      IamTokenService tokenService, TokenRevocationService revocationService, ApplicationEventPublisher aep,
       NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
@@ -86,8 +88,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     this.defaultsService = defaultsService;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
-    this.oidcTokenService = oidcTokenService;
     this.tokenService = tokenService;
+    this.revocationService = revocationService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
   }
@@ -254,9 +256,8 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
       ClientDetailsEntity client) {
-    OAuth2AccessTokenEntity token = oidcTokenService.createRegistrationAccessToken(client);
-    return tokenService.saveAccessToken(token);
 
+    return tokenService.createRegistrationAccessToken(client);
   }
 
   @Override
@@ -265,10 +266,8 @@ public class DefaultClientManagementService implements ClientManagementService {
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
     OAuth2AccessTokenEntity rat =
-        Optional.ofNullable(oidcTokenService.rotateRegistrationAccessTokenForClient(client))
+        Optional.ofNullable(tokenService.rotateRegistrationAccessTokenForClient(client))
           .orElse(createRegistrationAccessTokenForClient(client));
-
-    tokenService.saveAccessToken(rat);
 
     eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, client));
 

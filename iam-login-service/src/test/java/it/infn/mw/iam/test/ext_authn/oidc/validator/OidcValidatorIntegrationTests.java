@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -48,6 +49,7 @@ import it.infn.mw.iam.authn.common.Fail;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
+import it.infn.mw.iam.test.util.JvmProfilesSupport;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
@@ -55,6 +57,7 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
   OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
+//@ContextConfiguration(initializers = JvmProfilesSupport.OidcProfileInitializer.class)
 class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
 
   @Configuration

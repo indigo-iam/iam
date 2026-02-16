@@ -21,21 +21,22 @@ import static org.mockito.Mockito.when;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
+import it.infn.mw.iam.core.jwt.IamJwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
 
 @Configuration
-public class RCAuthTestConfig extends RCAuthTestSupport {
+class RCAuthTestConfig extends RCAuthTestSupport {
 
   @Bean
   @Primary
-  public ServerConfigurationService serverConfigService() {
+  ServerConfigurationService serverConfigService() {
 
     ServerConfigurationService scs = mock(ServerConfigurationService.class);
     ServerConfiguration sc = mock(ServerConfiguration.class);
@@ -49,12 +50,12 @@ public class RCAuthTestConfig extends RCAuthTestSupport {
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
+  JwkSetCacheService mockjwkSetCacheService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
-    IamJWTSigningService signatureValidator = new IamJWTSigningService(rcAuthKeyStore());
+    JwtSigningAndValidationService signatureValidator = new IamJwtSigningAndValidationService(rcAuthKeyStore());
 
-    JWKSetCacheService mockCacheService = mock(JWKSetCacheService.class);
+    JwkSetCacheService mockCacheService = mock(JwkSetCacheService.class);
     when(mockCacheService.getValidator(JWK_URI)).thenReturn(signatureValidator);
 
     return mockCacheService;

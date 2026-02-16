@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.registration.validation;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult.error;
 import static it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult.invalid;
@@ -23,6 +22,7 @@ import static it.infn.mw.iam.registration.validation.RegistrationRequestValidati
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
@@ -69,7 +67,7 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
       .build();
 
     if (isNull(request.getLabels())) {
-      request.setLabels(Lists.newArrayList());
+      request.setLabels(new ArrayList<>());
     }
 
     request.getLabels().add(label);
@@ -108,7 +106,7 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
     final String cernPersonId =
         auth.getAdditionalAttributes().get(cernProperties.getPersonIdClaim());
 
-    if (isNullOrEmpty(cernPersonId)) {
+    if (cernPersonId == null || cernPersonId.isBlank()) {
       return invalid(format("CERN person id claim '%s' not found in authentication attributes",
           cernProperties.getPersonIdClaim()));
     }

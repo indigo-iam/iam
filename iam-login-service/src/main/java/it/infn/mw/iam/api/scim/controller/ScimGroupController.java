@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +40,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -59,20 +54,6 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 public class ScimGroupController extends ScimControllerSupport {
 
   public static final String INVALID_GROUP_MSG = "Invalid Scim Group";
-
-  private Set<String> parseAttributes(final String attributesParameter) {
-
-    Set<String> result = new HashSet<>();
-    if (!Strings.isNullOrEmpty(attributesParameter)) {
-      result = Sets.newHashSet(Splitter.on(CharMatcher.anyOf(".,"))
-        .trimResults()
-        .omitEmptyStrings()
-        .split(attributesParameter));
-    }
-    result.add("schemas");
-    result.add("id");
-    return result;
-  }
 
   @Autowired
   ScimGroupProvisioning groupProvisioningService;

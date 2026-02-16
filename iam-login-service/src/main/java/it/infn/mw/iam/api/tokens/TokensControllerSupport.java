@@ -15,11 +15,6 @@
  */
 package it.infn.mw.iam.api.tokens;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
-
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -77,11 +72,14 @@ public class TokensControllerSupport {
   protected Set<String> parseAttributes(final String attributesParameter) {
 
     Set<String> result = new HashSet<>();
-    if (!Strings.isNullOrEmpty(attributesParameter)) {
-      result = Sets.newHashSet(Splitter.on(CharMatcher.anyOf(".,"))
-          .trimResults()
-          .omitEmptyStrings()
-          .split(attributesParameter));
+    if (attributesParameter != null && !attributesParameter.isBlank()) {
+      String[] parts = attributesParameter.split("[\\.,]+");
+      for (String part : parts) {
+          String trimmed = part.trim();
+          if (!trimmed.isEmpty()) {
+              result.add(trimmed);
+          }
+      }
     }
     result.add("id");
     return result;

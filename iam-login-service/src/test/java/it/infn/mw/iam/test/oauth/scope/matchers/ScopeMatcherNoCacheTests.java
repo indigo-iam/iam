@@ -15,16 +15,13 @@
  */
 package it.infn.mw.iam.test.oauth.scope.matchers;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -33,11 +30,13 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -66,9 +65,9 @@ class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
   @Test
   void ensureRedisCacheIsDisabled() {
-    assertThat(cacheManager, instanceOf(NoOpCacheManager.class));
-    assertThat(cacheManager, not(instanceOf(ConcurrentMapCacheManager.class)));
-    assertThat(cacheManager, not(instanceOf(RedisCacheManager.class)));
+    assertTrue(cacheManager instanceof NoOpCacheManager);
+    assertFalse(cacheManager instanceof ConcurrentMapCacheManager);
+    assertFalse(cacheManager instanceof RedisCacheManager);
   }
 
   @Test
@@ -83,12 +82,11 @@ class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
     try {
       JWT token = JWTParser.parse(getAccessTokenForClient("openid profile email"));
-      assertThat("scim:read",
-          not(in(token.getJWTClaimsSet().getClaim("scope").toString().split(" "))));
+      assertFalse(Lists.newArrayList(token.getJWTClaimsSet().getClaim("scope").toString().split(" ")).contains("scim:read"));
       client.setScope(Sets.newHashSet("openid", "profile", "email", "scim:read"));
       clientRepo.save(client);
       token = JWTParser.parse(getAccessTokenForClient("openid profile email scim:read"));
-      assertThat("scim:read", in(token.getJWTClaimsSet().getClaim("scope").toString().split(" ")));
+      assertTrue(Lists.newArrayList(token.getJWTClaimsSet().getClaim("scope").toString().split(" ")).contains("scim:read"));
     } finally {
       clientRepo.delete(client);
     }

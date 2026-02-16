@@ -15,67 +15,104 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
-
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.OIDCAuthenticationFilter;
-import org.mitre.openid.connect.config.ServerConfiguration;
-import org.mitre.openid.connect.model.PendingOIDCAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
-/**
- * A slightly modified version of mitreid client filter that allows to provide a custom
- * {@link ClientHttpRequestFactory} object. This is needed to accomodate SSL connections to
- * providers that use EUGridPMA certificates.
- *
- */
+import it.infn.mw.iam.authn.oidc.configuration.ClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.PendingOIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
+import it.infn.mw.iam.authn.util.SessionUtils;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.SymmetricKeyJWTValidatorCacheService;
+import it.infn.mw.iam.core.oidc.service.IssuerService;
+import it.infn.mw.iam.core.oidc.service.IssuerServiceResponse;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
+
 @SuppressWarnings("deprecation")
-public class OidcClientFilter extends OIDCAuthenticationFilter {
+public class OidcClientFilter extends AbstractAuthenticationProcessingFilter {
 
-  public static class OidcProviderConfiguration {
+  public final static String FILTER_PROCESSES_URL = "/openid_connect_login";
 
-    public OidcProviderConfiguration(ServerConfiguration sc, RegisteredClient cc) {
-      this.serverConfig = sc;
-      this.clientConfig = cc;
-    }
-
-    ServerConfiguration serverConfig;
-    RegisteredClient clientConfig;
-  }
+  protected final static String ACR_SESSION_VARIABLE = "acr_values";
+  protected final static String CODE_VERIFIER_SESSION_VARIABLE = "code_verifier";
+  protected final static String ISSUER_SESSION_VARIABLE = "issuer";
+  protected final static String NONCE_SESSION_VARIABLE = "nonce";
+  protected final static String REDIRECT_URI_SESSION_VARIABLE = "redirect_uri";
+  protected final static String STATE_SESSION_VARIABLE = "state";
+  protected final static String TARGET_SESSION_VARIABLE = "target";
 
   public static final Logger LOG = LoggerFactory.getLogger(OidcClientFilter.class);
 
-  OidcTokenRequestor tokenRequestor;
+  private final ServerConfigurationService servers;
+  private final ClientConfigurationService clients;
+  private final SymmetricKeyJWTValidatorCacheService symmetricCacheService;
+  private final JwkSetCacheService validationServices;
+  private final OidcTokenRequestor tokenRequestor;
+  private final IssuerService issuerService;
+  private final AuthRequestUrlBuilder authRequestBuilder;
+  private final Environment env;
+  private final int timeSkewAllowance = 300;
 
-  // Allow for time sync issues by having a window of X seconds.
-  private int timeSkewAllowance = 300;
+  public OidcClientFilter(AuthenticationManager authenticationManager, ServerConfigurationService servers, ClientConfigurationService clients,
+      SymmetricKeyJWTValidatorCacheService symmetricCacheService,
+      JwkSetCacheService validationServices, OidcTokenRequestor tokenRequestor,
+      IssuerService issuerService, AuthRequestUrlBuilder authRequestBuilder, Environment env) {
+
+    super(FILTER_PROCESSES_URL, authenticationManager);
+    this.servers = servers;
+    this.clients = clients;
+    this.symmetricCacheService = symmetricCacheService;
+    this.validationServices = validationServices;
+    this.issuerService = issuerService;
+    this.authRequestBuilder = authRequestBuilder;
+    this.tokenRequestor = tokenRequestor;
+    this.env = env;
+  }
 
   private void validateState(HttpServletRequest request, HttpServletResponse response) {
 
@@ -91,10 +128,48 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
   }
 
+  protected static String createNonce(HttpSession session) {
+
+    String nonce = new BigInteger(50, new SecureRandom()).toString(16);
+    session.setAttribute(NONCE_SESSION_VARIABLE, nonce);
+    return nonce;
+  }
+
+  protected static String getStoredNonce(HttpSession session) {
+
+    return SessionUtils.getStoredSessionString(session, NONCE_SESSION_VARIABLE);
+  }
+
+  protected static String createState(HttpSession session) {
+
+    String state = new BigInteger(50, new SecureRandom()).toString(16);
+    session.setAttribute(STATE_SESSION_VARIABLE, state);
+    return state;
+  }
+
+  protected static String getStoredState(HttpSession session) {
+
+    return SessionUtils.getStoredSessionString(session, STATE_SESSION_VARIABLE);
+  }
+
+  protected static String createCodeVerifier(HttpSession session) {
+    String challenge = new BigInteger(50, new SecureRandom()).toString(16);
+    session.setAttribute(CODE_VERIFIER_SESSION_VARIABLE, challenge);
+    return challenge;
+  }
+
+  protected static String getStoredCodeVerifier(HttpSession session) {
+    return SessionUtils.getStoredSessionString(session, CODE_VERIFIER_SESSION_VARIABLE);
+  }
+
+  public ServerConfigurationService getServerConfigurationService() {
+    return servers;
+  }
 
   protected OidcProviderConfiguration lookupProvider(HttpServletRequest request) {
 
-    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
+    String issuer =
+        SessionUtils.getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
     if (issuer == null) {
       throw new AuthenticationServiceException("Issuer not found in session.");
     }
@@ -105,8 +180,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
       throw new AuthenticationServiceException("Unknow OpenID provider :" + issuer);
     }
 
-    RegisteredClient clientConfig =
-        getClientConfigurationService().getClientConfiguration(serverConfig);
+    RegisteredClient clientConfig = clients.getClientConfiguration(serverConfig.getIssuer());
 
     if (clientConfig == null) {
       throw new AuthenticationServiceException(
@@ -124,10 +198,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     form.add("grant_type", "authorization_code");
     form.add("code", request.getParameter("code"));
 
-    form.setAll(getAuthRequestOptionsService().getTokenOptions(config.serverConfig,
-        config.clientConfig, request));
-
-    String redirectUri = getStoredSessionString(request.getSession(), "redirect_uri");
+    String redirectUri = SessionUtils.getStoredSessionString(request.getSession(), "redirect_uri");
 
     if (redirectUri != null) {
       form.add("redirect_uri", redirectUri);
@@ -158,16 +229,13 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
   }
 
-  @Override
   protected void handleError(HttpServletRequest request, HttpServletResponse response)
       throws IOException {
 
     throw new OidcClientError("External authentication error", request.getParameter("error"),
         request.getParameter("error_description"), request.getParameter("error_uri"));
-
   }
 
-  @Override
   protected Authentication handleAuthorizationCodeResponse(HttpServletRequest request,
       HttpServletResponse response) {
 
@@ -183,7 +251,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
     } catch (OidcClientError e) {
       LOG.error("Error executing token request against endpoint {}: {}",
-          config.serverConfig.getTokenEndpointUri(), e.getMessage(), e);
+          config.getServerConfig().getTokenEndpointUri(), e.getMessage(), e);
       throw e;
     }
 
@@ -221,10 +289,9 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
     PendingOIDCAuthenticationToken oidcToken =
         new PendingOIDCAuthenticationToken(idClaims.getSubject(), idClaims.getIssuer(),
-            config.serverConfig, idToken, accessTokenValue, refreshTokenValue);
+            config.getServerConfig(), idToken, accessTokenValue, refreshTokenValue);
 
     return getAuthenticationManager().authenticate(oidcToken);
-
   }
 
   private JWTClaimsSet parseClaims(JWT idToken) {
@@ -241,9 +308,9 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
 
-    Algorithm clientAlg = config.clientConfig.getIdTokenSignedResponseAlg();
+    Algorithm clientAlg = config.getClientConfig().getIdTokenSignedResponseAlg();
 
-    JWTSigningAndValidationService jwtValidator = null;
+    JwtSigningAndValidationService jwtValidator = null;
 
     if (clientAlg != null && !clientAlg.equals(tokenAlg)) {
       throw new AuthenticationServiceException(
@@ -270,10 +337,10 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
         // generate one based on client secret
         jwtValidator =
-            getSymmetricCacheService().getSymmetricValidtor(config.clientConfig.getClient());
+            this.symmetricCacheService.getSymmetricValidator(config.getClientConfig().getClient());
       } else {
         // otherwise load from the server's public key
-        jwtValidator = getValidationServices().getValidator(config.serverConfig.getJwksUri());
+        jwtValidator = validationServices.getValidator(config.getServerConfig().getJwksUri());
       }
 
       if (jwtValidator != null) {
@@ -297,9 +364,9 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
       throw new AuthenticationServiceException("Id Token Issuer is null");
 
-    } else if (!idClaims.getIssuer().equals(config.serverConfig.getIssuer())) {
+    } else if (!idClaims.getIssuer().equals(config.getServerConfig().getIssuer())) {
       throw new AuthenticationServiceException("Issuers do not match, expected "
-          + config.serverConfig.getIssuer() + " got " + idClaims.getIssuer());
+          + config.getServerConfig().getIssuer() + " got " + idClaims.getIssuer());
     }
 
     // check expiration
@@ -347,10 +414,10 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
       throw new AuthenticationServiceException("Id token audience is null");
 
-    } else if (!idClaims.getAudience().contains(config.clientConfig.getClientId())) {
+    } else if (!idClaims.getAudience().contains(config.getClientConfig().getClientId())) {
 
       throw new AuthenticationServiceException("Audience does not match, expected "
-          + config.clientConfig.getClientId() + " got " + idClaims.getAudience());
+          + config.getClientConfig().getClientId() + " got " + idClaims.getAudience());
     }
 
     // compare the nonce to our stored claim
@@ -383,21 +450,151 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
   }
 
-  @Override
   public int getTimeSkewAllowance() {
 
     return timeSkewAllowance;
   }
 
-  @Override
-  public void setTimeSkewAllowance(int timeSkewAllowance) {
+  // public void setTimeSkewAllowance(int timeSkewAllowance) {
+  //
+  // this.timeSkewAllowance = timeSkewAllowance;
+  // }
+  //
+  //
+  // public void setTokenRequestor(OidcTokenRequestor tokenRequestor) {
+  // this.tokenRequestor = tokenRequestor;
+  // }
 
-    this.timeSkewAllowance = timeSkewAllowance;
+  @Override
+  public Authentication attemptAuthentication(HttpServletRequest request,
+      HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
+
+    if (!Strings.isNullOrEmpty(request.getParameter("error"))) {
+
+      handleError(request, response);
+      return null;
+    }
+    if (!Strings.isNullOrEmpty(request.getParameter("code"))) {
+
+      Authentication auth = handleAuthorizationCodeResponse(request, response);
+      return auth;
+    }
+
+    handleAuthorizationRequest(request, response);
+    return null;
   }
 
+  protected void handleAuthorizationRequest(HttpServletRequest request,
+      HttpServletResponse response) throws IOException {
 
-  public void setTokenRequestor(OidcTokenRequestor tokenRequestor) {
-    this.tokenRequestor = tokenRequestor;
+    HttpSession session = request.getSession();
+
+    IssuerServiceResponse issResp = issuerService.getIssuer(request);
+
+    if (issResp == null) {
+      logger.error("Null issuer response returned from service.");
+      throw new AuthenticationServiceException("No issuer found.");
+    }
+
+    if (issResp.shouldRedirect()) {
+      response.sendRedirect(issResp.getRedirectUrl());
+    } else {
+      String issuer = issResp.getIssuer();
+
+      if (!Strings.isNullOrEmpty(issResp.getTargetLinkUri())) {
+        // there's a target URL in the response, we should save this so we can forward to it later
+        session.setAttribute(TARGET_SESSION_VARIABLE, issResp.getTargetLinkUri());
+      }
+
+      if (Strings.isNullOrEmpty(issuer)) {
+        logger.error("No issuer found: " + issuer);
+        throw new AuthenticationServiceException("No issuer found: " + issuer);
+      }
+
+      ServerConfiguration serverConfig = servers.getServerConfiguration(issuer);
+      if (serverConfig == null) {
+        logger.error("No server configuration found for issuer: " + issuer);
+        throw new AuthenticationServiceException(
+            "No server configuration found for issuer: " + issuer);
+      }
+
+
+      session.setAttribute(ISSUER_SESSION_VARIABLE, serverConfig.getIssuer());
+
+      RegisteredClient clientConfig = clients.getClientConfiguration(serverConfig.getIssuer());
+      if (clientConfig == null) {
+        logger.error("No client configuration found for issuer: " + issuer);
+        throw new AuthenticationServiceException(
+            "No client configuration found for issuer: " + issuer);
+      }
+
+      String redirectUri = null;
+      if (clientConfig.getRegisteredRedirectUri() != null
+          && clientConfig.getRegisteredRedirectUri().size() == 1) {
+        // if there's a redirect uri configured (and only one), use that
+        redirectUri = Iterables.getOnlyElement(clientConfig.getRegisteredRedirectUri());
+      } else {
+        // otherwise our redirect URI is this current URL, with no query parameters
+        redirectUri = request.getRequestURL().toString();
+      }
+      session.setAttribute(REDIRECT_URI_SESSION_VARIABLE, redirectUri);
+
+      // this value comes back in the id token and is checked there
+      String nonce = createNonce(session);
+
+      // this value comes back in the auth code response
+      String state = createState(session);
+
+      // Map<String, String> options = authOptions.getOptions(serverConfig, clientConfig, request);
+      Map<String, String> options = new HashMap<>();
+
+      // if the client requests MFA using claims request parameter, IAM transforms it into the
+      // acr_values one
+      if (request.getParameter("acr_values") != null) {
+        options.put("acr_values", request.getParameter("acr_values"));
+      } else if (request.getParameter("claims") != null) {
+        JsonNode claimsNode = (new ObjectMapper()).readTree(request.getParameter("claims"));
+        JsonNode acrNodeValues = claimsNode.path("id_token").path("acr").path("values");
+        if (acrNodeValues.isArray() && acrNodeValues.size() > 0) {
+          String acrValues = StreamSupport.stream(acrNodeValues.spliterator(), false)
+            .map(JsonNode::asText)
+            .collect(Collectors.joining(" "));
+          session.setAttribute(ACR_SESSION_VARIABLE, acrValues);
+          options.put("acr_values", acrValues);
+        }
+      } else {
+        if (Arrays.asList(env.getActiveProfiles()).contains("mfa")) {
+          options.put("acr_values", "https://refeds.org/profile/mfa");
+        }
+      }
+
+      // if we're using PKCE, handle the challenge here
+      if (clientConfig.getCodeChallengeMethod() != null) {
+        String codeVerifier = createCodeVerifier(session);
+        options.put("code_challenge_method", clientConfig.getCodeChallengeMethod().getName());
+        if (clientConfig.getCodeChallengeMethod().equals(PKCEAlgorithm.plain)) {
+          options.put("code_challenge", codeVerifier);
+        } else if (clientConfig.getCodeChallengeMethod().equals(PKCEAlgorithm.S256)) {
+          try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String hash =
+                Base64URL.encode(digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)))
+                  .toString();
+            options.put("code_challenge", hash);
+          } catch (NoSuchAlgorithmException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+        }
+      }
+
+      String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig,
+          redirectUri, nonce, state, options, issResp.getLoginHint());
+
+      logger.debug("Auth Request:  " + authRequest);
+
+      response.sendRedirect(authRequest);
+    }
   }
 
 }

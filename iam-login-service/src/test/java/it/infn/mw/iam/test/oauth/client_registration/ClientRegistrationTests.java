@@ -36,11 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.UnsupportedEncodingException;
 
+import org.assertj.core.util.Strings;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.repository.OAuth2ClientRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -50,8 +47,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
@@ -62,10 +63,10 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
   private ObjectMapper mapper;
 
   @Autowired
-  private ClientDetailsEntityService clientService;
+  private IamClientDetailsService clientService;
 
   @Autowired
-  private OAuth2ClientRepository clientRepo;
+  private IamClientRepository clientRepo;
 
   @Autowired
   private MockMvc mvc;
@@ -145,7 +146,6 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
     String jsonInString = ClientJsonStringBuilder.builder().scopes(scopes).grantTypes("authorization_code").build();
 
-    // @formatter:off
     String response =
         mvc.perform(post(REGISTER_ENDPOINT)
             .contentType(APPLICATION_JSON)
@@ -155,9 +155,8 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
           .andReturn()
           .getResponse()
           .getContentAsString();
-    // @formatter:on
 
-    ClientDetailsEntity saved = ClientDetailsEntityJsonProcessor.parse(response);
+    RegisteredClientDTO saved = mapper.readValue(response, RegisteredClientDTO.class);
 
     assertNotNull(saved);
     for (String reservedScope : scopes) {
@@ -173,7 +172,6 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     String jsonInString =
         ClientJsonStringBuilder.builder().scopes(scopes).grantTypes("authorization_code").build();
 
-    // @formatter:off
     String response =
         mvc.perform(post(REGISTER_ENDPOINT)
             .contentType(APPLICATION_JSON)
@@ -183,20 +181,17 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
           .andReturn()
           .getResponse()
           .getContentAsString();
-    // @formatter:on
 
-    ClientDetailsEntity saved = ClientDetailsEntityJsonProcessor.parse(response);
+    RegisteredClientDTO saved = mapper.readValue(response, RegisteredClientDTO.class);
 
     assertNotNull(saved);
 
-    // @formatter:off
     mvc.perform(post("/token")
         .param("grant_type", "client_credentials")
         .param("client_id", saved.getClientId())
         .param("client_secret", saved.getClientSecret())
-        .param("scope", ClientJsonStringBuilder.JOINER.join(scopes)))
+        .param("scope", Strings.join(scopes).with(" ")))
       .andExpect(status().isBadRequest());
-    // @formatter:on
   }
 
   @Test
@@ -254,7 +249,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     clientModel.getGrantTypes().add("password");
     clientModel.getGrantTypes().add(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
 
-    clientRepo.saveClient(clientModel);
+    clientRepo.save(clientModel);
 
     clientJson = mvc
       .perform(get(registrationUri).contentType(APPLICATION_JSON)
@@ -280,7 +275,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     clientModel = clientService.loadClientByClientId(clientId);
     clientModel.getGrantTypes().remove("password");
     clientModel.getGrantTypes().remove(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
-    clientRepo.saveClient(clientModel);
+    clientRepo.save(clientModel);
 
     mvc
       .perform(get(registrationUri).contentType(APPLICATION_JSON)
@@ -298,7 +293,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
   @Test
   void deviceCodeTimeoutNotAffectedWhenCreatingAndUpdatingClient()
-    throws UnsupportedEncodingException, Exception {
+      throws UnsupportedEncodingException, Exception {
     String jsonInString =
         ClientJsonStringBuilder.builder().grantTypes("authorization_code").scopes("openid").build();
 

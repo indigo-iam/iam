@@ -22,14 +22,12 @@ import static java.util.stream.Collectors.toList;
 import java.security.Principal;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 import eu.emi.security.authn.x509.impl.PEMCredential;
 import eu.emi.security.authn.x509.impl.X500NameUtils;
@@ -50,7 +48,6 @@ public class DefaultProxyCertificateService implements ProxyCertificateService {
   final ProxyCertificateProperties properties;
   final ProxyHelperService proxyHelper;
 
-  @Autowired
   public DefaultProxyCertificateService(Clock clock, IamAccountRepository accountRepository,
       ProxyCertificateProperties properties, ProxyHelperService proxyHelper) {
     this.clock = clock;
@@ -159,7 +156,7 @@ public class DefaultProxyCertificateService implements ProxyCertificateService {
   public List<ProxyCertificateDTO> listProxies(Principal principal) {
     IamAccount account = findAccountByPrincipal(principal);
 
-    List<IamX509ProxyCertificate> proxies = Lists.newArrayList();
+    List<IamX509ProxyCertificate> proxies = new ArrayList<>();
 
     for (IamX509Certificate c : account.getX509Certificates()) {
       if (c.hasProxy()) {

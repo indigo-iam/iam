@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.common;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.util.Objects;
 
 import javax.annotation.Generated;
@@ -48,8 +46,12 @@ public class OffsetPageable implements Pageable {
 
   public OffsetPageable(int offset, int count, Sort sort) {
 
-    checkArgument(offset >= 0, "offset must be greater or equal to 0");
-    checkArgument(count >= 1, "count must be a positive integer");
+    if (offset < 0) {
+      throw new IllegalArgumentException("offset must be greater or equal to 0");
+    }
+    if (count < 1) {
+      throw new IllegalArgumentException("count must be a positive integer");
+    }
 
     this.offset = offset;
     this.count = count;

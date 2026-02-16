@@ -34,7 +34,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +52,7 @@ import io.restassured.http.Cookie;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.TestUtils;
@@ -62,7 +62,7 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 @ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
   public static final String TEST_CLIENT_ID = "client";

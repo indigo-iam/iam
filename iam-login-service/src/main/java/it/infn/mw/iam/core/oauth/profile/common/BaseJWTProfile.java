@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
@@ -24,6 +23,7 @@ import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.RequestValidator;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 
 public abstract class BaseJWTProfile implements JWTProfile, RequestValidator {

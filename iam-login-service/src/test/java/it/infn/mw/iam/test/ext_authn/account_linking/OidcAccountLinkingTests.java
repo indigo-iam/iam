@@ -47,7 +47,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,8 +62,8 @@ import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
     FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
 @Transactional
+@ActiveProfiles({"h2-test", "oidc"})
 class OidcAccountLinkingTests {
 
   static final String TEST_100_USER = "test_100";

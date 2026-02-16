@@ -47,7 +47,6 @@ public class MitreSecurityConfig {
   public static class MitreApisEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    @Qualifier("resourceServerFilter")
     private OAuth2AuthenticationProcessingFilter resourceFilter;
 
     @Autowired

@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
 
-import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,6 +63,7 @@ import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
+import it.infn.mw.iam.authn.jwt.JwtBearerClientAssertionTokenEndpointFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
@@ -103,11 +103,9 @@ public class IamWebSecurityConfig {
     private OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler;
 
     @Autowired
-    @Qualifier("mitreAuthzRequestFilter")
     private GenericFilterBean authorizationRequestFilter;
 
     @Autowired
-    @Qualifier("iamUserDetailsService")
     private UserDetailsService iamUserDetailsService;
 
     @Autowired
@@ -219,12 +217,12 @@ public class IamWebSecurityConfig {
     }
 
     @Bean
-    public OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
+    OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
     @Bean
-    public AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
+    AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo);
     }
@@ -257,7 +255,6 @@ public class IamWebSecurityConfig {
     private UserLoginConfig userLoginConfig;
     private IamProperties iamProperties;
 
-    @Autowired
     public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
       this.iamProperties = iamProperties;
@@ -329,13 +326,13 @@ public class IamWebSecurityConfig {
 
   @Configuration
   @Order(105)
+  @Profile("oidc")
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
     @Value("${iam.baseUrl}")
     private String iamBaseUrl;
 
     @Autowired
-    @Qualifier("OIDCAuthenticationManager")
     private AuthenticationManager oidcAuthManager;
 
     @Autowired
@@ -344,16 +341,12 @@ public class IamWebSecurityConfig {
     @Autowired
     private IamProperties iamProperties;
 
+    @Autowired
+    @Qualifier("OIDCAuthenticationFilter")
     private OidcClientFilter oidcFilter;
-    private UserLoginConfig userLoginConfig;
 
     @Autowired
-    public ExternalOidcLogin(
-        @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
-        UserLoginConfig userLoginConfig) {
-      this.oidcFilter = oidcClientFilter;
-      this.userLoginConfig = userLoginConfig;
-    }
+    private UserLoginConfig userLoginConfig;
 
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
@@ -450,10 +443,10 @@ public class IamWebSecurityConfig {
    */
   @Configuration
   @Order(102)
+  @Profile("mfa")
   public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    @Qualifier("MultiFactorVerificationFilter")
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
@@ -483,12 +476,12 @@ public class IamWebSecurityConfig {
 
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
     private UserDetailsService userDetailsService;
-    private JWTBearerClientAssertionTokenEndpointFilter bearerFilter;
+    private JwtBearerClientAssertionTokenEndpointFilter bearerFilter;
 
     public IntrospectEndpointAuthorizationConfig(
         OAuth2AuthenticationEntryPoint authenticationEntryPoint,
         @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
-        JWTBearerClientAssertionTokenEndpointFilter bearerFilter) {
+        JwtBearerClientAssertionTokenEndpointFilter bearerFilter) {
 
       this.authenticationEntryPoint = authenticationEntryPoint;
       this.userDetailsService = userDetailsService;

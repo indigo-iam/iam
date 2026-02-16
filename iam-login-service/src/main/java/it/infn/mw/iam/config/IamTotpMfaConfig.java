@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -40,16 +41,17 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 /**
  * Beans for handling TOTP MFA functionality
  */
 @Configuration
+@Profile("mfa")
 public class IamTotpMfaConfig {
 
   @Value("${iam.baseUrl}")
@@ -100,7 +102,7 @@ public class IamTotpMfaConfig {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
-  @Bean(name = "MultiFactorVerificationFilter")
+  @Bean
   MultiFactorVerificationFilter multiFactorVerificationFilter(
       @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager) {
 

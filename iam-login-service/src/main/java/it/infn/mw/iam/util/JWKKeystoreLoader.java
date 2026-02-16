@@ -15,11 +15,10 @@
  */
 package it.infn.mw.iam.util;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 
 public class JWKKeystoreLoader {
 
@@ -29,14 +28,9 @@ public class JWKKeystoreLoader {
     this.loader = resourceLoader;
   }
 
-  public JWKSetKeyStore loadKeystoreFromLocation(String keyStoreLocation) {
+  public JwkSetKeyStore loadKeystoreFromLocation(String keyStoreLocation) {
     try {
-      Resource keyStoreResource = loader.getResource(keyStoreLocation);
-
-      JWKSetKeyStore keyStore = new JWKSetKeyStore();
-      keyStore.setLocation(keyStoreResource);
-
-      return keyStore;
+      return new JwkSetKeyStore(loader.getResource(keyStoreLocation));
     } catch (Exception e) {
       throw new IAMJWTKeystoreError("Error initializing JWKProperties keystore: " + e.getMessage(), e);
     }

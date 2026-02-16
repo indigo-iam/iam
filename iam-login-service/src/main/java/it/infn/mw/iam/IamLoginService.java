@@ -15,20 +15,6 @@
  */
 package it.infn.mw.iam;
 
-import org.mitre.discovery.web.DiscoveryEndpoint;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
-import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.oauth2.web.DeviceEndpoint;
-import org.mitre.oauth2.web.IntrospectionEndpoint;
-import org.mitre.oauth2.web.OAuthConfirmationController;
-import org.mitre.oauth2.web.RevocationEndpoint;
-import org.mitre.openid.connect.token.ConnectTokenEnhancer;
-import org.mitre.openid.connect.token.TofuUserApprovalHandler;
-import org.mitre.openid.connect.view.UserInfoView;
-import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
-import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
-import org.mitre.openid.connect.web.RootController;
-import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -37,7 +23,6 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -60,42 +45,13 @@ import it.infn.mw.iam.core.util.IamBanner;
     "it.infn.mw.iam.audit",
     "it.infn.mw.iam.actuator",
     "it.infn.mw.iam.rcauth",
-    "it.infn.mw.iam.service.aup",
-    "org.mitre.oauth2.web",
-    "org.mitre.oauth2.view", 
-    "org.mitre.openid.connect.web", 
-    "org.mitre.openid.connect.view",
-    "org.mitre.discovery.web", 
-    "org.mitre.discovery.view"},
-excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=RootController.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DiscoveryEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=JWKSetPublishingEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DynamicClientRegistrationEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=CorsFilter.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=OAuthConfirmationController.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DeviceEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=TofuUserApprovalHandler.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=IntrospectionEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=RevocationEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoView.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=ConnectTokenEnhancer.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultOAuth2ProviderTokenService.class)
+    "it.infn.mw.iam.service.aup"
+//    "org.mitre.oauth2.web",
+//    "org.mitre.oauth2.view", 
+//    "org.mitre.openid.connect.web", 
+//    "org.mitre.openid.connect.view",
+//    "org.mitre.discovery.web", 
+//    "org.mitre.discovery.view"
 })
 @EnableCaching
 @EnableAutoConfiguration(

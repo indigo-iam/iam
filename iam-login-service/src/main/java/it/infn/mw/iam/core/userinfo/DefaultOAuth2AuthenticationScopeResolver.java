@@ -15,26 +15,29 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
+import static it.infn.mw.iam.core.IamTokenService.sha256;
 import static java.util.Objects.isNull;
 
+import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Component
 @SuppressWarnings("deprecation")
 public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2AuthenticationScopeResolver {
 
-  private final OAuth2TokenRepository tokenRepo;
+  private final IamOAuthAccessTokenRepository accessTokenRepository;
 
-  public DefaultOAuth2AuthenticationScopeResolver(OAuth2TokenRepository tokenRepo) {
-    this.tokenRepo = tokenRepo;
+  public DefaultOAuth2AuthenticationScopeResolver(
+      IamOAuthAccessTokenRepository accessTokenRepository) {
+    this.accessTokenRepository = accessTokenRepository;
   }
 
   @Override
@@ -46,15 +49,13 @@ public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2Authentic
       return auth.getOAuth2Request().getScope();
     }
 
-    OAuth2AccessTokenEntity accessTokenEntity =
-        tokenRepo.getAccessTokenByValue(details.getTokenValue());
+    Optional<OAuth2AccessTokenEntity> accessTokenEntity =
+        accessTokenRepository.findByTokenValue(sha256(details.getTokenValue()));
 
-    if (isNull(accessTokenEntity)) {
-      throw new IllegalArgumentException("Invalid token");
-    } else {
-      return accessTokenEntity.getScope();
+    if (accessTokenEntity.isPresent()) {
+      return accessTokenEntity.get().getScope();
     }
-
+    throw new IllegalArgumentException("Invalid token");
   }
 
 }

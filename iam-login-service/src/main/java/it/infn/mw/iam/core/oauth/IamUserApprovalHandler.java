@@ -15,12 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static java.lang.String.valueOf;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_CONSENT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.util.Calendar;
@@ -33,14 +29,6 @@ import java.util.Set;
 
 import javax.servlet.http.HttpSession;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.model.WhitelistedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
-import org.mitre.openid.connect.service.WhitelistedSiteService;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
@@ -54,13 +42,20 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
+import it.infn.mw.iam.core.oauth.approvedsite.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.web.util.AuthenticationTimeStamper;
+import it.infn.mw.iam.persistence.model.ApprovedSite;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.WhitelistedSite;
 
 @SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
-  private final ClientDetailsEntityService clientDetailsService;
+  private final IamClientDetailsService clientDetailsService;
   private final ApprovedSiteService approvedSiteService;
   private final WhitelistedSiteService whitelistedSiteService;
   private final SystemScopeService systemScopeService;
@@ -69,7 +64,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
-  public IamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
+  public IamUserApprovalHandler(IamClientDetailsService clientDetailsService,
       ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
       SystemScopeService systemScopeService, AccountUtils accountUtils,
       ClientService clientService) {
@@ -96,19 +91,25 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public AuthorizationRequest checkForPreApproval(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    String prompt = (String) authorizationRequest.getExtensions().get(PROMPT);
-    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
-    if (prompts.contains(PROMPT_CONSENT)) {
+    String prompt =
+        (String) authorizationRequest.getExtensions().get(IamOAuth2ParameterNames.PROMPT);
+    List<String> prompts = Splitter.on(IamOAuth2ParameterNames.PROMPT_SEPARATOR)
+      .splitToList(Strings.nullToEmpty(prompt));
+    if (prompts.contains(IamOAuth2ParameterNames.PROMPT_CONSENT)) {
       return authorizationRequest;
     }
 
-    String userId = userAuthentication.getName();
-    String clientId = authorizationRequest.getClientId();
+    ClientDetailsEntity client =
+        clientDetailsService.loadClientByClientId(authorizationRequest.getClientId());
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
+
+//    String userId = userAuthentication.getName();
+//    String clientId = authorizationRequest.getClientId();
     Set<String> scopes = authorizationRequest.getScope();
 
     boolean alreadyApproved = false;
 
-    Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
+    Collection<ApprovedSite> aps = approvedSiteService.getByClientAndUser(client, account);
 
     for (ApprovedSite ap : aps) {
 
@@ -118,7 +119,8 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
         ap.setAccessDate(new Date());
         approvedSiteService.save(ap);
 
-        authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
+        authorizationRequest.getExtensions()
+          .put(IamOAuth2ParameterNames.APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
         alreadyApproved = true;
 
@@ -127,7 +129,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     if (!alreadyApproved) {
-      WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
+      WhitelistedSite ws = whitelistedSiteService.getByClientId(client.getClientId());
       if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), scopes)) {
 
         authorizationRequest.setApproved(true);
@@ -142,9 +144,10 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public AuthorizationRequest updateAfterApproval(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    String userId = userAuthentication.getName();
-    String clientId = authorizationRequest.getClientId();
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
+    ClientDetailsEntity client =
+        clientDetailsService.loadClientByClientId(authorizationRequest.getClientId());
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
+
     Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
     if (!Boolean.parseBoolean(approvalParams.get(USER_OAUTH_APPROVAL))) {
@@ -179,17 +182,15 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       }
 
       ApprovedSite newSite =
-          approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
+          approvedSiteService.createApprovedSite(client, account, timeout, approvedScopes);
       String newSiteId = newSite.getId().toString();
-      authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
+      authorizationRequest.getExtensions().put(IamOAuth2ParameterNames.APPROVED_SITE, newSiteId);
     }
 
     setAuthTime(authorizationRequest);
 
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
-
     if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)
-        && clientService.findClientOwners(clientId, null).isEmpty()) {
+        && clientService.findClientOwners(client.getClientId(), null).isEmpty()) {
       clientService.linkClientToAccount(client, account);
     }
 

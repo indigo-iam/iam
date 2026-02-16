@@ -32,17 +32,16 @@ import java.util.function.Supplier;
 import javax.servlet.http.HttpSession;
 
 import org.bouncycastle.operator.OperatorCreationException;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
 import it.infn.mw.iam.config.IamProperties;
 
 @Service
@@ -79,8 +78,6 @@ public class DefaultRcAuthRequestService implements RCAuthRequestService {
   final RCAuthCertificateRequestor certRequestor;
   final SecureRandom rng;
 
-
-  @Autowired
   public DefaultRcAuthRequestService(IamProperties iamProperties, RCAuthProperties properties,
       ServerConfigurationService scs, RCAuthTokenRequestor requestor,
       RCAuthCertificateRequestor certRequestor) {

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.common;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.common.collect.Lists;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -122,7 +122,8 @@ public class ListResponseDTO<T> {
     }
 
     public Builder<T> zeroIndexedSingleResource(T element) {
-      this.resources = Lists.newArrayList(element);
+      this.resources = new ArrayList<>();
+      this.resources.add(element);
       this.totalResults = 1L;
       this.itemsPerPage = 10;
       this.startIndex = 0;
@@ -130,7 +131,8 @@ public class ListResponseDTO<T> {
     }
 
     public Builder<T> singleResource(T element) {
-      this.resources = Lists.newArrayList(element);
+      this.resources = new ArrayList<>();
+      this.resources.add(element);
       this.totalResults = 1L;
       this.itemsPerPage = 10;
       this.startIndex = 1;

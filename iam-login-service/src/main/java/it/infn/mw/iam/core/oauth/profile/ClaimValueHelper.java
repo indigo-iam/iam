@@ -19,11 +19,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.core.Authentication;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public interface ClaimValueHelper {
 
   /**
@@ -34,7 +33,7 @@ public interface ClaimValueHelper {
    * @param account The user account info
    * @return the value of claim name
    */
-  Object resolveClaim(String claimName, OAuth2Authentication auth, Optional<IamAccount> account);
+  Object resolveClaim(String claimName, Authentication auth, Optional<IamAccount> account);
 
   /**
    * Resolve claim names to a value (if available)
@@ -44,7 +43,7 @@ public interface ClaimValueHelper {
    * @param account The user account info
    * @return the map of claim names and values
    */
-  Map<String, Object> resolveClaims(Set<String> claimNames, OAuth2Authentication auth, Optional<IamAccount> account);
+  Map<String, Object> resolveClaims(Set<String> claimNames, Authentication auth, Optional<IamAccount> account);
 
   boolean isValidClaimValue(Object claimValue);
 }

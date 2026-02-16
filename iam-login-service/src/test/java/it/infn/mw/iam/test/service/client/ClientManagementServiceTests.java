@@ -42,8 +42,8 @@ import java.util.Set;
 import javax.validation.ConstraintViolationException;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,6 +53,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -64,6 +65,7 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
@@ -71,6 +73,7 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
     webEnvironment = WebEnvironment.NONE)
+@Transactional
 class ClientManagementServiceTests {
 
   @Autowired
@@ -89,6 +92,11 @@ class ClientManagementServiceTests {
   private Clock clock;
 
   private Authentication userAuth;
+
+  @BeforeAll
+  static void cleanupTokens() {
+    
+  }
 
   @Test
   void testPagedClientLookup() {

@@ -32,16 +32,17 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
+import it.infn.mw.iam.persistence.model.SystemScope;
+import it.infn.mw.iam.persistence.repository.IamSystemScopeRepository;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
@@ -51,12 +52,12 @@ class ScopeRegistryTests {
   ClientDetails client;
 
   @Mock
-  SystemScopeRepository scopeRepo;
+  IamSystemScopeRepository scopeRepo;
 
   @BeforeEach
   void setup() {
     SystemScope testScope = new SystemScope("test:/whatever");
-    when(scopeRepo.getAll()).thenReturn(Sets.newHashSet(testScope));
+    when(scopeRepo.findAll()).thenReturn(Lists.newArrayList(testScope));
   }
 
   @Test
@@ -92,11 +93,12 @@ class ScopeRegistryTests {
   @Test
   void testMatchingScope() {
 
-    DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);
+    DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(
+        newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")),
+        scopeRepo);
 
-    when(client.getScope())
-      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
+    when(client.getScope()).thenReturn(
+        Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));

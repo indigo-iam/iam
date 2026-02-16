@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.rcauth.oidc;
 
-import org.mitre.openid.connect.config.ServerConfiguration;
-
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
 import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 
 public interface RCAuthTokenResponseVerifier {

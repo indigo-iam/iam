@@ -17,7 +17,6 @@ package it.infn.mw.iam.authn;
 
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,15 +27,14 @@ import it.infn.mw.iam.authn.error.InvalidExternalAuthenticationHintError;
 @Service
 public class DefaultExternalAuthenticationHintService implements ExternalAuthenticationHintService {
 
-  private static final String SAML_COLON="saml:";
-  
+  private static final String SAML_COLON = "saml:";
+
   private String baseUrl;
-  
-  @Autowired
+
   public DefaultExternalAuthenticationHintService(@Value("${iam.baseUrl}") String url) {
     this.baseUrl = url;
   }
-  
+
   protected void hintSanityChecks(String hint) {
     if (Objects.isNull(hint)) {
       throw new InvalidExternalAuthenticationHintError("null hint");
@@ -52,7 +50,7 @@ public class DefaultExternalAuthenticationHintService implements ExternalAuthent
     hintSanityChecks(externalAuthnHint);
     if (externalAuthnHint.startsWith(SAML_COLON)) {
       if (SAML_COLON.equals(externalAuthnHint)) {
-        return String.format("%s/saml/login", baseUrl); 
+        return String.format("%s/saml/login", baseUrl);
       }
       return String.format("%s/saml/login?idp=%s", baseUrl, externalAuthnHint.substring(5));
     }

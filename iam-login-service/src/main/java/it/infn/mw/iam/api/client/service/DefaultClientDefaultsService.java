@@ -24,19 +24,17 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @Service
 public class DefaultClientDefaultsService implements ClientDefaultsService {
 
-  private static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
+  public static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
       EnumSet.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
@@ -88,8 +86,45 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setClientSecret(generateClientSecret());
     }
 
-    client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
+    client.setAuthorities(Set.of(Authorities.ROLE_CLIENT));
     client.setClearAccessTokensOnRefresh(false);
+    return client;
+  }
+
+  @Override
+  public ClientDetailsEntity setupProtectedResourceDefaults(ClientDetailsEntity client) {
+
+    client.setAccessTokenValiditySeconds(0);
+    client.setRefreshTokenValiditySeconds(0);
+    client.setIdTokenValiditySeconds(0);
+    client.setDeviceCodeValiditySeconds(0);
+
+    client.setGrantTypes(Set.of());
+    client.setResponseTypes(Set.of());
+    client.setRedirectUris(Set.of());
+
+    client.setAllowIntrospection(true);
+    client.setDynamicallyRegistered(true);
+
+    client.setAuthorities(Set.of(Authorities.ROLE_CLIENT));
+    client.setClearAccessTokensOnRefresh(false);
+
+    client.setDefaultACRvalues(Set.of());
+    client.setDefaultMaxAge(null);
+    client.setIdTokenEncryptedResponseAlg(null);
+    client.setIdTokenEncryptedResponseEnc(null);
+    client.setIdTokenSignedResponseAlg(null);
+    client.setInitiateLoginUri(null);
+    client.setPostLogoutRedirectUris(null);
+    client.setRequestObjectSigningAlg(null);
+    client.setRequireAuthTime(null);
+    client.setReuseRefreshToken(false);
+    client.setSectorIdentifierUri(null);
+    client.setSubjectType(null);
+    client.setUserInfoEncryptedResponseAlg(null);
+    client.setUserInfoEncryptedResponseEnc(null);
+    client.setUserInfoSignedResponseAlg(null);
+
     return client;
   }
 

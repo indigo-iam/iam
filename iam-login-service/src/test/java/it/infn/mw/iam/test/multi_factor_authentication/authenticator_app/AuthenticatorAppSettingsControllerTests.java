@@ -38,6 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -57,66 +58,73 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"notification.disable=false"})
+@ActiveProfiles({"h2-test", "mfa"})
 class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
-    private MockMvc mvc;
-    @Autowired
-    private WebApplicationContext context;
-    @Autowired
-    private MockNotificationDelivery notificationDelivery;
-    @Autowired
-    private IamEmailNotificationRepository notificationRepo;
-    @MockBean
-    private IamAccountRepository accountRepository;
-    @MockBean
-    private IamTotpMfaRepository totpMfaRepository;
+
+  private MockMvc mvc;
+
+  @Autowired
+  private WebApplicationContext context;
+
+  @Autowired
+  private MockNotificationDelivery notificationDelivery;
+
+  @Autowired
+  private IamEmailNotificationRepository notificationRepo;
+
+  @MockBean
+  private IamAccountRepository accountRepository;
+
+  @MockBean
+  private IamTotpMfaRepository totpMfaRepository;
 
   @BeforeEach
   void setup() {
-        when(accountRepository.findByUuid(TOTP_UUID)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-        when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    when(accountRepository.findByUuid(TOTP_UUID)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
+    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
 
-        mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-    }
+    mvc =
+        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
+  }
 
   @AfterEach
   void tearDown() {
-        notificationDelivery.clearDeliveredNotifications();
-    }
+    notificationDelivery.clearDeliveredNotifications();
+  }
 
   @Test
   @WithAnonymousUser
   void testDisableAuthenticatorAppNoAuthenticationFails() throws Exception {
-        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
-                .andExpect(status().isUnauthorized());
-    }
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isUnauthorized());
+  }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testDisableAuthenticatorAppWorksForAdmin() throws Exception {
-        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
-                .andExpect(status().isOk());
-    }
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isOk());
+  }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testConfirmationEmailSentOnMfaDisable() throws Exception {
-        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
-                .andExpect(status().isOk());
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isOk());
 
-        List<IamEmailNotification> notifications = notificationRepo
-                .findByNotificationType(IamNotificationType.MFA_DISABLE);
+    List<IamEmailNotification> notifications =
+        notificationRepo.findByNotificationType(IamNotificationType.MFA_DISABLE);
 
-        assertEquals(1, notifications.size());
-        assertEquals("[indigo-dc IAM] Multi-factor authentication (MFA) disabled", notifications.get(0).getSubject());
+    assertEquals(1, notifications.size());
+    assertEquals("[indigo-dc IAM] Multi-factor authentication (MFA) disabled",
+        notifications.get(0).getSubject());
 
-        notificationDelivery.sendPendingNotifications();
+    notificationDelivery.sendPendingNotifications();
 
-        assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
-        IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
-        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Multi-factor authentication (MFA) disabled"));
-    }
+    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+    assertThat(message.getSubject(),
+        equalTo("[indigo-dc IAM] Multi-factor authentication (MFA) disabled"));
+  }
 
 }

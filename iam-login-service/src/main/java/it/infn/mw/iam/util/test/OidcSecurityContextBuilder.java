@@ -22,8 +22,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -34,10 +32,12 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
+import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
 
-  private UserInfo userInfo = null;
+  private IamUserInfo userInfo = null;
   private Map<String, String> stringClaims = Maps.newHashMap();
 
   public OidcSecurityContextBuilder() {
@@ -47,14 +47,14 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
 
     username = "test-oidc-subject";
 
-    userInfo = mock(UserInfo.class);
+    userInfo = mock(IamUserInfo.class);
   }
 
   @Override
   public SecurityContext buildSecurityContext() {
 
     OIDCAuthenticationToken authToken = mock(OIDCAuthenticationToken.class);
-    UserInfo ui = mock(UserInfo.class);
+    IamUserInfo ui = mock(IamUserInfo.class);
     when(authToken.getUserInfo()).thenReturn(ui);
 
     JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();

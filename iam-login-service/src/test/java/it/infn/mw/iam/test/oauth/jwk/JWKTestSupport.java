@@ -21,10 +21,9 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
-
 import com.nimbusds.jose.jwk.JWKSet;
 
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 public interface JWKTestSupport {
@@ -48,8 +47,8 @@ public interface JWKTestSupport {
     }
   }
 
-  default JWKSetKeyStore loadKeystore(String location) throws IOException, ParseException {
-    return new JWKSetKeyStore(loadJWKSet(location));
+  default JwkSetKeyStore loadKeystore(String location) throws IOException, ParseException {
+    return new JwkSetKeyStore(loadJWKSet(location));
   }
 
 }

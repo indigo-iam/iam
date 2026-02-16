@@ -15,18 +15,8 @@
  */
 package it.infn.mw.iam.core.gc;
 
-import java.util.Collection;
+import java.util.List;
 
-import org.mitre.data.DefaultPageCriteria;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -34,7 +24,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.core.AuthenticationHolderService;
+import it.infn.mw.iam.core.oauth.approvedsite.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
@@ -47,23 +45,23 @@ public class DefaultGarbageCollector implements GarbageCollector {
   private final ApprovedSiteService approvedSiteService;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
-  private final DeviceCodeRepository deviceCodeRepo;
-  private final AuthenticationHolderRepository authenticationHolderRepository;
+  private final DeviceCodeService deviceCodeService;
+  private final AuthenticationHolderService authHolderService;
   private final IamRevokedAccessTokenRepository revokedAccessTokenRepo;
-  private final AuthorizationCodeRepository authzCodeRepo;
+  private final IamAuthorizationCodeRepository authzCodeRepo;
 
   public DefaultGarbageCollector(ApprovedSiteService approvedSiteService,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, DeviceCodeRepository deviceCodeRepo,
-      AuthenticationHolderRepository authenticationHolderRepository,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, DeviceCodeService deviceCodeService,
+      AuthenticationHolderService authHolderService,
       IamRevokedAccessTokenRepository revokedAccessTokenRepo,
-      AuthorizationCodeRepository authzCodeRepo) {
+      IamAuthorizationCodeRepository authzCodeRepo) {
 
     this.approvedSiteService = approvedSiteService;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
-    this.deviceCodeRepo = deviceCodeRepo;
-    this.authenticationHolderRepository = authenticationHolderRepository;
+    this.deviceCodeService = deviceCodeService;
+    this.authHolderService = authHolderService;
     this.revokedAccessTokenRepo = revokedAccessTokenRepo;
     this.authzCodeRepo = authzCodeRepo;
   }
@@ -78,18 +76,17 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredAuthorizationCodes(int count) {
 
-    Collection<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo.getExpiredCodes();
+    List<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo.findExpired();
     LOG.debug("Found {} expired authorization codes", expiredAuthzCodes.size());
-    expiredAuthzCodes.forEach(authzCodeRepo::remove);
+    expiredAuthzCodes.forEach(authzCodeRepo::delete);
   }
 
   @Override
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredDeviceCodes(int count) {
 
-    Collection<DeviceCode> expiredDeviceCodes = deviceCodeRepo.getExpiredCodes();
-    expiredDeviceCodes.forEach(deviceCodeRepo::remove);
-    LOG.debug("Removed {} expired device codes", expiredDeviceCodes.size());
+    int deleted = deviceCodeService.clearExpired();
+    LOG.debug("Removed {} expired device codes", deleted);
   }
 
   @Override
@@ -124,10 +121,11 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Override
   public void clearOrphanedAuthenticationHolder(int count) {
 
-    Collection<AuthenticationHolderEntity> orphanedHolders =
-        authenticationHolderRepository.getOrphanedAuthenticationHolders(new DefaultPageCriteria());
-    orphanedHolders.forEach(authenticationHolderRepository::remove);
-    LOG.debug("Removed {} orphaned authentication holders", orphanedHolders.size());
+    Page<AuthenticationHolderEntity> orphanedHolders =
+        authHolderService.getOrphanedAuthenticationHolders(new OffsetPageable(0, 100));
+    LOG.debug("Removing {} orphaned authentication holders ...",
+        orphanedHolders.getContent().size());
+    orphanedHolders.getContent().forEach(authHolderService::remove);
   }
 
 }

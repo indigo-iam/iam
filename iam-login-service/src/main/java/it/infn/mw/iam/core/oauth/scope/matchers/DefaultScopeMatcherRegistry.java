@@ -15,14 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
+import java.util.List;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
+
+import it.infn.mw.iam.persistence.model.SystemScope;
+import it.infn.mw.iam.persistence.repository.IamSystemScopeRepository;
 
 @SuppressWarnings("deprecation")
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
@@ -31,9 +33,9 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   private final Set<ScopeMatcher> customMatchers;
 
-  private final SystemScopeRepository scopeRepo;
+  private final IamSystemScopeRepository scopeRepo;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, SystemScopeRepository scopeRepo) {
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, IamSystemScopeRepository scopeRepo) {
     this.customMatchers = customMatchers;
     this.scopeRepo = scopeRepo;
   }
@@ -54,7 +56,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
 
-    Set<SystemScope> systemScopes = scopeRepo.getAll();
+    List<SystemScope> systemScopes = scopeRepo.findAll();
 
     return customMatchers.stream()
       .filter(s -> systemScopes.toString().contains(scope))

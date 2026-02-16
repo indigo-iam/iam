@@ -16,13 +16,13 @@
 package it.infn.mw.iam.api.scope_policy;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-
-import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -146,7 +146,8 @@ public class ScopePolicyDTO {
   }
 
   public void setScopes(Set<String> scopes) {
-    this.scopes = scopes;
+    this.scopes = new HashSet<>();
+    this.scopes.addAll(scopes);
   }
 
   public String getMatchingPolicy() {

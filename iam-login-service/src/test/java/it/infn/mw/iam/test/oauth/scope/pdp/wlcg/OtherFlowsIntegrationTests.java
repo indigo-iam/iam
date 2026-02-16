@@ -64,7 +64,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 @IamMockMvcIntegrationTest
-@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
+//@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
 class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired

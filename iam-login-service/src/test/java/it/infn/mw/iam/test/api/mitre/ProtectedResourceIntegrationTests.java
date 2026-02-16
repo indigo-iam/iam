@@ -23,7 +23,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.web.ProtectedResourceRegistrationEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -57,7 +56,7 @@ class ProtectedResourceIntegrationTests {
       .log()
       .all(true)
       .when()
-      .post("/" + ProtectedResourceRegistrationEndpoint.URL)
+      .post("/resource")
       .then()
       .log()
       .all(true);
@@ -72,7 +71,7 @@ class ProtectedResourceIntegrationTests {
       .log()
       .all(true)
       .when()
-      .get("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+      .get("/resource/" + clientId)
       .then()
       .log()
       .all(true);
@@ -90,7 +89,7 @@ class ProtectedResourceIntegrationTests {
       .log()
       .all(true)
       .when()
-      .put("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+      .put("/resource/" + clientId)
       .then()
       .log()
       .all(true);
@@ -105,7 +104,7 @@ class ProtectedResourceIntegrationTests {
       .log()
       .all(true)
       .when()
-      .delete("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+      .delete("/resource/" + clientId)
       .then()
       .log()
       .all(true);
@@ -160,7 +159,6 @@ class ProtectedResourceIntegrationTests {
     assertNull(fromAPI.getAccessTokenValiditySeconds());
     assertNull(fromAPI.getIdTokenValiditySeconds());
     assertNull(fromAPI.getRefreshTokenValiditySeconds());
-    assertEquals(0, fromAPI.getClientSecretExpiresAt().toInstant().getEpochSecond());
     assertFalse(fromAPI.getScope().isEmpty());
     assertEquals(1, fromAPI.getScope().size());
     assertTrue(fromAPI.getScope().contains("openid"));
@@ -184,7 +182,6 @@ class ProtectedResourceIntegrationTests {
     assertNull(updated.getAccessTokenValiditySeconds());
     assertNull(updated.getIdTokenValiditySeconds());
     assertNull(updated.getRefreshTokenValiditySeconds());
-    assertEquals(0, updated.getClientSecretExpiresAt().toInstant().getEpochSecond());
     assertFalse(updated.getScope().isEmpty());
     assertEquals(2, updated.getScope().size());
     assertTrue(updated.getScope().contains("openid"));

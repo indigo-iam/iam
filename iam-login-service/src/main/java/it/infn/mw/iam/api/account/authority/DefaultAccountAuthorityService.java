@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.account.authority;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,7 +52,7 @@ public class DefaultAccountAuthorityService
   }
 
   protected IamAuthority findAuthorityFromString(String authority) {
-    checkNotNull(authority, "authority must not be null");
+    requireNonNull(authority, "authority must not be null");
 
     return authRepo.findByAuthority(authority).orElseThrow(
         () -> new InvalidAuthorityError(String.format("Invalid authority: '%s'", authority)));
@@ -60,7 +60,7 @@ public class DefaultAccountAuthorityService
 
   @Override
   public void addAuthorityToAccount(IamAccount account, String authority) {
-    checkNotNull(account, ACCOUNT_NOT_NULL_MSG);
+    requireNonNull(account, ACCOUNT_NOT_NULL_MSG);
 
     IamAuthority iamAuthority = findAuthorityFromString(authority);
 
@@ -81,7 +81,7 @@ public class DefaultAccountAuthorityService
 
   @Override
   public void removeAuthorityFromAccount(IamAccount account, String authority) {
-    checkNotNull(account, ACCOUNT_NOT_NULL_MSG);
+    requireNonNull(account, ACCOUNT_NOT_NULL_MSG);
     IamAuthority iamAuthority = findAuthorityFromString(authority);
     account.getAuthorities().remove(iamAuthority);
     accountRepo.save(account);
@@ -94,7 +94,7 @@ public class DefaultAccountAuthorityService
 
   @Override
   public Set<String> getAccountAuthorities(IamAccount account) {
-    checkNotNull(account, ACCOUNT_NOT_NULL_MSG);
+    requireNonNull(account, ACCOUNT_NOT_NULL_MSG);
 
     return account.getAuthorities()
       .stream()

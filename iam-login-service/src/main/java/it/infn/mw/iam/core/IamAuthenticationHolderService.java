@@ -1,0 +1,80 @@
+/**
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package it.infn.mw.iam.core;
+
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.stereotype.Service;
+
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
+
+@SuppressWarnings("deprecation")
+@Service
+public class IamAuthenticationHolderService implements AuthenticationHolderService {
+
+  final IamAuthenticationHolderRepository repo;
+  final ExternalAuthenticationInfoBuilder mapBuilder;
+
+  public IamAuthenticationHolderService(IamAuthenticationHolderRepository repo,
+      ExternalAuthenticationInfoBuilder mapBuilder) {
+    this.repo = repo;
+    this.mapBuilder = mapBuilder;
+  }
+
+  @Override
+  public AuthenticationHolderEntity create(ClientDetailsEntity client, OAuth2Authentication authn) {
+
+    AuthenticationHolderEntity holder = new AuthenticationHolderEntity(client, authn);
+
+    if (authn.getUserAuthentication() != null
+        && authn.getUserAuthentication() instanceof AbstractExternalAuthenticationToken<?>) {
+
+      AbstractExternalAuthenticationToken<?> token =
+          (AbstractExternalAuthenticationToken<?>) authn.getUserAuthentication();
+
+      Map<String, String> info = token.buildAuthnInfoMap(mapBuilder);
+      holder.getUserAuth().getAdditionalInfo().putAll(info);
+    }
+
+    return repo.save(holder);
+  }
+
+  @Override
+  public void remove(AuthenticationHolderEntity holder) {
+
+    repo.delete(holder);
+  }
+
+  @Override
+  public Page<AuthenticationHolderEntity> getOrphanedAuthenticationHolders(Pageable page) {
+
+    return repo.getOrphans(page);
+  }
+
+  @Override
+  public AuthenticationHolderEntity save(AuthenticationHolderEntity code) {
+
+    return repo.save(code);
+  }
+
+}

@@ -27,14 +27,16 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.nimbusds.oauth2.sdk.GrantType;
+
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -138,7 +140,8 @@ public class ClientLastUsedTests extends TestTokensUtils {
         // After refreshing the access token, the last used date is updated
         iamProperties.getClient().setTrackLastUsed(true);
         OAuth2RefreshTokenEntity refreshToken = accessToken.getRefreshToken();
-        TokenRequest tokenRequest = new TokenRequest(emptyMap(), POST_CLIENT, Collections.emptySet(), "");
+        TokenRequest tokenRequest = new TokenRequest(emptyMap(), POST_CLIENT,
+            Collections.emptySet(), GrantType.REFRESH_TOKEN.getValue());
         tokenService.refreshAccessToken(refreshToken.getValue(), tokenRequest);
         assertNotNull(client.getClientLastUsed());
         lastUsed = client.getClientLastUsed().getLastUsed();

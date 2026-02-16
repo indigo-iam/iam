@@ -39,7 +39,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
+@ActiveProfiles({"h2-test", "openid-federation"})
 @TestPropertySource(properties = {
   "openid-federation.entity-configuration.federation-entity.logo-uri=https://logo-example.com",
   "openid-federation.entity-configuration.federation-entity.organization-name=INDIGO IAM",

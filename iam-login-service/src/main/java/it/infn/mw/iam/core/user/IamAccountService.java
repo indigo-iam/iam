@@ -56,6 +56,14 @@ public interface IamAccountService {
   Optional<IamAccount> findByUsername(String username);
 
   /**
+   * Finds an account by email
+   * 
+   * @param account email
+   * @return an {@link Optional} IAM account
+   */
+  Optional<IamAccount> findByEmail(String email);
+
+  /**
    * Creates a new {@link IamAccount} from a registration request.
    *
    * @param dto the registration request

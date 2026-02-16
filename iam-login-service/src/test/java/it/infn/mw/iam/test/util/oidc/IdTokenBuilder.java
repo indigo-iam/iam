@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
-
 import com.google.common.base.Strings;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -36,6 +34,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 
 public class IdTokenBuilder {
 
@@ -50,13 +50,13 @@ public class IdTokenBuilder {
   String jwtId;
   String nonce;
 
-  final JWKSetKeyStore keyStore;
+  final JwkSetKeyStore keyStore;
   final JWSAlgorithm signingAlgo;
   JWSSigner signer;
   
   Map<String, String> customClaims = newHashMap();
 
-  public IdTokenBuilder(JWKSetKeyStore keyStore, JWSAlgorithm algo) {
+  public IdTokenBuilder(JwkSetKeyStore keyStore, JWSAlgorithm algo) {
     Calendar cal = Calendar.getInstance();
     issueTime = cal.getTime();
     cal.add(Calendar.HOUR, 1);

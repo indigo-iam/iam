@@ -15,6 +15,7 @@
 #
 
 openid-federation:
+  enabled: ${IAM_OIDFED_ENABLED:false}
   trust-anchors: ${IAM_OIDFED_TRUST_ANCHORS:https://trust-anchor.sandbox.eosc.grnet.gr}
   entity-configuration:
     expiration-seconds: ${IAM_OIDFED_ENTITY_CONFIGURATION_EXPIRATION_SECONDS:86400}

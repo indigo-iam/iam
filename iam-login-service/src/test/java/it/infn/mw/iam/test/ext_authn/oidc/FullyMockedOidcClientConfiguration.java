@@ -27,7 +27,7 @@ public class FullyMockedOidcClientConfiguration {
 
   @Bean
   @Primary
-  public OidcTokenRequestor tokenRequestor(MockOIDCProvider mockOidcProvider) {
+  OidcTokenRequestor tokenRequestor(MockOIDCProvider mockOidcProvider) {
     return mockOidcProvider;
   }
 

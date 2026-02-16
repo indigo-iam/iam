@@ -17,11 +17,11 @@ package it.infn.mw.iam.audit.events.tokens;
 
 import java.text.ParseException;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.nimbusds.jose.JWSHeader;
+
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 
 @JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "subject",

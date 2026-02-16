@@ -20,18 +20,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.UserInfoFetcher;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
-import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
-import org.mitre.openid.connect.client.service.impl.StaticSingleIssuerService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,8 +29,19 @@ import org.springframework.core.io.ClassPathResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.authn.oidc.RegisteredClient;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.authn.oidc.configuration.ClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.StaticClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
+import it.infn.mw.iam.authn.oidc.userinfo.UserInfoFetcher;
+import it.infn.mw.iam.core.jwt.IamJwtSigningAndValidationService;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
+import it.infn.mw.iam.core.oidc.service.IssuerService;
+import it.infn.mw.iam.persistence.model.AuthMethod;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
@@ -57,7 +56,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public UserInfoFetcher userInfoFetcher() {
+  UserInfoFetcher userInfoFetcher() {
 
     UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
     return fetcher;
@@ -65,13 +64,13 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public RestTemplateFactory restTemplateFactory() {
+  RestTemplateFactory restTemplateFactory() {
     return new MockRestTemplateFactory();
   }
 
   @Bean
   @Primary
-  public IssuerService oidcIssuerService() {
+  IssuerService oidcIssuerService() {
 
     StaticSingleIssuerService issuerService = new StaticSingleIssuerService();
     issuerService.setIssuer(TEST_OIDC_ISSUER);
@@ -82,7 +81,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public ServerConfigurationService mockServerConfigurationService() {
+  ServerConfigurationService mockServerConfigurationService() {
 
     ServerConfiguration sc = new ServerConfiguration();
     sc.setIssuer(TEST_OIDC_ISSUER);
@@ -100,7 +99,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public ClientConfigurationService staticClientConfiguration() {
+  ClientConfigurationService staticClientConfiguration() {
 
     RegisteredClient rc = new RegisteredClient();
     rc.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
@@ -111,21 +110,18 @@ public class OidcTestConfig {
 
     clients.put(TEST_OIDC_ISSUER, rc);
 
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
+    return new StaticClientConfigurationService(clients);
   }
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
+  JwkSetCacheService mockjwkSetCacheService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
-    JWTSigningAndValidationService signatureValidator =
-        new IamJWTSigningService(mockOidcProviderKeyStore());
+    JwtSigningAndValidationService signatureValidator =
+        new IamJwtSigningAndValidationService(mockOidcProviderKeyStore());
 
-    JWKSetCacheService mockCacheService = Mockito.mock(JWKSetCacheService.class);
+    JwkSetCacheService mockCacheService = Mockito.mock(JwkSetCacheService.class);
     Mockito.when(mockCacheService.getValidator(TEST_OIDC_JWKS_URI)).thenReturn(signatureValidator);
 
     return mockCacheService;
@@ -134,14 +130,12 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public JWKSetKeyStore mockOidcProviderKeyStore() {
-    JWKSetKeyStore ks = new JWKSetKeyStore();
-    ks.setLocation(new ClassPathResource("/oidc/mock_op_keys.jks"));
-    return ks;
+  JwkSetKeyStore mockOidcProviderKeyStore() {
+    return new JwkSetKeyStore(new ClassPathResource("/oidc/mock_op_keys.jks"));
   }
 
   @Bean
-  public MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
+  MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
     return new MockOIDCProvider(mapper, mockOidcProviderKeyStore());
   }
 

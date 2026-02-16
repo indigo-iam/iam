@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.api.scim.controller;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import it.infn.mw.iam.api.scim.provisioning.paging.DefaultScimPageRequest;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 
@@ -27,8 +30,6 @@ public class ScimControllerSupport {
   protected ScimPageRequest buildUserPageRequest(Integer count, Integer startIndex) {
     return buildPageRequest(count, startIndex, SCIM_USER_MAX_PAGE_SIZE);
   }
-
-
 
   protected ScimPageRequest buildGroupPageRequest(Integer count, Integer startIndex) {
     return buildPageRequest(count, startIndex, SCIM_GROUP_MAX_PAGE_SIZE);
@@ -67,4 +68,20 @@ public class ScimControllerSupport {
       .build();
   }
 
+  protected Set<String> parseAttributes(final String attributesParameter) {
+
+    Set<String> result = new HashSet<>();
+    if (attributesParameter != null && !attributesParameter.isBlank()) {
+      String[] parts = attributesParameter.split("[\\.,]+");
+      for (String part : parts) {
+          String trimmed = part.trim();
+          if (!trimmed.isEmpty()) {
+              result.add(trimmed);
+          }
+      }
+    }
+    result.add("schemas");
+    result.add("id");
+    return result;
+  }
 }

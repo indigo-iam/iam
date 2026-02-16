@@ -23,11 +23,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -41,6 +38,8 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.model.ServerConfiguration;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.oidc.RCAuthTokenResponseVerifier;
@@ -57,8 +56,7 @@ public class DefaultRCAuthTokenRequestor implements RCAuthTokenRequestor {
   final ServerConfigurationService serverConfigService;
   final ObjectMapper objectMapper;
   final RCAuthTokenResponseVerifier responseVerifier;
-  
-  @Autowired
+
   public DefaultRCAuthTokenRequestor(RestTemplateFactory restFactory, RCAuthProperties props,
       RCAuthTokenResponseVerifier verifier, IamProperties iamProps, ServerConfigurationService scs,
       ObjectMapper mapper) {
@@ -97,13 +95,13 @@ public class DefaultRCAuthTokenRequestor implements RCAuthTokenRequestor {
     HttpHeaders headers = new HttpHeaders();
 
     prepareBasicAuthenticationHeader(headers);
-    
+
     MultiValueMap<String, String> tokenRequestParams = new LinkedMultiValueMap<>();
-    
+
     tokenRequestParams.add("grant_type", "authorization_code");
     tokenRequestParams.add("redirect_uri",
         String.format("%s%s", iamProperties.getBaseUrl(), CALLBACK_PATH));
-    
+
     tokenRequestParams.add("client_id", rcAuthProperties.getClientId());
     tokenRequestParams.add("client_secret", rcAuthProperties.getClientSecret());
     tokenRequestParams.add("code", code);
@@ -124,32 +122,32 @@ public class DefaultRCAuthTokenRequestor implements RCAuthTokenRequestor {
       return conf.getTokenEndpointUri();
     }
   }
-  
+
   private void verifyTokenResponse(RCAuthTokenResponse response) {
-    
+
     ServerConfiguration conf =
         serverConfigService.getServerConfiguration(rcAuthProperties.getIssuer());
-    
+
     responseVerifier.verify(conf, response);
-    
+
   }
 
   @Override
   public RCAuthTokenResponse getAccessToken(String code) {
 
     RestTemplate rt = restFactory.newRestTemplate();
-    
+
     // ugly hack needed to workaround buggy oauth myproxy implementation
     // that does not set the content type for the token response
     rt.getInterceptors().add(new AddContentTypeInterceptor(APPLICATION_JSON_VALUE));
 
     try {
 
-      RCAuthTokenResponse response = rt.postForObject(resolveTokenEndpoint(), prepareTokenRequest(code),
-          RCAuthTokenResponse.class);
-      
+      RCAuthTokenResponse response = rt.postForObject(resolveTokenEndpoint(),
+          prepareTokenRequest(code), RCAuthTokenResponse.class);
+
       verifyTokenResponse(response);
-      
+
       return response;
 
     } catch (HttpStatusCodeException e) {

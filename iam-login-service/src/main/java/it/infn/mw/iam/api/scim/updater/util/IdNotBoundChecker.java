@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater.util;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -41,7 +40,8 @@ public class IdNotBoundChecker<T> implements Predicate<T> {
 
   @Override
   public boolean test(T id) {
-    checkNotNull(id);
+
+    Objects.requireNonNull(id);
 
     Optional<IamAccount> a = finder.find(id);
     

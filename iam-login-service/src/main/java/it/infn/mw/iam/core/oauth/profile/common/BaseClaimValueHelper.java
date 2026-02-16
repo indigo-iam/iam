@@ -21,15 +21,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.nimbusds.jwt.JWTClaimNames;
 
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public abstract class BaseClaimValueHelper implements ClaimValueHelper {
 
   protected static final Set<String> OPENID_CLAIMS = Set.of(StandardClaimNames.SUB);
@@ -50,8 +49,8 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
       Set.of(StandardClaimNames.PHONE_NUMBER, StandardClaimNames.PHONE_NUMBER_VERIFIED);
 
   @Override
-  public Map<String, Object> resolveClaims(Set<String> claimNames,
-      OAuth2Authentication auth, Optional<IamAccount> account) {
+  public Map<String, Object> resolveClaims(Set<String> claimNames, Authentication auth,
+      Optional<IamAccount> account) {
 
     Map<String, Object> claims = new HashMap<>();
     claimNames.forEach(
@@ -60,7 +59,7 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, OAuth2Authentication auth, Optional<IamAccount> account) {
+  public Object resolveClaim(String claimName, Authentication auth, Optional<IamAccount> account) {
 
     if (account.isEmpty()) {
       return null;

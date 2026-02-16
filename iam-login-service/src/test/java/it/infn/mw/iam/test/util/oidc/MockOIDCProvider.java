@@ -20,7 +20,6 @@ import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER
 import java.util.Map;
 import java.util.UUID;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,14 +28,15 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.authn.oidc.OidcClientError;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
+import it.infn.mw.iam.authn.oidc.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 
 public class MockOIDCProvider implements OidcTokenRequestor {
 
-  private JWKSetKeyStore keyStore;
+  private JwkSetKeyStore keyStore;
   private JWSAlgorithm signingAlgo = JWSAlgorithm.RS256;
 
   private final ObjectMapper mapper;
@@ -46,7 +46,7 @@ public class MockOIDCProvider implements OidcTokenRequestor {
   private OidcClientError clientError;
 
 
-  public MockOIDCProvider(ObjectMapper mapper, JWKSetKeyStore keyStore) {
+  public MockOIDCProvider(ObjectMapper mapper, JwkSetKeyStore keyStore) {
     this.keyStore = keyStore;
     this.mapper = mapper;
   }

@@ -71,7 +71,7 @@ DELETE FROM access_token WHERE refresh_token_id NOT IN (SELECT id FROM refresh_t
 DELETE FROM access_token WHERE client_id NOT IN (SELECT id FROM client_details);
 DELETE FROM access_token WHERE auth_holder_id NOT IN (SELECT id FROM authentication_holder);
 
-ALTER TABLE access_token ADD CONSTRAINT FK_access_token_refresh_token_id FOREIGN KEY (refresh_token_id) REFERENCES refresh_token (id) ON DELETE CASCADE;
+ALTER TABLE access_token ADD CONSTRAINT FK_access_token_refresh_token_id FOREIGN KEY (refresh_token_id) REFERENCES refresh_token (id); -- ON DELETE CASCADE;
 ALTER TABLE access_token ADD CONSTRAINT FK_access_token_client_id FOREIGN KEY (client_id) REFERENCES client_details (id) ON DELETE CASCADE;
 ALTER TABLE access_token ADD CONSTRAINT FK_access_token_auth_holder_id FOREIGN KEY (auth_holder_id) REFERENCES authentication_holder (id) ON DELETE CASCADE;
 

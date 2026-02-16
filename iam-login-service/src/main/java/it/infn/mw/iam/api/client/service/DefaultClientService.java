@@ -21,8 +21,6 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -32,11 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.audit.events.client.ClientCreatedEvent;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientLastUsedEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.repository.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
-import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 @Transactional
@@ -50,9 +50,7 @@ public class DefaultClientService implements ClientService {
   private ApplicationEventPublisher eventPublisher;
 
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo,
-      ApplicationEventPublisher eventPublisher
-      ) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
@@ -81,7 +79,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-        .orElseGet(newAccountClient(owner, client));
+      .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -101,7 +99,8 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
+      String userId) {
     client.setActive(status);
     client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
@@ -122,7 +121,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-          .map(IamAccountClient::getClient);
+        .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -165,6 +164,13 @@ public class DefaultClientService implements ClientService {
     if (client.getClientLastUsed().getLastUsed().isBefore(now)) {
       client.getClientLastUsed().setLastUsed(now);
     }
+  }
+
+  @Override
+  public void disableExpiredClients() {
+
+    clientRepo.findActiveClientsExpiredBefore(new Date())
+      .forEach(client -> updateClientStatus(client, false, "expired_client_task"));
   }
 
 }

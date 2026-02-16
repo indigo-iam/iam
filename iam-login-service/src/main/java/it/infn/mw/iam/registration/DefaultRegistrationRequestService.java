@@ -25,9 +25,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -44,9 +48,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
 
 import it.infn.mw.iam.api.common.LabelDTOConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -124,7 +125,6 @@ public class DefaultRegistrationRequestService
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
-  @Autowired
   public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
       IamProperties iamProperties) {
     this.labelConverter = labelConverter;
@@ -137,16 +137,33 @@ public class DefaultRegistrationRequestService
           String.format("No request mapped to uuid [%s]", requestUuid)));
   }
 
-  private static final Table<IamRegistrationRequestStatus, IamRegistrationRequestStatus, Boolean> allowedStateTransitions =
-      new ImmutableTable.Builder<IamRegistrationRequestStatus, IamRegistrationRequestStatus, Boolean>()
-        .put(NEW, CONFIRMED, true)
-        .put(NEW, APPROVED, true)
-        .put(NEW, REJECTED, true)
-        .put(CONFIRMED, APPROVED, true)
-        .put(CONFIRMED, REJECTED, true)
-        .put(APPROVED, CONFIRMED, true)
-        .put(REJECTED, CONFIRMED, true)
-        .build();
+  // private static final Table<IamRegistrationRequestStatus, IamRegistrationRequestStatus, Boolean>
+  // allowedStateTransitions =
+  // new ImmutableTable.Builder<IamRegistrationRequestStatus, IamRegistrationRequestStatus,
+  // Boolean>()
+  // .put(NEW, CONFIRMED, true)
+  // .put(NEW, APPROVED, true)
+  // .put(NEW, REJECTED, true)
+  // .put(CONFIRMED, APPROVED, true)
+  // .put(CONFIRMED, REJECTED, true)
+  // .put(APPROVED, CONFIRMED, true)
+  // .put(REJECTED, CONFIRMED, true)
+  // .build();
+
+  private static final Map<IamRegistrationRequestStatus, Set<IamRegistrationRequestStatus>> ALLOWED_STATE_TRANSITIONS;
+
+  static {
+    EnumMap<IamRegistrationRequestStatus, Set<IamRegistrationRequestStatus>> map =
+        new EnumMap<>(IamRegistrationRequestStatus.class);
+
+    map.put(NEW, EnumSet.of(CONFIRMED, APPROVED, REJECTED));
+    map.put(CONFIRMED, EnumSet.of(APPROVED, REJECTED));
+    map.put(APPROVED, EnumSet.of(CONFIRMED));
+    map.put(REJECTED, EnumSet.of(CONFIRMED));
+
+    ALLOWED_STATE_TRANSITIONS = Collections.unmodifiableMap(map);
+  }
+
 
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
     iamAupRepo.findDefaultAup().ifPresent(aup -> accountService.signAup(account, aup));
@@ -287,10 +304,9 @@ public class DefaultRegistrationRequestService
   private boolean checkStatusTransition(IamRegistrationRequestStatus currentStatus,
       final IamRegistrationRequestStatus newStatus) {
 
-    return allowedStateTransitions.contains(currentStatus, newStatus);
+    return ALLOWED_STATE_TRANSITIONS.containsKey(currentStatus)
+        && ALLOWED_STATE_TRANSITIONS.get(currentStatus).contains(newStatus);
   }
-
-
 
   private RegistrationRequestDto handleApprove(IamRegistrationRequest request) {
     IamAccount account = request.getAccount();

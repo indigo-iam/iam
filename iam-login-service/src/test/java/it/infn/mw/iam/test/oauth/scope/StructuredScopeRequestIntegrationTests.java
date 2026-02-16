@@ -33,8 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
@@ -51,7 +49,9 @@ import com.google.common.collect.Sets;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.repository.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
 @SuppressWarnings("deprecation")
@@ -60,7 +60,7 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 @TestPropertySource(properties = {
     "spring.main.allow-bean-definition-overriding=true",
 })
-@ActiveProfiles({"h2", "wlcg-scopes", "registration"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 

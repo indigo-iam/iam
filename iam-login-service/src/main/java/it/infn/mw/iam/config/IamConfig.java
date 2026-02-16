@@ -17,13 +17,15 @@ package it.infn.mw.iam.config;
 
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.h2.server.web.WebServlet;
-import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,18 +34,56 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
+import org.springframework.security.oauth2.provider.CompositeTokenGranter;
+import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
+import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
+import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
+import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.configuration.DynamicServerConfigurationService;
+import it.infn.mw.iam.authn.oidc.configuration.ServerConfigurationService;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
+import it.infn.mw.iam.core.jwt.IamJwkSetCacheService;
+import it.infn.mw.iam.core.jwt.JwkSetCacheService;
+import it.infn.mw.iam.core.jwt.assertion.AssertionOAuth2RequestFactory;
+import it.infn.mw.iam.core.jwt.assertion.AssertionValidator;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.devicecode.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
+import it.infn.mw.iam.core.oauth.granters.ChainedTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
@@ -80,7 +120,9 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.token.JwtAssertionTokenGranter;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -92,6 +134,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamSystemScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -99,6 +142,7 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @SuppressWarnings("deprecation")
 @Configuration
 public class IamConfig {
+
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
 
   @Value("${iam.organisation.name}")
@@ -278,10 +322,11 @@ public class IamConfig {
     return Clock.systemDefaultZone();
   }
 
-  @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
-  }
+  // @Bean
+  // AuthorizationCodeServices authorizationCodeServices(IamAuthorizationCodeRepository repository,
+  // AuthenticationHolderEntityService authenticationHolderService) {
+  // return new IamAuthorizationCodeService(repository, authenticationHolderService);
+  // }
 
   @Bean
   PasswordEncoder passwordEncoder() {
@@ -299,14 +344,14 @@ public class IamConfig {
 
   @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
-      SystemScopeRepository scopeRepo) {
+      IamSystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
     return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
         scopeRepo);
   }
 
   @Bean
-  @Profile("dev")
+  @Profile({"dev", "h2-console"})
   ServletRegistrationBean<WebServlet> h2Console() {
     WebServlet h2Servlet = new WebServlet();
     return new ServletRegistrationBean<>(h2Servlet, "/h2-console/*");
@@ -329,4 +374,134 @@ public class IamConfig {
     return cs;
   }
 
+  @Bean
+  JwkSetCacheService defaultCacheService(RestTemplateFactory rtf) {
+
+    return new IamJwkSetCacheService(rtf, 100, 1, TimeUnit.HOURS);
+  }
+
+  @Bean
+  WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
+
+    return new DefaultWebResponseExceptionTranslator();
+  }
+
+  @Bean(name = "iamAuthenticationEventPublisher")
+  AuthenticationEventPublisher iamAuthenticationEventPublisher() {
+    return new IamAuthenticationEventPublisher();
+  }
+
+  @Bean(name = "authenticationManager")
+  @Primary
+  AuthenticationManager authenticationManager(UserDetailsService iamUserDetailsService,
+      PasswordEncoder passwordEncoder) {
+
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setUserDetailsService(iamUserDetailsService);
+    provider.setPasswordEncoder(passwordEncoder);
+
+    ProviderManager pm =
+        new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+
+    pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
+    return pm;
+  }
+
+  @Bean
+  TokenGranter tokenGranter(
+      @Qualifier("authenticationManager") AuthenticationManager authenticationManager,
+      UserDetailsService iamUserDetailsService, PasswordEncoder passwordEncoder,
+      OAuth2TokenEntityService tokenServices, ClientDetailsService clientDetailsService,
+      OAuth2RequestFactory requestFactory, AccountUtils accountUtils,
+      AUPSignatureCheckService signatureCheckService, TokenExchangePdp tokenExchangePdp,
+      AuthorizationCodeServices authorizationCodeServices, AssertionValidator assertionValidator,
+      AssertionOAuth2RequestFactory assertionFactory, DeviceCodeService deviceCodeService) {
+
+    IamResourceOwnerPasswordTokenGranter resourceOwnerPasswordCredentialGranter =
+        new IamResourceOwnerPasswordTokenGranter(authenticationManager, tokenServices,
+            clientDetailsService, requestFactory, signatureCheckService, accountUtils);
+
+    IamRefreshTokenGranter refreshTokenGranter = new IamRefreshTokenGranter(tokenServices,
+        clientDetailsService, requestFactory, signatureCheckService, accountUtils);
+
+    TokenExchangeTokenGranter tokenExchangeGranter =
+        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory);
+
+    tokenExchangeGranter.setAccountUtils(accountUtils);
+    tokenExchangeGranter.setSignatureCheckService(signatureCheckService);
+    tokenExchangeGranter.setExchangePdp(tokenExchangePdp);
+
+    return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
+        new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+            clientDetailsService, requestFactory),
+        new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        refreshTokenGranter,
+        new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        resourceOwnerPasswordCredentialGranter,
+        new JwtAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory,
+            assertionValidator, assertionFactory),
+        new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenServices, clientDetailsService,
+            requestFactory, deviceCodeService)));
+  }
+
+  @Bean
+  FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
+      OAuth2AuthenticationProcessingFilter f) {
+
+    FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> b =
+        new FilterRegistrationBean<>(f);
+    b.setEnabled(false);
+    return b;
+  }
+
+  @Bean
+  OAuth2AuthenticationProcessingFilter oauthResourceServerFilter(
+      OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+      OAuth2TokenEntityService tokenService) {
+
+    OAuth2AuthenticationManager manager = new OAuth2AuthenticationManager();
+    manager.setTokenServices(tokenService);
+
+    OAuth2AuthenticationProcessingFilter filter = new OAuth2AuthenticationProcessingFilter();
+    filter.setAuthenticationEntryPoint(authenticationEntryPoint);
+    filter.setAuthenticationManager(manager);
+    filter.setStateless(false);
+    return filter;
+  }
+
+  @Bean
+  @Profile("!canl")
+  RestTemplateFactory restTemplateFactory() {
+
+    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory());
+  }
+
+  @Bean
+  @Profile("canl")
+  RestTemplateFactory canlRestTemplateFactory(
+      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf) {
+
+    return new DefaultRestTemplateFactory(rf);
+  }
+
+  @Bean
+  @Profile("!canl")
+  ServerConfigurationService dynamicServerConfiguration() {
+
+    return new DynamicServerConfigurationService();
+  }
+
+  @Bean
+  @Profile("canl")
+  ServerConfigurationService canlDynamicServerConfiguration(
+      @Qualifier("canlHttpClient") HttpClient client) {
+
+    return new DynamicServerConfigurationService(client);
+  }
+
+//  @Bean
+//  HttpClient httpClient() {
+//    return HttpClientBuilder.create().useSystemProperties().build();
+//  }
 }

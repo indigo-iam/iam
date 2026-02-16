@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.assertion;
 
-import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
@@ -26,12 +25,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -47,7 +40,13 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.jwt.JwtBearerAssertionAuthenticationToken;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.client.IamClientDetailsService;
+import it.infn.mw.iam.core.jwt.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwt.JwtSigningAndValidationService;
+import it.infn.mw.iam.persistence.model.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvider {
 
@@ -61,13 +60,13 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   private static final String INVALID_SIGNATURE_ALGO = "Invalid signature algorithm: %s";
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientService;
+  private final IamClientDetailsService clientService;
   private final ClientKeyCacheService validators;
 
   private final String tokenEndpoint;
 
   public IAMJWTBearerAuthenticationProvider(Clock clock, IamProperties iamProperties,
-      ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
+      IamClientDetailsService clientService, ClientKeyCacheService validators) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -116,10 +115,10 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   private void signatureChecks(ClientDetailsEntity client, SignedJWT jws) {
     JWSAlgorithm alg = jws.getHeader().getAlgorithm();
 
-    JWTSigningAndValidationService validator =
+    JwtSigningAndValidationService validator =
         Optional.ofNullable(validators.getValidator(client, alg))
           .orElseThrow(() -> new AuthenticationServiceException(
-              format("Unable to resolve validator for client '%s' and algorithm '%s'",
+              String.format("Unable to resolve validator for client '%s' and algorithm '%s'",
                   client.getClientId(), alg.getName())));
 
     if (!validator.validateSignature(jws)) {
@@ -184,8 +183,8 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    JWTBearerAssertionAuthenticationToken jwtAuth =
-        (JWTBearerAssertionAuthenticationToken) authentication;
+    JwtBearerAssertionAuthenticationToken jwtAuth =
+        (JwtBearerAssertionAuthenticationToken) authentication;
 
     ClientDetailsEntity client = clientService.loadClientByClientId(jwtAuth.getName());
 
@@ -217,7 +216,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
       Set<GrantedAuthority> authorities = new HashSet<>(client.getAuthorities());
       authorities.add(ROLE_CLIENT);
 
-      return new JWTBearerAssertionAuthenticationToken(jwt, authorities);
+      return new JwtBearerAssertionAuthenticationToken(jwt, authorities);
 
     } catch (ParseException e) {
       throw new AuthenticationServiceException("JWT parse error:" + e.getMessage(), e);
@@ -227,7 +226,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return JWTBearerAssertionAuthenticationToken.class.isAssignableFrom(authentication);
+    return JwtBearerAssertionAuthenticationToken.class.isAssignableFrom(authentication);
   }
 
 }

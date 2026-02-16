@@ -15,20 +15,20 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.validation.Valid;
-
 import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUserPatchRequest {
@@ -45,7 +45,7 @@ public class ScimUserPatchRequest {
   private ScimUserPatchRequest(@JsonProperty("schemas") Set<String> schemas,
       @JsonProperty("operations") List<ScimPatchOperation<ScimUser>> operations) {
 
-	Preconditions.checkNotNull(operations, "Operation list is null");
+    requireNonNull(operations, "Operation list is null");
     this.schemas = schemas;
     this.operations = operations;
   }

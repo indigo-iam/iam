@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +39,7 @@ import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
+import it.infn.mw.iam.core.jwt.JwkSetKeyStore;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -57,7 +57,7 @@ public class EntityConfigurationBuilder {
   private final long expirationSec;
   private final Map<String, Object> metadata;
 
-  public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
+  public EntityConfigurationBuilder(JwkSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider, OpenidFederationProperties fedProperties,
       IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint) {
     signingKey = keyStore.getKeys()

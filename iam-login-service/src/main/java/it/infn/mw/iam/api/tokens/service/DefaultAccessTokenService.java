@@ -21,8 +21,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -33,6 +31,9 @@ import it.infn.mw.iam.api.tokens.converter.TokensConverter;
 import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
+import it.infn.mw.iam.core.OAuth2TokenEntityService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Service
@@ -43,6 +44,9 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
 
   @Autowired
   private OAuth2TokenEntityService tokenService;
+
+  @Autowired
+  private TokenRevocationService tokenRevocationService;
 
   @Autowired
   private IamOAuthAccessTokenRepository tokenRepository;
@@ -60,7 +64,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
 
     OAuth2AccessTokenEntity at =
         getAccessTokenById(id).orElseThrow(() -> new TokenNotFoundException(id));
-    tokenService.revokeAccessToken(at);
+    tokenRevocationService.revokeAccessToken(at);
   }
 
   private Optional<OAuth2AccessTokenEntity> getAccessTokenById(Long accessTokenId) {
