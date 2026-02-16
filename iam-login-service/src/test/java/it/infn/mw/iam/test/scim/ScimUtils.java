@@ -124,8 +124,8 @@ public class ScimUtils {
       return this;
     }
 
-    public ParamsBuilder filters(String filters) {
-      params.add("filters", filters);
+    public ParamsBuilder filter(String filter) {
+      params.add("filter", filter);
       return this;
     }
 

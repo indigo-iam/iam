@@ -174,13 +174,6 @@ public class IamTokenService implements OAuth2TokenEntityService {
   }
 
   @Override
-  public OAuth2AccessTokenEntity readAccessToken(String token) {
-
-    return accessTokenRepo.findByTokenValue(sha256(token))
-      .orElseThrow(() -> new InvalidTokenException("Access Token not found"));
-  }
-
-  @Override
   public OAuth2AccessTokenEntity saveAccessToken(OAuth2AccessTokenEntity accessToken) {
 
     AuthenticationHolderEntity ah =
@@ -194,6 +187,20 @@ public class IamTokenService implements OAuth2TokenEntityService {
       throws AuthenticationException {
 
     return readAccessToken(accessTokenValue).getAuthenticationHolder().getAuthentication();
+  }
+
+  @Override
+  public OAuth2AccessTokenEntity readAccessToken(String accessTokenValue) {
+
+    String hValue = sha256(accessTokenValue);
+    OAuth2AccessTokenEntity accessToken = accessTokenRepo.findByTokenValue(hValue)
+      .orElseThrow(() -> new InvalidTokenException("Access token not found"));
+
+    if (accessToken.isExpired()) {
+      throw new InvalidTokenException("The access token is expired");
+    }
+
+    return accessToken;
   }
 
   @Override

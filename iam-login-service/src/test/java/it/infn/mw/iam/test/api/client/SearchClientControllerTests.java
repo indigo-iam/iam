@@ -16,26 +16,34 @@
 package it.infn.mw.iam.test.api.client;
 
 import static it.infn.mw.iam.api.client.search.SearchClientController.ENDPOINT;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
+@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 class SearchClientControllerTests {
 
   @Autowired
@@ -44,16 +52,120 @@ class SearchClientControllerTests {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  private MockOAuth2Filter filter;
+
+  @AfterEach
+  void tearDown() {
+    filter.cleanupSecurityContext();
+  }
+
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  void searchForTestClient() throws Exception {
+  void searchForPublicClientByName() throws Exception {
+
+    ListResponseDTO<RegisteredClientDTO> response = mapper.readValue(
+        mvc.perform(get(ENDPOINT).param("search", "Public client").param("searchType", "name"))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString(),
+        new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+    assertEquals(1, response.getTotalResults());
+    assertEquals("Public client", response.getResources().get(0).getClientName());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void clientSearchIsCaseInsensitive() throws Exception {
+
+    ListResponseDTO<RegisteredClientDTO> response =
+        mapper
+          .readValue(
+              mvc.perform(get(ENDPOINT).param("search", "Test Client").param("searchType", "name"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(),
+              new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+
+    assertEquals(2, response.getTotalResults());
+
+    List<String> names =
+        response.getResources().stream().map(RegisteredClientDTO::getClientName).toList();
+
+    assertTrue(names.contains("Test Client"));
+    assertTrue(names.contains("Registration service test client"));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void searchForClientsByNamePrefix() throws Exception {
 
     ListResponseDTO<RegisteredClientDTO> response = mapper
-      .readValue(mvc.perform(get(ENDPOINT).param("search", "test").param("searchType", "name"))
+      .readValue(mvc.perform(get(ENDPOINT).param("search", "Adm").param("searchType", "name"))
         .andExpect(status().isOk())
         .andReturn()
         .getResponse()
         .getContentAsString(), new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
-    assertThat(response.getTotalResults()).isGreaterThan(0);
+    assertEquals(2, response.getTotalResults());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void searchForNonExistingClient() throws Exception {
+
+    ListResponseDTO<RegisteredClientDTO> response = mapper
+      .readValue(mvc.perform(get(ENDPOINT).param("search", "ghost").param("searchType", "name"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+    assertEquals(0, response.getTotalResults());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void searchForAdminClientsByScope() throws Exception {
+
+    ListResponseDTO<RegisteredClientDTO> response = mapper
+      .readValue(mvc.perform(get(ENDPOINT).param("search", "admin").param("searchType", "scope"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+    assertEquals(5, response.getTotalResults());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  void searchClientsWithAdminUserAndAdminScope() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  void searchClientsWithAdminUserWithoutAdminScope() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN"})
+  void searchClientsWithAdminUser() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void searchClientsWithTestUser() throws Exception {
+
+    mvc.perform(get(ENDPOINT).param("search", "Admin").param("searchType", "name"))
+      .andExpect(status().isForbidden());
   }
 }
