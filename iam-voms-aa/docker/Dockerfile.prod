@@ -11,4 +11,4 @@ COPY --from=builder /workspace/dependencies/ \
         /workspace/snapshot-dependencies/ \
         /workspace/application/ /workspace/
 
-CMD java ${JAVA_OPTS} org.springframework.boot.loader.JarLauncher
+CMD ["/bin/sh", "-c", "java ${JAVA_OPTS} org.springframework.boot.loader.JarLauncher"]
