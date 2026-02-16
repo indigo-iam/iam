@@ -1,0 +1,14 @@
+FROM eclipse-temurin:17 AS builder
+WORKDIR /workspace
+COPY iam-voms-aa.jar /workspace/
+RUN java -Djarmode=layertools -jar iam-voms-aa.jar extract
+
+FROM eclipse-temurin:17
+WORKDIR /workspace
+
+COPY --from=builder /workspace/dependencies/ \
+        /workspace/spring-boot-loader/ \
+        /workspace/snapshot-dependencies/ \
+        /workspace/application/ /workspace/
+
+CMD ["/bin/sh", "-c", "java ${JAVA_OPTS} org.springframework.boot.loader.JarLauncher"]

@@ -40,9 +40,7 @@ jobs:
       run: |
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
-
-    - name: Generate buildpacks
-      run: mvn -DskipTests -U -B -q spring-boot:build-image -Dspring-boot.build-image.builder=paketobuildpacks/builder:tiny
+        cp iam-voms-aa/target/iam-voms-aa.jar iam-voms-aa/docker
 
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v3
@@ -65,7 +63,8 @@ jobs:
 
     - name: Docker metainformation for iam-login-service
       id: ls-meta
-      uses: docker/metadata-action@v5
+      # tag v5
+      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
       with:
         images: indigoiam/iam-login-service
         tags: |
@@ -74,15 +73,27 @@ jobs:
 
     - name: Docker metainformation for iam-test-client
       id: tc-meta
-      uses: docker/metadata-action@v5
+      # tag v5
+      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
       with:
         images: indigoiam/iam-test-client
         tags: |
           type=sha
           type=ref,event=tag
 
+    - name: Docker metainformation for iam-voms-aa
+      id: va-meta
+      # tag v5
+      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+      with:
+        images: indigoiam/iam-voms-aa
+        tags: |
+          type=sha
+          type=ref,event=tag
+
     - name: Build & push iam-login-service docker image
-      uses: docker/build-push-action@v6
+      # tag v6
+      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
       with:
         tags: ${{ steps.ls-meta.outputs.tags }}
         labels: ${{ steps.ls-meta.outputs.labels }}
@@ -92,11 +103,23 @@ jobs:
         push: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     - name: Build & push iam-test-client docker image
-      uses: docker/build-push-action@v6
+      # tag v6
+      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
       with:
         tags: ${{ steps.tc-meta.outputs.tags }}
         labels: ${{ steps.tc-meta.outputs.labels }}
         context: iam-test-client/docker/
         file: iam-test-client/docker/Dockerfile.prod
+        platforms: linux/amd64,linux/arm64
+        push: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+    - name: Build & push iam-voms-aa docker image
+      # tag v6
+      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+      with:
+        tags: ${{ steps.va-meta.outputs.tags }}
+        labels: ${{ steps.va-meta.outputs.labels }}
+        context: iam-voms-aa/docker/
+        file: iam-voms-aa/docker/Dockerfile.prod
         platforms: linux/amd64,linux/arm64
         push: ${{ startsWith(github.ref, 'refs/tags/') }}
