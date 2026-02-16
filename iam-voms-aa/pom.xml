@@ -178,6 +178,7 @@
   </dependencies>
 
   <build>
+    <finalName>iam-voms-aa</finalName>
     <pluginManagement>
       <plugins>
         <plugin>
