@@ -27,7 +27,7 @@ public class IamTotpMfaProperties {
   private String oldPasswordToDecrypt;
   private boolean multiFactorMandatory;
 
-  public String getPasswordToEncryptOrDecrypt() {
+  public String getPasswordToEncryptAndDecrypt() {
     return passwordToEncryptAndDecrypt;
   }
 

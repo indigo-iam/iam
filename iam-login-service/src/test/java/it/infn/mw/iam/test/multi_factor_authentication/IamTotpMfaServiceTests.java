@@ -103,7 +103,7 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @BeforeEach
   void setup() {
-    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt())
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt())
       .thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     lenient().when(secretGenerator.generate()).thenReturn("test_secret");
@@ -157,7 +157,7 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   void testAddTotpMfaSecretWhenPasswordIsEmpty() {
     lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -173,7 +173,7 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret("secret",
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     totpMfa.setActive(false);
     totpMfa.setAccount(account);
 
@@ -269,7 +269,7 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
     lenient().when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    lenient().when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
