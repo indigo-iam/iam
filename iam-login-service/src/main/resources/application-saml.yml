@@ -25,8 +25,8 @@ saml:
   id-resolvers: ${IAM_SAML_ID_RESOLVERS:eduPersonUniqueId,eduPersonTargetedId,eduPersonPrincipalName}
   metadata-refresh-period-sec: ${IAM_SAML_METADATA_REFRESH_PERIOD_SEC:43200}
   nameid-policy: ${IAM_SAML_NAMEID_POLICY:transient}
-  http-client-connection-timeout-secs: ${IAM_SAML_CLIENT_CONNECTION_TIMEOUT_SECS:500}
-  http-client-socket-timeout-secs: ${IAM_SAML_CLIENT_SOCKET_TIMEOUT_SECS:500}
+  http-client-connection-timeout-secs: ${IAM_SAML_CLIENT_CONNECTION_TIMEOUT_SECS:5}
+  http-client-socket-timeout-secs: ${IAM_SAML_CLIENT_SOCKET_TIMEOUT_SECS:5}
   
   wayf-login-button:
     text: ${IAM_SAML_LOGIN_BUTTON_TEXT:Your institutional account}
