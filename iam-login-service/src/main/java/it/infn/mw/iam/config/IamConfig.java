@@ -158,7 +158,7 @@ public class IamConfig {
         new AarcUserinfoHelper(properties, claimValueHelper, claimService);
 
     AarcIntrospectionHelper introspectionHelper =
-        new AarcIntrospectionHelper(claimValueHelper, accountService);
+        new AarcIntrospectionHelper(claimValueHelper, accountService, claimService);
 
     return new AarcJWTProfile(claimService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
         userInfoHelper, introspectionHelper);
