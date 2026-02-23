@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -32,19 +32,19 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 @Service
 public class DefaultScopePolicyService implements ScopePolicyService {
 
+  private final Clock clock;
   private final IamScopePolicyRepository scopePolicyRepo;
   private final IamScopePolicyConverter converter;
   private final ApplicationEventPublisher publisher;
-  
-  @Autowired
-  public DefaultScopePolicyService(IamScopePolicyRepository scopePolicyRepo,
-      IamScopePolicyConverter converter,
-      ApplicationEventPublisher publisher) {
+
+  public DefaultScopePolicyService(Clock clock, IamScopePolicyRepository scopePolicyRepo,
+      IamScopePolicyConverter converter, ApplicationEventPublisher publisher) {
+    this.clock = clock;
     this.scopePolicyRepo = scopePolicyRepo;
     this.converter = converter;
     this.publisher = publisher;
   }
-  
+
   private ScopePolicyNotFoundError notFoundError(Long id) {
     return new ScopePolicyNotFoundError(String.format("No scope policy found for id: %d", id));
   }
@@ -72,7 +72,7 @@ public class DefaultScopePolicyService implements ScopePolicyService {
   @Override
   public IamScopePolicy createScopePolicy(ScopePolicyDTO scopePolicy) {
     IamScopePolicy sp = converter.toModel(scopePolicy);
-    Date now = new Date();
+    Date now = Date.from(clock.instant());
     sp.setCreationTime(now);
     sp.setLastUpdateTime(now);
 
@@ -94,22 +94,22 @@ public class DefaultScopePolicyService implements ScopePolicyService {
   @Override
   public IamScopePolicy updateScopePolicy(ScopePolicyDTO scopePolicy) {
     IamScopePolicy updatedPolicy = converter.toModel(scopePolicy);
-    
-    IamScopePolicy existingPolicy =
-        scopePolicyRepo.findById(scopePolicy.getId()).orElseThrow(() -> notFoundError(scopePolicy.getId()));
-    
+
+    IamScopePolicy existingPolicy = scopePolicyRepo.findById(scopePolicy.getId())
+      .orElseThrow(() -> notFoundError(scopePolicy.getId()));
+
     List<IamScopePolicy> equivalentPolicies = scopePolicyRepo.findEquivalentPolicies(updatedPolicy);
-    
-    // The new policy can be equivalent to the existing policy it will replace 
+
+    // The new policy can be equivalent to the existing policy it will replace
     equivalentPolicies.remove(existingPolicy);
-    
-    if (!equivalentPolicies.isEmpty()){
+
+    if (!equivalentPolicies.isEmpty()) {
       throw new DuplicateScopePolicyError(equivalentPolicies);
     }
-    
+
     existingPolicy.from(updatedPolicy);
-    existingPolicy.setLastUpdateTime(new Date());
-    
+    existingPolicy.setLastUpdateTime(Date.from(clock.instant()));
+
     existingPolicy = scopePolicyRepo.save(existingPolicy);
     publisher.publishEvent(new ScopePolicyUpdatedEvent(this, existingPolicy));
     return existingPolicy;

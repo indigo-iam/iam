@@ -18,6 +18,7 @@ package it.infn.mw.iam.authn;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Date;
 
 import javax.servlet.ServletException;
@@ -38,12 +39,15 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class TimestamperSuccessHandler implements AuthenticationSuccessHandler {
 
   public static final Logger LOG = getLogger(TimestamperSuccessHandler.class);
+
+  private final Clock clock;
   private final AuthenticationSuccessHandler delegate;
-  
   private final IamAccountRepository accountRepository;
   
-  public TimestamperSuccessHandler(AuthenticationSuccessHandler delegate,
+  public TimestamperSuccessHandler(Clock clock, AuthenticationSuccessHandler delegate,
       IamAccountRepository accountRepository) {
+
+    this.clock = clock;
     this.delegate = delegate;
     this.accountRepository = accountRepository;
   }
@@ -51,7 +55,7 @@ public class TimestamperSuccessHandler implements AuthenticationSuccessHandler {
   protected void setAuthenticationTimestamp(HttpServletRequest request,
       HttpServletResponse response, Authentication authentication) {
 
-    Date timestamp = new Date();
+    Date timestamp = Date.from(clock.instant());
     HttpSession session = request.getSession();
     session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, timestamp);
     IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(authentication);

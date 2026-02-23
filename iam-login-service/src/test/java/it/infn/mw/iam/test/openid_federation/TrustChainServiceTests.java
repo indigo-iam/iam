@@ -24,6 +24,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.UndeclaredThrowableException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -70,12 +71,15 @@ class TrustChainServiceTests {
 
   TrustChain fakeChain;
 
+  Clock clock;
+
   @BeforeEach
   void setup() {
 
+    clock = Clock.systemDefaultZone();
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
     resolver = new TrustChainResolver(restTemplateFactory);
-    validator = new TrustChainValidator(trustAnchorRepository);
+    validator = new TrustChainValidator(clock, trustAnchorRepository);
     service = new TrustChainService(resolver, validator);
   }
 
@@ -207,6 +211,7 @@ class TrustChainServiceTests {
   @Test
   void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
       throws JOSEException, FederationException {
+
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 

@@ -372,9 +372,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
+    assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
   @Test
@@ -414,9 +414,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
+    assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
   @Test
@@ -443,9 +443,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
+    assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
 
@@ -481,8 +481,8 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
+    assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 }

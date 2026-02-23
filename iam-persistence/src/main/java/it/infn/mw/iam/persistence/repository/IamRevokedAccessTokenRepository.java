@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Date;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -28,8 +29,8 @@ import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
 public interface IamRevokedAccessTokenRepository
   extends PagingAndSortingRepository<IamRevokedAccessToken, String> {
 
-  @Query("select t from IamRevokedAccessToken t where t.expiration < current_date")
-  Page<IamRevokedAccessToken> findExpired(Pageable p);
+  @Query("select t from IamRevokedAccessToken t where t.expiration < :timestamp")
+  Page<IamRevokedAccessToken> findExpired(@Param("timestamp") Date timestamp, Pageable p);
 
   @Query("select t from IamRevokedAccessToken t where t.hashValue = :hashValue")
   Optional<IamRevokedAccessToken> findByHashValue(@Param("hashValue") String hashValue);

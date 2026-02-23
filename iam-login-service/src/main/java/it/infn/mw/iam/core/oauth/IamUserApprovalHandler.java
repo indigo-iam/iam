@@ -23,6 +23,7 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_C
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
+import java.time.Clock;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -60,6 +61,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
+  private final Clock clock;
   private final ClientDetailsEntityService clientDetailsService;
   private final ApprovedSiteService approvedSiteService;
   private final WhitelistedSiteService whitelistedSiteService;
@@ -69,10 +71,11 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
-  public IamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
+  public IamUserApprovalHandler(Clock clock, ClientDetailsEntityService clientDetailsService,
       ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
       SystemScopeService systemScopeService, AccountUtils accountUtils,
       ClientService clientService) {
+    this.clock = clock;
     this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
     this.whitelistedSiteService = whitelistedSiteService;
@@ -115,7 +118,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
 
 
-        ap.setAccessDate(new Date());
+        ap.setAccessDate(Date.from(clock.instant()));
         approvedSiteService.save(ap);
 
         authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));

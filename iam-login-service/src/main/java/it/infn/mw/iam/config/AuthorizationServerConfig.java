@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -111,6 +112,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   @Autowired
   IamProperties iamProperties;
 
+  @Autowired
+  Clock clock;
+
   @Bean
   WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
 
@@ -172,7 +176,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
             resourceOwnerPasswordCredentialGranter,
             new JWTAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory),
             new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
-            tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenServices, clientDetailsService,
+            tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices, clientDetailsService,
                 requestFactory, deviceCodeService)));
   }
 

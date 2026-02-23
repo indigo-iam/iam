@@ -40,11 +40,12 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
   final IamAupSignatureRepository signatureRepo;
   final Clock clock;
 
-  public DefaultAupSignatureCheckService(IamAupRepository aupRepo,
-      IamAupSignatureRepository signatureRepo, Clock clock) {
+  public DefaultAupSignatureCheckService(Clock clock, IamAupRepository aupRepo,
+      IamAupSignatureRepository signatureRepo) {
+
+    this.clock = clock;
     this.aupRepo = aupRepo;
     this.signatureRepo = signatureRepo;
-    this.clock = clock;
   }
 
   @Override

@@ -17,6 +17,7 @@ package it.infn.mw.iam.config;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
+import java.time.Clock;
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +41,11 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 /**
  * Beans for handling TOTP MFA functionality
@@ -63,6 +64,9 @@ public class IamTotpMfaConfig {
 
   @Autowired
   private AccountUtils accountUtils;
+
+  @Autowired
+  private Clock clock;
 
   /**
    * Responsible for generating new TOTP secrets
@@ -120,7 +124,7 @@ public class IamTotpMfaConfig {
   }
 
   public AuthenticationSuccessHandler successHandler() {
-    return new MultiFactorVerificationSuccessHandler(accountUtils, aupSignatureCheckService,
+    return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
         accountRepo, iamBaseUrl);
   }
 

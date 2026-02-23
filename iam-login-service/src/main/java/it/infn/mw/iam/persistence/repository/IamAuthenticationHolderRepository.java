@@ -15,9 +15,22 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Date;
+
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface IamAuthenticationHolderRepository
     extends JpaRepository<AuthenticationHolderEntity, Long> {
+
+  @Query("select a from AuthenticationHolderEntity a where "
+      + "a.id not in (select t.authenticationHolder.id from OAuth2AccessTokenEntity t) and "
+      + "a.id not in (select r.authenticationHolder.id from OAuth2RefreshTokenEntity r) and "
+      + "a.id not in (select c.authenticationHolder.id from AuthorizationCodeEntity c)")
+  Page<AuthenticationHolderEntity> getOrphans(Pageable op, @Param("timestamp") Date timestamp);
+
 }

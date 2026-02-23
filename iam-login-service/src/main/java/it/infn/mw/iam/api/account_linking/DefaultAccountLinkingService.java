@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static java.lang.String.format;
 
 import java.security.Principal;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
@@ -51,6 +52,7 @@ import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 public class DefaultAccountLinkingService
     implements AccountLinkingService, ApplicationEventPublisherAware {
 
+  final Clock clock;
   final IamAccountRepository iamAccountRepository;
   final IamX509CertificateRepository certificateRepository;
   final ExternalAccountLinker externalAccountLinker;
@@ -58,10 +60,11 @@ public class DefaultAccountLinkingService
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
 
-  public DefaultAccountLinkingService(IamAccountRepository repo,
+  public DefaultAccountLinkingService(Clock clock, IamAccountRepository repo,
       IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
 
+    this.clock = clock;
     this.iamAccountRepository = repo;
     this.certificateRepository = certificateRepository;
     this.externalAccountLinker = linker;
@@ -167,7 +170,7 @@ public class DefaultAccountLinkingService
     if (linkedCertificate.isPresent()) {
 
       linkedCertificate.get().setCertificate(x509Credential.getCertificateChainPemString());
-      linkedCertificate.get().setLastUpdateTime(new Date());
+      linkedCertificate.get().setLastUpdateTime(Date.from(clock.instant()));
       certificateRepository.save(linkedCertificate.get());
       userAccount.getX509Certificates().remove(linkedCertificate.get());
       userAccount.getX509Certificates().add(linkedCertificate.get());
@@ -180,7 +183,7 @@ public class DefaultAccountLinkingService
           x509Credential));
     } else {
 
-      Date now = new Date();
+      Date now = Date.from(clock.instant());
       IamX509Certificate newCert = x509Credential.asIamX509Certificate();
       newCert.setLabel(String.format("cert-%d", userAccount.getX509Certificates().size()));
       newCert.setCreationTime(now);

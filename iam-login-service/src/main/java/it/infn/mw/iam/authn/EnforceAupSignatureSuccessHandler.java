@@ -18,6 +18,7 @@ package it.infn.mw.iam.authn;
 import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
@@ -40,13 +41,15 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @SuppressWarnings("deprecation")
 public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessHandler {
 
+  private final Clock clock;
   private final AuthenticationSuccessHandler delegate;
   private final AUPSignatureCheckService service;
   private final AccountUtils accountUtils;
   private final IamAccountRepository accountRepo;
 
-  public EnforceAupSignatureSuccessHandler(AuthenticationSuccessHandler delegate,
+  public EnforceAupSignatureSuccessHandler(Clock clock, AuthenticationSuccessHandler delegate,
       AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo) {
+    this.clock = clock;
     this.delegate = delegate;
     this.service = service;
     this.accountUtils = utils;
@@ -76,7 +79,7 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   protected void setAuthenticationTimestamp(HttpServletRequest request,
       Authentication authentication) {
 
-    Date timestamp = new Date();
+    Date timestamp = Date.from(clock.instant());
     HttpSession session = request.getSession();
     session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, timestamp);
     IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(authentication);

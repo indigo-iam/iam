@@ -430,19 +430,19 @@ public class IamTokenService implements OAuth2TokenEntityService {
       AuthenticationHolderEntity authHolder) {
 
     String jti = UUID.randomUUID().toString();
-    Date iat = new Date();
+    Instant iat = clock.instant();
     Date exp = null;
 
     if (client.getRefreshTokenValiditySeconds() != null
         && client.getRefreshTokenValiditySeconds() > 0) {
       exp = Date
-        .from(clock.instant().plus(client.getRefreshTokenValiditySeconds(), ChronoUnit.SECONDS));
+        .from(iat.plus(client.getRefreshTokenValiditySeconds(), ChronoUnit.SECONDS));
     }
 
     JWTClaimsSet.Builder refreshClaims = new JWTClaimsSet.Builder();
     refreshClaims.jwtID(jti);
     refreshClaims.issuer(iamProperties.getIssuer());
-    refreshClaims.issueTime(iat);
+    refreshClaims.issueTime(Date.from(iat));
     refreshClaims.expirationTime(exp);
     refreshClaims.serializeNullClaims(false);
     PlainJWT refreshJwt = new PlainJWT(refreshClaims.build());

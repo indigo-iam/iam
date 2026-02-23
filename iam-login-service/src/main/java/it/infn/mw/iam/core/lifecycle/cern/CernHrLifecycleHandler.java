@@ -81,8 +81,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   private final IamAccountService accountService;
   private final CernHrDBApiService hrDb;
 
-  public CernHrLifecycleHandler(Clock clock, CernProperties cernProperties, IamAccountRepository accountRepo,
-      IamAccountService accountService, CernHrDBApiService hrDb) {
+  public CernHrLifecycleHandler(Clock clock, CernProperties cernProperties,
+      IamAccountRepository accountRepo, IamAccountService accountService, CernHrDBApiService hrDb) {
     this.clock = clock;
     this.cernProperties = cernProperties;
     this.accountRepo = accountRepo;
@@ -131,9 +131,9 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
     a.getUserInfo().setAffiliation(ep.get().getInstitute().getName());
-    
 
-    if (CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate()) && !a.isActive()
+
+    if (CernHrLifecycleUtils.isActiveMembership(clock, ep.get().getEndDate()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
       restoreAccount(a);
     }
@@ -159,7 +159,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
           try {
             handleAccount(getCernPersonId(a), cernProperties.getExperimentName(), a);
           } catch (RuntimeException e) {
-            LOG.error("Error during CERN HR lifecycle handler on account {}: {}", a, e.getMessage());
+            LOG.error("Error during CERN HR lifecycle handler on account {}: {}", a,
+                e.getMessage());
           }
         }
       }
@@ -200,7 +201,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
         accountService.setAccountEmail(a, p.getEmail());
       } catch (EmailAlreadyBoundException | NullPointerException e) {
         LOG.error("Error on setting email for account {}: {}", a.getUuid(), e.getMessage());
-      } 
+      }
     }
   }
 

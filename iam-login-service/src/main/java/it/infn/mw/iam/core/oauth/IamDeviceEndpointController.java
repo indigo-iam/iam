@@ -29,6 +29,7 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -80,6 +81,7 @@ public class IamDeviceEndpointController {
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
+  private final Clock clock;
   private final IamClientRepository clientRepository;
   private final SystemScopeService scopeService;
   private final ConfigurationPropertiesBean config;
@@ -90,11 +92,12 @@ public class IamDeviceEndpointController {
   private final DeviceCodeRepository deviceCodeRepository;
   private final ScopeFilter scopeFilter;
 
-  public IamDeviceEndpointController(IamClientRepository clientRepository,
+  public IamDeviceEndpointController(Clock clock, IamClientRepository clientRepository,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
       DeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
+    this.clock = clock;
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
     this.config = config;
@@ -200,7 +203,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
+    if (dc.getExpiration() != null && dc.getExpiration().before(Date.from(clock.instant()))) {
       model.addAttribute(ERROR_STRING, "expiredUserCode");
       return REQUEST_USER_CODE_STRING;
     }
@@ -261,7 +264,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
+    if (dc.getExpiration() != null && dc.getExpiration().before(Date.from(clock.instant()))) {
       model.addAttribute(ERROR_STRING, "expiredUserCode");
       return REQUEST_USER_CODE_STRING;
     }

@@ -16,54 +16,64 @@
 package it.infn.mw.iam.test.core.gc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.openid.connect.service.ApprovedSiteService;
-import org.mockito.ArgumentMatchers;
+import org.mitre.openid.connect.model.ApprovedSite;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
-import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.gc.DefaultGarbageCollector;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
+import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 class GarbageCollectorTests {
 
   @Mock
-  private ApprovedSiteService approvedSiteService;
+  private IamApprovedSiteRepository approvedSiteRepository;
   @Mock
   private IamOAuthAccessTokenRepository accessTokenRepo;
   @Mock
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
   @Mock
-  private DeviceCodeRepository deviceCodeRepo;
+  private IamDeviceCodeRepository deviceCodeRepo;
   @Mock
-  private AuthenticationHolderRepository authenticationHolderRepository;
+  private IamAuthenticationHolderRepository authenticationHolderRepository;
   @Mock
   private IamRevokedAccessTokenRepository revokedAccessTokenRepo;
   @Mock
-  private AuthorizationCodeRepository authzCodeRepo;
+  private IamAuthorizationCodeRepository authzCodeRepo;
+  @Mock
+  private IamClientRepository clientRepository;
+  @Mock
+  private ClientService clientService;
   @Mock
   private Clock clock;
 
@@ -73,83 +83,104 @@ class GarbageCollectorTests {
   void setup() {
     MockitoAnnotations.openMocks(this);
 
-    gc = new DefaultGarbageCollector(clock, approvedSiteService, accessTokenRepo, refreshTokenRepo,
-        deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo, authzCodeRepo);
+    gc = new DefaultGarbageCollector(clock, approvedSiteRepository, accessTokenRepo,
+        refreshTokenRepo, deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo,
+        authzCodeRepo, clientRepository, clientService);
   }
 
   @Test
   void testClearExpiredApprovedSites() {
-    gc.clearExpiredApprovedSites(10);
 
-    verify(approvedSiteService).clearExpiredSites();
+    ApprovedSite code = mock(ApprovedSite.class);
+    Page<ApprovedSite> response = new PageImpl<>(List.of(code), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(approvedSiteRepository.getExpiredCodes(any(), any())).thenReturn(response);
+    gc.clearExpiredApprovedSites(10);
+    verify(approvedSiteRepository).deleteAll(response);
   }
 
   @Test
   void testClearExpiredAuthorizationCodes() {
+
     AuthorizationCodeEntity code = mock(AuthorizationCodeEntity.class);
-    when(authzCodeRepo.getExpiredCodes()).thenReturn(Collections.singletonList(code));
-
+    Page<AuthorizationCodeEntity> response = new PageImpl<>(List.of(code), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(authzCodeRepo.getExpiredAuthorizationCodes(any(), any())).thenReturn(response);
     gc.clearExpiredAuthorizationCodes(10);
-
-    verify(authzCodeRepo).remove(code);
+    verify(authzCodeRepo).deleteAll(response);
   }
 
   @Test
   void testClearExpiredDeviceCodes() {
+
     DeviceCode dc = mock(DeviceCode.class);
-    when(deviceCodeRepo.getExpiredCodes()).thenReturn(Collections.singletonList(dc));
-
+    Page<DeviceCode> response = new PageImpl<>(List.of(dc), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(deviceCodeRepo.getExpiredCodes(any(), any())).thenReturn(response);
     gc.clearExpiredDeviceCodes(10);
-
-    verify(deviceCodeRepo).remove(dc);
+    verify(deviceCodeRepo).deleteAll(response);
   }
 
   @Test
   void testClearExpiredRevokedTokens() {
+
     IamRevokedAccessToken tok = mock(IamRevokedAccessToken.class);
-    Page<IamRevokedAccessToken> page = new PageImpl<>(Collections.singletonList(tok));
-
-    when(revokedAccessTokenRepo.findExpired(any(OffsetPageable.class))).thenReturn(page);
-
+    Page<IamRevokedAccessToken> response = new PageImpl<>(List.of(tok), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(revokedAccessTokenRepo.findExpired(any(), any())).thenReturn(response);
     gc.clearExpiredRevokedTokens(10);
-
-    verify(revokedAccessTokenRepo).delete(tok);
+    verify(revokedAccessTokenRepo).deleteAll(response);
   }
 
   @Test
   void testClearExpiredAccessTokens() {
+
     OAuth2AccessTokenEntity tok = mock(OAuth2AccessTokenEntity.class);
-    Page<OAuth2AccessTokenEntity> page = new PageImpl<>(Collections.singletonList(tok));
-
+    Page<OAuth2AccessTokenEntity> response = new PageImpl<>(List.of(tok), PageRequest.of(0, 1), 1);
     when(clock.instant()).thenReturn(Instant.now());
-    when(accessTokenRepo.findExpiredTokens(any(), any())).thenReturn(page);
-
+    when(accessTokenRepo.findExpiredTokens(any(), any())).thenReturn(response);
     gc.clearExpiredAccessTokens(10);
-
-    verify(accessTokenRepo).delete(tok);
+    verify(accessTokenRepo).deleteAll(response);
   }
 
   @Test
   void testClearExpiredRefreshTokens() {
+
     OAuth2RefreshTokenEntity tok = mock(OAuth2RefreshTokenEntity.class);
-    Page<OAuth2RefreshTokenEntity> page = new PageImpl<>(Collections.singletonList(tok));
-
+    Page<OAuth2RefreshTokenEntity> response = new PageImpl<>(List.of(tok), PageRequest.of(0, 1), 1);
     when(clock.instant()).thenReturn(Instant.now());
-    when(refreshTokenRepo.findExpiredTokens(any(), any())).thenReturn(page);
-
+    when(refreshTokenRepo.findExpiredTokens(any(), any())).thenReturn(response);
     gc.clearExpiredRefreshTokens(10);
-
-    verify(refreshTokenRepo).delete(tok);
+    verify(refreshTokenRepo).deleteAll(response);
   }
 
   @Test
   void testClearOrphanedAuthenticationHolder() {
+
     AuthenticationHolderEntity holder = mock(AuthenticationHolderEntity.class);
-    when(authenticationHolderRepository.getOrphanedAuthenticationHolders(ArgumentMatchers.any()))
-      .thenReturn(Collections.singletonList(holder));
-
+    Page<AuthenticationHolderEntity> response =
+        new PageImpl<>(List.of(holder), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(authenticationHolderRepository.getOrphans(any(), any())).thenReturn(response);
     gc.clearOrphanedAuthenticationHolder(10);
+    verify(authenticationHolderRepository).deleteAll(response);
+  }
 
-    verify(authenticationHolderRepository).remove(holder);
+  @Test
+  void testSuspendExpiredClients() {
+
+    Date aMinuteBefore = Date.from(Instant.now().minusSeconds(60));
+    ClientDetailsEntity client = mock(ClientDetailsEntity.class);
+    when(client.isActive()).thenReturn(true);
+    ClientRelyingPartyEntity rp = mock(ClientRelyingPartyEntity.class);
+    when(rp.getExpiration()).thenReturn(aMinuteBefore);
+    when(client.getClientRelyingParty()).thenReturn(rp);
+
+    Page<ClientDetailsEntity> response =
+        new PageImpl<>(List.of(client), PageRequest.of(0, 1), 1);
+    when(clock.instant()).thenReturn(Instant.now());
+    when(clientRepository.findActiveClientsExpiredBefore(any(), any())).thenReturn(response);
+    gc.clearExpiredClients(10);
+    verify(clientService).updateClientStatus(eq(client), eq(false), any());
   }
 }

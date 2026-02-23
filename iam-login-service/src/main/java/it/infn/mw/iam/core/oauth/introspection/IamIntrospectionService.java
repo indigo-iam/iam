@@ -237,7 +237,7 @@ public class IamIntrospectionService implements IntrospectionService {
   private boolean notYetValid(JWTClaimsSet claims) {
 
     Optional<Date> notBefore = Optional.ofNullable(claims.getNotBeforeTime());
-    return notBefore.isPresent() && notBefore.get().after(new Date());
+    return notBefore.isPresent() && notBefore.get().after(Date.from(clock.instant()));
   }
 
   private ClientDetailsEntity loadClient(Authentication auth) {
