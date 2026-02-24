@@ -17,6 +17,7 @@ package it.infn.mw.iam.authn;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.List;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +32,6 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.google.common.collect.Iterables;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -78,12 +78,16 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
       }
 
       JWTClaimsSet idTokenClaims = idToken.getJWTClaimsSet();
-      String clientId = Iterables.getOnlyElement(idTokenClaims.getAudience());
+      List<String> audience = idTokenClaims.getAudience();
 
-      Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
+      Optional<ClientDetailsEntity> client = audience.stream()
+        .map(clientRepo::findByClientId)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .findFirst();
 
       if (client.isEmpty()) {
-        LOG.debug("OIDC logout: client {} not found", clientId);
+        LOG.debug("OIDC logout: no matching client found in audiences {}", audience);
         response.sendRedirect(fallback);
         return;
       }
