@@ -118,6 +118,7 @@ public class ClientConverter {
 
     clientDTO.setJwksUri(entity.getJwksUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
+    clientDTO.setPostLogoutRedirectUris(entity.getPostLogoutRedirectUris());
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
       .valueOf(Optional.ofNullable(entity.getTokenEndpointAuthMethod())
@@ -199,6 +200,8 @@ public class ClientConverter {
     client.setPolicyUri(dto.getPolicyUri());
 
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
+
+    client.setPostLogoutRedirectUris(dto.getPostLogoutRedirectUris());
 
     client.setScope(cloneSet(dto.getScope()));
 

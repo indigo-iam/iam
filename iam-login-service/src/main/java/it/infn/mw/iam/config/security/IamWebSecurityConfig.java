@@ -64,6 +64,7 @@ import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
+import it.infn.mw.iam.authn.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
@@ -144,6 +145,9 @@ public class IamWebSecurityConfig {
     private IamProperties iamProperties;
 
     @Autowired
+    private OidcLogoutSuccessHandler oidcLogoutSuccessHandler;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, totpMfaRepository));
@@ -173,7 +177,6 @@ public class IamWebSecurityConfig {
       LoginUrlAuthenticationEntryPoint delegate = new LoginUrlAuthenticationEntryPoint("/login");
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
-
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
@@ -210,6 +213,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(oidcLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()
@@ -219,12 +223,12 @@ public class IamWebSecurityConfig {
     }
 
     @Bean
-    public OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
+    OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
     @Bean
-    public AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
+    AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo);
     }

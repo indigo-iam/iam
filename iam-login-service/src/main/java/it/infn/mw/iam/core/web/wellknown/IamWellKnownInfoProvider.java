@@ -51,6 +51,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String TOKEN_ENDPOINT = "token";
   public static final String ABOUT_ENDPOINT = "about";
   public static final String SCIM_ENDPOINT = "scim";
+  public static final String LOGOUT_ENDPOINT = "logout";
 
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = newArrayList(
       "client_secret_basic", "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
@@ -106,6 +107,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String deviceAuthorizationEndpoint;
   private final String aboutEndpoint;
   private final String scimEndpoint;
+  private final String logoutEndpoint;
   private Set<String> supportedScopes;
 
 
@@ -134,6 +136,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     deviceAuthorizationEndpoint = buildEndpointUrl(DeviceEndpoint.URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
+    logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);
     updateSupportedScopes();
   }
 
@@ -220,6 +223,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     updateSupportedScopes();
     result.put("scopes_supported", supportedScopes);
+
+    result.put("end_session_endpoint", logoutEndpoint);
 
     return result;
   }
