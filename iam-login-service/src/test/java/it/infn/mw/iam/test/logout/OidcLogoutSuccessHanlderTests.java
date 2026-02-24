@@ -39,7 +39,7 @@ import it.infn.mw.iam.authn.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class OidcLogoutSuccessHanlderTests {
+class OidcLogoutSuccessHanlderTests {
 
   @Mock
   private IamClientRepository clientRepo;
