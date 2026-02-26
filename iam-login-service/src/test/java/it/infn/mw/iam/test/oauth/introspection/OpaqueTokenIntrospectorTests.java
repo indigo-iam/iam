@@ -126,7 +126,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
-    when(discoveryService.getDiscoveryDocument(eq(issuer), restTemplate))
+    when(discoveryService.getDiscoveryDocument(issuer, restTemplate))
       .thenReturn(new ObjectMapper().createObjectNode());
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
@@ -156,7 +156,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
-    when(discoveryService.getDiscoveryDocument(eq(issuer), restTemplate))
+    when(discoveryService.getDiscoveryDocument(issuer, restTemplate))
       .thenThrow(new RestClientException("error"));
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
