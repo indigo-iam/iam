@@ -41,6 +41,7 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 
 @Configuration
 @EnableScheduling
@@ -95,6 +96,13 @@ public class TaskConfig implements SchedulingConfigurer {
   @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
   public void logWellKnownCacheEviction() {
     LOG.debug("well-known config cache evicted");
+  }
+  
+  @Scheduled(fixedRateString = "${task.oidcDiscoveryCacheCleanupPeriodSecs:86400}",
+      timeUnit = TimeUnit.SECONDS)
+  @CacheEvict(allEntries = true, cacheNames = DefaultOidcDiscoveryService.CACHE_NAME)
+  public void logOidcDiscoveryCacheEviction() {
+    LOG.debug("OIDC discovery cache evicted");
   }
 
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
