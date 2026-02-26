@@ -63,12 +63,8 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
   @Override
   public OAuth2AuthenticatedPrincipal introspect(String token) {
 
-    final String issuer;
-
-    try {
-      issuer = JWTParser.parse(token).getJWTClaimsSet().getIssuer();
-    } catch (ParseException e) {
-      LOG.info("Failed introspection of token, parsing exception {}", e.getMessage());
+    String issuer = extractIssuer(token);
+    if (issuer == null) {
       return inactive();
     }
 
@@ -78,30 +74,36 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Invalid issuer: " + issuer));
 
-    RestTemplate restTemplate = restTemplateMapper.apply(provider.getClient());
-    JsonNode discovery = discoveryService.getDiscoveryDocument(issuer, restTemplate);
-    String introspectionEndpoint = discovery.has(INTROSPECTION_ENDPOINT_KEY)
-        ? discovery.get(INTROSPECTION_ENDPOINT_KEY).asText()
-        : null;
-
-    if (introspectionEndpoint == null || introspectionEndpoint.isBlank()) {
-      LOG.info("Failed introspection of token, no introspection endpoint found for {}", issuer);
-      return inactive();
-    }
-
-    OpaqueTokenIntrospector introspector =
-        new SpringOpaqueTokenIntrospector(introspectionEndpoint, restTemplate);
     try {
+      RestTemplate restTemplate = restTemplateMapper.apply(provider.getClient());
+      JsonNode discovery = discoveryService.getDiscoveryDocument(issuer, restTemplate);
+      String introspectionEndpoint = discovery.path(INTROSPECTION_ENDPOINT_KEY).asText(null);
+
+      if (introspectionEndpoint == null || introspectionEndpoint.isBlank()) {
+        LOG.info("Failed introspection of token, no introspection endpoint found for {}", issuer);
+        return inactive();
+      }
+
+      OpaqueTokenIntrospector introspector =
+          new SpringOpaqueTokenIntrospector(introspectionEndpoint, restTemplate);
       return introspector.introspect(token);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOG.error("Failed introspection of token issued by {}: {}", issuer, t.getMessage());
       return inactive();
+    }
+  }
+
+  private String extractIssuer(String token) {
+    try {
+      return JWTParser.parse(token).getJWTClaimsSet().getIssuer();
+    } catch (ParseException e) {
+      LOG.info("Token parsing failed: {}", e.getMessage());
+      return null;
     }
   }
 
   private OAuth2AuthenticatedPrincipal inactive() {
     return new DefaultOAuth2AuthenticatedPrincipal(Map.of("active", false), List.of());
   }
-
 }
 

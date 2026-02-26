@@ -21,6 +21,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public interface OidcDiscoveryService {
-    public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
+  public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
       throws RestClientException;
 }

@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.oauth.introspection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +26,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
@@ -41,25 +43,61 @@ class OidcDiscoveryServiceTests {
 
   @Test
   void testRestClientException() {
-    Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.any()))
+    Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.eq(JsonNode.class)))
       .thenThrow(new RuntimeException("Error"));
 
     RestClientException e = assertThrows(RestClientException.class,
-        () -> discoveryService.getDiscoveryDocument("test", restTemplate));
-    assertEquals("Unable to discover OpenID configuration for issuer test", e.getMessage());
+        () -> discoveryService.getDiscoveryDocument("https://test.example", restTemplate));
+    assertEquals("Unable to discover OpenID configuration for issuer https://test.example",
+        e.getMessage());
   }
 
   @Test
-  void testSuccessfulOidcDiscovery() throws Exception {
-    String json = "{\"issuer\":\"test\"}";
+  void testSuccessfulOidcDiscovery() {
 
-    Mockito.when(restTemplate.getForEntity("test/.well-known/openid-configuration", String.class))
-      .thenReturn(ResponseEntity.ok(json));
+    JsonNode jsonNode = new ObjectMapper().createObjectNode().put("issuer", "https://test.example");
 
-    var result = discoveryService.getDiscoveryDocument("test", restTemplate);
+    Mockito
+      .when(restTemplate.getForEntity("https://test.example/.well-known/openid-configuration",
+          JsonNode.class))
+      .thenReturn(ResponseEntity.ok(jsonNode));
 
-    assertTrue(result.get("issuer").asText().equals("test"));
+    var result = discoveryService.getDiscoveryDocument("https://test.example", restTemplate);
 
+    assertEquals(result.get("issuer").asText(), "https://test.example");
+  }
+
+  @Test
+  void testFallbackToSecondDiscoveryEndpoint() {
+
+    JsonNode jsonNode = new ObjectMapper().createObjectNode().put("issuer", "https://test.example");
+
+    Mockito
+      .when(restTemplate.getForEntity("https://test.example/.well-known/openid-configuration",
+          JsonNode.class))
+      .thenThrow(new RestClientException("First endpoint failed"));
+
+    Mockito
+      .when(restTemplate.getForEntity("https://test.example/.well-known/oauth-authorization-server",
+          JsonNode.class))
+      .thenReturn(ResponseEntity.ok(jsonNode));
+
+    var result = discoveryService.getDiscoveryDocument("https://test.example", restTemplate);
+
+    assertEquals(result.get("issuer").asText(), "https://test.example");
+  }
+
+  @Test
+  void testIssuerWithTrailingSlash() {
+
+    JsonNode jsonNode = new ObjectMapper().createObjectNode().put("issuer", "https://test.example");
+
+    Mockito.when(restTemplate.getForEntity("https://test.example/.well-known/openid-configuration", JsonNode.class))
+      .thenReturn(ResponseEntity.ok(jsonNode));
+
+    var result = discoveryService.getDiscoveryDocument("https://test.example/", restTemplate);
+
+    assertEquals(result.get("issuer").asText(), "https://test.example");
   }
 
 }

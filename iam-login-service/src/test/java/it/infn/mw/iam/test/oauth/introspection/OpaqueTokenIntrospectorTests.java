@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -100,6 +101,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     // Not checked if 'active' is 'true' since we don't have the
     // remote provider introspection response
     assertNotNull(principal.getAttribute("active"));
+
   }
 
   @Test
@@ -139,6 +141,26 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OAuth2AuthenticatedPrincipal principal = introspector.introspect("this-is-not-a-jwt");
 
     assertNotNull(principal);
+    assertTrue(principal.getAttribute("active").equals(false));
+  }
+
+  @Test
+  void introspectReturnsInactiveWhenDiscoveryThrows() {
+
+    String issuer = "https://einstein.example.com";
+    String token = buildPlainJwt(issuer, "1234", "client", "openid");
+
+    OidcProvider provider = new OidcProvider();
+    provider.setIssuer(issuer);
+    provider.setClient(new OidcClient());
+
+    when(properties.getProviders()).thenReturn(List.of(provider));
+    when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
+    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
+      .thenThrow(new RestClientException("error"));
+
+    OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
+
     assertTrue(principal.getAttribute("active").equals(false));
   }
 

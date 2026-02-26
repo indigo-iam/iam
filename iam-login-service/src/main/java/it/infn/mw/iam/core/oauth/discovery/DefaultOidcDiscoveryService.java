@@ -33,12 +33,8 @@ public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultOidcDiscoveryService.class);
 
 
-  private static final String OIDC_DISCOVERY_URL = "/.well-known/openid-configuration";
-  private static final String OAUTH_DISCOVERY_URL = "/.well-known/oauth-authorization-server";
   private static final List<String> DISCOVERY_URLS =
-      List.of(OIDC_DISCOVERY_URL, OAUTH_DISCOVERY_URL);
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
+      List.of("/.well-known/openid-configuration", "/.well-known/oauth-authorization-server");
 
   @Override
   public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
@@ -50,10 +46,12 @@ public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
 
     for (String url : DISCOVERY_URLS) {
       try {
-        ResponseEntity<String> resp = restTemplate.getForEntity(base + url, String.class);
-        LOG.info("Discover response: {} {}", resp.getStatusCode(), resp.getBody());
+        ResponseEntity<JsonNode> resp = restTemplate.getForEntity(base + url, JsonNode.class);
+        LOG.info("Discover response status code: {}", resp.getStatusCode());
+        
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
-          return objectMapper.readTree(resp.getBody());
+          LOG.debug("Discover response body: {}", resp.getBody());
+          return resp.getBody();
         }
       } catch (Throwable e) {
         LOG.error("Error fetching discovery document from {} for issuer {}: {}", url, issuer,

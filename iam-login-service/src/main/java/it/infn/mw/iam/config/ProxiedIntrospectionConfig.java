@@ -15,13 +15,11 @@
  */
 package it.infn.mw.iam.config;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.function.Function;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
@@ -29,23 +27,20 @@ import it.infn.mw.iam.config.oidc.OidcClient;
 
 @Configuration
 public class ProxiedIntrospectionConfig {
-    @Bean
-    Function<OidcClient, RestTemplate> introspectionRestTemplateFactory(
-            RestTemplateFactory defaultRestTemplateFactory) {
-        return client -> {
-            RestTemplate introspectionTemplate = defaultRestTemplateFactory.newRestTemplate();
+  @Bean
+  Function<OidcClient, RestTemplate> introspectionRestTemplateFactory(
+      RestTemplateFactory defaultRestTemplateFactory) {
 
-            String credentials = Base64.getEncoder()
-                    .encodeToString((client.getClientId() + ":" + client.getClientSecret())
-                            .getBytes(StandardCharsets.UTF_8));
+    return client -> createRestTemplate(client, defaultRestTemplateFactory);
+  }
 
-            introspectionTemplate.getInterceptors().add((request, body, execution) -> {
-                request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Basic " + credentials);
-                return execution.execute(request, body);
-            });
+  private RestTemplate createRestTemplate(OidcClient client, RestTemplateFactory factory) {
 
-            return introspectionTemplate;
-        };
-    }
+    RestTemplate restTemplate = factory.newRestTemplate();
 
+    restTemplate.getInterceptors()
+      .add(new BasicAuthenticationInterceptor(client.getClientId(), client.getClientSecret()));
+
+    return restTemplate;
+  }
 }
