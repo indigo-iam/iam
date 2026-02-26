@@ -44,13 +44,13 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @ActiveProfiles({"h2"})
-public class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
+class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
 
   @MockBean
   private OpaqueTokenIntrospector opaqueTokenIntrospector;
 
   @Test
-  public void testProxiedIntrospectionWithKnownProvider() throws Exception {
+  void testProxiedIntrospectionWithKnownProvider() throws Exception {
 
     String externalIssuer = "https://einstein.example.com";
     String clientId = "client-einstein";
@@ -84,7 +84,7 @@ public class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
   }
 
   @Test
-  public void testTokenInactiveWhenIntrospectionTrowsException() throws Exception {
+  void testTokenInactiveWhenIntrospectionTrowsException() throws Exception {
 
     String issuer = "https://oppenheimer.example.com";
     String token = buildPlainJwt(issuer, "1234", "unknown", "openid");

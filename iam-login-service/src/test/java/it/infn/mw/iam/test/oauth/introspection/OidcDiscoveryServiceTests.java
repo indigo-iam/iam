@@ -64,7 +64,7 @@ class OidcDiscoveryServiceTests {
 
     var result = discoveryService.getDiscoveryDocument("https://test.example", restTemplate);
 
-    assertEquals(result.get("issuer").asText(), "https://test.example");
+    assertEquals("https://test.example", result.get("issuer").asText());
   }
 
   @Test
@@ -84,7 +84,7 @@ class OidcDiscoveryServiceTests {
 
     var result = discoveryService.getDiscoveryDocument("https://test.example", restTemplate);
 
-    assertEquals(result.get("issuer").asText(), "https://test.example");
+    assertEquals("https://test.example", result.get("issuer").asText());
   }
 
   @Test
@@ -97,7 +97,7 @@ class OidcDiscoveryServiceTests {
 
     var result = discoveryService.getDiscoveryDocument("https://test.example/", restTemplate);
 
-    assertEquals(result.get("issuer").asText(), "https://test.example");
+    assertEquals("https://test.example", result.get("issuer").asText());
   }
 
 }

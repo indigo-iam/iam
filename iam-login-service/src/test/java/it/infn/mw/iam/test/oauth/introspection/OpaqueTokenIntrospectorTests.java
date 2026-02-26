@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.test.oauth.introspection;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -46,6 +46,7 @@ import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
 
+@SuppressWarnings("deprecation")
 @ActiveProfiles({"h2"})
 @ExtendWith(MockitoExtension.class)
 class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
@@ -92,8 +93,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     ObjectNode discoveryJson = mapper.createObjectNode();
     discoveryJson.put("introspection_endpoint", "https://einstein.example.com/introspect");
 
-    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
-      .thenReturn(discoveryJson);
+    when(discoveryService.getDiscoveryDocument(issuer, restTemplate)).thenReturn(discoveryJson);
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
@@ -126,13 +126,13 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
-    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
+    when(discoveryService.getDiscoveryDocument(eq(issuer), restTemplate))
       .thenReturn(new ObjectMapper().createObjectNode());
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
     assertNotNull(principal);
-    assertTrue(principal.getAttribute("active").equals(false));
+    assertEquals(principal.getAttribute("active"), false);
   }
 
   @Test
@@ -141,7 +141,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OAuth2AuthenticatedPrincipal principal = introspector.introspect("this-is-not-a-jwt");
 
     assertNotNull(principal);
-    assertTrue(principal.getAttribute("active").equals(false));
+    assertEquals(principal.getAttribute("active"), false);
   }
 
   @Test
@@ -156,12 +156,12 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
-    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
+    when(discoveryService.getDiscoveryDocument(eq(issuer), restTemplate))
       .thenThrow(new RestClientException("error"));
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
-    assertTrue(principal.getAttribute("active").equals(false));
+    assertEquals(principal.getAttribute("active"), false);
   }
 
 }

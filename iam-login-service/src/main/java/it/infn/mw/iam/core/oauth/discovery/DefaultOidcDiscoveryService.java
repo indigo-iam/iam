@@ -25,7 +25,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
@@ -48,12 +47,12 @@ public class DefaultOidcDiscoveryService implements OidcDiscoveryService {
       try {
         ResponseEntity<JsonNode> resp = restTemplate.getForEntity(base + url, JsonNode.class);
         LOG.info("Discover response status code: {}", resp.getStatusCode());
-        
+
         if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
           LOG.debug("Discover response body: {}", resp.getBody());
           return resp.getBody();
         }
-      } catch (Throwable e) {
+      } catch (Exception e) {
         LOG.error("Error fetching discovery document from {} for issuer {}: {}", url, issuer,
             e.getMessage());
       }
