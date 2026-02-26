@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,14 +108,13 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     disabled.setAllowProxiedIntrospection(false);
 
     when(properties.getProviders()).thenReturn(List.of(disabled));
-    assertThrows(InvalidTokenException.class, () -> {
-      properties.getProviders()
-        .stream()
-        .filter(c -> c.getIssuer().equals(issuer)
-            && Boolean.TRUE.equals(c.isAllowProxiedIntrospection()))
-        .findFirst()
-        .orElseThrow(() -> new InvalidTokenException("Not allowed"));
-    });
+
+    Supplier<OidcProvider> providerSupplier = () -> properties.getProviders()
+      .stream()
+      .filter(p -> p.getIssuer().equals(issuer) && p.isAllowProxiedIntrospection())
+      .findFirst()
+      .orElseThrow(() -> new InvalidTokenException("Not allowed"));
+    assertThrows(InvalidTokenException.class, () -> providerSupplier.get());
   }
 
   @Test
@@ -131,14 +131,13 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     nullValue.setAllowProxiedIntrospection(null);
 
     when(properties.getProviders()).thenReturn(List.of(nullValue));
-    assertThrows(InvalidTokenException.class, () -> {
-      properties.getProviders()
-        .stream()
-        .filter(c -> c.getIssuer().equals(issuer)
-            && Boolean.TRUE.equals(c.isAllowProxiedIntrospection()))
-        .findFirst()
-        .orElseThrow(() -> new InvalidTokenException("Not allowed"));
-    });
+
+    Supplier<OidcProvider> providerSupplier = () -> properties.getProviders()
+      .stream()
+      .filter(p -> p.getIssuer().equals(issuer) && p.isAllowProxiedIntrospection())
+      .findFirst()
+      .orElseThrow(() -> new InvalidTokenException("Not allowed"));
+    assertThrows(InvalidTokenException.class, () -> providerSupplier.get());
 
   }
 
