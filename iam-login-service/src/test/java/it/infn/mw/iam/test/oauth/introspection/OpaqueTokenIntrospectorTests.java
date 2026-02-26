@@ -15,15 +15,13 @@
  */
 package it.infn.mw.iam.test.oauth.introspection;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,12 +32,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
 
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
@@ -47,127 +45,101 @@ import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
 
+@ActiveProfiles({"h2", "oidc-test"})
 @ExtendWith(MockitoExtension.class)
-class OpaqueTokenIntrospectorTests {
+class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
-    @Mock
-    OidcProviderProperties properties;
+  @Mock
+  OidcProviderProperties properties;
 
-    @Mock
-    OidcDiscoveryService discoveryService;
-    
-    @Mock
-    Function<OidcClient, RestTemplate> restTemplateMapper;
+  @Mock
+  OidcDiscoveryService discoveryService;
 
-    @Mock
-    RestTemplate restTemplate;
+  @Mock
+  Function<OidcClient, RestTemplate> restTemplateMapper;
 
-    DelegatingOpaqueTokenIntrospector introspector;
+  @Mock
+  RestTemplate restTemplate;
 
-    @BeforeEach
-    void setup() {
-        introspector = new DelegatingOpaqueTokenIntrospector(properties, restTemplateMapper, discoveryService);
-    }
+  OpaqueTokenIntrospector introspector;
 
-    @Test
-    void introspectReturnsPrincipalWhenIssuerIsKnown() {
-        // Test to check if the principal is returned when the issuer is known
+  @BeforeEach
+  void setup() {
+    introspector =
+        new DelegatingOpaqueTokenIntrospector(properties, restTemplateMapper, discoveryService);
+  }
 
-        String issuer = "https://einstein.example.com";
-        // Building a JWT with the known issuer
-        String token = buildJwtWithIssuer(issuer); 
+  @Test
+  void introspectWorksWhitKnownIssuer() {
 
-        OidcClient client = new OidcClient();
-        client.setClientId("client-einstein");
-        client.setClientSecret("secret");
+    String issuer = "https://einstein.example.com";
+    String clientId = "external-client";
+    String token = buildPlainJwt(issuer, "external-subject-123", clientId, "penid profile");
 
-        OidcProvider provider = new OidcProvider();
-        provider.setIssuer(issuer);
-        provider.setClient(client);
+    OidcClient client = new OidcClient();
+    client.setClientId(clientId);
+    client.setClientSecret("secret");
 
-        // Mocking the properties to return the know provider
-        when(properties.getProviders()).thenReturn(List.of(provider));
-        // Mocking the restTemplateMapper to return the mocked RestTemplate for the client
-        when(restTemplateMapper.apply(client)).thenReturn(restTemplate);
+    OidcProvider provider = new OidcProvider();
+    provider.setIssuer(issuer);
+    provider.setClient(client);
 
-        // Creating a JSON object for the discovery document with the introspection endpoint
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode discoveryJson = mapper.createObjectNode();
-        discoveryJson.put("introspection_endpoint", "https://einstein.example.com/introspect");
+    when(properties.getProviders()).thenReturn(List.of(provider));
+    when(restTemplateMapper.apply(client)).thenReturn(restTemplate);
 
-        // Mocking the discovery service to return the discovery document JSON
-        when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
-            .thenReturn(discoveryJson);
+    ObjectMapper mapper = new ObjectMapper();
+    ObjectNode discoveryJson = mapper.createObjectNode();
+    discoveryJson.put("introspection_endpoint", "https://einstein.example.com/introspect");
 
-        assertThrows(Exception.class, () ->  introspector.introspect(token));
-    }
+    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
+      .thenReturn(discoveryJson);
 
-    @Test
-    void introspectFailsUnknownIssuer() {
-        // Test to check if InvalidTokenException is thrown for an unkown issuer
+    OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
-        String token = buildJwtWithIssuer("https://unknown.example.com");
+    assertNotNull(principal);
+    // Not checked if 'active' is 'true' since we don't have the
+    // remote provider introspection response
+    assertNotNull(principal.getAttribute("active"));
+  }
 
-        // Mocking properties to return an empty list, simulating no known providers
-        when(properties.getProviders()).thenReturn(List.of());
+  @Test
+  void introspectFailsWhithUnknownIssuer() {
 
-        assertThrows(
-            InvalidTokenException.class, () -> introspector.introspect(token)
-        );
-    }
+    String token = buildPlainJwt("https://unknown.example.com", "1234", "unknown", "openid");
 
-    @Test
-    void introspectReturnsInactiveWhenNoIntrospectionEndpoint() throws Exception {
-        // Test to verify that the introspector return an inactive principal when there is no introspection endpoint available for the issuer
+    when(properties.getProviders()).thenReturn(List.of());
 
-        String issuer = "https://einstein.example.com";
-        String token = buildJwtWithIssuer(issuer);
+    assertThrows(InvalidTokenException.class, () -> introspector.introspect(token));
+  }
 
-        OidcProvider provider = new OidcProvider();
-        provider.setIssuer(issuer);
-        provider.setClient(new OidcClient());
+  @Test
+  void introspectReturnsInactiveWhenMissingIntrospectionEndpoint() throws Exception {
 
-        // Mocking properties to return the provider that has no introspection endpoint
-        when(properties.getProviders()).thenReturn(List.of(provider));
-        // Mocking the restTemplateMapper to return the mocked RestTemplate
-        when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
-        // Mocking the discoveryService to return an empty JSON object when getDiscoveryDocument is called
-        when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate))).thenReturn(new ObjectMapper().createObjectNode());
+    String issuer = "https://einstein.example.com";
+    String token = buildPlainJwt(issuer, "1234", "unknown", "openid");
 
-        OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
+    OidcProvider provider = new OidcProvider();
+    provider.setIssuer(issuer);
+    provider.setClient(new OidcClient());
 
-        assertNotNull(principal);
-        // Assert that the 'active' attribute of the principal is false
-        assertTrue(principal.getAttribute("active").equals(false));
-    }
+    when(properties.getProviders()).thenReturn(List.of(provider));
+    when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
+    when(discoveryService.getDiscoveryDocument(eq(issuer), eq(restTemplate)))
+      .thenReturn(new ObjectMapper().createObjectNode());
 
-    @Test
-    void introspectReturnsInactiveForMalformedToken() {
-        // Test to verify that the introspector returns an inactive principal for a malformed JWT token
+    OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
-        OAuth2AuthenticatedPrincipal principal = introspector.introspect("this-is-not-a-jwt");
+    assertNotNull(principal);
+    assertTrue(principal.getAttribute("active").equals(false));
+  }
 
-        assertNotNull(principal);
-        assertTrue(principal.getAttribute("active").equals(false));
-    }
+  @Test
+  void introspectReturnsInactiveForMalformedToken() {
 
-    private String buildJwtWithIssuer(String iss) {
+    OAuth2AuthenticatedPrincipal principal = introspector.introspect("this-is-not-a-jwt");
 
-        Date now = new Date();
-        Date exp = new Date(System.currentTimeMillis() + 3600_000L);
+    assertNotNull(principal);
+    assertTrue(principal.getAttribute("active").equals(false));
+  }
 
-        // Creates the claims for the JWT
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer(iss)
-                .subject("external-subject-123")
-                .issueTime(now)
-                .expirationTime(exp)
-                .jwtID("jti-external-123")
-                .claim("client_id", "external-client")
-                .claim("scope", "openid profile")
-                .build();
-
-        PlainJWT jwt = new PlainJWT(claims);
-        return jwt.serialize();
-    }
 }

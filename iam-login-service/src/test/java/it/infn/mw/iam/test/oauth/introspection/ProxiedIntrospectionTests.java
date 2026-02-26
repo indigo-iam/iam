@@ -22,156 +22,83 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClientException;
-import org.springframework.http.MediaType;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles({ "h2", "oidc-test" })
-public class ProxiedIntrospectionTests extends EndpointsTestUtils {
+@ActiveProfiles({"h2", "oidc-test"})
+public class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
 
-    /*
-     * @Autowired
-     * OidcProviderProperties properties;
-     * 
-     * @Test
-     * public void checkConfiguration() {
-     * assertTrue(properties.getProviders().size() == 2);
-     * JWT jwt = new PlainJWT();
-     * }
-     */
+  @MockBean
+  private OpaqueTokenIntrospector opaqueTokenIntrospector;
 
-    @Autowired
-    OidcProviderProperties properties;
+  @Test
+  public void testProxiedIntrospectionWithKnownProvider() throws Exception {
 
-    @MockBean
-    private OpaqueTokenIntrospector opaqueTokenIntrospector;
+    String externalIssuer = "https://einstein.example.com";
+    String clientId = "client-einstein";
+    String scopes = "openid profile email";
 
-    @Test
-    public void testProxiedIntrospectionWithEinsteinProvider() throws Exception {
+    Map<String, Object> attrs = new HashMap<>();
+    attrs.put("active", true);
+    attrs.put("iss", externalIssuer);
+    attrs.put("client_id", clientId);
+    attrs.put("scope", scopes);
 
-        String externalIssuer = "https://einstein.example.com";
-        String externalToken = buildJwtWithIssuer(externalIssuer);
+    OAuth2AuthenticatedPrincipal principal =
+        new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
 
-        /*
-         * Map of attributes an external provider should return
-         * during introspection
-         */
-        Map<String, Object> attrs = new HashMap<>();
-        attrs.put("active", true);
-        attrs.put("iss", externalIssuer);
-        attrs.put("client_id", "client-einstein");
-        attrs.put("scope", "openid profile email");
+    String token = buildPlainJwt(externalIssuer, "1234", clientId, scopes);
 
-        OAuth2AuthenticatedPrincipal principal = new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
+    when(opaqueTokenIntrospector.introspect(token)).thenReturn(principal);
 
-        when(opaqueTokenIntrospector.introspect(externalToken)).thenReturn(principal);
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 
-        // Executes a POST request to the introspection endpoint
-        mvc.perform(post(INTROSPECTION_ENDPOINT)
-                .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                
-                .param("token", externalToken)
-                .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.active", equalTo(true)))
-            .andExpect(jsonPath("$.iss", equalTo(externalIssuer)))
-            .andExpect(jsonPath("$.client_id", equalTo("client-einstein")))
-            .andExpect(jsonPath("$.scope", equalTo("openid profile email")));
-    }
+        .param("token", token)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.iss", equalTo(externalIssuer)))
+      .andExpect(jsonPath("$.client_id", equalTo(clientId)))
+      .andExpect(jsonPath("$.scope", equalTo(scopes)));
+  }
 
-    @Test
-    public void testProxiedIntrospectionWithOppenheimerProvider() throws Exception {
+  @Test
+  public void testTokenInactiveWhenIntrospectionTrowsException() throws Exception {
 
-        String externalIssuer = "https://oppenheimer.example.com";
-        String externalToken = buildJwtWithIssuer(externalIssuer);
+    String issuer = "https://oppenheimer.example.com";
+    String token = buildPlainJwt(issuer, "1234", "unknown", "openid");
 
-        /*
-         * Map of attributes an external provider should return
-         * during introspection
-         */
-        Map<String, Object> attrs = new HashMap<>();
-        attrs.put("active", true);
-        attrs.put("iss", externalIssuer);
-        attrs.put("client_id", "client-oppenheimer");
-        attrs.put("scope", "openid profile email");
+    when(opaqueTokenIntrospector.introspect(token)).thenThrow(new RestClientException("Error"));
 
-        OAuth2AuthenticatedPrincipal principal = new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", token)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+  }
 
-        when(opaqueTokenIntrospector.introspect(externalToken)).thenReturn(principal);
-
-        // Executes a POST request to the introspection endpoint
-        mvc.perform(post(INTROSPECTION_ENDPOINT)
-                .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                .param("token", externalToken)
-                .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.active", equalTo(true)))
-            .andExpect(jsonPath("$.iss", equalTo(externalIssuer)))
-            .andExpect(jsonPath("$.client_id", equalTo("client-oppenheimer")))
-            .andExpect(jsonPath("$.scope", equalTo("openid profile email")));
-    }
-
-     @Test
-    public void testProxiedIntrospectionWithRestClientException() throws Exception {
-
-        String externalIssuer = "https://oppenheimer.example.com";
-        String externalToken = buildJwtWithIssuer(externalIssuer);
-
-        when(opaqueTokenIntrospector.introspect(externalToken)).thenThrow(new RestClientException("Error"));
-
-        // Executes a POST request to the introspection endpoint
-        mvc.perform(post(INTROSPECTION_ENDPOINT)
-                .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                .param("token", externalToken)
-                .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.active", equalTo(false)));
-    }
-
-    // Builds a JWT with a specified issuer
-    private String buildJwtWithIssuer(String iss) {
-
-        Date now = new Date();
-        Date exp = new Date(System.currentTimeMillis() + 3600_000L);
-
-        // Creates the claims for the JWT
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer(iss)
-                .subject("external-subject-123")
-                .issueTime(now)
-                .expirationTime(exp)
-                .jwtID("jti-external-123")
-                .claim("client_id", "external-client")
-                .claim("scope", "openid profile")
-                .build();
-
-        PlainJWT jwt = new PlainJWT(claims);
-        return jwt.serialize();
-    }
 }

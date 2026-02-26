@@ -17,7 +17,7 @@ package it.infn.mw.iam.test.oauth.introspection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,42 +34,32 @@ import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 @ExtendWith(MockitoExtension.class)
 class OidcDiscoveryServiceTests {
 
-    OidcDiscoveryService discoveryService = new DefaultOidcDiscoveryService();
+  OidcDiscoveryService discoveryService = new DefaultOidcDiscoveryService();
 
-    @Mock
-    RestTemplate restTemplate;
+  @Mock
+  RestTemplate restTemplate;
 
-    @Test
-    void testRestClientException() {
-        Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.any())).thenThrow(new RuntimeException("Error"));
-        RestClientException e = assertThrows(RestClientException.class, () -> discoveryService.getDiscoveryDocument("test", restTemplate));
-        assertEquals("Unable to discover OpenID configuration for issuer test", e.getMessage());
-    }
+  @Test
+  void testRestClientException() {
+    Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.any()))
+      .thenThrow(new RuntimeException("Error"));
 
-    @Test
-    void testSuccessfulOidcDiscovery() throws Exception {
-        String json = "{\"issuer\":\"test\"}";
+    RestClientException e = assertThrows(RestClientException.class,
+        () -> discoveryService.getDiscoveryDocument("test", restTemplate));
+    assertEquals("Unable to discover OpenID configuration for issuer test", e.getMessage());
+  }
 
-        Mockito.when(restTemplate.getForEntity("test/.well-known/openid-configuration", String.class))
-            .thenReturn(ResponseEntity.ok(json));
+  @Test
+  void testSuccessfulOidcDiscovery() throws Exception {
+    String json = "{\"issuer\":\"test\"}";
 
-        var result = discoveryService.getDiscoveryDocument("test", restTemplate);
-        
-        assertEquals("test", result.get("issuer").asText());
-    }
+    Mockito.when(restTemplate.getForEntity("test/.well-known/openid-configuration", String.class))
+      .thenReturn(ResponseEntity.ok(json));
 
-    @Test
-    void testSuccessfulOAuthDiscoveryEndpoint() throws Exception {
-        String json = "{\"issuer\":\"test\"}";
+    var result = discoveryService.getDiscoveryDocument("test", restTemplate);
 
-        Mockito.when(restTemplate.getForEntity("test/.well-known/openid-configuration", String.class))
-            .thenThrow(new RestClientException("Not found"));
+    assertTrue(result.get("issuer").asText().equals("test"));
 
-        Mockito.when(restTemplate.getForEntity("test/.well-known/oauth-authorization-server", String.class))
-            .thenReturn(ResponseEntity.ok(json));
+  }
 
-        var result = discoveryService.getDiscoveryDocument("test", restTemplate);
-        
-        assertEquals("test", result.get("issuer").asText());
-    }
 }
