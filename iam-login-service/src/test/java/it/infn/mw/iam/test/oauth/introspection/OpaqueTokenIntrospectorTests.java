@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -72,6 +71,78 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
   }
 
   @Test
+  void introspectAllowedWhenFlagIsTrue() {
+    String issuer = "https://example.com";
+
+    OidcClient client = new OidcClient();
+    client.setClientId("client");
+    client.setClientSecret("secret");
+
+    OidcProvider enabled = new OidcProvider();
+    enabled.setIssuer(issuer);
+    enabled.setClient(client);
+    enabled.setAllowProxiedIntrospection(true);
+
+    when(properties.getProviders()).thenReturn(List.of(enabled));
+    OidcProvider result = properties.getProviders()
+      .stream()
+      .filter(
+          c -> c.getIssuer().equals(issuer) && Boolean.TRUE.equals(c.isAllowProxiedIntrospection()))
+      .findFirst()
+      .orElseThrow(() -> new InvalidTokenException("Not allowed"));
+    assertEquals(enabled, result);
+  }
+
+  @Test
+  void introspectThrowsExceptionWhenFlagIsFalse() {
+    String issuer = "https://example.com";
+
+    OidcClient client = new OidcClient();
+    client.setClientId("client");
+    client.setClientSecret("secret");
+
+    OidcProvider disabled = new OidcProvider();
+    disabled.setIssuer(issuer);
+    disabled.setClient(client);
+    disabled.setAllowProxiedIntrospection(false);
+
+    when(properties.getProviders()).thenReturn(List.of(disabled));
+    assertThrows(InvalidTokenException.class, () -> {
+      properties.getProviders()
+        .stream()
+        .filter(c -> c.getIssuer().equals(issuer)
+            && Boolean.TRUE.equals(c.isAllowProxiedIntrospection()))
+        .findFirst()
+        .orElseThrow(() -> new InvalidTokenException("Not allowed"));
+    });
+  }
+
+  @Test
+  void introspectThrowsExceptionWhenFlagIsNull() {
+    String issuer = "https://example.com";
+
+    OidcClient client = new OidcClient();
+    client.setClientId("client");
+    client.setClientSecret("secret");
+
+    OidcProvider nullValue = new OidcProvider();
+    nullValue.setIssuer(issuer);
+    nullValue.setClient(client);
+    nullValue.setAllowProxiedIntrospection(null);
+
+    when(properties.getProviders()).thenReturn(List.of(nullValue));
+    assertThrows(InvalidTokenException.class, () -> {
+      properties.getProviders()
+        .stream()
+        .filter(c -> c.getIssuer().equals(issuer)
+            && Boolean.TRUE.equals(c.isAllowProxiedIntrospection()))
+        .findFirst()
+        .orElseThrow(() -> new InvalidTokenException("Not allowed"));
+    });
+
+  }
+
+  @Test
   void introspectWorksWhitKnownIssuer() {
 
     String issuer = "https://einstein.example.com";
@@ -85,6 +156,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
     provider.setClient(client);
+    provider.setAllowProxiedIntrospection(true);
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(client)).thenReturn(restTemplate);
@@ -123,6 +195,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
     provider.setClient(new OidcClient());
+    provider.setAllowProxiedIntrospection(true);
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
@@ -132,7 +205,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
     assertNotNull(principal);
-    assertEquals(principal.getAttribute("active"), false);
+    assertEquals(false, principal.getAttribute("active"));
   }
 
   @Test
@@ -141,7 +214,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OAuth2AuthenticatedPrincipal principal = introspector.introspect("this-is-not-a-jwt");
 
     assertNotNull(principal);
-    assertEquals(principal.getAttribute("active"), false);
+    assertEquals(false, principal.getAttribute("active"));
   }
 
   @Test
@@ -153,6 +226,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
     provider.setClient(new OidcClient());
+    provider.setAllowProxiedIntrospection(true);
 
     when(properties.getProviders()).thenReturn(List.of(provider));
     when(restTemplateMapper.apply(any())).thenReturn(restTemplate);
@@ -161,7 +235,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     OAuth2AuthenticatedPrincipal principal = introspector.introspect(token);
 
-    assertEquals(principal.getAttribute("active"), false);
+    assertEquals(false, principal.getAttribute("active"));
   }
 
 }

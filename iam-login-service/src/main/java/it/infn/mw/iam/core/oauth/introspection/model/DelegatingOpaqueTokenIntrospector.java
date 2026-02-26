@@ -70,7 +70,7 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
 
     OidcProvider provider = properties.getProviders()
       .stream()
-      .filter(c -> c.getIssuer().equals(issuer))
+      .filter(c -> Boolean.TRUE.equals(c.isAllowProxiedIntrospection()) && c.getIssuer().equals(issuer))
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Invalid issuer: " + issuer));
 

@@ -18,6 +18,7 @@ oidc:
   providers:
   - name: iam-remote
     issuer: https://iam-remote.local.io/
+    allow-proxied-introspection: true
     client:
       clientId: client
       clientSecret: secret
