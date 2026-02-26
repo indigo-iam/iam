@@ -73,6 +73,11 @@ public interface StructuredScopeTestSupportConstants {
   static final String PROTECTED_RESOURCE_ID = "protected-resource";
   static final String PROTECTED_RESOURCE_SECRET = "secret";
 
+  static final String SCIM_CLIENT_RO_ID = "scim-client-ro";
+  static final String SCIM_CLIENT_RO_SECRET = "secret";
+  static final String SCIM_CLIENT_RW_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_RW_SECRET = "secret";
+
   static final String LOGIN_URL = "/login";
   static final String TEST_USERNAME = "test";
   static final String TEST_PASSWORD = "password";

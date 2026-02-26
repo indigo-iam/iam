@@ -85,7 +85,7 @@ public class JavamailNotificationDeliveryTests {
   @BeforeEach
   void setup() {
 
-    lenient().when(clock.instant()).thenReturn(Clock.systemDefaultZone().instant());
+    lenient().when(clock.instant()).thenReturn(Clock.systemUTC().instant());
     lenient().when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
   }
 

@@ -130,7 +130,7 @@ class AupReminderTaskTests extends AupTestSupport {
     LocalDate today = LocalDate.now(clock);
     LocalDate twoDaysAgo = today.minusDays(2);
 
-    Date twoDaysAgoStartOfDay = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    Date twoDaysAgoStartOfDay = Date.from(twoDaysAgo.atStartOfDay(clock.getZone()).toInstant());
     aup.setCreationTime(twoDaysAgoStartOfDay);
     aup.setLastUpdateTime(twoDaysAgoStartOfDay);
 

@@ -191,7 +191,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("User test needs to sign AUP for this organization in order to proceed.")));
+          equalTo("User test needs to sign AUP.")));
   }
 
   @Test

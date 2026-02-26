@@ -117,7 +117,7 @@ public class VomsConfig {
 
   @Bean
   Clock clock() {
-    return Clock.systemDefaultZone();
+    return Clock.systemUTC();
   }
 
 

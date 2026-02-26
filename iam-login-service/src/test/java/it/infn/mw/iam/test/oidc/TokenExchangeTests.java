@@ -24,10 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
-
-public class TokenExchangeTest extends OidcMockMvcTestSupport
-    implements StructuredScopeTestSupportConstants {
+class TokenExchangeTests extends OidcMockMvcTestSupport {
 
   @Test
   void tokenExchangeSuccess() throws Exception {

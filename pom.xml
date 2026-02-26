@@ -94,7 +94,7 @@
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx2500m</jvm.test.args>
+    <jvm.test.args>-Xmx2500m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 

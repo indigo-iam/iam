@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.api.proxy;
+package it.infn.mw.iam.test.util.oauth;
 
-import java.time.Clock;
+import org.springframework.mock.web.MockHttpSession;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+public class ClockedHttpSession extends MockHttpSession {
 
-@Configuration
-public class ProxyCertificateClockConfig extends ProxyCertificateTestSupport {
+  private final long customCreationTime;
 
-  @Bean
-  @Primary
-  public Clock clock() {
-    return clock;
+  public ClockedHttpSession(long creationTime) {
+    super();
+    this.customCreationTime = creationTime;
   }
 
+  @Override
+  public long getCreationTime() {
+    return customCreationTime;
+  }
 }

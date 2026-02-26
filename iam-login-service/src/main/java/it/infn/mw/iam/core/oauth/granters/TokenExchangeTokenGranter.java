@@ -15,14 +15,10 @@
  */
 package it.infn.mw.iam.core.oauth.granters;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision.INVALID_SCOPE;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision.PERMIT;
 import static java.lang.String.format;
-import static java.util.Objects.isNull;
 
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -49,7 +45,6 @@ import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -59,183 +54,231 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
   public static final String TOKEN_EXCHANGE_GRANT_TYPE =
       "urn:ietf:params:oauth:grant-type:token-exchange";
+
   private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
+
   private static final String AUDIENCE_FIELD = "audience";
   private static final String OFFLINE_ACCESS_SCOPE = "offline_access";
 
-  private final OAuth2TokenEntityService tokenServices;
+  private final OAuth2TokenEntityService tokenService;
+  private final ClientDetailsEntityService clientDetailsService;
+  private final IamProperties iamProperties;
+  private final AccountUtils accountUtils;
+  private final AUPSignatureCheckService signatureCheckService;
+  private final TokenExchangePdp exchangePdp;
+  private final TokenUtils tokenUtils;
 
-  private IamProperties iamProperties;
-  private AccountUtils accountUtils;
-  private AUPSignatureCheckService signatureCheckService;
-  private TokenExchangePdp exchangePdp;
-  private ClientDetailsEntityService clientDetailsService;
-  private TokenUtils tokenUtils;
+  public TokenExchangeTokenGranter(OAuth2TokenEntityService tokenService,
+      ClientDetailsEntityService clientDetailsService, OAuth2RequestFactory requestFactory,
+      IamProperties iamProperties, TokenUtils tokenUtils, AccountUtils accountUtils,
+      AUPSignatureCheckService signatureCheckService, TokenExchangePdp exchangePdp) {
 
-  public TokenExchangeTokenGranter(final OAuth2TokenEntityService tokenServices,
-      final ClientDetailsEntityService clientDetailsService,
-      final OAuth2RequestFactory requestFactory, IamProperties iamProperties,
-      TokenUtils tokenUtils) {
-    super(tokenServices, clientDetailsService, requestFactory, TOKEN_EXCHANGE_GRANT_TYPE);
-    this.iamProperties = iamProperties;
+    super(tokenService, clientDetailsService, requestFactory, TOKEN_EXCHANGE_GRANT_TYPE);
+
+    this.tokenService = tokenService;
     this.clientDetailsService = clientDetailsService;
-    this.tokenServices = tokenServices;
+    this.iamProperties = iamProperties;
     this.tokenUtils = tokenUtils;
+    this.accountUtils = accountUtils;
+    this.signatureCheckService = signatureCheckService;
+    this.exchangePdp = exchangePdp;
+  }
+
+  @Override
+  protected OAuth2Authentication getOAuth2Authentication(ClientDetails actorClient,
+      TokenRequest tokenRequest) {
+
+    rejectDelegationIfPresent(tokenRequest);
+
+    ClientDetailsEntity actor = castClient(actorClient);
+
+    SubjectTokenContext subjectContext = resolveSubjectToken(actor, tokenRequest);
+
+    OAuth2Authentication finalAuth =
+        rebuildAuthentication(actorClient, tokenRequest, subjectContext.authentication());
+
+    enrichAudience(tokenRequest, finalAuth);
+
+    return finalAuth;
+  }
+
+  @Override
+  protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
+
+    OAuth2Authentication auth = getOAuth2Authentication(client, tokenRequest);
+
+    OAuth2AccessToken token = tokenService.createAccessToken(auth);
+
+    token.getAdditionalInformation().put("issued_token_type", TOKEN_TYPE);
+
+    return token;
+  }
+
+  private SubjectTokenContext resolveSubjectToken(ClientDetailsEntity actor, TokenRequest request) {
+
+    String tokenValue = request.getRequestParameters().get("subject_token");
+
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      return resolveFromDatabase(actor, request, tokenValue);
+    }
+
+    return resolveFromJwt(actor, request, tokenValue);
+  }
+
+  private SubjectTokenContext resolveFromDatabase(ClientDetailsEntity actor, TokenRequest request,
+      String tokenValue) {
+
+    OAuth2AccessTokenEntity token = tokenUtils.loadFromDatabase(tokenValue)
+      .orElseThrow(() -> new InvalidTokenException("Invalid subject token: not found on database"));
+
+    OAuth2Authentication authentication = token.getAuthenticationHolder().getAuthentication();
+
+    validateExchange(actor, request, authentication, token.getScope(),
+        token.getClient().getClientId());
+
+    return new SubjectTokenContext(authentication, token.getScope(),
+        token.getClient().getClientId());
+  }
+
+  private SubjectTokenContext resolveFromJwt(ClientDetailsEntity actor, TokenRequest request,
+      String tokenValue) {
+
+    ParsedAccessToken parsed = tokenUtils.parseAccessToken(tokenValue);
+
+    OAuth2Authentication authentication = tokenUtils.getAuthentication(parsed);
+
+    validateExchange(actor, request, authentication, parsed.scopes(), parsed.clientId());
+
+    tokenUtils.validate(parsed);
+
+    return new SubjectTokenContext(authentication, parsed.scopes(), parsed.clientId());
   }
 
   private void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
-      OAuth2Authentication authentication, Set<String> subjectTokenScopes,
-      String subjectTokenClientId) {
+      OAuth2Authentication authentication, Set<String> subjectScopes, String subjectClientId) {
 
-    String audience = tokenRequest.getRequestParameters().get(AUDIENCE_FIELD);
-    Set<String> requestedScopes = tokenRequest.getScope();
+    Set<String> requestedScopes = resolveScopes(tokenRequest, subjectScopes);
 
-    if (Objects.isNull(requestedScopes) || requestedScopes.isEmpty()) {
-      LOG.debug(
-          "No scope parameter found in token exchange request, defaulting to scopes linked to the suject token");
-      requestedScopes = subjectTokenScopes;
+    validateAupIfNeeded(authentication);
+
+    logRequest(actorClient, authentication, subjectClientId, tokenRequest, requestedScopes);
+
+    validateOfflineAccess(actorClient, subjectClientId, requestedScopes);
+
+    validateWithPdp(actorClient, tokenRequest, subjectClientId);
+  }
+
+  private Set<String> resolveScopes(TokenRequest request, Set<String> subjectScopes) {
+
+    Set<String> scopes = request.getScope();
+
+    if (scopes == null || scopes.isEmpty()) {
+      LOG.debug("Defaulting to subject token scopes");
+      return subjectScopes;
     }
 
-    if (!isNull(authentication.getUserAuthentication())) {
+    return scopes;
+  }
 
-      Optional<IamAccount> account =
-          accountUtils.getAuthenticatedUserAccount(authentication.getUserAuthentication());
+  private void validateAupIfNeeded(OAuth2Authentication authentication) {
 
-      if (account.isPresent() && signatureCheckService.needsAupSignature(account.get())) {
+    if (authentication.getUserAuthentication() == null) {
+      return;
+    }
+
+    accountUtils.getAuthenticatedUserAccount(authentication.getUserAuthentication())
+      .filter(signatureCheckService::needsAupSignature)
+      .ifPresent(account -> {
         throw new InvalidGrantException(
-            format("User %s needs to sign AUP for this organization in order to proceed.",
-                account.get().getUsername()));
-      }
+            format("User %s needs to sign AUP.", account.getUsername()));
+      });
+  }
 
-      LOG.info(
-          "Client '{}' requests token exchange from client '{}' to impersonate user '{}' on audience '{}' with scopes '{}'",
-          actorClient.getClientId(), subjectTokenClientId,
-          authentication.getUserAuthentication().getName(), audience, requestedScopes);
+  private void validateOfflineAccess(ClientDetailsEntity actor, String subjectClientId,
+      Set<String> scopes) {
 
-    } else {
-
-      LOG.info(
-          "Client '{}' requests token exchange from client '{}' on audience '{}' with scopes '{}'",
-          actorClient.getClientId(), subjectTokenClientId, audience, requestedScopes);
-    }
-
-    if (subjectTokenClientId.equals(actorClient.getClientId())
-        && requestedScopes.contains(OFFLINE_ACCESS_SCOPE)) {
+    if (actor.getClientId().equals(subjectClientId) && scopes.contains(OFFLINE_ACCESS_SCOPE)) {
       throw new OAuth2AccessDeniedException(
-          "Token exchange not allowed: the actor and the subject are the same client and offline_access is in the requested scopes");
+          "Token exchange not allowed: same client and offline_access requested");
     }
+  }
 
-    ClientDetailsEntity subjectClient =
-        clientDetailsService.loadClientByClientId(subjectTokenClientId);
-    TokenExchangePdpResult result =
-        exchangePdp.validateTokenExchange(tokenRequest, subjectClient, actorClient);
+  private void validateWithPdp(ClientDetailsEntity actor, TokenRequest request,
+      String subjectClientId) {
+
+    ClientDetailsEntity subject = clientDetailsService.loadClientByClientId(subjectClientId);
+
+    TokenExchangePdpResult result = exchangePdp.validateTokenExchange(request, subject, actor);
+
+    handlePdpDecision(result);
+  }
+
+  private void handlePdpDecision(TokenExchangePdpResult result) {
 
     LOG.debug("Token exchange pdp decision: {}", result.decision());
 
-
     if (INVALID_SCOPE.equals(result.decision())) {
-      String errorMsg = "An invalid scope was requested";
+      throw new InvalidScopeException(result.message()
+        .flatMap(m -> result.invalidScope().map(s -> format("%s: %s", m, s)))
+        .orElse("An invalid scope was requested"));
+    }
 
-      // These clauses will _always_ be true, but this way sonarcloud
-      // does not complain...
-      if (result.message().isPresent() && result.invalidScope().isPresent()) {
-        errorMsg = format("%s: %s", result.message().get(), result.invalidScope().get());
-      }
-
-      throw new InvalidScopeException(errorMsg);
-
-    } else if (!PERMIT.equals(result.decision())) {
-      if (result.message().isPresent()) {
-        throw new OAuth2AccessDeniedException(result.message().get());
-      } else {
-        throw new OAuth2AccessDeniedException("Token exchange not allowed");
-      }
+    if (!PERMIT.equals(result.decision())) {
+      throw new OAuth2AccessDeniedException(result.message().orElse("Token exchange not allowed"));
     }
   }
 
-  protected void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
-      OAuth2AccessTokenEntity accessToken) {
+  private void rejectDelegationIfPresent(TokenRequest request) {
 
-    validateExchange(actorClient, tokenRequest,
-        accessToken.getAuthenticationHolder().getAuthentication(), accessToken.getScope(),
-        accessToken.getClient().getClientId());
-  }
-
-  protected void validateExchange(ClientDetailsEntity actorClient, TokenRequest tokenRequest,
-      OAuth2Authentication authentication, ParsedAccessToken subjectToken) {
-
-    validateExchange(actorClient, tokenRequest, authentication, subjectToken.scopes(),
-        subjectToken.clientId());
-  }
-
-  @Override
-  protected OAuth2Authentication getOAuth2Authentication(final ClientDetails actorClient,
-      final TokenRequest tokenRequest) {
-
-    if (tokenRequest.getRequestParameters().get("actor_token") != null
-        || tokenRequest.getRequestParameters().get("want_composite") != null) {
+    if (request.getRequestParameters().get("actor_token") != null
+        || request.getRequestParameters().get("want_composite") != null) {
       throw new InvalidRequestException("Delegation not supported");
     }
+  }
 
-    if (!(actorClient instanceof ClientDetailsEntity actorClientEntity)) {
-      throw new IllegalStateException("Invalid client entity");
+  private ClientDetailsEntity castClient(ClientDetails client) {
+
+    if (client instanceof ClientDetailsEntity entity) {
+      return entity;
     }
 
-    String subjectTokenValue = tokenRequest.getRequestParameters().get("subject_token");
+    throw new IllegalStateException("Invalid client entity");
+  }
 
-    OAuth2Authentication authentication;
+  private OAuth2Authentication rebuildAuthentication(ClientDetails actorClient,
+      TokenRequest request, OAuth2Authentication subjectAuth) {
 
-    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+    return new OAuth2Authentication(getRequestFactory().createOAuth2Request(actorClient, request),
+        subjectAuth.getUserAuthentication());
+  }
 
-      Optional<OAuth2AccessTokenEntity> accessTokenOnDb =
-          tokenUtils.loadFromDatabase(subjectTokenValue);
-      if (accessTokenOnDb.isEmpty()) {
-        throw new InvalidTokenException("Invalid subject token: not found on database");
-      }
-      validateExchange(actorClientEntity, tokenRequest, accessTokenOnDb.get());
-      authentication = accessTokenOnDb.get().getAuthenticationHolder().getAuthentication();
+  private void enrichAudience(TokenRequest request, OAuth2Authentication auth) {
 
-    } else {
+    String audience = request.getRequestParameters().get(AUDIENCE_FIELD);
 
-      ParsedAccessToken subjectToken = tokenUtils.parseAccessToken(subjectTokenValue);
-      authentication = tokenUtils.getAuthentication(subjectToken);
-      validateExchange(actorClientEntity, tokenRequest, authentication, subjectToken);
-      tokenUtils.validate(subjectToken);
+    if (audience != null && !audience.isBlank()) {
+      auth.getOAuth2Request().getExtensions().put("aud", audience);
+    }
+  }
+
+  private void logRequest(ClientDetailsEntity actor, OAuth2Authentication authentication,
+      String subjectClientId, TokenRequest request, Set<String> scopes) {
+
+    String audience = request.getRequestParameters().get(AUDIENCE_FIELD);
+
+    if (authentication.getUserAuthentication() == null) {
+      LOG.info("Client '{}' exchanges token from '{}' audience '{}' scopes '{}'",
+          actor.getClientId(), subjectClientId, audience, scopes);
+      return;
     }
 
-    authentication =
-        new OAuth2Authentication(getRequestFactory().createOAuth2Request(actorClient, tokenRequest),
-            authentication.getUserAuthentication());
-
-    String audience = tokenRequest.getRequestParameters().get(AUDIENCE_FIELD);
-    if (!isNullOrEmpty(audience)) {
-      authentication.getOAuth2Request().getExtensions().put("aud", audience);
-    }
-
-    return authentication;
+    LOG.info("Client '{}' impersonates '{}' from '{}' audience '{}' scopes '{}'",
+        actor.getClientId(), authentication.getUserAuthentication().getName(), subjectClientId,
+        audience, scopes);
   }
 
-  @Override
-  protected OAuth2AccessToken getAccessToken(final ClientDetails client,
-      final TokenRequest tokenRequest) {
-
-    OAuth2Authentication auth = getOAuth2Authentication(client, tokenRequest);
-    OAuth2AccessToken accessToken = tokenServices.createAccessToken(auth);
-    accessToken.getAdditionalInformation().put("issued_token_type", TOKEN_TYPE);
-
-    return accessToken;
-  }
-
-  public void setAccountUtils(AccountUtils accountUtils) {
-    this.accountUtils = accountUtils;
-  }
-
-  public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
-    this.signatureCheckService = signatureCheckService;
-  }
-
-  public void setExchangePdp(TokenExchangePdp exchangePdp) {
-    this.exchangePdp = exchangePdp;
+  private record SubjectTokenContext(OAuth2Authentication authentication, Set<String> scopes,
+      String clientId) {
   }
 
 }

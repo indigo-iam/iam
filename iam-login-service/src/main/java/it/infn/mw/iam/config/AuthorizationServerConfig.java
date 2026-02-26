@@ -158,12 +158,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     refreshTokenGranter.setAccountUtils(accountUtils);
     refreshTokenGranter.setSignatureCheckService(signatureCheckService);
 
-    TokenExchangeTokenGranter tokenExchangeGranter = new TokenExchangeTokenGranter(tokenServices,
-        clientDetailsService, requestFactory, iamProperties, tokenUtils);
-
-    tokenExchangeGranter.setAccountUtils(accountUtils);
-    tokenExchangeGranter.setSignatureCheckService(signatureCheckService);
-    tokenExchangeGranter.setExchangePdp(tokenExchangePdp);
+    TokenExchangeTokenGranter tokenExchangeGranter =
+        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory,
+            iamProperties, tokenUtils, accountUtils, signatureCheckService, tokenExchangePdp);
 
     return new CompositeTokenGranter(
         Arrays.<TokenGranter>asList(

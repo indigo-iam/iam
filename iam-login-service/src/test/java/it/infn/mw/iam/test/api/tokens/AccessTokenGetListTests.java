@@ -30,12 +30,10 @@ import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
@@ -53,10 +51,8 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
-    "iam.access_token.store_on_database=true"})
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
 @Transactional
 class AccessTokenGetListTests extends TokenGetterUtils {
 

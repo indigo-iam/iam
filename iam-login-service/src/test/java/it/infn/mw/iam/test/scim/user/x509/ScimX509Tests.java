@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
@@ -48,15 +47,17 @@ import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 class ScimX509Tests extends X509TestSupport implements ScimConstants {
@@ -75,6 +76,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
   @Autowired
   SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
@@ -96,7 +100,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(user);
+    linkTest0CertificateToAccount(user, clock.instant());
 
     iamAccountRepo.save(user);
 
@@ -112,7 +116,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.%s.certificates[0].issuerDn", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_0_ISSUER)))
       .andExpect(jsonPath("$.%s.certificates[0].pemEncodedCertificate", INDIGO_USER_SCHEMA)
-        .value(equalTo(TEST_0_CERT_STRING)))
+        .value(equalTo(getTest0CertString())))
       .andExpect(jsonPath("$.%s.certificates[0].display", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_0_CERT_LABEL)))
       .andExpect(jsonPath("$.%s.certificates[0].primary", INDIGO_USER_SCHEMA).value(equalTo(true)));
@@ -123,8 +127,8 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(user);
-    linkTest1CertificateToAccount(user);
+    linkTest0CertificateToAccount(user, clock.instant());
+    linkTest1CertificateToAccount(user, clock.instant());
 
     iamAccountRepo.save(user);
 
@@ -140,7 +144,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")
@@ -168,7 +172,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.%s.certificates[0].issuerDn", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_1_ISSUER)))
       .andExpect(jsonPath("$.%s.certificates[0].pemEncodedCertificate", INDIGO_USER_SCHEMA)
-        .value(equalTo(TEST_1_CERT_STRING)))
+        .value(equalTo(getTest1CertString())))
       .andExpect(jsonPath("$.%s.certificates[0].display", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_1_CERT_LABEL)))
       .andExpect(jsonPath("$.%s.certificates[0].primary", INDIGO_USER_SCHEMA).value(equalTo(true)));
@@ -180,7 +184,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .subjectDn("a fake subject")
       .issuerDn("a fake issuer")
       .build();
@@ -210,7 +214,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.%s.certificates[0].issuerDn", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_1_ISSUER)))
       .andExpect(jsonPath("$.%s.certificates[0].pemEncodedCertificate", INDIGO_USER_SCHEMA)
-        .value(equalTo(TEST_1_CERT_STRING)))
+        .value(equalTo(getTest1CertString())))
       .andExpect(jsonPath("$.%s.certificates[0].display", INDIGO_USER_SCHEMA)
         .value(equalTo(TEST_1_CERT_LABEL)))
       .andExpect(jsonPath("$.%s.certificates[0].primary", INDIGO_USER_SCHEMA).value(equalTo(true)));
@@ -253,7 +257,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
   void testScimCreateUserWithBoundCertFails() throws Exception {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")
@@ -296,7 +300,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
   void testScimAddCertificateSuccess() throws Exception {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .issuerDn(TEST_0_ISSUER)
       .subjectDn(TEST_0_SUBJECT)
       .build();
@@ -352,7 +356,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")
@@ -395,7 +399,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .subjectDn(TEST_0_SUBJECT)
       .issuerDn(TEST_0_ISSUER)
       .build();
@@ -437,7 +441,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .build();
 
     iamAccountRepo.findByCertificate(TEST_0_SUBJECT).ifPresent(a -> {

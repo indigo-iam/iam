@@ -20,7 +20,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
@@ -41,7 +40,6 @@ public class ExternalConnectivityHealthIndicator implements HealthIndicator {
   private final String endpoint;
   private final int timeoutInSecs;
 
-  @Autowired
   public ExternalConnectivityHealthIndicator(IamProperties properties) {
     this.endpoint = properties.getExternalConnectivityProbe().getEndpoint();
     this.timeoutInSecs = properties.getExternalConnectivityProbe().getTimeoutInSecs();

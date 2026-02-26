@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
@@ -57,12 +56,13 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.ClockedHttpSession;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 @WithAnonymousUser
 @TestPropertySource(properties = {"logging.level.root=DEBUG",
@@ -205,7 +205,8 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
     IamAup defaultAup = buildDefaultAup(clock.now());
     aupRepo.save(defaultAup);
 
-    MockHttpSession session = new MockHttpSession();
+    ClockedHttpSession session =
+        new ClockedHttpSession(clock.instant().plusMillis(100).toEpochMilli());
 
     mvc.perform(get("/dashboard")
         .session(session))

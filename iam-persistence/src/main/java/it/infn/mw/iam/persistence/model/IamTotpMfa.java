@@ -16,6 +16,7 @@
 package it.infn.mw.iam.persistence.model;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -58,16 +59,17 @@ public class IamTotpMfa implements Serializable {
   private Date lastUpdateTime;
 
   public IamTotpMfa() {
-    Date now = new Date();
+  }
+
+  public IamTotpMfa(Instant instant) {
+    Date now = Date.from(instant);
     setCreationTime(now);
     setLastUpdateTime(now);
   }
 
-  public IamTotpMfa(IamAccount account) {
+  public IamTotpMfa(Instant instant, IamAccount account) {
+    this(instant);
     this.account = account;
-    Date now = new Date();
-    setCreationTime(now);
-    setLastUpdateTime(now);
   }
 
   public Long getId() {
@@ -124,9 +126,9 @@ public class IamTotpMfa implements Serializable {
     this.lastUpdateTime = lastUpdateTime;
   }
 
-  public void touch() {
+  public void touch(Instant instant) {
 
-    setLastUpdateTime(new Date());
+    setLastUpdateTime(Date.from(instant));
   }
 
   @Override

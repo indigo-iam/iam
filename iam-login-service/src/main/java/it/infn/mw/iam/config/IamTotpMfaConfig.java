@@ -65,9 +65,6 @@ public class IamTotpMfaConfig {
   @Autowired
   private AccountUtils accountUtils;
 
-  @Autowired
-  private Clock clock;
-
   /**
    * Responsible for generating new TOTP secrets
    * 
@@ -106,9 +103,10 @@ public class IamTotpMfaConfig {
 
   @Bean(name = "MultiFactorVerificationFilter")
   MultiFactorVerificationFilter multiFactorVerificationFilter(
-      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager) {
+      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
+      Clock clock) {
 
-    return new MultiFactorVerificationFilter(authenticationManager, successHandler(),
+    return new MultiFactorVerificationFilter(authenticationManager, successHandler(clock),
         failureHandler());
   }
 
@@ -123,7 +121,7 @@ public class IamTotpMfaConfig {
     return new ProviderManager(Arrays.asList(totpCheckProvider));
   }
 
-  public AuthenticationSuccessHandler successHandler() {
+  public AuthenticationSuccessHandler successHandler(Clock clock) {
     return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
         accountRepo, iamBaseUrl);
   }

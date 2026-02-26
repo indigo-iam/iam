@@ -41,6 +41,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import com.google.common.hash.Hashing;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.aup.AupService;
@@ -56,7 +57,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Component
 public class TokenUtils {
 
-  public static final Logger LOG = LoggerFactory.getLogger(IamTokenService.class);
+  public static final Logger LOG = LoggerFactory.getLogger(TokenUtils.class);
 
   private final Clock clock;
   private final IamProperties iamProperties;
@@ -122,12 +123,12 @@ public class TokenUtils {
 
   public void validate(ParsedAccessToken token) {
 
-    validateSignature(token.jwt());
-    validateIssuer(token.issuer());
-    validateExpirationTime(token.expiration());
+    validateSignature(token);
+    validateIssuer(token);
+    validateExpirationTime(token);
     validateClientId(token.clientId());
     if (!token.isClient()) {
-      validateSub(token.sub());
+      validateSub(token);
     }
   }
 
@@ -142,36 +143,55 @@ public class TokenUtils {
     }
   }
 
-  private void validateSignature(SignedJWT jwt) {
+  private void validateSignature(ParsedAccessToken token) {
 
-    if (jwt != null && jwt.getPayload() != null && !jwtSigningService.validateSignature(jwt)) {
-      LOG.warn("Invalid signature for token {}", jwt.getPayload().toJSONObject());
+    SignedJWT jwt = token.jwt();
+    if (jwt == null) {
+      throw new IllegalArgumentException("Invalid null jwt");
+    }
+    Payload payload = jwt.getPayload();
+    if (payload == null) {
+      throw new IllegalArgumentException("Invalid null payload");
+    }
+    if (!jwtSigningService.validateSignature(jwt)) {
+      LOG.warn("Invalid signature for token {}", payload.toJSONObject());
       throw new InvalidTokenException("Invalid token signature");
     }
+    LOG.debug("Valid signature for token {}", payload.toJSONObject());
+    return;
   }
 
-  private void validateExpirationTime(Date expiration) {
+  private void validateExpirationTime(ParsedAccessToken token) {
 
-    if (Objects.isNull(expiration)) {
+    if (Objects.isNull(token.expiration())) {
       throw new InvalidTokenException("Access token exp claim is required");
     }
-    Date now = Date.from(clock.instant());
-    if (now.after(expiration)) {
+    if (token.isExpired(clock)) {
       throw new InvalidTokenException("The access token is expired");
     }
   }
 
-  private void validateIssuer(String issuer) {
+  private void validateExpirationTime(OAuth2AccessTokenEntity token) {
 
-    if (Objects.isNull(issuer) || !iamProperties.getIssuer().equals(issuer)) {
+    if (Objects.isNull(token.getExpiration())) {
+      throw new InvalidTokenException("Access token exp claim is required");
+    }
+    if (Date.from(clock.instant()).after(token.getExpiration())) {
+      throw new InvalidTokenException("The access token is expired");
+    }
+  }
+
+  private void validateIssuer(ParsedAccessToken token) {
+
+    if (Objects.isNull(token.issuer()) || !iamProperties.getIssuer().equals(token.issuer())) {
       throw new InvalidTokenException("Invalid access token issuer");
     }
   }
 
-  private void validateSub(String uuid) {
+  private void validateSub(ParsedAccessToken token) {
 
-    IamAccount account = accountRepository.findByUuid(uuid)
-      .orElseThrow(() -> new InvalidTokenException("User with uuid " + uuid + " not found"));
+    IamAccount account = accountRepository.findByUuid(token.sub())
+      .orElseThrow(() -> new InvalidTokenException("User with uuid " + token.sub() + " not found"));
     validateAccount(account);
   }
 
@@ -279,7 +299,7 @@ public class TokenUtils {
   public void validate(OAuth2AccessTokenEntity token) {
 
     if (token.getExpiration() != null) {
-      validateExpirationTime(token.getExpiration());
+      validateExpirationTime(token);
     }
     Authentication userAuth =
         token.getAuthenticationHolder().getAuthentication().getUserAuthentication();

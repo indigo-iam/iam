@@ -15,7 +15,10 @@
  */
 package it.infn.mw.iam.api.scim.provisioning;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
+
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +32,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
-import static com.google.common.collect.Lists.newArrayList;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
@@ -72,7 +74,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final ScimResourceLocationProvider locationProvider;
 
-  public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
+  public ScimGroupProvisioning(Clock clock, IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
       ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
 
@@ -83,7 +85,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     this.groupRequestsService = groupRequestsService;
     this.groupUpdaterFactory =
-        new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
+        new DefaultGroupMembershipUpdaterFactory(clock, accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 

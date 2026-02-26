@@ -345,7 +345,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   protected void removeClientLinks(IamAccount account) {
 
     accountClientRepo.deleteByAccount(account);
-
   }
 
 
@@ -353,7 +352,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     tokenRevocationService.revokeAccessTokens(account);
     tokenRevocationService.revokeRefreshTokens(account);
-
   }
 
   private void deleteTotpMfa(IamAccount account) {
@@ -509,7 +507,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.getLabels().remove(label);
     account.getLabels().add(label);
 
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     labelSetEvent(account, label);
 
@@ -522,7 +520,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     boolean labelRemoved = account.getLabels().remove(label);
 
     if (labelRemoved) {
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       labelRemovedEvent(account, label);
     }
@@ -535,7 +533,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "Cannot set givenName on a null account");
     if (ObjectUtils.notEqual(account.getUserInfo().getGivenName(), givenName)) {
       account.getUserInfo().setGivenName(givenName);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new GivenNameReplacedEvent(this, account, givenName));
     }
@@ -547,7 +545,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "Cannot set familyName on a null account");
     if (ObjectUtils.notEqual(account.getUserInfo().getFamilyName(), familyName)) {
       account.getUserInfo().setFamilyName(familyName);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new FamilyNameReplacedEvent(this, account, familyName));
     }
@@ -565,7 +563,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         throw new EmailAlreadyBoundException(email, account.getUsername(), o.get().getUsername());
       }
       account.getUserInfo().setEmail(email);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new EmailReplacedEvent(this, account, email));
     }
@@ -580,7 +578,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     if (ObjectUtils.notEqual(previousEndTime, endTime)) {
       deleteLabel(account, IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).build());
       account.setEndTime(endTime);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime,
           format("Account endTime set to '%s' for user '%s'", endTime, account.getUsername())));
@@ -591,7 +589,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount disableAccount(IamAccount account) {
     account.setActive(false);
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));
     notificationFactory.createAccountSuspendedMessage(account);
@@ -601,7 +599,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount restoreAccount(IamAccount account) {
     account.setActive(true);
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
     notificationFactory.createAccountRestoredMessage(account);
@@ -612,7 +610,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public IamAccount setAttribute(IamAccount account, IamAttribute attribute) {
     account.getAttributes().remove(attribute);
     account.getAttributes().add(attribute);
-    account.touch();
+    account.touch(clock.instant());
 
     accountRepo.save(account);
     attributeSetEvent(account, attribute);
@@ -624,7 +622,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     boolean attributeRemoved = account.getAttributes().remove(attribute);
 
     if (attributeRemoved) {
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       attributeRemovedEvent(account, attribute);
     }
@@ -643,7 +641,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         .add(IamAccountGroupMembership.forAccountAndGroup(clock.instant(), account, group));
 
       group.touch(clock);
-      account.touch(clock);
+      account.touch(clock.instant());
 
       groupRepo.save(group);
       accountRepo.save(account);
@@ -679,7 +677,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       for (IamGroup dg : toBeDeleted) {
         account.getGroups()
           .remove(IamAccountGroupMembership.forAccountAndGroup(clock.instant(), account, dg));
-        account.touch(clock);
+        account.touch(clock.instant());
         dg.touch(clock);
         accountRepo.save(account);
         groupRepo.save(dg);

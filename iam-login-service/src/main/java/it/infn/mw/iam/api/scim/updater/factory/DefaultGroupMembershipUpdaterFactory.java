@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 
+import java.time.Clock;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -41,12 +42,14 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class DefaultGroupMembershipUpdaterFactory
     implements AccountUpdaterFactory<IamGroup, List<ScimMemberRef>> {
 
+  final Clock clock;
   final IamAccountService accountService;
   final ScimResourceLocationProvider locationProvider;
   final IamAccountRepository accountRepo;
 
-  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService,
+  public DefaultGroupMembershipUpdaterFactory(Clock clock, IamAccountService accountService,
       ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
+    this.clock = clock;
     this.accountService = accountService;
     this.locationProvider = locationProvider;
     this.accountRepo = accountRepo;
@@ -90,7 +93,7 @@ public class DefaultGroupMembershipUpdaterFactory
       IamGroup group) {
 
     for (IamAccount memberToAdd : membersToAdd) {
-      GroupMembershipManagement mgmt = new GroupMembershipManagement(memberToAdd, accountService);
+      GroupMembershipManagement mgmt = new GroupMembershipManagement(clock, memberToAdd, accountService);
       updaters.add(mgmt.addToGroup(group));
 
     }
@@ -100,7 +103,7 @@ public class DefaultGroupMembershipUpdaterFactory
       IamGroup group) {
 
     for (IamAccount memberToRemove : membersToRemove) {
-      GroupMembershipManagement mgmt = new GroupMembershipManagement(memberToRemove, accountService);
+      GroupMembershipManagement mgmt = new GroupMembershipManagement(clock, memberToRemove, accountService);
       updaters.add(mgmt.removeFromGroup(group));
     }
   }

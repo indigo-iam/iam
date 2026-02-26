@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.util.clock;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -49,6 +50,10 @@ public class MutableClock extends Clock {
   @Override
   public Instant instant() {
     return instant;
+  }
+
+  public LocalDate localDate() {
+    return LocalDate.now(this);
   }
 
   public Date now() {

@@ -24,31 +24,25 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
-
-public class PasswordGrantFlowTest extends OidcMockMvcTestSupport
-    implements StructuredScopeTestSupportConstants {
+class ClientCredentialsFlowTests extends OidcMockMvcTestSupport {
 
   @Test
-  void passwordGrantSuccess() throws Exception {
+  void clientCredentialsSuccess() throws Exception {
 
-    JsonNode json = assert200AndParse(postForm(
-        TOKEN_ENDPOINT, Map.of("grant_type", "password", "username", TEST_USERNAME, "password",
-            TEST_PASSWORD, "scope", "openid profile offline_access"),
-        basicAuth(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET)));
+    JsonNode json = assert200AndParse(
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "scope", "openid"),
+            basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET)));
 
     assertTrue(json.has("access_token"));
-    assertTrue(json.has("refresh_token"));
+    assertEquals("Bearer", json.get("token_type").asText());
   }
 
   @Test
-  void passwordGrantFailsWithWrongPassword() throws Exception {
+  void clientCredentialsFailsWithWrongSecret() throws Exception {
 
-    var result = postForm(TOKEN_ENDPOINT,
-        Map.of("grant_type", "password", "username", TEST_USERNAME, "password", "wrong"),
-        basicAuth(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET));
+    var result = postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
+        basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, "wrong-secret"));
 
-    assertEquals(400, result.getResponse().getStatus());
+    assertEquals(401, result.getResponse().getStatus());
   }
-
 }

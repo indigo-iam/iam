@@ -32,13 +32,11 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,9 +60,8 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 class RefreshTokenGranterTests extends TokenGetterUtils {
 
   static final String SCOPES_STR = "openid profile offline_access";

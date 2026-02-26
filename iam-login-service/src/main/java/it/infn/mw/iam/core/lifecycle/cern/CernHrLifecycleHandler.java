@@ -102,6 +102,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
 
+    Date now = Date.from(clock.instant());
     Optional<VOPersonDTO> voPerson = Optional.empty();
     try {
       voPerson = hrDb.getHrDbPersonRecord(cernPersonId);
@@ -112,7 +113,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
     if (voPerson.isEmpty()) {
       setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
-      if (a.isValid()) {
+      if (a.isValid(now)) {
         expireAccount(a);
       }
       return;
@@ -125,7 +126,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
     if (ep.isEmpty()) {
       setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PARTICIPATION_MESSAGE, experiment));
-      if (a.isValid()) {
+      if (a.isValid(now)) {
         expireAccount(a);
       }
       return;

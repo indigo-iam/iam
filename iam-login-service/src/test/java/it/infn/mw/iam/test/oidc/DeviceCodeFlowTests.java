@@ -23,10 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
-
-public class DeviceCodeFlowTest extends OidcMockMvcTestSupport
-    implements StructuredScopeTestSupportConstants {
+class DeviceCodeFlowTests extends OidcMockMvcTestSupport {
 
   @Test
   void deviceCodeFlowHappyPath() throws Exception {

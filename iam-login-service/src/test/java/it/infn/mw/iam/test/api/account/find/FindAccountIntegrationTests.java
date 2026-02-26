@@ -36,7 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -60,7 +59,7 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 @WithMockUser(username = "admin", roles = "ADMIN")
 class FindAccountIntegrationTests implements StructuredScopeTestSupportConstants {
@@ -301,8 +300,8 @@ class FindAccountIntegrationTests implements StructuredScopeTestSupportConstants
   @Test
   void findByUUIDWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUuid(TEST_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    IamAccount testAccount =
+        accountRepo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
       .andExpect(OK)
@@ -383,11 +382,11 @@ class FindAccountIntegrationTests implements StructuredScopeTestSupportConstants
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(1)))
       .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
-    
+
     mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "not_existing_authority"))
-    .andExpect(OK)
-    .andExpect(jsonPath("$.totalResults", is(0)))
-    .andExpect(jsonPath("$.Resources", emptyIterable()));
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(0)))
+      .andExpect(jsonPath("$.Resources", emptyIterable()));
 
   }
 
@@ -395,8 +394,8 @@ class FindAccountIntegrationTests implements StructuredScopeTestSupportConstants
   @WithMockUser(username = "test", roles = "USER")
   void findByUUIDForbiddenForUsers() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUuid(TEST_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    IamAccount testAccount =
+        accountRepo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid())).andExpect(FORBIDDEN);
   }

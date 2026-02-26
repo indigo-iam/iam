@@ -165,6 +165,8 @@ public class TestSupport {
   }
 
   protected IamAccount setupTestUser() {
+
+    Date now = Date.from(clock.instant());
     IamAccount testAccount =
         accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -172,6 +174,8 @@ public class TestSupport {
     cert.setLabel("label");
     cert.setSubjectDn(TEST_0_SUBJECT);
     cert.setIssuerDn(TEST_0_ISSUER);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
 
     List<IamX509Certificate> certs = List.of(cert);
     testAccount.linkX509Certificates(certs);
@@ -181,6 +185,8 @@ public class TestSupport {
   }
 
   protected IamAccount setupTestUserWithDifferentCertIssuer() {
+
+    Date now = Date.from(clock.instant());
     IamAccount testAccount =
         accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -188,6 +194,8 @@ public class TestSupport {
     cert.setLabel("label");
     cert.setSubjectDn(TEST_0_SUBJECT);
     cert.setIssuerDn(TEST_1_ISSUER);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
 
     List<IamX509Certificate> certs = List.of(cert);
     testAccount.linkX509Certificates(certs);

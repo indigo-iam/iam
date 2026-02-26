@@ -35,7 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,10 +59,8 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
         ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK,
-    properties = {"spring.main.allow-bean-definition-overriding=true",
-        "scim.include_authorities=true"})
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+    webEnvironment = WebEnvironment.MOCK, properties = {"scim.include_authorities=true"})
+@AutoConfigureMockMvc
 @Transactional
 class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
 

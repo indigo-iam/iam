@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.scim.updater.builders;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_GROUP_MEMBERSHIP;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_GROUP_MEMBERSHIP;
 
+import java.time.Clock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -32,6 +33,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class GroupMembershipManagement {
 
+  private final Clock clock;
   private final IamAccount account;
   private final IamAccountService accountService;
 
@@ -39,7 +41,9 @@ public class GroupMembershipManagement {
   private final Consumer<IamGroup> groupRemover;
   private final Predicate<IamGroup> accountIsMember;
 
-  public GroupMembershipManagement(IamAccount account, IamAccountService accountService) {
+  public GroupMembershipManagement(Clock clock, IamAccount account, IamAccountService accountService) {
+
+    this.clock = clock;
     this.account = account;
     this.accountService = accountService;
 
@@ -58,14 +62,14 @@ public class GroupMembershipManagement {
   }
 
   public AccountUpdater addToGroup(IamGroup group) {
-    return new DefaultAccountUpdater<IamGroup, GroupMembershipAddedEvent>(account,
+    return new DefaultAccountUpdater<IamGroup, GroupMembershipAddedEvent>(clock, account,
         ACCOUNT_ADD_GROUP_MEMBERSHIP, groupAdder, group, accountIsMember.negate(),
         GroupMembershipAddedEvent::new);
 
   }
 
   public AccountUpdater removeFromGroup(IamGroup group) {
-    return new DefaultAccountUpdater<IamGroup, GroupMembershipRemovedEvent>(account,
+    return new DefaultAccountUpdater<IamGroup, GroupMembershipRemovedEvent>(clock, account,
         ACCOUNT_REMOVE_GROUP_MEMBERSHIP, groupRemover, group, accountIsMember,
         GroupMembershipRemovedEvent::new);
   }

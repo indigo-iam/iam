@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
 import java.util.Date;
 
 import org.junit.jupiter.api.AfterEach;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -49,10 +49,9 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 class AccountClientEndpointTests {
 
@@ -70,6 +69,9 @@ class AccountClientEndpointTests {
 
   @Autowired
   SecurityContextUtils context;
+
+  @Autowired
+  Clock clock;
 
   long clientsCount;
 
@@ -96,7 +98,7 @@ class AccountClientEndpointTests {
     IamAccountClient accountClient = new IamAccountClient();
     accountClient.setAccount(a);
     accountClient.setClient(c);
-    accountClient.setCreationTime(new Date());
+    accountClient.setCreationTime(Date.from(clock.instant()));
     return accountClientRepo.save(accountClient);
   }
 

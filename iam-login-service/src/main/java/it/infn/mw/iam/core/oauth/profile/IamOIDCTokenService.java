@@ -21,6 +21,7 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.NONCE;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -157,8 +158,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     handleAuthTimestamp(client, request, idClaims);
 
     if (client.getIdTokenValiditySeconds() != null) {
-      Date expiration =
-          new Date(System.currentTimeMillis() + (client.getIdTokenValiditySeconds() * 1000L));
+      Date expiration = Date.from(clock.instant().plus(Duration.ofSeconds(client.getIdTokenValiditySeconds())));
       idClaims.expirationTime(expiration);
     }
 

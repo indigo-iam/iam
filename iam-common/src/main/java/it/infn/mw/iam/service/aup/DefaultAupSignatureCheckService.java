@@ -18,9 +18,9 @@ package it.infn.mw.iam.service.aup;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,8 +81,7 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
 
       if (signatureValidityInDays > 0) {
 
-        Date signatureValidTime =
-            new Date(signatureTime.getTime() + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+        Date signatureValidTime = Date.from(signatureTime.toInstant().plus(Duration.ofDays(signatureValidityInDays)));
 
         // The signature was on the last version of the AUP
         boolean signatureNeeded = now.compareTo(signatureValidTime) > 0;

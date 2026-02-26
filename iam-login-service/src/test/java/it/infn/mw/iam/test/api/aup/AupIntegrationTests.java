@@ -18,12 +18,10 @@ package it.infn.mw.iam.test.api.aup;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,15 +33,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -64,7 +59,7 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 @WithAnonymousUser
 class AupIntegrationTests extends AupTestSupport {
@@ -75,9 +70,6 @@ class AupIntegrationTests extends AupTestSupport {
   static final String DEFAULT_AUP_TEXT = null;
   static final String DEFAULT_AUP_URL = "http://updated-aup-text.org/";
   static final String DEFAULT_AUP_DESC = "desc";
-
-  @Autowired
-  WebApplicationContext context;
 
   @Autowired
   ObjectMapper mapper;
@@ -99,8 +91,6 @@ class AupIntegrationTests extends AupTestSupport {
 
   @BeforeEach
   void setup() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
     securityContext.cleanupSecurityContext();
   }
 
@@ -165,7 +155,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   void aupCreationRequiresAuthenticatedUser() throws Exception {
-    Date now = new Date();
+    Date now = clock.now();
     String reminders = "1,15,30";
     AupDTO aup =
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
@@ -179,7 +169,7 @@ class AupIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void aupCreationRequiresAdminPrivileges() throws Exception {
-    Date now = new Date();
+    Date now = clock.now();
     String reminders = "1,15,30";
     AupDTO aup =
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
@@ -261,8 +251,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  void aupCreationFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
-    throws Exception {
+  void aupCreationFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero() throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, reminders);
 
@@ -272,8 +261,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero()
-    throws Exception {
+  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, null);
 
     verifyAupCreationSuccess(aup);
@@ -281,8 +269,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsNotZero()
-    throws Exception {
+  void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsNotZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, null);
 
     verifyAupCreationFailureWithBadRequest(aup,
@@ -376,7 +363,8 @@ class AupIntegrationTests extends AupTestSupport {
 
     AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
 
-    DateEqualModulo1Second creationAndLastUpdateTimeMatcher = new DateEqualModulo1Second(clock.now());
+    DateEqualModulo1Second creationAndLastUpdateTimeMatcher =
+        new DateEqualModulo1Second(clock.now());
     assertThat(createdAup.getUrl(), equalTo(aup.getUrl()));
     assertThat(createdAup.getDescription(), equalTo(aup.getDescription()));
     assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
@@ -401,7 +389,8 @@ class AupIntegrationTests extends AupTestSupport {
 
     AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
 
-    DateEqualModulo1Second creationAndLastUpdateTimeMatcher = new DateEqualModulo1Second(clock.now());
+    DateEqualModulo1Second creationAndLastUpdateTimeMatcher =
+        new DateEqualModulo1Second(clock.now());
     assertThat(createdAup.getUrl(), equalTo(aup.getUrl()));
     assertThat(createdAup.getDescription(), equalTo(aup.getDescription()));
     assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
@@ -533,8 +522,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  void aupUpdateFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
-    throws Exception {
+  void aupUpdateFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     createAup(aup);
@@ -656,8 +644,7 @@ class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  void aupUpdateRequiresAupRemindersWhenSignatureValidityIsGreaterThanZero()
-    throws Exception {
+  void aupUpdateRequiresAupRemindersWhenSignatureValidityIsGreaterThanZero() throws Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     createAup(aup);

@@ -15,10 +15,13 @@
  */
 package it.infn.mw.iam.test.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-import it.infn.mw.iam.IamLoginService;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,17 +31,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
 @SpringBootTest(classes = { IamLoginService.class }, properties = "iam.access_token.store_on_database=false")
 @AutoConfigureMockMvc
-public abstract class OidcMockMvcTestSupport {
+public abstract class OidcMockMvcTestSupport implements StructuredScopeTestSupportConstants  {
 
   @Autowired
   protected MockMvc mockMvc;
@@ -77,5 +78,16 @@ public abstract class OidcMockMvcTestSupport {
   protected static String basicAuth(String clientId, String secret) {
     return Base64.getEncoder()
       .encodeToString((clientId + ":" + secret).getBytes(StandardCharsets.UTF_8));
+  }
+
+  protected JsonNode introspect(String token) throws Exception {
+
+    var result = postForm(
+        INTROSPECTION_ENDPOINT,
+        Map.of("token", token),
+        basicAuth(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET)
+    );
+
+    return assert200AndParse(result);
   }
 }

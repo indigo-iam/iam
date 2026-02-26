@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.openid_federation;
 
 import java.net.URI;
+import java.time.Clock;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -96,9 +97,10 @@ public class TrustChainTestFactory {
 
   /** Minimum Trust Chain: RP → TA */
   public static TrustChain createRpToTaChain(String aud, Set<ResponseType> responseTypes,
-      URI redirectUri, JWKSet jwkSet, URI jwksUri) throws JOSEException {
-    Date now = new Date();
-    Date exp = new Date(now.getTime() + 600000);
+      URI redirectUri, JWKSet jwkSet, URI jwksUri, Clock clock) throws JOSEException {
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
 
     String rp = "https://rp.example";
     String ta = "https://ta.example";
@@ -114,19 +116,20 @@ public class TrustChainTestFactory {
     clientMetadata.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE));
     clientMetadata.setEmailContacts(List.of("iam-support@example.it"));
     EntityStatement rpEC =
-        selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
+        selfEC(rp, iat, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 
     // TA → RP ES
-    EntityStatement taToRp = superiorES(ta, rp, now, exp);
+    EntityStatement taToRp = superiorES(ta, rp, iat, exp);
 
     // Build the TrustChain
     return new TrustChain(rpEC, List.of(taToRp));
   }
 
   /** Trust Chain: RP → Intermediate → TA */
-  public static TrustChain createRpToIntermediateToTaChain(String ta) throws JOSEException {
-    Date now = new Date();
-    Date exp = new Date(now.getTime() + 600000);
+  public static TrustChain createRpToIntermediateToTaChain(String ta, Clock clock) throws JOSEException {
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
 
     String rp = "https://rp.example";
     String ia = "https://intermediate.example";
@@ -135,13 +138,13 @@ public class TrustChainTestFactory {
     OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
     clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
     EntityStatement rpEC =
-        selfEC(rp, now, exp, List.of(new EntityID(ia)), null, clientMetadata, null);
+        selfEC(rp, iat, exp, List.of(new EntityID(ia)), null, clientMetadata, null);
 
     // Intermediate → RP ES
-    EntityStatement intermToRp = superiorES(ia, rp, now, exp);
+    EntityStatement intermToRp = superiorES(ia, rp, iat, exp);
 
     // TA → Intermediate ES
-    EntityStatement taToInterm = superiorES(ta, ia, now, exp);
+    EntityStatement taToInterm = superiorES(ta, ia, iat, exp);
 
     // Build the TrustChain: RP EC, intermediate → RP, TA → intermediate
     return new TrustChain(rpEC, List.of(intermToRp, taToInterm));

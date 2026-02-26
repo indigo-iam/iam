@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -48,23 +49,25 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
-  private final static String APPROVE_URL = "/iam/group_requests/{uuid}/approve";
+  static final String APPROVE_URL = "/iam/group_requests/{uuid}/approve";
 
   @Autowired
-  private NotificationStoreService notificationService;
+  NotificationStoreService notificationService;
 
   @Autowired
-  private IamEmailNotificationRepository emailRepository;
+  IamEmailNotificationRepository emailRepository;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @BeforeEach
   void setup() {
@@ -182,12 +185,12 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     // Setup: Create parent-child group hierarchy
     IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
     IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();
-  
+
     childGroup.setParentGroup(parentGroup);
     groupRepository.save(childGroup);
-  
+
     IamAccount account = accountRepository.findByUsername(TEST_100_USERNAME).get();
-  
+
     // Create a pending request for parent group
     IamGroupRequest parentRequest = new IamGroupRequest();
     parentRequest.setUuid(UUID.randomUUID().toString());
@@ -196,7 +199,7 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     parentRequest.setStatus(IamGroupRequestStatus.PENDING);
     parentRequest.setCreationTime(new java.util.Date());
     groupRequestRepository.save(parentRequest);
-  
+
     // Create a pending request for child group
     IamGroupRequest childRequest = new IamGroupRequest();
     childRequest.setUuid(UUID.randomUUID().toString());
@@ -205,7 +208,7 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     childRequest.setStatus(IamGroupRequestStatus.PENDING);
     childRequest.setCreationTime(new java.util.Date());
     groupRequestRepository.save(childRequest);
-  
+
     // Approve child request - User will be automatically added to the parent group
     String response = mvc.perform(post(APPROVE_URL, childRequest.getUuid()))
       .andExpect(status().isOk())
@@ -215,18 +218,19 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .andReturn()
       .getResponse()
       .getContentAsString();
-  
+
     GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
-  
+
     // Child request is approved
     assertThat(result.getStatus(), equalTo(IamGroupRequestStatus.APPROVED.toString()));
     assertThat(result.getGroupName(), equalTo(TEST_001_GROUPNAME));
     assertThat(result.getUsername(), equalTo(TEST_100_USERNAME));
-  
+
     // Parent request will be approved automatically via recursive logic
     Optional<IamGroupRequest> hasParentRequest =
-        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(parentGroup.getId(), account.getId(), IamGroupRequestStatus.APPROVED);
-  
+        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(parentGroup.getId(),
+            account.getId(), IamGroupRequestStatus.APPROVED);
+
     assertThat(hasParentRequest.isPresent(), equalTo(true));
     IamGroupRequest updatedParentRequest = hasParentRequest.get();
     assertThat(updatedParentRequest.getStatus(), equalTo(IamGroupRequestStatus.APPROVED));
@@ -270,8 +274,8 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())));
 
     Optional<IamGroupRequest> rejectedChild =
-        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(childGroup.getId(), account.getId(),
-            IamGroupRequestStatus.REJECTED);
+        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(childGroup.getId(),
+            account.getId(), IamGroupRequestStatus.REJECTED);
     assertThat(rejectedChild.isPresent(), equalTo(true));
   }
 }

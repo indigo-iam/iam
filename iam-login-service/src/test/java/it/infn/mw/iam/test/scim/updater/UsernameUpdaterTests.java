@@ -26,11 +26,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
@@ -55,14 +53,13 @@ import it.infn.mw.iam.test.api.tokens.MultiValueMapBuilder;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",
-    "iam.access_token.store_on_database=true"})
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
 @Transactional
 class UsernameUpdaterTests extends TokenGetterUtils {
 
@@ -90,6 +87,9 @@ class UsernameUpdaterTests extends TokenGetterUtils {
   @Autowired
   SecurityContextUtils context;
 
+  @Autowired
+  MutableClock clock;
+
   IamAccount account;
 
   @BeforeEach
@@ -114,7 +114,7 @@ class UsernameUpdaterTests extends TokenGetterUtils {
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepository, accountService, encoder, account,
+    return AccountUpdaters.replacers(clock, accountRepository, accountService, encoder, account,
         accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
@@ -125,8 +125,8 @@ class UsernameUpdaterTests extends TokenGetterUtils {
     account = newAccount(OLD);
 
     context.useLocalUser(OLD, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, OLD,
-        "password", "openid offline_access");
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, OLD, "password",
+        "openid offline_access");
 
     Updater u = accountReplacers().username(NEW);
     assertThat(u.update(), is(true));

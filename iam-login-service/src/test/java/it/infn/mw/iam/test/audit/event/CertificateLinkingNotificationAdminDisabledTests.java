@@ -24,6 +24,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,9 +54,9 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK,
-  properties = {"notification.admin-notification-policy = notify-admins"})
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"notification.admin-notification-policy = notify-admins"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
 
@@ -84,10 +86,10 @@ class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
   private ScimUser user;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -112,10 +114,10 @@ class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
   }
 
   @Test
-  void testAddX509CertificateEventNotificationUpdateFalse() {
+  void testAddX509CertificateEventNotificationUpdateFalse() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
       .build();
 
@@ -132,17 +134,17 @@ class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest0CertString()));
 
     assertThat(emailRepo.countAllMessages(), equalTo(0));
   }
 
 
   @Test
-  void testRemoveX509CertificateEventEventNotificationUpdateFalse() {
+  void testRemoveX509CertificateEventEventNotificationUpdateFalse() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -159,7 +161,7 @@ class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest1CertString()));
 
     assertThat(emailRepo.countAllMessages(), equalTo(0));
   }

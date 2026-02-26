@@ -29,6 +29,6 @@ public class ClockConfig {
   @Bean
   @Primary
   Clock testClock() {
-    return new MutableClock(Clock.systemDefaultZone());
+    return new MutableClock(Clock.systemUTC());
   }
 }

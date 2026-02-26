@@ -138,7 +138,7 @@ public class DefaultAccountLinkingService
     }
 
     if (modified) {
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
 
       eventPublisher.publishEvent(new AccountUnlinkedEvent(this, userAccount, type, iss, sub,
@@ -174,7 +174,7 @@ public class DefaultAccountLinkingService
       certificateRepository.save(linkedCertificate.get());
       userAccount.getX509Certificates().remove(linkedCertificate.get());
       userAccount.getX509Certificates().add(linkedCertificate.get());
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
 
       eventPublisher.publishEvent(new X509CertificateUpdatedEvent(this, userAccount,
@@ -192,7 +192,7 @@ public class DefaultAccountLinkingService
       newCert.setAccount(userAccount);
       certificateRepository.save(newCert);
       userAccount.getX509Certificates().add(newCert);
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
       eventPublisher.publishEvent(new X509CertificateLinkedEvent(this, userAccount,
           String.format("User '%s' linked certificate with subject '%s' to his/her membership",
@@ -226,7 +226,7 @@ public class DefaultAccountLinkingService
     }
 
     if (removed) {
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
 
 
@@ -270,7 +270,7 @@ public class DefaultAccountLinkingService
     proxy.setExpirationTime(proxyCertificateExpirationTime);
     cert.setProxy(proxy);
 
-    userAccount.touch();
+    userAccount.touch(clock.instant());
     iamAccountRepository.save(userAccount);
   }
 }

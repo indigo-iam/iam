@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -64,6 +65,7 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAccount, ScimUser> {
 
+  final Clock clock;
   final PasswordEncoder encoder;
 
   final IamAccountRepository repo;
@@ -80,13 +82,15 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final SshKeyConverter sshKeyConverter;
   final X509CertificateConverter x509CertificateConverter;
 
-  public DefaultAccountUpdaterFactory(PasswordEncoder encoder, IamAccountRepository repo,
-      IamAccountService accountService, IamOAuthAccessTokenRepository accessTokenRepo,
+  public DefaultAccountUpdaterFactory(Clock clock, PasswordEncoder encoder,
+      IamAccountRepository repo, IamAccountService accountService,
+      IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       IamGroupRepository groupRepo) {
 
+    this.clock = clock;
     this.accountService = accountService;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
@@ -142,8 +146,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareAdders(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, accessTokenRepo,
-        refreshTokenRepo, usernameValidator);
+    Adders add = AccountUpdaters.adders(clock, repo, accountService, encoder, account,
+        accessTokenRepo, refreshTokenRepo, usernameValidator);
 
     if (user.hasName()) {
 
@@ -182,7 +186,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   }
 
   private void prepareRemovers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
-    Removers remove = AccountUpdaters.removers(repo, accountService, account);
+    Removers remove = AccountUpdaters.removers(clock, repo, accountService, account);
 
     if (user.hasOidcIds()) {
       addUpdater(updaters, CollectionHelpers::notNullOrEmpty, oidcIdConverter(user),
@@ -215,7 +219,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareReplacers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account,
+    Replacers replace = AccountUpdaters.replacers(clock, repo, accountService, encoder, account,
         accessTokenRepo, refreshTokenRepo, usernameValidator);
 
     if (user.hasName()) {

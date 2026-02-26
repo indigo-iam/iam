@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -45,12 +44,13 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
 
@@ -69,6 +69,9 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
   MockMvc mvc;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
@@ -102,7 +105,7 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void managingEndTimeRequiresAdminUser() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -120,7 +123,7 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   void setEndTimeWorksForAdminUserWithScope() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -133,7 +136,7 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
   void setEndTimeDoesNotWork() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -142,8 +145,4 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
         .contentType(APPLICATION_JSON))
       .andExpect(FORBIDDEN);
   }
-
-
-
-
 }

@@ -35,12 +35,10 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
@@ -60,10 +58,9 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @SuppressWarnings("deprecation")
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(
+    webEnvironment = WebEnvironment.MOCK,
     properties = {"iam.access_token.store_on_database=true", "scheduling.enabled=false"})
+@AutoConfigureMockMvc
 @Transactional
 class GarbageCollectorIntegrationTests extends TokenGetterUtils {
 

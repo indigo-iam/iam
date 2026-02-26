@@ -23,6 +23,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SSH_KEY
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_X509_CERTIFICATE;
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -50,11 +51,11 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class Removers extends AccountBuilderSupport {
 
   final Consumer<Collection<IamSshKey>> unlinkSshKeys;
-
   final Consumer<Collection<IamGroup>> unlinkGroups;
 
-  public Removers(IamAccountRepository repo, IamAccountService accountService, IamAccount account) {
-    super(repo, accountService, account);
+  public Removers(Clock clock, IamAccountRepository repo, IamAccountService accountService,
+      IamAccount account) {
+    super(clock, repo, accountService, account);
     unlinkSshKeys = keys -> {
       for (IamSshKey k : keys) {
         if (!isNull(k)) {
@@ -73,8 +74,8 @@ public class Removers extends AccountBuilderSupport {
 
   public AccountUpdater group(Collection<IamGroup> tobeRemoved) {
 
-    return new DefaultAccountUpdater<Collection<IamGroup>, GroupMembershipRemovedEvent>(account,
-        ACCOUNT_REMOVE_GROUP_MEMBERSHIP, unlinkGroups, tobeRemoved, i -> {
+    return new DefaultAccountUpdater<Collection<IamGroup>, GroupMembershipRemovedEvent>(clock,
+        account, ACCOUNT_REMOVE_GROUP_MEMBERSHIP, unlinkGroups, tobeRemoved, i -> {
           Set<String> accountGroupNames = account.getGroups()
             .stream()
             .map(m -> m.getGroup().getName())
@@ -88,21 +89,21 @@ public class Removers extends AccountBuilderSupport {
 
   public AccountUpdater oidcId(Collection<IamOidcId> toBeRemoved) {
 
-    return new DefaultAccountUpdater<Collection<IamOidcId>, OidcAccountRemovedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamOidcId>, OidcAccountRemovedEvent>(clock, account,
         ACCOUNT_REMOVE_OIDC_ID, account::unlinkOidcIds, toBeRemoved,
         i -> !Collections.disjoint(account.getOidcIds(), i), OidcAccountRemovedEvent::new);
   }
 
   public AccountUpdater samlId(Collection<IamSamlId> toBeRemoved) {
 
-    return new DefaultAccountUpdater<Collection<IamSamlId>, SamlAccountRemovedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamSamlId>, SamlAccountRemovedEvent>(clock, account,
         ACCOUNT_REMOVE_SAML_ID, account::unlinkSamlIds, toBeRemoved,
         i -> !Collections.disjoint(account.getSamlIds(), i), SamlAccountRemovedEvent::new);
   }
 
   public AccountUpdater sshKey(Collection<IamSshKey> toBeRemoved) {
 
-    return new DefaultAccountUpdater<Collection<IamSshKey>, SshKeyRemovedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamSshKey>, SshKeyRemovedEvent>(clock, account,
         ACCOUNT_REMOVE_SSH_KEY, unlinkSshKeys, toBeRemoved,
         i -> !Collections.disjoint(account.getSshKeys(), i), SshKeyRemovedEvent::new);
   }
@@ -110,14 +111,14 @@ public class Removers extends AccountBuilderSupport {
   public AccountUpdater x509Certificate(Collection<IamX509Certificate> toBeRemoved) {
 
     return new DefaultAccountUpdater<Collection<IamX509Certificate>, X509CertificateRemovedEvent>(
-        account, ACCOUNT_REMOVE_X509_CERTIFICATE, account::unlinkX509Certificates, toBeRemoved,
-        i -> !Collections.disjoint(account.getX509Certificates(), i),
+        clock, account, ACCOUNT_REMOVE_X509_CERTIFICATE, account::unlinkX509Certificates,
+        toBeRemoved, i -> !Collections.disjoint(account.getX509Certificates(), i),
         X509CertificateRemovedEvent::new);
   }
 
   public AccountUpdater picture(String picture) {
     final IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, PictureRemovedEvent>(account, ACCOUNT_REMOVE_PICTURE,
-        ui::getPicture, ui::setPicture, null, PictureRemovedEvent::new);
+    return new DefaultAccountUpdater<String, PictureRemovedEvent>(clock, account,
+        ACCOUNT_REMOVE_PICTURE, ui::getPicture, ui::setPicture, null, PictureRemovedEvent::new);
   }
 }

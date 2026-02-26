@@ -32,7 +32,6 @@ import java.sql.Date;
 import java.time.Clock;
 import java.time.Instant;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import eu.emi.security.authn.x509.impl.PEMCredential;
@@ -47,7 +46,6 @@ public class DefaultProxyHelperService implements ProxyHelperService {
 
   final Clock clock;
 
-  @Autowired
   public DefaultProxyHelperService(Clock clock) {
     this.clock = clock;
   }

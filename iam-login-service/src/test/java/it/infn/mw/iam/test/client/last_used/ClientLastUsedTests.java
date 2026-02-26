@@ -30,11 +30,9 @@ import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.provider.TokenRequest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
@@ -43,12 +41,12 @@ import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@AutoConfigureMockMvc
 @Transactional
 class ClientLastUsedTests extends TokenGetterUtils {
 
@@ -66,6 +64,9 @@ class ClientLastUsedTests extends TokenGetterUtils {
 
   @Autowired
   SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void init() {
@@ -90,7 +91,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     iamProperties.getClient().setTrackLastUsed(true);
     assertNotNull(getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
         "password", "openid").accessToken());
-    assertLastUsedIs(LOOKUP_CLIENT_ID, LocalDate.now());
+    assertLastUsedIs(LOOKUP_CLIENT_ID, clock.localDate());
   }
 
   @Test
@@ -106,7 +107,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     assertNotNull(
         getPasswordToken(POST_CLIENT_ID, POST_CLIENT_SECRET, TEST_347_USER, "password", "openid")
           .accessToken());
-    assertLastUsedIs(POST_CLIENT_ID, LocalDate.now());
+    assertLastUsedIs(POST_CLIENT_ID, clock.localDate());
   }
 
   @Test
@@ -132,7 +133,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     TokenRequest tokenRequest =
         new TokenRequest(emptyMap(), LOOKUP_CLIENT_ID, Collections.emptySet(), "");
     tokenService.refreshAccessToken(refreshToken, tokenRequest);
-    assertLastUsedIs(LOOKUP_CLIENT_ID, LocalDate.now());
+    assertLastUsedIs(LOOKUP_CLIENT_ID, clock.localDate());
   }
 
   @Test
@@ -157,7 +158,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     TokenRequest tokenRequest =
         new TokenRequest(emptyMap(), TEST_CLIENT_ID, Collections.emptySet(), "");
     tokenService.refreshAccessToken(refreshToken, tokenRequest);
-    assertLastUsedIs(TEST_CLIENT_ID, LocalDate.now());
+    assertLastUsedIs(TEST_CLIENT_ID, clock.localDate());
   }
 
   private void assertLastUsedIs(String clientId, LocalDate expected) {

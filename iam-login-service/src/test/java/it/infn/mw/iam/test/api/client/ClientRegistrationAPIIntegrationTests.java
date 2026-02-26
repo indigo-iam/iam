@@ -29,14 +29,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +55,7 @@ import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
 @SpringBootTest(classes = {IamLoginService.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSupportConstants {
 
@@ -71,8 +71,12 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
   @Autowired
   ClientManagementService clientService;
 
+  @BeforeEach
+  void setup() {
+    SecurityContextHolder.clearContext();
+  }
+
   @Test
-  @WithAnonymousUser
   void dynamicRegistrationWorksForAnonymousUser() throws Exception {
 
     String clientJson =
@@ -100,7 +104,6 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
   }
 
   @Test
-  @WithAnonymousUser
   void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
       throws Exception {
 
@@ -167,7 +170,6 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
   }
 
   @Test
-  @WithAnonymousUser
   void clientRemovalWorksWithRatAuthentication() throws Exception {
 
     String clientJson =
@@ -190,6 +192,8 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
       .perform(delete(url).header(HttpHeaders.AUTHORIZATION,
           "Bearer " + client.getRegistrationAccessToken()))
       .andExpect(NO_CONTENT);
+
+    SecurityContextHolder.clearContext();
 
     mvc.perform(get(url))
       .andExpect(BAD_REQUEST)

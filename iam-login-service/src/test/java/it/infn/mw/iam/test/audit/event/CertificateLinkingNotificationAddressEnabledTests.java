@@ -25,13 +25,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +67,7 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
         "notification.admin-notification-policy = notify-address",
         "spring.main.allow-bean-definition-overriding = true"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @Transactional
 class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
     implements CertificateLinkingNotificationUtil {
@@ -104,10 +104,10 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
   ScimUser user;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -126,10 +126,10 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
   }
 
   @Test
-  void testAddX509CertificateEventNotificationPolicy() {
+  void testAddX509CertificateEventNotificationPolicy() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
       .subjectDn(TEST_0_SUBJECT)
       .issuerDn(TEST_0_ISSUER)
@@ -148,7 +148,7 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
     assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest0CertString()));
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
@@ -168,10 +168,10 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
   }
 
   @Test
-  void testRemoveX509CertificateEventEventNotificationPolicy() {
+  void testRemoveX509CertificateEventEventNotificationPolicy() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .subjectDn(TEST_1_SUBJECT)
       .issuerDn(TEST_1_ISSUER)
@@ -190,7 +190,7 @@ class CertificateLinkingNotificationAddressEnabledTests extends X509TestSupport
     assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest1CertString()));
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 

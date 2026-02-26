@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STA
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,6 +96,7 @@ class AccountLifecycleTests implements LifecycleTestSupport {
     statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(testAccount.isActive(), is(true));
     assertThat(statusLabel.isPresent(), is(false));
+    clock.advance(Duration.ofHours(1));
   }
 
   @Test
@@ -147,6 +149,7 @@ class AccountLifecycleTests implements LifecycleTestSupport {
     accountService.setAccountEndTime(testAccount, Date.from(clock.daysBefore(8)));
     Date lastUpdateTime = testAccount.getLastUpdateTime();
 
+    clock.advance(Duration.ofHours(1));
     handler.handleExpiredAccounts();
 
     testAccount = accountService.findByUuid(USER_UUID)

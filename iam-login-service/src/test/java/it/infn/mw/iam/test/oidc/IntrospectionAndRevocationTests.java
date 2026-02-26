@@ -24,10 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
-
-public class IntrospectionAndRevocationTest extends OidcMockMvcTestSupport
-    implements StructuredScopeTestSupportConstants {
+class IntrospectionAndRevocationTests extends OidcMockMvcTestSupport {
 
   @Test
   void revokedTokenBecomesInactive() throws Exception {
