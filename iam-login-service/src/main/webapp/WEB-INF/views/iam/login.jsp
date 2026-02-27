@@ -128,7 +128,7 @@
                     </c:when>
 
                     <c:when test="${externalAuthnMethodName == 'OIDC'}">
-                        <c:if test="${loginPageConfiguration.oidcEnabled}">
+                        <c:if test="${loginPageConfiguration.oidcEnabled} && ${provider.loginButton.visible}">
                             <c:forEach items="${loginPageConfiguration.oidcProviders}" var="provider">
                                 <t:loginButton
                                     cssClass="ext-authn-login-button"

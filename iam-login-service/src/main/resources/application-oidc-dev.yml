@@ -18,11 +18,12 @@ oidc:
   providers:
   - name: iam-remote
     issuer: https://iam-remote.local.io/
-    allow-proxied-introspection: true
     client:
       clientId: client
       clientSecret: secret
       scope: openid,profile,email
-
+    allow-proxied-introspection: true
+    loginButton:
+      visible: false
 
     
