@@ -21,18 +21,16 @@ import org.springframework.stereotype.Component;
 import it.infn.mw.voms.audit.events.VomsAuditApplicationEvent;
 
 @Component
-public class VomsAuditLoggingListener implements ApplicationListener<VomsAuditApplicationEvent>
-{
+public class VomsAuditLoggingListener implements ApplicationListener<VomsAuditApplicationEvent> {
 
   private final AuditEventLogger logger;
-  
+
   public VomsAuditLoggingListener(AuditEventLogger logger) {
     this.logger = logger;
   }
 
   @Override
   public void onApplicationEvent(VomsAuditApplicationEvent event) {
-
     logger.logAuditEvent(event);
   }
 }

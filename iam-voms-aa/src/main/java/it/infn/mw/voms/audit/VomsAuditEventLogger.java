@@ -25,32 +25,22 @@ import it.infn.mw.voms.audit.events.VomsAuditApplicationEvent;
 
 @Component
 public class VomsAuditEventLogger implements AuditEventLogger {
-  
+
   public static final String AUDIT_MARKER_STRING = "AUDIT";
   public static final Marker AUDIT_MARKER = MarkerFactory.getMarker(AUDIT_MARKER_STRING);
-  
+
   public static final Logger LOG = LoggerFactory.getLogger(AUDIT_MARKER_STRING);
   final AuditDataSerializer serializer;
-  
-  private VomsAuditApplicationEvent lastEvent;
-  
+
   public VomsAuditEventLogger(AuditDataSerializer serializer) {
     this.serializer = serializer;
   }
 
   @Override
   public void logAuditEvent(VomsAuditApplicationEvent event) {
-    lastEvent = event;
-    if (LOG.isInfoEnabled()){
+    if (LOG.isInfoEnabled()) {
       final String serializedEvent = serializer.serialize(event);
       LOG.info(AUDIT_MARKER, serializedEvent);
     }
   }
-  
-  public VomsAuditApplicationEvent getLastEvent() {
-    VomsAuditApplicationEvent e = lastEvent;
-    lastEvent = null;
-    return e;
-  }
-
 }

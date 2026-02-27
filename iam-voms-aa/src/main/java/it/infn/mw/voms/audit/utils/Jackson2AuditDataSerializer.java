@@ -29,27 +29,23 @@ import it.infn.mw.voms.audit.events.VomsAuditApplicationEvent;
 public class Jackson2AuditDataSerializer implements AuditDataSerializer {
 
   public static final Logger LOG = LoggerFactory.getLogger(Jackson2AuditDataSerializer.class);
-  
+
   final ObjectMapper mapper;
-  
+
   public Jackson2AuditDataSerializer(ObjectMapper mapper) {
     this.mapper = mapper;
   }
-  
+
   @Override
   public String serialize(VomsAuditApplicationEvent event) {
     String json;
 
     try {
-
       json = mapper.writeValueAsString(event);
-
     } catch (JsonProcessingException e) {
       LOG.error(e.getMessage(), e);
       json = "Data parsing error: " + e.getMessage();
     }
-
     return json;
-   
   }
 }

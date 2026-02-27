@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
-@JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message"})
+@JsonPropertyOrder({ "timestamp", "@type", "category", "principal", "message" })
 @JsonTypeInfo(use = Id.NAME, property = "@type")
 public abstract class VomsAuditApplicationEvent extends ApplicationEvent {
 
