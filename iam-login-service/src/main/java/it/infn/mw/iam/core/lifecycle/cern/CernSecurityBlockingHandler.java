@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.lifecycle.cern;
 
+import static java.lang.String.format;
+
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -46,7 +48,8 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
     private final IamAccountRepository accountRepo;
     private final IamAccountService accountService;
     private final CernSecurityBlockingApiService cernSecurityBlockingApiService;
-    public static final String IGNORE_MESSAGE = "Account is blocked at CERN";
+    public static final String BLOCKED_MESSAGE = "Account is blocked at CERN";
+    public static final String SYNCHRONIZED_MESSAGE ="Account's membership to the experiment synchronized";
 
     public CernSecurityBlockingHandler(CernProperties cernProperties, IamAccountRepository accountRepo,
         IamAccountService accountService, CernSecurityBlockingApiService  cernSecurityBlockingApiService) {
@@ -90,9 +93,15 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
             } else {
                 LOG.debug("Account with username: {} is active and not blocked in CERN, no action needed", username);
             }
+        } else {
+            if (voPerson.isPresent() && voPerson.get().getBlocked()) {
+                LOG.debug("Account with username: {} is already disabled and blocked in CERN, no action needed", username);
+            } else {
+                LOG.info("Account with username: {} is disabled but not blocked in CERN, setting status label to ACTIVE", username);
+                restoreAccount(a);
+                setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
+            }
         }
-
-        return;
     }
 
     @Override
@@ -126,7 +135,7 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
 
     private void disableAccount(IamAccount a) {
         accountService.disableAccount(a);
-        setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
+        setCernStatusLabel(a, CernStatus.BLOCKED, BLOCKED_MESSAGE);
     }
 
     private void setCernStatusLabel(IamAccount a, CernStatus status, String message) {
@@ -135,4 +144,8 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
         accountService.addLabel(a, statusLabel);
         accountService.addLabel(a, messageLabel);
     }
+    private void restoreAccount(IamAccount a) {
+        accountService.restoreAccount(a);
+  }
+
 }

@@ -55,7 +55,6 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
     }
 
     private HttpHeaders buildAuthHeaders() {
-    //The HTTP headers, should be modified to client secret and client id of the service account/application that has access to the blocking api
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + getAccessToken());
         return headers;
@@ -65,7 +64,6 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
 
         Instant now = Instant.now();
 
-        // Check if cached token exists and is still valid
         if (cachedToken != null && tokenExpiry != null && now.isBefore(tokenExpiry)) {
             LOG.debug("Using cached access token, expires at {}", tokenExpiry);
             return cachedToken;
@@ -94,10 +92,15 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
                         request,
                         CernTokenResponse.class
                     );
-            cachedToken = response.getBody().getAccessToken();
-            LOG.debug("Received new access token, expires in {} seconds", response.getBody().getExpiresIn());
+            CernTokenResponse body = response.getBody();
+            if (body == null) {
+              throw new CernSecurityBlockingError("CERN security blocking token endpoint returned empty body");
+            }
 
-            tokenExpiry = now.plusSeconds(response.getBody().getExpiresIn() - properties.getBlocking().getGracePeriod());  
+            cachedToken = body.getAccessToken();
+            LOG.debug("Received new access token, expires in {} seconds", body.getExpiresIn());
+
+            tokenExpiry = now.plusSeconds(body.getExpiresIn() - properties.getBlocking().getGracePeriod());  
         } catch (RestClientException e) {
             throw new CernSecurityBlockingError("Error fetching security blocking api access token: " + e.getMessage(), e);
         }

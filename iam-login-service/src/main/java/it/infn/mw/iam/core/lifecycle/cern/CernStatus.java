@@ -16,5 +16,5 @@
 package it.infn.mw.iam.core.lifecycle.cern;
 
 public enum CernStatus {
-  IGNORED, ERROR, EXPIRED, VO_MEMBER
+  IGNORED, ERROR, EXPIRED, VO_MEMBER, BLOCKED
 }

@@ -63,8 +63,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public static final String NO_PARTICIPATION_MESSAGE =
       "Account end-time not updated: no participation to %s found";
   public static final String SYNCHRONIZED_MESSAGE =
-      "Account's membership to the experiment synchronized";
-
+      "Account's membership to the experiment synchronized";  
+  public static final String BLOCKED_MESSAGE = "Account is blocked at CERN";
   public static final String HR_DB_API_ERROR = "Account not updated: HR DB error";
 
   public static final int DEFAULT_PAGE_SIZE = 50;
@@ -98,6 +98,12 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
       return;
     }
+
+    if (CernHrLifecycleUtils.isAccountBlocked(a)) {
+      LOG.info("Account is blocked: {}", a);
+      return;
+    }
+
 
     Optional<VOPersonDTO> voPerson = Optional.empty();
     try {

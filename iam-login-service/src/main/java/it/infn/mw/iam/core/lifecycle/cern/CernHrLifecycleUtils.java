@@ -41,8 +41,10 @@ public class CernHrLifecycleUtils {
   public static final String LABEL_MESSAGE = "message";
   public static final String LABEL_ACTION = "action";
   public static final String LABEL_IGNORE = "ignore";
+  public static final String LABEL_BLOCKED = "blocked";
   public static final String LABEL_SKIP_EMAIL_SYNCH = "skip-email-synch";
   public static final String LABEL_SKIP_END_DATE_SYNCH = "skip-end-date-synch";
+  public static final String BLOCKED_MESSAGE = "Account is blocked at CERN";
 
   private CernHrLifecycleUtils() {}
 
@@ -68,6 +70,10 @@ public class CernHrLifecycleUtils {
   public static IamLabel buildCernIgnoreLabel() {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
+  }
+
+  public static IamLabel buildCernBlockedLabel() {
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_STATUS).value(CernStatus.BLOCKED.name()).build();
   }
 
   public static IamLabel buildCernMessageLabel(String message) {
@@ -105,5 +111,9 @@ public class CernHrLifecycleUtils {
 
   public static boolean isAccountIgnored(IamAccount a) {
     return a.hasLabel(buildCernIgnoreLabel());
+  }
+
+  public static boolean isAccountBlocked(IamAccount a) {
+    return a.hasLabel(buildCernBlockedLabel());
   }
 }

@@ -15,25 +15,17 @@
  */
 package it.infn.mw.iam.test.lifecycle.cern;
 
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PARTICIPATION_MESSAGE;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PERSON_FOUND_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_TIMESTAMP;
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -51,7 +43,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
@@ -61,10 +52,10 @@ import com.mercateo.test.clock.TestClock;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
+import it.infn.mw.iam.api.registration.cern.CernSecurityBlockingError;
 import it.infn.mw.iam.api.registration.cern.CernSecurityBlockingApiService;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
-import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
-import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
+import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernSecurityBlockingHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -100,6 +91,12 @@ class CernSecurityBlockTest extends TestSupport
         CernSecurityBlockingApiService blockingService() {
             return mock(CernSecurityBlockingApiService.class);
         }
+
+        @Bean
+        @Primary
+        CernHrDBApiService hrDb() {
+        return mock(CernHrDBApiService.class);
+    }
     }
     @Autowired
     IamAccountRepository repo;
@@ -114,10 +111,10 @@ class CernSecurityBlockTest extends TestSupport
     CernSecurityBlockingApiService blockingService;
 
     @Autowired
-    ExpiredAccountsHandler expiredAccountsHandler;
-
-    @Autowired
     CernHrDBApiService hrDb;
+      
+    @Autowired
+    CernHrLifecycleHandler cernHrLifecycleHandler;
 
     @Autowired
     Clock clock;
@@ -143,6 +140,7 @@ class CernSecurityBlockTest extends TestSupport
     @AfterEach
     void teardown() {
         reset(blockingService);
+        reset(hrDb);
         service.deleteAccount(cernUser);
     }
     
@@ -186,5 +184,140 @@ class CernSecurityBlockTest extends TestSupport
 
         testAccount = loadAccount(CERN_USER_UUID);
         assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
     }
+    @Test
+    void testUserBlockedNoAction() {
+
+        IamAccount testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(true));
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, true)));
+        
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
+        
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, true)));
+
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(false));
+
+        Optional<IamLabel> cernStatusLabel2 = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel2.get().getValue(), is(CernStatus.BLOCKED.name()));
+    }
+    
+    @Test
+    void testUserRestorationWorks() {
+
+        IamAccount testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(true));
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, true)));
+        
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
+        
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, false)));
+
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(true));
+
+        Optional<IamLabel> cernStatusLabel2 = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel2.get().getValue(), is(CernStatus.VO_MEMBER.name()));
+    }
+
+    @Test
+    void testUserSuspensionWithHRdb() {
+
+        IamAccount testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(true));
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, true)));
+        
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
+
+        VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+        when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
+
+        cernHrLifecycleHandler.run();
+
+        assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel2 = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel2.get().getValue(), is(CernStatus.BLOCKED.name()));
+    }
+
+    @Test
+    void testUserRestorationWorksWithHRDb() {
+
+        IamAccount testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(true));
+
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, true)));
+        
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        assertThat(testAccount.isActive(), is(false));
+        Optional<IamLabel> cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
+
+        when(blockingService.getSecurityBlockingRecord(anyString()))
+          .thenReturn(Optional.of(voPersonSecurityDto(CERN_PERSON_ID, cernUser, false)));
+
+        cernSecurityBlockingHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(testAccount.isActive(), is(true));
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.VO_MEMBER.name()));
+
+        VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+        when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
+
+        cernHrLifecycleHandler.run();
+
+        testAccount = loadAccount(CERN_USER_UUID);
+        cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        assertThat(testAccount.isActive(), is(true));
+        assertThat(cernStatusLabel.get().getValue(), is(CernStatus.VO_MEMBER.name()));
+        assertThat(cernStatusLabel.get().getValue(), is(not(CernStatus.BLOCKED.name())));
+    }
+
+    @Test
+    void testApiErrorIsHandled() {
+
+      when(blockingService.getSecurityBlockingRecord(anyString()))
+        .thenThrow(new CernSecurityBlockingError("API is unreachable"));
+
+      cernSecurityBlockingHandler.run();
+
+      IamAccount testAccount = loadAccount(CERN_USER_UUID);
+
+      assertThat(testAccount.isActive(), is(true));
+
+    }
+    
 }
+
+        

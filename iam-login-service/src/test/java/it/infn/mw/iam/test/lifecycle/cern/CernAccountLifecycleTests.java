@@ -630,6 +630,29 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   }
 
   @Test
+  void testBlockedAccount() {
+
+    IamAccount testAccount = loadAccount(CERN_USER_UUID);
+    assertThat(testAccount.isActive(), is(true));
+
+    service.addLabel(testAccount, cernBlockedLabel());
+
+    cernHrLifecycleHandler.run();
+
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+    Optional<IamLabel> statusLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    Optional<IamLabel> timestampLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
+    System.out.println(testAccount.getLabels());
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.BLOCKED.name()));
+
+    assertThat(timestampLabel.isPresent(), is(false));
+  }
+  @Test
   void testPaginationWorks() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
