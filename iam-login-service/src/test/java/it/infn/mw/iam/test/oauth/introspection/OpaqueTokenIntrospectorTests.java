@@ -134,7 +134,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     Supplier<OidcProvider> providerSupplier = () -> properties.getProviders()
       .stream()
-      .filter(p -> p.getIssuer().equals(issuer) && p.isAllowProxiedIntrospection())
+      .filter(p -> p.getIssuer().equals(issuer) && Boolean.TRUE.equals(p.isAllowProxiedIntrospection()))
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Not allowed"));
     assertThrows(InvalidTokenException.class, () -> providerSupplier.get());
