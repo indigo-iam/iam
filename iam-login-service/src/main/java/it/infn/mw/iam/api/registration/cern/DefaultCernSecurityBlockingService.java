@@ -111,17 +111,14 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
 
     @Override
     public Optional<VOPersonDTO> getSecurityBlockingRecord(String username) {
-        // Create a new RestTemplate instance
         RestTemplate restTemplate = rtFactory.newRestTemplate();
 
-        // Build the URL for the person's security record
         String url = String.format("%s%s", properties.getBlocking().getAuthorizationUrl(),
                                 String.format(IDENTITY_API_PATH_TEMPLATE, username));
 
         LOG.debug("Checking security blocking for person {} at URL {}", username, url);
 
         try {
-            // Make the GET request with authorization headers
             ResponseEntity<VOPersonDTO> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
