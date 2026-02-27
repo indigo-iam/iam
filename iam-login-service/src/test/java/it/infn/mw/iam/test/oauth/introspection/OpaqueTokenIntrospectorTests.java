@@ -114,7 +114,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
       .filter(p -> p.getIssuer().equals(issuer) && p.isAllowProxiedIntrospection())
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Not allowed"));
-    assertThrows(InvalidTokenException.class, () -> providerSupplier.get());
+    assertThrows(InvalidTokenException.class, providerSupplier::get);
   }
 
   @Test
@@ -137,7 +137,7 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
       .filter(p -> p.getIssuer().equals(issuer) && Boolean.TRUE.equals(p.isAllowProxiedIntrospection()))
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Not allowed"));
-    assertThrows(InvalidTokenException.class, () -> providerSupplier.get());
+    assertThrows(InvalidTokenException.class, providerSupplier::get);
 
   }
 
