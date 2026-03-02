@@ -15,13 +15,11 @@
  */
 package it.infn.mw.voms.audit.events;
 
-import it.infn.mw.voms.aa.VOMSResponse;
-
 public class VomsFailureResponseEvent extends VomsResponseEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public VomsFailureResponseEvent(Object source, VOMSResponse vomsResponse, String message) {
-    super(source, vomsResponse, message);
+  public VomsFailureResponseEvent(Object source, String message) {
+    super(source, message);
   }
 }

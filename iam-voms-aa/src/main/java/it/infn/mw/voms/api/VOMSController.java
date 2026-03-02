@@ -189,13 +189,11 @@ public class VOMSController extends VOMSControllerSupport implements Application
     if (log.isInfoEnabled()) {
       if (Outcome.SUCCESS.equals(c.getResponse().getOutcome())) {
         String successMessage = "User " + userStr(c) + " got successful VOMS response " + successResponse(c);
-        eventPublisher.publishEvent(new VomsSuccessResponseEvent(this, c.getResponse(),
-            successMessage));
+        eventPublisher.publishEvent(new VomsSuccessResponseEvent(this, successMessage));
         log.info(successMessage);
       } else {
         String failureMessage = "User " + userStr(c) + " got failure VOMS response " + errorResponse(c);
-        eventPublisher.publishEvent(new VomsFailureResponseEvent(this, c.getResponse(),
-            failureMessage));
+        eventPublisher.publishEvent(new VomsFailureResponseEvent(this, failureMessage));
         log.info(failureMessage);
       }
     }

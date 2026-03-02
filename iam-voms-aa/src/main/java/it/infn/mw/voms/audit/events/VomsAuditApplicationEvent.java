@@ -45,11 +45,11 @@ public abstract class VomsAuditApplicationEvent extends ApplicationEvent {
   @JsonInclude
   private final String message;
 
-  public VomsAuditApplicationEvent(VomsEventCategory category, Object source, String message) {
+  protected VomsAuditApplicationEvent(VomsEventCategory category, Object source, String message) {
     this(category, source, message, SecurityContextHolder.getContext().getAuthentication());
   }
 
-  public VomsAuditApplicationEvent(VomsEventCategory category, Object source, String message,
+  protected VomsAuditApplicationEvent(VomsEventCategory category, Object source, String message,
       Authentication auth) {
     super(source);
     this.category = category;
