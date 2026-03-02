@@ -86,7 +86,8 @@ public class EnforceAupFilter implements Filter {
 
     String requestURL = req.getRequestURL().toString();
 
-    if (!accountUtils.isAuthenticated() || isNull(session) || requestURL.endsWith(AUP_API_PATH)) {
+    if (!accountUtils.isAuthenticated() || isNull(session) || requestURL.endsWith(AUP_API_PATH)
+        || accountUtils.isPreAuthenticated()) {
       chain.doFilter(request, response);
       return;
     }
