@@ -239,8 +239,9 @@ public class IamSamlProperties {
 
   private List<IssuerValidationProperties> validators = Lists.newArrayList();
 
-  private long httpClientConnectionTimeoutSecs = 5;
-  private long httpClientSocketTimeoutSecs = 5;
+  private long httpClientConnectionTimeoutSecs;
+
+  private long httpClientSocketTimeoutSecs;
 
   public List<IamSamlIdpMetadataProperties> getIdpMetadata() {
     return idpMetadata;
