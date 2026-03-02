@@ -21,6 +21,8 @@ import java.util.Optional;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 
@@ -29,13 +31,17 @@ import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
 
   private final ClaimValueHelper claimValueHelper;
+  private final ScopeClaimTranslationService scopeToClaimService;
 
-  public AarcIntrospectionHelper(ClaimValueHelper claimValueHelper, IamAccountService accountService) {
+  public AarcIntrospectionHelper(ClaimValueHelper claimValueHelper,
+      IamAccountService accountService, ScopeClaimTranslationService scopeToClaimService) {
     super(accountService);
     this.claimValueHelper = claimValueHelper;
+    this.scopeToClaimService = scopeToClaimService;
   }
 
   @Override
@@ -54,13 +60,13 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
       account = Optional.empty();
     }
 
-    AarcExtraClaimNames.INTROSPECTION_REQUIRED_CLAIMS.forEach(claimName -> {
-      Object claimValue = claimValueHelper.resolveClaim(claimName,
-          accessToken.getAuthenticationHolder().getAuthentication(), account);
-      if (claimValueHelper.isValidClaimValue(claimValue)) {
-        result.putIfAbsent(claimName, claimValue);
-      }
-    });
+    scopeToClaimService.getClaimsForScopeSet(accessToken.getScope())
+      .forEach(claim -> resolveAndAddClaimValueToResult(claim,
+          accessToken.getAuthenticationHolder().getAuthentication(), account, result));
+
+    AarcExtraClaimNames.INTROSPECTION_REQUIRED_CLAIMS
+      .forEach(claim -> resolveAndAddClaimValueToResult(claim,
+          accessToken.getAuthenticationHolder().getAuthentication(), account, result));
 
     // add all the others avoiding duplicates/override
     claims.getClaims().forEach(result::putIfAbsent);
@@ -76,5 +82,14 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
     // add all the others avoiding duplicates/override
     getClaimsSet(refreshToken.getJwt()).getClaims().forEach(result::putIfAbsent);
     return result;
+  }
+
+  private void resolveAndAddClaimValueToResult(String claimName, OAuth2Authentication authn,
+      Optional<IamAccount> account, Map<String, Object> result) {
+
+    Object claimValue = claimValueHelper.resolveClaim(claimName, authn, account);
+    if (claimValueHelper.isValidClaimValue(claimValue)) {
+      result.putIfAbsent(claimName, claimValue);
+    }
   }
 }

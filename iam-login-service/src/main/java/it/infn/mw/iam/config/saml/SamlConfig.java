@@ -99,7 +99,6 @@ import org.springframework.security.saml.processor.HTTPSOAP11Binding;
 import org.springframework.security.saml.processor.SAMLBinding;
 import org.springframework.security.saml.processor.SAMLProcessor;
 import org.springframework.security.saml.processor.SAMLProcessorImpl;
-import org.springframework.security.saml.trust.httpclient.TLSProtocolConfigurer;
 import org.springframework.security.saml.trust.httpclient.TLSProtocolSocketFactory;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.security.saml.util.VelocityFactory;
@@ -490,14 +489,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     return new JKSKeyManager(storeFile, samlProperties.getKeystorePassword(), passwords,
         samlProperties.getKeyId());
-  }
-
-  //
-  // Setup TLS Socket Factory
-  @Bean
-  TLSProtocolConfigurer tlsProtocolConfigurer() {
-
-    return new TLSProtocolConfigurer();
   }
 
   @Bean
