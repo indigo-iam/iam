@@ -30,6 +30,8 @@
 
     self.isMfaActive = function() { return self.userCtrl.user.isMfaActive; };
 
+    self.isMfaMandatory = function() { return Utils.isMfaMandatory(); };
+
     self.openUserMfaModal = function() {
       var modalInstance = $uibModal.open({
         templateUrl: '/resources/iam/apps/dashboard-app/templates/home/editmfasettings.html',

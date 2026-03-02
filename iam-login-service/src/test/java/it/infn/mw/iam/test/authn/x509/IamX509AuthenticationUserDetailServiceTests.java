@@ -36,6 +36,7 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -52,6 +53,8 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
   IamTotpMfaRepository totpMfaRepository;
   @Mock
   InactiveAccountAuthenticationHander inactiveAccountHandler;
+  @Mock
+  IamTotpMfaProperties iamTotpMfaProperties;
 
   IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
   PreAuthenticatedAuthenticationToken token;
@@ -59,7 +62,7 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
   @BeforeEach
   void setup() {
     iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
-        accountRepository, totpMfaRepository, inactiveAccountHandler);
+        accountRepository, totpMfaRepository, inactiveAccountHandler, iamTotpMfaProperties);
     token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
   }
 
@@ -81,6 +84,23 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
     IamTotpMfa iamTotpMfa = new IamTotpMfa();
     iamTotpMfa.setActive(true);
     when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+
+    UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
+
+    assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
+    Map<?, ?> details = (Map<?, ?>) token.getDetails();
+    assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
+  }
+
+  @Test
+  void testIfMfaMandatoryThenRolePreAuthenticatedIsAdded() {
+
+    IamAccount account = newAccount("test-user");
+    when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
+
+    IamTotpMfa iamTotpMfa = new IamTotpMfa();
+    when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+    when(iamTotpMfaProperties.isMultiFactorMandatory()).thenReturn(true);
 
     UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
 

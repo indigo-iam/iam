@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 
 import java.time.Instant;
 import java.util.Date;
@@ -35,6 +36,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -50,6 +52,9 @@ class LoginTests implements LoginTestSupport {
 
   @Autowired
   private IamAupRepository aupRepo;
+
+  @Autowired
+  private IamTotpMfaProperties iamTotpMfaProperties;
 
   @Autowired
   private MockMvc mvc;
@@ -125,5 +130,18 @@ class LoginTests implements LoginTestSupport {
       .andExpect(status().isFound())
       .andExpect(redirectedUrl("/iam/aup/sign"));
 
+  }
+
+  @Test
+  void testLoginRedirectsToActivateMfaPageWhenMultiFactorMandatory() throws Exception {
+    iamTotpMfaProperties.setMultiFactorMandatory(true);
+    mvc
+        .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+            .param("password", ADMIN_PASSWORD)
+            .param("submit", "Login"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl(MFA_ACTIVATE_URL));
+
+    iamTotpMfaProperties.setMultiFactorMandatory(false);    
   }
 }
