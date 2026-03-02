@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication;
 
+import dev.samstevens.totp.exceptions.QrGenerationException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
@@ -57,5 +58,27 @@ public interface IamTotpMfaService {
    * @return true if valid, false otherwise
    */
   boolean verifyTotp(IamAccount account, String totp);
+
+  /**
+   * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
+   * details about the issuer, length of TOTP and period of expiry from application properties
+   * 
+   * @param secret the TOTP secret
+   * @param username the logged-in user (attaches a username to the secret in the authenticator app)
+   * @return the data URI to be used with an <img> tag
+   * @throws QrGenerationException
+   */
+  String generateQRCodeFromSecret(String secret, String username) throws QrGenerationException;
+
+  
+  /**
+   * Checks whether the authenticator application is active for the specified IAM
+   * account.
+   *
+   * @param account the IamAccount instance to check; must not be  null
+   * @return true if the authenticator app is active for the account;
+   *         false otherwise
+   */
+  boolean isAuthenticatorAppActive(IamAccount account);
 
 }

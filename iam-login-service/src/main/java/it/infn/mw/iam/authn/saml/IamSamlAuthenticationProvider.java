@@ -48,6 +48,7 @@ import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -65,16 +66,18 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
   private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public IamSamlAuthenticationProvider(SamlUserIdentifierResolver resolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
     this.userIdResolver = resolver;
     this.validator = validator;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
     this.accountRepo = accountRepo;
     this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   private Supplier<AuthenticationServiceException> handleResolutionFailure(
@@ -133,8 +136,13 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
         .findFirst()
         .orElse(null);
 
-      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()
-          && authnContextClassRef == null) {
+        
+      boolean authnMissing = authnContextClassRef == null;
+      boolean active = totpMfaOptional.map(IamTotpMfa::isActive).orElse(false);
+      boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
+
+
+      if ((active && authnMissing) || (!active && mandatory)) {
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
         Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>(user.getAuthorities());
 

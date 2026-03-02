@@ -53,6 +53,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean showLinkToLocalAuthn;
   private boolean defaultLoginPageLayout;
   private boolean mfaSettingsBtnEnabled;
+  private boolean multiFactorMandatory;
 
   @Value("${iam.registration.registration-button-text}")
   private String registrationButtonText;
@@ -87,6 +88,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
       .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
+    multiFactorMandatory = iamTotpMfaProperties.isMultiFactorMandatory();
   }
 
   @Override
@@ -206,6 +208,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   @Override
   public boolean isMfaSettingsBtnEnabled() {
     return mfaSettingsBtnEnabled;
+  }
+
+  @Override
+  public boolean isMultiFactorMandatory() {
+    return multiFactorMandatory;
   }
 
   @Override
