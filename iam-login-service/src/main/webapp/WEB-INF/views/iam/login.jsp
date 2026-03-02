@@ -128,14 +128,16 @@
                     </c:when>
 
                     <c:when test="${externalAuthnMethodName == 'OIDC'}">
-                        <c:if test="${loginPageConfiguration.oidcEnabled} && ${provider.loginButton.visible}">
+                        <c:if test="${loginPageConfiguration.oidcEnabled}">
                             <c:forEach items="${loginPageConfiguration.oidcProviders}" var="provider">
-                                <t:loginButton
-                                    cssClass="ext-authn-login-button"
-                                    href="/openid_connect_login?iss=${provider.issuer}"
-                                    btn="${provider.loginButton}"
-                                    id="oidc-login-${provider.name}"
-                                 />
+                                <c:if test="${provider.loginButton.visible}">
+                                    <t:loginButton
+                                        cssClass="ext-authn-login-button"
+                                        href="/openid_connect_login?iss=${provider.issuer}"
+                                        btn="${provider.loginButton}"
+                                        id="oidc-login-${provider.name}"
+                                    />
+                                </c:if>
                             </c:forEach>
                         </c:if>
                     </c:when>
