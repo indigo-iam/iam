@@ -30,6 +30,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
@@ -49,6 +50,9 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   private IamTotpMfaService totpMfaService;
 
   @Mock
+  private LoginLockoutService lockoutService;
+
+  @Mock
   private ExtendedAuthenticationToken token;
 
   @Mock
@@ -60,7 +64,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
-    multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+    multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, lockoutService);
   }
 
   @Test

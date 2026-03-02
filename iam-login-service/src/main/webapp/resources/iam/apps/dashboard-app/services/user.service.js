@@ -17,9 +17,9 @@
 
 angular.module('dashboardApp').factory('UserService', UserService);
 
-UserService.$inject = ['$q', '$rootScope', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService', 'AuthenticatorAppService'];
+UserService.$inject = ['$q', '$rootScope', '$http', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService', 'AuthenticatorAppService'];
 
-function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService, AuthenticatorAppService) {
+function UserService($q, $rootScope, $http, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService, AuthenticatorAppService) {
     var service = {
         getUser: getUser,
         getMe: getMe,
@@ -61,10 +61,16 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
             });
     }
 
+    function getLockoutInfo(userId) {
+        return $http.get('/iam/account/' + userId + '/lockout')
+            .then(function (r) { return r.data; })
+            .catch(function () { return { suspended: false }; });
+    }
+
     function getUser(userId) {
         return $q
             .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId),
-            AuthenticatorAppService.getMfaSettingsForAccount(userId)
+            AuthenticatorAppService.getMfaSettingsForAccount(userId), getLockoutInfo(userId)
             ])
             .then(function (result) {
                 var user = result[0].data;
@@ -82,6 +88,9 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 if (result[3] !== null) {
                     user.isMfaActive = result[3];
                 }
+
+                user.lockoutInfo = result[4];
+
                 return user;
             })
             .catch(function (error) {

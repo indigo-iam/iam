@@ -36,6 +36,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -62,6 +63,8 @@ class IamLocalAuthenticationProviderTests {
     LocalAuthenticationProperties localAuthn;
     @Mock
     IamTotpMfaProperties iamTotpMfaProperties;
+    @Mock
+    LoginLockoutService lockoutService;
 
     IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
 
@@ -69,7 +72,7 @@ class IamLocalAuthenticationProviderTests {
   void setup() {
         when(properties.getLocalAuthn()).thenReturn(localAuthn);
         iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds, passwordEncoder,
-                accountRepo, iamTotpMfaService, iamTotpMfaProperties));
+                accountRepo, iamTotpMfaService, iamTotpMfaProperties, lockoutService));
     }
 
     private IamAccount newAccount(String username) {

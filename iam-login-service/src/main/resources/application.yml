@@ -189,6 +189,12 @@ iam:
   client:
     track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
+  login-lockout:
+    enabled: ${IAM_ACCOUNT_LOGIN_LOCKOUT_ENABLED:false}
+    max-failed-attempts: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS:3}
+    lockout-minutes: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MINUTES:30}
+    max-concurrent-failures: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_CONCURRENT_FAILURES:2}
+
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
   redis:

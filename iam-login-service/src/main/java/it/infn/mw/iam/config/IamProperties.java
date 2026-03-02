@@ -663,6 +663,46 @@ public class IamProperties {
     }
   }
 
+  public static class LoginLockoutProperties {
+
+    private boolean enabled = false;
+    private int maxFailedAttempts = 3;
+    private int lockoutMinutes = 30;
+    private int maxConcurrentFailures = 2;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public int getMaxFailedAttempts() {
+      return maxFailedAttempts;
+    }
+
+    public void setMaxFailedAttempts(int maxFailedAttempts) {
+      this.maxFailedAttempts = maxFailedAttempts;
+    }
+
+    public int getLockoutMinutes() {
+      return lockoutMinutes;
+    }
+
+    public void setLockoutMinutes(int lockoutMinutes) {
+      this.lockoutMinutes = lockoutMinutes;
+    }
+
+    public int getMaxConcurrentFailures() {
+      return maxConcurrentFailures;
+    }
+
+    public void setMaxConcurrentFailures(int maxConcurrentFailures) {
+      this.maxConcurrentFailures = maxConcurrentFailures;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -726,6 +766,8 @@ public class IamProperties {
   private ClientProperties client = new ClientProperties();
 
   private AarcProfile aarcProfile = new AarcProfile();
+
+  private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -975,6 +1017,14 @@ public class IamProperties {
 
   public void setAarcProfile(AarcProfile aarcProfile) {
     this.aarcProfile = aarcProfile;
+  }
+
+  public LoginLockoutProperties getLoginLockout() {
+    return loginLockout;
+  }
+
+  public void setLoginLockout(LoginLockoutProperties loginLockout) {
+    this.loginLockout = loginLockout;
   }
 
 }
