@@ -72,7 +72,7 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithAnonymousUser
   @Transactional
-  public void dynamicRegistrationWorksForAnonymousUser() throws Exception {
+  void dynamicRegistrationWorksForAnonymousUser() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
@@ -99,8 +99,8 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithAnonymousUser
   @Transactional
-  public void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
-      throws Exception {
+  void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
+    throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("client_credentials").build();
@@ -114,7 +114,7 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithMockUser(username = "test", roles = "USER")
   @Transactional
-  public void clientDetailsVisibleWithAuthentication() throws Exception {
+  void clientDetailsVisibleWithAuthentication() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -140,7 +140,7 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithMockUser(username = "test", roles = "USER")
   @Transactional
-  public void clientRemovalWorksWithAuthentication() throws Exception {
+  void clientRemovalWorksWithAuthentication() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -167,7 +167,7 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithAnonymousUser
   @Transactional
-  public void clientRemovalWorksWithRatAuthentication() throws Exception {
+  void clientRemovalWorksWithRatAuthentication() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
@@ -198,7 +198,7 @@ class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @Test
   @WithMockUser(username = "test", roles = "USER")
   @Transactional
-  public void tokenLifetimesAreNotEditable() throws Exception {
+  void tokenLifetimesAreNotEditable() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
