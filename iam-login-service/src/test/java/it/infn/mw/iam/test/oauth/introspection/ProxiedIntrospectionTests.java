@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -34,16 +35,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClientException;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
+@AutoConfigureMockMvc
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles({"h2"})
 class ProxiedIntrospectionTests extends IntrospectionEndpointTestsUtils {
 
   @MockBean

@@ -33,7 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -47,7 +46,6 @@ import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
 
 @SuppressWarnings("deprecation")
-@ActiveProfiles({"h2"})
 @ExtendWith(MockitoExtension.class)
 class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
@@ -134,7 +132,8 @@ class OpaqueTokenIntrospectorTests extends IntrospectionEndpointTestsUtils {
 
     Supplier<OidcProvider> providerSupplier = () -> properties.getProviders()
       .stream()
-      .filter(p -> p.getIssuer().equals(issuer) && Boolean.TRUE.equals(p.isAllowProxiedIntrospection()))
+      .filter(
+          p -> p.getIssuer().equals(issuer) && Boolean.TRUE.equals(p.isAllowProxiedIntrospection()))
       .findFirst()
       .orElseThrow(() -> new InvalidTokenException("Not allowed"));
     assertThrows(InvalidTokenException.class, providerSupplier::get);
