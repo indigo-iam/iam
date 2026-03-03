@@ -32,17 +32,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 
 class OidcDiscoveryCacheTests {
@@ -52,15 +52,12 @@ class OidcDiscoveryCacheTests {
 
   @Nested
   @SpringBootTest(properties = {"cache.enabled=true", "cache.redis.enabled=false"})
-  @ActiveProfiles({"h2-test", "dev"})
+  @TestPropertySource(properties = "cache.oidc-discovery-cleanup-period-secs=1")
   @EnableCaching
   class InMemoryCacheTest {
 
     @Autowired
     private DefaultOidcDiscoveryService discoveryService;
-
-    @Autowired
-    private TaskConfig taskConfig;
 
     @MockBean
     private RestTemplate restTemplate;
@@ -100,7 +97,7 @@ class OidcDiscoveryCacheTests {
       assertEquals("https://example.com/introspect",
           cachedJson.path("introspection_endpoint").asText());
       assertFalse(cachedJson.has("token_endpoint"));
-      assertTrue(cacheManager instanceof ConcurrentMapCacheManager);
+      assertTrue(cacheManager instanceof CaffeineCacheManager);
     }
 
     @Test
@@ -114,7 +111,10 @@ class OidcDiscoveryCacheTests {
       assertNotNull(
           cacheManager.getCache(DefaultOidcDiscoveryService.CACHE_NAME).get(REMOTE_ISSUER));
 
-      taskConfig.logOidcDiscoveryCacheEviction();
+      try {
+        Thread.sleep(1100);
+      } catch (InterruptedException e) {
+      }
       assertNull(cacheManager.getCache(DefaultOidcDiscoveryService.CACHE_NAME).get(REMOTE_ISSUER));
 
     }
