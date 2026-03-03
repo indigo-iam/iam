@@ -599,6 +599,27 @@ public class IamProperties {
     }
   }
 
+  public static class DashboardProperties {
+    private String dashboardClientId;
+    private String dashboardClientSecret;
+
+    public String getDashboardClientId() {
+      return dashboardClientId;
+    }
+
+    public void setDashboardClientId(String dashboardClientId) {
+      this.dashboardClientId = dashboardClientId;
+    }
+
+    public String getDashboardClientSecret() {
+      return dashboardClientSecret;
+    }
+
+    public void setDashboardClientSecret(String dashboardClientSecret) {
+      this.dashboardClientSecret = dashboardClientSecret;
+    }
+  }
+
   public static class DefaultGroup {
     private String name;
     private String enrollment = "INSERT";
@@ -726,6 +747,8 @@ public class IamProperties {
   private ClientProperties client = new ClientProperties();
 
   private AarcProfile aarcProfile = new AarcProfile();
+
+  private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -967,6 +990,14 @@ public class IamProperties {
 
   public ClientProperties getClient() {
     return client;
+  }
+
+  public DashboardProperties getDashboard() {
+    return dashboard;
+  }
+
+  public void setDashboard(DashboardProperties dashboard) {
+    this.dashboard = dashboard;
   }
 
   public AarcProfile getAarcProfile() {
