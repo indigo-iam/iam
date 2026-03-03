@@ -17,7 +17,6 @@ package it.infn.mw.iam.config;
 
 import java.time.Duration;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.cache.CacheManager;
@@ -36,8 +35,11 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 @Configuration
 public class CacheConfig {
 
-  @Autowired
-  CacheProperties cacheProps;
+  private CacheProperties cacheProps;
+
+  CacheConfig(CacheProperties cacheProps) {
+    this.cacheProps = cacheProps;
+  }
 
   @Bean
   @ConditionalOnExpression("${cache.enabled} == false")

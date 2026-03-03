@@ -114,6 +114,7 @@ class OidcDiscoveryCacheTests {
       try {
         Thread.sleep(1100);
       } catch (InterruptedException e) {
+        // empty catch
       }
       assertNull(cacheManager.getCache(DefaultOidcDiscoveryService.CACHE_NAME).get(REMOTE_ISSUER));
 
