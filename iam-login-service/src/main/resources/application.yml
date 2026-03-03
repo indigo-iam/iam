@@ -191,6 +191,7 @@ iam:
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
+  oidc-discovery-cleanup-period-secs: ${IAM_OIDC_DISCOVERY_CLEANUP_PERIOD_SECS:86400}
   redis:
     enabled: ${IAM_CACHE_REDIS_ENABLED:false}
 

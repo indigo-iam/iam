@@ -22,9 +22,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,27 +34,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
-import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class IntrospectionEndpointTests extends TestTokensUtils {
-
-  @Value("${iam.organisation.name}")
-  String organisationName;
+class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
 
   @Value("${iam.issuer}")
   String issuer;
@@ -79,44 +69,6 @@ class IntrospectionEndpointTests extends TestTokensUtils {
 
   @Autowired
   ObjectMapper mapper;
-
-  private ResultActions introspect(String username, String password, String tokenToIntrospect,
-      TokenTypeHint tokenTypeHint) throws Exception {
-
-    return introspect(username, password, tokenToIntrospect, tokenTypeHint.name());
-  }
-
-  private ResultActions introspect(String username, String password, String tokenToIntrospect,
-      String tokenTypeHint) throws Exception {
-
-    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
-      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-      .param("token", tokenToIntrospect)
-      .param("token_type_hint", tokenTypeHint));
-  }
-
-  private ResultActions introspect(String username, String password, String tokenToIntrospect)
-      throws Exception {
-
-    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
-      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-      .param("token", tokenToIntrospect));
-  }
-
-  private ResultActions introspect(String tokenToIntrospect, TokenTypeHint tokenTypeHint)
-      throws Exception {
-
-    return introspect(tokenToIntrospect, tokenTypeHint.name());
-  }
-
-  private ResultActions introspect(String tokenToIntrospect, String tokenTypeHint)
-      throws Exception {
-
-    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(anonymous())
-      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-      .param("token", tokenToIntrospect)
-      .param("token_type_hint", tokenTypeHint));
-  }
 
   @Test
   void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {

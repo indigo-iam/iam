@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -32,10 +31,6 @@ public class IntrospectionResponse implements Serializable {
 
   private final Map<String, Object> additionalFields = new HashMap<>();
 
-  public IntrospectionResponse() {
-    // Required for de-serialization
-  }
-
   private IntrospectionResponse(Builder builder) {
     this.active = builder.active;
     this.additionalFields.putAll(builder.additionalFields);
@@ -45,18 +40,9 @@ public class IntrospectionResponse implements Serializable {
     return active;
   }
 
-  public void setActive(boolean active) {
-    this.active = active;
-  }
-
   @JsonAnyGetter
   public Map<String, Object> getAdditionalFields() {
       return additionalFields;
-  }
-
-  @JsonAnySetter
-  public void addAdditionalField(String key, Object value) {
-    this.additionalFields.put(key, value);
   }
 
   public static IntrospectionResponse inactive() {
@@ -73,12 +59,16 @@ public class IntrospectionResponse implements Serializable {
     }
 
     public Builder addField(String key, Object value) {
-      this.additionalFields.put(key, value);
+      if (!"active".equals(key)){
+        this.additionalFields.put(key, value);
+      }
       return this;
     }
 
     public Builder addFieldIfAbsent(String key, Object value) {
-      this.additionalFields.putIfAbsent(key, value);
+      if (!"active".equals(key)){
+        this.additionalFields.putIfAbsent(key, value);
+      }
       return this;
     }
 
