@@ -13,23 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc;
+package it.infn.mw.iam.core.oauth.discovery;
 
-import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-public class DefaultRestTemplateFactory implements RestTemplateFactory {
+import com.fasterxml.jackson.databind.JsonNode;
 
-  final ClientHttpRequestFactory httpRequestFactory;
-
-  public DefaultRestTemplateFactory(ClientHttpRequestFactory httpRequestFactory) {
-
-    this.httpRequestFactory = httpRequestFactory;
-  }
-
-  @Override
-  public RestTemplate newRestTemplate() {
-
-    return new RestTemplate(httpRequestFactory);
-  }
+public interface OidcDiscoveryService {
+  public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
+      throws RestClientException;
 }
