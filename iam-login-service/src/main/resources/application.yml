@@ -192,6 +192,7 @@ iam:
   dashboard:
     client-id: ${IAM_DASHBOARD_CLIENT_ID}
     client-secret: ${IAM_DASHBOARD_CLIENT_SECRET}
+    client-base-url: ${IAM_DASHBOARD_CLIENT_BASE_URL}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}

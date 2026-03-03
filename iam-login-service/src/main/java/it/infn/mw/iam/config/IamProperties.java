@@ -600,23 +600,32 @@ public class IamProperties {
   }
 
   public static class DashboardProperties {
-    private String dashboardClientId;
-    private String dashboardClientSecret;
+    private String clientId;
+    private String clientSecret;
+    private String clientBaseUrl;
 
-    public String getDashboardClientId() {
-      return dashboardClientId;
+    public String getClientId() {
+      return clientId;
     }
 
-    public void setDashboardClientId(String dashboardClientId) {
-      this.dashboardClientId = dashboardClientId;
+    public void setClientId(String clientId) {
+      this.clientId = clientId;
     }
 
-    public String getDashboardClientSecret() {
-      return dashboardClientSecret;
+    public String getClientSecret() {
+      return clientSecret;
     }
 
-    public void setDashboardClientSecret(String dashboardClientSecret) {
-      this.dashboardClientSecret = dashboardClientSecret;
+    public void setClientSecret(String clientSecret) {
+      this.clientSecret = clientSecret;
+    }
+
+    public String getClientBaseUrl() {
+      return clientBaseUrl;
+    }
+
+    public void setClientBaseUrl(String clientBaseUrl) {
+      this.clientBaseUrl = clientBaseUrl;
     }
   }
 
@@ -998,6 +1007,10 @@ public class IamProperties {
 
   public void setDashboard(DashboardProperties dashboard) {
     this.dashboard = dashboard;
+  }
+  
+  public Boolean isDashboardPropertiesEnable() {
+    return dashboard != null;
   }
 
   public AarcProfile getAarcProfile() {
