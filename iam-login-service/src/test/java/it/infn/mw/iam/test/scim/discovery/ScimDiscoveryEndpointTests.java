@@ -17,9 +17,13 @@ package it.infn.mw.iam.test.scim.discovery;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_BULK_MAX_OPERATIONS;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -76,11 +80,12 @@ class ScimDiscoveryEndpointTests {
     mvc.perform(get(SERVICE_PROVIDER_CONFIG_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
-      .andExpect(jsonPath("$.schemas",
-          hasItem(ScimServiceProviderConfig.SERVICE_PROVIDER_CONFIG_SCHEMA)))
+      .andExpect(
+          jsonPath("$.schemas", hasItem(ScimServiceProviderConfig.SERVICE_PROVIDER_CONFIG_SCHEMA)))
       .andExpect(jsonPath("$.patch.supported", equalTo(true)))
       .andExpect(jsonPath("$.bulk.supported", equalTo(true)))
-      .andExpect(jsonPath("$.bulk.maxOperations", equalTo(500)))
+      .andExpect(jsonPath("$.bulk.maxOperations", equalTo(SCIM_BULK_MAX_OPERATIONS)))
+      .andExpect(jsonPath("$.bulk.maxPayloadSize", equalTo(SCIM_BULK_MAX_PAYLOAD_SIZE)))
       .andExpect(jsonPath("$.filter.supported", equalTo(true)))
       .andExpect(jsonPath("$.filter.maxResults", equalTo(100)))
       .andExpect(jsonPath("$.authenticationSchemes[0].type", equalTo("oauthbearertoken")));
@@ -99,7 +104,11 @@ class ScimDiscoveryEndpointTests {
       .andExpect(jsonPath("$.Resources", hasSize(2)))
       .andExpect(jsonPath("$.Resources[?(@.id == 'User')].schema", hasItem(ScimUser.USER_SCHEMA)))
       .andExpect(jsonPath("$.Resources[?(@.id == 'Group')].schema",
-          hasItem("urn:ietf:params:scim:schemas:core:2.0:Group")));
+          hasItem("urn:ietf:params:scim:schemas:core:2.0:Group")))
+      .andExpect(jsonPath("$.Resources[?(@.id == 'User')].meta.location",
+          hasItem(containsString("/scim/ResourceTypes/User"))))
+      .andExpect(jsonPath("$.Resources[?(@.id == 'Group')].meta.location",
+          hasItem(containsString("/scim/ResourceTypes/Group"))));
   }
 
   @Test
@@ -114,6 +123,15 @@ class ScimDiscoveryEndpointTests {
       .andExpect(jsonPath("$.endpoint", equalTo("/Users")))
       .andExpect(jsonPath("$.schema", equalTo(ScimUser.USER_SCHEMA)))
       .andExpect(jsonPath("$.meta.resourceType", equalTo("ResourceType")));
+  }
+
+  @Test
+  void testResourceTypeEndpointReturnsNotFoundForUnknownType() throws Exception {
+
+    mvc.perform(get(RESOURCE_TYPES_ENDPOINT + "/Unknown").contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status", equalTo("404")))
+      .andExpect(jsonPath("$.detail", equalTo("No ResourceType found for 'Unknown'")));
   }
 
   @Test
@@ -145,14 +163,69 @@ class ScimDiscoveryEndpointTests {
       .andExpect(jsonPath("$.id", equalTo(ScimUser.USER_SCHEMA)))
       .andExpect(jsonPath("$.name", equalTo("User")))
       .andExpect(jsonPath("$.meta.resourceType", equalTo("Schema")))
+      .andExpect(
+          jsonPath("$.meta.location", containsString("/scim/Schemas/" + ScimUser.USER_SCHEMA)))
       .andExpect(jsonPath("$.attributes[?(@.name == 'userName')].required", hasItem(true)));
+  }
+
+  @Test
+  void testUserSchemaDeclaresAllRepositoryCoreUserAttributes() throws Exception {
+
+    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.attributes[*].name",
+          hasItems("userName", "password", "name", "displayName", "nickName", "profileUrl",
+              "title", "userType", "preferredLanguage", "locale", "timezone", "active",
+              "emails", "addresses", "photos", "groups")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
+          hasItems("formatted", "givenName", "familyName", "middleName", "honorificPrefix",
+              "honorificSuffix")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'password')].mutability", hasItem("writeOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].returned", hasItem("never")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'groups')].mutability", hasItem("readOnly")));
+  }
+
+  @Test
+  void testIndigoUserSchemaDeclaresAllRepositoryExtensionAttributes() throws Exception {
+
+    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", INDIGO_USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.attributes[*].name",
+          hasItems("serviceAccount", "affiliation", "sshKeys", "oidcIds", "samlIds",
+              "certificates", "aupSignatureTime", "endTime", "labels", "authorities",
+              "attributes", "managedGroups")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'sshKeys')].subAttributes[*].name",
+          hasItems("display", "primary", "fingerprint", "value", "created", "lastModified")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'certificates')].subAttributes[*].name",
+          hasItems("display", "primary", "subjectDn", "issuerDn", "pemEncodedCertificate",
+              "created", "lastModified", "hasProxyCertificate", "proxyExpirationTime")));
+  }
+
+  @Test
+  void testIndigoGroupSchemaDeclaresAllRepositoryExtensionAttributes() throws Exception {
+
+    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", INDIGO_GROUP_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(
+          jsonPath("$.attributes[*].name", hasItems("parentGroup", "description", "labels")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'parentGroup')].subAttributes[*].name",
+          hasItems("value", "display", "$ref")));
+  }
+
+  @Test
+  void testSchemaEndpointReturnsNotFoundForUnknownSchema() throws Exception {
+
+    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", "urn:test:unknown").contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.status", equalTo("404")))
+      .andExpect(jsonPath("$.detail", equalTo("No Schema found for 'urn:test:unknown'")));
   }
 
   @Test
   void testSchemasListWithFilterReturnsForbidden() throws Exception {
 
-    mvc.perform(
-        get(SCHEMAS_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
+    mvc.perform(get(SCHEMAS_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.status", equalTo("403")))
       .andExpect(jsonPath("$.detail", equalTo(FILTER_NOT_SUPPORTED_MSG)));
@@ -161,7 +234,8 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testResourceTypesListWithFilterReturnsForbidden() throws Exception {
 
-    mvc.perform(get(RESOURCE_TYPES_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
+    mvc.perform(
+        get(RESOURCE_TYPES_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.status", equalTo("403")))
       .andExpect(jsonPath("$.detail", equalTo(FILTER_NOT_SUPPORTED_MSG)));
