@@ -20,5 +20,7 @@ public interface ScimConstants {
   final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
   final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
   final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
+  final int SCIM_BULK_MAX_OPERATIONS = 500;
+  final int SCIM_BULK_MAX_PAYLOAD_SIZE = 1048576;
 
 }

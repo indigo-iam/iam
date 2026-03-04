@@ -41,15 +41,15 @@ public class ScimUsersBulkRequest {
 
   @NotEmpty
   @Valid
-  @ValidBulkSize(max = 500)
+  @ValidBulkSize(max = ScimConstants.SCIM_BULK_MAX_OPERATIONS)
   private final List<ScimBulkOperationSingle> operations;
 
   private long failOnErrors;
 
   @JsonCreator
   private ScimUsersBulkRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") @Valid @ValidBulkSize(
-          max = 500) List<ScimBulkOperationSingle> operations,
+      @JsonProperty("operations") @Valid
+      @ValidBulkSize(max = ScimConstants.SCIM_BULK_MAX_OPERATIONS) List<ScimBulkOperationSingle> operations,
       @JsonProperty("failOnErrors") long failOnErrors) {
 
     this.schemas = schemas;
