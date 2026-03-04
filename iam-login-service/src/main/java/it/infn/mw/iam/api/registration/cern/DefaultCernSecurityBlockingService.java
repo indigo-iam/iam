@@ -84,7 +84,7 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
         HttpEntity<MultiValueMap<String, String>> request =
                 new HttpEntity<>(form, headers);
 
-        LOG.debug("Requesting access token with client_id: {}, audience: {}, token_url: {}", properties.getBlocking().getClientId(), properties.getBlocking().getAudience(), properties.getBlocking().getTokenUrl());
+            LOG.debug("Requesting access token with client_id: {}, audience: {}, token_url: {}", properties.getBlocking().getClientId(), properties.getBlocking().getAudience(), properties.getBlocking().getTokenUrl());
         try {
             ResponseEntity<CernTokenResponse> response = rt.exchange(
                         properties.getBlocking().getTokenUrl(),
@@ -94,7 +94,8 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
                     );
             CernTokenResponse body = response.getBody();
             if (body == null) {
-              throw new CernSecurityBlockingError("CERN security blocking token endpoint returned empty body");
+                LOG.warn("CERN security blocking token endpoint returned empty body");
+                throw new CernSecurityBlockingError("CERN security blocking token endpoint returned empty body");
             }
 
             cachedToken = body.getAccessToken();

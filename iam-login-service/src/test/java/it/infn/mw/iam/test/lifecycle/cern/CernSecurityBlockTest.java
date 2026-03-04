@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.lifecycle.cern;
 
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,6 +41,10 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.time.Instant;
+import java.lang.reflect.Field; 
+import java.lang.reflect.Method; 
+import java.lang.reflect.InvocationTargetException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,8 +137,6 @@ class CernSecurityBlockTest extends TestSupport
     @Autowired
     CernSecurityBlockingHandler cernSecurityBlockingHandler;
 
-    // tokenResponse bean removed; not injected
-
     @Autowired
     CernSecurityBlockingApiService blockingService;
 
@@ -184,14 +188,13 @@ class CernSecurityBlockTest extends TestSupport
         
         svc = new DefaultCernSecurityBlockingService(rtf, props);
         
-        // Pre-cache token to avoid token fetch during tests
         try {
-          java.lang.reflect.Field cachedTokenField = DefaultCernSecurityBlockingService.class
+          Field cachedTokenField = DefaultCernSecurityBlockingService.class
               .getDeclaredField("cachedToken");
           cachedTokenField.setAccessible(true);
           cachedTokenField.set(svc, "test-access-token");
           
-          java.lang.reflect.Field tokenExpiryField = DefaultCernSecurityBlockingService.class
+          Field tokenExpiryField = DefaultCernSecurityBlockingService.class
               .getDeclaredField("tokenExpiry");
           tokenExpiryField.setAccessible(true);
           tokenExpiryField.set(svc, java.time.Instant.now().plusSeconds(3600));
@@ -227,11 +230,10 @@ class CernSecurityBlockTest extends TestSupport
         cernSecurityBlockingHandler.run();
 
         accountPage = repo.findAll(pageRequest);
-        System.out.println("Account: " + accountPage.getContent().size()); 
      
         for (IamAccount account : accountPage.getContent()) {
             assertThat(account.isActive(), is(true));
-            System.out.println("Account: " + account.getLabels());
+
         }
         assertThat(accountPage.getContent().size(), is(5));
     }
@@ -404,13 +406,13 @@ class CernSecurityBlockTest extends TestSupport
     @Test
     void cernTokenResponseSerialization() throws Exception {
       CernTokenResponse r = new CernTokenResponse();
-      java.lang.reflect.Field at = CernTokenResponse.class.getDeclaredField("accessToken");
+      Field at = CernTokenResponse.class.getDeclaredField("accessToken");
       at.setAccessible(true);
       at.set(r, "foo");
-      java.lang.reflect.Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
+      Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
       ei.setAccessible(true);
       ei.setLong(r, 789L);
-      java.lang.reflect.Field tt = CernTokenResponse.class.getDeclaredField("tokenType");
+      Field tt = CernTokenResponse.class.getDeclaredField("tokenType");
       tt.setAccessible(true);
       tt.set(r, "bearer test");
 
@@ -423,12 +425,12 @@ class CernSecurityBlockTest extends TestSupport
 
     @Test
     void testBuildAuthHeaders() throws Exception {
-      java.lang.reflect.Field cachedTokenField = DefaultCernSecurityBlockingService.class
+      Field cachedTokenField = DefaultCernSecurityBlockingService.class
           .getDeclaredField("cachedToken");
       cachedTokenField.setAccessible(true);
       cachedTokenField.set(svc, "test-token-xyz");
       
-      java.lang.reflect.Field tokenExpiryField = DefaultCernSecurityBlockingService.class
+      Field tokenExpiryField = DefaultCernSecurityBlockingService.class
           .getDeclaredField("tokenExpiry");
       tokenExpiryField.setAccessible(true);
       tokenExpiryField.set(svc, java.time.Instant.now().plusSeconds(3600));
@@ -475,7 +477,7 @@ class CernSecurityBlockTest extends TestSupport
     void testGetSecurityBlockingRecordError() {
       MockRestServiceServer mockServer = mockRtf.getMockServer();
       mockServer.expect(MockRestRequestMatchers.anything())
-          .andRespond(MockRestResponseCreators.withStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR));
+          .andRespond(MockRestResponseCreators.withStatus(INTERNAL_SERVER_ERROR));
       
       CernSecurityBlockingError exception = assertThrows(CernSecurityBlockingError.class, () -> {
         svc.getSecurityBlockingRecord("testuser");
@@ -484,6 +486,239 @@ class CernSecurityBlockTest extends TestSupport
       mockServer.verify();
       assertTrue(exception.getMessage().contains("Error fetching security blocking record"));
     }
-}
 
-        
+    @Test
+    void testGetAccessTokenSuccess() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      ObjectMapper om = new ObjectMapper();
+      
+      CernTokenResponse tokenResponse = new CernTokenResponse();
+      Field at = CernTokenResponse.class.getDeclaredField("accessToken");
+      at.setAccessible(true);
+      at.set(tokenResponse, "new-access-token-12345");
+      Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
+      ei.setAccessible(true);
+      ei.setLong(tokenResponse, 3600L);
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(tokenResponse), APPLICATION_JSON));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      String token = (String) getAccessToken.invoke(freshSvc);
+      
+      assertEquals("new-access-token-12345", token);
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenMultipleCalls() throws Exception {
+
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      ObjectMapper om = new ObjectMapper();
+      
+      CernTokenResponse tokenResponse = new CernTokenResponse();
+      Field at = CernTokenResponse.class.getDeclaredField("accessToken");
+      at.setAccessible(true);
+      at.set(tokenResponse, "multi-call-token");
+      Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
+      ei.setAccessible(true);
+      ei.setLong(tokenResponse, 3600L);
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(tokenResponse),APPLICATION_JSON));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      
+      String token1 = (String) getAccessToken.invoke(freshSvc);
+      String token2 = (String) getAccessToken.invoke(freshSvc);
+      
+      assertEquals(token1, token2);
+      assertEquals("multi-call-token", token1);
+      
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenCached() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      Field cachedTokenField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("cachedToken");
+      cachedTokenField.setAccessible(true);
+      cachedTokenField.set(freshSvc, "cached-token-xyz");
+      
+      Field tokenExpiryField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("tokenExpiry");
+      tokenExpiryField.setAccessible(true);
+      tokenExpiryField.set(freshSvc, java.time.Instant.now().plusSeconds(3600));
+      
+      java.lang.reflect.Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      String token = (String) getAccessToken.invoke(freshSvc);
+      
+      assertEquals("cached-token-xyz", token);
+    }
+
+    @Test
+    void testGetAccessTokenExpiredRefetch() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      Field cachedTokenField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("cachedToken");
+      cachedTokenField.setAccessible(true);
+      cachedTokenField.set(freshSvc, "expired-token");
+      
+      Field tokenExpiryField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("tokenExpiry");
+      tokenExpiryField.setAccessible(true);
+      tokenExpiryField.set(freshSvc, Instant.now().minusSeconds(100));
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      ObjectMapper om = new ObjectMapper();
+      
+      CernTokenResponse tokenResponse = new CernTokenResponse();
+      Field at = CernTokenResponse.class.getDeclaredField("accessToken");
+      at.setAccessible(true);
+      at.set(tokenResponse, "new-refreshed-token");
+      Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
+      ei.setAccessible(true);
+      ei.setLong(tokenResponse, 3600L);
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(tokenResponse), APPLICATION_JSON));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      String token = (String) getAccessToken.invoke(freshSvc);
+      
+      assertEquals("new-refreshed-token", token);
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenEmptyResponseBody() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withSuccess("",APPLICATION_JSON));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      
+      InvocationTargetException invocationException = 
+          assertThrows(InvocationTargetException.class, () -> {
+            getAccessToken.invoke(freshSvc);
+          });
+      
+      assertTrue(invocationException.getCause() instanceof CernSecurityBlockingError);
+      assertTrue(invocationException.getCause().getMessage().contains("empty body"));
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenWithGracePeriod() throws Exception {
+      CernProperties testProps = new CernProperties();
+      CernProperties.CernBlockingProperties b = new CernProperties.CernBlockingProperties();
+      b.setClientId("cid");
+      b.setClientSecret("secret");
+      b.setAudience("aud");
+      b.setTokenUrl("https://token.url");
+      b.setAuthorizationUrl("http://authorization.test.example");
+      b.setGracePeriod(60);  
+      testProps.setBlocking(b);
+      
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, testProps);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      ObjectMapper om = new ObjectMapper();
+      
+      CernTokenResponse tokenResponse = new CernTokenResponse();
+      Field at = CernTokenResponse.class.getDeclaredField("accessToken");
+      at.setAccessible(true);
+      at.set(tokenResponse, "token-with-grace");
+      Field ei = CernTokenResponse.class.getDeclaredField("expiresIn");
+      ei.setAccessible(true);
+      ei.setLong(tokenResponse, 3600L);  
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(tokenResponse),
+              APPLICATION_JSON));
+      
+      java.lang.reflect.Method getAccessToken = DefaultCernSecurityBlockingService.class
+          .getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      String token = (String) getAccessToken.invoke(freshSvc);
+      
+      assertEquals("token-with-grace", token);
+      
+      Field tokenExpiryField = DefaultCernSecurityBlockingService.class.getDeclaredField("tokenExpiry");
+      tokenExpiryField.setAccessible(true);
+
+      Instant expiry = (Instant) tokenExpiryField.get(freshSvc);
+      Instant endTimeWithoutGrace = Instant.now().plusSeconds(3600L);
+      Instant endTimeWithGrace = Instant.now().plusSeconds(3600L - 60L);
+      
+      assertTrue(expiry.isBefore(endTimeWithoutGrace));
+      assertTrue(expiry.isAfter(endTimeWithGrace.minusSeconds(2)));
+      
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenError() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withException(
+              new java.net.ConnectException("Connection refused")));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class.getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      
+      InvocationTargetException invocationException = 
+          assertThrows(InvocationTargetException.class, () -> {
+            getAccessToken.invoke(freshSvc);
+          });
+      
+      assertTrue(invocationException.getCause() instanceof CernSecurityBlockingError);
+      assertTrue(invocationException.getCause().getMessage().contains("Error fetching security blocking api access token"));
+      mockServer.verify();
+    }
+
+    @Test
+    void testGetAccessTokenServerError() throws Exception {
+      DefaultCernSecurityBlockingService freshSvc = new DefaultCernSecurityBlockingService(rtf, props);
+      
+      MockRestServiceServer mockServer = mockRtf.resetTemplate();
+      
+      mockServer.expect(MockRestRequestMatchers.anything())
+          .andRespond(MockRestResponseCreators.withStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR));
+      
+      Method getAccessToken = DefaultCernSecurityBlockingService.class.getDeclaredMethod("getAccessToken");
+      getAccessToken.setAccessible(true);
+      
+      InvocationTargetException invocationException = 
+          assertThrows(InvocationTargetException.class, () -> {
+            getAccessToken.invoke(freshSvc);
+          });
+      
+      assertTrue(invocationException.getCause() instanceof CernSecurityBlockingError);
+      assertTrue(invocationException.getCause().getMessage().contains("Error fetching security blocking api access token"));
+      mockServer.verify();
+    }
+}
