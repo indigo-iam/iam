@@ -54,7 +54,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
 import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
@@ -75,7 +74,6 @@ import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
@@ -199,8 +197,7 @@ public class OidcConfiguration {
 
   @Bean
   ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers,
-      Environment env, IamClientRepository clientRepo,
-      FederatedOpRegistrationService federationRegistrationService) {
+      Environment env) {
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -216,7 +213,7 @@ public class OidcConfiguration {
 
     if (clients.isEmpty()
         && Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals)) {
-      return new FederationClientConfigurationService(clientRepo, federationRegistrationService);
+      return new FederationClientConfigurationService();
     }
 
     if (clients.isEmpty()) {
