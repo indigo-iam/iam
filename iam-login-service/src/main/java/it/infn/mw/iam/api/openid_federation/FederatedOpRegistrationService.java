@@ -22,6 +22,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
@@ -40,7 +42,7 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
+import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -54,9 +56,11 @@ import it.infn.mw.iam.core.oidc.TrustChainService;
 @Profile("openid-federation")
 public class FederatedOpRegistrationService {
 
+  public static final Logger LOG = LoggerFactory.getLogger(FederatedOpRegistrationService.class);
+
   private final TrustChainService tcService;
   private final ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder;
-  private final DefaultClientManagementService clientManagementService;
+  private final ClientRegistrationService clientRegistrationService;
   private final OpenidFederationProperties oidFedProperties;
   private final RestTemplate restTemplate;
 
@@ -65,12 +69,12 @@ public class FederatedOpRegistrationService {
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      DefaultClientManagementService clientManagementService,
+      ClientRegistrationService clientRegistrationService,
       OpenidFederationProperties oidFedProperties) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
-    this.clientManagementService = clientManagementService;
+    this.clientRegistrationService = clientRegistrationService;
     this.oidFedProperties = oidFedProperties;
     this.restTemplate = new RestTemplate();
   }
@@ -100,7 +104,7 @@ public class FederatedOpRegistrationService {
     RegisteredClientDTO dtoClient = createClientDtoFromOpMetadata(opEc);
     dtoClient.setExpiration(trustChain.resolveExpirationTime());
     dtoClient.setRequestObjectSigningAlgorithm(signedResponse.getHeader().getAlgorithm());
-    RegisteredClientDTO client = clientManagementService.saveNewClient(dtoClient);
+    RegisteredClientDTO client = clientRegistrationService.registerClient(dtoClient, null);
 
     return client;
   }
@@ -187,7 +191,7 @@ public class FederatedOpRegistrationService {
     Optional.ofNullable(metadata.getJWKSetURI())
       .ifPresent(uri -> dtoClient.setJwksUri(uri.toASCIIString()));
 
-    // log.debug("Client metadata mapped successfully for RP: {}", dtoClient.getEntityId());
+    LOG.debug("Client metadata mapped successfully for OP: {}", dtoClient.getEntityId());
     return dtoClient;
   }
 }
