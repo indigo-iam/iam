@@ -1,0 +1,1 @@
+-- Nothing to do: in H2, info_key is already case-sensitive

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +50,7 @@ import org.springframework.web.context.WebApplicationContext;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
@@ -133,5 +136,27 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
       .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
     mvc.perform(get("/dashboard")).andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = "PRE_AUTHENTICATED")
+  void getActivateMfaViewAuthorizedReturnsView() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isOk())
+        .andExpect(view().name("iam/activateMfa"));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void getActivateMfaViewWrongRoleForbidden() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithAnonymousUser
+  void getActivateMfaViewAnonymousUnauthorized() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isUnauthorized());
   }
 }

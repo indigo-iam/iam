@@ -23,32 +23,32 @@ import org.junit.jupiter.api.Test;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHintConverter;
 
-public class TokenTypeHintConverterTests {
+class TokenTypeHintConverterTests {
 
   private TokenTypeHintConverter converter = new TokenTypeHintConverter();
 
   @Test
-  public void testTokenTypeHintNullConversion() {
+  void testTokenTypeHintNullConversion() {
 
     assertNull(converter.convert(null));
   }
 
   @Test
-  public void testTokenTypeHintLowerCaseConversions() {
+  void testTokenTypeHintLowerCaseConversions() {
 
     assertEquals(TokenTypeHint.ACCESS_TOKEN, converter.convert("access_token"));
     assertEquals(TokenTypeHint.REFRESH_TOKEN, converter.convert("refresh_token"));
   }
 
   @Test
-  public void testTokenTypeHintUpperCaseConversions() {
+  void testTokenTypeHintUpperCaseConversions() {
 
     assertEquals(TokenTypeHint.ACCESS_TOKEN, converter.convert("ACCESS_TOKEN"));
     assertEquals(TokenTypeHint.REFRESH_TOKEN, converter.convert("REFRESH_TOKEN"));
   }
 
   @Test
-  public void testTokenTypeHintMixedCaseConversions() {
+  void testTokenTypeHintMixedCaseConversions() {
 
     assertEquals(TokenTypeHint.ACCESS_TOKEN, converter.convert("ACCESS_token"));
     assertEquals(TokenTypeHint.REFRESH_TOKEN, converter.convert("refresh_TOKEN"));

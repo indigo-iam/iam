@@ -1,0 +1,52 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form class="form-horizontal" ng-submit="activateMfaCtrl.submitEnable()" name="activateMfaForm">
+<div style="text-align: center;">
+  <div>
+    <h3>Enable authenticator</h3>
+  </div>
+
+  <div>
+
+    <p>Scan the QR code through your authenticator and input a TOTP to validate configuration.</p>
+    <div style="text-align: center;">
+      <img ng-src="{{activateMfaCtrl.dataUri}}" />
+    </div>
+    <p>Alternatively, enter this secret manually into your authenticator.</p>
+    <p><strong>{{activateMfaCtrl.secret}}</strong></p>
+
+    <div class="form-group">
+      <div class="col-sm-4" style="text-align: end;">
+        <label class="control-label" for="code">TOTP</label>
+      </div>
+      <div class="col-sm-4"  ng-class="{'has-error': activateMfaForm.code.$dirty && activateMfaForm.code.$invalid, 'has-success': activateMfaForm.code.$dirty && activateMfaForm.code.$valid}">
+        <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="activateMfaCtrl.user.code" ng-change="activateMfaCtrl.clearError()" required ng-minlength="activateMfaCtrl.codeMinlength" />
+        <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': activateMfaForm.code.$dirty && activateMfaForm.code.$invalid, 'glyphicon-ok': activateMfaForm.code.$dirty && activateMfaForm.code.$valid}" style="right: 15px"></span>
+        <span class="help-block" ng-show="activateMfaForm.code.$dirty && activateMfaForm.code.$error.required"> This is a required field</span>
+        <span class="help-block" ng-show="activateMfaForm.code.$dirty && activateMfaForm.code.$error.minlength">Minimum length required is {{activateMfaCtrl.codeMinlength}}</span>
+        <span class="help-block" ng-show="operationResult" style="color: #a94442;">{{ operationResult.text }}</span>
+      </div>
+    </div>
+   </div>
+
+  <div>
+    <button class="btn btn-primary" type="submit" name="submit" id="modal-btn-submit" ng-disabled="activateMfaForm.code.$error.minlength || activateMfaForm.code.$error.required || activateMfaCtrl.requestPending">Submit</button>
+    <button class="btn btn-warning" type="button" name="reset" id="modal-btn-reset" ng-click="activateMfaCtrl.reset()" ng-disabled="activateMfaForm.$pristine">Reset</button>
+  </div>
+</div>
+</form>

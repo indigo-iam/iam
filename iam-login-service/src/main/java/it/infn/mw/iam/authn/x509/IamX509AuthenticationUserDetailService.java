@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -48,12 +49,15 @@ public class IamX509AuthenticationUserDetailService
   IamAccountRepository accountRepository;
   IamTotpMfaRepository totpMfaRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, InactiveAccountAuthenticationHander handler) {
+      IamTotpMfaRepository totpMfaRepository, InactiveAccountAuthenticationHander handler,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.inactiveAccountHandler = handler;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   protected UserDetails buildUserFromIamAccount(IamAccount account,
@@ -62,8 +66,10 @@ public class IamX509AuthenticationUserDetailService
     inactiveAccountHandler.handleInactiveAccount(account);
 
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    boolean active = totpMfaOptional.map(IamTotpMfa::isActive).orElse(false);
+    boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
 
-    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+    if (active || mandatory) {
       addPreAuthenticatedRole(account);
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     }

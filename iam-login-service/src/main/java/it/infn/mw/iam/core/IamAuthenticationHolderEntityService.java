@@ -22,7 +22,6 @@ import org.mitre.data.PageCriteria;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.AuthenticationHolderEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,6 @@ public class IamAuthenticationHolderEntityService implements AuthenticationHolde
   final AuthenticationHolderRepository repo;
   final ExternalAuthenticationInfoBuilder mapBuilder;
 
-  @Autowired
   public IamAuthenticationHolderEntityService(AuthenticationHolderRepository repo,
       ExternalAuthenticationInfoBuilder mapBuilder) {
     this.repo = repo;

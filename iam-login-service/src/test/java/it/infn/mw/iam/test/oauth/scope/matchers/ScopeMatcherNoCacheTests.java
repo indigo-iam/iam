@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.test.context.TestPropertySource;
@@ -67,7 +67,7 @@ class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
   @Test
   void ensureRedisCacheIsDisabled() {
     assertThat(cacheManager, instanceOf(NoOpCacheManager.class));
-    assertThat(cacheManager, not(instanceOf(ConcurrentMapCacheManager.class)));
+    assertThat(cacheManager, not(instanceOf(CaffeineCacheManager.class)));
     assertThat(cacheManager, not(instanceOf(RedisCacheManager.class)));
   }
 
