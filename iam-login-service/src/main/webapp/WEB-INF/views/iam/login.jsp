@@ -204,6 +204,8 @@
         </c:if>
 
         <!-- OpenID Federation -->
+        <spring:eval expression="@environment.acceptsProfiles('openid-federation')" var="openidFederationEnabled"/>
+        <c:if test="${openidFederationEnabled}">
         <form method="get" action="/openid_connect_login">
             <div id="login-registration">
                 <div class="registration-preamble text-muted">
@@ -212,6 +214,7 @@
                 <input type="url" name="iss" placeholder="Type your OP" required/>
             </div>
         </form>
+        </c:if>
 
         <c:if test="${loginPageConfiguration.privacyPolicyUrl.isPresent()}">
             <div id="privacy-policy">
