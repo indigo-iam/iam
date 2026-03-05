@@ -35,6 +35,8 @@ services:
       - cabundle:/etc/pki
       - hostcerts:/hostcerts
       - usercerts:/usercerts
+    environment:
+      FORCE_TRUST_ANCHORS_UPDATE: "true"
 
   iam-be:
     container_name: iam-be

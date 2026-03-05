@@ -32,5 +32,4 @@ public class DefaultRestTemplateFactory implements RestTemplateFactory {
 
     return new RestTemplate(httpRequestFactory);
   }
-
 }
