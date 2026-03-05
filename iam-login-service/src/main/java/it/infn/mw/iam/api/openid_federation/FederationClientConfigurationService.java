@@ -23,7 +23,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
@@ -35,11 +34,14 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Profile("openid-federation")
 public class FederationClientConfigurationService implements ClientConfigurationService {
 
-  @Autowired
   private IamClientRepository clientRepo;
-
-  @Autowired
   private FederatedOpRegistrationService federationRegistrationService;
+
+  public FederationClientConfigurationService(IamClientRepository clientRepo,
+      FederatedOpRegistrationService federationRegistrationService) {
+    this.clientRepo = clientRepo;
+    this.federationRegistrationService = federationRegistrationService;
+  }
 
   @Override
   public RegisteredClient getClientConfiguration(ServerConfiguration serverConfig) {

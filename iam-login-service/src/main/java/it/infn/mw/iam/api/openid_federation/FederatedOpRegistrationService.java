@@ -104,9 +104,8 @@ public class FederatedOpRegistrationService {
     RegisteredClientDTO dtoClient = createClientDtoFromOpMetadata(opEc);
     dtoClient.setExpiration(trustChain.resolveExpirationTime());
     dtoClient.setRequestObjectSigningAlgorithm(signedResponse.getHeader().getAlgorithm());
-    RegisteredClientDTO client = clientRegistrationService.registerClient(dtoClient, null);
 
-    return client;
+    return clientRegistrationService.registerClient(dtoClient, null);
   }
 
   private List<String> selectAuthorityHints(TrustChain trustChain, String issuer) {
