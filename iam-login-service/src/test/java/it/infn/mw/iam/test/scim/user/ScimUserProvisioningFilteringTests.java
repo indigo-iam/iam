@@ -89,11 +89,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringGivenNameEqNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("givenName eq Madonna").build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenname,eq,Madonna\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("givenName eq Madonna").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -118,10 +120,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringGivenNameCoNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("givenName co xyz").build(), HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenname,co,xyz\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("givenName co xyz").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
 
@@ -150,11 +155,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringFamilyNameEqNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("familyName eq Medici").build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyname,eq,Medici\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("familyName eq Medici").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -180,10 +187,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringFamilyNameCoNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("familyName co Ham").build(), HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyname,co,Ham\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("familyName co Ham").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -209,11 +219,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringUsernameEqNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("username eq mrWorldWide").build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"username,eq,mrWorldWide\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("username eq mrWorldWide").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -240,10 +252,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringUsernameCoNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("username co supreme").build(), HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"username,co,supreme\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("username co supreme").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -269,11 +284,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringEmailsEqNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("emails eq Bill.Nye@cern.ch").build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"emails,eq,Bill.Nye@cern.ch\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("emails eq Bill.Nye@cern.ch").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -304,11 +321,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringEmailsCoNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("emails co @google.com").build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"emails,co,@google.com\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("emails co @google.com").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -336,10 +355,34 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringActiveEqNegative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("active eq false").build(), HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"active,eq,false\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("active eq false").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(0)))
+      .andExpect(jsonPath("$.startIndex", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  void testFilteringFamilyNameEqQuotedPositive() throws Exception {
+
+    ScimUser user = ScimUser.builder("user_with_quoted_family_name")
+      .buildEmail("quoted_family_name_user@test.org")
+      .buildName("Quoted", "Value With Spaces")
+      .active(true)
+      .build();
+
+    ScimUser createdUser = scimUtils.postUser(user);
+
+    scimUtils.getUsers(ParamsBuilder.builder().filter("familyName eq \"Value With Spaces\"").build())
+      .andExpect(jsonPath("$.totalResults", equalTo(1)))
+      .andExpect(jsonPath("$.itemsPerPage", equalTo(1)))
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(1))))
+      .andExpect(jsonPath("$.Resources[0].id", equalTo(createdUser.getId())))
+      .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("Value With Spaces")));
   }
 
   @Test
@@ -510,11 +553,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringGivenNameEqCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("givenName eq Madonna").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenname,eq,Madonna\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("givenName eq Madonna").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -531,11 +576,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringGivenNameCoCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("givenName co xyz").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenname,co,xyz\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("givenName co xyz").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -552,11 +599,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringFamilyNameEqCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("familyName eq Medici").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyname,eq,Medici\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("familyName eq Medici").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -573,11 +622,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringFamilyNameCoCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("familyName co Ham").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyname,co,Ham\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("familyName co Ham").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -594,11 +645,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringUsernameEqCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("username eq mrWorldWide").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"username,eq,mrWorldWide\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("username eq mrWorldWide").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -615,11 +668,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringUsernameCoCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("username co supreme").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"username,co,supreme\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("username co supreme").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -637,11 +692,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringEmailsEqCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("emails eq Bill.Nye@cern.ch").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"emails,eq,Bill.Nye@cern.ch\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("emails eq Bill.Nye@cern.ch").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -658,11 +715,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringEmailsCoCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("emails co @google.com").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"emails,co,@google.com\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("emails co @google.com").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
@@ -680,11 +739,13 @@ class ScimUserProvisioningFilteringTests {
   @Test
   void testFilteringActiveEqCount0Negative() throws Exception {
 
-    scimUtils
-      .getUsers(ParamsBuilder.builder().filter("active eq false").count(0).build(),
-          HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"active,eq,false\" produced no results as no data fulfilled the criteria.")));
+    scimUtils.getUsers(ParamsBuilder.builder().filter("active eq false").count(0).build())
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
+      .andExpect(jsonPath("$.startIndex").doesNotExist())
+      .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
+      .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
+      .andExpect(jsonPath("$.Resources[0]").doesNotExist());
   }
 
   @Test
