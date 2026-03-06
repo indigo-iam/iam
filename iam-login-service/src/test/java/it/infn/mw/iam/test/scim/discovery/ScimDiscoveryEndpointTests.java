@@ -174,15 +174,12 @@ class ScimDiscoveryEndpointTests {
     mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.attributes[*].name",
-          hasItems("userName", "password", "name", "displayName", "nickName", "profileUrl",
-              "title", "userType", "preferredLanguage", "locale", "timezone", "active",
-              "emails", "addresses", "photos", "groups")))
+          hasItems("userName", "name", "displayName", "nickName", "profileUrl", "title",
+              "userType", "preferredLanguage", "locale", "timezone", "active", "emails",
+              "addresses", "photos", "groups")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
           hasItems("formatted", "givenName", "familyName", "middleName", "honorificPrefix",
               "honorificSuffix")))
-      .andExpect(
-          jsonPath("$.attributes[?(@.name == 'password')].mutability", hasItem("writeOnly")))
-      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].returned", hasItem("never")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'groups')].mutability", hasItem("readOnly")));
   }
 

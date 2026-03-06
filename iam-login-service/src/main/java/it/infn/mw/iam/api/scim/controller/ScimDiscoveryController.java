@@ -64,10 +64,7 @@ public class ScimDiscoveryController extends ScimControllerSupport {
   private static final String MUTABILITY_IMMUTABLE = "immutable";
   private static final String MUTABILITY_READ_ONLY = "readOnly";
   private static final String MUTABILITY_READ_WRITE = "readWrite";
-  private static final String MUTABILITY_WRITE_ONLY = "writeOnly";
-
   private static final String RETURNED_DEFAULT = "default";
-  private static final String RETURNED_NEVER = "never";
 
   private static final String UNIQUENESS_NONE = "none";
   private static final String UNIQUENESS_SERVER = "server";
@@ -228,8 +225,6 @@ public class ScimDiscoveryController extends ScimControllerSupport {
     List<SchemaAttribute> attributes = Arrays.asList(
         attr("userName", "string", false, "Unique username", true, false,
             MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_SERVER, null, null),
-        attr("password", "string", false, "User password", false, false,
-            MUTABILITY_WRITE_ONLY, RETURNED_NEVER, UNIQUENESS_NONE, null, null),
         attr("name", "complex", false, "User's full name", false, null, MUTABILITY_READ_WRITE,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null,
             Arrays.asList(formattedName, familyName, givenName, middleName, honorificPrefix,
