@@ -772,7 +772,7 @@ public class IamProperties {
 
   private AarcProfile aarcProfile = new AarcProfile();
 
-@ValidDashboard
+  @ValidDashboard
   private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {
