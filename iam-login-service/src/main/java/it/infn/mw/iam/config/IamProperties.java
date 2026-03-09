@@ -21,17 +21,20 @@ import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Lists;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 
+import it.infn.mw.iam.api.client.management.validation.ValidDashboard;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.config.login.LoginButtonProperties;
 import it.infn.mw.iam.config.multi_factor_authentication.VerifyButtonProperties;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "iam")
 public class IamProperties {
 
@@ -599,10 +602,22 @@ public class IamProperties {
     }
   }
 
+  @Validated
+  @ConfigurationProperties(prefix = "app.dashboard")
   public static class DashboardProperties {
+
+    private boolean enabled = false;
     private String clientId;
     private String clientSecret;
     private String clientBaseUrl;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
 
     public String getClientId() {
       return clientId;
@@ -757,6 +772,7 @@ public class IamProperties {
 
   private AarcProfile aarcProfile = new AarcProfile();
 
+@ValidDashboard
   private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {

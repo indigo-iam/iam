@@ -190,6 +190,7 @@ iam:
     track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
   dashboard:
+    enabled: ${IAM_DASHBOARD_ENABLED:false}
     client-id: ${IAM_DASHBOARD_CLIENT_ID}
     client-secret: ${IAM_DASHBOARD_CLIENT_SECRET}
     client-base-url: ${IAM_DASHBOARD_CLIENT_BASE_URL}

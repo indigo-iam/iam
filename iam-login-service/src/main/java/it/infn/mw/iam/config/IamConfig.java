@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -43,6 +44,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -98,6 +100,7 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 @Configuration
+@EnableConfigurationProperties(DashboardProperties.class)
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
 
