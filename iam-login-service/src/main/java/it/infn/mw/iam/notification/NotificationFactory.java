@@ -26,6 +26,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.model.IamGroup;
 
 public interface NotificationFactory {
 
@@ -45,6 +46,9 @@ public interface NotificationFactory {
   IamEmailNotification createGroupMembershipApprovedMessage(IamGroupRequest groupRequest);
 
   IamEmailNotification createGroupMembershipRejectedMessage(IamGroupRequest groupRequest);
+
+  IamEmailNotification createGroupMembershipReminderMessage(IamGroup group,
+      List<IamGroupRequest> pendingRequests, List<String> recipients);
 
   IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
       List<IamAccount> accounts);
