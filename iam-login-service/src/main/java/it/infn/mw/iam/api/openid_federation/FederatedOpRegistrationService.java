@@ -70,13 +70,13 @@ public class FederatedOpRegistrationService {
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
       ClientRegistrationService clientRegistrationService,
-      OpenidFederationProperties oidFedProperties) {
+      OpenidFederationProperties oidFedProperties, RestTemplate restTemplate) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
     this.clientRegistrationService = clientRegistrationService;
     this.oidFedProperties = oidFedProperties;
-    this.restTemplate = new RestTemplate();
+    this.restTemplate = restTemplate;
   }
 
   public RegisteredClientDTO registerOp(String issuer) throws JOSEException, ParseException {
@@ -121,7 +121,7 @@ public class FederatedOpRegistrationService {
     List<String> selected = chainIssuers.stream().filter(configuredHints::contains).toList();
 
     if (selected.isEmpty()) {
-      throw new IllegalStateException("No valid authority_hints found for OP " + issuer);
+      throw new IllegalStateException("No valid authority_hints found for OP: " + issuer);
     }
 
     return selected;

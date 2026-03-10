@@ -30,12 +30,15 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.Audience;
+import com.nimbusds.oauth2.sdk.id.Issuer;
+import com.nimbusds.openid.connect.sdk.SubjectType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
 import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import net.minidev.json.JSONObject;
@@ -66,6 +69,33 @@ public class TrustChainTestFactory {
 
     if (metadata != null) {
       claims.setRPMetadata(metadata);
+    }
+    JSONObject federationMetadata = new JSONObject();
+    federationMetadata.put("organization_name", "Org");
+    if (fetchEndpoint != null) {
+      federationMetadata.put("federation_fetch_endpoint", fetchEndpoint);
+    }
+    claims.setMetadata(FederationMetadataType.FEDERATION_ENTITY, federationMetadata);
+    if (authorityHints != null && !authorityHints.isEmpty()) {
+      claims.setAuthorityHints(authorityHints);
+    }
+    if (audience != null) {
+      claims.setAudience(Audience.create(List.of(audience)));
+    }
+    return EntityStatement.sign(claims, key);
+  }
+
+  public static EntityStatement selfECForOp(String entity, Date iat, Date exp,
+      List<EntityID> authorityHints, String fetchEndpoint, OIDCProviderMetadata metadata,
+      String audience) throws JOSEException {
+    RSAKey key = keyFor(entity);
+    EntityID eid = new EntityID(entity);
+
+    EntityStatementClaimsSet claims =
+        new EntityStatementClaimsSet(eid, eid, iat, exp, new JWKSet(key.toPublicJWK()));
+
+    if (metadata != null) {
+      claims.setOPMetadata(metadata);
     }
     JSONObject federationMetadata = new JSONObject();
     federationMetadata.put("organization_name", "Org");
@@ -118,6 +148,29 @@ public class TrustChainTestFactory {
 
     // TA → RP ES
     EntityStatement taToRp = superiorES(ta, rp, now, exp);
+
+    // Build the TrustChain
+    return new TrustChain(rpEC, List.of(taToRp));
+  }
+
+  /** Minimum Trust Chain: OP → TA */
+  public static TrustChain createOpToTaChain(String aud, Set<ResponseType> responseTypes,
+      URI redirectUri, JWKSet jwkSet, URI jwksUri) throws JOSEException {
+    Date now = new Date();
+    Date exp = new Date(now.getTime() + 600000);
+
+    String op = "https://op.example.com";
+    String ta = "https://trust-anchor.sandbox.eosc.grnet.gr";
+
+    // OP self EC with authority_hint = TA
+    OIDCProviderMetadata clientMetadata =
+        new OIDCProviderMetadata(Issuer.parse(op), List.of(SubjectType.PUBLIC), jwksUri);
+    clientMetadata.setFederationRegistrationEndpointURI(URI.create(op + "/fedreg"));
+    EntityStatement rpEC =
+        selfECForOp(op, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
+
+    // TA → OP ES
+    EntityStatement taToRp = superiorES(ta, op, now, exp);
 
     // Build the TrustChain
     return new TrustChain(rpEC, List.of(taToRp));
