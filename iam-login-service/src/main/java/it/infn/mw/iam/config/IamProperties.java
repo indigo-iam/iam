@@ -609,7 +609,6 @@ public class IamProperties {
     private boolean enabled = false;
     private String clientId;
     private String clientSecret;
-    private String clientBaseUrl;
 
     public boolean isEnabled() {
       return enabled;
@@ -633,14 +632,6 @@ public class IamProperties {
 
     public void setClientSecret(String clientSecret) {
       this.clientSecret = clientSecret;
-    }
-
-    public String getClientBaseUrl() {
-      return clientBaseUrl;
-    }
-
-    public void setClientBaseUrl(String clientBaseUrl) {
-      this.clientBaseUrl = clientBaseUrl;
     }
   }
 

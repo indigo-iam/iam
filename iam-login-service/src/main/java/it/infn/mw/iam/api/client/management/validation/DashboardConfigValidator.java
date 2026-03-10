@@ -30,7 +30,6 @@ public class DashboardConfigValidator implements ConstraintValidator<ValidDashbo
 
   private static final String CLIENT_ID_REGEX = "^[a-zA-Z0-9\\-._~]{3,64}$";
   private static final String CLIENT_SECRET_REGEX = "^[a-zA-Z0-9\\-._~]{32,72}$";
-  private static final String URL_REGEX = "^(https?://)?([\\w.-]+)(:[0-9]+)?(/.*)?$";
 
   @Override
   public boolean isValid(DashboardProperties dashboardProperties, ConstraintValidatorContext context) {
@@ -41,9 +40,7 @@ public class DashboardConfigValidator implements ConstraintValidator<ValidDashbo
         && dashboardProperties.getClientId().matches(CLIENT_ID_REGEX);
     boolean validClientSecret = dashboardProperties.getClientSecret() != null
         && dashboardProperties.getClientSecret().matches(CLIENT_SECRET_REGEX);
-    boolean validUrl = dashboardProperties.getClientBaseUrl() != null
-        && dashboardProperties.getClientBaseUrl().matches(URL_REGEX);
 
-    return validClientId && validClientSecret && validUrl;
+    return validClientId && validClientSecret;
   }
 }

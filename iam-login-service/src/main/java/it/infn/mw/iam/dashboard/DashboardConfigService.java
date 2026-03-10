@@ -52,7 +52,7 @@ public class DashboardConfigService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
-  private static final String DASHBOARD_CALLBACK = "/api/auth/oauth2/callback/indigo-iam";
+  private static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
   Set<String> dashboardScopes = Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email",
       "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
@@ -66,10 +66,10 @@ public class DashboardConfigService {
   }
 
   @Transactional
-  public boolean initDashboardClient(DashboardProperties dashboardProperties) throws java.text.ParseException {
+  public boolean initDashboardClient(DashboardProperties dashboardProperties, String iamUrl) throws java.text.ParseException {
     String clientId = dashboardProperties.getClientId();
     String clientSecret = dashboardProperties.getClientSecret();
-    String url = dashboardProperties.getClientBaseUrl() + DASHBOARD_CALLBACK;
+    String url = iamUrl + DASHBOARD_CALLBACK;
 
     Optional<ClientDetailsEntity> test = iamClientDetailsRepository.findByClientId(clientId);
 

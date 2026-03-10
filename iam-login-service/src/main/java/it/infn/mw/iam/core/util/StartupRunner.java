@@ -32,10 +32,12 @@ public class StartupRunner implements ApplicationRunner {
 
   private final DashboardConfigService dashboardConfigService;
   private final IamProperties.DashboardProperties dashboardProperties;
+  private final String iamBaseUrl;
 
   public StartupRunner(DashboardConfigService dashboardConfigService, IamProperties iamProperties) {
     this.dashboardConfigService = dashboardConfigService;
     this.dashboardProperties = iamProperties.getDashboard();
+    this.iamBaseUrl = iamProperties.getBaseUrl();
   }
 
   @Override
@@ -47,7 +49,7 @@ public class StartupRunner implements ApplicationRunner {
     }
 
     try {
-      boolean recordExists = this.dashboardConfigService.initDashboardClient(dashboardProperties);
+      boolean recordExists = this.dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
       if (!recordExists) {
         throw new IllegalStateException(
             "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
