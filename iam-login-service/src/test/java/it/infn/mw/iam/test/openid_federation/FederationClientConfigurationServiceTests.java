@@ -53,7 +53,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-public class FederationClientConfigurationServiceTests {
+class FederationClientConfigurationServiceTests {
 
   @Autowired
   private MockMvc mvc;
@@ -95,9 +95,8 @@ public class FederationClientConfigurationServiceTests {
 
   @Test
   void testOpRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null, null,
-        URI.create("https://op.example.com/callback"), null,
-        URI.create("https://op.example.com/jwk"));
+    fakeChain =
+        TrustChainTestFactory.createOpToTaChain(null, URI.create("https://op.example.com/jwk"));
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
 
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();

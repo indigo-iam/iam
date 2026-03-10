@@ -154,8 +154,7 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: OP → TA */
-  public static TrustChain createOpToTaChain(String aud, Set<ResponseType> responseTypes,
-      URI redirectUri, JWKSet jwkSet, URI jwksUri) throws JOSEException {
+  public static TrustChain createOpToTaChain(String aud, URI jwksUri) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
