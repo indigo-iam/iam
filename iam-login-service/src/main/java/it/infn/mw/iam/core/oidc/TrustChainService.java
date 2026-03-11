@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oidc;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -25,6 +26,7 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 @Service
+@Profile("openid-federation")
 public class TrustChainService {
 
   private final TrustChainResolver resolver;

@@ -15,27 +15,16 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import javax.servlet.http.HttpServletResponse;
 
-@Component
-@Profile("openid-federation")
-public class StaticTrustAnchorRepository implements TrustAnchorRepository {
+import org.mitre.oauth2.model.ClientDetailsEntity;
 
-  private final Set<String> trustedAnchors;
+public interface AuthorizationClientResolver {
 
-  public StaticTrustAnchorRepository(
-      @Value("${openid-federation.trust-anchors}") List<String> anchors) {
-    this.trustedAnchors = new HashSet<>(anchors);
-  }
-
-  @Override
-  public boolean isTrusted(String entityId) {
-    return trustedAnchors.contains(entityId);
-  }
+  Optional<ClientDetailsEntity> resolveClient(String clientId, Map<String, String> params,
+      HttpServletResponse response) throws IOException;
 }
