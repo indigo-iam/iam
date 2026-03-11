@@ -91,12 +91,7 @@ public class DashboardConfigService {
     } else {
       LOG.info("The client record for dashboard does not exist. Creating record with default configuration...");
       RegisteredClientDTO client = new RegisteredClientDTO();
-      Set<String> clientScopes = Sets.newHashSet();
-      clientScopes.add(StandardClaimNames.PROFILE);
-      clientScopes.add(StandardClaimNames.EMAIL);
-      clientScopes.add(DefaultScopeFilter.ADMIN_SCOPES.toString());
-
-      client.setScope(clientScopes);
+      client.setScope(dashboardScopes);
       client.setClientId(clientId);
       client.setClientName("dashboard");
       client.setClientSecret(clientSecret);
