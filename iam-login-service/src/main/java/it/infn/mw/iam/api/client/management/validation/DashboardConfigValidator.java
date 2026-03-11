@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package it.infn.mw.iam.api.client.management.validation;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
@@ -22,13 +23,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.api.client.management.validation.ValidDashboard;
 
 @Component
 @Scope("prototype")
 public class DashboardConfigValidator implements ConstraintValidator<ValidDashboard, DashboardProperties> {
 
-  private static final String CLIENT_UUID_REGEX = "^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$";
+  private static final String CLIENT_ID_REGEX = "^[a-zA-Z0-9\\-._~]{4,256}$";
   private static final String CLIENT_SECRET_REGEX = "^[a-zA-Z0-9\\-._~]{32,72}$";
 
   @Override
@@ -37,7 +37,7 @@ public class DashboardConfigValidator implements ConstraintValidator<ValidDashbo
       return true;
     }
     boolean validClientId = dashboardProperties.getClientId() != null
-        && dashboardProperties.getClientId().matches(CLIENT_UUID_REGEX);
+        && dashboardProperties.getClientId().matches(CLIENT_ID_REGEX);
     boolean validClientSecret = dashboardProperties.getClientSecret() != null
         && dashboardProperties.getClientSecret().matches(CLIENT_SECRET_REGEX);
 

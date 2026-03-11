@@ -22,7 +22,7 @@ public class DashboardConfigValidatorTests {
   void setup() {
     dashboardProperties = new DashboardProperties();
     dashboardProperties.setEnabled(true);
-    dashboardProperties.setClientId("123e4567-e89b-12d3-a456-426655440000");
+    dashboardProperties.setClientId("client-dashboard");
     dashboardProperties.setClientSecret("0tlkqGPJD2vWN1dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
   }
 
@@ -32,63 +32,53 @@ public class DashboardConfigValidatorTests {
     dashboardProperties.setEnabled(false);
     dashboardProperties.setClientId(null);
     dashboardProperties.setClientSecret(null);
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertTrue(isValid);
+    assertTrue(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testDashboardPropertiesValid() {
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertTrue(isValid);
+    assertTrue(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardSecret() {
     dashboardProperties.setClientSecret("too-short-client-secret");
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertFalse(isValid);
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardSecretTooLong() {
     dashboardProperties.setClientSecret("too-long-client-secret-82gbV6OEwGBCPMmcFPXg5-4wRJXnKc-4wds5odwrFiY4wds5odwrF");
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertFalse(isValid);
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardSecretInvalidChars() {
     dashboardProperties.setClientSecret("0tlkqGPJD2vWN1/dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertFalse(isValid);
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardSecretInvalidNull() {
     dashboardProperties.setClientSecret(null);
-    boolean isValid = validator.isValid(dashboardProperties, context);
+    assertFalse(validator.isValid(dashboardProperties, context));
+  }
 
-    assertFalse(isValid);
+  @Test
+  void testIsNotValidDashboardSecretInvalidString() {
+    dashboardProperties.setClientSecret("");
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardClientIdInvalidUUID() {
-    dashboardProperties.setClientId("3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertFalse(isValid);
+    dashboardProperties.setClientId("client-dashboard!");
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 
   @Test
   void testIsNotValidDashboardClientIdNull() {
     dashboardProperties.setClientId(null);
-    boolean isValid = validator.isValid(dashboardProperties, context);
-
-    assertFalse(isValid);
+    assertFalse(validator.isValid(dashboardProperties, context));
   }
 }
