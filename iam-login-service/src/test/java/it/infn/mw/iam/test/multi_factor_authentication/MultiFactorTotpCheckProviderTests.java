@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.lockout.LoginLockoutService;
@@ -106,10 +110,13 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
     assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
+
+    verify(lockoutService).recordFailedAttempt("totp");
+    verify(lockoutService, never()).resetFailedAttempts(anyString());
   }
 
   @Test
-  void authenticateReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateResetsLockoutWhenTotpIsValid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -117,6 +124,20 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
     when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
 
     assertNotNull(multiFactorTotpCheckProvider.authenticate(token));
+
+    verify(lockoutService).resetFailedAttempts("totp");
+    verify(lockoutService, never()).recordFailedAttempt(anyString());
+  }
+
+  @Test
+  void authenticateThrowsLockedExceptionWhenSuspended() {
+    when(token.getTotp()).thenReturn("123456");
+    when(token.getName()).thenReturn("locked");
+    doThrow(new LockedException("Suspended")).when(lockoutService).checkIamAccountLockout("locked");
+
+    assertThrows(LockedException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+    verify(accountRepo, never()).findByUsername(anyString());
   }
 
   @Test

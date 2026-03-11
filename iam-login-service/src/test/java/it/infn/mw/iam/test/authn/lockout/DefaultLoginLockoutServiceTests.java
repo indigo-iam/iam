@@ -145,7 +145,6 @@ class DefaultLoginLockoutServiceTests {
     // Suspension expires again
     lockout.setSuspendedUntil(new Date(System.currentTimeMillis() - 1000));
     service.checkIamAccountLockout(USERNAME);
-
     // ROUND 3: 2 failures -> account disabled, row deleted
     service.recordFailedAttempt(USERNAME);
     service.recordFailedAttempt(USERNAME);
@@ -154,4 +153,44 @@ class DefaultLoginLockoutServiceTests {
     verify(accountRepo).save(account);
     verify(lockoutRepo).delete(lockout);
   }
+
+  @Test
+  void checkLockoutNoRecordIsNoop() {
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
+    assertDoesNotThrow(() -> service.checkIamAccountLockout(USERNAME));
+  }
+
+  @Test
+  void recordFailedAttemptUnknownUserIsNoop() {
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.empty());
+    service.recordFailedAttempt(USERNAME);
+    verify(lockoutRepo, never()).save(any());
+  }
+
+  @Test
+  void recordFailedAttemptInactiveAccountIsNoop() {
+    account.setActive(false);
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    service.recordFailedAttempt(USERNAME);
+    verify(lockoutRepo, never()).save(any());
+  }
+
+  @Test
+  void recordFailedAttemptWhileSuspendedIsNoop() {
+    IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
+    lockout.setSuspendedUntil(new Date(System.currentTimeMillis() + 60_000));
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
+
+    service.recordFailedAttempt(USERNAME);
+    verify(lockoutRepo, never()).save(any());
+  }
+
+  @Test
+  void resetNoRowIsNoop() {
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
+    service.resetFailedAttempts(USERNAME);
+    verify(lockoutRepo, never()).delete(any());
+  }
+
 }

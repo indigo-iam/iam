@@ -99,4 +99,17 @@ class IamLocalAuthenticationProviderTests {
         // Verify that super.authenticate was not called
         verify(iamLocalAuthenticationProvider, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
+
+  @Test
+  void resetCalledOnNonMfaSuccess() {
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("user", "cred");
+        token.setPreAuthenticated(true);
+        IamAccount account = newAccount("user");
+        when(accountRepo.findByUsername("user")).thenReturn(Optional.of(account));
+        when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+
+        iamLocalAuthenticationProvider.authenticate(token);
+
+        verify(lockoutService).resetFailedAttempts("user");
+    }
 }
