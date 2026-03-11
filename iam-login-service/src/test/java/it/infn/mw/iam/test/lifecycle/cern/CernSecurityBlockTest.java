@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.lifecycle.cern;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -31,6 +32,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 
 import java.lang.reflect.Method;
 
@@ -43,7 +47,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.time.Instant;
 import java.lang.reflect.Field; 
-import java.lang.reflect.Method; 
 import java.lang.reflect.InvocationTargetException;
 
 import org.junit.jupiter.api.AfterEach;
@@ -188,19 +191,6 @@ class CernSecurityBlockTest extends TestSupport
         
         svc = new DefaultCernSecurityBlockingService(rtf, props);
         
-        try {
-          Field cachedTokenField = DefaultCernSecurityBlockingService.class
-              .getDeclaredField("cachedToken");
-          cachedTokenField.setAccessible(true);
-          cachedTokenField.set(svc, "test-access-token");
-          
-          Field tokenExpiryField = DefaultCernSecurityBlockingService.class
-              .getDeclaredField("tokenExpiry");
-          tokenExpiryField.setAccessible(true);
-          tokenExpiryField.set(svc, java.time.Instant.now().plusSeconds(3600));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
     }
 
     @AfterEach
@@ -212,6 +202,18 @@ class CernSecurityBlockTest extends TestSupport
     
     private IamAccount loadAccount(String username) {
         return repo.findByUuid(username).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    }
+
+    private void primeToken(DefaultCernSecurityBlockingService service) throws Exception {
+      Field cachedTokenField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("cachedToken");
+      cachedTokenField.setAccessible(true);
+      cachedTokenField.set(service, "test-token");
+
+      Field tokenExpiryField = DefaultCernSecurityBlockingService.class
+          .getDeclaredField("tokenExpiry");
+      tokenExpiryField.setAccessible(true);
+      tokenExpiryField.set(service, java.time.Instant.now().plusSeconds(3600));
     }
 
     @Test
@@ -445,16 +447,27 @@ class CernSecurityBlockTest extends TestSupport
 
     @Test
     void testGetSecurityBlockingRecordSuccess() throws Exception {
+      primeToken(svc);
+
       VOPersonDTO voPerson = voPerson("12345");
       voPerson.setBlocked(false);
       
+      String url = String.format("%s%s", props.getBlocking().getAuthorizationUrl(),
+                                  "/api/v1.0/Identity/-/Query");
+      String personId = "testuser";
+      String patch = String.format("{\"operator\":\"Equals\",\"value\":\"%s\",\"property\":\"personId\"}",
+                                   personId);
+
       MockRestServiceServer mockServer = mockRtf.getMockServer();
       ObjectMapper om = new ObjectMapper();
-      mockServer.expect(MockRestRequestMatchers.anything())
+      mockServer.expect(requestTo(url))
+          .andExpect(method(POST))
+          .andExpect(content().contentType("application/json-patch+json"))
+          .andExpect(content().json(patch))
           .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(voPerson), 
               org.springframework.http.MediaType.APPLICATION_JSON));
       
-      Optional<VOPersonDTO> result = svc.getSecurityBlockingRecord("testuser");
+      Optional<VOPersonDTO> result = svc.getSecurityBlockingRecord(personId);
       
       mockServer.verify();
       assertTrue(result.isPresent());
@@ -462,25 +475,47 @@ class CernSecurityBlockTest extends TestSupport
     }
 
     @Test
-    void testGetSecurityBlockingRecordNotFound() {
+    void testGetSecurityBlockingRecordNotFound() throws Exception {
+      primeToken(svc);
+
+      String url = String.format("%s%s", props.getBlocking().getAuthorizationUrl(),
+                                  "/api/v1.0/Identity/-/Query");
+      String personId = "nonexistent";
+      String patch = String.format("{\"operator\":\"Equals\",\"value\":\"%s\",\"property\":\"personId\"}",
+                                   personId);
+
       MockRestServiceServer mockServer = mockRtf.getMockServer();
-      mockServer.expect(MockRestRequestMatchers.anything())
+      mockServer.expect(requestTo(url))
+          .andExpect(method(POST))
+          .andExpect(content().contentType("application/json-patch+json"))
+          .andExpect(content().json(patch))
           .andRespond(MockRestResponseCreators.withStatus(org.springframework.http.HttpStatus.NOT_FOUND));
       
-      Optional<VOPersonDTO> result = svc.getSecurityBlockingRecord("nonexistent");
+      Optional<VOPersonDTO> result = svc.getSecurityBlockingRecord(personId);
       
       mockServer.verify();
       assertFalse(result.isPresent());
     }
 
     @Test
-    void testGetSecurityBlockingRecordError() {
+    void testGetSecurityBlockingRecordError() throws Exception {
+      primeToken(svc);
+
+      String url = String.format("%s%s", props.getBlocking().getAuthorizationUrl(),
+                                  "/api/v1.0/Identity/-/Query");
+      String personId = "testuser";
+      String patch = String.format("{\"operator\":\"Equals\",\"value\":\"%s\",\"property\":\"personId\"}",
+                                   personId);
+
       MockRestServiceServer mockServer = mockRtf.getMockServer();
-      mockServer.expect(MockRestRequestMatchers.anything())
+      mockServer.expect(requestTo(url))
+          .andExpect(method(POST))
+          .andExpect(content().contentType("application/json-patch+json"))
+          .andExpect(content().json(patch))
           .andRespond(MockRestResponseCreators.withStatus(INTERNAL_SERVER_ERROR));
       
       CernSecurityBlockingError exception = assertThrows(CernSecurityBlockingError.class, () -> {
-        svc.getSecurityBlockingRecord("testuser");
+        svc.getSecurityBlockingRecord(personId);
       });
       
       mockServer.verify();
@@ -560,7 +595,7 @@ class CernSecurityBlockTest extends TestSupport
       tokenExpiryField.setAccessible(true);
       tokenExpiryField.set(freshSvc, java.time.Instant.now().plusSeconds(3600));
       
-      java.lang.reflect.Method getAccessToken = DefaultCernSecurityBlockingService.class
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
           .getDeclaredMethod("getAccessToken");
       getAccessToken.setAccessible(true);
       String token = (String) getAccessToken.invoke(freshSvc);
@@ -657,7 +692,7 @@ class CernSecurityBlockTest extends TestSupport
           .andRespond(MockRestResponseCreators.withSuccess(om.writeValueAsString(tokenResponse),
               APPLICATION_JSON));
       
-      java.lang.reflect.Method getAccessToken = DefaultCernSecurityBlockingService.class
+      Method getAccessToken = DefaultCernSecurityBlockingService.class
           .getDeclaredMethod("getAccessToken");
       getAccessToken.setAccessible(true);
       String token = (String) getAccessToken.invoke(freshSvc);
@@ -671,6 +706,7 @@ class CernSecurityBlockTest extends TestSupport
       Instant endTimeWithoutGrace = Instant.now().plusSeconds(3600L);
       Instant endTimeWithGrace = Instant.now().plusSeconds(3600L - 60L);
       
+
       assertTrue(expiry.isBefore(endTimeWithoutGrace));
       assertTrue(expiry.isAfter(endTimeWithGrace.minusSeconds(2)));
       

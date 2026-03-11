@@ -26,13 +26,13 @@ import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 public interface CernSecurityBlockingApiService {
 
   /**
-   * Returns an @Optional object that contains the @VOPersonDTO related to the CERN username
+   * Returns an @Optional object that contains the @VOPersonDTO related to the CERN personId
    * provided as parameter or empty if not found.
    * 
-   * @param userName
+   * @param personId
    * @return
    * @throws RestClientException in case of ApiErrors
    */
-  Optional<VOPersonDTO> getSecurityBlockingRecord(String userName) throws RestClientException;
+  Optional<VOPersonDTO> getSecurityBlockingRecord(String personId) throws RestClientException;
 
 }

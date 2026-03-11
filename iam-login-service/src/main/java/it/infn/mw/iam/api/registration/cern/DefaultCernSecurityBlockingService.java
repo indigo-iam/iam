@@ -42,7 +42,7 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
 
     public static final Logger LOG = LoggerFactory.getLogger(DefaultCernSecurityBlockingService.class);
     
-    public static final String IDENTITY_API_PATH_TEMPLATE = "/api-access/token/Identity/";
+    public static final String QUERY_API_PATH = "/api/v1.0/Identity/-/Query";
 
     private String cachedToken;
     private Instant tokenExpiry;
@@ -111,19 +111,25 @@ public class DefaultCernSecurityBlockingService implements CernSecurityBlockingA
     }
 
     @Override
-    public Optional<VOPersonDTO> getSecurityBlockingRecord(String username) {
+    public Optional<VOPersonDTO> getSecurityBlockingRecord(String personId) {
         RestTemplate restTemplate = rtFactory.newRestTemplate();
 
         String url = String.format("%s%s", properties.getBlocking().getAuthorizationUrl(),
-                                String.format(IDENTITY_API_PATH_TEMPLATE, username));
+                                QUERY_API_PATH);
 
-        LOG.debug("Checking security blocking for person {} at URL {}", username, url);
+        LOG.debug("Checking security blocking for person {} with query at URL {}", personId, url);
+
+        String data = String.format("{\"operator\":\"Equals\",\"value\":\"%s\",\"property\":\"personId\"}",
+                                     personId);
+
+        HttpHeaders headers = buildAuthHeaders();
+        headers.setContentType(org.springframework.http.MediaType.valueOf("application/json-patch+json"));
 
         try {
             ResponseEntity<VOPersonDTO> response = restTemplate.exchange(
                     url,
-                    HttpMethod.GET,
-                    new HttpEntity<>(buildAuthHeaders()),
+                    HttpMethod.POST,
+                    new HttpEntity<>(data, headers),
                     VOPersonDTO.class
             );
             return Optional.ofNullable(response.getBody());

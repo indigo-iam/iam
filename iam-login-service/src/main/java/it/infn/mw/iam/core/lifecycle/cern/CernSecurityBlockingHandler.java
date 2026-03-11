@@ -28,6 +28,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
 
 import it.infn.mw.iam.api.registration.cern.CernSecurityBlockingApiService;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
@@ -50,6 +52,9 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
     private final CernSecurityBlockingApiService cernSecurityBlockingApiService;
     public static final String BLOCKED_MESSAGE = "Account is blocked at CERN";
     public static final String SYNCHRONIZED_MESSAGE ="Account's membership to the experiment synchronized";
+    public static final String INVALID_ACCOUNT_MESSAGE = "Account has not the mandatory CERN person id label";
+    public static final String LABEL_STATUS = "status";
+    public static final String MISSING_STATUS_LABEL = "Account has not the mandatory CERN status label";
 
     public CernSecurityBlockingHandler(CernProperties cernProperties, IamAccountRepository accountRepo,
         IamAccountService accountService, CernSecurityBlockingApiService  cernSecurityBlockingApiService) {
@@ -73,34 +78,31 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
 
     public void handleAccount(IamAccount a) {
         
-        String username = a.getUsername();
-        LOG.debug("Handling IAM account (username: {} , uuid: {})", username, a.getUuid());
+        String personId = getCernPersonId(a);
+        LOG.debug("Handling IAM account (username: {} , uuid: {})", personId, a.getUuid());
         
         Optional<VOPersonDTO> voPerson = Optional.empty();
         try {
-
-            voPerson = cernSecurityBlockingApiService.getSecurityBlockingRecord(username);
-            LOG.debug("Received security blocking information for account with username: {} , blocking status: {}, active: {}", username, voPerson.isPresent() ? voPerson.get().getBlocked() : "No record found", a.isActive());
+            voPerson = cernSecurityBlockingApiService.getSecurityBlockingRecord(personId);
+            LOG.debug("Received security blocking information for account with personID: {} , blocking status: {}, active: {}", personId, voPerson.isPresent() ? voPerson.get().getBlocked() : "No record found", a.isActive());
         } catch (CernSecurityBlockingError e) {
             LOG.error("Error contacting CERN Authorization api: {}", e.getMessage(), e);
             return;
         }
 
-        if (a.isActive()) {
-            if (voPerson.isPresent() && voPerson.get().getBlocked()) {
-                LOG.info("Account with username: {} is active but blocked in CERN, disabling account", username);
-                disableAccount(a);
-            } else {
-                LOG.debug("Account with username: {} is active and not blocked in CERN, no action needed", username);
-            }
-        } else {
-            if (voPerson.isPresent() && voPerson.get().getBlocked()) {
-                LOG.debug("Account with username: {} is already disabled and blocked in CERN, no action needed", username);
-            } else {
-                LOG.info("Account with username: {} is disabled but not blocked in CERN, setting status label to ACTIVE", username);
-                restoreAccount(a);
-                setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
-            }
+        if (!voPerson.isPresent()) {
+            LOG.warn("Account with personID: {} has no security blocking information in CERN", personId);
+            return;
+        }
+
+        if (a.isActive() && voPerson.get().getBlocked()) {
+            LOG.info("Account with personID: {} is active but blocked in CERN, disabling account", personId);
+            disableAccount(a);
+        }
+
+        if (!a.isActive() && !voPerson.get().getBlocked() && getBlockingLabel(a).equals(CernStatus.BLOCKED.name())){
+            LOG.info("Account with personID: {} is disabled but not blocked in CERN, setting status label to ACTIVE", personId);
+            restoreAccount(a);
         }
     }
 
@@ -146,6 +148,17 @@ public class CernSecurityBlockingHandler implements Runnable, SchedulingConfigur
     }
     private void restoreAccount(IamAccount a) {
         accountService.restoreAccount(a);
-  }
-
+        setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
+    }
+    private String getCernPersonId(IamAccount a) {
+        Optional<IamLabel> cernPersonIdLabel =
+            a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, cernProperties.getPersonIdClaim());
+        Assert.isTrue(cernPersonIdLabel.isPresent(), INVALID_ACCOUNT_MESSAGE);
+        return cernPersonIdLabel.get().getValue();
+    }
+    private String getBlockingLabel(IamAccount a) {
+        Optional<IamLabel> cernStatusLabel = a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        Assert.isTrue(cernStatusLabel.isPresent(), INVALID_ACCOUNT_MESSAGE);
+        return cernStatusLabel.get().getValue();
+    }
 }
