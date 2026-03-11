@@ -60,15 +60,17 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Profile("openid-federation")
 public class FederationAuthorizationClientResolver implements AuthorizationClientResolver {
 
+  public static final String INVALID_REQUEST_ERROR = "invalid_request";
+  public static final String INVALID_CLIENT_METADATA_ERROR = "invalid_client_metadata";
+  public static final String INVALID_REQUEST_OBJECT_ERROR = "invalid_request_object";
+
   private final IamClientRepository clientRepo;
   private final DefaultClientManagementService clientManagementService;
   private final TrustChainService trustChainService;
   private final AutomaticClientRegistrationMapper clientMapper;
 
-  public FederationAuthorizationClientResolver(
-      IamClientRepository clientRepo,
-      DefaultClientManagementService clientManagementService,
-      TrustChainService trustChainService,
+  public FederationAuthorizationClientResolver(IamClientRepository clientRepo,
+      DefaultClientManagementService clientManagementService, TrustChainService trustChainService,
       AutomaticClientRegistrationMapper clientMapper) {
 
     this.clientRepo = clientRepo;
@@ -78,9 +80,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
   }
 
   @Override
-  public Optional<ClientDetailsEntity> resolveClient(
-      String clientId,
-      Map<String, String> params,
+  public Optional<ClientDetailsEntity> resolveClient(String clientId, Map<String, String> params,
       HttpServletResponse response) throws IOException {
 
     if (clientId == null) {
@@ -109,7 +109,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
           || url.getHost().isEmpty() || url.getQuery() != null || url.getRef() != null) {
 
         OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-            "invalid_request", "Entity ID URL is not compliant");
+            INVALID_REQUEST_ERROR, "Entity ID URL is not compliant");
 
         return false;
       }
@@ -119,7 +119,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
     } catch (MalformedURLException e) {
 
       OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_request", "Malformed Entity ID URL");
+          INVALID_REQUEST_ERROR, "Malformed Entity ID URL");
 
       return false;
     }
@@ -133,7 +133,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
     if (requestObj == null) {
 
       OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_request", "Missing request object");
+          INVALID_REQUEST_ERROR, "Missing request object");
 
       return Optional.empty();
     }
@@ -239,7 +239,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
     if (rpMetadata == null) {
 
-      OAuthError.sendAuthenticationError(response, null, null, "invalid_client_metadata",
+      OAuthError.sendAuthenticationError(response, null, null, INVALID_CLIENT_METADATA_ERROR,
           "Missing openid_relying_party metadata");
 
       return false;
@@ -271,11 +271,12 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
         }
 
       } catch (JOSEException ignored) {
+        // ignore exception
       }
     }
 
     OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-        "invalid_request_object", "Invalid signature on request object");
+        INVALID_REQUEST_OBJECT_ERROR, "Invalid signature on request object");
 
     return false;
   }
@@ -293,7 +294,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
       } catch (Exception e) {
 
-        OAuthError.sendAuthenticationError(response, null, null, "invalid_client_metadata",
+        OAuthError.sendAuthenticationError(response, null, null, INVALID_CLIENT_METADATA_ERROR,
             "Unable to fetch JWKS from RP's jwks_uri");
 
         return Optional.empty();
@@ -302,7 +303,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
     if (jwkSet == null) {
 
-      OAuthError.sendAuthenticationError(response, null, null, "invalid_client_metadata",
+      OAuthError.sendAuthenticationError(response, null, null, INVALID_CLIENT_METADATA_ERROR,
           "No JWKS or jwks_uri provided by RP");
 
       return Optional.empty();

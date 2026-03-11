@@ -30,6 +30,10 @@ import com.google.common.base.Strings;
 
 public class OAuthError {
 
+  private OAuthError() {
+    // Add a private constructor to hide the implicit public one.
+  }
+
   public static void sendAuthenticationError(HttpServletResponse response, String redirectUri,
       String state, String error, String description) throws IOException {
 
