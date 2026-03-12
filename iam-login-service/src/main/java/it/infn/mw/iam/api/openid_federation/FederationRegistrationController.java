@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidRequest;
+
 import java.text.ParseException;
 import java.util.Optional;
 
@@ -40,8 +42,7 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.oidc.ExplicitClientRegistrationMapper;
 import it.infn.mw.iam.core.oidc.FederationError;
-import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
-import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
@@ -75,14 +76,14 @@ public class FederationRegistrationController {
       consumes = "application/entity-statement+jwt",
       produces = "application/explicit-registration-response+jwt")
   public ResponseEntity<String> register(@RequestBody String requestJwt)
-      throws ParseException, JOSEException {
+      throws FederationException, ParseException, JOSEException {
 
     // 1. Parse request Entity Statement (self-signed EC of the RP)
     EntityStatement rpRequest;
     try {
       rpRequest = EntityStatement.parse(requestJwt);
     } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-      throw (ParseException) e.getCause();
+      throw invalidRequest(e.getMessage());
     }
 
     Optional<ClientDetailsEntity> existingClient =
@@ -90,7 +91,7 @@ public class FederationRegistrationController {
 
     // 2. Verify that aud == issuer (OP)
     if (!issuer.equals(rpRequest.getClaimsSet().getAudience().get(0).getValue())) {
-      throw new InvalidTrustChainException("invalid_request", "Invalid audience");
+      throw invalidRequest("Invalid audience");
     }
 
     // 3. Resolve and validate trust chain starting from received EC
@@ -130,14 +131,8 @@ public class FederationRegistrationController {
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidTrustChainException.class)
-  public FederationError handleTrustChainException(InvalidTrustChainException e) {
-    return new FederationError(e.getErrorCode(), e.getMessage());
-  }
-
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidClientMetadataException.class)
-  public FederationError handleClientMetadataException(InvalidClientMetadataException e) {
+  @ExceptionHandler(FederationException.class)
+  public FederationError handleFederationExceptions(FederationException e) {
     return new FederationError(e.getErrorCode(), e.getMessage());
   }
 }

@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidClientMetadata;
+import static it.infn.mw.iam.core.oidc.FederationException.invalidRedirectUri;
+
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Optional;
@@ -37,7 +40,8 @@ public abstract class BaseFedClientRegistrationMapper {
 
   private static final Logger log = LoggerFactory.getLogger(BaseFedClientRegistrationMapper.class);
 
-  public RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest) {
+  public RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
+      throws FederationException {
 
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
@@ -79,15 +83,17 @@ public abstract class BaseFedClientRegistrationMapper {
     dto.setGrantTypes(grantTypes);
   }
 
-  protected void setRedirectUris(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
+  protected void setRedirectUris(RegisteredClientDTO dto, OIDCClientMetadata metadata)
+      throws FederationException {
     if (metadata.getRedirectionURIs() == null || metadata.getRedirectionURIs().isEmpty()) {
-      throw new InvalidClientMetadataException("invalid_redirect_uri", "Missing redirect URIs");
+      throw invalidRedirectUri("Missing redirect URIs");
     }
     dto.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
   }
 
-  protected void setResponseTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
+  protected void setResponseTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata)
+      throws FederationException {
     Set<String> supportedResponseTypes =
         Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
     if (metadata.getResponseTypes() != null) {
@@ -98,8 +104,7 @@ public abstract class BaseFedClientRegistrationMapper {
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet());
       if (responseTypes.isEmpty()) {
-        throw new InvalidClientMetadataException("invalid_client_metadata",
-            "Unsupported response type");
+        throw invalidClientMetadata("Unsupported response type");
       }
       dto.setResponseTypes(responseTypes);
     } else {

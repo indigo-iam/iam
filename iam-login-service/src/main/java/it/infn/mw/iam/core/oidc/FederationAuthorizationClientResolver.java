@@ -15,13 +15,13 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.REDIRECT_URI;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,6 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.OctetKeyPair;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
@@ -170,13 +169,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
       return clientRepo.findByClientId(clientId);
 
-    } catch (InvalidClientMetadataException e) {
-
-      if (!response.isCommitted()) {
-        OAuthError.sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
-      }
-
-    } catch (InvalidTrustChainException e) {
+    } catch (FederationException e) {
 
       if (!response.isCommitted()) {
         OAuthError.sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
@@ -193,7 +186,7 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
   }
 
   private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)
-      throws BadJOSEException, JOSEException, ParseException {
+      throws FederationException {
 
     Object trustChainObj = claims.getClaim("trust_chain");
 
@@ -208,17 +201,15 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
       for (String jwtString : trustChainStrings) {
 
-        SignedJWT signedJWT = SignedJWT.parse(jwtString);
-
         EntityStatement entityStatement;
 
         try {
 
-          entityStatement = EntityStatement.parse(signedJWT);
+          entityStatement = EntityStatement.parse(jwtString);
 
         } catch (com.nimbusds.oauth2.sdk.ParseException e) {
 
-          throw (ParseException) e.getCause();
+          throw invalidTrustChain(e.getMessage(), e);
         }
 
         trustChain.add(entityStatement);
