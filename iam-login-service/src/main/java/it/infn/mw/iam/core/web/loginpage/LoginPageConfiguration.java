@@ -69,4 +69,6 @@ public interface LoginPageConfiguration {
   boolean isDefaultLoginPageLayout();
 
   List<ExternalAuthnOptions> getExternalAuthnOptionsOrder();
+
+  boolean isMultiFactorMandatory();
 }

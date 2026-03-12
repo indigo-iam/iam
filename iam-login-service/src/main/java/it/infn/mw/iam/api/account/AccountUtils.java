@@ -66,6 +66,11 @@ public class AccountUtils {
     return account.getAuthorities().contains(ROLE_ADMIN);
   }
 
+  public boolean isPreAuthenticated() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return isPreAuthenticated(auth);
+  }
+
   public boolean isPreAuthenticated(Authentication auth) {
     if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;

@@ -22,12 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
@@ -42,11 +47,14 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.qr.QrData;
+import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
@@ -80,6 +88,15 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Mock
   private IamTotpMfaProperties iamTotpMfaProperties;
+  
+  @Mock
+  private QrGenerator qrGenerator;
+
+  @Mock
+  private IamProperties iamProperties;
+
+  @Mock
+  private IamProperties.Organisation organisation;
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -96,7 +113,7 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     lenient().when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        codeVerifier, eventPublisher, iamTotpMfaProperties);
+        codeVerifier, eventPublisher, iamTotpMfaProperties, qrGenerator, iamProperties);
   }
 
   @AfterEach
@@ -274,6 +291,40 @@ class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
     assertFalse(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  void generateQRCodeFromSecretSuccess() throws Exception {
+    
+    String secret = "JBSWY3DPEHPK3PXP";
+    String username = "alice@example.com";
+    byte[] pngBytes = "PNG_IMAGE_BYTES".getBytes(StandardCharsets.UTF_8);
+    when(qrGenerator.generate(any(QrData.class))).thenReturn(pngBytes);
+    when(qrGenerator.getImageMimeType()).thenReturn("image/png");
+    when(iamProperties.getOrganisation()).thenReturn(organisation);
+    when(organisation.getName()).thenReturn("Test Corp");
+
+    
+    String dataUri = service.generateQRCodeFromSecret(secret, username);
+
+    ArgumentCaptor<QrData> dataCaptor = ArgumentCaptor.forClass(QrData.class);
+    verify(qrGenerator).generate(dataCaptor.capture());
+    QrData built = dataCaptor.getValue();
+
+    
+    assertThat(built.getLabel()).isEqualTo(username);
+    assertThat(built.getSecret()).isEqualTo(secret);
+    assertThat(built.getIssuer()).isEqualTo("INDIGO IAM" + " - " + "Test Corp");
+    assertThat(built.getAlgorithm()).isEqualTo("SHA1");
+    assertThat(built.getDigits()).isEqualTo(6);
+    assertThat(built.getPeriod()).isEqualTo(30);
+
+    assertThat(dataUri).startsWith("data:image/png;base64,");
+    String base64Part = dataUri.substring("data:image/png;base64,".length());
+    assertThat(Base64.getDecoder().decode(base64Part)).isEqualTo(pngBytes);
+
+    verify(qrGenerator, times(1)).generate(any(QrData.class));
+    verify(qrGenerator, times(1)).getImageMimeType();
   }
 
 }

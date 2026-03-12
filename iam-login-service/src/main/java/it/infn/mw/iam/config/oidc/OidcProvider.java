@@ -31,22 +31,24 @@ public class OidcProvider {
 
   @NotBlank
   private String name;
-  
+
   @NotBlank
   private String issuer;
-  
+
+  private Boolean allowProxiedIntrospection = false;
+
   @Valid
   @JsonIgnore
   private OidcClient client;
-  
+
   @Valid
   private LoginButtonProperties loginButton;
 
   private boolean enabled = true;
-  
+
   @Valid
   private ValidatorProperties validator;
-  
+
   public String getName() {
     return name;
   }
@@ -61,6 +63,14 @@ public class OidcProvider {
 
   public void setIssuer(String issuer) {
     this.issuer = issuer;
+  }
+
+  public Boolean isAllowProxiedIntrospection() {
+    return allowProxiedIntrospection;
+  }
+
+  public void setAllowProxiedIntrospection(Boolean allowProxiedIntrospection) {
+    this.allowProxiedIntrospection = allowProxiedIntrospection;
   }
 
   public OidcClient getClient() {
@@ -94,5 +104,5 @@ public class OidcProvider {
   public void setValidator(ValidatorProperties validator) {
     this.validator = validator;
   }
-  
+
 }
