@@ -16,35 +16,23 @@
 
 package it.infn.mw.iam.dashboard;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopeFilter;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
-
-import com.beust.jcommander.internal.Sets;
 
 @Service
 public class DashboardConfigService {
