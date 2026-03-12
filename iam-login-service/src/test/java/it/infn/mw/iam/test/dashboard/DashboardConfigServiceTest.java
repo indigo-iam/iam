@@ -1,30 +1,49 @@
+/**
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package it.infn.mw.iam.test.dashboard;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 
 import java.text.ParseException;
 import java.util.Set;
+
+import javax.transaction.Transactional;
+
 import com.google.common.collect.Sets;
 
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest(classes = { IamLoginService.class })
+@Transactional
 public class DashboardConfigServiceTest {
 
   private static final String CLIENT_ID = "dashboard-client";
@@ -37,14 +56,11 @@ public class DashboardConfigServiceTest {
 
   private ClientDetailsEntity client;
 
-  @InjectMocks
+  @Autowired
   private DashboardConfigService dashboardConfigService;
 
-  @Mock
+  @Autowired
   private IamClientRepository iamClientDetailsRepository;
-
-  @Mock
-  private DefaultClientManagementService clientService;
 
   @BeforeEach
   void setUp() {
@@ -93,6 +109,50 @@ public class DashboardConfigServiceTest {
     properties.setClientSecret(CLIENT_SECRET);
 
     assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+  }
+
+  @Test
+  void testInitDashboardClientFail() throws ParseException {
+    DashboardProperties properties = new DashboardProperties();
+    properties.setClientId(CLIENT_ID);
+    properties.setClientSecret(CLIENT_SECRET);
+    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+  }
+
+  @Test
+  void testInitDashboardClientInsertDashboard() throws ParseException {
+    assertThat(iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").isPresent(), is(false));
+
+    DashboardProperties properties = new DashboardProperties();
+    properties.setClientId(CLIENT_ID + "-new");
+    properties.setClientSecret(CLIENT_SECRET);
+
+    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+
+    iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").ifPresentOrElse(c -> {
+      assertEquals(c.getClientId(), CLIENT_ID + "-new");
+      assertEquals(c.getScope(), client.getScope());
+    }, () -> {
+      throw new AssertionError("Client not found");
+    });
+  }
+
+  @Test
+  void testInitDashboardClientUpdateDashboard() throws ParseException {
+    assertThat(iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").isPresent(), is(false));
+
+    DashboardProperties properties = new DashboardProperties();
+    properties.setClientId(CLIENT_ID);
+    properties.setClientSecret(CLIENT_SECRET);
+
+    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+
+    iamClientDetailsRepository.findByClientId(CLIENT_ID).ifPresentOrElse(c -> {
+      assertEquals(c.getClientId(), CLIENT_ID);
+      assertEquals(c.getScope(), client.getScope());
+    }, () -> {
+      throw new AssertionError("Client not found");
+    });
   }
 
   private ClientDetailsEntity createClientDashboard(String clientId, String clientSecret,

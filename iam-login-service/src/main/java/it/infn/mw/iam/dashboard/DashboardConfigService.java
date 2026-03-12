@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
-import org.springframework.transaction.annotation.Transactional;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -65,7 +64,6 @@ public class DashboardConfigService {
     this.iamClientDetailsRepository = iamClientDetailsRepository;
   }
 
-  @Transactional
   public boolean initDashboardClient(DashboardProperties dashboardProperties, String iamUrl) throws java.text.ParseException {
     String clientId = dashboardProperties.getClientId();
     String clientSecret = dashboardProperties.getClientSecret();
