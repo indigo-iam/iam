@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,43 +39,62 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpEntity;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(
+    classes = {IamLoginService.class, FederationClientConfigurationServiceTests.TestConfig.class},
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
 class FederationClientConfigurationServiceTests {
 
-  @Autowired
-  private MockMvc mvc;
+  @TestConfiguration
+  public static class TestConfig {
+    @Bean
+    @Primary
+    RestTemplateFactory mockRestTemplateFactory() {
+      return new MockRestTemplateFactory();
+    }
+  }
 
   @Autowired
-  private ClientConfigurationService clientConfigurationService;
+  MockMvc mvc;
 
   @Autowired
-  private IamClientRepository clientRepo;
+  ClientConfigurationService clientConfigurationService;
+
+  @Autowired
+  IamClientRepository clientRepo;
+
+  @Autowired
+  RestTemplateFactory rtf;
 
   @MockBean
-  private RestTemplate restTemplate;
-
-  @MockBean
-  private ServerConfigurationService serverConfigurationService;
+  ServerConfigurationService serverConfigurationService;
 
   @MockBean
   TrustChainService trustChainService;
 
   TrustChain fakeChain;
+
+  MockRestTemplateFactory mockRtf;
 
   @BeforeEach
   void setup() {
@@ -86,6 +107,8 @@ class FederationClientConfigurationServiceTests {
 
     when(serverConfigurationService.getServerConfiguration("https://op.example.com"))
       .thenReturn(sc);
+
+    mockRtf = (MockRestTemplateFactory) rtf;
   }
 
   @Test
@@ -102,8 +125,10 @@ class FederationClientConfigurationServiceTests {
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
-    when(restTemplate.postForObject(any(URI.class), any(HttpEntity.class), eq(String.class)))
-      .thenReturn(rpJwt);
+    mockRtf.getMockServer()
+      .expect(requestTo("https://op.example.com/fedreg"))
+      .andExpect(method(HttpMethod.POST))
+      .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());

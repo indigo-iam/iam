@@ -47,6 +47,7 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.oidc.ExplicitRegistrationEntityStatementBuilder;
 import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
@@ -70,13 +71,13 @@ public class FederatedOpRegistrationService {
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
       ClientRegistrationService clientRegistrationService,
-      OpenidFederationProperties oidFedProperties, RestTemplate restTemplate) {
+      OpenidFederationProperties oidFedProperties, RestTemplateFactory restTemplateFactory) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
     this.clientRegistrationService = clientRegistrationService;
     this.oidFedProperties = oidFedProperties;
-    this.restTemplate = restTemplate;
+    this.restTemplate = restTemplateFactory.newRestTemplate();
   }
 
   public RegisteredClientDTO registerOp(String issuer) throws JOSEException, ParseException {
