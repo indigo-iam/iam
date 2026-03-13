@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Sets;
+import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.management.validation.ClientIdAvailable;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
@@ -257,8 +258,8 @@ public class RegisteredClientDTO {
   private String entityId;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  @Size(max = 2048, groups = {OnClientCreation.class, OnClientUpdate.class})
+      ClientViews.DynamicRegistration.class})
+  @Size(max = 65535, groups = {OnClientCreation.class, OnClientUpdate.class})
   private String jwk;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
@@ -284,6 +285,10 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String statusChangedBy;
+
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  private JWSAlgorithm requestObjectSigningAlgorithm;
 
   public String getClientId() {
     return clientId;
@@ -588,5 +593,13 @@ public class RegisteredClientDTO {
 
   public String getStatusChangedBy() {
     return statusChangedBy;
+  }
+
+  public JWSAlgorithm getRequestObjectSigningAlgorithm() {
+    return requestObjectSigningAlgorithm;
+  }
+
+  public void setRequestObjectSigningAlgorithm(JWSAlgorithm requestObjectSigningAlgorithm) {
+    this.requestObjectSigningAlgorithm = requestObjectSigningAlgorithm;
   }
 }

@@ -82,6 +82,11 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
+import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
+import it.infn.mw.iam.core.oidc.LoginHintService;
+import it.infn.mw.iam.core.oidc.MaxAgeService;
+import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
@@ -341,4 +346,12 @@ public class IamConfig {
     return cs;
   }
 
+  @Bean
+  AuthorizationRequestFilter authorizationRequestFilter(AuthorizationClientResolver clientResolver,
+      LoginHintService loginHintService,
+      PromptService promptService,
+      MaxAgeService maxAgeService) {
+    return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
+        maxAgeService);
+  }
 }

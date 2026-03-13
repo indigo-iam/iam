@@ -137,9 +137,10 @@ public class EntityConfigurationBuilder {
     opMetadata.put("registration_endpoint", wellKnownInfo.get("registration_endpoint"));
     opMetadata.put("scopes_supported", wellKnownInfo.get("scopes_supported"));
     opMetadata.put("claims_supported", wellKnownInfo.get("claims_supported"));
-    opMetadata.put("client_registration_types_supported", List.of("explicit"));
+    opMetadata.put("client_registration_types_supported", List.of("explicit", "automatic"));
     opMetadata.put("federation_registration_endpoint",
         URI.create(iamProperties.getBaseUrl()).resolve("/iam/api/oid-fed/client-registration"));
+    opMetadata.put("request_uri_parameter_supported", false);
     return opMetadata;
   }
 

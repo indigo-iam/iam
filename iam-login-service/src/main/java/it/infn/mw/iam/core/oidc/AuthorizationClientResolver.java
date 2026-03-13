@@ -15,17 +15,16 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-public class InvalidClientMetadataException extends RuntimeException {
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
-  private static final long serialVersionUID = 1L;
-  private final String errorCode;
+import javax.servlet.http.HttpServletResponse;
 
-  public InvalidClientMetadataException(String errorCode, String message) {
-    super(message);
-    this.errorCode = errorCode;
-  }
+import org.mitre.oauth2.model.ClientDetailsEntity;
 
-  public String getErrorCode() {
-    return errorCode;
-  }
+public interface AuthorizationClientResolver {
+
+  Optional<ClientDetailsEntity> resolveClient(String clientId, Map<String, String> params,
+      HttpServletResponse response) throws IOException;
 }
