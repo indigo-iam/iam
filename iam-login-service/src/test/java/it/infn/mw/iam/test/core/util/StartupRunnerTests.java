@@ -20,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.text.ParseException;
+import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.ApplicationArguments;
@@ -39,6 +40,7 @@ import it.infn.mw.iam.dashboard.DashboardConfigService;
   "iam.dashboard.enabled=true"
 // @formatter:on
     })
+@Transactional
 public class StartupRunnerTests {
 
   @SpyBean
