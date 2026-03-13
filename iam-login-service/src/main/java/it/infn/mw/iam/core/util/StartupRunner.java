@@ -23,6 +23,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
 @Component
@@ -31,7 +32,7 @@ public class StartupRunner implements ApplicationRunner {
   private static final Logger LOG = LoggerFactory.getLogger(StartupRunner.class);
 
   private final DashboardConfigService dashboardConfigService;
-  private final IamProperties.DashboardProperties dashboardProperties;
+  private final DashboardProperties dashboardProperties;
   private final String iamBaseUrl;
 
   public StartupRunner(DashboardConfigService dashboardConfigService, IamProperties iamProperties) {
@@ -49,7 +50,7 @@ public class StartupRunner implements ApplicationRunner {
     }
 
     try {
-      boolean recordExists = this.dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
+      boolean recordExists = dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
       if (!recordExists) {
         throw new IllegalStateException(
             "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
