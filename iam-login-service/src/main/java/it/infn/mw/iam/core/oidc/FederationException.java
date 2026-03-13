@@ -43,10 +43,6 @@ public class FederationException extends Exception {
     return new FederationException(INVALID_CLIENT_METADATA, message);
   }
 
-//  public static FederationException invalidClientMetadata(String message, Throwable cause) {
-//    return new FederationException(INVALID_CLIENT_METADATA, message, cause);
-//  }
-
   public static FederationException invalidRedirectUri(String message) {
     return new FederationException(INVALID_REDIRECT_URI, message);
   }

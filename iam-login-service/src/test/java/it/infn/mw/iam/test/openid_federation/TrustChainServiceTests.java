@@ -37,7 +37,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
@@ -207,7 +206,7 @@ class TrustChainServiceTests {
 
   @Test
   void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
-      throws JOSEException, BadJOSEException, FederationException {
+      throws JOSEException, FederationException {
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
