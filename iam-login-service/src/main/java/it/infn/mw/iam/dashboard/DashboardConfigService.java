@@ -43,21 +43,21 @@ public class DashboardConfigService {
   Set<String> dashboardScopes = Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email",
       "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
-  private final IamClientRepository iamClientDetailsRepository;
+  private final IamClientRepository clientRepository;
   private final DefaultClientManagementService clientService;
 
-  public DashboardConfigService(IamClientRepository iamClientDetailsRepository,
+  public DashboardConfigService(IamClientRepository clientRepository,
       DefaultClientManagementService clientService) {
     this.clientService = clientService;
-    this.iamClientDetailsRepository = iamClientDetailsRepository;
+    this.clientRepository = clientRepository;
   }
 
-  public boolean initDashboardClient(DashboardProperties dashboardProperties, String iamUrl) throws java.text.ParseException {
+  public boolean initDashboardClient(DashboardProperties dashboardProperties, String iamUrl) {
     String clientId = dashboardProperties.getClientId();
     String clientSecret = dashboardProperties.getClientSecret();
     String url = iamUrl + DASHBOARD_CALLBACK;
 
-    Optional<ClientDetailsEntity> test = iamClientDetailsRepository.findByClientId(clientId);
+    Optional<ClientDetailsEntity> test = clientRepository.findByClientId(clientId);
 
     if (test.isPresent()) {
       ClientDetailsEntity client = test.get();
@@ -71,7 +71,7 @@ public class DashboardConfigService {
         client.setRedirectUris(Set.of(url));
         client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
 
-        iamClientDetailsRepository.save(client);
+        clientRepository.save(client);
       }
       return true;
     } else {

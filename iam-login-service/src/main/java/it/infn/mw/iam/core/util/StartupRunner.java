@@ -42,23 +42,17 @@ public class StartupRunner implements ApplicationRunner {
   }
 
   @Override
-  public void run(ApplicationArguments args) throws IllegalStateException {
+  public void run(ApplicationArguments args) {
     if (!dashboardProperties.isEnabled()) {
       LOG.info(
           "Dashboard client is disabled, skipping checks for the dashboard client properties and the presence of the record for the dashboard client");
       return;
     }
 
-    try {
-      boolean recordExists = dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
-      if (!recordExists) {
-        throw new IllegalStateException(
-            "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
-      }
-    } catch (Exception e) {
+    boolean recordExists = dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
+    if (!recordExists) {
       throw new IllegalStateException(
-          "An error occurred while verifying the presence of the record for the dashboard client: " + e.getMessage(),
-          e);
+          "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
     }
   }
 }

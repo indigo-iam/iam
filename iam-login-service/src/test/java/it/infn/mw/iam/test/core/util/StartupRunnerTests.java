@@ -50,10 +50,9 @@ public class StartupRunnerTests {
   private DashboardConfigService service;
 
   @Test
-  void shouldStartRunner() throws ParseException {
+  void shouldStartRunner() {
     verify(runner).run(any(ApplicationArguments.class));
 
     verify(service, times(1)).initDashboardClient(any(DashboardProperties.class), any(String.class));
-
   }
 }
