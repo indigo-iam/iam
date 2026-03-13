@@ -92,7 +92,7 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication auth) throws IOException, ServletException {
 
-    HttpSession session = request.getSession(false);
+    HttpSession session = request.getSession();
 
     setAuthenticationTimestamp(request, auth);
     touchLastLoginTimeForIamAccount(auth);

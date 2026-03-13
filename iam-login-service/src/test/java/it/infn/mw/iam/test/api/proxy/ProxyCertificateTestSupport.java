@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +43,8 @@ public class ProxyCertificateTestSupport extends X509TestSupport {
 
   public static final String TEST_USER_USERNAME = "test";
 
-  public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
+  public static final Instant NOW =
+      Calendar.getInstance().toInstant().truncatedTo(ChronoUnit.SECONDS);
 
   public static final Instant A_WEEK_AGO = NOW.minus(7, ChronoUnit.DAYS);
   public static final Instant AN_HOUR_AGO = NOW.minus(1, ChronoUnit.HOURS);

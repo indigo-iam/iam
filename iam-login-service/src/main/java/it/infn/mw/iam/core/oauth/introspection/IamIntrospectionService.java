@@ -29,8 +29,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -40,6 +43,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.IntrospectionEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
@@ -48,8 +52,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 
 @SuppressWarnings("deprecation")
 @Service
-public class IamIntrospectionService
-    implements IntrospectionService {
+public class IamIntrospectionService implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
@@ -62,15 +65,20 @@ public class IamIntrospectionService
   private final OAuth2TokenEntityService tokenService;
   private final ClientService clientService;
   private final ApplicationEventPublisher eventPublisher;
+  private final IamProperties iamProperties;
+  private final OpaqueTokenIntrospector introspector;
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
       OAuth2TokenEntityService tokenService, ClientService clientService,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
+      OpaqueTokenIntrospector introspector) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
     this.eventPublisher = eventPublisher;
+    this.iamProperties = iamProperties;
+    this.introspector = introspector;
   }
 
   @Override
@@ -96,8 +104,19 @@ public class IamIntrospectionService
           break;
         case ACCESS_TOKEN:
         default:
-          OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
-          response = introspectAccessToken(authenticatedClient, at, info);
+          String issuer = info.claims.getIssuer();
+
+          if (iamProperties.getIssuer().equals(issuer)) {
+            OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
+            response = introspectAccessToken(authenticatedClient, at, info);
+          } else {
+            OAuth2AuthenticatedPrincipal introspectionResult = introspector.introspect(tokenValue);
+
+            LOG.info("Introspection result for token issued by {}: active={}", issuer,
+                introspectionResult.getAttribute("active"));
+
+            response = convertIntrospectionResponse(introspectionResult);
+          }
           break;
       }
 
@@ -114,6 +133,11 @@ public class IamIntrospectionService
     } catch (ParseException e) {
 
       LOG.info("Failed introspection of token, malformed token: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (RestClientException e) {
+
+      LOG.info("Failed introspection of token, discovery failed: {}", e.getMessage());
       return IntrospectionResponse.inactive();
     }
 
@@ -147,14 +171,12 @@ public class IamIntrospectionService
   private void validateClient(ClientDetailsEntity c)
       throws UnauthorizedClientException, InvalidTokenException {
 
-    // check if client has been suspended
     if (!c.isActive()) {
       String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
     }
 
-    // check if client is allowed to introspect tokens
     if (!c.isAllowIntrospection()) {
       String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
@@ -174,7 +196,6 @@ public class IamIntrospectionService
     profile.getIntrospectionResultHelper()
       .assembleIntrospectionResult(rt, authenticatedClient)
       .forEach(builder::addField);
-    // add all the others avoiding duplicates/override
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
@@ -190,7 +211,6 @@ public class IamIntrospectionService
     profile.getIntrospectionResultHelper()
       .assembleIntrospectionResult(at, authenticatedClient)
       .forEach(builder::addField);
-    // add all the others avoiding duplicates/override
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
@@ -212,5 +232,15 @@ public class IamIntrospectionService
 
   public record TokenInfo(String tokenValue, TokenTypeHint tokenType, JWTClaimsSet claims,
       String jti) {
+  }
+
+  private IntrospectionResponse convertIntrospectionResponse(
+      OAuth2AuthenticatedPrincipal principal) {
+    IntrospectionResponse.Builder builder =
+        new IntrospectionResponse.Builder(principal.getAttribute("active"));
+
+    principal.getAttributes().forEach(builder::addField);
+
+    return builder.build();
   }
 }

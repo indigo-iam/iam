@@ -68,6 +68,7 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -155,11 +156,11 @@ public class OidcConfiguration {
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
       IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService) {
+      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
 
     OidcAuthenticationProvider provider =
         new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
-            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService);
+            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService, iamTotpMfaProperties);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 

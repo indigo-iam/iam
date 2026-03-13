@@ -22,6 +22,7 @@ import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.oauth2.web.RevocationEndpoint;
+import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.view.UserInfoView;
@@ -46,7 +47,6 @@ import it.infn.mw.iam.core.util.IamBanner;
 
 @SpringBootApplication
 @EnableTransactionManagement
-
 // @formatter:off
 @ComponentScan(basePackages = {
     "it.infn.mw.iam.config", 
@@ -92,6 +92,8 @@ excludeFilters = {
         value=RevocationEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=UserInfoView.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=AuthorizationRequestFilter.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=ConnectTokenEnhancer.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,

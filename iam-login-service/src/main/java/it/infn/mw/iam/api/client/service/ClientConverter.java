@@ -97,6 +97,7 @@ public class ClientConverter {
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
+    client.setUpScopingEnabled(dto.isUpScopingEnabled());
 
     return client;
   }
@@ -142,7 +143,6 @@ public class ClientConverter {
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
     clientDTO.setDynamicallyRegistered(entity.isDynamicallyRegistered());
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
-    clientDTO.setJwksUri(entity.getJwksUri());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
     clientDTO.setPolicyUri(entity.getPolicyUri());
@@ -170,8 +170,15 @@ public class ClientConverter {
     }
 
     clientDTO.setActive(entity.isActive());
+    clientDTO.setUpScopingEnabled(entity.isUpScopingEnabled());
     clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
     clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
+
+    if (entity.getClientRelyingParty() != null) {
+      clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
+      clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
+      clientDTO.setRequestObjectSigningAlgorithm(entity.getRequestObjectSigningAlg());
+    }
 
     return clientDTO;
   }
@@ -201,6 +208,8 @@ public class ClientConverter {
     client.setScope(cloneSet(dto.getScope()));
 
     client.setGrantTypes(new HashSet<>());
+
+    client.setUpScopingEnabled(dto.isUpScopingEnabled());
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(

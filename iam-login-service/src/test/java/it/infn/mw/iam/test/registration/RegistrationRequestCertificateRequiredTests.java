@@ -152,7 +152,7 @@ class RegistrationRequestCertificateRequiredTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -202,7 +202,7 @@ class RegistrationRequestCertificateRequiredTests {
     request.setEmail(email);
     request.setUsername(USERNAME_2);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -254,7 +254,7 @@ class RegistrationRequestCertificateRequiredTests {
     request.setEmail(email);
     request.setUsername(USERNAME_2);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("false");
+    request.setCertificate("false");
 
     HttpSession session = httpRequest.getSession();
 
@@ -306,7 +306,7 @@ class RegistrationRequestCertificateRequiredTests {
     request1.setEmail(email);
     request1.setUsername(USERNAME);
     request1.setNotes("Some short notes...");
-    request1.setRegisterCertificate("false");
+    request1.setCertificate("false");
 
     MockHttpServletRequest req1 = new MockHttpServletRequest();
     MockHttpSession session1 = new MockHttpSession();
@@ -337,7 +337,7 @@ class RegistrationRequestCertificateRequiredTests {
     request2.setEmail(email2);
     request2.setUsername(USERNAME_2);
     request2.setNotes("Some short notes...");
-    request2.setRegisterCertificate("false");
+    request2.setCertificate("false");
 
     MockHttpServletRequest req2 = new MockHttpServletRequest();
     MockHttpSession session2 = new MockHttpSession();
@@ -401,7 +401,7 @@ class RegistrationRequestCertificateRequiredTests {
     request.setEmail(email);
     request.setUsername(USERNAME);
     request.setNotes("Some short notes...");
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     HttpSession session = httpRequest.getSession();
 
@@ -425,7 +425,7 @@ class RegistrationRequestCertificateRequiredTests {
     email = USERNAME_2 + "@example.org";
     request.setEmail(email);
     request.setUsername(USERNAME_2);
-    request.setRegisterCertificate("true");
+    request.setCertificate("true");
 
     httpRequest.getSession();
 

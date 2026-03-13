@@ -28,7 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -84,7 +84,7 @@ class ScopeMatcherCacheTests extends EndpointsTestUtils {
   @Test
   void ensureRedisCacheIsDisabled() {
     assertFalse(cacheProperties.getRedis().isEnabled());
-    assertThat(localCacheManager, instanceOf(ConcurrentMapCacheManager.class));
+    assertThat(localCacheManager, instanceOf(CaffeineCacheManager.class));
   }
 
   @Test

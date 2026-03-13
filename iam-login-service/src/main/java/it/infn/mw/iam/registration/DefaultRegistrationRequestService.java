@@ -168,17 +168,16 @@ public class DefaultRegistrationRequestService
 
     IamAccount account;
 
-    if (iamProperties.getRegistration()
-      .getFields()
-      .get(RegistrationField.CERTIFICATE)
-      .getFieldBehaviour()
-      .equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
-        || (iamProperties.getRegistration()
-          .getFields()
-          .get(RegistrationField.CERTIFICATE)
-          .getFieldBehaviour()
-          .equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
-            && dto.getRegisterCertificate().equals("true"))) {
+    ExternalAuthAttributeSectionBehaviour ceritificateVisability =
+        Optional.ofNullable(iamProperties.getRegistration())
+          .map(IamProperties.RegistrationProperties::getFields)
+          .map(f -> f.get(RegistrationField.CERTIFICATE))
+          .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+          .orElse(ExternalAuthAttributeSectionBehaviour.HIDDEN);
+
+    if (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
+        || (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
+            && dto.getCertificate().equals("true"))) {
 
       certificateSanityCheck(request);
 

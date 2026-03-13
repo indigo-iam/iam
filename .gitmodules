@@ -1,6 +1,4 @@
 [submodule "compose/voms-replica/voms-testsuite"]
 	path = compose/voms-replica/voms-testsuite
 	url = git@github.com:italiangrid/voms-testsuite.git
-[submodule "compose/trust-anchors/helper-scripts"]
-	path = compose/trust-anchors/helper-scripts
-	url = https://baltig.infn.it/mw-devel/helper-scripts
+

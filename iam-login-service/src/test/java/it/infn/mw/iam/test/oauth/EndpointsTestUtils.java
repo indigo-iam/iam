@@ -33,6 +33,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GrantType;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
 @SuppressWarnings("deprecation")
@@ -143,7 +146,8 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
       .getTokenResponseObject());
   }
 
-  protected TokenEndpointResponse getExchangeTokenResponse(String subjectToken, String scope, String audience) throws Exception {
+  protected TokenEndpointResponse getExchangeTokenResponse(String subjectToken, String scope,
+      String audience) throws Exception {
 
     return getExchangeTokenResponse(subjectToken, EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET, scope,
         audience);
@@ -289,5 +293,13 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
 
       return getTokenResponseObject().getValue();
     }
+  }
+
+  protected ListAppender<ILoggingEvent> attachLogCaptor(Class<?> clazz) {
+    Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(clazz);
+    ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+    listAppender.start();
+    logger.addAppender(listAppender);
+    return listAppender;
   }
 }

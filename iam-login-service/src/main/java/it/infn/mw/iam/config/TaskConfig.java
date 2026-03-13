@@ -15,12 +15,9 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +29,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
@@ -40,7 +36,6 @@ import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableScheduling
@@ -63,8 +58,6 @@ public class TaskConfig implements SchedulingConfigurer {
   private ExpiredAccountsHandler expiredAccountsHandler;
   private AupReminderTask aupReminderTask;
   private ExecutorService taskScheduler;
-  private IamClientRepository clientRepo;
-  private ClientService clientService;
   private GarbageCollector garbageCollector;
 
   @Value("${notification.disable}")
@@ -76,8 +69,7 @@ public class TaskConfig implements SchedulingConfigurer {
   public TaskConfig(NotificationStoreService notificationStoreService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
-      ExecutorService taskScheduler, IamClientRepository clientRepo, ClientService clientService,
-      GarbageCollector garbageCollector) {
+      ExecutorService taskScheduler, GarbageCollector garbageCollector) {
 
     this.notificationStoreService = notificationStoreService;
     this.deliveryTask = deliveryTask;
@@ -85,8 +77,6 @@ public class TaskConfig implements SchedulingConfigurer {
     this.expiredAccountsHandler = expiredAccountsHandler;
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
-    this.clientRepo = clientRepo;
-    this.clientService = clientService;
     this.garbageCollector = garbageCollector;
   }
 
@@ -130,14 +120,6 @@ public class TaskConfig implements SchedulingConfigurer {
   public void scheduledAupRemindersTask() {
 
     aupReminderTask.sendAupReminders();
-  }
-
-  @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
-  public void disableExpiredClients() {
-    List<ClientDetailsEntity> clients = clientRepo.findActiveClientsExpiredBefore(new Date());
-    for (ClientDetailsEntity client : clients) {
-      clientService.updateClientStatus(client, false, "expired_client_task");
-    }
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

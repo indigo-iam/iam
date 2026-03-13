@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.api.account.multi_factor_authentication.authenticato
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,7 +43,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import dev.samstevens.totp.exceptions.QrGenerationException;
-import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -105,7 +103,7 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
         iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
-    when(qrGenerator.generate(any(QrData.class))).thenThrow(
+    when(totpMfaService.generateQRCodeFromSecret(TOTP_MFA_SECRET, account.getUsername())).thenThrow(
         new QrGenerationException("Simulated QR generation failure", new RuntimeException()));
 
     mvc.perform(put(ADD_SECRET_URL))
@@ -114,7 +112,7 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
 
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).addTotpMfaSecret(account);
-    verify(qrGenerator, times(1)).generate(any(QrData.class));
+    verify(totpMfaService, times(1)).generateQRCodeFromSecret(TOTP_MFA_SECRET, account.getUsername());
   }
 
   @Test

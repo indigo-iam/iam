@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oidc;
+package it.infn.mw.iam.core.oauth.introspection.model;
 
-public class InvalidClientMetadataException extends RuntimeException {
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.stereotype.Component;
 
-  private static final long serialVersionUID = 1L;
-  private final String errorCode;
+@Component
+public class TokenTypeHintConverter implements Converter<String, TokenTypeHint> {
 
-  public InvalidClientMetadataException(String errorCode, String message) {
-    super(message);
-    this.errorCode = errorCode;
-  }
+  @Override
+  public TokenTypeHint convert(String source) {
 
-  public String getErrorCode() {
-    return errorCode;
+    if (source == null) {
+      return null;
+    }
+    return TokenTypeHint.valueOf(source.toUpperCase());
   }
 }
