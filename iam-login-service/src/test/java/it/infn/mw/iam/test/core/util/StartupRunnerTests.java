@@ -18,14 +18,18 @@ package it.infn.mw.iam.test.core.util;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
@@ -40,8 +44,12 @@ public class StartupRunnerTests {
   @SpyBean
   private DashboardConfigService dashboardConfigService;
 
+  @MockBean
+  DefaultClientManagementService clientService;
+
   @Test
   void testRunnerInitializesDashboard() throws Exception {
+    when(clientService.saveNewClient(any(RegisteredClientDTO.class))).thenReturn(null);
     verify(dashboardConfigService, times(1)).initDashboardClient(any(DashboardProperties.class), any(String.class));
   }
 }
