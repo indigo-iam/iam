@@ -16,43 +16,29 @@
 package it.infn.mw.iam.test.core.util;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.text.ParseException;
-import javax.transaction.Transactional;
-
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.core.util.StartupRunner;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
-@SpringBootTest(classes = { IamLoginService.class }
-// @formatter:off
-  , properties = {
-  "iam.dashboard.client-id=dashboard-client-id",
-  "iam.dashboard.client-secret=AS69GU9PWvXw3te2RtYqhRYLlNYOhY03IjCnTjeRA69nFXK",
-  "iam.dashboard.enabled=true"
-// @formatter:on
-    })
-@Transactional
-public class StartupRunnerTests {
+@SpringBootTest(classes = { IamLoginService.class })
+@TestPropertySource(properties = "iam.dashboard.enabled=false")
+public class StartupRunnerWithoutConfigurationTests {
 
-  @SpyBean
-  private StartupRunner runner;
-
-  @SpyBean
-  private DashboardConfigService service;
+  @MockBean
+  private DashboardConfigService myService;
 
   @Test
-  void shouldStartRunner() {
-    verify(runner).run(any(ApplicationArguments.class));
-
-    verify(service, times(1)).initDashboardClient(any(DashboardProperties.class), any(String.class));
+  void testRunnerDoesNotInitializeDashboard() throws IllegalStateException {
+    verify(myService, times(0)).initDashboardClient(any(DashboardProperties.class), any(String.class));
   }
 }
