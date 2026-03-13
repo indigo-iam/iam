@@ -99,7 +99,6 @@ import org.springframework.security.saml.processor.HTTPSOAP11Binding;
 import org.springframework.security.saml.processor.SAMLBinding;
 import org.springframework.security.saml.processor.SAMLProcessor;
 import org.springframework.security.saml.processor.SAMLProcessorImpl;
-import org.springframework.security.saml.trust.httpclient.TLSProtocolConfigurer;
 import org.springframework.security.saml.trust.httpclient.TLSProtocolSocketFactory;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.security.saml.util.VelocityFactory;
@@ -153,6 +152,7 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -218,6 +218,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private HttpFirewall firewall;
+
+  @Autowired
+  private IamTotpMfaProperties iamTotpMfaProperties;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -410,7 +413,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
       IamSamlJITAccountProvisioningProperties jitProperties) {
 
     IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
-        resolver, validator, helper, accountRepo, totpMfaRepository);
+        resolver, validator, helper, accountRepo, totpMfaRepository, iamTotpMfaProperties);
 
     samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo,
         accountService, handler, mpResolver, jitProperties));
@@ -486,14 +489,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     return new JKSKeyManager(storeFile, samlProperties.getKeystorePassword(), passwords,
         samlProperties.getKeyId());
-  }
-
-  //
-  // Setup TLS Socket Factory
-  @Bean
-  TLSProtocolConfigurer tlsProtocolConfigurer() {
-
-    return new TLSProtocolConfigurer();
   }
 
   @Bean

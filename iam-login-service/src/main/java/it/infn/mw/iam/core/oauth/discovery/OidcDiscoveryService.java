@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oidc;
+package it.infn.mw.iam.core.oauth.discovery;
 
-public class InvalidTrustChainException extends RuntimeException {
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
-  private static final long serialVersionUID = 1L;
-  private final String errorCode;
+import com.fasterxml.jackson.databind.JsonNode;
 
-  public InvalidTrustChainException(String errorCode, String message) {
-    super(message);
-    this.errorCode = errorCode;
-  }
-
-  public InvalidTrustChainException(String errorCode, String message, Throwable cause) {
-    super(message, cause);
-    this.errorCode = errorCode;
-  }
-
-  public String getErrorCode() {
-    return errorCode;
-  }
+public interface OidcDiscoveryService {
+  public JsonNode getDiscoveryDocument(String issuer, RestTemplate restTemplate)
+      throws RestClientException;
 }

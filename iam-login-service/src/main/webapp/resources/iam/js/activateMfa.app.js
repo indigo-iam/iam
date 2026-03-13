@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,19 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oidc;
+'use strict'
 
-public class InvalidClientMetadataException extends RuntimeException {
-
-  private static final long serialVersionUID = 1L;
-  private final String errorCode;
-
-  public InvalidClientMetadataException(String errorCode, String message) {
-    super(message);
-    this.errorCode = errorCode;
-  }
-
-  public String getErrorCode() {
-    return errorCode;
-  }
-}
+angular.module('activateMfaApp', ['ui.bootstrap']);

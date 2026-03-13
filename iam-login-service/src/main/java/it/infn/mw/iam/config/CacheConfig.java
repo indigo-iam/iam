@@ -15,49 +15,68 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.Duration;
+
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
 @Configuration
 public class CacheConfig {
 
+  private CacheProperties cacheProps;
+
+  CacheConfig(CacheProperties cacheProps) {
+    this.cacheProps = cacheProps;
+  }
+
   @Bean
   @ConditionalOnExpression("${cache.enabled} == false")
-  CacheManager fakeCacheManager(CacheProperties props) {
+  CacheManager fakeCacheManager() {
     return new NoOpCacheManager();
   }
 
   @Bean
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
-  CacheManager localCacheManager(CacheProperties props) {
-    return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
-        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
+  CacheManager localCacheManager() {
+    CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+
+    cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
+        Caffeine.newBuilder().build());
+
+    cacheManager.registerCustomCache(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
+        Caffeine.newBuilder().build());
+
+    cacheManager.registerCustomCache(DefaultOidcDiscoveryService.CACHE_NAME,
+        Caffeine.newBuilder()
+          .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
+          .build());
+
+    return cacheManager;
   }
 
   @Bean
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
   RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
-    return builder -> builder
-      .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
-          RedisCacheConfiguration.defaultCacheConfig())
-      .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
-          RedisCacheConfiguration.defaultCacheConfig());
-  }
 
-  @Bean
-  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
-  RedisCacheConfiguration redisCacheConfiguration() {
+    RedisCacheConfiguration config =
+        RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
 
-    return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
+    return builder -> builder.withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY, config)
+      .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, config)
+      .withCacheConfiguration(DefaultOidcDiscoveryService.CACHE_NAME,
+          config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())));
   }
 
 }

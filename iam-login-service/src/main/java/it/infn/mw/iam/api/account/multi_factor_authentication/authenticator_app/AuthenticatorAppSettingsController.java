@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
-import static dev.samstevens.totp.util.Utils.getDataUriForImage;
-
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 import org.springframework.http.HttpStatus;
@@ -28,15 +27,11 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
-import dev.samstevens.totp.qr.QrData;
-import dev.samstevens.totp.qr.QrGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -65,23 +60,19 @@ public class AuthenticatorAppSettingsController {
   public static final String CODE_GENERATION_ERROR = "Could not generate QR code";
   public static final String MFA_SECRET_NOT_FOUND_MESSAGE =
       "No multi-factor secret is attached to this account";
+  public static final String REQUESTING_MFA = "iam.mfa.requesting-mfa";    
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
-  private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
-  private final IamProperties iamProperties;
   private final NotificationFactory notificationFactory;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
-      IamAccountRepository accountRepository, QrGenerator qrGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties, IamProperties iamProperties,
+      IamAccountRepository accountRepository, IamTotpMfaProperties iamTotpMfaProperties,
       NotificationFactory notificationFactory) {
     this.service = service;
     this.accountRepository = accountRepository;
-    this.qrGenerator = qrGenerator;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
-    this.iamProperties = iamProperties;
     this.notificationFactory = notificationFactory;
   }
 
@@ -91,7 +82,7 @@ public class AuthenticatorAppSettingsController {
    * 
    * @return DTO containing the plaintext TOTP secret and QR code URI for scanning
    */
-  @PreAuthorize("hasRole('USER')")
+  @PreAuthorize("hasAnyRole('USER', 'PRE_AUTHENTICATED')")
   @PutMapping(value = ADD_SECRET_URL, produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public SecretAndDataUriDTO addSecret() throws IamTotpMfaInvalidArgumentError {
@@ -106,7 +97,7 @@ public class AuthenticatorAppSettingsController {
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);
 
-      String dataUri = generateQRCodeFromSecret(mfaSecret, account.getUsername());
+      String dataUri = service.generateQRCodeFromSecret(mfaSecret, account.getUsername());
       dto.setDataUri(dataUri);
 
       return dto;
@@ -123,11 +114,11 @@ public class AuthenticatorAppSettingsController {
    * @param validationResult result of validation checks on the code
    * @return nothing
    */
-  @PreAuthorize("hasRole('USER')")
+  @PreAuthorize("hasAnyRole('USER', 'PRE_AUTHENTICATED')")
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
-      BindingResult validationResult) {
+      BindingResult validationResult, HttpSession session) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
     }
@@ -150,6 +141,7 @@ public class AuthenticatorAppSettingsController {
 
     service.enableTotpMfa(account);
     notificationFactory.createMfaEnableMessage(account);
+    session.removeAttribute(REQUESTING_MFA);
   }
 
 
@@ -218,31 +210,6 @@ public class AuthenticatorAppSettingsController {
       auth = oauth.getUserAuthentication();
     }
     return auth.getName();
-  }
-
-  /**
-   * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
-   * details about the issuer, length of TOTP and period of expiry from application properties
-   * 
-   * @param secret the TOTP secret
-   * @param username the logged-in user (attaches a username to the secret in the authenticator app)
-   * @return the data URI to be used with an <img> tag
-   * @throws QrGenerationException
-   */
-  private String generateQRCodeFromSecret(String secret, String username)
-      throws QrGenerationException {
-
-    QrData data = new QrData.Builder().label(username)
-      .secret(secret)
-      .issuer("INDIGO IAM" + " - " + iamProperties.getOrganisation().getName())
-      .algorithm(HashingAlgorithm.SHA1)
-      .digits(6)
-      .period(30)
-      .build();
-
-    byte[] imageData = qrGenerator.generate(data);
-    String mimeType = qrGenerator.getImageMimeType();
-    return getDataUriForImage(imageData, mimeType);
   }
 
 

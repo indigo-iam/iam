@@ -56,6 +56,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.audit.events.utils.EventUtils;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
@@ -186,6 +187,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       clientId = authenticatedClient.getClientId();
     } else {
       if (!clientId.equals(authenticatedClient.getClientId())) {
+        LOG.warn("Given client ID {} does not match authenticated client {}",
+            EventUtils.sanitize(clientId), EventUtils.sanitize(authenticatedClient.getClientId()));
         throw new InvalidClientException("Given client ID does not match authenticated client");
       }
     }

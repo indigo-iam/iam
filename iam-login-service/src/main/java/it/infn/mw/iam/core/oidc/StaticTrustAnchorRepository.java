@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("openid-federation")
 public class StaticTrustAnchorRepository implements TrustAnchorRepository {
 
   private final Set<String> trustedAnchors;

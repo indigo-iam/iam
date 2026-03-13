@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.api.client.management.service;
 
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,8 +44,6 @@ import it.infn.mw.iam.api.client.service.ClientConverter;
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -60,6 +62,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @Service
 @Validated
 public class DefaultClientManagementService implements ClientManagementService {
@@ -123,10 +126,21 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
 
+    if (hasRelyingParty(client)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(entity, client.getExpiration(), client.getEntityId());
+      entity.setClientRelyingParty(clientRelyingParty);
+      entity.setRequestObjectSigningAlg(client.getRequestObjectSigningAlgorithm());
+    }
+
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
     return converter.registeredClientDtoFromEntity(entity);
+  }
+
+  private boolean hasRelyingParty(RegisteredClientDTO request) {
+    return request.getEntityId() != null;
   }
 
   @Override
@@ -166,7 +180,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    if (oldClient.getClientRelyingParty() != null) {
+    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
       throw new InvalidRequestException("Federated clients cannot be updated");
     }
 
@@ -180,6 +194,14 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setActive(oldClient.isActive());
     // Direct updates are disabled. Changes must be made via secret reset process
     newClient.setClientSecret(oldClient.getClientSecret());
+
+    if (hasRelyingParty(clientDTO)) {
+      ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,
+          clientDTO.getExpiration(), clientDTO.getEntityId());
+      newClient.setClientRelyingParty(clientRelyingParty);
+      newClient.setRequestObjectSigningAlg(clientDTO.getRequestObjectSigningAlgorithm());
+      newClient.setActive(true);
+    }
 
     newClient = clientService.updateClient(newClient);
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, newClient));

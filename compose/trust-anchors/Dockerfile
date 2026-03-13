@@ -1,4 +1,4 @@
-FROM almalinux:9
+FROM indigoiam/egi-trustanchors:main
 
 COPY ./x509 /
 COPY ./setup-trust.sh /setup-trust.sh

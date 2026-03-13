@@ -56,9 +56,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.AARCHintService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
@@ -76,9 +76,10 @@ import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -103,8 +104,7 @@ public class IamWebSecurityConfig {
     private OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler;
 
     @Autowired
-    @Qualifier("mitreAuthzRequestFilter")
-    private GenericFilterBean authorizationRequestFilter;
+    private AuthorizationRequestFilter authorizationRequestFilter;
 
     @Autowired
     @Qualifier("iamUserDetailsService")
@@ -126,7 +126,7 @@ public class IamWebSecurityConfig {
     private IamX509CertificateRepository certRepo;
 
     @Autowired
-    private IamTotpMfaRepository totpMfaRepository;
+    private IamTotpMfaService iamTotpMfaService;
 
     @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
@@ -144,9 +144,12 @@ public class IamWebSecurityConfig {
     private IamProperties iamProperties;
 
     @Autowired
+    private IamTotpMfaProperties iamTotpMfaProperties;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, totpMfaRepository));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
       // @formatter:on
     }
 
@@ -219,14 +222,14 @@ public class IamWebSecurityConfig {
     }
 
     @Bean
-    public OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
+    OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
     @Bean
-    public AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
+    AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo);
+          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
@@ -257,12 +260,10 @@ public class IamWebSecurityConfig {
     private UserLoginConfig userLoginConfig;
     private IamProperties iamProperties;
 
-    @Autowired
     public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
       this.iamProperties = iamProperties;
     }
-
 
     AccessDeniedHandler accessDeniedHandler() {
       return (request, response, authError) -> {

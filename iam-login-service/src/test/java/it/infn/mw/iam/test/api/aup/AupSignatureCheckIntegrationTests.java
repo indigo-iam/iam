@@ -22,6 +22,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +34,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -54,6 +59,9 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
+@TestPropertySource(properties = {"logging.level.root=DEBUG",
+        "logging.level.it.infn.mw.iam.core.web.aup.EnforceAupFilter=DEBUG"
+})
 class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Autowired
@@ -170,5 +178,44 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
       .andExpect(status().isCreated());
 
     mvc.perform(get("/iam/aup")).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testWhenNoDefaultAupNoRedirection() throws Exception {
+
+    mvc.perform(get("/dashboard"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testWhenSessionNeedsAupThenRedirection() throws Exception {
+    IamAup defaultAup = buildDefaultAup();
+    aupRepo.save(defaultAup);
+
+    MockHttpSession session = new MockHttpSession();
+    session.setAttribute(REQUESTING_SIGNATURE, Boolean.TRUE);
+
+    mvc.perform(get("/dashboard")
+        .session(session))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/iam/aup/sign"))
+        .andExpect(header().doesNotExist("Set-Cookie"));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testNeedsSignatureAndSessionOlderThanAupCreationThenRedirection() throws Exception {
+    IamAup defaultAup = buildDefaultAup();
+    aupRepo.save(defaultAup);
+
+    MockHttpSession session = new MockHttpSession();
+
+    mvc.perform(get("/dashboard")
+        .session(session))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/iam/aup/sign"))
+        .andExpect(header().doesNotExist("Set-Cookie"));
   }
 }

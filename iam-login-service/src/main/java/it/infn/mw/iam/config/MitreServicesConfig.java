@@ -34,7 +34,6 @@ import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
-import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
@@ -64,7 +63,6 @@ import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.mitre.uma.service.ResourceSetService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -185,21 +183,6 @@ public class MitreServicesConfig {
   ServerConfigInterceptor serverConfigInterceptor() {
 
     return new ServerConfigInterceptor();
-  }
-
-  @Bean
-  FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
-      AuthorizationRequestFilter f) {
-
-    FilterRegistrationBean<AuthorizationRequestFilter> b = new FilterRegistrationBean<>(f);
-    b.setEnabled(false);
-    return b;
-  }
-
-  @Bean(name = "mitreAuthzRequestFilter")
-  AuthorizationRequestFilter authorizationRequestFilter() {
-
-    return new AuthorizationRequestFilter();
   }
 
   @Bean

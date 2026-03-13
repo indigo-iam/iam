@@ -18,9 +18,12 @@ package it.infn.mw.iam.test.openid_federation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,28 +31,25 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
-import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
 import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @ExtendWith(MockitoExtension.class)
 class TrustChainServiceTests {
 
@@ -60,12 +60,12 @@ class TrustChainServiceTests {
   RestTemplate restTemplate;
 
   @Mock
+  RestTemplateFactory restTemplateFactory;
+
   TrustChainValidator validator;
 
-  @Mock
   TrustChainResolver resolver;
 
-  @InjectMocks
   TrustChainService service;
 
   TrustChain fakeChain;
@@ -73,16 +73,14 @@ class TrustChainServiceTests {
   @BeforeEach
   void setup() {
 
-    TrustChainResolver realResolver = new TrustChainResolver();
-    TrustChainValidator realValidator = new TrustChainValidator(trustAnchorRepository);
-    ReflectionTestUtils.setField(realResolver, "restTemplate", restTemplate);
-    ReflectionTestUtils.setField(service, "validator", realValidator);
-    ReflectionTestUtils.setField(service, "resolver", realResolver);
+    when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
+    resolver = new TrustChainResolver(restTemplateFactory);
+    validator = new TrustChainValidator(trustAnchorRepository);
+    service = new TrustChainService(resolver, validator);
   }
 
   private void mockRpToTaChain(boolean taTrusted) throws Exception {
-
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -127,8 +125,29 @@ class TrustChainServiceTests {
   void testUntrustedTrustAnchor() throws Exception {
     mockRpToTaChain(false);
 
-    assertThrows(InvalidTrustChainException.class,
+    FederationException e = assertThrows(FederationException.class,
         () -> service.validateFromEntityId("https://rp.example"));
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
+  }
+
+  @Test
+  void testFetchEntityIdWithUnsupportedProtocol() throws Exception {
+    mockRpToTaChain(true);
+
+    FederationException e = assertThrows(FederationException.class, () -> {
+      service.validateFromEntityId("http://rp.example");
+    });
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
+  }
+
+  @Test
+  void testFetchMalformedEntityId() throws Exception {
+    mockRpToTaChain(true);
+
+    FederationException e = assertThrows(FederationException.class, () -> {
+      service.validateFromEntityId("ht!tps://rp.example");
+    });
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
   }
 
   @Test
@@ -187,7 +206,7 @@ class TrustChainServiceTests {
 
   @Test
   void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
-    throws JOSEException, BadJOSEException {
+      throws JOSEException, FederationException {
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
@@ -211,7 +230,7 @@ class TrustChainServiceTests {
         null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
 
@@ -256,7 +275,7 @@ class TrustChainServiceTests {
   }
 
   @Test
-  void testValidatorReturnsValidChain() throws JOSEException {
+  void testValidatorReturnsValidChain() throws JOSEException, FederationException {
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
@@ -286,7 +305,7 @@ class TrustChainServiceTests {
         null);
     String untrustedTaEcJwt = untrustedTaEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example");
 
@@ -342,10 +361,12 @@ class TrustChainServiceTests {
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", futureIat, exp, null,
         "https://rp.example/fetch", null, null);
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Entity Statement has iat in the future"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Entity Statement has iat in the future"));
   }
 
   @Test
@@ -356,10 +377,12 @@ class TrustChainServiceTests {
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", iat, exp, null,
         "https://rp.example/fetch", null, null);
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Entity Statement is expired"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Entity Statement is expired"));
   }
 
   @Test
@@ -394,11 +417,12 @@ class TrustChainServiceTests {
   void testFetchEntityConfigurationFailure() {
     String entityId = "https://rp.example";
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(resolver, "fetchEntityConfiguration", entityId));
-
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Failed to fetch EC"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Failed to fetch EC"));
   }
 
   @Test
@@ -407,17 +431,20 @@ class TrustChainServiceTests {
     String subject = "https://rp.example";
     String issuer = "https://ta.example";
 
-    InvalidTrustChainException ex =
-        assertThrows(InvalidTrustChainException.class, () -> ReflectionTestUtils
-          .invokeMethod(resolver, "fetchEntityStatement", fetchEndpoint, issuer, subject));
+    when(restTemplate.getForObject(anyString(), eq(String.class))).thenReturn("");
 
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Failed to fetch entity statement"));
+    UndeclaredThrowableException ex =
+        assertThrows(UndeclaredThrowableException.class, () -> ReflectionTestUtils
+          .invokeMethod(resolver, "fetchEntityStatement", fetchEndpoint, issuer, subject));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Failed to fetch entity statement"));
   }
 
   @Test
   void testMissingFetchEndpoint() throws JOSEException {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -433,7 +460,8 @@ class TrustChainServiceTests {
         restTemplate.getForObject("https://ta.example/.well-known/openid-federation", String.class))
           .thenReturn(taEcJwt);
 
-    assertThrows(InvalidTrustChainException.class,
+    FederationException e = assertThrows(FederationException.class,
         () -> service.validateFromEntityId("https://rp.example"));
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
   }
 }

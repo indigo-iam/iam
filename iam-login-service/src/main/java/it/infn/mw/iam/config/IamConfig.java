@@ -42,7 +42,9 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -80,8 +82,14 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
+import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
+import it.infn.mw.iam.core.oidc.LoginHintService;
+import it.infn.mw.iam.core.oidc.MaxAgeService;
+import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
+import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -158,7 +166,7 @@ public class IamConfig {
         new AarcUserinfoHelper(properties, claimValueHelper, claimService);
 
     AarcIntrospectionHelper introspectionHelper =
-        new AarcIntrospectionHelper(claimValueHelper, accountService);
+        new AarcIntrospectionHelper(claimValueHelper, accountService, claimService);
 
     return new AarcJWTProfile(claimService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
         userInfoHelper, introspectionHelper);
@@ -298,6 +306,15 @@ public class IamConfig {
   }
 
   @Bean
+  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
+      IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
+    FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
+    frb.setOrder(Ordered.LOWEST_PRECEDENCE);
+    return frb;
+  }
+
+  @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
       SystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
@@ -329,4 +346,12 @@ public class IamConfig {
     return cs;
   }
 
+  @Bean
+  AuthorizationRequestFilter authorizationRequestFilter(AuthorizationClientResolver clientResolver,
+      LoginHintService loginHintService,
+      PromptService promptService,
+      MaxAgeService maxAgeService) {
+    return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
+        maxAgeService);
+  }
 }

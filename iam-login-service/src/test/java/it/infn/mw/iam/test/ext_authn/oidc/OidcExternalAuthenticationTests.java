@@ -19,15 +19,20 @@ import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
 import java.util.Map;
+import java.util.random.RandomGenerator;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpEntity;
@@ -46,6 +51,8 @@ import com.nimbusds.jose.JOSEException;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
@@ -54,6 +61,9 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
   webEnvironment = WebEnvironment.RANDOM_PORT)
 class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSupport {
+
+  @Autowired
+  private IamAupRepository aupRepo;  
 
   @BeforeEach
   void setup() {
@@ -234,6 +244,61 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(mfaVerifyPageURL()));
+  }
+
+  @Test
+  void testOidcUserRedirectToMfaVerifyPageIfMfaIsActiveEvenIfAupPending()
+      throws JOSEException, JsonProcessingException, RestClientException {
+    createDefaultAup();
+    RestTemplate rt = noRedirectRestTemplate();
+    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+
+    checkAuthorizationEndpointRedirect(response);
+    HttpHeaders requestHeaders = new HttpHeaders();
+
+    String sessionCookie = extractSessionCookie(response);
+    requestHeaders.add("Cookie", sessionCookie);
+
+    CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
+
+    prepareSuccessResponse(tokenResponse);
+
+    response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
+    verifyMockServerCalls();
+
+    assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
+    assertNotNull(response.getHeaders().getLocation());
+
+    assertThat(response.getHeaders().getLocation().toString(), equalTo(mfaVerifyPageURL()));
+
+    HttpHeaders followHeaders = new HttpHeaders();
+    followHeaders.add("Cookie", sessionCookie);
+    HttpEntity<Void> followEntity = new HttpEntity<>(followHeaders);
+
+    ResponseEntity<String> redirectedResponse = rt.exchange(mfaVerifyPageURL(), HttpMethod.GET, followEntity,
+        String.class);
+
+    assertThat(redirectedResponse.getStatusCode(), equalTo(HttpStatus.OK));
+    assertThat(redirectedResponse.getBody(),
+        containsString("For your security, please enter a TOTP from your authenticator"));
+
+    aupRepo.deleteAll();    
+  }
+
+  private void createDefaultAup() {
+    IamAup aup = new IamAup();
+
+    aup.setCreationTime(new Date());
+    aup.setLastUpdateTime(new Date());
+    aup.setName("default-aup" + RandomGenerator.getDefault().nextInt());
+    aup.setUrl("http://default-aup.org/");
+    aup.setDescription("AUP description");
+    aup.setSignatureValidityInDays(0L);
+    aup.setAupRemindersInDays("30,15,1");
+
+    aupRepo.saveDefaultAup(aup);
   }
 
   @Test
