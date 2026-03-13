@@ -19,8 +19,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
@@ -35,18 +33,18 @@ public class TrustChainService {
     this.validator = validator;
   }
 
-  public TrustChain validateFromEntityId(String entityId) {
+  public TrustChain validateFromEntityId(String entityId) throws FederationException {
     List<List<EntityStatement>> chain = resolver.resolveFromEntityId(entityId);
     return validator.validateAll(chain);
   }
 
-  public TrustChain validateFromEntityConfiguration(EntityStatement ec) {
+  public TrustChain validateFromEntityConfiguration(EntityStatement ec) throws FederationException {
     List<List<EntityStatement>> chain = resolver.resolveFromEntityConfiguration(ec);
     return validator.validateAll(chain);
   }
 
   public TrustChain validateFromProvidedChain(List<EntityStatement> providedChain)
-      throws BadJOSEException, JOSEException {
+      throws FederationException {
     return validator.validate(providedChain);
   }
 }

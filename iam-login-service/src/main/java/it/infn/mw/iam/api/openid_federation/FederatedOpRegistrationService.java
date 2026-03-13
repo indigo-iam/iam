@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidClientMetadata;
+
 import java.net.URI;
 import java.text.ParseException;
 import java.util.List;
@@ -50,7 +52,7 @@ import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.oidc.ExplicitRegistrationEntityStatementBuilder;
-import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 
 @Service
@@ -80,7 +82,7 @@ public class FederatedOpRegistrationService {
     this.restTemplate = restTemplateFactory.newRestTemplate();
   }
 
-  public RegisteredClientDTO registerOp(String issuer) throws JOSEException, ParseException {
+  public RegisteredClientDTO registerOp(String issuer) throws JOSEException, ParseException, FederationException {
 
     validateIssuer(issuer);
 
@@ -150,7 +152,7 @@ public class FederatedOpRegistrationService {
     }
   }
 
-  private RegisteredClientDTO createClientDtoFromOpMetadata(EntityStatement opEc) {
+  private RegisteredClientDTO createClientDtoFromOpMetadata(EntityStatement opEc) throws FederationException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCProviderMetadata metadata = opEc.getClaimsSet().getOPMetadata();
 
@@ -174,8 +176,7 @@ public class FederatedOpRegistrationService {
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet());
       if (responseTypes.isEmpty()) {
-        throw new InvalidClientMetadataException("invalid_client_metadata",
-            "Unsupported response type");
+        throw invalidClientMetadata("Unsupported response type");
       }
       dtoClient.setResponseTypes(responseTypes);
     } else {

@@ -30,6 +30,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Profile("openid-federation")
@@ -60,7 +61,7 @@ public class FederationClientConfigurationService implements ClientConfiguration
 
       return toRegisteredClient(registered);
 
-    } catch (JOSEException | ParseException e) {
+    } catch (JOSEException | ParseException | FederationException e) {
       throw new AuthenticationServiceException(
           "Unable to register federated OP " + serverConfig.getIssuer(), e);
     }

@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,26 +26,36 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+
 @Service
+@Profile("openid-federation")
 public class TrustChainResolver {
 
   public static final Logger LOG = LoggerFactory.getLogger(TrustChainResolver.class);
-  private final RestTemplate restTemplate = new RestTemplate();
 
-  private EntityStatement fetchEntityConfiguration(String entityId) {
+  private RestTemplate restTemplate;
+
+  public TrustChainResolver(RestTemplateFactory restTemplateFactory) {
+
+    this.restTemplate = restTemplateFactory.newRestTemplate();
+  }
+
+  private EntityStatement fetchEntityConfiguration(String entityId) throws FederationException {
     URL baseUrl;
     try {
       baseUrl = new URL(entityId);
       if (!"https".equalsIgnoreCase(baseUrl.getProtocol())) {
-        throw new InvalidTrustChainException("invalid_trust_chain",
-            "Only HTTPS URLs are allowed: " + entityId);
+        throw invalidTrustChain("Only HTTPS URLs are allowed: " + entityId);
       }
       URL metadataUrl =
           new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
@@ -52,59 +64,66 @@ public class TrustChainResolver {
       String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
       return EntityStatement.parse(jwt);
     } catch (MalformedURLException e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Invalid entityId URL: " + entityId, e);
+      throw invalidTrustChain("Invalid entityId URL: " + entityId, e);
     } catch (Exception e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Failed to fetch EC: " + e.getMessage(), e);
+      throw invalidTrustChain("Failed to fetch EC: " + e.getMessage(), e);
     }
   }
 
-  private EntityStatement fetchEntityStatement(String fetchEndpoint, String issuer,
-      String subject) {
+  private EntityStatement fetchEntityStatement(String fetchEndpoint, String issuer, String subject)
+      throws FederationException {
+
+    String url = String.format("%s?sub=%s", fetchEndpoint, subject);
+    String jwt = restTemplate.getForObject(url, String.class);
+
+    EntityStatement es;
     try {
-      String url = String.format("%s?sub=%s", fetchEndpoint, subject);
-
-      String jwt = restTemplate.getForObject(url, String.class);
-      EntityStatement es = EntityStatement.parse(jwt);
-
-      if (!issuer.equals(es.getClaimsSet().getIssuer().getValue())
-          || !subject.equals(es.getClaimsSet().getSubject().getValue())) {
-        throw new InvalidTrustChainException("invalid_trust_chain",
-            "Entity statement mismatch (iss/sub)");
-      }
-      return es;
-    } catch (Exception e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Failed to fetch entity statement: " + issuer + " -> " + subject, e);
+      es = EntityStatement.parse(jwt);
+    } catch (ParseException e) {
+      throw invalidTrustChain("Failed to fetch entity statement: " + issuer + " -> " + subject, e);
     }
+
+    if (!issuer.equals(es.getClaimsSet().getIssuer().getValue())
+        || !subject.equals(es.getClaimsSet().getSubject().getValue())) {
+      throw invalidTrustChain("Entity statement mismatch (iss/sub)");
+    }
+
+    return es;
   }
 
   /**
    * Resolve the Trust Chain starting from an entity_id
+   * 
+   * @throws FederationException
    */
-  public List<List<EntityStatement>> resolveFromEntityId(String entityId) {
+  public List<List<EntityStatement>> resolveFromEntityId(String entityId)
+      throws FederationException {
     EntityStatement ec = fetchEntityConfiguration(entityId);
-    return buildChain(ec, new HashSet<>());
+    return resolveFromEntityConfiguration(ec);
   }
 
   /**
    * Resolve the Trust Chain starting from an EntityConfiguration already provided
+   * 
+   * @throws FederationException
    */
-  public List<List<EntityStatement>> resolveFromEntityConfiguration(EntityStatement ec) {
+  public List<List<EntityStatement>> resolveFromEntityConfiguration(EntityStatement ec)
+      throws FederationException {
     return buildChain(ec, new HashSet<>());
   }
 
   /**
    * Recursion to build the Trust Chain up to a Trust Anchor
+   * 
+   * @throws FederationException
    */
   private List<List<EntityStatement>> buildChain(EntityStatement subordinateEC,
-      Set<String> seenEntityIds) {
+      Set<String> seenEntityIds) throws FederationException {
 
     String subId = subordinateEC.getEntityID().getValue();
 
     if (!seenEntityIds.add(subId)) {
-      throw new InvalidTrustChainException("invalid_trust_chain", "Loop detected at " + subId);
+      throw invalidTrustChain("Loop detected at " + subId);
     }
 
     // If it is a Trust Anchor (self-signed) it ends the chain
@@ -126,8 +145,7 @@ public class TrustChainResolver {
         var fedMeta =
             superiorEC.getClaimsSet().getMetadata(FederationMetadataType.FEDERATION_ENTITY);
         if (fedMeta == null || fedMeta.get("federation_fetch_endpoint") == null) {
-          throw new InvalidTrustChainException("invalid_trust_chain",
-              "No fetch_endpoint for " + superior.getValue());
+          throw invalidTrustChain("No fetch_endpoint for " + superior.getValue());
         }
         String fetchEndpoint = fedMeta.get("federation_fetch_endpoint").toString();
 
@@ -146,7 +164,7 @@ public class TrustChainResolver {
           newChain.addAll(chain);
           chains.add(newChain);
         }
-      } catch (InvalidTrustChainException e) {
+      } catch (FederationException e) {
         invalidChains++;
         LOG.warn("Failed to resolve authority {} for entity {}: {}", superior.getValue(), subId,
             e.getMessage());
@@ -154,7 +172,7 @@ public class TrustChainResolver {
     }
 
     if (invalidChains == subordinateEC.getClaimsSet().getAuthorityHints().size()) {
-      throw new InvalidTrustChainException("invalid_trust_chain", "No valid chains for " + subId);
+      throw invalidTrustChain("No valid chains for " + subId);
     }
 
     return chains;

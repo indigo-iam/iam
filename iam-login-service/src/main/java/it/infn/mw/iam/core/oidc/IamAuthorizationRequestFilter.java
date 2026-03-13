@@ -231,12 +231,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
       return clientRepo.findByClientId(clientId);
 
-    } catch (InvalidClientMetadataException e) {
+    } catch (FederationException e) {
       // If we reach here, maybe the response has not been committed yet
-      if (!response.isCommitted()) {
-        sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
-      }
-    } catch (InvalidTrustChainException e) {
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
       }
@@ -250,7 +246,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   }
 
   private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)
-      throws BadJOSEException, JOSEException, ParseException {
+      throws BadJOSEException, JOSEException, ParseException, FederationException {
     Object trustChainObj = claims.getClaim("trust_chain");
     if (trustChainObj != null) {
       ObjectMapper mapper = new ObjectMapper();

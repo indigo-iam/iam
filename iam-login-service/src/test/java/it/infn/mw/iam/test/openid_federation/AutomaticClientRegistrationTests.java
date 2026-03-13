@@ -69,7 +69,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
-import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -353,8 +353,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
-    InvalidTrustChainException ex =
-        new InvalidTrustChainException("invalid_trust_chain", "Error description");
+    FederationException ex = FederationException.invalidTrustChain("Error description");
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenThrow(ex);
 
