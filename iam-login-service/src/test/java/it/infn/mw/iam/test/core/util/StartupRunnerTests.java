@@ -21,22 +21,27 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
 @SpringBootTest(classes = { IamLoginService.class })
-@TestPropertySource(properties = "iam.dashboard.enabled=false")
-public class StartupRunnerWithoutConfigurationTests {
+@TestPropertySource(properties = {
+  "iam.dashboard.enabled=true",
+  "iam.dashboard.client-id=dashboard-id",
+  "iam.dashboard.client-secret=10000000-1234-1234-1234-123456789012" })
+@Transactional
+public class StartupRunnerTests {
 
-  @MockBean
+  @SpyBean
   private DashboardConfigService dashboardConfigService;
 
   @Test
-  void testRunnerDoesNotInitializeDashboard() throws IllegalStateException {
-    verify(dashboardConfigService, times(0)).initDashboardClient(any(DashboardProperties.class), any(String.class));
+  void testRunnerInitializesDashboard() throws Exception {
+    verify(dashboardConfigService, times(1)).initDashboardClient(any(DashboardProperties.class), any(String.class));
   }
 }
