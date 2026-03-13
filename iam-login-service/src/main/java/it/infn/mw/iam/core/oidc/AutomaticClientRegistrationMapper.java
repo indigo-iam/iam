@@ -15,27 +15,22 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+
 @Component
-@Profile("openid-federation")
-public class StaticTrustAnchorRepository implements TrustAnchorRepository {
-
-  private final Set<String> trustedAnchors;
-
-  public StaticTrustAnchorRepository(
-      @Value("${openid-federation.trust-anchors}") List<String> anchors) {
-    this.trustedAnchors = new HashSet<>(anchors);
-  }
+public class AutomaticClientRegistrationMapper extends BaseFedClientRegistrationMapper {
 
   @Override
-  public boolean isTrusted(String entityId) {
-    return trustedAnchors.contains(entityId);
+  protected void setTokenEndpointAuthMethod(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
+    dto.setTokenEndpointAuthMethod(Optional.ofNullable(metadata.getTokenEndpointAuthMethod())
+      .map(v -> TokenEndpointAuthenticationMethod.valueOf(v.getValue()))
+      .orElse(TokenEndpointAuthenticationMethod.private_key_jwt));
   }
 }

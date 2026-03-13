@@ -86,9 +86,9 @@ public class IamX509PreauthenticationProcessingFilter
   protected void storeCredentialInSession(HttpServletRequest request,
       IamX509AuthenticationCredential cred) {
 
-    HttpSession session = request.getSession(false);
+    HttpSession session = request.getSession();
 
-    if (session != null && !cred.failedVerification()) {
+    if (!cred.failedVerification()) {
       LOG.debug("Storing X.509 {} credential in session ", cred);
       session.setAttribute(X509_CREDENTIAL_SESSION_KEY, cred);
     }
@@ -125,7 +125,7 @@ public class IamX509PreauthenticationProcessingFilter
 
     Optional<IamX509AuthenticationCredential> credential = extractCredential(request);
 
-    HttpSession session = request.getSession(false);
+    HttpSession session = request.getSession();
 
     ExternalAuthAttributeSectionBehaviour ceritificateVisability =
         Optional.ofNullable(iamProperties.getRegistration())
@@ -135,9 +135,7 @@ public class IamX509PreauthenticationProcessingFilter
           .orElse(ExternalAuthAttributeSectionBehaviour.HIDDEN);
 
     // If there is a session, also place the information there, otherwise only in the request
-    if (session != null) {
-      session.setAttribute(X509_REQUIRED, ceritificateVisability);
-    }
+    session.setAttribute(X509_REQUIRED, ceritificateVisability);
 
     // Always present in the request
     request.setAttribute(X509_REQUIRED, ceritificateVisability);
@@ -163,11 +161,9 @@ public class IamX509PreauthenticationProcessingFilter
     if (ceritificateVisability != HIDDEN) {
       if (expirationDate.isPresent() && expirationDate.get().before(minTimeBeforeExpiration)) {
 
-        // If a session is present, then add the information to the session as well.
-        if (session != null) {
-          session.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
-          session.setAttribute(X509_EXPIRATION_DATE, expirationDate.get());
-        }
+        session.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
+        session.setAttribute(X509_EXPIRATION_DATE, expirationDate.get());
+
         request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
         request.setAttribute(X509_EXPIRATION_DATE, expirationDate.get());
 
@@ -187,9 +183,8 @@ public class IamX509PreauthenticationProcessingFilter
     IamAccount account = cert.get().getAccount();
 
     if (!account.isActive()) {
-      if (session != null) {
-        session.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
-      }
+
+      session.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
 
       request.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
     }
@@ -208,11 +203,9 @@ public class IamX509PreauthenticationProcessingFilter
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) {
 
-    HttpSession session = request.getSession(false);
+    HttpSession session = request.getSession();
 
-    if (session != null) {
-      session.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
-    }
+    session.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
 
     request.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
 

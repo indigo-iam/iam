@@ -15,27 +15,33 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
+import javax.servlet.http.HttpServletResponse;
+
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+
 @Component
-@Profile("openid-federation")
-public class StaticTrustAnchorRepository implements TrustAnchorRepository {
+@Profile("!openid-federation")
+public class DefaultAuthorizationClientResolver implements AuthorizationClientResolver {
 
-  private final Set<String> trustedAnchors;
+  private final IamClientRepository clientRepo;
 
-  public StaticTrustAnchorRepository(
-      @Value("${openid-federation.trust-anchors}") List<String> anchors) {
-    this.trustedAnchors = new HashSet<>(anchors);
+  public DefaultAuthorizationClientResolver(IamClientRepository clientRepo) {
+    this.clientRepo = clientRepo;
   }
 
   @Override
-  public boolean isTrusted(String entityId) {
-    return trustedAnchors.contains(entityId);
+  public Optional<ClientDetailsEntity> resolveClient(
+      String clientId,
+      Map<String, String> params,
+      HttpServletResponse response) {
+
+    return clientRepo.findByClientId(clientId);
   }
 }
