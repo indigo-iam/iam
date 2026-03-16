@@ -27,6 +27,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 
@@ -50,6 +51,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 class DefaultLoginLockoutServiceTests {
 
   private static final String USERNAME = "testuser";
+  private static final String UUID = "test-uuid-1234";
 
   @Mock
   private IamAccountLoginLockoutRepository lockoutRepo;
@@ -71,6 +73,7 @@ class DefaultLoginLockoutServiceTests {
     lockoutProps.setMaxFailedAttempts(2);
     lockoutProps.setLockoutMinutes(30);
     lockoutProps.setMaxConcurrentFailures(2);
+    lockoutProps.setDisableAfterMaxFailures(true);
 
     when(iamProperties.getLoginLockout()).thenReturn(lockoutProps);
     service = new DefaultLoginLockoutService(lockoutRepo, accountRepo, iamProperties);
@@ -78,6 +81,7 @@ class DefaultLoginLockoutServiceTests {
     account = new IamAccount();
     account.setId(1L);
     account.setUsername(USERNAME);
+    account.setUuid(UUID);
     account.setActive(true);
   }
 
@@ -93,71 +97,32 @@ class DefaultLoginLockoutServiceTests {
   }
 
   @Test
+  void checkLockoutNoRecordIsNoop() {
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
+    assertDoesNotThrow(() -> service.checkIamAccountLockout(USERNAME));
+  }
+
+  @Test
   void blocksLoginWhenSuspended() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    lockout.setSuspendedUntil(new Date(System.currentTimeMillis() + 60000));
+    lockout.setSuspendedUntil(Date.from(Instant.now().plusSeconds(60)));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
 
     assertThrows(LockedException.class, () -> service.checkIamAccountLockout(USERNAME));
   }
 
   @Test
-  void successfulLoginDeletesRow() {
+  void checkLockoutResetsExpiredSuspension() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    lockout.setFailedAttempts(1);
+    lockout.setFailedAttempts(2);
+    lockout.setFirstFailureTime(Date.from(Instant.now().minusSeconds(120)));
+    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
 
-    service.resetFailedAttempts(USERNAME);
-    verify(lockoutRepo).delete(lockout);
-  }
-
-  @Test
-  void fullLifecycleSuspendSuspendDisable() {
-    // Config: max-failed-attempts=2, max-concurrent-failures=2
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
-    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
-
-    // ROUND 1: 2 failures -> suspended
-    service.recordFailedAttempt(USERNAME);
-    ArgumentCaptor<IamAccountLoginLockout> captor = ArgumentCaptor.forClass(IamAccountLoginLockout.class);
-    verify(lockoutRepo).save(captor.capture());
-    IamAccountLoginLockout lockout = captor.getValue();
-
-    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
-    service.recordFailedAttempt(USERNAME);
-
-    assertEquals(1, lockout.getLockoutCount());
-    assertNotNull(lockout.getSuspendedUntil());
-    assertTrue(account.isActive());
-
-    // Suspension expires
-    lockout.setSuspendedUntil(new Date(System.currentTimeMillis() - 1000));
-    service.checkIamAccountLockout(USERNAME);
+    assertDoesNotThrow(() -> service.checkIamAccountLockout(USERNAME));
     assertEquals(0, lockout.getFailedAttempts());
     assertNull(lockout.getSuspendedUntil());
-
-    // ROUND 2: 2 failures -> suspended again
-    service.recordFailedAttempt(USERNAME);
-    service.recordFailedAttempt(USERNAME);
-    assertEquals(2, lockout.getLockoutCount());
-    assertTrue(account.isActive());
-
-    // Suspension expires again
-    lockout.setSuspendedUntil(new Date(System.currentTimeMillis() - 1000));
-    service.checkIamAccountLockout(USERNAME);
-    // ROUND 3: 2 failures -> account disabled, row deleted
-    service.recordFailedAttempt(USERNAME);
-    service.recordFailedAttempt(USERNAME);
-
-    assertFalse(account.isActive());
-    verify(accountRepo).save(account);
-    verify(lockoutRepo).delete(lockout);
-  }
-
-  @Test
-  void checkLockoutNoRecordIsNoop() {
-    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
-    assertDoesNotThrow(() -> service.checkIamAccountLockout(USERNAME));
+    verify(lockoutRepo).save(lockout);
   }
 
   @Test
@@ -178,12 +143,21 @@ class DefaultLoginLockoutServiceTests {
   @Test
   void recordFailedAttemptWhileSuspendedIsNoop() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    lockout.setSuspendedUntil(new Date(System.currentTimeMillis() + 60_000));
+    lockout.setSuspendedUntil(Date.from(Instant.now().plusSeconds(60)));
     when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
 
     service.recordFailedAttempt(USERNAME);
     verify(lockoutRepo, never()).save(any());
+  }
+
+  @Test
+  void successfulLoginDeletesRow() {
+    IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
+
+    service.resetFailedAttempts(USERNAME);
+    verify(lockoutRepo).delete(lockout);
   }
 
   @Test
@@ -193,4 +167,97 @@ class DefaultLoginLockoutServiceTests {
     verify(lockoutRepo, never()).delete(any());
   }
 
+  @Test
+  void fullLifecycleDisablesAfterMaxRounds() {
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
+
+    // ROUND 1: 2 failures => suspended
+    service.recordFailedAttempt(USERNAME);
+    ArgumentCaptor<IamAccountLoginLockout> captor = ArgumentCaptor.forClass(IamAccountLoginLockout.class);
+    verify(lockoutRepo).save(captor.capture());
+    IamAccountLoginLockout lockout = captor.getValue();
+
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
+    service.recordFailedAttempt(USERNAME);
+    assertEquals(1, lockout.getLockoutCount());
+    assertNotNull(lockout.getSuspendedUntil());
+    assertTrue(account.isActive());
+
+    // Suspension expires
+    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
+    service.checkIamAccountLockout(USERNAME);
+    assertEquals(0, lockout.getFailedAttempts());
+
+    // ROUND 2
+    service.recordFailedAttempt(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+    assertEquals(2, lockout.getLockoutCount());
+
+    // Suspension expires
+    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
+    service.checkIamAccountLockout(USERNAME);
+
+    // ROUND 3: exceeds max-concurrent-failures=2 => disabled
+    service.recordFailedAttempt(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+
+    assertFalse(account.isActive());
+    verify(accountRepo).save(account);
+    verify(lockoutRepo).delete(lockout);
+  }
+
+  @Test
+  void keepsSuspendingWhenDisableAfterMaxFailuresIsFalse() {
+    lockoutProps.setDisableAfterMaxFailures(false);
+
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
+
+    // ROUND 1
+    service.recordFailedAttempt(USERNAME);
+    ArgumentCaptor<IamAccountLoginLockout> captor = ArgumentCaptor.forClass(IamAccountLoginLockout.class);
+    verify(lockoutRepo).save(captor.capture());
+    IamAccountLoginLockout lockout = captor.getValue();
+
+    when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.of(lockout));
+    service.recordFailedAttempt(USERNAME);
+    assertEquals(1, lockout.getLockoutCount());
+    assertNotNull(lockout.getSuspendedUntil());
+
+    // Expire + ROUND 2
+    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
+    service.checkIamAccountLockout(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+    assertEquals(2, lockout.getLockoutCount());
+
+    // Expire + ROUND 3: would disable with default, but now just suspends again
+    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
+    service.checkIamAccountLockout(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+    service.recordFailedAttempt(USERNAME);
+
+    assertEquals(3, lockout.getLockoutCount());
+    assertNotNull(lockout.getSuspendedUntil());
+    assertTrue(account.isActive());
+    verify(accountRepo, never()).save(account);
+  }
+
+  @Test
+  void adminRevokeLockoutDeletesRow() {
+    IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
+    lockout.setSuspendedUntil(Date.from(Instant.now().plusSeconds(60)));
+    when(lockoutRepo.findByAccountUuid(UUID)).thenReturn(Optional.of(lockout));
+
+    service.adminRevokeLockout(UUID);
+    verify(lockoutRepo).delete(lockout);
+  }
+
+  @Test
+  void adminRevokeLockoutNoRowPresent() {
+    when(lockoutRepo.findByAccountUuid(UUID)).thenReturn(Optional.empty());
+    service.adminRevokeLockout(UUID);
+    verify(lockoutRepo, never()).delete(any());
+  }
 }

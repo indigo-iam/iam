@@ -75,16 +75,18 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   void authenticateReturnsNullWhenTotpIsNull() {
     when(token.getTotp()).thenReturn(null);
     assertNull(multiFactorTotpCheckProvider.authenticate(token));
+    verify(lockoutService, never()).checkIamAccountLockout(anyString());
   }
 
   @Test
-  void authenticateThrowsBadCredentialsExceptionWhenAccountNotFound() {
+  void authenticateChecksLockoutBeforeAccountLookup() {
     when(token.getTotp()).thenReturn("123456");
     when(token.getName()).thenReturn("username");
     when(accountRepo.findByUsername("username")).thenReturn(Optional.empty());
 
     assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
+    verify(lockoutService).checkIamAccountLockout("username");
   }
 
   @Test
@@ -141,7 +143,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  void authenticateWithOidcTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateWithOidcTokenSucceeds() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(oidcToken.getName()).thenReturn("totp");
     when(oidcToken.getTotp()).thenReturn("123456");
@@ -152,7 +154,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  void authenticateWithSamlTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateWithSamlTokenSucceeds() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(samlToken.getName()).thenReturn("totp");
     when(samlToken.getTotp()).thenReturn("123456");

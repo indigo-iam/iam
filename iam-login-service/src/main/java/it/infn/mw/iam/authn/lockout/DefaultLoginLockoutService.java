@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.authn.lockout;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
@@ -68,15 +70,16 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
               + "Please provide the suspension duration in minutes.");
     }
 
-    if (properties.getMaxConcurrentFailures() < 1) {
+    if (properties.isDisableAfterMaxFailures() && properties.getMaxConcurrentFailures() < 1) {
       throw new IllegalStateException(
-          "iam.login-lockout.max-concurrent-failures must be >= 1. "
+          "iam.login-lockout.max-concurrent-failures must be >= 1 when disable-after-max-failures is true. "
               + "Please provide the maximum number of suspension rounds allowed before the account is permanently disabled.");
     }
 
     LOG.info("Iam Account Login lockout enabled: max-failed-attempts={}, lockout-minutes={}, "
-        + "max-concurrent-failures={}", properties.getMaxFailedAttempts(),
-        properties.getLockoutMinutes(), properties.getMaxConcurrentFailures());
+        + "max-concurrent-failures={}, disable-after-max-failures={}",
+        properties.getMaxFailedAttempts(), properties.getLockoutMinutes(),
+        properties.getMaxConcurrentFailures(), properties.isDisableAfterMaxFailures());
   }
 
   @Override
@@ -139,7 +142,7 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       return;
     }
 
-    // if a previous suspension has expired but checkLockout was not called,
+    // if a previous suspension has expired but checkIamAccountLockout was not called,
     // reset the counter so we don't carry over stale failedAttempts from the prior round.
     if (lockout.getSuspendedUntil() != null) {
       lockout.setFailedAttempts(0);
@@ -147,10 +150,10 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       lockout.setSuspendedUntil(null);
     }
 
-    Date now = new Date();
+    Instant now = Instant.now();
 
     if (lockout.getFailedAttempts() == 0) {
-      lockout.setFirstFailureTime(now);
+      lockout.setFirstFailureTime(Date.from(now));
     }
 
     lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);
@@ -162,7 +165,8 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
 
       lockout.setLockoutCount(lockout.getLockoutCount() + 1);
 
-      if (lockout.getLockoutCount() > properties.getMaxConcurrentFailures()) {
+      if (properties.isDisableAfterMaxFailures()
+          && lockout.getLockoutCount() > properties.getMaxConcurrentFailures()) {
         // All suspension rounds exhausted; disable the account and clean up
         account.setActive(false);
         accountRepo.save(account);
@@ -173,8 +177,8 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       }
 
       // Suspend for the configured duration
-      long suspendUntilMs = now.getTime() + ((long) properties.getLockoutMinutes() * 60 * 1000);
-      lockout.setSuspendedUntil(new Date(suspendUntilMs));
+      Instant suspendUntil = now.plus(properties.getLockoutMinutes(), ChronoUnit.MINUTES);
+      lockout.setSuspendedUntil(Date.from(suspendUntil));
 
       LOG.warn("Account '{}' suspended until {} (round {} of {})", username,
           lockout.getSuspendedUntil(), lockout.getLockoutCount(),
@@ -198,8 +202,18 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
     });
   }
 
+  @Override
+  @Transactional
+  public void adminRevokeLockout(String accountUuid) {
+
+    lockoutRepo.findByAccountUuid(accountUuid).ifPresent(lockout -> {
+      lockoutRepo.delete(lockout);
+      LOG.info("Admin revoked suspension for account '{}'", lockout.getAccount().getUsername());
+    });
+  }
+
   private boolean isSuspended(IamAccountLoginLockout lockout) {
     return lockout.getSuspendedUntil() != null
-        && System.currentTimeMillis() < lockout.getSuspendedUntil().getTime();
+        && Instant.now().isBefore(lockout.getSuspendedUntil().toInstant());
   }
 }

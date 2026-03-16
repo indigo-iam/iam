@@ -669,6 +669,7 @@ public class IamProperties {
     private int maxFailedAttempts = 3;
     private int lockoutMinutes = 30;
     private int maxConcurrentFailures = 2;
+    private boolean disableAfterMaxFailures = true;
 
     public boolean isEnabled() {
       return enabled;
@@ -700,6 +701,14 @@ public class IamProperties {
 
     public void setMaxConcurrentFailures(int maxConcurrentFailures) {
       this.maxConcurrentFailures = maxConcurrentFailures;
+    }
+
+    public boolean isDisableAfterMaxFailures() {
+      return disableAfterMaxFailures;
+    }
+
+    public void setDisableAfterMaxFailures(boolean disableAfterMaxFailures) {
+      this.disableAfterMaxFailures = disableAfterMaxFailures;
     }
   }
 

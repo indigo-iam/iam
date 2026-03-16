@@ -191,6 +191,7 @@ iam:
 
   login-lockout:
     enabled: ${IAM_ACCOUNT_LOGIN_LOCKOUT_ENABLED:false}
+    disable-after-max-failures: ${IAM_ACCOUNT_LOGIN_LOCKOUT_DISABLE_AFTER_MAX_FAILURES:false}
     max-failed-attempts: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS:3}
     lockout-minutes: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MINUTES:30}
     max-concurrent-failures: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_CONCURRENT_FAILURES:2}

@@ -54,6 +54,7 @@ function UserService($q, $rootScope, $http, scimFactory, Authorities, Utils, Aup
                 if (result[2] !== null) {
                     user.isMfaActive = result[2];
                 }
+                user.lockoutInfo = { suspended: false };
                 return user;
             }).catch(function (error) {
                 console.error('Error loading authenticated user information: ', error);
@@ -61,16 +62,11 @@ function UserService($q, $rootScope, $http, scimFactory, Authorities, Utils, Aup
             });
     }
 
-    function getLockoutInfo(userId) {
-        return $http.get('/iam/account/' + userId + '/lockout')
-            .then(function (r) { return r.data; })
-            .catch(function () { return { suspended: false }; });
-    }
-
     function getUser(userId) {
         return $q
             .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId),
-            AuthenticatorAppService.getMfaSettingsForAccount(userId), getLockoutInfo(userId)
+            AuthenticatorAppService.getMfaSettingsForAccount(userId),
+            $http.get('/iam/account/' + userId + '/lockout').catch(function () { return { data: { suspended: false } }; })
             ])
             .then(function (result) {
                 var user = result[0].data;
@@ -89,7 +85,7 @@ function UserService($q, $rootScope, $http, scimFactory, Authorities, Utils, Aup
                     user.isMfaActive = result[3];
                 }
 
-                user.lockoutInfo = result[4];
+                user.lockoutInfo = result[4].data;
 
                 return user;
             })

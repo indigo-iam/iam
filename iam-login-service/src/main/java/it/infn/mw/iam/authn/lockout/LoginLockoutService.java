@@ -16,15 +16,17 @@
 package it.infn.mw.iam.authn.lockout;
 
 /**
- * Tracks failed login attempts and enforces temporary suspensions and permanent account disabling.
+ * Tracks failed login attempts and enforces temporary suspensions
+ *  and permanent account disabling, if `disable-after-max-failures` enabled.
  *
  * Password failures and TOTP failures share the same counter. The lifecycle:
  *
- *   User fails {@code max-failed-attempts} times => suspended for {@code lockout-minutes}
- *   Suspension expires => counter resets, user gets another round of attempts
- *   After {@code max-concurrent-failures} suspension rounds, the next round of failures
- *       disables the account ({@code active = false}) and the lockout row is deleted
- *   An admin can re-enable the account since the lockout row is gone, the user starts fresh
+ * User fails {max-failed-attempts} times => suspended for {lockout-minutes}.
+ * Suspension expires => counter resets, user gets another round of attempts.
+ * If {disable-after-max-failures} is true:
+ *   after {max-concurrent-failures} suspension rounds the account is disabled.
+ * If false (default): the account is never disabled, only repeatedly suspended.
+ * An admin can clear a lockout at any time.
  */
 public interface LoginLockoutService {
 
@@ -37,8 +39,8 @@ public interface LoginLockoutService {
 
   /**
    * Records a single failed attempt (password or TOTP). When the attempt count reaches the
-   * threshold the account is suspended. When all suspension rounds are exhausted the account
-   * is disabled and the lockout row is deleted.
+   * threshold the account is suspended. When all suspension rounds are exhausted and
+   * disable-after-max-failures is true, the account is disabled and the lockout row is deleted.
    */
   void recordFailedAttempt(String username);
 
@@ -47,4 +49,10 @@ public interface LoginLockoutService {
    * authentication (password-only login, or TOTP verification).
    */
   void resetFailedAttempts(String username);
+
+  /**
+   * Admin-triggered unlock. Deletes the lockout row for the given account,
+   * clearing any active suspension.
+   */
+  void adminRevokeLockout(String accountUuid);
 }
