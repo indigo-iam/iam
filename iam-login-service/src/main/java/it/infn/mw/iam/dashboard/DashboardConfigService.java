@@ -91,7 +91,7 @@ public class DashboardConfigService {
       try {
         clientService.saveNewClient(client);
       } catch (Exception e) {
-        LOG.error("Error saving dashboard client: " + e.getMessage());
+        LOG.error("Error saving dashboard client: {}", e.getMessage());
         return false;
       }
       return true;

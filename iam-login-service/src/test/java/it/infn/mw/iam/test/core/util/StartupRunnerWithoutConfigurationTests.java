@@ -30,7 +30,7 @@ import it.infn.mw.iam.dashboard.DashboardConfigService;
 
 @SpringBootTest(classes = { IamLoginService.class })
 @TestPropertySource(properties = "iam.dashboard.enabled=false")
-public class StartupRunnerWithoutConfigurationTests {
+class StartupRunnerWithoutConfigurationTests {
 
   @MockBean
   private DashboardConfigService dashboardConfigService;

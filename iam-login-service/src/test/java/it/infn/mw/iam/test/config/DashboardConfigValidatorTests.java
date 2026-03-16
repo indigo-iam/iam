@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import it.infn.mw.iam.api.client.management.validation.DashboardConfigValidator;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
-public class DashboardConfigValidatorTests {
+class DashboardConfigValidatorTests {
 
   private final DashboardConfigValidator validator = new DashboardConfigValidator();
   private final ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
@@ -57,43 +57,30 @@ public class DashboardConfigValidatorTests {
 
   @Test
   void testIsNotValidDashboardSecret() {
-    dashboardProperties.setClientSecret("too-short-client-secret");
-    assertFalse(validator.isValid(dashboardProperties, context));
-  }
-
-  @Test
-  void testIsNotValidDashboardSecretTooLong() {
-    dashboardProperties.setClientSecret("too-long-client-secret-82gbV6OEwGBCPMmcFPXg5-4wRJXnKc-4wds5odwrFiY4wds5odwrF");
-    assertFalse(validator.isValid(dashboardProperties, context));
-  }
-
-  @Test
-  void testIsNotValidDashboardSecretInvalidChars() {
-    dashboardProperties.setClientSecret("0tlkqGPJD2vWN1/dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
-    assertFalse(validator.isValid(dashboardProperties, context));
-  }
-
-  @Test
-  void testIsNotValidDashboardSecretInvalidNull() {
-    dashboardProperties.setClientSecret(null);
-    assertFalse(validator.isValid(dashboardProperties, context));
-  }
-
-  @Test
-  void testIsNotValidDashboardSecretInvalidString() {
-    dashboardProperties.setClientSecret("");
-    assertFalse(validator.isValid(dashboardProperties, context));
-  }
-
-  @Test
-  void testIsNotValidDashboardClientIdInvalidUUID() {
-    dashboardProperties.setClientId("client-dashboard!");
-    assertFalse(validator.isValid(dashboardProperties, context));
+    invalidSecret("too-short-client-secret");
+    invalidSecret("too-long-client-secret-82gbV6OEwGBCPMmcFPXg5-4wRJXnKc-4wds5odwrFiY4wds5odwrF");
+    invalidSecret("0tlkqGPJD2vWN1/dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
+    invalidSecret(null);
+    invalidSecret("");
   }
 
   @Test
   void testIsNotValidDashboardClientIdNull() {
-    dashboardProperties.setClientId(null);
+    invalidClientId(null);
+    invalidClientId("id");
+    invalidClientId("client-with-special-chars/");
+    invalidClientId("client with spaces");
+    invalidClientId("too long client-id over 255 characters " + "a".repeat(256));
+    invalidClientId("");
+  }
+
+  private void invalidSecret(String secret) {
+    dashboardProperties.setClientSecret(secret);
+    assertFalse(validator.isValid(dashboardProperties, context));
+  }
+
+  private void invalidClientId(String clientId) {
+    dashboardProperties.setClientId(clientId);
     assertFalse(validator.isValid(dashboardProperties, context));
   }
 }

@@ -39,7 +39,7 @@ import it.infn.mw.iam.dashboard.DashboardConfigService;
   "iam.dashboard.client-id=dashboard-id",
   "iam.dashboard.client-secret=10000000-1234-1234-1234-123456789012" })
 @Transactional
-public class StartupRunnerTests {
+class StartupRunnerTests {
 
   @SpyBean
   private DashboardConfigService dashboardConfigService;

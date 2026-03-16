@@ -26,7 +26,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 
-import java.text.ParseException;
 import java.util.Set;
 
 import javax.transaction.Transactional;
@@ -44,7 +43,7 @@ import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
 @SpringBootTest(classes = { IamLoginService.class })
 @Transactional
-public class DashboardConfigServiceTest {
+class DashboardConfigServiceTest {
 
   private static final String CLIENT_ID = "dashboard-client";
   private static final String CLIENT_SECRET = "secret";
@@ -54,7 +53,7 @@ public class DashboardConfigServiceTest {
   private static final Set<String> AUTH_GRAND_TYPE = Set.of(AuthorizationGrantType.CODE.getGrantType(),
       AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
 
-  private ClientDetailsEntity client;
+  private ClientDetailsEntity clientDashboard;
 
   @Autowired
   private DashboardConfigService dashboardConfigService;
@@ -64,27 +63,27 @@ public class DashboardConfigServiceTest {
 
   @BeforeEach
   void setUp() {
-    this.client = new ClientDetailsEntity();
-    client.setClientId(CLIENT_ID);
-    client.setClientSecret(CLIENT_SECRET);
-    client.setScope(SCOPES);
-    client.setGrantTypes(AUTH_GRAND_TYPE);
-    client.setRedirectUris(Set.of("http://localhost:8080/api/auth/oauth2/callback/indigo-iam"));
-    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
-    client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    iamClientDetailsRepository.save(client);
+    clientDashboard = new ClientDetailsEntity();
+    clientDashboard.setClientId(CLIENT_ID);
+    clientDashboard.setClientSecret(CLIENT_SECRET);
+    clientDashboard.setScope(SCOPES);
+    clientDashboard.setGrantTypes(AUTH_GRAND_TYPE);
+    clientDashboard.setRedirectUris(Set.of("http://localhost:8080/api/auth/oauth2/callback/indigo-iam"));
+    clientDashboard.setCodeChallengeMethod(PKCEAlgorithm.S256);
+    clientDashboard.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    iamClientDetailsRepository.save(clientDashboard);
   }
 
   @AfterEach
   void tearDown() {
-    iamClientDetailsRepository.delete(client);
+    iamClientDetailsRepository.delete(clientDashboard);
   }
 
   @Test
   void testCheckRecordConfiguration() {
     ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES);
 
-    assertEquals(dashboardConfigService.checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL), true);
+    assertEquals(true, dashboardConfigService.checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
   }
 
   @Test
@@ -92,64 +91,56 @@ public class DashboardConfigServiceTest {
     ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE,
         Sets.newHashSet("openid"));
 
-    assertEquals(dashboardConfigService.checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL), false);
+    assertEquals(false, dashboardConfigService.checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
   }
 
   @Test
   void testFailCheckRecordClientSecretConfiguration() {
     ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES);
 
-    assertEquals(dashboardConfigService.checkRecordConfiguration(client, "test_secret", BASE_URL), false);
+    assertEquals(false, dashboardConfigService.checkRecordConfiguration(client, "test_secret", BASE_URL));
   }
 
   @Test
-  void testInitDashboardClient() throws ParseException {
+  void testInitDashboardClient() {
     DashboardProperties properties = new DashboardProperties();
     properties.setClientId(CLIENT_ID);
     properties.setClientSecret(CLIENT_SECRET);
 
-    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+    assertEquals(true, dashboardConfigService.initDashboardClient(properties, BASE_URL));
   }
 
   @Test
-  void testInitDashboardClientFail() throws ParseException {
-    DashboardProperties properties = new DashboardProperties();
-    properties.setClientId(CLIENT_ID);
-    properties.setClientSecret(CLIENT_SECRET);
-    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
-  }
-
-  @Test
-  void testInitDashboardClientInsertDashboard() throws ParseException {
+  void testInitDashboardClientInsertDashboard() {
     assertThat(iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").isPresent(), is(false));
 
     DashboardProperties properties = new DashboardProperties();
     properties.setClientId(CLIENT_ID + "-new");
     properties.setClientSecret(CLIENT_SECRET);
 
-    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+    assertEquals(true, dashboardConfigService.initDashboardClient(properties, BASE_URL));
 
     iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").ifPresentOrElse(c -> {
-      assertEquals(c.getClientId(), CLIENT_ID + "-new");
-      assertEquals(c.getScope(), client.getScope());
+      assertEquals(CLIENT_ID + "-new", c.getClientId());
+      assertEquals(clientDashboard.getScope(), c.getScope());
     }, () -> {
       throw new AssertionError("Client not found");
     });
   }
 
   @Test
-  void testInitDashboardClientUpdateDashboard() throws ParseException {
+  void testInitDashboardClientUpdateDashboard() {
     assertThat(iamClientDetailsRepository.findByClientId(CLIENT_ID + "-new").isPresent(), is(false));
 
     DashboardProperties properties = new DashboardProperties();
     properties.setClientId(CLIENT_ID);
     properties.setClientSecret(CLIENT_SECRET);
 
-    assertEquals(dashboardConfigService.initDashboardClient(properties, BASE_URL), true);
+    assertEquals(true, dashboardConfigService.initDashboardClient(properties, BASE_URL));
 
     iamClientDetailsRepository.findByClientId(CLIENT_ID).ifPresentOrElse(c -> {
-      assertEquals(c.getClientId(), CLIENT_ID);
-      assertEquals(c.getScope(), client.getScope());
+      assertEquals(CLIENT_ID, c.getClientId());
+      assertEquals(clientDashboard.getScope(), c.getScope());
     }, () -> {
       throw new AssertionError("Client not found");
     });
