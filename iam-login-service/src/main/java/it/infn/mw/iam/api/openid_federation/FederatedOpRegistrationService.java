@@ -16,6 +16,8 @@
 package it.infn.mw.iam.api.openid_federation;
 
 import static it.infn.mw.iam.core.oidc.FederationException.invalidClientMetadata;
+import static it.infn.mw.iam.core.oidc.FederationException.invalidRequest;
+import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 
 import java.net.URI;
 import java.text.ParseException;
@@ -31,7 +33,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -82,7 +83,8 @@ public class FederatedOpRegistrationService {
     this.restTemplate = restTemplateFactory.newRestTemplate();
   }
 
-  public RegisteredClientDTO registerOp(String issuer) throws JOSEException, ParseException, FederationException {
+  public RegisteredClientDTO registerOp(String issuer)
+      throws JOSEException, ParseException, FederationException {
 
     validateIssuer(issuer);
 
@@ -111,7 +113,8 @@ public class FederatedOpRegistrationService {
     return clientRegistrationService.registerClient(dtoClient, null);
   }
 
-  private List<String> selectAuthorityHints(TrustChain trustChain, String issuer) {
+  private List<String> selectAuthorityHints(TrustChain trustChain, String issuer)
+      throws FederationException {
 
     List<String> chainIssuers = trustChain.getSuperiorStatements()
       .stream()
@@ -124,13 +127,13 @@ public class FederatedOpRegistrationService {
     List<String> selected = chainIssuers.stream().filter(configuredHints::contains).toList();
 
     if (selected.isEmpty()) {
-      throw new IllegalStateException("No valid authority_hints found for OP: " + issuer);
+      throw invalidTrustChain("No valid authority_hints found for OP: " + issuer);
     }
 
     return selected;
   }
 
-  private String postRegistration(URI endpoint, String jwt) {
+  private String postRegistration(URI endpoint, String jwt) throws FederationException {
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(new MediaType("application", "entity-statement+jwt"));
@@ -140,19 +143,19 @@ public class FederatedOpRegistrationService {
     try {
       return restTemplate.postForObject(endpoint, entity, String.class);
     } catch (HttpClientErrorException e) {
-      throw new AuthenticationServiceException(
-          "Federation registration failed: " + e.getResponseBodyAsString(), e);
+      throw invalidRequest("Federation registration failed: " + e.getResponseBodyAsString(), e);
     }
   }
 
-  private void validateIssuer(String issuer) {
+  private void validateIssuer(String issuer) throws FederationException {
     URI uri = URI.create(issuer);
     if (!"https".equalsIgnoreCase(uri.getScheme())) {
-      throw new IllegalArgumentException("Issuer must use https");
+      throw invalidRequest("Issuer must use https");
     }
   }
 
-  private RegisteredClientDTO createClientDtoFromOpMetadata(EntityStatement opEc) throws FederationException {
+  private RegisteredClientDTO createClientDtoFromOpMetadata(EntityStatement opEc)
+      throws FederationException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCProviderMetadata metadata = opEc.getClaimsSet().getOPMetadata();
 

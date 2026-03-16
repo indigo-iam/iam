@@ -63,7 +63,7 @@ public class FederationClientConfigurationService implements ClientConfiguration
 
     } catch (JOSEException | ParseException | FederationException e) {
       throw new AuthenticationServiceException(
-          "Unable to register federated OP " + serverConfig.getIssuer(), e);
+          "Unable to register federated OP: " + serverConfig.getIssuer(), e);
     }
   }
 
