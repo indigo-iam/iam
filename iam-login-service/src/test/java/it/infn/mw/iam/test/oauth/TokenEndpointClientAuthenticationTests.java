@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +35,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -70,6 +71,24 @@ class TokenEndpointClientAuthenticationTests {
         .param("scope", SCOPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo(SCOPE)));
+    // @formatter:on
+  }
+
+  @Test
+  void testTokenEndpointFormClientWithNoAuthenticationFailed() throws Exception {
+    // Replicate: When user is changing client auth method to No authentication from others, 
+    // the previous secret value persist in the database. So when the client is in use, it is still checking for the secret.
+    String clientId = "public-client-having-secret";
+    String clientSecret = "";
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", GRANT_TYPE)
+        .param("client_id", clientId)
+        .param("client_secret", clientSecret)
+        .param("scope", SCOPE))
+      .andDo(print())
+      .andExpect(status().isUnauthorized());
     // @formatter:on
   }
 
