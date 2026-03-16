@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
+import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,14 +25,20 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
@@ -45,8 +52,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
@@ -63,6 +73,7 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
     classes = {IamLoginService.class, FederationClientConfigurationServiceTests.TestConfig.class},
     webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@Transactional
 class FederationClientConfigurationServiceTests {
 
   @TestConfiguration
@@ -118,8 +129,8 @@ class FederationClientConfigurationServiceTests {
 
   @Test
   void testOpRegistration() throws Exception {
-    fakeChain =
-        TrustChainTestFactory.createOpToTaChain(null, URI.create("https://op.example.com/jwk"));
+    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
+        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
 
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
@@ -136,7 +147,41 @@ class FederationClientConfigurationServiceTests {
     Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(rpEC.getEntityID().getValue());
     assertTrue(client.isPresent());
     assertEquals("OIDFed OP client", client.get().getClientName());
+  }
 
-    clientRepo.delete(client.get());
+  @Test
+  void testOpRegistrationFailureWhenCommonAuthorityHintsNotFound() throws Exception {
+    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
+        URI.create("https://op.example.com/jwk"), "https://ta.example.com");
+    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
+
+    MvcResult result = mvc.perform(get("/openid_connect_login?iss=https://op.example.com"))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("/login?error=true"))
+      .andReturn();
+
+    AuthenticationServiceException ex = (AuthenticationServiceException) result.getRequest()
+      .getSession()
+      .getAttribute(EXT_AUTH_ERROR_KEY);
+
+    assertTrue(ex.getMessage().contains("Unable to register federated OP"));
+  }
+
+  @Test
+  void testRegisteredOpRedirectsToAuthorize() throws Exception {
+    Optional<ClientDetailsEntity> registeredOp = clientRepo.findByClientId("client");
+    ClientRelyingPartyEntity client = new ClientRelyingPartyEntity();
+    client.setEntityId("https://op.example.com");
+    LocalDate today = LocalDate.now();
+    LocalDate tomorrow = today.plusDays(1);
+    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    client.setExpiration(tomorrowDate);
+    client.setClient(registeredOp.get());
+    registeredOp.get().setClientRelyingParty(client);
+    clientRepo.save(registeredOp.get());
+
+    mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrlPattern("https://op.example.com/authorize*"));
   }
 }

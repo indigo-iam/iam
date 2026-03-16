@@ -154,12 +154,12 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: OP → TA */
-  public static TrustChain createOpToTaChain(String aud, URI jwksUri) throws JOSEException {
+  public static TrustChain createOpToTaChain(String aud, URI jwksUri, String ta)
+      throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
     String op = "https://op.example.com";
-    String ta = "https://trust-anchor.sandbox.eosc.grnet.gr";
 
     // OP self EC with authority_hint = TA
     OIDCProviderMetadata clientMetadata =
