@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,6 +48,7 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -65,6 +68,7 @@ public class FederatedOpRegistrationService {
   private final TrustChainService tcService;
   private final ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder;
   private final ClientRegistrationService clientRegistrationService;
+  private final ClientService clientService;
   private final OpenidFederationProperties oidFedProperties;
   private final RestTemplate restTemplate;
 
@@ -73,17 +77,18 @@ public class FederatedOpRegistrationService {
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      ClientRegistrationService clientRegistrationService,
+      ClientRegistrationService clientRegistrationService, ClientService clientService,
       OpenidFederationProperties oidFedProperties, RestTemplateFactory restTemplateFactory) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
     this.clientRegistrationService = clientRegistrationService;
+    this.clientService = clientService;
     this.oidFedProperties = oidFedProperties;
     this.restTemplate = restTemplateFactory.newRestTemplate();
   }
 
-  public RegisteredClientDTO registerOp(String issuer)
+  public RegisteredClientDTO registerOp(String issuer, Optional<ClientDetailsEntity> existingClient)
       throws JOSEException, ParseException, FederationException {
 
     validateIssuer(issuer);
@@ -109,8 +114,16 @@ public class FederatedOpRegistrationService {
     RegisteredClientDTO dtoClient = createClientDtoFromOpMetadata(opEc);
     dtoClient.setExpiration(trustChain.resolveExpirationTime());
     dtoClient.setRequestObjectSigningAlgorithm(signedResponse.getHeader().getAlgorithm());
+    dtoClient.setClientType(ClientType.EXTERNAL);
 
-    return clientRegistrationService.registerClient(dtoClient, null);
+    RegisteredClientDTO registeredClient =
+        clientRegistrationService.registerClient(dtoClient, null);
+
+    if (existingClient.isPresent()) {
+      clientService.deleteClient(existingClient.get());
+    }
+
+    return registeredClient;
   }
 
   private List<String> selectAuthorityHints(TrustChain trustChain, String issuer)

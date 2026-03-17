@@ -1,0 +1,1 @@
+ALTER TABLE client_relying_party ADD COLUMN client_type VARCHAR(10) NOT NULL DEFAULT 'INTERNAL';

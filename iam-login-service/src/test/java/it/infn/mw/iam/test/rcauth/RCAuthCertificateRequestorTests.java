@@ -77,7 +77,7 @@ class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
   @BeforeEach
   void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
-    mockRtf.resetTemplate();
+    mockRtf.resetServer();
   }
 
   @Test
@@ -122,6 +122,6 @@ class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
 
   void verifyMockServerCalls() {
     mockRtf.getMockServer().verify();
-    mockRtf.resetTemplate();
+    mockRtf.resetServer();
   }
 }

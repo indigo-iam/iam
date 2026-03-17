@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -315,7 +316,7 @@ class FederationRegistrationControllerTests {
     long oneDayInMillis = 24 * 60 * 60 * 1000;
     Date yesterday = new Date(now.getTime() - oneDayInMillis);
     ClientRelyingPartyEntity entity = new ClientRelyingPartyEntity(client, yesterday,
-        fakeChain.getLeafSelfStatement().getEntityID().getValue());
+        fakeChain.getLeafSelfStatement().getEntityID().getValue(), ClientType.INTERNAL);
     client.setClientRelyingParty(entity);
     clientRepo.save(client);
 

@@ -57,7 +57,7 @@ public class FederationClientConfigurationService implements ClientConfiguration
 
     try {
       RegisteredClientDTO registered =
-          federationRegistrationService.registerOp(serverConfig.getIssuer());
+          federationRegistrationService.registerOp(serverConfig.getIssuer(), client);
 
       return toRegisteredClient(registered);
 

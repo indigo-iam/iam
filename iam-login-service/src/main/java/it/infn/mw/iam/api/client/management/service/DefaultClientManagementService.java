@@ -127,8 +127,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setActive(true);
 
     if (hasRelyingParty(client)) {
-      ClientRelyingPartyEntity clientRelyingParty =
-          new ClientRelyingPartyEntity(entity, client.getExpiration(), client.getEntityId());
+      ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(entity,
+          client.getExpiration(), client.getEntityId(), client.getClientType());
       entity.setClientRelyingParty(clientRelyingParty);
       entity.setRequestObjectSigningAlg(client.getRequestObjectSigningAlgorithm());
     }
@@ -197,7 +197,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
     if (hasRelyingParty(clientDTO)) {
       ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,
-          clientDTO.getExpiration(), clientDTO.getEntityId());
+          clientDTO.getExpiration(), clientDTO.getEntityId(), clientDTO.getClientType());
       newClient.setClientRelyingParty(clientRelyingParty);
       newClient.setRequestObjectSigningAlg(clientDTO.getRequestObjectSigningAlgorithm());
       newClient.setActive(true);
