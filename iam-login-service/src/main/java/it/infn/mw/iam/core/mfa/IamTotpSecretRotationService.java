@@ -54,7 +54,6 @@ public class IamTotpSecretRotationService {
     this.totpRepository = totpRepository;
     this.adminKeyRepository = adminKeyRepository;
     this.passwordEncoder = passwordEncoder;
-    validate();
   }
 
   private void validate() {
@@ -89,19 +88,11 @@ public class IamTotpSecretRotationService {
   @Transactional(rollbackFor = Throwable.class)
   public void rotateSecrets() {
 
-    validateProperties();
+    validate();
     totpRepository.findAll().stream().forEach(this::rotateSecret);
     IamTotpAdminKey adminKey =
         new IamTotpAdminKey(passwordEncoder.encode(mfaProperties.getPasswordToEncryptAndDecrypt()));
     adminKeyRepository.save(adminKey);
-  }
-
-  private void validateProperties() {
-
-    if (!StringUtils.hasText(mfaProperties.getOldPasswordToDecrypt())) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "A value for mfa.old-password-to-decrypt MUST be provided.");
-    }
   }
 
   private void rotateSecret(IamTotpMfa totp) {
