@@ -21,12 +21,4 @@ import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
 
 public interface IamTotpAdminKeyRepository extends JpaRepository<IamTotpAdminKey, Long> {
 
- /**
-   * Always returns the current MFA admin key hash (singleton row id = 1).
-   */
-  default String findCurrentHash() {
-    return findById(1L)
-        .map(IamTotpAdminKey::getAdminMfaKeyHash)
-        .orElse(null);
-  }
 }

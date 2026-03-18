@@ -34,19 +34,17 @@ import java.nio.ByteBuffer;
 
 public class IamTotpMfaEncryptionAndDecryptionUtil {
 
-  private static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
-      .getInstance();
+  private static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel =
+      IamTotpMfaEncryptionAndDecryptionHelper.getInstance();
 
-  private IamTotpMfaEncryptionAndDecryptionUtil() {
-  }
+  private IamTotpMfaEncryptionAndDecryptionUtil() {}
 
   /**
-   * This helper method requires a password for encrypting the plaintext.
-   * Ensure to use the same password for decryption as well.
+   * This helper method requires a password for encrypting the plaintext. Ensure to use the same
+   * password for decryption as well.
    *
    * @param plaintext plaintext to encrypt.
-   * @param password  Provided by the admin through the environment
-   *                  variable.
+   * @param password Provided by the admin through the environment variable.
    *
    * @return String If encryption is successful, the cipherText would be returned.
    *
@@ -77,33 +75,31 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       } else {
         iv = generateNonce(defaultModel.getIvLengthInBytesForGCM());
 
-        cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
+        cipher.init(Cipher.ENCRYPT_MODE, key,
+            new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
       }
 
       byte[] cipherText = cipher.doFinal(plaintext.getBytes());
 
       // Append salt, IV, and cipherText into `encryptedData`.
       byte[] encryptedData = ByteBuffer.allocate(salt.length + iv.length + cipherText.length)
-          .put(salt)
-          .put(iv)
-          .put(cipherText)
-          .array();
+        .put(salt)
+        .put(iv)
+        .put(cipherText)
+        .array();
 
-      return Base64.getEncoder()
-          .encodeToString(encryptedData);
+      return Base64.getEncoder().encodeToString(encryptedData);
     } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "An error occurred while encrypting secret", exp);
+      throw new IamTotpMfaInvalidArgumentError("An error occurred while encrypting secret", exp);
     }
   }
 
   /**
-   * Helper to decrypt the cipherText. Ensure you use the same password as you did
-   * during encryption.
+   * Helper to decrypt the cipherText. Ensure you use the same password as you did during
+   * encryption.
    *
-   * @param cText    Encrypted data which help us to extract the plaintext.
-   * @param password Provided by the admin through the environment
-   *                 variable.
+   * @param cText Encrypted data which help us to extract the plaintext.
+   * @param password Provided by the admin through the environment variable.
    *
    * @return String Returns plainText which we obtained from the cipherText.
    *
@@ -147,15 +143,16 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       if (isCipherModeCBC()) {
         cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
       } else {
-        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
+        cipher.init(Cipher.DECRYPT_MODE, key,
+            new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
       }
 
       byte[] decryptedTextBytes = cipher.doFinal(cipherText);
 
       return new String(decryptedTextBytes);
     } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "An error occurred while decrypting ciphertext", exp);
+      throw new IamTotpMfaInvalidArgumentError("An error occurred while decrypting ciphertext",
+          exp);
     }
   }
 
@@ -168,8 +165,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    *
    * @throws NoSuchAlgorithmException
    */
-  private static IvParameterSpec getIVSecureRandom(int byteSize)
-      throws NoSuchAlgorithmException {
+  private static IvParameterSpec getIVSecureRandom(int byteSize) throws NoSuchAlgorithmException {
     SecureRandom random = SecureRandom.getInstanceStrong();
     byte[] iv = new byte[byteSize];
 
@@ -181,9 +177,8 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
   /**
    * Generates the key which can be used to encrypt and decrypt the plaintext.
    *
-   * @param password  Provided by the admin through the environment
-   *                  variable.
-   * @param salt      Ensures derived keys to be different.
+   * @param password Provided by the admin through the environment variable.
+   * @param salt Ensures derived keys to be different.
    * @param algorithm A symmetric key algorithm (AES) has been used.
    *
    * @return SecretKey
@@ -239,7 +234,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * @return boolean
    */
   private static boolean isCipherModeCBC() {
-    return defaultModel.getModeOfOperation().equalsIgnoreCase(
-        IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC.getCipherMode());
+    return defaultModel.getModeOfOperation()
+      .equalsIgnoreCase(IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC.getCipherMode());
   }
 }

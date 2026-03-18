@@ -15,17 +15,24 @@
  */
 package it.infn.mw.iam.core.mfa;
 
-import java.util.List;
-import java.util.Map;
+import static it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret;
+import static it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret;
 
+import java.util.Optional;
+
+import org.flywaydb.core.internal.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.repository.IamTotpAdminKeyRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
@@ -34,24 +41,94 @@ public class IamTotpSecretRotationService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamTotpSecretRotationService.class);
 
-  private final JdbcTemplate jdbcTemplate;
+  private final IamTotpMfaProperties mfaProperties;
+  private final IamTotpMfaRepository totpRepository;
+  private final IamTotpAdminKeyRepository adminKeyRepository;
+  private final PasswordEncoder passwordEncoder;
 
-  public IamTotpSecretRotationService(JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
+  public IamTotpSecretRotationService(IamTotpMfaProperties mfaProperties,
+      IamTotpMfaRepository totpRepository, IamTotpAdminKeyRepository adminKeyRepository,
+      PasswordEncoder passwordEncoder) {
+
+    this.mfaProperties = mfaProperties;
+    this.totpRepository = totpRepository;
+    this.adminKeyRepository = adminKeyRepository;
+    this.passwordEncoder = passwordEncoder;
+    validate();
   }
 
-  @Transactional(rollbackFor = IamTotpMfaInvalidArgumentError.class)
-  public void reEncryptAllTotpSecrets(String oldKey, String newKey) {
-    List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id, secret FROM iam_totp_mfa");
+  private void validate() {
 
-    for (Map<String, Object> row : rows) {
-      final long id = ((Number) row.get("id")).longValue();
-      final String encryptedSecret = (String) row.get("secret");
+    if (!StringUtils.hasText(mfaProperties.getPasswordToEncryptAndDecrypt())) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "TOTP MFA: A password to encrypt mfa secrets is required");
+    }
+    Optional<IamTotpAdminKey> adminKey = adminKeyRepository.findAll().stream().findAny();
+    if (adminKey.isEmpty()) {
+      return;
+    }
+    String currentHash = adminKey.get().getAdminMfaKeyHash();
+    if (passwordEncoder.matches(mfaProperties.getPasswordToEncryptAndDecrypt(), currentHash)) {
+      return;
+    }
+    if (StringUtils.hasText(mfaProperties.getOldPasswordToDecrypt())
+        && passwordEncoder.matches(mfaProperties.getOldPasswordToDecrypt(), currentHash)) {
+      return;
+    }
+    throw new IamTotpMfaInvalidArgumentError(
+        "TOTP MFA: Admin key changed. You MUST provide old password to re-encrypt existing secrets.");
+  }
 
-      final String decrypted = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(encryptedSecret, oldKey);
-      final String reEncrypted = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(decrypted, newKey);
-      jdbcTemplate.update("UPDATE iam_totp_mfa SET secret = ? WHERE id = ?", reEncrypted, id);
-      LOG.info("TOTP MFA: Re-encrypted secret for id={}", id);
+  public boolean shouldRotateSecrets() {
+
+    IamTotpAdminKey adminKey = getCurrentKey();
+    return !passwordEncoder.matches(mfaProperties.getPasswordToEncryptAndDecrypt(),
+        adminKey.getAdminMfaKeyHash());
+  }
+
+  @Transactional(rollbackFor = Throwable.class)
+  public void rotateSecrets() {
+
+    validateProperties();
+    totpRepository.findAll().stream().forEach(this::rotateSecret);
+    IamTotpAdminKey adminKey =
+        new IamTotpAdminKey(passwordEncoder.encode(mfaProperties.getPasswordToEncryptAndDecrypt()));
+    adminKeyRepository.save(adminKey);
+  }
+
+  private void validateProperties() {
+
+    if (!StringUtils.hasText(mfaProperties.getOldPasswordToDecrypt())) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "A value for mfa.old-password-to-decrypt MUST be provided.");
     }
   }
+
+  private void rotateSecret(IamTotpMfa totp) {
+
+    final String rawSecret =
+        decryptSecret(totp.getSecret(), mfaProperties.getOldPasswordToDecrypt());
+    final String encrypted =
+        encryptSecret(rawSecret, mfaProperties.getPasswordToEncryptAndDecrypt());
+    totp.setSecret(encrypted);
+    totpRepository.save(totp);
+    LOG.info("TOTP MFA: Re-encrypted secret for id={}", totp.getId());
+  }
+
+  private IamTotpAdminKey getCurrentKey() {
+
+    Optional<IamTotpAdminKey> current = adminKeyRepository.findAll().stream().findFirst();
+    if (current.isEmpty()) {
+      return initEncryptionKeyFromConfig();
+    }
+    return current.get();
+  }
+
+  private IamTotpAdminKey initEncryptionKeyFromConfig() {
+
+    IamTotpAdminKey entity =
+        new IamTotpAdminKey(passwordEncoder.encode(mfaProperties.getPasswordToEncryptAndDecrypt()));
+    return adminKeyRepository.save(entity);
+  }
+
 }
