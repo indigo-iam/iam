@@ -121,7 +121,7 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   private void paginatedGetClientsTest() throws Exception {
     mvc.perform(get(ClientManagementAPIController.ENDPOINT))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(21))
+      .andExpect(jsonPath("$.totalResults").value(22))
       .andExpect(jsonPath("$.itemsPerPage").value(10))
       .andExpect(jsonPath("$.startIndex").value(1))
       .andExpect(jsonPath("$.Resources", hasSize(10)))
@@ -129,11 +129,11 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "13"))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(21))
-      .andExpect(jsonPath("$.itemsPerPage").value(9))
+      .andExpect(jsonPath("$.totalResults").value(22))
+      .andExpect(jsonPath("$.itemsPerPage").value(10))
       .andExpect(jsonPath("$.startIndex").value(13))
-      .andExpect(jsonPath("$.Resources", hasSize(9)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
+      .andExpect(jsonPath("$.Resources", hasSize(10)))
+      .andExpect(jsonPath("$.Resources[0].client_id").value("public-client-having-secret"));
   }
 
   @Test

@@ -71,7 +71,7 @@ class SearchClientControllerTests {
           .getResponse()
           .getContentAsString(),
         new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
-    assertEquals(1, response.getTotalResults());
+    assertEquals(2, response.getTotalResults());
     assertEquals("Public client", response.getResources().get(0).getClientName());
   }
 
