@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.core.mfa;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,9 +69,7 @@ class IamTotpMfaKeyRotationTests {
   @Test
   void shouldRotateSecretsReturnsTrueWhenPasswordChanged() {
 
-    IamTotpAdminKey adminKey = new IamTotpAdminKey("hash");
-
-    when(adminKeyRepository.findAll()).thenReturn(List.of(adminKey));
+    mockAdminKey("hash");
 
     when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("new-password");
 
@@ -84,9 +83,8 @@ class IamTotpMfaKeyRotationTests {
   @Test
   void shouldRotateSecretsReturnsFalseWhenPasswordMatches() {
 
-    IamTotpAdminKey adminKey = new IamTotpAdminKey("hash");
+    mockAdminKey("hash");
 
-    when(adminKeyRepository.findAll()).thenReturn(List.of(adminKey));
     when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("password");
 
     when(passwordEncoder.matches("password", "hash")).thenReturn(true);
@@ -132,5 +130,88 @@ class IamTotpMfaKeyRotationTests {
   void validationExceptionWhenOldPasswordIsMissing() {
 
     assertThrows(IamTotpMfaInvalidArgumentError.class, () -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validateThrowsWhenPasswordMissing() {
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
+
+    assertThrows(IamTotpMfaInvalidArgumentError.class, () -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validatePassesWhenNoAdminKeyExists() {
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(currentKey);
+    when(adminKeyRepository.findAll()).thenReturn(List.of());
+
+    when(totpRepository.findAll()).thenReturn(List.of());
+    when(passwordEncoder.encode(currentKey)).thenReturn("encoded");
+
+    assertDoesNotThrow(() -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validatePassesWhenNewPasswordMatchesStoredHash() {
+
+    mockAdminKey(storedHash);
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(currentKey);
+
+    when(passwordEncoder.matches(currentKey, storedHash)).thenReturn(true);
+
+    when(totpRepository.findAll()).thenReturn(List.of());
+    when(passwordEncoder.encode(currentKey)).thenReturn("encoded");
+
+    assertDoesNotThrow(() -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validatePassesWhenOldPasswordMatchesStoredHash() {
+
+    mockAdminKey(storedHash);
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(currentKey);
+    when(mfaProperties.getOldPasswordToDecrypt()).thenReturn(oldKey);
+
+    when(passwordEncoder.matches(currentKey, storedHash)).thenReturn(false);
+    when(passwordEncoder.matches(oldKey, storedHash)).thenReturn(true);
+
+    when(totpRepository.findAll()).thenReturn(List.of());
+    when(passwordEncoder.encode(currentKey)).thenReturn("encoded");
+
+    assertDoesNotThrow(() -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validateThrowsWhenPasswordChangedAndOldPasswordNotProvided() {
+
+    mockAdminKey(storedHash);
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(currentKey);
+    when(mfaProperties.getOldPasswordToDecrypt()).thenReturn(null);
+
+    when(passwordEncoder.matches(currentKey, storedHash)).thenReturn(false);
+
+    assertThrows(IamTotpMfaInvalidArgumentError.class, () -> getService().rotateSecrets());
+  }
+
+  @Test
+  void validateThrowsWhenOldPasswordDoesNotMatch() {
+
+    mockAdminKey(storedHash);
+
+    when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(currentKey);
+    when(mfaProperties.getOldPasswordToDecrypt()).thenReturn(oldKey);
+
+    when(passwordEncoder.matches(currentKey, storedHash)).thenReturn(false);
+    when(passwordEncoder.matches(oldKey, storedHash)).thenReturn(false);
+
+    assertThrows(IamTotpMfaInvalidArgumentError.class, () -> getService().rotateSecrets());
+  }
+
+  private void mockAdminKey(String hash) {
+    when(adminKeyRepository.findAll()).thenReturn(List.of(new IamTotpAdminKey(hash)));
   }
 }
