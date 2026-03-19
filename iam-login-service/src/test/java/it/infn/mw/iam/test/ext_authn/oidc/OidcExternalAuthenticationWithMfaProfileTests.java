@@ -36,8 +36,11 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @IamRandomPortIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
-  webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    classes = {IamLoginService.class, OidcTestConfig.class},
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = "mfa.password-to-encrypt-and-decrypt=define_me_please"
+)
 @ActiveProfiles({"h2", "mfa"})
 class OidcExternalAuthenticationWithMfaProfileTests
   extends OidcExternalAuthenticationTestsSupport {

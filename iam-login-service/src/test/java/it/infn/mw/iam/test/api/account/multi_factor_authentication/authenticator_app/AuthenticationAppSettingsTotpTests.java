@@ -86,7 +86,7 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
   void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+    when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -100,7 +100,7 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
 
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
     when(totpMfaService.generateQRCodeFromSecret(TOTP_MFA_SECRET, account.getUsername())).thenThrow(
@@ -124,7 +124,7 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
     totpMfa.setActive(true);
     totpMfa.setAccount(account);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     String totp = "123456";
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
