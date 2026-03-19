@@ -54,6 +54,7 @@ public class IamTotpSecretRotationService {
     this.totpRepository = totpRepository;
     this.adminKeyRepository = adminKeyRepository;
     this.passwordEncoder = passwordEncoder;
+    validate();
   }
 
   private void validate() {
@@ -88,7 +89,6 @@ public class IamTotpSecretRotationService {
   @Transactional(rollbackFor = Throwable.class)
   public void rotateSecrets() {
 
-    validate();
     totpRepository.findAll().stream().forEach(this::rotateSecret);
     IamTotpAdminKey adminKey =
         new IamTotpAdminKey(passwordEncoder.encode(mfaProperties.getPasswordToEncryptAndDecrypt()));

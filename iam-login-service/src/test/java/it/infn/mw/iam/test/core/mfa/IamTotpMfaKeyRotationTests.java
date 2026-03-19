@@ -72,8 +72,10 @@ class IamTotpMfaKeyRotationTests {
     mockAdminKey("hash");
 
     when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("new-password");
+    when(mfaProperties.getOldPasswordToDecrypt()).thenReturn("old-password");
 
     when(passwordEncoder.matches("new-password", "hash")).thenReturn(false);
+    when(passwordEncoder.matches("old-password", "hash")).thenReturn(true);
 
     boolean result = getService().shouldRotateSecrets();
 
