@@ -89,7 +89,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+    when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -103,7 +103,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isOk());
@@ -120,7 +120,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenThrow(new MfaSecretAlreadyBoundException(
         "A multi-factor secret is already assigned to this account"));
 
@@ -138,10 +138,10 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
 
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
 
     NestedServletException thrownException = assertThrows(NestedServletException.class, () -> {
       mvc.perform(put(ADD_SECRET_URL));
@@ -172,7 +172,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     totpMfa.setActive(true);
     totpMfa.setAccount(account);
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     String totp = "123456";
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);

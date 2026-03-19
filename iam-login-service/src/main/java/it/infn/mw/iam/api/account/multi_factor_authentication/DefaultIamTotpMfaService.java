@@ -115,7 +115,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     IamTotpMfa totpMfa = new IamTotpMfa(account);
 
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
-        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     totpMfa.setAccount(account);
 
     totpMfaRepository.save(totpMfa);
@@ -189,7 +189,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptAndDecrypt());
 
     // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
