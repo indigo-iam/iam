@@ -15,41 +15,54 @@
  */
 package it.infn.mw.iam.test.core.util;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
-
-import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.ApplicationArguments;
+import it.infn.mw.iam.core.util.StartupRunner;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
-@SpringBootTest(classes = { IamLoginService.class })
-@TestPropertySource(properties = {
-  "iam.dashboard.enabled=true",
-  "iam.dashboard.client-id=dashboard-id",
-  "iam.dashboard.client-secret=10000000-1234-1234-1234-123456789012" })
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class StartupRunnerTests {
 
-  @SpyBean
-  private DashboardConfigService dashboardConfigService;
+  @Mock
+  private DashboardConfigService service;
 
-  @MockBean
-  DefaultClientManagementService clientService;
+  private StartupRunner runner;
+
+  @BeforeEach
+  void initRunner() {
+    runner = new StartupRunner(service);
+  }
 
   @Test
-  void testRunnerInitializesDashboard() throws Exception {
-    when(clientService.saveNewClient(any(RegisteredClientDTO.class))).thenReturn(null);
-    verify(dashboardConfigService, times(1)).initDashboardClient(any(DashboardProperties.class), any(String.class));
+  void testRunnerInitializesDashboard() {
+    when(service.isEnabled()).thenReturn(true);
+    when(service.init()).thenReturn(true);
+    runner.run(mock(ApplicationArguments.class));
+    verify(service, times(1)).init();
+  }
+
+  @Test
+  void testRunnerDoesNotInitializeDashboard() {
+    when(service.isEnabled()).thenReturn(false);
+    runner.run(mock(ApplicationArguments.class));
+    verify(service, times(0)).init();
+  }
+
+  @Test
+  void testRunnerThrowsExceptionOnInitializationFailure() {
+    when(service.isEnabled()).thenReturn(true);
+    when(service.init()).thenThrow(new IllegalStateException());
+    assertThrows(IllegalStateException.class, () -> runner.run(mock(ApplicationArguments.class)));
+    verify(service, times(1)).init();
   }
 }

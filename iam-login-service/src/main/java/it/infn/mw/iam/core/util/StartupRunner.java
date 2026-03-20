@@ -22,8 +22,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
 @Component
@@ -32,25 +30,21 @@ public class StartupRunner implements ApplicationRunner {
   private static final Logger LOG = LoggerFactory.getLogger(StartupRunner.class);
 
   private final DashboardConfigService dashboardConfigService;
-  private final DashboardProperties dashboardProperties;
-  private final String iamBaseUrl;
 
-  public StartupRunner(DashboardConfigService dashboardConfigService, IamProperties iamProperties) {
+  public StartupRunner(DashboardConfigService dashboardConfigService) {
     this.dashboardConfigService = dashboardConfigService;
-    this.dashboardProperties = iamProperties.getDashboard();
-    this.iamBaseUrl = iamProperties.getBaseUrl();
   }
 
   @Override
   public void run(ApplicationArguments args) {
-    if (!dashboardProperties.isEnabled()) {
+    if (!dashboardConfigService.isEnabled()) {
       LOG.info(
           "Dashboard client is disabled, skipping checks for the dashboard client properties and the presence of the record for the dashboard client");
       return;
     }
 
-    boolean recordExists = dashboardConfigService.initDashboardClient(dashboardProperties, iamBaseUrl);
-    if (!recordExists) {
+    boolean isValid = dashboardConfigService.init();
+    if (!isValid) {
       throw new IllegalStateException(
           "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
     }

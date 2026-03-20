@@ -603,7 +603,6 @@ public class IamProperties {
   }
 
   @Validated
-  @ConfigurationProperties(prefix = "app.dashboard")
   public static class DashboardProperties {
 
     private boolean enabled = false;

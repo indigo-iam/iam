@@ -103,7 +103,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 @Configuration
-@EnableConfigurationProperties(DashboardProperties.class)
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
 
