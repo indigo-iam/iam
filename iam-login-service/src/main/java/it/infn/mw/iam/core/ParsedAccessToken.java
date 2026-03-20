@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core;
 
-import java.time.Clock;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -31,13 +30,5 @@ public record ParsedAccessToken(String issuer, String sub, String clientId, Date
 
   public boolean isClient() {
     return clientId.equals(sub);
-  }
-
-  public boolean hasRefreshToken() {
-    return refreshToken != null;
-  }
-
-  public boolean isExpired(Clock clock) {
-    return expiration != null && clock.instant().isAfter(expiration.toInstant());
   }
 }

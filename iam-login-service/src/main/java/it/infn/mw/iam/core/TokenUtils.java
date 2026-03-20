@@ -18,6 +18,7 @@ package it.infn.mw.iam.core;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,13 +42,13 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import com.google.common.hash.Hashing;
-import com.nimbusds.jose.Payload;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.aup.AupService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -125,7 +126,7 @@ public class TokenUtils {
 
     validateSignature(token);
     validateIssuer(token);
-    validateExpirationTime(token);
+    validateExpiration(token);
     validateClientId(token.clientId());
     if (!token.isClient()) {
       validateSub(token);
@@ -145,40 +146,32 @@ public class TokenUtils {
 
   private void validateSignature(ParsedAccessToken token) {
 
-    SignedJWT jwt = token.jwt();
-    if (jwt == null) {
-      throw new IllegalArgumentException("Invalid null jwt");
-    }
-    Payload payload = jwt.getPayload();
-    if (payload == null) {
-      throw new IllegalArgumentException("Invalid null payload");
-    }
-    if (!jwtSigningService.validateSignature(jwt)) {
-      LOG.warn("Invalid signature for token {}", payload.toJSONObject());
+    Objects.requireNonNull(token.jwt());
+    Objects.requireNonNull(token.jwt().getPayload());
+    if (!jwtSigningService.validateSignature(token.jwt())) {
+      LOG.warn("Invalid signature for token {}", token.jwt().getPayload().toJSONObject());
       throw new InvalidTokenException("Invalid token signature");
     }
-    LOG.debug("Valid signature for token {}", payload.toJSONObject());
-    return;
+    LOG.debug("Valid signature for token {}", token.jwt().getPayload().toJSONObject());
   }
 
-  private void validateExpirationTime(ParsedAccessToken token) {
-
-    if (Objects.isNull(token.expiration())) {
+  private void validateExpiration(Date exp) {
+    if (Objects.isNull(exp)) {
       throw new InvalidTokenException("Access token exp claim is required");
     }
-    if (token.isExpired(clock)) {
+    if (Date.from(clock.instant()).after(exp)) {
       throw new InvalidTokenException("The access token is expired");
     }
   }
 
-  private void validateExpirationTime(OAuth2AccessTokenEntity token) {
+  private void validateExpiration(ParsedAccessToken token) {
 
-    if (Objects.isNull(token.getExpiration())) {
-      throw new InvalidTokenException("Access token exp claim is required");
-    }
-    if (Date.from(clock.instant()).after(token.getExpiration())) {
-      throw new InvalidTokenException("The access token is expired");
-    }
+    validateExpiration(token.expiration());
+  }
+
+  private void validateExpiration(OAuth2AccessTokenEntity token) {
+
+    validateExpiration(token.getExpiration());
   }
 
   private void validateIssuer(ParsedAccessToken token) {
@@ -198,21 +191,23 @@ public class TokenUtils {
   private void validateAccount(IamAccount account) {
 
     if (!account.isActive()) {
-      throw new InvalidTokenException("User " + account.getUsername() + " is not active");
+      throw new InvalidTokenException("User with uuid " + account.getUuid() + " is not active");
     }
     if (account.getUserInfo().getEmailVerified() != null
         && !account.getUserInfo().getEmailVerified().booleanValue()) {
       throw new InvalidTokenException(
-          "User " + account.getUsername() + " has a not verified email");
+          "User with uuid " + account.getUuid() + " has a not verified email");
     }
-    if (aupService.findAup().isPresent()) {
+    Optional<IamAup> aup = aupService.findAup();
+    if (aup.isPresent()) {
       // User test needs to sign AUP for this organization in order to proceed.
       if (account.getAupSignature() == null) {
-        throw new InvalidTokenException("User " + account.getUsername()
+        throw new InvalidTokenException("User with uuid " + account.getUuid()
             + " needs to sign AUP for this organization in order to proceed.");
       }
-      if (!account.getAupSignature().getSignatureTime().toInstant().isBefore(clock.instant())) {
-        throw new InvalidTokenException("User " + account.getUsername()
+      Instant signatureExpiration = account.getAupSignature().getSignatureTime().toInstant().plus(Duration.ofDays(aup.get().getSignatureValidityInDays()));
+      if (signatureExpiration.isBefore(clock.instant())) {
+        throw new InvalidTokenException("User with uuid " + account.getUuid()
             + " needs to sign AUP for this organization in order to proceed.");
       }
     }
@@ -299,7 +294,7 @@ public class TokenUtils {
   public void validate(OAuth2AccessTokenEntity token) {
 
     if (token.getExpiration() != null) {
-      validateExpirationTime(token);
+      validateExpiration(token);
     }
     Authentication userAuth =
         token.getAuthenticationHolder().getAuthentication().getUserAuthentication();
