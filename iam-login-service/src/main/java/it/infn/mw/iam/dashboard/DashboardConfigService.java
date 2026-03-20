@@ -83,8 +83,8 @@ public class DashboardConfigService {
     }
 
     ClientDetailsEntity client = dashboardRecord.get();
-    boolean isConfigured = checkRecordConfiguration(client, clientSecret, url);
-    if (!isConfigured) {
+    boolean isValid = checkRecordConfiguration(client, clientSecret, url);
+    if (!isValid) {
       LOG.warn("The record is not properly configured. Updating Dashboard client.");
       updateRecordDashboard(client, clientSecret, url);
     }
