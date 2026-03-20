@@ -288,6 +288,6 @@ class PasswordUpdateTests {
     accountRepository.save(account);
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
-      .body(containsString("User password_tester_user is not active"));
+      .body(containsString("User with uuid " + account.getUuid() + " is not active"));
   }
 }
