@@ -50,7 +50,7 @@ import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 class DashboardConfigServiceTest {
 
   private static final String CLIENT_ID = "dashboard-client";
-  private static final String CLIENT_SECRET = "secret";
+  private static final String CLIENT_SECRET = "dashboard-client-secret-01234567890";
   private static final String BASE_URL = "http://localhost:8080";
   private static final Set<String> SCOPES = Sets.newHashSet("openid", "profile", "email", "iam:admin.read",
       "iam:admin.write", "scim:read", "scim:write", "offline_access");
