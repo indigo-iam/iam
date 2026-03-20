@@ -13,8 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.lifecycle.cern;
+package it.infn.mw.iam.api.registration.cern;
 
-public enum CernStatus {
-  IGNORED, ERROR, EXPIRED, VO_MEMBER, BLOCKED
+public class CernSecurityBlockingError extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public CernSecurityBlockingError(String message) {
+    super(message);
+  }
+
+  public CernSecurityBlockingError(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

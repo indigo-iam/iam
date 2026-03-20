@@ -32,3 +32,15 @@ cern:
   # Action when the VO-person received from the HR API contains no participations to the experiment (even expired). 
   # Values: no_action, disable_user
   on-participation-not-found: no_action
+
+  blocking: 
+    enabled: true
+    cron-schedule: "0 */3 * * * *"
+    token_url: "https://auth.cern.ch/auth/realms/cern"
+    authorization_url: "https://auth.cern.ch/auth/realms/cern"
+    page-size: 50
+    client-id: "client-id"
+    client-secret: "client-secret"
+    audience: "audience"
+    grace_period: 30
+    

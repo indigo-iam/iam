@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_IGNORE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,13 +29,13 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.joda.time.LocalDate;
-
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
+import it.infn.mw.iam.core.lifecycle.cern.CernStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
@@ -56,6 +57,9 @@ public interface LifecycleTestSupport {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
   }
 
+  default IamLabel cernBlockedLabel() {
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_STATUS).value(CernStatus.BLOCKED.name()).build();
+  }
 
   default IamLabel skipEmailSyncLabel() {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_EMAIL_SYNCH).build();
@@ -176,5 +180,25 @@ public interface LifecycleTestSupport {
   default Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
   }
+
+  default VOPersonDTO voPersonSecurityDto(String personId, IamAccount account) {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
+    dto.setId(Long.parseLong(personId));
+    return dto;
+  }
+
+  default VOPersonDTO voPersonSecurityDto(String personId, IamAccount account, boolean blocked) {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
+    dto.setId(Long.parseLong(personId));
+    dto.setBlocked(blocked);
+    return dto;
+  }
+
 
 }

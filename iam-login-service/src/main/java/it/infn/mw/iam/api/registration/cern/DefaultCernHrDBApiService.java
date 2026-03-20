@@ -81,8 +81,8 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
           new HttpEntity<>(buildAuthHeaders()), VOPersonDTO.class);
       return Optional.of(response.getBody());
     } catch (RestClientException e) {
-      if ((e instanceof HttpClientErrorException)
-          && (((HttpClientErrorException) e).getStatusCode().equals(NOT_FOUND))) {
+      if (e instanceof HttpClientErrorException httpException
+          && httpException.getStatusCode().equals(NOT_FOUND)) {
         return Optional.empty();
       }
       throw new CernHrDbApiError(e.getMessage(), e);

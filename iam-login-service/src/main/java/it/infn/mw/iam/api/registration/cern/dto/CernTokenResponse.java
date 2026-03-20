@@ -13,8 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.lifecycle.cern;
+package it.infn.mw.iam.api.registration.cern.dto;
 
-public enum CernStatus {
-  IGNORED, ERROR, EXPIRED, VO_MEMBER, BLOCKED
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class CernTokenResponse {
+
+    @JsonProperty("access_token")
+    private String accessToken;
+
+    @JsonProperty("expires_in")
+    private long expiresIn;
+
+    @JsonProperty("token_type")
+    private String tokenType;
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public long getExpiresIn() {
+        return expiresIn;
+    }
+
+    public String getTokenType() {
+        return tokenType;
+    }
 }
