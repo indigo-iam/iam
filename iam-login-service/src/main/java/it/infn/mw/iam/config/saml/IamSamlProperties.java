@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config.saml;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -195,6 +196,34 @@ public class IamSamlProperties {
     }
   }
 
+  public static class AuthnContextProperties {
+
+    private boolean enabled = true;
+
+    private List<String> classRefs = Arrays.asList(
+        "https://refeds.org/profile/mfa",
+        "https://refeds.org/profile/sfa",
+        "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+        "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"
+    );
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public List<String> getClassRefs() {
+      return classRefs;
+    }
+
+    public void setClassRefs(List<String> classRefs) {
+      this.classRefs = classRefs;
+    }
+  }
+
   private String entityId;
 
   private String keystore;
@@ -242,6 +271,8 @@ public class IamSamlProperties {
   private long httpClientConnectionTimeoutSecs;
 
   private long httpClientSocketTimeoutSecs;
+
+  private AuthnContextProperties authnContext = new AuthnContextProperties();
 
   public List<IamSamlIdpMetadataProperties> getIdpMetadata() {
     return idpMetadata;
@@ -426,5 +457,13 @@ public class IamSamlProperties {
 
   public void setHttpClientSocketTimeoutSecs(long httpClientSocketTimeoutSecs) {
     this.httpClientSocketTimeoutSecs = httpClientSocketTimeoutSecs;
+  }
+
+  public AuthnContextProperties getAuthnContext() {
+    return authnContext;
+  }
+
+  public void setAuthnContext(AuthnContextProperties authnContext) {
+    this.authnContext = authnContext;
   }
 }

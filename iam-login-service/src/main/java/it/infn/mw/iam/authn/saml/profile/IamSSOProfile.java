@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.saml.profile;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +36,15 @@ import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.websso.WebSSOProfileImpl;
 import org.springframework.security.saml.websso.WebSSOProfileOptions;
 
+import it.infn.mw.iam.config.saml.IamSamlProperties.AuthnContextProperties;
+
 public class IamSSOProfile extends WebSSOProfileImpl {
+
+  private final AuthnContextProperties authnContextProperties;
+
+  public IamSSOProfile(AuthnContextProperties authnContextProperties) {
+    this.authnContextProperties = authnContextProperties;
+  }
 
   private void spidNameIDPolicy(AuthnRequest request) {
     @SuppressWarnings("unchecked")
@@ -75,34 +82,28 @@ public class IamSSOProfile extends WebSSOProfileImpl {
     return (SAMLObjectBuilder<T>) builderFactory.getBuilder(elementName);
   }
 
-  private void addRefedsAuthnContexts(AuthnRequest request) {
-    RequestedAuthnContext requestedAuthnContext = request.getRequestedAuthnContext();
-    SAMLObjectBuilder<RequestedAuthnContext> builder =
-        getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
-    if (requestedAuthnContext == null) {
-      requestedAuthnContext = builder.buildObject();
-      request.setRequestedAuthnContext(requestedAuthnContext);
+  private void configureAuthnContext(AuthnRequest request) {
+
+    if (!authnContextProperties.isEnabled()) {
+      // Actively clear any AuthnContext the parent class may have already set.
+      // This ensures NO RequestedAuthnContext is sent letting the IdP decide.
+      request.setRequestedAuthnContext(null);
+      return;
     }
 
-    List<String> requiredClassRefs =
-        Arrays.asList("https://refeds.org/profile/mfa", "https://refeds.org/profile/sfa",
-            "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
-            "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified");
-
-    Set<String> existingRefs = requestedAuthnContext.getAuthnContextClassRefs()
-      .stream()
-      .map(AuthnContextClassRef::getAuthnContextClassRef)
-      .collect(Collectors.toSet());
+    // Clear and replace with the configured list (admin-defined or defaults)
+    SAMLObjectBuilder<RequestedAuthnContext> builder =
+        getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
+    RequestedAuthnContext requestedAuthnContext = builder.buildObject();
+    request.setRequestedAuthnContext(requestedAuthnContext);
 
     SAMLObjectBuilder<AuthnContextClassRef> contextRefBuilder =
         getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
 
-    for (String ref : requiredClassRefs) {
-      if (!existingRefs.contains(ref)) {
-        AuthnContextClassRef classRef = contextRefBuilder.buildObject();
-        classRef.setAuthnContextClassRef(ref);
-        requestedAuthnContext.getAuthnContextClassRefs().add(classRef);
-      }
+    for (String ref : authnContextProperties.getClassRefs()) {
+      AuthnContextClassRef classRef = contextRefBuilder.buildObject();
+      classRef.setAuthnContextClassRef(ref);
+      requestedAuthnContext.getAuthnContextClassRefs().add(classRef);
     }
   }
 
@@ -114,7 +115,7 @@ public class IamSSOProfile extends WebSSOProfileImpl {
     AuthnRequest request =
         super.getAuthnRequest(context, options, assertionConsumer, bindingService);
 
-    addRefedsAuthnContexts(request);
+    configureAuthnContext(request);
 
     if (options instanceof IamSSOProfileOptions) {
       IamSSOProfileOptions ssoOptions = (IamSSOProfileOptions) options;

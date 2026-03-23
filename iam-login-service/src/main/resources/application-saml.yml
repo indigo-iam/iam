@@ -43,3 +43,12 @@ saml:
       require-valid-signature: ${IAM_SAML_METADATA_REQUIRE_VALID_SIGNATURE:false}
       require-sirtfi: ${IAM_SAML_METADATA_REQUIRE_SIRTFI:false}
       require-rs: ${IAM_SAML_METADATA_REQUIRE_RS:false}
+
+  authn-context:
+    enabled: ${IAM_SAML_AUTHN_CONTEXT_ENABLED:true}
+    # Set enabled to false to send no AuthnContext at all (IdP determines the appropriate authentication assurance).
+    # To customise the AuthnContextClassRef values, add a class-refs list
+    # at the same indentation level as 'enabled' above. For example:
+    # class-refs:
+    #   - urn:federation:authentication:windows
+    #   - urn:oasis:names:tc:SAML:2.0:ac:classes:Unspecified
