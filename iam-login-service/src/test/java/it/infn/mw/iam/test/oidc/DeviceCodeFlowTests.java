@@ -23,34 +23,30 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
+
 class DeviceCodeFlowTests extends OidcMockMvcTestSupport {
 
   @Test
   void deviceCodeFlowHappyPath() throws Exception {
 
-    // Step 1: request device code
     JsonNode deviceCodeResponse = assert200AndParse(postForm(DEVICE_CODE_ENDPOINT,
-        Map.of("client_id", DEVICE_CODE_CLIENT_ID, "scope", "openid profile"), null));
+        Map.of("client_id", DEVICE_CODE_CLIENT_ID, "scope", "openid profile")));
 
     String deviceCode = deviceCodeResponse.get("device_code").asText();
 
-    // Step 2: poll token endpoint (before approval → authorization_pending)
     var pendingResult = postForm(TOKEN_ENDPOINT,
         Map.of("grant_type", "urn:ietf:params:oauth:grant-type:device_code", "device_code",
             deviceCode, "client_id", DEVICE_CODE_CLIENT_ID),
-        basicAuth(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET));
+        DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET);
 
     assertEquals(400, pendingResult.getResponse().getStatus());
-
-    // NOTE:
-    // Approval would normally happen via /device UI.
-    // In test environments this is often auto-approved or pre-approved.
   }
 
   @Test
   void deviceCodeFailsForUnknownClient() throws Exception {
 
-    var result = postForm(DEVICE_CODE_ENDPOINT, Map.of("client_id", "unknown-client"), null);
+    var result = postForm(DEVICE_CODE_ENDPOINT, Map.of("client_id", "unknown-client"));
 
     assertEquals(404, result.getResponse().getStatus());
   }

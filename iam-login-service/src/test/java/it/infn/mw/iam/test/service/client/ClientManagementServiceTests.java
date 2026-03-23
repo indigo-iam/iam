@@ -65,6 +65,7 @@ import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
@@ -86,6 +87,9 @@ class ClientManagementServiceTests {
   IamAccountRepository accountRepo;
 
   @Autowired
+  IamClientRepository clientRepo;
+
+  @Autowired
   MutableClock clock;
 
   Authentication userAuth;
@@ -98,7 +102,7 @@ class ClientManagementServiceTests {
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(21L));
+    assertThat(clients.getTotalResults(), is(clientRepo.count()));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
     assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));

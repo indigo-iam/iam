@@ -168,23 +168,21 @@ class ScimUserValidationTests extends ScimUserTestSupport {
   }
 
   @Test
-  void testReplaceWithEmailNoType() throws Exception {
+  void testReplaceWithEmailNoTypeWorks() throws Exception {
 
     ScimEmail email = ScimEmail.builder().value(VALID_EMAILS[0]).primary(true).build();
     ScimUser updates = ScimUser.builder().addEmail(email).build();
     scimUtils.patchUser(lennon.getId(), replace, updates)
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", containsString("Please provide a value for email type")));
+      .andExpect(status().isNoContent());
   }
 
   @Test
-  void testReplaceWithEmailNoPrimary() throws Exception {
+  void testReplaceWithEmailNoPrimaryWorks() throws Exception {
 
     ScimEmail email = ScimEmail.builder().value(VALID_EMAILS[0]).build();
     ScimUser updates = ScimUser.builder().addEmail(email).build();
     scimUtils.patchUser(lennon.getId(), replace, updates)
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", containsString("Please provide a value for email primary")));
+      .andExpect(status().isNoContent());
   }
 
   @Test

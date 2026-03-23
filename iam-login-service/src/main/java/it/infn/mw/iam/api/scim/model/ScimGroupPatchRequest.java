@@ -25,6 +25,7 @@ import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(Include.NON_EMPTY)
 public class ScimGroupPatchRequest {
@@ -35,6 +36,7 @@ public class ScimGroupPatchRequest {
 
   @NotEmpty
   @Valid
+  @JsonProperty("Operations")
   private List<ScimPatchOperation<List<ScimMemberRef>>> operations;
 
   public ScimGroupPatchRequest() {}

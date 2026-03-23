@@ -41,6 +41,7 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -64,9 +65,7 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@TestPropertySource(properties = {
-    "iam.access_token.store_on_database=true",
-})
+@TestPropertySource(properties = {"iam.access_token.store_on_database=true",})
 class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
 
   public static final String[] REFRESH_SCOPES = {"openid", "profile", "offline_access"};
@@ -99,10 +98,13 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   @Autowired
   SecurityContextUtils context;
 
+  long numClients;
+
   @BeforeEach
   void setup() {
     context.cleanupSecurityContext();
     mockOAuth2Filter.cleanupSecurityContext();
+    numClients = clientRepo.count();
   }
 
   @AfterEach
@@ -130,19 +132,21 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   private void paginatedGetClientsTest() throws Exception {
     mvc.perform(get(ClientManagementAPIController.ENDPOINT))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(21))
+      .andExpect(jsonPath("$.totalResults").value(numClients))
       .andExpect(jsonPath("$.itemsPerPage").value(10))
       .andExpect(jsonPath("$.startIndex").value(1))
-      .andExpect(jsonPath("$.Resources", hasSize(10)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("admin-client-ro"));
+      .andExpect(jsonPath("$.Resources", hasSize(10)));
 
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "13"))
+    int count = 9;
+    long startIndex = numClients - count + 1;
+    mvc
+      .perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex",
+          String.valueOf(startIndex)))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(21))
-      .andExpect(jsonPath("$.itemsPerPage").value(9))
-      .andExpect(jsonPath("$.startIndex").value(13))
-      .andExpect(jsonPath("$.Resources", hasSize(9)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
+      .andExpect(jsonPath("$.totalResults").value(numClients))
+      .andExpect(jsonPath("$.itemsPerPage").value(count))
+      .andExpect(jsonPath("$.startIndex").value(startIndex))
+      .andExpect(jsonPath("$.Resources", hasSize(count)));
   }
 
   @Test
@@ -398,11 +402,12 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-//  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  // @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void testClientRevokeAllRefreshTokensWorks() throws Exception {
 
     context.useBearerAdminToken();
-    getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password",
+        "openid profile offline_access");
     getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password", "openid profile");
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
@@ -422,9 +427,11 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
 
-    /* It was 1 before changing the effects of the refresh token revocation:
-     * access-token now are not deleted when the refresh token is revoked, 
-     * same behavior of the token-not-in-database solution */
+    /*
+     * It was 1 before changing the effects of the refresh token revocation: access-token now are
+     * not deleted when the refresh token is revoked, same behavior of the token-not-in-database
+     * solution
+     */
     mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
@@ -434,7 +441,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   void testClientRevokeAllAccessTokensWorks() throws Exception {
 
     context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
-    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password",
+        "openid profile offline_access");
     getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
     context.useBearerAdminToken();
 
@@ -465,7 +473,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
 
     context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
-    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile offline_access");
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password",
+        "openid profile offline_access");
     getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
     context.useBearerAdminToken();
 

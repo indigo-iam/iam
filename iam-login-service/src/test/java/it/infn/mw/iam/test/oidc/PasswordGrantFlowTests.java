@@ -24,17 +24,21 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
+
 class PasswordGrantFlowTests extends OidcMockMvcTestSupport {
 
   @Test
   void passwordGrantSuccess() throws Exception {
 
-    JsonNode json = assert200AndParse(postForm(
-        TOKEN_ENDPOINT, Map.of("grant_type", "password", "username", TEST_USERNAME, "password",
-            TEST_PASSWORD, "scope", "openid profile offline_access"),
-        basicAuth(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET)));
+    JsonNode json =
+        assert200AndParse(postForm(TOKEN_ENDPOINT,
+            Map.of("grant_type", "password", "username", TEST_USERNAME, "password", TEST_PASSWORD,
+                "scope", "openid profile offline_access"),
+            PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET));
 
     assertTrue(json.has("access_token"));
+    assertTrue(json.has("id_token"));
     assertTrue(json.has("refresh_token"));
   }
 
@@ -43,7 +47,7 @@ class PasswordGrantFlowTests extends OidcMockMvcTestSupport {
 
     var result = postForm(TOKEN_ENDPOINT,
         Map.of("grant_type", "password", "username", TEST_USERNAME, "password", "wrong"),
-        basicAuth(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET));
+        PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET);
 
     assertEquals(400, result.getResponse().getStatus());
   }

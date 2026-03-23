@@ -20,17 +20,13 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -173,11 +169,5 @@ public class ScimGroupController extends ScimControllerSupport {
 
     return groupProvisioningService.listGroupMembers(id,
         buildPageRequest(count, startIndex, SCIM_MEMBERS_MAX_PAGE_SIZE));
-  }
-
-  @ResponseStatus(value=HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(HttpMessageNotReadableException.class)
-  public String httpMessageNotReadableExceptionHander(HttpServletRequest req, Exception ex) {
-    return ex.getMessage();
   }
 }

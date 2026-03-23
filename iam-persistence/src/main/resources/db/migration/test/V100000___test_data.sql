@@ -28,7 +28,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, 86400, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
   (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
-  (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
+  (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true),
+  (22, 'whitelist-client', 'secret', 'Client which is not requiring confirmation access', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -175,8 +176,9 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (21, 'profile'),
   (21, 'email'),
   (21, 'address'),
-  (21, 'phone');
-
+  (21, 'phone'),
+  (22, 'openid'),
+  (22, 'profile');
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
@@ -186,7 +188,8 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (11, 'http://localhost:1234/callback'),
   (13, 'http://localhost:9876/implicit'),
   (18, 'https://iam.local.io/iam-test-client/openid_connect_login'),
-  (20, 'http://localhost:4000/callback');
+  (20, 'http://localhost:4000/callback'),
+  (22, 'http://localhost:1234/callback');
 
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
@@ -241,7 +244,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (20, 'authorization_code'),
   (20, 'password'),
   (20, 'refresh_token'),
-  (20, 'urn:ietf:params:oauth:grant-type:device_code');
+  (20, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (22, 'authorization_code');
 
 
 INSERT INTO client_contact (owner_id, contact) VALUES
@@ -1603,3 +1607,10 @@ insert into client_last_used(client_details_id, last_used) VALUES
 (2, '1994-03-20'),
 (3, '1994-03-19'),
 (4, '1994-03-23');
+
+insert into whitelisted_site(id, creator_user_id, client_id) values
+(1, 'admin', 'whitelist-client');
+
+insert into whitelisted_site_scope(owner_id, scope) values
+(1, 'openid'),
+(1, 'profile');

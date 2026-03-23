@@ -35,6 +35,7 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
 public class JwtIntrospectionNegativeTests extends OidcMockMvcTestSupport {
 

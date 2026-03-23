@@ -42,6 +42,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import com.google.common.hash.Hashing;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.aup.AupService;
@@ -88,16 +89,24 @@ public class TokenUtils {
 
     try {
       SignedJWT jwt = SignedJWT.parse(accessToken);
-      String issuer = jwt.getJWTClaimsSet().getIssuer();
-      String sub = jwt.getJWTClaimsSet().getSubject();
-      String clientId = jwt.getJWTClaimsSet().getStringClaim("client_id");
-      Date expiration = jwt.getJWTClaimsSet().getExpirationTime();
-      Set<String> scopes = Set.of(jwt.getJWTClaimsSet().getStringClaim("scope").split(" "));
+      JWTClaimsSet claims = jwt.getJWTClaimsSet();
+      String issuer = claims.getIssuer();
+      String sub = claims.getSubject();
+      String clientId = claims.getStringClaim("client_id");
+      if (clientId == null) {
+        throw new InvalidTokenException("missing clientId claim");
+      }
+      Date expiration = claims.getExpirationTime();
+      String scopes = claims.getStringClaim("scope");
+      if (scopes == null) {
+        throw new InvalidTokenException("missing scope claim");
+      }
+      Set<String> scopeSet = Set.of(scopes.split(" "));
       Set<String> audiences =
-          jwt.getJWTClaimsSet().getAudience().stream().collect(Collectors.toSet());
-      String refreshToken = jwt.getJWTClaimsSet().getStringClaim("refresh_token");
-      Map<String, Object> external = jwt.getJWTClaimsSet().getJSONObjectClaim("external_authn");
-      return new ParsedAccessToken(issuer, sub, clientId, expiration, scopes, audiences,
+          claims.getAudience().stream().collect(Collectors.toSet());
+      String refreshToken = claims.getStringClaim("refresh_token");
+      Map<String, Object> external = claims.getJSONObjectClaim("external_authn");
+      return new ParsedAccessToken(issuer, sub, clientId, expiration, scopeSet, audiences,
           jwt.getHeader(), jwt.getPayload(), jwt.getSignature(), jwt, refreshToken, external);
     } catch (ParseException e) {
       throw new InvalidTokenException("Token parsing error: " + e.getMessage());

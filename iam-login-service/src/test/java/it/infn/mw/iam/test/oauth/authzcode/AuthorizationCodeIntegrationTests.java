@@ -1145,4 +1145,97 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
     request.formParam("grant_type", "refresh_token");
     return request.auth().preemptive().basic(clientId, clientSecret).when().post(tokenUrl).then();
   }
+
+  @Test
+  void testUsingCodeTwiceIsBadRequest() throws IOException {
+
+    ValidatableResponse resp1 = RestAssured.given()
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
+
+    RestAssured.given()
+      .formParam("username", TEST_USER_NAME)
+      .formParam("password", TEST_USER_PASSWORD)
+      .formParam("submit", "Login")
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .redirects()
+      .follow(false)
+      .when()
+      .post(loginUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value());
+
+    RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .log()
+      .all()
+      .statusCode(HttpStatus.OK.value());
+
+    ValidatableResponse resp2 = RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .formParam("user_oauth_approval", "true")
+      .formParam("authorize", "Authorize")
+      .formParam("remember", "none")
+      .redirects()
+      .follow(false)
+      .when()
+      .post(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.SEE_OTHER.value());
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
+      .build()
+      .getQueryParams()
+      .get("code")
+      .get(0);
+
+    RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+      .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value());
+
+    RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+      .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.BAD_REQUEST.value());
+  }
+
 }

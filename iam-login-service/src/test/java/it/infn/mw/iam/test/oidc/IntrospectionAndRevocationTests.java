@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
+
 class IntrospectionAndRevocationTests extends OidcMockMvcTestSupport {
 
   @Test
@@ -31,19 +33,17 @@ class IntrospectionAndRevocationTests extends OidcMockMvcTestSupport {
 
     JsonNode token =
         assert200AndParse(postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
-            basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET)));
+            CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
 
     String accessToken = token.get("access_token").asText();
 
     // revoke
-    assertEquals(200,
-        postForm(REVOCATION_ENDPOINT, Map.of("token", accessToken),
-            basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET)).getResponse()
-              .getStatus());
+    assertEquals(200, postForm(REVOCATION_ENDPOINT, Map.of("token", accessToken),
+        CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET).getResponse().getStatus());
 
     // introspect
     JsonNode introspection = assert200AndParse(postForm(INTROSPECTION_ENDPOINT,
-        Map.of("token", accessToken), basicAuth(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET)));
+        Map.of("token", accessToken), PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET));
 
     assertFalse(introspection.get("active").asBoolean());
   }
@@ -51,7 +51,7 @@ class IntrospectionAndRevocationTests extends OidcMockMvcTestSupport {
   @Test
   void introspectionFailsWithoutAuth() throws Exception {
 
-    var result = postForm(INTROSPECTION_ENDPOINT, Map.of("token", "whatever"), null);
+    var result = postForm(INTROSPECTION_ENDPOINT, Map.of("token", "whatever"));
 
     assertEquals(401, result.getResponse().getStatus());
   }

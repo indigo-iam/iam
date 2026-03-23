@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
+
 class TokenExchangeTests extends OidcMockMvcTestSupport {
 
   @Test
@@ -31,7 +33,7 @@ class TokenExchangeTests extends OidcMockMvcTestSupport {
 
     JsonNode original =
         assert200AndParse(postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
-            basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET)));
+            CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
 
     String subjectToken = original.get("access_token").asText();
 
@@ -39,7 +41,7 @@ class TokenExchangeTests extends OidcMockMvcTestSupport {
         Map.of("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange", "subject_token",
             subjectToken, "subject_token_type", "urn:ietf:params:oauth:token-type:access_token",
             "scope", "openid profile"),
-        basicAuth(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET)));
+        EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET));
 
     assertTrue(exchanged.has("access_token"));
   }
@@ -50,7 +52,7 @@ class TokenExchangeTests extends OidcMockMvcTestSupport {
     var result = postForm(TOKEN_ENDPOINT,
         Map.of("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange", "subject_token",
             "invalid", "subject_token_type", "urn:ietf:params:oauth:token-type:access_token"),
-        basicAuth(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET));
+        EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET);
 
     assertEquals(400, result.getResponse().getStatus());
   }

@@ -313,11 +313,11 @@ class ClientRepositoryTests extends TokenGetterUtils {
 
     em.flush();
 
-    List<ClientDetailsEntity> result = clientRepo.findAll(hasClientNameLike("fir"));
+    List<ClientDetailsEntity> result = clientRepo.findAll(hasClientNameLike("first"));
     assertThat(result, hasSize(1));
     assertThat(result.get(0).getClientId(), is(client0.getClientId()));
 
-    result = clientRepo.findAll(hasClientNameLike("fir").or(hasClientIdLike("seco")));
+    result = clientRepo.findAll(hasClientNameLike("first").or(hasClientIdLike("seco")));
     assertThat(result, hasSize(2));
     assertThat(result, hasItems(client0, client1));
 

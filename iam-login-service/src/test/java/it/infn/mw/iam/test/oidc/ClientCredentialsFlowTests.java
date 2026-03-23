@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
+
 class ClientCredentialsFlowTests extends OidcMockMvcTestSupport {
 
   @Test
@@ -31,7 +33,7 @@ class ClientCredentialsFlowTests extends OidcMockMvcTestSupport {
 
     JsonNode json = assert200AndParse(
         postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "scope", "openid"),
-            basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET)));
+            CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
 
     assertTrue(json.has("access_token"));
     assertEquals("Bearer", json.get("token_type").asText());
@@ -41,7 +43,7 @@ class ClientCredentialsFlowTests extends OidcMockMvcTestSupport {
   void clientCredentialsFailsWithWrongSecret() throws Exception {
 
     var result = postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
-        basicAuth(CLIENT_CREDENTIALS_CLIENT_ID, "wrong-secret"));
+        CLIENT_CREDENTIALS_CLIENT_ID, "wrong-secret");
 
     assertEquals(401, result.getResponse().getStatus());
   }
