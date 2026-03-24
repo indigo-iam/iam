@@ -22,6 +22,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.ParseException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Date;
@@ -124,7 +125,8 @@ class TokenUtilsTests {
     return userInfo;
   }
 
-  private IamAccount mockAccount(String accountId, boolean isActive, IamAupSignature aupSignature, IamUserInfo userInfo) {
+  private IamAccount mockAccount(String accountId, boolean isActive, IamAupSignature aupSignature,
+      IamUserInfo userInfo) {
 
     IamAccount account = mock(IamAccount.class);
     when(account.getUuid()).thenReturn(accountId);
@@ -190,8 +192,7 @@ class TokenUtilsTests {
   void validateTokenWithNullExpThrowsException() {
 
     SignedJWT jwt = mockJwt();
-    ParsedAccessToken token =
-        clientToken(ISSUER, CLIENT_ID, null, jwt);
+    ParsedAccessToken token = clientToken(ISSUER, CLIENT_ID, null, jwt);
     mockValidateSignature(jwt, true);
 
     assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
@@ -223,7 +224,7 @@ class TokenUtilsTests {
   void validateInvalidSignatureThrowsException() {
 
     SignedJWT jwt = mock(SignedJWT.class);
-    Payload payload = new Payload("test");;
+    Payload payload = new Payload("test");
 
     when(jwt.getPayload()).thenReturn(payload);
     when(jwtSigningService.validateSignature(jwt)).thenReturn(false);
@@ -309,7 +310,8 @@ class TokenUtilsTests {
 
     InvalidTokenException e =
         assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
-    assertEquals("User with uuid " + ACCOUNT_ID + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
+    assertEquals("User with uuid " + ACCOUNT_ID
+        + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
   }
 
   @Test
@@ -322,11 +324,58 @@ class TokenUtilsTests {
         userToken(ISSUER, ACCOUNT_ID, CLIENT_ID, Date.from(clock.instant().plusSeconds(3600)), jwt);
     mockValidateSignature(jwt, true);
 
-    mockAccount(ACCOUNT_ID, true, mockAupSignature(Date.from(clock.instant().minus(Duration.ofDays(10)))), mockUserInfo(true));
+    mockAccount(ACCOUNT_ID, true,
+        mockAupSignature(Date.from(clock.instant().minus(Duration.ofDays(10)))),
+        mockUserInfo(true));
 
     InvalidTokenException e =
         assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
-    assertEquals("User with uuid " + ACCOUNT_ID + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
+    assertEquals("User with uuid " + ACCOUNT_ID
+        + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
+  }
+
+  @Test
+  void validateUserTokenWithNotVerifiedEmailThrowsException() {
+
+    mockClient(CLIENT_ID, true);
+
+    SignedJWT jwt = mockJwt();
+    ParsedAccessToken token =
+        userToken(ISSUER, ACCOUNT_ID, CLIENT_ID, Date.from(clock.instant().plusSeconds(3600)), jwt);
+    mockValidateSignature(jwt, true);
+
+    mockAccount(ACCOUNT_ID, true,
+        mockAupSignature(Date.from(clock.instant().minus(Duration.ofDays(1)))),
+        mockUserInfo(false));
+
+    InvalidTokenException e =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
+    assertEquals("User with uuid " + ACCOUNT_ID + " has a not verified email", e.getMessage());
+  }
+
+  @Test
+  void missingScopeClaimThrowsException() throws ParseException {
+
+    String token =
+        """
+            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+            eyJzdWIiOiI2YTk0M2QxMi1hYWU5LTRhMTItOWM3MS0wNzc5OGIxZmQ2ZWUiLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo4MDgwLyIsImNsaWVudF9pZCI6ImNsaWVudC1pZCIsImlhdCI6MTUxNjIzOTAyMn0.
+            D1QsajaJFY5Xpe4I8Qx8OWmUILphdDqVS-nOjtLtEEA
+            """;
+    InvalidTokenException e =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.parseAccessToken(token));
+    assertEquals("missing scope claim", e.getMessage());
+  }
+
+  @Test
+  void parsedTokenWithAccountNotFoundThrowsException() throws ParseException {
+
+    ParsedAccessToken token = new ParsedAccessToken("iss", "sub-user", "client",
+        Date.from(clock.instant().plusSeconds(3600)), Set.of("openid", "profile"), Set.of(), null,
+        null, null, null, null, null);
+    InvalidTokenException e =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.getAuthentication(token));
+    assertEquals("User with subject sub-user not found", e.getMessage());
   }
 
 }

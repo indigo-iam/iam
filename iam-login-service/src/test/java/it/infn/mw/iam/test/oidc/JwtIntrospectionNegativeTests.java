@@ -37,7 +37,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
-public class JwtIntrospectionNegativeTests extends OidcMockMvcTestSupport {
+class JwtIntrospectionNegativeTests extends OidcMockMvcTestSupport {
 
   private static final byte[] VALID_SECRET = "01234567890123456789012345678901".getBytes();
 

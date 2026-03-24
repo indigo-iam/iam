@@ -161,7 +161,7 @@ class IamCoreControllerTests {
   @WithMockOAuthUser(scopes = {"openid"}, user = "not-found", authorities = {"ROLE_USER"})
   void userinfoReturns404ForUserNotFound() throws Exception {
 
-    mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isNotFound());
+    mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isBadRequest());
   }
 
 

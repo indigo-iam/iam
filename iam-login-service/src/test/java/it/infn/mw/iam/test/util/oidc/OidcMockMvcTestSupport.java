@@ -83,11 +83,6 @@ public abstract class OidcMockMvcTestSupport implements StructuredScopeTestSuppo
     assertEquals(200, result.getResponse().getStatus());
     return mapper.readTree(result.getResponse().getContentAsString());
   }
-  //
-  // protected static String basicAuth(String clientId, String secret) {
-  // return Base64.getEncoder()
-  // .encodeToString((clientId + ":" + secret).getBytes(StandardCharsets.UTF_8));
-  // }
 
   protected JsonNode introspect(String token) throws Exception {
 

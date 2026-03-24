@@ -1147,7 +1147,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  void testUsingCodeTwiceIsBadRequest() throws IOException {
+  void testUsingCodeTwiceIsBadRequest() {
 
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)

@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @Transactional
-public class ScimApiAccessTests extends ScimTestSupport {
+class ScimApiAccessTests extends ScimTestSupport {
 
   @Test
   void userLifecycle() throws Exception {

@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.userinfo;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.message.AuthException;
@@ -50,8 +49,6 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 public class IamUserInfoEndpoint {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
-  private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
-  private static final String CLIENT_NOT_FOUND_ERROR = "Client '%s' not found";
 
   private final IamProperties iamProperties;
   private final JWTProfileResolver profileResolver;
@@ -76,28 +73,17 @@ public class IamUserInfoEndpoint {
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
     String username = auth.getName();
-    Optional<IamAccount> account = accountRepo.findByUsername(username);
-    if (account.isEmpty()) {
-      String errorMsg = String.format(ACCOUNT_NOT_FOUND_ERROR, auth.getName());
-      LOG.error(errorMsg);
-      throw new AuthException(errorMsg);
-    }
+    IamAccount account = accountRepo.findByUsername(username).orElseThrow(() -> new AuthException("Account id not found"));
     String clientId = auth.getOAuth2Request().getClientId();
-    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
-    if (client.isEmpty()) {
-      String errorMsg =
-          String.format(CLIENT_NOT_FOUND_ERROR, auth.getOAuth2Request().getClientId());
-      LOG.error(errorMsg);
-      throw new AuthException(errorMsg);
-    }
+    ClientDetailsEntity client = clientRepo.findByClientId(clientId).orElseThrow(() -> new AuthException("Client id not found"));
     LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
         username);
 
     JWTProfile profile =
-        profileResolver.resolveProfile(client.get().getScope(), auth.getOAuth2Request().getScope());
+        profileResolver.resolveProfile(client.getScope(), auth.getOAuth2Request().getScope());
     Set<String> scopes = scopeResolver.resolveScope(auth);
     Map<String, Object> claims =
-        profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
+        profile.getUserinfoHelper().resolveScopeClaims(scopes, account, auth);
 
     addExternalAuthN(auth, claims);
     return new UserInfoResponse(claims);
@@ -115,7 +101,7 @@ public class IamUserInfoEndpoint {
     }
   }
 
-  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler({AuthException.class})
   public ErrorDTO accountNotFound(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
