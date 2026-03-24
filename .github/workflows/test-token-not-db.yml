@@ -1,4 +1,4 @@
-name: specific tests
+name: Token not in database tests
 
 on: [push] 
 
