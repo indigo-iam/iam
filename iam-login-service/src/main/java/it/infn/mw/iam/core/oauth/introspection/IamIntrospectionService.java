@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -128,7 +129,7 @@ public class IamIntrospectionService implements IntrospectionService {
       LOG.info("Failed introspection of token, client validation error: {}", e.getMessage());
       return IntrospectionResponse.inactive();
 
-    } catch (InvalidTokenException e) {
+    } catch (InvalidTokenException | InvalidGrantException e) {
 
       LOG.info("Failed introspection of token, invalid token value: {}", e.getMessage());
       return IntrospectionResponse.inactive();

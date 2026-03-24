@@ -191,7 +191,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("User test needs to sign AUP.")));
+          equalTo("User with uuid " + TEST_UUID + " needs to sign AUP for this organization in order to proceed.")));
   }
 
   @Test
@@ -443,8 +443,8 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)
         .param("scope", "read-tasks"))
-      .andExpect(status().isUnauthorized())
-      .andExpect(jsonPath("$.error", equalTo("invalid_token")));
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_grant")));
     // @formatter:on
   }
 

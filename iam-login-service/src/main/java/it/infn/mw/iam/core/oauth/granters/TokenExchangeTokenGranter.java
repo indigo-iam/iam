@@ -92,7 +92,12 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
     ClientDetailsEntity actor = castClient(actorClient);
 
-    SubjectTokenContext subjectContext = resolveSubjectToken(actor, tokenRequest);
+    SubjectTokenContext subjectContext = null;
+    try {
+      subjectContext = resolveSubjectToken(actor, tokenRequest);
+    } catch (InvalidTokenException e) {
+      throw new InvalidGrantException(e.getMessage(), e);
+    }
 
     OAuth2Authentication finalAuth =
         rebuildAuthentication(actorClient, tokenRequest, subjectContext.authentication());
@@ -147,7 +152,11 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
     OAuth2Authentication authentication = tokenUtils.getAuthentication(parsed);
 
-    tokenUtils.validate(parsed);
+    try {
+      tokenUtils.validate(parsed);
+    } catch (InvalidTokenException e) {
+      throw new InvalidGrantException(e.getMessage(), e);
+    }
 
     validateExchange(actor, request, authentication, parsed.scopes(), parsed.clientId());
 
@@ -190,7 +199,8 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
       .filter(signatureCheckService::needsAupSignature)
       .ifPresent(account -> {
         throw new InvalidGrantException(
-            format("User %s needs to sign AUP.", account.getUsername()));
+            format("User with uuid %s needs to sign AUP for this organization in order to proceed.",
+                account.getUuid()));
       });
   }
 

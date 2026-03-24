@@ -96,8 +96,7 @@ public class TokenUtils {
       Date expiration = claims.getExpirationTime();
       String scopeClaim = claims.getStringClaim("scope");
       Set<String> scopeSet = scopeClaim == null ? Set.of() : Set.of(scopeClaim.split(" "));
-      Set<String> audiences =
-          claims.getAudience().stream().collect(Collectors.toSet());
+      Set<String> audiences = claims.getAudience().stream().collect(Collectors.toSet());
       String refreshToken = claims.getStringClaim("refresh_token");
       Map<String, Object> external = claims.getJSONObjectClaim("external_authn");
       return new ParsedAccessToken(issuer, sub, clientId, expiration, scopeSet, audiences,
@@ -216,7 +215,10 @@ public class TokenUtils {
         throw new InvalidTokenException("User with uuid " + account.getUuid()
             + " needs to sign AUP for this organization in order to proceed.");
       }
-      Instant signatureExpiration = account.getAupSignature().getSignatureTime().toInstant().plus(Duration.ofDays(aup.get().getSignatureValidityInDays()));
+      Instant signatureExpiration = account.getAupSignature()
+        .getSignatureTime()
+        .toInstant()
+        .plus(Duration.ofDays(aup.get().getSignatureValidityInDays()));
       if (signatureExpiration.isBefore(clock.instant())) {
         throw new InvalidTokenException("User with uuid " + account.getUuid()
             + " needs to sign AUP for this organization in order to proceed.");
@@ -286,6 +288,10 @@ public class TokenUtils {
       return accessTokenOnDb;
     }
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      ParsedAccessToken token = parseAccessToken(accessTokenValue);
+      if (isExpired(token)) {
+        throw new InvalidTokenException("The access token is expired");
+      }
       throw new InvalidTokenException("Access token not found");
     }
     return Optional.empty();
@@ -296,10 +302,19 @@ public class TokenUtils {
     return Hashing.sha256().hashString(tokenString, StandardCharsets.UTF_8).toString();
   }
 
+  public boolean isExpired(ParsedAccessToken accessToken) {
+
+    return isExpired(accessToken.expiration());
+  }
+
   public boolean isExpired(OAuth2AccessTokenEntity accessToken) {
 
-    return !Objects.isNull(accessToken.getExpiration())
-        && Date.from(clock.instant()).after(accessToken.getExpiration());
+    return isExpired(accessToken.getExpiration());
+  }
+
+  public boolean isExpired(Date exp) {
+
+    return exp != null && Date.from(clock.instant()).after(exp);
   }
 
   public void validate(OAuth2AccessTokenEntity token) {

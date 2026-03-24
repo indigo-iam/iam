@@ -68,8 +68,8 @@ class TokenExiprationTests extends TokenGetterUtils {
         .param("subject_token", subjectToken)
         .param("subject_token_type", TOKEN_TYPE_JWT)
         .param("scope", "profile"))
-      .andExpect(status().isUnauthorized())
-      .andExpect(jsonPath("$.error").value("invalid_token"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_grant"))
       .andExpect(jsonPath("$.error_description").value("The access token is expired"));
   }
 }
