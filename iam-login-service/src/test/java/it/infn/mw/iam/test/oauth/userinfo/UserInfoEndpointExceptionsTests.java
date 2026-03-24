@@ -71,7 +71,6 @@ class UserInfoEndpointExceptionsTests {
     String username = "test-user";
 
     when(auth.getName()).thenReturn(username);
-    when(auth.getOAuth2Request()).thenReturn(oAuth2Request);
     when(accountRepo.findByUsername(username)).thenReturn(Optional.empty());
 
     AuthException ex = assertThrows(AuthException.class, () -> {
