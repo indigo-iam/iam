@@ -237,6 +237,19 @@ class TokenUtilsTests {
   }
 
   @Test
+  void validateTokenWithNullClientIdThrowsException() {
+
+    SignedJWT jwt = mockJwt();
+    ParsedAccessToken token =
+        clientToken(ISSUER, null, Date.from(clock.instant().plusSeconds(3600)), jwt);
+    mockValidateSignature(jwt, true);
+
+    InvalidTokenException e =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
+    assertEquals("client_id claim not found on token", e.getMessage());
+  }
+
+  @Test
   void validateTokenWithInactiveClientThrowsException() {
 
     mockClient(CLIENT_ID, false);
@@ -356,15 +369,24 @@ class TokenUtilsTests {
   @Test
   void missingScopeClaimThrowsException() throws ParseException {
 
-    String token =
-        """
-            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-            eyJzdWIiOiI2YTk0M2QxMi1hYWU5LTRhMTItOWM3MS0wNzc5OGIxZmQ2ZWUiLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo4MDgwLyIsImNsaWVudF9pZCI6ImNsaWVudC1pZCIsImlhdCI6MTUxNjIzOTAyMn0.
-            D1QsajaJFY5Xpe4I8Qx8OWmUILphdDqVS-nOjtLtEEA
-            """;
-    InvalidTokenException e =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.parseAccessToken(token));
-    assertEquals("missing scope claim", e.getMessage());
+    Date notExpired = Date.from(clock.instant().plusSeconds(3600));
+    SignedJWT jwt = mockJwt();
+    mockValidateSignature(jwt, true);
+    mockClient(CLIENT_ID, true);
+    ParsedAccessToken tokenNoScopes =
+        buildToken(ISSUER, CLIENT_ID, CLIENT_ID, notExpired, null, AUDIENCES, jwt);
+
+    InvalidTokenException e1 =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(tokenNoScopes));
+    assertEquals("missing or empty scope claim", e1.getMessage());
+
+    ParsedAccessToken tokenEmptyScopes =
+        buildToken(ISSUER, CLIENT_ID, CLIENT_ID, notExpired, Set.of(), AUDIENCES, jwt);
+
+    InvalidTokenException e2 =
+        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(tokenEmptyScopes));
+    assertEquals("missing or empty scope claim", e2.getMessage());
+
   }
 
   @Test

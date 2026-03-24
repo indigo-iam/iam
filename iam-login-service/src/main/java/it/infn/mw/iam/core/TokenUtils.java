@@ -93,15 +93,9 @@ public class TokenUtils {
       String issuer = claims.getIssuer();
       String sub = claims.getSubject();
       String clientId = claims.getStringClaim("client_id");
-      if (clientId == null) {
-        throw new InvalidTokenException("missing clientId claim");
-      }
       Date expiration = claims.getExpirationTime();
-      String scopes = claims.getStringClaim("scope");
-      if (scopes == null) {
-        throw new InvalidTokenException("missing scope claim");
-      }
-      Set<String> scopeSet = Set.of(scopes.split(" "));
+      String scopeClaim = claims.getStringClaim("scope");
+      Set<String> scopeSet = scopeClaim == null ? Set.of() : Set.of(scopeClaim.split(" "));
       Set<String> audiences =
           claims.getAudience().stream().collect(Collectors.toSet());
       String refreshToken = claims.getStringClaim("refresh_token");
@@ -136,20 +130,28 @@ public class TokenUtils {
     validateSignature(token);
     validateIssuer(token);
     validateExpiration(token);
-    validateClientId(token.clientId());
+    validateClientId(token);
+    validateScopes(token);
     if (!token.isClient()) {
       validateSub(token);
     }
   }
 
-  private void validateClientId(String clientId) {
+  private void validateClientId(ParsedAccessToken token) {
 
-    if (Objects.isNull(clientId)) {
+    if (Objects.isNull(token.clientId())) {
       throw new InvalidTokenException("client_id claim not found on token");
     }
-    ClientDetailsEntity client = clientRepository.findByClientId(clientId).orElseThrow();
+    ClientDetailsEntity client = clientRepository.findByClientId(token.clientId()).orElseThrow();
     if (!client.isActive()) {
-      throw new InvalidTokenException("Client with id " + clientId + " is not active");
+      throw new InvalidTokenException("Client with id " + token.clientId() + " is not active");
+    }
+  }
+
+  private void validateScopes(ParsedAccessToken token) {
+
+    if (token.scopes() == null || token.scopes().isEmpty()) {
+      throw new InvalidTokenException("missing or empty scope claim");
     }
   }
 

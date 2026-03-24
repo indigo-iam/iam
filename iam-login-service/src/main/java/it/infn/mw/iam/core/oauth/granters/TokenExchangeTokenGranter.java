@@ -147,9 +147,9 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
     OAuth2Authentication authentication = tokenUtils.getAuthentication(parsed);
 
-    validateExchange(actor, request, authentication, parsed.scopes(), parsed.clientId());
-
     tokenUtils.validate(parsed);
+
+    validateExchange(actor, request, authentication, parsed.scopes(), parsed.clientId());
 
     return new SubjectTokenContext(authentication, parsed.scopes(), parsed.clientId());
   }
