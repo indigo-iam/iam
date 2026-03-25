@@ -30,8 +30,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Clock;
-import java.util.Date;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -40,12 +38,17 @@ import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -54,39 +57,47 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamNoMvcTest
-class ClientRepositoryTests extends ClientRepositoryTestsSupport {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ClientRepositoryTests extends TokenGetterUtils {
 
-
-  @Autowired
-  private IamClientRepository clientRepo;
-
-  @Autowired
-  private IamAccountClientRepository accountClientRepo;
-
-  @Autowired
-  private IamAccountRepository accountRepo;
-
-  @Autowired
-  private IamAccountService accountService;
+  static final String TEST_100_USER = "test_100";
 
   @Autowired
-  private OAuth2ClientRepository mitreClientRepo;
+  IamClientRepository clientRepo;
 
   @Autowired
-  private Clock clock;
+  IamAccountClientRepository accountClientRepo;
 
   @Autowired
-  private ClientDefaultsService defaultsService;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private EntityManager em;
+  IamAccountService accountService;
+
+  @Autowired
+  OAuth2ClientRepository mitreClientRepo;
+
+  @Autowired
+  MutableClock clock;
+
+  @Autowired
+  ClientDefaultsService defaultsService;
+
+  @Autowired
+  EntityManager em;
 
   private IamAccountClient linkClientToAccount(ClientDetailsEntity client, IamAccount account) {
     IamAccountClient ac = new IamAccountClient();
-    ac.setCreationTime(Date.from(clock.instant()));
+    ac.setCreationTime(clock.now());
     ac.setAccount(account);
     ac.setClient(client);
     return accountClientRepo.save(ac);
@@ -95,9 +106,9 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   @Test
   void testBasicClientOps() {
 
-    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER).orElseThrow();
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
 
     Page<ClientDetailsEntity> page =
         accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged());
@@ -109,15 +120,13 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
     page = accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged());
 
     assertThat(page.getSize(), is(1));
-    assertThat(page.getContent().get(0).getClientId(), is(TEST_CLIENT_CLIENT_ID));
+    assertThat(page.getContent().get(0).getClientId(), is(TEST_CLIENT_ID));
 
     accountClientRepo.deleteByAccountAndClientId(testAccount, testClient.getId());
 
     page = accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged());
 
     assertThat(page.isEmpty(), is(true));
-
-    testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
 
   }
 
@@ -126,10 +135,9 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   void testMultipleLinkRaiseReferentialIntegrityError() {
 
     JpaSystemException exception = assertThrows(JpaSystemException.class, () -> {
-      ClientDetailsEntity testClient =
-          clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+      ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
 
-      IamAccount testAccount = accountRepo.findByUsername(TEST_USER).orElseThrow();
+      IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
 
       Page<ClientDetailsEntity> page =
           accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged());
@@ -153,11 +161,11 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   @Test
   void accountCanOwnMultipleClients() {
 
-    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     ClientDetailsEntity passwordGrantClient =
-        clientRepo.findByClientId(PASSWORD_GRANT_CLIENT_ID).orElseThrow();
+        clientRepo.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER).orElseThrow();
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
 
     Page<ClientDetailsEntity> page =
         accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged());
@@ -183,11 +191,11 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
   @Test
   void clientCanBeOwnedByMultipleAccounts() {
 
-    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     ClientDetailsEntity passwordGrantClient =
-        clientRepo.findByClientId(PASSWORD_GRANT_CLIENT_ID).orElseThrow();
+        clientRepo.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER).orElseThrow();
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
     IamAccount test100Account = accountRepo.findByUsername(TEST_100_USER).orElseThrow();
 
     assertThat(accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged()).isEmpty(),
@@ -216,7 +224,7 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
   @Test
   void accountDeletionHandledGracefully() {
-    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     IamAccount test100Account = accountRepo.findByUsername(TEST_100_USER).orElseThrow();
 
     linkClientToAccount(testClient, test100Account);
@@ -232,15 +240,15 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
     assertThat(accountClientRepo.findClientByAccount(test100Account, Pageable.unpaged()).isEmpty(),
         is(true));
 
-    assertTrue(clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).isPresent());
+    assertTrue(clientRepo.findByClientId(TEST_CLIENT_ID).isPresent());
   }
 
   @Test
   void clientDeletionHandledGracefully() {
 
-    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity testClient = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER).orElseThrow();
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME).orElseThrow();
     IamAccount test100Account = accountRepo.findByUsername(TEST_100_USER).orElseThrow();
 
     assertThat(accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged()).isEmpty(),
@@ -305,11 +313,11 @@ class ClientRepositoryTests extends ClientRepositoryTestsSupport {
 
     em.flush();
 
-    List<ClientDetailsEntity> result = clientRepo.findAll(hasClientNameLike("fir"));
+    List<ClientDetailsEntity> result = clientRepo.findAll(hasClientNameLike("first"));
     assertThat(result, hasSize(1));
     assertThat(result.get(0).getClientId(), is(client0.getClientId()));
-    
-    result = clientRepo.findAll(hasClientNameLike("fir").or(hasClientIdLike("seco")));
+
+    result = clientRepo.findAll(hasClientNameLike("first").or(hasClientIdLike("seco")));
     assertThat(result, hasSize(2));
     assertThat(result, hasItems(client0, client1));
 

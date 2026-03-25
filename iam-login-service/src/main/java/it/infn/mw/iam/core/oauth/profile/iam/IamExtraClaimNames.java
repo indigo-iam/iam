@@ -22,7 +22,6 @@ public interface IamExtraClaimNames extends BaseExtraClaimNames {
   String AFFILIATION = "affiliation";
   String AMR = "amr";
   String ATTR = "attr";
-  String EXTERNAL_AUTHN = "external_authn";
   String GROUPS = "groups";
   String LAST_LOGIN_AT = "last_login_at";
   String SSH_KEYS = "ssh_keys";

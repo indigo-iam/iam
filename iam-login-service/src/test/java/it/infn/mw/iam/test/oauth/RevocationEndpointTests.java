@@ -15,11 +15,14 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.ACCESS_TOKEN;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Set;
@@ -32,11 +35,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class RevocationEndpointTests extends EndpointsTestUtils {
+class RevocationEndpointTests extends TokenGetterUtils {
 
   private static final String REVOKE_ENDPOINT = "/revoke";
 
@@ -49,10 +53,9 @@ class RevocationEndpointTests extends EndpointsTestUtils {
   @Test
   void testRevocationEnpointRequiresClientAuth() throws Exception {
     mvc
-    .perform(post(REVOKE_ENDPOINT)
-      .contentType(APPLICATION_FORM_URLENCODED)
-      .param("token", "whatever"))
-    .andExpect(status().isUnauthorized());
+      .perform(
+          post(REVOKE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED).param("token", "whatever"))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -68,28 +71,18 @@ class RevocationEndpointTests extends EndpointsTestUtils {
   @Test
   void accessTokenRevocationWorks() throws Exception {
 
-    Set<OAuth2AccessTokenEntity> accessTokens = iamTokenService.getAllAccessTokensForUser("test");
-
-    // Start clean
-    accessTokens.forEach(iamTokenService::revokeAccessToken);
-
     String accessToken = getPasswordToken().accessToken();
 
-    accessTokens = iamTokenService.getAllAccessTokensForUser("test");
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
 
-    assertThat(accessTokens, hasSize(1)); // access token
-
-    mvc
-      .perform(post(REVOKE_ENDPOINT)
-        .with(httpBasic(PASSWORD_GRANT_CLIENT_ID, PASSWORD_GRANT_CLIENT_SECRET))
-        .contentType(APPLICATION_FORM_URLENCODED)
-        .param("token", accessToken))
+    revoke(PASSWORD_GRANT_CLIENT_ID, PASSWORD_GRANT_CLIENT_SECRET, accessToken)
       .andExpect(status().isOk());
 
-    accessTokens = iamTokenService.getAllAccessTokensForUser("test");
-
-    assertThat(accessTokens, hasSize(0)); // revoking the access token revokes the linked id token
-
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
   }
 
   @Test
@@ -102,9 +95,6 @@ class RevocationEndpointTests extends EndpointsTestUtils {
     String tokenOne = getPasswordToken().accessToken();
     String tokenTwo = getPasswordToken().accessToken();
 
-    accessTokens = iamTokenService.getAllAccessTokensForUser("test");
-    assertThat(accessTokens, hasSize(2));
-
     mvc
       .perform(post(REVOKE_ENDPOINT)
         .with(httpBasic(PASSWORD_GRANT_CLIENT_ID, PASSWORD_GRANT_CLIENT_SECRET))
@@ -112,10 +102,13 @@ class RevocationEndpointTests extends EndpointsTestUtils {
         .param("token", tokenOne))
       .andExpect(status().isOk());
 
-    accessTokens = iamTokenService.getAllAccessTokensForUser("test");
-    assertThat(accessTokens, hasSize(1));
-    accessTokens.stream().filter(t -> t.getValue().equals(tokenTwo)).findAny().orElseThrow(
-        () -> new AssertionError("Expected access token not found"));
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, tokenOne, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, tokenTwo, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
   }
 
   @Test
@@ -160,7 +153,7 @@ class RevocationEndpointTests extends EndpointsTestUtils {
 
 
     assertThat(iamTokenService.getAllRefreshTokensForUser("test"), hasSize(1));
-    
+
     iamTokenService.getAllRefreshTokensForUser("test")
       .stream()
       .filter(t -> t.getValue().equals(rt2))

@@ -19,6 +19,7 @@ import static java.lang.String.format;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -98,6 +99,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
               properties.getOrganisation().getName());
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
+          if (Objects.isNull(auth)) {
+            return null;
+          }
           Optional<SavedUserAuthentication> userAuth =
               AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
           if (userAuth.isPresent()) {

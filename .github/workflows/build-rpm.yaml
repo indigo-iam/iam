@@ -1,4 +1,4 @@
-name: Build RPM
+name: Build RPMs
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
       - '**'
 
 jobs:
-  build-rpm:
+  build-rpms:
     strategy:
       fail-fast: false
       matrix:

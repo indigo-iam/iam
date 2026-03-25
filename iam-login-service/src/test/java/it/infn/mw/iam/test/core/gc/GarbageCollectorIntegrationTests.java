@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.core.gc;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.time.Duration;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,17 +29,16 @@ import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.AuthenticationHolderEntityService;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
@@ -48,14 +49,20 @@ import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class})
-@TestPropertySource(properties = "scheduling.enabled=false")
-class GarbageCollectorIntegrationTests extends TestTokensUtils {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.access_token.store_on_database=true", "scheduling.enabled=false"})
+@AutoConfigureMockMvc
+@Transactional
+class GarbageCollectorIntegrationTests extends TokenGetterUtils {
 
   @Autowired
   GarbageCollector gc;
@@ -76,9 +83,6 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   private IamAuthenticationHolderRepository authenticationHolderRepository;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
-
-  @Autowired
   private IamOAuthAccessTokenRepository accessTokenRepository;
 
   @Autowired
@@ -90,11 +94,28 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   @Autowired
   private IamDeviceCodeRepository deviceCodeRepository;
 
+  @Autowired
+  ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  SecurityContextUtils sc;
+
+  @Autowired
+  MutableClock clock;
+
   private AuthorizationCodeEntity createAuthorizationCode() {
     OAuth2Authentication auth = getOAuth2Authentication();
     RandomValueStringGenerator generator = new RandomValueStringGenerator(22);
     AuthenticationHolderEntity authHolder = authenticationHolderService.create(auth);
-    return new AuthorizationCodeEntity(generator.generate(), authHolder, yesterday());
+    return new AuthorizationCodeEntity(generator.generate(), authHolder, clock.now());
+  }
+
+  private DeviceCode createDeviceCode(String clientId, Set<String> scopes)
+      throws DeviceCodeCreationException {
+    DeviceCode dc = codeService.createNewDeviceCode(scopes,
+        clientDetailsService.loadClientByClientId(clientId), Map.of());
+    dc.setExpiration(clock.now());
+    return dc;
   }
 
   private OAuth2Authentication getOAuth2Authentication() {
@@ -102,12 +123,13 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   }
 
   private OAuth2Authentication getOAuth2Authentication(Set<String> scopes) {
-    return oauth2Authentication(loadTestClient(PASSWORD_CLIENT_ID), TEST_USERNAME,
-        scopes.toArray(new String[0]));
+    return oauth2Authentication(clientDetailsService.loadClientByClientId(PASSWORD_CLIENT_ID),
+        TEST_USERNAME, scopes.toArray(new String[0]));
   }
 
   @BeforeEach
   void cleanAll() {
+    sc.cleanupSecurityContext();
     siteRepository.deleteAll();
     codeRepository.deleteAll();
     accessTokenRepository.deleteAll();
@@ -117,49 +139,47 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   }
 
   @Test
-  @Transactional
   void clearExpiredApprovedSites() {
 
     assertThat(siteRepository.count(), equalTo(0L));
-    approvedSiteService.createApprovedSite(PASSWORD_CLIENT_ID, TEST_USERNAME, yesterday(),
-        Set.of("openid"));
+    approvedSiteService.createApprovedSite(PASSWORD_CLIENT_ID, TEST_USERNAME,
+        Date.from(clock.daysBefore(2)), Set.of("openid"));
     assertThat(siteRepository.count(), equalTo(1L));
+    clock.advance(Duration.ofDays(1));
     gc.clearExpiredApprovedSites(1);
     assertThat(siteRepository.count(), equalTo(0L));
   }
 
   @Test
-  @Transactional
   void clearExpiredAuthorizationCodes() {
 
     assertThat(codeRepository.count(), equalTo(0L));
-    codeRepository.save(createAuthorizationCode());
+    // Mitre's Authorization Code service is not using clock
+    AuthorizationCodeEntity entity = codeRepository.save(createAuthorizationCode());
+    entity.setExpiration(Date.from(clock.daysBefore(200)));
+    codeRepository.save(entity);
     assertThat(codeRepository.count(), equalTo(1L));
     gc.clearExpiredAuthorizationCodes(1);
     assertThat(codeRepository.count(), equalTo(0L));
   }
 
   @Test
-  @Transactional
-  void clearExpiredTokensAndOrphanedAuthenticationHolder() {
+  void clearExpiredTokensAndOrphanedAuthenticationHolder() throws Exception {
 
     assertThat(accessTokenRepository.count(), equalTo(0L));
     assertThat(refreshTokenRepository.count(), equalTo(0L));
     assertThat(authenticationHolderRepository.count(), equalTo(0L));
-    OAuth2AccessTokenEntity at = (OAuth2AccessTokenEntity) tokenService
-      .createAccessToken(getOAuth2Authentication(Set.of("openid", "offline_access")));
-    at.setExpiration(yesterday());
-    accessTokenRepository.save(at);
-    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    rt.setExpiration(yesterday());
-    refreshTokenRepository.save(rt);
+    sc.useLocalTestUser();
+    getPasswordToken(Set.of("openid", "offline_access"));
     assertThat(accessTokenRepository.count(), equalTo(1L));
     assertThat(refreshTokenRepository.count(), equalTo(1L));
     assertThat(authenticationHolderRepository.count(), equalTo(1L));
+    clock.advance(Duration.ofDays(1));
     gc.clearExpiredAccessTokens(1);
     assertThat(accessTokenRepository.count(), equalTo(0L));
     assertThat(refreshTokenRepository.count(), equalTo(1L));
     assertThat(authenticationHolderRepository.count(), equalTo(1L));
+    clock.advance(Duration.ofDays(30));
     gc.clearExpiredRefreshTokens(1);
     assertThat(refreshTokenRepository.count(), equalTo(0L));
     assertThat(authenticationHolderRepository.count(), equalTo(1L));
@@ -168,15 +188,12 @@ class GarbageCollectorIntegrationTests extends TestTokensUtils {
   }
 
   @Test
-  @Transactional
   void clearExpiredDeviceCodes() throws DeviceCodeCreationException {
 
     assertThat(deviceCodeRepository.count(), equalTo(0L));
-    DeviceCode dc = codeService.createNewDeviceCode(Set.of("openid"),
-        loadTestClient(DEVICE_CODE_CLIENT_ID), Map.of());
-    dc.setExpiration(yesterday());
-    deviceCodeRepository.save(dc);
+    deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));
     assertThat(deviceCodeRepository.count(), equalTo(1L));
+    clock.advance(Duration.ofDays(1));
     gc.clearExpiredDeviceCodes(1);
     assertThat(deviceCodeRepository.count(), equalTo(0L));
   }

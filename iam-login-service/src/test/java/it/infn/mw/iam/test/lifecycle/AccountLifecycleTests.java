@@ -19,21 +19,17 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STA
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Clock;
-import java.time.ZoneId;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
@@ -41,73 +37,72 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  AccountLifecycleTests.TestConfig.class})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class})
 @TestPropertySource(
   properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=7",
     "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
     "lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=true"})
-class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+@Transactional
+class AccountLifecycleTests implements LifecycleTestSupport {
 
-  @TestConfiguration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
+  static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
+
+  static final String USER_UUID = UUID.randomUUID().toString();
+  static final String USER_USERNAME = "test-account-lifecycle";
+
+  @Autowired
+  IamAccountRepository repo;
+
+  @Autowired
+  IamAccountService accountService;
+
+  @Autowired
+  ExpiredAccountsHandler handler;
+
+  @Autowired
+  SecurityContextUtils sc;
+
+  @Autowired
+  MutableClock clock;
+
+  IamAccount testAccount;
+  Optional<IamLabel> statusLabel;
+
+  private IamAccount getLifecycleAccount() {
+
+    IamAccount a = IamAccount.newAccount();
+    a.setUuid(USER_UUID);
+    a.setUsername(USER_USERNAME);
+    a.setActive(true);
+    a.getUserInfo().setGivenName("Test");
+    a.getUserInfo().setFamilyName("Test");
+    a.getUserInfo().setEmail("test.lifecycle.account@cern.ch");
+    a.setEndTime(null);
+    a.getLabels().clear();
+    return a;
   }
 
-  @Autowired
-  private IamAccountRepository repo;
-
-  @Autowired
-  private IamAccountService accountService;
-
-  @Autowired
-  private ExpiredAccountsHandler handler;
-
-  private static final String USER_UUID = UUID.randomUUID().toString();
-  private static final String USER_USERNAME = "test-account-lifecycle";
-  private IamAccount testAccount;
-  private Optional<IamLabel> statusLabel;
-
   @BeforeEach
-  void resetTestAccount() {
+  void createTestAccount() {
 
-    testAccount = IamAccount.newAccount();
-    testAccount.setUuid(USER_UUID);
-    testAccount.setUsername(USER_USERNAME);
-    testAccount.setActive(true);
-    testAccount.getUserInfo().setGivenName("Test");
-    testAccount.getUserInfo().setFamilyName("Test");
-    testAccount.getUserInfo().setEmail("test.lifecycle.account@cern.ch");
-    testAccount.setEndTime(null);
-    testAccount.getLabels().clear();
-    accountService.createAccount(testAccount);
-    testAccount = accountService.findByUuid(USER_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    testAccount = accountService.createAccount(getLifecycleAccount());
     statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(testAccount.isActive(), is(true));
     assertThat(statusLabel.isPresent(), is(false));
-  }
-
-  @AfterEach
-  void deleteAccount() {
-
-    accountService.deleteAccount(testAccount);
+    clock.advance(Duration.ofHours(1));
   }
 
   @Test
   void testUserSuspensionAtLastMidnight() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(LAST_MIDNIGHT));
+    accountService.setAccountEndTime(testAccount, Date.from(clock.lastMidnight()));
     handler.handleExpiredAccounts();
 
     testAccount = accountService.findByUuid(USER_UUID)
@@ -121,7 +116,7 @@ class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport 
   @Test
   void testSuspensionGracePeriodWorks() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(DAY_BEFORE));
+    accountService.setAccountEndTime(testAccount, Date.from(clock.daysBefore(1)));
     testAccount = accountService.findByUuid(USER_UUID)
         .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
@@ -151,9 +146,10 @@ class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport 
   @Test
   void testRemovalGracePeriodWorks() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(EIGHT_DAYS_AGO));
+    accountService.setAccountEndTime(testAccount, Date.from(clock.daysBefore(8)));
     Date lastUpdateTime = testAccount.getLastUpdateTime();
 
+    clock.advance(Duration.ofHours(1));
     handler.handleExpiredAccounts();
 
     testAccount = accountService.findByUuid(USER_UUID)
@@ -180,7 +176,7 @@ class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport 
   @Test
   void testAccountRemovalWorks() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(THIRTY_ONE_DAYS_AGO));
+    accountService.setAccountEndTime(testAccount, Date.from(clock.daysBefore(31)));
 
     handler.handleExpiredAccounts();
 

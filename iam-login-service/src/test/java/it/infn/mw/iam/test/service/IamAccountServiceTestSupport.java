@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.test.service;
 
+import java.time.Instant;
+import java.util.Date;
+
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamOidcId;
@@ -68,88 +71,100 @@ public class IamAccountServiceTestSupport {
   public static final String TEST_X509_CERTIFICATE_ISSUER_2 = "x509-cert-issuer-2";
   public static final String TEST_X509_CERTIFICATE_LABEL_2 = "x509-cert-label-2";
 
+  protected static final IamAuthority ROLE_USER_AUTHORITY;
 
-  protected final IamAccount TEST_ACCOUNT;
-  protected final IamAccount CICCIO_ACCOUNT;
-  protected final IamAccount TOTP_MFA_ACCOUNT;
-  protected final IamTotpMfa TOTP_MFA;
-  protected final IamAuthority ROLE_USER_AUTHORITY;
-  protected final IamSamlId TEST_SAML_ID;
-  protected final IamOidcId TEST_OIDC_ID;
+  protected static final IamSamlId TEST_SAML_ID;
+  protected static final IamOidcId TEST_OIDC_ID;
 
-  protected final IamSshKey TEST_SSH_KEY_1;
-  protected final IamSshKey TEST_SSH_KEY_2;
-  protected final IamX509Certificate TEST_X509_CERTIFICATE_1;
-  protected final IamX509Certificate TEST_X509_CERTIFICATE_2;
-
-  public IamAccountServiceTestSupport() {
-    TEST_ACCOUNT = IamAccount.newAccount();
-    TEST_ACCOUNT.setUuid(TEST_UUID);
-    TEST_ACCOUNT.setUsername(TEST_USERNAME);
-    TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
-    TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
-    TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
+  static {
 
     ROLE_USER_AUTHORITY = new IamAuthority("ROLE_USER");
-
-    CICCIO_ACCOUNT = IamAccount.newAccount();
-    CICCIO_ACCOUNT.setUuid(CICCIO_UUID);
-    CICCIO_ACCOUNT.setUsername(CICCIO_USERNAME);
-    CICCIO_ACCOUNT.getUserInfo().setEmail(CICCIO_EMAIL);
-    CICCIO_ACCOUNT.getUserInfo().setGivenName(CICCIO_GIVEN_NAME);
-    CICCIO_ACCOUNT.getUserInfo().setFamilyName(CICCIO_FAMILY_NAME);
-
-    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
-    TOTP_MFA_ACCOUNT.setUsername(TOTP_USERNAME);
-    TOTP_MFA_ACCOUNT.setUuid(TOTP_UUID);
-    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_EMAIL);
-    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
-
-    TOTP_MFA_ACCOUNT.touch();
-
-    TOTP_MFA = new IamTotpMfa();
-    TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
-    TOTP_MFA.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
-            TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT));
-    TOTP_MFA.setActive(true);
-    TOTP_MFA.touch();
 
     TEST_SAML_ID =
         new IamSamlId(TEST_SAML_ID_IDP_ID, TEST_SAML_ID_ATTRIBUTE_ID, TEST_SAML_ID_USER_ID);
 
     TEST_OIDC_ID = new IamOidcId(TEST_OIDC_ID_ISSUER, TEST_OIDC_ID_SUBJECT);
-
-    TEST_SSH_KEY_1 = new IamSshKey(TEST_SSH_KEY_VALUE_1);
-
-    TEST_SSH_KEY_2 = new IamSshKey(TEST_SSH_KEY_VALUE_2);
-
-    TEST_X509_CERTIFICATE_1 = new IamX509Certificate();
-
-    TEST_X509_CERTIFICATE_1.setLabel(TEST_X509_CERTIFICATE_LABEL_1);
-    TEST_X509_CERTIFICATE_1.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_1);
-    TEST_X509_CERTIFICATE_1.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_1);
-    TEST_X509_CERTIFICATE_1.setCertificate(TEST_X509_CERTIFICATE_VALUE_1);
-
-    TEST_X509_CERTIFICATE_2 = new IamX509Certificate();
-
-    TEST_X509_CERTIFICATE_2.setLabel(TEST_X509_CERTIFICATE_LABEL_2);
-    TEST_X509_CERTIFICATE_2.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_2);
-    TEST_X509_CERTIFICATE_2.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_2);
-    TEST_X509_CERTIFICATE_2.setCertificate(TEST_X509_CERTIFICATE_VALUE_2);
   }
 
-  public IamAccount cloneAccount(IamAccount account) {
-    IamAccount newAccount = IamAccount.newAccount();
-    newAccount.setUuid(account.getUuid());
-    newAccount.setUsername(account.getUsername());
-    newAccount.getUserInfo().setEmail(account.getUserInfo().getEmail());
-    newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
-    newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
+  protected IamX509Certificate getTestX509Certificate1() {
 
-    newAccount.touch();
+    IamX509Certificate c = new IamX509Certificate();
+    c.setLabel(TEST_X509_CERTIFICATE_LABEL_1);
+    c.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_1);
+    c.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_1);
+    c.setCertificate(TEST_X509_CERTIFICATE_VALUE_1);
+    c.setPrimary(false);
+    return c;
+  }
 
-    return newAccount;
+  protected IamX509Certificate getTestX509Certificate2() {
+
+    IamX509Certificate c = new IamX509Certificate();
+    c.setLabel(TEST_X509_CERTIFICATE_LABEL_2);
+    c.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_2);
+    c.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_2);
+    c.setCertificate(TEST_X509_CERTIFICATE_VALUE_2);
+    c.setPrimary(false);
+    return c;
+  }
+
+  protected IamSshKey getTestSshKey1(Instant instant) {
+    IamSshKey k = new IamSshKey(TEST_SSH_KEY_VALUE_1);
+    k.setCreationTime(Date.from(instant));
+    k.setPrimary(false);
+    return k;
+  }
+
+  protected IamSshKey getTestSshKey2(Instant instant) {
+    IamSshKey k = new IamSshKey(TEST_SSH_KEY_VALUE_2);
+    k.setCreationTime(Date.from(instant));
+    k.setPrimary(false);
+    return k;
+  }
+
+  protected IamAccount getTestAccount(Instant instant) {
+    IamAccount a = IamAccount.newAccount();
+    a.setUsername(TEST_USERNAME);
+    a.setUuid(TEST_UUID);
+    a.getUserInfo().setEmail(TEST_EMAIL);
+    a.getUserInfo().setGivenName(TEST_GIVEN_NAME);
+    a.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
+    a.touch(instant);
+    return a;
+  }
+
+  protected IamAccount getCiccioAccount(Instant instant) {
+    IamAccount a = IamAccount.newAccount();
+    a.setUsername(CICCIO_USERNAME);
+    a.setUuid(CICCIO_UUID);
+    a.getUserInfo().setEmail(CICCIO_EMAIL);
+    a.getUserInfo().setGivenName(CICCIO_GIVEN_NAME);
+    a.getUserInfo().setFamilyName(CICCIO_FAMILY_NAME);
+    a.touch(instant);
+    return a;
+  }
+
+  protected IamAccount getTotpMfaAccount(Instant instant) {
+    IamAccount a = IamAccount.newAccount();
+    a.setUsername(TOTP_USERNAME);
+    a.setUuid(TOTP_UUID);
+    a.getUserInfo().setEmail(TOTP_EMAIL);
+    a.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
+    a.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
+    a.touch(instant);
+    return a;
+  }
+
+  protected IamTotpMfa getTotpMfaFor(IamAccount account, Instant instant) {
+    IamTotpMfa t = new IamTotpMfa(instant);
+    t.setAccount(account);
+    t.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
+        KEY_TO_ENCRYPT_DECRYPT));
+    t.setActive(true);
+    return t;
+  }
+
+  public String getEncryptedCode(String plaintext, String key) {
+    return IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(plaintext, key);
   }
 }

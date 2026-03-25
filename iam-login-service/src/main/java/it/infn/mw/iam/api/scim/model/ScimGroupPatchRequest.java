@@ -21,10 +21,8 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.Valid;
-
 import javax.validation.constraints.NotEmpty;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,19 +32,14 @@ public class ScimGroupPatchRequest {
 
   public static final String PATCHOP_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:PatchOp";
 
-  private final Set<String> schemas;
+  private Set<String> schemas;
 
   @NotEmpty
   @Valid
-  private final List<ScimPatchOperation<List<ScimMemberRef>>> operations;
+  @JsonProperty("Operations")
+  private List<ScimPatchOperation<List<ScimMemberRef>>> operations;
 
-  @JsonCreator
-  private ScimGroupPatchRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") List<ScimPatchOperation<List<ScimMemberRef>>> operations) {
-
-    this.schemas = schemas;
-    this.operations = operations;
-  }
+  public ScimGroupPatchRequest() {}
 
   private ScimGroupPatchRequest(Builder b) {
 
@@ -72,8 +65,7 @@ public class ScimGroupPatchRequest {
   public static class Builder {
 
     private Set<String> schemas = new HashSet<>();
-    private List<ScimPatchOperation<List<ScimMemberRef>>> operations =
-        new ArrayList<>();
+    private List<ScimPatchOperation<List<ScimMemberRef>>> operations = new ArrayList<>();
 
     public Builder() {
       schemas.add(PATCHOP_SCHEMA);

@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.time;
+package it.infn.mw.iam.test.util.oauth;
 
-import org.springframework.stereotype.Component;
+import org.springframework.mock.web.MockHttpSession;
 
-/**
- * 
- * A {@link TimeProvider} implementation that leverages {@link System#currentTimeMillis()} to return
- * the time.
- *
- */
-@Component
-public class SystemTimeProvider implements TimeProvider {
+public class ClockedHttpSession extends MockHttpSession {
 
-  @Override
-  public long currentTimeMillis() {
+  private final long customCreationTime;
 
-    return System.currentTimeMillis();
+  public ClockedHttpSession(long creationTime) {
+    super();
+    this.customCreationTime = creationTime;
   }
 
+  @Override
+  public long getCreationTime() {
+    return customCreationTime;
+  }
 }

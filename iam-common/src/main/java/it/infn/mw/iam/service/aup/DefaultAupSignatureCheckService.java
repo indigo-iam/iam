@@ -17,15 +17,15 @@ package it.infn.mw.iam.service.aup;
 
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -38,20 +38,22 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
 
   final IamAupRepository aupRepo;
   final IamAupSignatureRepository signatureRepo;
-  final TimeProvider timeProvider;
+  final Clock clock;
 
-  public DefaultAupSignatureCheckService(IamAupRepository aupRepo,
-      IamAupSignatureRepository signatureRepo, TimeProvider timeProvider) {
+  public DefaultAupSignatureCheckService(Clock clock, IamAupRepository aupRepo,
+      IamAupSignatureRepository signatureRepo) {
+
+    this.clock = clock;
     this.aupRepo = aupRepo;
     this.signatureRepo = signatureRepo;
-    this.timeProvider = timeProvider;
   }
 
   @Override
   public boolean needsAupSignature(IamAccount account) {
+
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    Date now = new Date(timeProvider.currentTimeMillis());
+    Date now = Date.from(clock.instant());
 
     if (!aup.isPresent()) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",
@@ -79,8 +81,7 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
 
       if (signatureValidityInDays > 0) {
 
-        Date signatureValidTime =
-            new Date(signatureTime.getTime() + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+        Date signatureValidTime = Date.from(signatureTime.toInstant().plus(Duration.ofDays(signatureValidityInDays)));
 
         // The signature was on the last version of the AUP
         boolean signatureNeeded = now.compareTo(signatureValidTime) > 0;

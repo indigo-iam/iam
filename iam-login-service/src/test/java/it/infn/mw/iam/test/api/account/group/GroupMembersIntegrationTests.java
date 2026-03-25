@@ -36,18 +36,20 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.group.IamGroupService;
@@ -60,13 +62,18 @@ import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithAnonymousUser
 class GroupMembersIntegrationTests {
 
@@ -96,22 +103,20 @@ class GroupMembersIntegrationTests {
   private MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-  @Autowired
   private IamScopePolicyRepository scopePolicyRepo;
 
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  private MutableClock clock;
+
+  @Autowired
+  private SecurityContextUtils context;
+
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -519,10 +524,10 @@ class GroupMembersIntegrationTests {
   void getGroupsForAccountWorksForAdminsTest() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.totalResults", is(3)))
-          .andExpect(jsonPath("$.Resources", not(empty())))
-          .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(3)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
 
   @Test
@@ -553,18 +558,17 @@ class GroupMembersIntegrationTests {
   @WithMockUser(username = "test", authorities = {"ROLE_USER"})
   void userAccessToGetListOfUserGroupUsingMeEndpointSuccessTest() throws Exception {
     mvc.perform(get("/iam/account/me/groups"))
-        .andDo(print())
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(3)))
-        .andExpect(jsonPath("$.Resources", not(empty())))
-        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(3)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
 
   @Test
   @WithMockUser(username = ADMIN_USER, roles = {"USER", "ADMIN"})
   void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
-    Set<IamScopePolicy> scopePolicies = Set.of(
-        initScopePolicy("Scope policy description 1"),
+    Set<IamScopePolicy> scopePolicies = Set.of(initScopePolicy("Scope policy description 1"),
         initScopePolicy("Scope policy description 2"),
         initScopePolicy("Scope policy description 3"));
 
@@ -573,26 +577,37 @@ class GroupMembersIntegrationTests {
     IamGroup subgroup = createGroup("root/subgroup", rootGroup);
     IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
 
-    IamAccount account = accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+    IamAccount account =
+        accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
-        .andExpect(status().isCreated());
+    mvc
+      .perform(
+          post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+      .andExpect(status().isCreated());
 
     final int groupsCount = account.getGroups().size();
 
     String response = mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
-        .andDo(print())
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(groupsCount)))
-        .andExpect(jsonPath("$.Resources", not(empty())))
-        .andReturn().getResponse().getContentAsString();
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(groupsCount)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
     ListResponseDTO<RegisteredGroupDTO> groups =
         mapper.readValue(response, new TypeReference<ListResponseDTO<RegisteredGroupDTO>>() {});
 
     assertThat(groups.getResources().size(), is(groupsCount));
-    List<String> descriptions = groups.getResources().stream().filter(r -> r.getName().equals("root")).findFirst().get().getScopePoliciesDescription();
-    assertThat(descriptions, hasItems("Scope policy description 1", "Scope policy description 2", "Scope policy description 3"));
+    List<String> descriptions = groups.getResources()
+      .stream()
+      .filter(r -> r.getName().equals("root"))
+      .findFirst()
+      .get()
+      .getScopePoliciesDescription();
+    assertThat(descriptions, hasItems("Scope policy description 1", "Scope policy description 2",
+        "Scope policy description 3"));
   }
 
   private IamGroup createGroup(String name, IamGroup parent) {
@@ -603,7 +618,7 @@ class GroupMembersIntegrationTests {
   }
 
   private IamScopePolicy initScopePolicy(String description) {
-    Date now = new Date();
+    Date now = clock.now();
     long randomLong = ThreadLocalRandom.current().nextLong();
 
     IamScopePolicy p = new IamScopePolicy();

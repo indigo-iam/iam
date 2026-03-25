@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +49,6 @@ public class DefaultProxyCertificateService implements ProxyCertificateService {
   final ProxyCertificateProperties properties;
   final ProxyHelperService proxyHelper;
 
-  @Autowired
   public DefaultProxyCertificateService(Clock clock, IamAccountRepository accountRepository,
       ProxyCertificateProperties properties, ProxyHelperService proxyHelper) {
     this.clock = clock;

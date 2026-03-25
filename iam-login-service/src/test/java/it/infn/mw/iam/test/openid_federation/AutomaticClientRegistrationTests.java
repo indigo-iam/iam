@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,7 +39,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
@@ -50,7 +50,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -75,7 +74,6 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class AutomaticClientRegistrationTests {
 
@@ -93,6 +91,9 @@ class AutomaticClientRegistrationTests {
 
   @MockBean
   private JWKSetCacheService jwkService;
+
+  @Autowired
+  private Clock clock;
 
   private TrustChain fakeChain;
 
@@ -158,7 +159,7 @@ class AutomaticClientRegistrationTests {
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -243,7 +244,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/cb";
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -278,7 +279,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/cb";
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -332,7 +333,7 @@ class AutomaticClientRegistrationTests {
     String rpEntityId = "https://rp.example";
     String requestJwt = generateRequestJWT(rpEntityId, null, null);
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, null, jwkSet, null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, null, jwkSet, null, clock);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -391,7 +392,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/cb";
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
 
@@ -414,7 +415,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/cb";
 
     fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null, null);
+        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null, null, clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -448,7 +449,7 @@ class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/cb";
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null,
-        new URI(rpEntityId + "/jwk"));
+        new URI(rpEntityId + "/jwk"), clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -537,7 +538,7 @@ class AutomaticClientRegistrationTests {
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -560,7 +561,7 @@ class AutomaticClientRegistrationTests {
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -603,7 +604,7 @@ class AutomaticClientRegistrationTests {
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
-        jwkSet, null);
+        jwkSet, null, clock);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 

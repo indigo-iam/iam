@@ -19,9 +19,10 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
+import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -69,17 +70,14 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 @Transactional
 public class ScimMeController implements ApplicationEventPublisherAware {
 
+  private final Clock clock;
   private final IamAccountRepository iamAccountRepository;
-
   private final UserConverter userConverter;
-
   private final DefaultAccountUpdaterFactory updatersFactory;
-
   private ApplicationEventPublisher eventPublisher;
-
   private final Set<UpdaterType> enabledUpdaters;
 
-  public ScimMeController(IamAccountRepository accountRepository,
+  public ScimMeController(Clock clock, IamAccountRepository accountRepository,
       IamGroupRepository groupRepository, IamAccountService accountService,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, UserConverter userConverter,
@@ -88,10 +86,11 @@ public class ScimMeController implements ApplicationEventPublisherAware {
       X509CertificateConverter x509CertificateConverter, ScimUserProvisioning scimUserProvisioning,
       UsernameValidator usernameValidator, Set<UpdaterType> enabledUpdaters) {
 
+    this.clock = clock;
     this.iamAccountRepository = accountRepository;
     this.userConverter = userConverter;
     this.enabledUpdaters = enabledUpdaters;
-    this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
+    this.updatersFactory = new DefaultAccountUpdaterFactory(clock, passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
   }
@@ -143,7 +142,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
     if (hasChanged) {
 
-      account.touch();
+      account.touch(clock.instant());
       iamAccountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
         u.publishUpdateEvent(this, eventPublisher);

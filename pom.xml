@@ -90,10 +90,11 @@
     <jsr250-api.version>1.0</jsr250-api.version>
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
+    <shedlock-spring.version>4.48.0</shedlock-spring.version>
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx2500m</jvm.test.args>
+    <jvm.test.args>-Xmx2500m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
@@ -135,6 +136,18 @@
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-config</artifactId>
         <version>5.6.12</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.javacrumbs.shedlock</groupId>
+        <artifactId>shedlock-spring</artifactId>
+        <version>${shedlock-spring.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.javacrumbs.shedlock</groupId>
+        <artifactId>shedlock-provider-jdbc-template</artifactId>
+        <version>${shedlock-spring.version}</version>
       </dependency>
 
       <dependency>

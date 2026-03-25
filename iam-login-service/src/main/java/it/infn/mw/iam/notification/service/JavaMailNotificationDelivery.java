@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.notification.service;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 
@@ -30,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -47,15 +47,14 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
 
   final IamEmailNotificationRepository repo;
   final NotificationProperties properties;
-  final TimeProvider timeProvider;
+  final Clock clock;
 
   public JavaMailNotificationDelivery(JavaMailSender mailSender,
-      IamEmailNotificationRepository repo, NotificationProperties properties,
-      TimeProvider timeProvider) {
+      IamEmailNotificationRepository repo, NotificationProperties properties, Clock clock) {
     this.mailSender = mailSender;
     this.repo = repo;
     this.properties = properties;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
   }
 
   protected SimpleMailMessage messageFromNotification(IamEmailNotification notification) {
@@ -105,7 +104,7 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
             ex.getMessage(), ex);
       }
 
-      e.setLastUpdate(new Date(timeProvider.currentTimeMillis()));
+      e.setLastUpdate(Date.from(clock.instant()));
       repo.save(e);
     }
 

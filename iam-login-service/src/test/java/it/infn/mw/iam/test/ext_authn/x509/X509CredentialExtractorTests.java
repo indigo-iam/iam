@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,12 +55,12 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testPartialHeadersResultInExceptionThrown() {
+  void testPartialHeadersResultInExceptionThrown() throws IOException {
 
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
-      .thenReturn(TEST_0_CERT_STRING);
+      .thenReturn(getTest0CertString());
 
     IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
         () -> extractor.extractX509Credential(request));
@@ -67,7 +68,8 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testSuccesfullx509Extraction() {
+  void testSuccesfullx509Extraction() throws IOException {
+
     mockHttpRequestWithTest0SSLHeaders(request);
 
     IamX509AuthenticationCredential cred = extractor.extractX509Credential(request)
@@ -80,7 +82,8 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testSuccesfullx509ExtractionNewNginx() {
+  void testSuccesfullx509ExtractionNewNginx() throws IOException {
+
     mockHttpRequestWithTest0SSLHeadersNginxNew(request);
 
     IamX509AuthenticationCredential cred = extractor.extractX509Credential(request)
@@ -93,7 +96,8 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testSuccesfullx509ExtractionHAProxy() {
+  void testSuccesfullx509ExtractionHAProxy() throws IOException {
+
     mockHttpRequestWithTest0SSLHeadersHAProxy(request);
 
     IamX509AuthenticationCredential cred = extractor.extractX509Credential(request)
@@ -106,7 +110,8 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testInvalidVerifyHeaderParsing() {
+  void testInvalidVerifyHeaderParsing() throws IOException {
+
     mockHttpRequestWithTest0SSLHeaders(request);
     mockVerifyHeader(request, "invalid");
 
@@ -117,7 +122,8 @@ class X509CredentialExtractorTests extends X509TestSupport {
   }
 
   @Test
-  void testVerifyHeaderFailureParsing() {
+  void testVerifyHeaderFailureParsing() throws IOException {
+
     mockHttpRequestWithTest0SSLHeaders(request);
     mockVerifyHeader(request, "FAILED:invalid whatever");
 

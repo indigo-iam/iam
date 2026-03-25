@@ -16,13 +16,9 @@
 package it.infn.mw.iam.test.lifecycle;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
-import static it.infn.mw.iam.test.api.TestSupport.EXPECTED_ACCOUNT_NOT_FOUND;
-import static it.infn.mw.iam.test.api.TestSupport.TEST_USER_UUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Clock;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
@@ -30,59 +26,58 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    AccountLifecycleNoSuspensionGracePeriodTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
-  properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-    "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
+    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
+@Transactional
 class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTestSupport {
 
-  @TestConfiguration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-  }
-  
-  @Autowired
-  private IamAccountRepository repo;
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @Autowired
-  private ExpiredAccountsHandler handler;
+  IamAccountRepository repo;
+
+  @Autowired
+  ExpiredAccountsHandler handler;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   void testZeroDaysSuspensionGracePeriod() {
-    IamAccount testAccount =
-        repo.findByUuid(TestSupport.TEST_USER_UUID).orElseThrow(assertionError(TestSupport.EXPECTED_ACCOUNT_NOT_FOUND));
+
+    IamAccount testAccount = repo.findByUuid(TEST_UUID)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
 
-    testAccount.setEndTime(Date.from(FOUR_DAYS_AGO));
+    testAccount.setEndTime(Date.from(clock.daysBefore(4)));
     repo.save(testAccount);
 
     handler.handleExpiredAccounts();
 
     testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
 

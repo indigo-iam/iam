@@ -48,8 +48,8 @@ import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
 import it.infn.mw.iam.test.util.WithMockSAMLUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -61,24 +61,24 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
   "iam.registration.fields.email.read-only=true", "iam.registration.fields.name.read-only=true",
   "iam.registration.fields.surname.read-only=true",
   "iam.registration.fields.username.read-only=true"})
-class ReadOnlyFieldsValidationTests extends TestSupport {
+class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstants {
 
-  private final String TEST_USERNAME = "test-attributes";
-  private final String TEST_EMAIL = TEST_USERNAME + "@example.org";
-  private final String TEST_GIVENNAME = "Test";
-  private final String TEST_FAMILYNAME = "User";
+  private static final String TEST_ATTRIBUTES_USERNAME = "test-attributes";
+  private static final String TEST_ATTRIBUTES_EMAIL = TEST_USERNAME + "@example.org";
+  private static final String TEST_ATTRIBUTES_GIVENNAME = "Test";
+  private static final String TEST_ATTRIBUTES_FAMILYNAME = "User";
 
-  private final String SAML_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
-  private final String SAML_USERNAME = "saml-username";
-  private final String SAML_EMAIL = SAML_USERNAME + "@example.org";
-  private final String SAML_GIVENNAME = "SAML";
-  private final String SAML_FAMILYNAME = "Remote";
+  private static final String SAML_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
+  private static final String SAML_USERNAME = "saml-username";
+  private static final String SAML_EMAIL = SAML_USERNAME + "@example.org";
+  private static final String SAML_GIVENNAME = "SAML";
+  private static final String SAML_FAMILYNAME = "Remote";
 
-  private final String OIDC_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
-  private final String OIDC_USERNAME = "oidc-username";
-  private final String OIDC_EMAIL = OIDC_USERNAME + "@example.org";
-  private final String OIDC_GIVENNAME = "OIDC";
-  private final String OIDC_FAMILYNAME = "Remote";
+  private static final String OIDC_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
+  private static final String OIDC_USERNAME = "oidc-username";
+  private static final String OIDC_EMAIL = OIDC_USERNAME + "@example.org";
+  private static final String OIDC_GIVENNAME = "OIDC";
+  private static final String OIDC_FAMILYNAME = "Remote";
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -108,10 +108,10 @@ class ReadOnlyFieldsValidationTests extends TestSupport {
   private RegistrationRequestDto createTestRegistrationRequest() {
 
     RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname(TEST_GIVENNAME);
-    request.setFamilyname(TEST_FAMILYNAME);
-    request.setEmail(TEST_EMAIL);
-    request.setUsername(TEST_USERNAME);
+    request.setGivenname(TEST_ATTRIBUTES_GIVENNAME);
+    request.setFamilyname(TEST_ATTRIBUTES_FAMILYNAME);
+    request.setEmail(TEST_ATTRIBUTES_EMAIL);
+    request.setUsername(TEST_ATTRIBUTES_USERNAME);
     request.setNotes("Some short notes...");
     return request;
   }

@@ -86,7 +86,7 @@ class KeycloakAccessTokenBuilderTests {
   MockOAuth2Request oauth2Request =
       new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
 
-  final Instant now = Clock.systemDefaultZone().instant();
+  final Instant now = Clock.systemUTC().instant();
 
   KeycloakAccessTokenBuilder tokenBuilder;
 

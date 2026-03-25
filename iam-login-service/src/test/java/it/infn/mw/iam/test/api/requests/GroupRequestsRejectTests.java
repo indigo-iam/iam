@@ -31,11 +31,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
@@ -44,24 +46,25 @@ import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
-  private final static String REJECT_URL = "/iam/group_requests/{uuid}/reject";
-
-
-  @Autowired
-  private NotificationStoreService notificationService;
+  static final String REJECT_URL = "/iam/group_requests/{uuid}/reject";
 
   @Autowired
-  private IamEmailNotificationRepository emailRepository;
+  NotificationStoreService notificationService;
 
   @Autowired
-  private MockMvc mvc;
+  IamEmailNotificationRepository emailRepository;
+
+  @Autowired
+  MockMvc mvc;
 
   @BeforeEach
   void setup() {
@@ -71,9 +74,9 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void rejectGroupRequestAsAdmin() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     String response = mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)
@@ -109,9 +112,9 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void rejectGroupRequestAsUser() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)
@@ -178,7 +181,7 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   void rejectRequestWithoutMotivation() throws Exception {
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .contentType(MediaType.APPLICATION_JSON))
@@ -194,7 +197,7 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   void rejectGroupRequestAsUserWithBothRoles() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())

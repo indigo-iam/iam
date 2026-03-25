@@ -22,6 +22,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_SSH_KEY;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_X509_CERTIFICATE;
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -54,7 +55,6 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Adders extends Replacers {
 
-
   final Predicate<Collection<IamOidcId>> oidcIdAddChecks;
   final Predicate<Collection<IamSamlId>> samlIdAddChecks;
   final Predicate<Collection<IamSshKey>> sshKeyAddChecks;
@@ -67,10 +67,10 @@ public class Adders extends Replacers {
 
   final Consumer<Collection<IamSshKey>> linkSshKeys;
 
-  public Adders(IamAccountRepository repo, IamAccountService accountService,
+  public Adders(Clock clock, IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
-    super(repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
+    super(clock, repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
         usernameValidator);
 
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
@@ -189,29 +189,29 @@ public class Adders extends Replacers {
 
   public AccountUpdater oidcId(Collection<IamOidcId> newOidcIds) {
 
-    return new DefaultAccountUpdater<Collection<IamOidcId>, OidcAccountAddedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamOidcId>, OidcAccountAddedEvent>(clock, account,
         ACCOUNT_ADD_OIDC_ID, account::linkOidcIds, newOidcIds, oidcIdAddChecks,
         OidcAccountAddedEvent::new);
   }
 
   public AccountUpdater samlId(Collection<IamSamlId> newSamlIds) {
 
-    return new DefaultAccountUpdater<Collection<IamSamlId>, SamlAccountAddedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamSamlId>, SamlAccountAddedEvent>(clock, account,
         ACCOUNT_ADD_SAML_ID, account::linkSamlIds, newSamlIds, samlIdAddChecks,
         SamlAccountAddedEvent::new);
   }
 
   public AccountUpdater sshKey(Collection<IamSshKey> newSshKeys) {
 
-    return new DefaultAccountUpdater<Collection<IamSshKey>, SshKeyAddedEvent>(account,
+    return new DefaultAccountUpdater<Collection<IamSshKey>, SshKeyAddedEvent>(clock, account,
         ACCOUNT_ADD_SSH_KEY, linkSshKeys, newSshKeys, sshKeyAddChecks, SshKeyAddedEvent::new);
   }
 
   public AccountUpdater x509Certificate(Collection<IamX509Certificate> newX509Certificates) {
 
     return new DefaultAccountUpdater<Collection<IamX509Certificate>, X509CertificateAddedEvent>(
-        account, ACCOUNT_ADD_X509_CERTIFICATE, account::linkX509Certificates, newX509Certificates,
-        x509CertificateAddChecks, X509CertificateAddedEvent::new);
+        clock, account, ACCOUNT_ADD_X509_CERTIFICATE, account::linkX509Certificates,
+        newX509Certificates, x509CertificateAddChecks, X509CertificateAddedEvent::new);
   }
 
 }

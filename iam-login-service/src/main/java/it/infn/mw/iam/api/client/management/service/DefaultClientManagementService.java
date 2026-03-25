@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
@@ -65,6 +67,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 @Service
 @Validated
+@Transactional
 public class DefaultClientManagementService implements ClientManagementService {
 
   private final Clock clock;
@@ -255,6 +258,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void assignClientOwner(String clientId, String accountId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
@@ -265,6 +269,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void removeClientOwner(String clientId, String accountId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
@@ -276,6 +281,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
       ClientDetailsEntity client) {
+
     OAuth2AccessTokenEntity token = oidcTokenService.createRegistrationAccessToken(client);
     return tokenService.saveAccessToken(token);
 
@@ -283,12 +289,14 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public RegisteredClientDTO rotateRegistrationAccessToken(@NotBlank String clientId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    OAuth2AccessTokenEntity rat =
-        Optional.ofNullable(oidcTokenService.rotateRegistrationAccessTokenForClient(client))
-          .orElse(createRegistrationAccessTokenForClient(client));
+    OAuth2AccessTokenEntity rat = oidcTokenService.rotateRegistrationAccessTokenForClient(client);
+    if (Objects.isNull(rat)) {
+      rat = createRegistrationAccessTokenForClient(client);
+    }
 
     tokenService.saveAccessToken(rat);
 

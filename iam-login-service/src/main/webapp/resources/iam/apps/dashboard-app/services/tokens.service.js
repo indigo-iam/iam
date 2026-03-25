@@ -22,12 +22,10 @@ TokensService.$inject = [ '$q', '$rootScope', '$http', '$httpParamSerializer' ];
 function TokensService($q, $rootScope, $http, $httpParamSerializer) {
     var service = {
         getAccessTokens : getAccessTokens,
-        getAccessToken : getAccessToken,
         getAccessTokensFilteredByUser : getAccessTokensFilteredByUser,
         getAccessTokensFilteredByClient : getAccessTokensFilteredByClient,
         getAccessTokensFilteredByUserAndClient : getAccessTokensFilteredByUserAndClient,
         revokeAccessToken : revokeAccessToken,
-        getRefreshToken : getRefreshToken,
         getRefreshTokensFilteredByUser : getRefreshTokensFilteredByUser,
         getRefreshTokensFilteredByClient : getRefreshTokensFilteredByClient,
         getRefreshTokensFilteredByUserAndClient : getRefreshTokensFilteredByUserAndClient,
@@ -136,22 +134,10 @@ function TokensService($q, $rootScope, $http, $httpParamSerializer) {
       return $http.get(url);
     }
 
-    function getAccessToken(id) {
-        console.debug("Getting access-token with id: ", id);
-        var url = urlAccessTokens + '/' + id;
-        return $http.get(url);
-    }
-
     function revokeAccessToken(id) {
       console.debug("Revoking access-token with id: ", id);
       var url = urlAccessTokens + '/' + id;
       return $http.delete(url);
-    }
-
-    function getRefreshToken(id) {
-      console.debug("Getting refresh-token with id: ", id);
-      var url = urlRefreshTokens + '/' + id;
-      return $http.get(url);
     }
 
     function revokeRefreshToken(id) {

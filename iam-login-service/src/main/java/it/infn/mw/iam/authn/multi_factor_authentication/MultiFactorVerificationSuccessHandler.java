@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.TOTP_VERIFIED;
 
 import java.io.IOException;
+import java.time.Clock;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -42,14 +43,17 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
 
   private static final Logger logger = LoggerFactory.getLogger(MultiFactorVerificationSuccessHandler.class);
 
+  private final Clock clock;
   private final AccountUtils accountUtils;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
   private final String iamBaseUrl;
 
-  public MultiFactorVerificationSuccessHandler(AccountUtils accountUtils,
+  public MultiFactorVerificationSuccessHandler(Clock clock,AccountUtils accountUtils,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
       String iamBaseUrl) {
+
+    this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
@@ -78,7 +82,7 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     AuthenticationSuccessHandler delegate =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
-    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(delegate,
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock, delegate,
         aupSignatureCheckService, accountUtils, accountRepo);
     handler.onAuthenticationSuccess(request, response, auth);
   }
