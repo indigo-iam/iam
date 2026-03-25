@@ -3,7 +3,7 @@ name: Token not in database tests
 on: [push] 
 
 jobs:
-  build:
+  build-and-test-token-not-in-db:
     runs-on: ubuntu-latest
 
     steps:

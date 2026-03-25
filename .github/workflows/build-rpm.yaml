@@ -7,7 +7,7 @@ on:
       - '**'
 
 jobs:
-  build-rpm:
+  build-rpms:
     strategy:
       fail-fast: false
       matrix:
