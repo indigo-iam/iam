@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.14.0 (2026-04-23)
+
+## Features
+
+## What's Changed
+
+* Added support for AARC-G061 IDP hinting guideline
+* Added a paginated Group Requests API
+* Restored and cleaned up Docker Compose files
+* Added support for signed RPMs
+* Aligned authorization between the SCIM `/me` endpoint and the corresponding `Users/{id}` endpoint
+* Ensured the client secret is returned only upon creation and rotation
+* Completed full migration to JUnit 5
+* Fixed trust-anchor build
+* Cloned helper scripts repository inside the Dockerfile
+* Prevented multiple AUP reminder emails from being sent
+* Added support for X.509 linking during registration
+* Handled unhandled errors in the IAM account clients endpoint
+* Added a client option to disable upscoping during token exchange
+* Added `apt-get upgrade` during the Docker build phase
+* Added a Dockerfile for VOMS-AA and renamed the final image
+* Stopped redirecting pre-authenticated users to the AUP page
+* Added a filter to enforce MFA for all users
+* Updated the AARC introspection response to include a list of claims based on the requested scopes
+* Fixed a TLS issue when downloading SAML metadata files
+* Updated minor dependencies
+* Fixed a duplicate key error for case-insensitive `info_key`
+* Added support for AARC-G052 Proxied Token Introspection implementation
+* Added support for OpenID Federation automatic client registration
+* Added support for a TOTP encryption key rotation mechanism during bootstrap
+* Added an option to store access tokens in the database
+* Follow RFC-4086 when creating the authorization code value
+* Make new dashboard client credentials configurable on bootstrap
+* Add storage.poll matcher in wlcg-scopes profile
+* Upgrade voms-api-java from 3.3.6 to 3.3.8
+* Add API endpoint for approved site with client details (
+* Make SAML authn-context class-refs list configurable
+* Refactor VOMS-AA yaml configuration files
+* Enhance/optimize IAM login service yaml profiles
+* Generate AUDIT log for VOMS-AA
+
+### Notes for VOMS-AA
+
+* Docker image name has changed from `indigoiam/voms-aa-bp` to `indigoiam/iam-voms-aa`
+* The service no longer logs issued proxies at INFO logging level
+* New AUDIT events have been added: VomsProxyIssuedEvent, VomsProxyDeniedEvent
+
+### Notes for INDIGO IAM
+
+* The error returned on asking for a Token Exchange with an expired or malformed subject token has been changed from `invalid_token` to `invalid_grant`, according to the [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html). The response HTTP status code changed also from 401 to a proper 400.
+
 ## 1.13.4 (2025-01-26)
 
 ## What's Changed
