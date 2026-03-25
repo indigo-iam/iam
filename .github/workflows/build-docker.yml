@@ -4,11 +4,6 @@ on:
     workflows: ["Build & Test"]
     types:
       - completed
-  push:
-    branches:
-      - '**'
-    tags:
-      - '**'
 
 jobs:
   build:
