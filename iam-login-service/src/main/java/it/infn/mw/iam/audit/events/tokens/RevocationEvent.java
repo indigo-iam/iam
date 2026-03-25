@@ -23,18 +23,18 @@ public class RevocationEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -1843180591267883819L;
 
-  private final String jwtId;
+  private final String hashValue;
   private final TokenTypeHint tokenTypeHint;
 
-  public RevocationEvent(Object source, String jwtId, TokenTypeHint tokenTypeHint) {
+  public RevocationEvent(Object source, String hashValue, TokenTypeHint tokenTypeHint) {
 
     super(IamEventCategory.TOKEN, source, "Token revocation request");
-    this.jwtId = jwtId;
+    this.hashValue = hashValue;
     this.tokenTypeHint = tokenTypeHint;
   }
 
-  public String getJwtId() {
-    return jwtId;
+  public String getHashValue() {
+    return hashValue;
   }
 
   public TokenTypeHint getTokenTypeHint() {

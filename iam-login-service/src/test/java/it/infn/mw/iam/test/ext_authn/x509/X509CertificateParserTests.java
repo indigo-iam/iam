@@ -21,6 +21,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.authn.x509.CertificateParsingError;
@@ -31,9 +33,9 @@ import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 class X509CertificateParserTests extends X509TestSupport {
 
   @Test
-  void testCertificateParsing() {
+  void testCertificateParsing() throws IOException {
     X509CertificateChainParser parser = new X509CertificateChainParserImpl();
-    X509CertificateChainParsingResult result = parser.parseChainFromString(TEST_0_CERT_STRING);
+    X509CertificateChainParsingResult result = parser.parseChainFromString(getTest0CertString());
 
     assertThat(result.getChain(), arrayWithSize(1));
     assertThat(result.getChain()[0].getSubjectX500Principal().getName(), equalTo(TEST_0_SUBJECT));

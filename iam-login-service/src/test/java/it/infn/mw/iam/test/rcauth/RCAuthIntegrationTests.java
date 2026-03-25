@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -211,12 +212,12 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
       .andRespond(withSuccess(mapper.writeValueAsString(tr), MediaType.APPLICATION_JSON));
   }
 
-  public void prepareCertificateResponse() {
+  public void prepareCertificateResponse() throws IOException {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
-      .andRespond(withSuccess(TEST_0_CERT_STRING, TEXT_PLAIN));
+      .andRespond(withSuccess(getTest0CertString(), TEXT_PLAIN));
   }
 
   void verifyMockServerCalls() {

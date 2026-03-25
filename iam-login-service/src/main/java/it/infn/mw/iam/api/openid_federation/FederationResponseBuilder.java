@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -49,11 +50,13 @@ public class FederationResponseBuilder {
   @Value("${iam.issuer}")
   private String opEntityId;
 
+  private final Clock clock;
   private final JWSSigner signer;
   private final RSAKey signingKey;
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
 
-  public FederationResponseBuilder(JWKSetKeyStore keyStore) {
+  public FederationResponseBuilder(Clock clock, JWKSetKeyStore keyStore) {
+    this.clock = clock;
     this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
@@ -71,7 +74,7 @@ public class FederationResponseBuilder {
 
   public String build(RegisteredClientDTO registered, TrustChain trustChain) throws JOSEException {
 
-    Date iat = new Date();
+    Date iat = Date.from(clock.instant());
 
     Date exp = registered.getExpiration();
 

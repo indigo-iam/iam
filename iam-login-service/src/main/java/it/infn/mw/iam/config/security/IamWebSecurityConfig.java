@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
@@ -147,6 +148,9 @@ public class IamWebSecurityConfig {
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
+    private Clock clock;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
@@ -228,7 +232,7 @@ public class IamWebSecurityConfig {
 
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
-      return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
+      return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
     }
 

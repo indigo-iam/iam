@@ -20,95 +20,72 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.openid.connect.web.ProtectedResourceRegistrationEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTParser;
 
-import io.restassured.RestAssured;
-import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamRandomPortIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ProtectedResourceIntegrationTests {
 
-  @Value("${local.server.port}")
-  private Integer iamPort;
+  @Autowired
+  ClientManagementService managementService;
 
   @Autowired
-  private ClientManagementService managementService;
+  ObjectMapper mapper;
 
-  private ValidatableResponse doCreateProtectedResource(String clientJson) {
+  @Autowired
+  MockMvc mvc;
 
-    return RestAssured.given()
-      .port(iamPort)
+  private ResultActions doCreateProtectedResource(String clientJson) throws Exception {
+
+    return mvc.perform(post("/" + ProtectedResourceRegistrationEndpoint.URL).content(clientJson)
+      .contentType(APPLICATION_JSON_VALUE));
+  }
+
+  private ResultActions doGetProtectedResource(String clientId, String rat) throws Exception {
+
+    return mvc.perform(get("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+      .header("Authorization", "Bearer " + rat)
+      .accept(APPLICATION_JSON_VALUE));
+  }
+
+  private ResultActions doUpdateProtectedResource(String clientId, String clientJson, String rat)
+      throws Exception {
+
+    return mvc.perform(put("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+      .header("Authorization", "Bearer " + rat)
+      .content(clientJson)
       .contentType(APPLICATION_JSON_VALUE)
-      .body(clientJson)
-      .log()
-      .all(true)
-      .when()
-      .post("/" + ProtectedResourceRegistrationEndpoint.URL)
-      .then()
-      .log()
-      .all(true);
+      .accept(APPLICATION_JSON_VALUE));
   }
 
-  private ValidatableResponse doGetProtectedResource(String clientId, String rat) {
+  private ResultActions doDeleteProtectedResource(String clientId, String rat) throws Exception {
 
-    return RestAssured.given()
-      .port(iamPort)
-      .accept(APPLICATION_JSON_VALUE)
+    return mvc.perform(delete("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
       .header("Authorization", "Bearer " + rat)
-      .log()
-      .all(true)
-      .when()
-      .get("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
-      .then()
-      .log()
-      .all(true);
-  }
-
-  private ValidatableResponse doUpdateProtectedResource(String clientId, String clientJson,
-      String rat) {
-
-    return RestAssured.given()
-      .port(iamPort)
-      .contentType(APPLICATION_JSON_VALUE)
-      .accept(APPLICATION_JSON_VALUE)
-      .header("Authorization", "Bearer " + rat)
-      .body(clientJson)
-      .log()
-      .all(true)
-      .when()
-      .put("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
-      .then()
-      .log()
-      .all(true);
-  }
-
-  private ValidatableResponse doDeleteProtectedResource(String clientId, String rat) {
-
-    return RestAssured.given()
-      .port(iamPort)
-      .accept(APPLICATION_JSON_VALUE)
-      .header("Authorization", "Bearer " + rat)
-      .log()
-      .all(true)
-      .when()
-      .delete("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
-      .then()
-      .log()
-      .all(true);
+      .accept(APPLICATION_JSON_VALUE));
   }
 
   @Test
@@ -119,9 +96,10 @@ class ProtectedResourceIntegrationTests {
 
     // create protected resource
     RegisteredClientDTO testedResource =
-        doCreateProtectedResource(clientJson).statusCode(HttpStatus.CREATED.value())
-          .extract()
-          .as(RegisteredClientDTO.class);
+        mapper.readValue(doCreateProtectedResource(clientJson).andExpect(status().isCreated())
+          .andReturn()
+          .getResponse()
+          .getContentAsString(), RegisteredClientDTO.class);
 
     // verify registration access token exists and expiration is null
     assertNull(JWTParser.parse(testedResource.getRegistrationAccessToken())
@@ -147,10 +125,13 @@ class ProtectedResourceIntegrationTests {
 
 
     // retrieve protected resource from API
-    RegisteredClientDTO fromAPI = doGetProtectedResource(testedResource.getClientId(),
-        testedResource.getRegistrationAccessToken()).statusCode(HttpStatus.OK.value())
-          .extract()
-          .as(RegisteredClientDTO.class);
+    RegisteredClientDTO fromAPI =
+        mapper.readValue(doGetProtectedResource(testedResource.getClientId(),
+            testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(),
+            RegisteredClientDTO.class);
 
     assertEquals(testedResource.getClientId(), fromAPI.getClientId());
     assertEquals(NAME, fromAPI.getClientName());
@@ -171,10 +152,13 @@ class ProtectedResourceIntegrationTests {
       .name(NAME)
       .scopes("openid email")
       .build();
-    RegisteredClientDTO updated = doUpdateProtectedResource(testedResource.getClientId(),
-        clientJson, testedResource.getRegistrationAccessToken()).statusCode(HttpStatus.OK.value())
-          .extract()
-          .as(RegisteredClientDTO.class);
+    RegisteredClientDTO updated =
+        mapper.readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson,
+            testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(),
+            RegisteredClientDTO.class);
 
     assertEquals(testedResource.getClientId(), updated.getClientId());
     assertEquals(NAME, updated.getClientName());
@@ -191,7 +175,7 @@ class ProtectedResourceIntegrationTests {
     assertTrue(updated.getScope().contains("email"));
 
     doDeleteProtectedResource(testedResource.getClientId(),
-        testedResource.getRegistrationAccessToken()).statusCode(HttpStatus.NO_CONTENT.value());
+        testedResource.getRegistrationAccessToken()).andExpect(status().isNoContent());
 
     assertTrue(managementService.retrieveClientByClientId(testedResource.getClientId()).isEmpty());
   }

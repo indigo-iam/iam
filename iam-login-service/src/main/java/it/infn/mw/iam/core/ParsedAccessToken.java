@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.time;
+package it.infn.mw.iam.core;
 
-/**
- * Time provider interface.
- *
- */
-@FunctionalInterface
-public interface TimeProvider {
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
-  /**
-   * Returns the current time in milliseconds
-   * 
-   * @return the difference, measured in milliseconds, between the current time and midnight,
-   * January 1, 1970 UTC.
-   * 
-   * @see System#currentTimeMillis()
-   */
-  public long currentTimeMillis();
+import com.nimbusds.jose.Header;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.SignedJWT;
 
+public record ParsedAccessToken(String issuer, String sub, String clientId, Date expiration,
+    Set<String> scopes, Set<String> audiences, Header header, Payload payload,
+    Base64URL signature, SignedJWT jwt, String refreshToken, Map<String, Object> external) {
+
+  public boolean isClient() {
+    return clientId.equals(sub);
+  }
 }

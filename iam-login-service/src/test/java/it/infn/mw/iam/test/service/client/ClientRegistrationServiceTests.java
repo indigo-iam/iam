@@ -37,7 +37,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 
 import java.text.ParseException;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
@@ -54,6 +53,7 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -66,8 +66,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.ActiveProfiles;
-
-import com.mercateo.test.clock.TestClock;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -85,57 +84,61 @@ import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SuppressWarnings("deprecation")
-@IamNoMvcTest
-@SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE)
-@ActiveProfiles({"h2", "wlcg-scopes"})
-class ClientRegistrationServiceTests {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
+class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Autowired
-  private IamClientRepository clientRepo;
+  IamClientRepository clientRepo;
 
   @Autowired
-  private ClientRegistrationService service;
+  ClientRegistrationService service;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private SystemScopeService scopeService;
+  SystemScopeService scopeService;
 
   @Autowired
-  private ClientRegistrationProperties registrationProperties;
+  ClientRegistrationProperties registrationProperties;
 
   @Autowired
-  private Clock clock;
+  MutableClock clock;
 
   @MockBean
-  private BlacklistedSiteService blsService;
+  BlacklistedSiteService blsService;
 
   @SpyBean
-  private AccountUtils accountUtils;
+  AccountUtils accountUtils;
 
-  private Authentication noAuth;
+  Authentication noAuth;
 
-  private Authentication userAuth;
+  Authentication userAuth;
 
-  private Authentication anotherUserAuth;
+  Authentication anotherUserAuth;
 
-  private Authentication adminAuth;
+  Authentication adminAuth;
 
-  private OAuth2Authentication ratAuth;
+  OAuth2Authentication ratAuth;
 
-  private OAuth2Request oauthRequest;
+  OAuth2Request oauthRequest;
 
-  private OAuth2AuthenticationDetails oauthDetails;
+  OAuth2AuthenticationDetails oauthDetails;
 
-  private IamAccount testAccount;
-  private IamAccount test100Account;
+  IamAccount testAccount;
+  IamAccount test100Account;
 
-  private IamAccount adminAccount;
+  IamAccount adminAccount;
 
   @BeforeEach
   void beforeEach() {
@@ -1055,7 +1058,6 @@ class ClientRegistrationServiceTests {
   @Test
   void testRatIsUpdated() throws ParseException {
 
-    TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
     props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
 
@@ -1076,7 +1078,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO updateRequest = response;
     response.setClientDescription("Whatever");
 
-    testClock.fastForward(Duration.ofDays(2));
+    clock.advance(Duration.ofDays(2));
 
     RegisteredClientDTO updateResponse =
         service.updateClient(response.getClientId(), updateRequest, ratAuth);
@@ -1176,7 +1178,6 @@ class ClientRegistrationServiceTests {
   @Test
   void testRedeemClient() throws ParseException {
 
-    TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
     props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
 
@@ -1218,7 +1219,7 @@ class ClientRegistrationServiceTests {
 
     assertThat(redeemedResponse.getClientId(), is(response.getClientId()));
 
-    testClock.fastForward(Duration.ofDays(2));
+    clock.advance(Duration.ofDays(2));
 
     Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       service.redeemClient(response.getClientId(), response.getRegistrationAccessToken(),

@@ -25,25 +25,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
-  private static final String GROUP_MANAGER_USER = "test_200";
 
-  private static final String USER_ROLE = "USER";
-  private static final String GROUP_MANAGER_ROLE_001 = "GM:" + TEST_001_GROUP_UUID;
-  private static final String GROUP_MANAGER_ROLE_002 = "GM:" + TEST_002_GROUP_UUID;
+  static final String GROUP_MANAGER_USER = "test_200";
+  static final String USER_ROLE = "USER";
+  static final String GROUP_MANAGER_ROLE_001 = "GM:" + TEST_001_GROUP_UUID;
+  static final String GROUP_MANAGER_ROLE_002 = "GM:" + TEST_002_GROUP_UUID;
 
   @Autowired
   private MockMvc mvc;
@@ -54,7 +60,6 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
-    // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
@@ -62,12 +67,11 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.groupName", equalTo(request.getGroupName())))
       .andExpect(jsonPath("$.status", equalTo(request.getStatus())))
       .andExpect(jsonPath("$.notes", equalTo(request.getNotes())));
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER,
-    roles = {GROUP_MANAGER_ROLE_001, GROUP_MANAGER_ROLE_002, USER_ROLE})
+      roles = {GROUP_MANAGER_ROLE_001, GROUP_MANAGER_ROLE_002, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroups() throws Exception {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
@@ -87,13 +91,12 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.Resources[?(@.username == 'test_100')]", hasSize(2)))
       .andExpect(jsonPath("$.Resources[?(@.username == 'test_101')]", hasSize(2)))
       .andExpect(jsonPath("$.Resources[?(@.username == 'test_102')]", hasSize(1)));
-
-
   }
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroup() throws Exception {
+
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
@@ -117,6 +120,7 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_002, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroup2() throws Exception {
+
     savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);

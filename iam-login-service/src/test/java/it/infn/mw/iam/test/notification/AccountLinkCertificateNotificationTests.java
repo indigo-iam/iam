@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 
@@ -106,7 +107,7 @@ class AccountLinkCertificateNotificationTests extends X509TestSupport {
       new DefaultX509AuthenticationCredentialExtractor(certChainParser);
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     when(principal.getName()).thenReturn(USERNAME);
 
@@ -118,7 +119,7 @@ class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 

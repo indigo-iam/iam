@@ -27,21 +27,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@IamRandomPortIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, OidcTestConfig.class},
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = "mfa.password-to-encrypt-and-decrypt=define_me_please"
-)
-@ActiveProfiles({"h2", "mfa"})
+@Transactional
+@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
+  webEnvironment = WebEnvironment.RANDOM_PORT,
+  properties = "mfa.password-to-encrypt-and-decrypt=secret")
+@ActiveProfiles({"h2-test", "mfa"})
 class OidcExternalAuthenticationWithMfaProfileTests
   extends OidcExternalAuthenticationTestsSupport {
 

@@ -31,13 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,43 +51,37 @@ import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class ScimGroupManagerTests {
 
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final String GROUP_URI = ScimUtils.getGroupsLocation();
+
+  static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
+  static final String TEST_002_GROUP_ID = "c617d586-54e6-411d-8e38-649677980002";
 
   @Autowired
-  private ObjectMapper mapper;
+  SecurityContextUtils context;
 
   @Autowired
-  private IamAuthoritiesRepository authoritiesRepo;
+  MockMvc mvc;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  ObjectMapper mapper;
 
   @Autowired
-  private UserConverter userConverter;
-
-  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
-
-  private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
-  private static final String TEST_002_GROUP_ID = "c617d586-54e6-411d-8e38-649677980002";
+  IamAuthoritiesRepository authoritiesRepo;
 
   @Autowired
-  private MockMvc mvc;
+  IamAccountRepository accountRepo;
+
+  @Autowired
+  UserConverter userConverter;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   @Test
@@ -132,7 +123,7 @@ class ScimGroupManagerTests {
   @Test
   @WithMockUser(username = "test", roles = "READER")
   void roleReaderCanSeeGroupMembers() throws Exception {
-    mvc.perform(get(GROUP_URI+ "/{uuid}/members", TEST_001_GROUP_ID ).content(SCIM_CONTENT_TYPE))
+    mvc.perform(get(GROUP_URI + "/{uuid}/members", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.Resources").isArray());
@@ -231,11 +222,11 @@ class ScimGroupManagerTests {
       .perform(patch(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
         .content(mapper.writeValueAsString(patchAddReq)))
       .andExpect(status().isForbidden());
-    
+
     mvc
-    .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
-      .content(mapper.writeValueAsString(patchRemReq)))
-    .andExpect(status().isNoContent());
-    
+      .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
+        .content(mapper.writeValueAsString(patchRemReq)))
+      .andExpect(status().isNoContent());
+
   }
 }

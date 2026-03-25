@@ -15,9 +15,20 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Date;
+
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface IamAuthorizationCodeRepository
     extends JpaRepository<AuthorizationCodeEntity, Long> {
+
+  @Query("select a from AuthorizationCodeEntity a where a.expiration <= :timestamp")
+  Page<AuthorizationCodeEntity> getExpiredAuthorizationCodes(@Param("timestamp") Date timestamp,
+      Pageable op);
+
 }

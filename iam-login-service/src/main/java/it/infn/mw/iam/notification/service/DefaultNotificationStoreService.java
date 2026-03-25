@@ -15,17 +15,16 @@
  */
 package it.infn.mw.iam.notification.service;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
@@ -37,20 +36,19 @@ public class DefaultNotificationStoreService implements NotificationStoreService
       .getLogger(DefaultNotificationStoreService.class);
   
   final IamEmailNotificationRepository repo;
-  final TimeProvider timeProvider;
+  final Clock clock;
   final NotificationProperties properties;
 
-  @Autowired
   public DefaultNotificationStoreService(IamEmailNotificationRepository repo,
-      TimeProvider timeProvider, NotificationProperties properties) {
+      Clock clock, NotificationProperties properties) {
     this.repo = repo;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
     this.properties = properties;
   }
 
   @Override
   public void clearExpiredNotifications() {
-    Date currentTime = new Date(timeProvider.currentTimeMillis());
+    Date currentTime = Date.from(clock.instant());
     Date threshold = DateUtils.addDays(currentTime, -properties.getCleanupAge());
 
     List<IamEmailNotification> messageList =

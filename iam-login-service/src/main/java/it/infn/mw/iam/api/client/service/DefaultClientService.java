@@ -157,13 +157,13 @@ public class DefaultClientService implements ClientService {
   @Override
   public void useClient(ClientDetailsEntity client) {
 
-    LocalDate now = LocalDate.now();
+    LocalDate todayUtc = LocalDate.now(clock);
     if (client.getClientLastUsed() == null) {
-      client.setClientLastUsed(new ClientLastUsedEntity(client, now));
+      client.setClientLastUsed(new ClientLastUsedEntity(client, todayUtc));
       return;
     }
-    if (client.getClientLastUsed().getLastUsed().isBefore(now)) {
-      client.getClientLastUsed().setLastUsed(now);
+    if (client.getClientLastUsed().getLastUsed().isBefore(todayUtc)) {
+      client.getClientLastUsed().setLastUsed(todayUtc);
     }
   }
 

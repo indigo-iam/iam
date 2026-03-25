@@ -29,36 +29,44 @@ import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
+public class MfaAcrClaimIntegrationTests extends TokenGetterUtils {
 
   public static final String TEST_CLIENT_ID = "client";
   public static final String TEST_CLIENT_SECRET = "secret";
   public static final String TESTUSER_USERNAME = "test-with-mfa";
 
+  @Autowired
+  ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  IamTokenService tokenService;
+
+  @Autowired
+  SecurityContextUtils context;
+
   @AfterEach
   void teardown() {
-    SecurityContextHolder.clearContext();
-    clearAllTokens();
+    context.cleanupSecurityContext();
   }
 
   @Test
@@ -70,7 +78,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
     savedAuth.setAuthorities(List.of(new SimpleGrantedAuthority("ROLE_USER")));
     savedAuth.getAdditionalInfo().put("acr", "https://refeds.org/profile/mfa");
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
 
     OAuth2Request req = new OAuth2Request(Map.of("grant_type", "authorization_code"),
         client.getClientId(), null, true, Set.of("openid"), null, null, null, null);

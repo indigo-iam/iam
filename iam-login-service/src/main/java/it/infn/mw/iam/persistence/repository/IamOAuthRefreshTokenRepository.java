@@ -98,6 +98,6 @@ public interface IamOAuthRefreshTokenRepository
       + "select a.username from IamAccount a))")
   List<OAuth2RefreshTokenEntity> findOrphanedTokens();
 
-  @Query("select t from OAuth2RefreshTokenEntity t where t.expiration < current_date")
-  Page<OAuth2RefreshTokenEntity> findExpiredTokens(Pageable offsetPageable);
+  @Query("select t from OAuth2RefreshTokenEntity t where t.expiration < :timestamp")
+  Page<OAuth2RefreshTokenEntity> findExpiredTokens(Pageable offsetPageable, @Param("timestamp") Date timestamp);
 }

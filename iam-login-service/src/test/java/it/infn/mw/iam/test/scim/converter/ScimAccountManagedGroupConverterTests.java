@@ -21,18 +21,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
@@ -42,46 +43,54 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"scim.include_managed_groups=true"})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
+        ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"scim.include_managed_groups=true"})
+@AutoConfigureMockMvc
+@Transactional
 class ScimAccountManagedGroupConverterTests {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  AccountGroupManagerService groupManagerService;
 
   @Autowired
-  private AccountGroupManagerService groupManagerService;
+  IamGroupRepository groupRepo;
 
   @Autowired
-  private IamGroupRepository groupRepo;
+  ScimResourceLocationProvider resourceLocationProvider;
 
   @Autowired
-  private ScimResourceLocationProvider resourceLocationProvider;
+  ObjectMapper mapper;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
   @Autowired
-  private ObjectMapper mapper;
+  MutableClock clock;
 
-  private IamGroup productionGroup;
-  private ScimGroupRef producGroupRef;
+  @Autowired
+  MockMvc mvc;
+
+  IamGroup productionGroup;
+  ScimGroupRef producGroupRef;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
     productionGroup = groupRepo.findByName("Production").get();
     producGroupRef = ScimGroupRef.builder()
       .value(productionGroup.getUuid())
@@ -91,15 +100,9 @@ class ScimAccountManagedGroupConverterTests {
 
   }
 
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  void testManagedGroupsReturnedIfAllowedByConfigurationSerializedByDefault()
-    throws Exception {
+  void testManagedGroupsReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));

@@ -18,6 +18,7 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -71,13 +72,15 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Value("${iam.organisation.name}")
   private String organisationName;
 
+  private final Clock clock;
   private final NotificationProperties properties;
   private final AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
   private final GroupManagerNotificationDeliveryStrategy groupManagerDeliveryStrategy;
   private final Configuration freeMarkerConfiguration;
 
-  public TransientNotificationFactory(Configuration fm, NotificationProperties np,
+  public TransientNotificationFactory(Clock clock, Configuration fm, NotificationProperties np,
       AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+    this.clock = clock;
     this.freeMarkerConfiguration = fm;
     this.properties = np;
     this.adminNotificationDeliveryStrategy = ands;
@@ -507,7 +510,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       message.setType(messageType);
       message.setSubject(formattedSubject);
       message.setBody(body);
-      message.setCreationTime(new Date());
+      message.setCreationTime(Date.from(clock.instant()));
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
       message.setReceivers(receiverAddress.stream()
         .map(a -> IamNotificationReceiver.forAddress(message, a))

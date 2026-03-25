@@ -78,6 +78,7 @@ spring:
     table: schema_version
     
   freemarker:
+    enabled: false
     template-loader-path: ${IAM_CUSTOM_TEMPLATE_LOCATION:classpath:/email-templates}
 
   main:
@@ -141,6 +142,7 @@ iam:
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
     nbf-offset-seconds: ${IAM_ACCESS_TOKEN_NBF_OFFSET_SECONDS:60}
+    store_on_database: ${IAM_ACCESS_TOKEN_STORE_ON_DATABASE:true}
 
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}

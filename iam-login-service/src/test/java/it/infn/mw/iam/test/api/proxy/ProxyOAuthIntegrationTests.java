@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.sql.Date;
+import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +40,15 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
+@SpringBootTest(classes = {IamLoginService.class, RCAuthTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
     "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
@@ -55,27 +57,37 @@ import it.infn.mw.iam.test.util.oidc.TokenResponse;
 class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
+  ProxyHelperService proxyHelper;
+
+  @Autowired
   IamProperties iamProperties;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
+
+  @Autowired
+  MutableClock clock;
 
   private void linkProxyToTestAccount() throws Exception {
+
+    Date now = clock.now();
+    Date oneYearFromNow = Date.from(clock.daysAfter(365));
+
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
     IamX509Certificate cert = testAccount.getX509Certificates().iterator().next();
     IamX509ProxyCertificate proxyCert = new IamX509ProxyCertificate();
 
-    proxyCert.setChain(generateTest0Proxy(NOW, ONE_YEAR_FROM_NOW));
-    proxyCert.setExpirationTime(Date.from(ONE_YEAR_FROM_NOW));
+    proxyCert.setChain(generateTest0Proxy(proxyHelper, now, oneYearFromNow));
+    proxyCert.setExpirationTime(oneYearFromNow);
     proxyCert.setCertificate(cert);
     cert.setProxy(proxyCert);
 

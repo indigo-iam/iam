@@ -24,6 +24,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -56,23 +58,26 @@ import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 class ScopePolicyAuditTests extends ScopePolicyTestUtils {
 
   @Mock
-  private ApplicationEventPublisher eventPublisher;
+  Clock clock;
 
   @Mock
-  private IamScopePolicyRepository scopePolicyRepo;
+  ApplicationEventPublisher eventPublisher;
 
   @Mock
-  private IamAccountRepository accountRepo;
+  IamScopePolicyRepository scopePolicyRepo;
 
   @Mock
-  private IamGroupRepository groupRepo;
+  IamAccountRepository accountRepo;
+
+  @Mock
+  IamGroupRepository groupRepo;
 
   @Captor
-  private ArgumentCaptor<ApplicationEvent> eventCaptor;
+  ArgumentCaptor<ApplicationEvent> eventCaptor;
 
-  private IamScopePolicyConverter converter;
+  IamScopePolicyConverter converter;
 
-  private DefaultScopePolicyService service;
+  DefaultScopePolicyService service;
 
   @BeforeEach
   void init() {
@@ -83,13 +88,14 @@ class ScopePolicyAuditTests extends ScopePolicyTestUtils {
     lenient().when(scopePolicyRepo.findEquivalentPolicies(Mockito.any())).thenReturn(emptyList());
     lenient().when(scopePolicyRepo.save(Mockito.any(IamScopePolicy.class))).thenAnswer(returnsFirstArg());
 
-    service = new DefaultScopePolicyService(scopePolicyRepo, converter, eventPublisher);
+    service = new DefaultScopePolicyService(clock, scopePolicyRepo, converter, eventPublisher);
   }
 
   @Test
   void testCreatePolicyRaisesEvent() {
 
     ScopePolicyDTO dto = initDenyScopePolicyDTO();
+    when(clock.instant()).thenReturn(Instant.now());
     IamScopePolicy sp = service.createScopePolicy(dto);
     verify(eventPublisher).publishEvent(eventCaptor.capture());
 
@@ -132,6 +138,7 @@ class ScopePolicyAuditTests extends ScopePolicyTestUtils {
     sp.setId(1L);
     sp.setRule(PolicyRule.DENY);
 
+    when(clock.instant()).thenReturn(Instant.now());
     when(scopePolicyRepo.findById(1L)).thenReturn(Optional.of(sp));
 
     service.updateScopePolicy(dto);

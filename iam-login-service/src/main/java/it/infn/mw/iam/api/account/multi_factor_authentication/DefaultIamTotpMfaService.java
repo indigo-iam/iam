@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import static dev.samstevens.totp.util.Utils.getDataUriForImage;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,8 +49,10 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
 
   public static final int RECOVERY_CODE_QUANTITY = 6;
-  private static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
+  private static final String MFA_SECRET_NOT_FOUND_MESSAGE =
+      "No multi-factor secret is attached to this account";
 
+  private final Clock clock;
   private final IamAccountService iamAccountService;
   private final IamTotpMfaRepository totpMfaRepository;
   private final SecretGenerator secretGenerator;
@@ -59,11 +62,13 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   private final QrGenerator qrGenerator;
   private final IamProperties iamProperties;
 
-  public DefaultIamTotpMfaService(IamAccountService iamAccountService,
+  public DefaultIamTotpMfaService(Clock clock, IamAccountService iamAccountService,
       IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
       CodeVerifier codeVerifier, ApplicationEventPublisher eventPublisher,
       IamTotpMfaProperties iamTotpMfaProperties, QrGenerator qrGenerator,
-    IamProperties iamProperties) {
+      IamProperties iamProperties) {
+
+    this.clock = clock;
     this.iamAccountService = iamAccountService;
     this.totpMfaRepository = totpMfaRepository;
     this.secretGenerator = secretGenerator;
@@ -92,9 +97,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
   /**
-   * Generates and attaches a TOTP MFA secret to a user account
-   * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
-   * server-side TOTP verification during the user's enabling of MFA on their account
+   * Generates and attaches a TOTP MFA secret to a user account This is pre-emptive to actually
+   * enabling TOTP MFA on the account - the secret is written for server-side TOTP verification
+   * during the user's enabling of MFA on their account
    * 
    * @param account the account to add the secret to
    * @return the new TOTP secret
@@ -112,7 +117,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     // Generate secret
-    IamTotpMfa totpMfa = new IamTotpMfa(account);
+    IamTotpMfa totpMfa = new IamTotpMfa(clock.instant(), account);
 
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
         secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
@@ -143,7 +148,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     totpMfa.setActive(true);
-    totpMfa.touch();
+    totpMfa.touch(clock.instant());
     totpMfaRepository.save(totpMfa);
     iamAccountService.saveAccount(account);
     authenticatorAppEnabledEvent(account, totpMfa);

@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.scim.converter;
 
 import java.security.Principal;
 import java.security.cert.X509Certificate;
+import java.time.Clock;
+import java.util.Date;
 
 import org.springframework.stereotype.Service;
 
@@ -30,10 +32,11 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 public class X509CertificateConverter
     implements Converter<ScimX509Certificate, IamX509Certificate> {
 
+  private final Clock clock;
   private final X509CertificateChainParser parser;
 
-
-  public X509CertificateConverter(X509CertificateChainParser parser) {
+  public X509CertificateConverter(Clock clock, X509CertificateChainParser parser) {
+    this.clock = clock;
     this.parser = parser;
   }
 
@@ -58,6 +61,7 @@ public class X509CertificateConverter
   @Override
   public IamX509Certificate entityFromDto(ScimX509Certificate scim) {
 
+    Date now = Date.from(clock.instant());
     IamX509Certificate cert;
 
     if (scim.getPemEncodedCertificate() != null) {
@@ -68,6 +72,9 @@ public class X509CertificateConverter
       cert.setSubjectDn(scim.getSubjectDn());
       cert.setIssuerDn(scim.getIssuerDn());
     }
+
+    cert.setCreationTime(scim.getCreated() != null ? scim.getCreated() : now);
+    cert.setLastUpdateTime(scim.getLastModified() != null ? scim.getLastModified() : now);
 
     cert.setLabel(scim.getDisplay());
     cert.setPrimary(scim.getPrimary() == null ? false : scim.getPrimary());

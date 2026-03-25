@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.annotation;
+package it.infn.mw.iam.test.config;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.time.Clock;
 
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
-import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
-@Transactional
-public @interface IamNoMvcTest {
+@TestConfiguration
+public class ClockConfig {
 
+  @Bean
+  @Primary
+  Clock testClock() {
+    return new MutableClock(Clock.systemUTC());
+  }
 }

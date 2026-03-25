@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.notification;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 
@@ -32,10 +33,10 @@ public class PersistentNotificationFactory extends TransientNotificationFactory 
 
   final IamEmailNotificationRepository repo;
 
-  public PersistentNotificationFactory(Configuration fm, NotificationProperties np,
+  public PersistentNotificationFactory(Clock clock, Configuration fm, NotificationProperties np,
       IamEmailNotificationRepository repo, AdminNotificationDeliveryStrategy ands,
       GroupManagerNotificationDeliveryStrategy gmds) {
-    super(fm, np, ands, gmds);
+    super(clock, fm, np, ands, gmds);
     this.repo = repo;
   }
 

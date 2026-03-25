@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 public class IamTotpMfaCommons {
+
   public static final String KEY_TO_ENCRYPT_DECRYPT = "define_me_please";
   public static final String TOTP_MFA_SECRET = "secret";
 

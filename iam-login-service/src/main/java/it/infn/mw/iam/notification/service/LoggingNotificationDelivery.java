@@ -15,17 +15,16 @@
  */
 package it.infn.mw.iam.notification.service;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -40,15 +39,14 @@ public class LoggingNotificationDelivery implements NotificationDelivery {
 
   protected final IamEmailNotificationRepository repo;
   protected final NotificationProperties properties;
-  protected final TimeProvider timeProvider;
+  protected final Clock clock;
 
-  @Autowired
   public LoggingNotificationDelivery(IamEmailNotificationRepository repo,
-      NotificationProperties properties, TimeProvider provider) {
+      NotificationProperties properties, Clock clock) {
 
     this.repo = repo;
     this.properties = properties;
-    this.timeProvider = provider;
+    this.clock = clock;
   }
 
   protected void logEmailNotificationAndSetDelivered(IamEmailNotification e) {
@@ -59,7 +57,7 @@ public class LoggingNotificationDelivery implements NotificationDelivery {
     LOG.info("Email message [To:'{}' Subject:'{}' Body:'{}']", receivers, e.getSubject(),
         e.getBody());
     e.setDeliveryStatus(IamDeliveryStatus.DELIVERED);
-    e.setLastUpdate(new Date(timeProvider.currentTimeMillis()));
+    e.setLastUpdate(Date.from(clock.instant()));
     repo.save(e);
   }
 

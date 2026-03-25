@@ -24,6 +24,7 @@ import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ORGANISAT
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SSH_KEYS;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,6 +81,9 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
             ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
             : null;
       case EXTERNAL_AUTHN:
+        if (Objects.isNull(auth)) {
+          return null;
+        }
         Optional<SavedUserAuthentication> userAuth =
             AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
         if (userAuth.isPresent()) {

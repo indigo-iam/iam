@@ -30,42 +30,32 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.internal.util.collections.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
+@Transactional
 class IamGroupRepositoryTests {
 
+  static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
+
   @Autowired
-  private IamGroupRepository groupRepository;
+  IamGroupRepository groupRepository;
 
-  private IamGroup parent;
-  private IamGroup child;
-  
-  private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
-
-  @AfterEach
-  void tearDown() {
-    if (child != null) {
-      deleteGroup(child);
-    }
-    if (parent != null) {
-      deleteGroup(parent);
-    }
-  }
+  IamGroup parent;
+  IamGroup child;
 
   @Test
   void createParentGroup() {
@@ -144,21 +134,21 @@ class IamGroupRepositoryTests {
 
   @Test
   void lookupGroupsByName() {
-    List<IamGroup> groups =groupRepository.findByNameIgnoreCaseContaining("00");
+    List<IamGroup> groups = groupRepository.findByNameIgnoreCaseContaining("00");
     assertThat(groups.isEmpty(), is(false));
     assertThat(groups.size(), is(9));
-    
-    groups =groupRepository.findByNameIgnoreCaseContaining("reuwyuhisajd");
+
+    groups = groupRepository.findByNameIgnoreCaseContaining("reuwyuhisajd");
     assertThat(groups.isEmpty(), is(true));
-    
+
   }
 
   @Test
   void lookupGroupsByUuidNotInUuidSet() {
-    List<IamGroup> allGroups  = Lists.newArrayList(groupRepository.findAll());
+    List<IamGroup> allGroups = Lists.newArrayList(groupRepository.findAll());
     List<IamGroup> groups = groupRepository.findByUuidNotIn(Sets.newSet(TEST_001_GROUP_ID));
     assertThat(groups.isEmpty(), is(false));
-    assertThat(groups.size(), equalTo(allGroups.size() -1 ));
+    assertThat(groups.size(), equalTo(allGroups.size() - 1));
   }
 
   private IamGroup createGroup(IamGroup parentGroup) {
@@ -177,15 +167,6 @@ class IamGroupRepositoryTests {
     }
 
     return group;
-  }
-
-  private void deleteGroup(IamGroup group) {
-    IamGroup parent = group.getParentGroup();
-    if (parent != null) {
-      parent.getChildrenGroups().remove(group);
-      groupRepository.save(parent);
-    }
-    groupRepository.delete(group);
   }
 
 }
