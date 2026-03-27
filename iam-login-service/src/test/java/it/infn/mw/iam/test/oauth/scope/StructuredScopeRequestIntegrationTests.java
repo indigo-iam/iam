@@ -37,13 +37,11 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,10 +54,7 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
 @SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {
-    "spring.main.allow-bean-definition-overriding=true",
-})
+@AutoConfigureMockMvc
 @ActiveProfiles({"h2", "wlcg-scopes", "registration"})
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {

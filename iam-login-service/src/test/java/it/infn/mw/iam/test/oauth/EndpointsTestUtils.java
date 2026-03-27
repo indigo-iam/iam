@@ -88,10 +88,17 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
     return new TokenEndpointResponse(accessToken, refreshToken, idToken);
   }
 
+  protected TokenEndpointResponse getPasswordToken(String clientId, String clientSecret,
+      String username, String password, String scopes) throws Exception {
+
+    return parseTokens(
+        getPasswordTokenResponse(clientId, clientSecret, username, password, scopes, clientId));
+  }
+
   protected TokenEndpointResponse getPasswordToken(String scopes) throws Exception {
 
-    return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
-        TEST_USERNAME, TEST_PASSWORD, scopes, PASSWORD_CLIENT_ID));
+    return getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, scopes);
   }
 
   protected TokenEndpointResponse getPasswordToken(Set<String> scopes) throws Exception {

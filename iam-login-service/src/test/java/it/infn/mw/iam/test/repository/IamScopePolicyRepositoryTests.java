@@ -25,12 +25,14 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -39,23 +41,24 @@ import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
 class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
 
   @Autowired
-  private IamScopePolicyRepository policyRepo;
+  IamScopePolicyRepository policyRepo;
 
   @Autowired
-  private IamGroupRepository groupRepo;
+  IamGroupRepository groupRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamGroupService groupService;
+  IamGroupService groupService;
 
   @BeforeEach
   void cleanupPolicies() {
@@ -170,6 +173,7 @@ class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
 
   @Test
   void testFindEquivalentScopePolicy() {
+
     IamScopePolicy permitPolicy = initPermitScopePolicy();
 
     permitPolicy = policyRepo.save(permitPolicy);

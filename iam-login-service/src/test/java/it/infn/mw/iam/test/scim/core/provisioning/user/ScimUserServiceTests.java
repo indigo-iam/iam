@@ -23,12 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
+import it.infn.mw.iam.api.scim.converter.DefaultScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
@@ -47,26 +50,29 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
 class ScimUserServiceTests {
 
   @Autowired
-  private ScimUserProvisioning userService;
+  ScimUserProvisioning userService;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private PasswordEncoder passwordEncoder;
+  PasswordEncoder passwordEncoder;
 
   @Autowired
-  private AccountGroupManagerService groupManager;
+  AccountGroupManagerService groupManager;
 
   @Autowired
-  private ScimResourceLocationProvider resourceLocationProvider;
+  ScimResourceLocationProvider resourceLocationProvider = new DefaultScimResourceLocationProvider();
 
   final String TESTUSER_ATTRIBUTE_NAME = "attribute-name";
   final String TESTUSER_ATTRIBUTE_VALUE = "attribute-value";

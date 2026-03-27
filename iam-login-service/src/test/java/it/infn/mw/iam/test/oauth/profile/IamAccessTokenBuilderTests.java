@@ -86,7 +86,7 @@ class IamAccessTokenBuilderTests {
   @Mock
   IamAccount account;
 
-  final Instant now = Clock.systemDefaultZone().instant();
+  final Instant now = Clock.systemUTC().instant();
 
   IamAccessTokenBuilder tokenBuilder;
 

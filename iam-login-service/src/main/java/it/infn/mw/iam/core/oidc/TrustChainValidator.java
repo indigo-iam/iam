@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
+
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -22,6 +25,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -32,23 +36,26 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 @Service
+@Profile("openid-federation")
 public class TrustChainValidator {
 
   public static final Logger LOG = LoggerFactory.getLogger(TrustChainValidator.class);
+
+  private final Clock clock;
   private final TrustAnchorRepository trustAnchorRepository;
 
-  public TrustChainValidator(TrustAnchorRepository trustAnchorRepository) {
+  public TrustChainValidator(Clock clock, TrustAnchorRepository trustAnchorRepository) {
+    this.clock = clock;
     this.trustAnchorRepository = trustAnchorRepository;
   }
 
   /**
    * Validate all chains and select the shortest among the valid ones
    */
-  public TrustChain validateAll(List<List<EntityStatement>> chains)
-      throws InvalidTrustChainException {
+  public TrustChain validateAll(List<List<EntityStatement>> chains) throws FederationException {
 
     if (chains == null || chains.isEmpty()) {
-      throw new InvalidTrustChainException("invalid_trust_chain", "No chains provided");
+      throw invalidTrustChain("No chains provided");
     }
 
     List<TrustChain> validChains = new ArrayList<>();
@@ -57,27 +64,25 @@ public class TrustChainValidator {
       try {
         TrustChain tc = validate(chain);
         validChains.add(tc);
-      } catch (InvalidTrustChainException | BadJOSEException | JOSEException e) {
+      } catch (FederationException e) {
         LOG.warn("Invalid chain discarded: {}", e.getMessage());
       }
     }
 
     if (validChains.isEmpty()) {
-      throw new InvalidTrustChainException("invalid_trust_chain", "No valid trust chains found");
+      throw invalidTrustChain("No valid trust chains found");
     }
 
     // Choose the TrustChain with fewer steps
     return validChains.stream()
       .min(Comparator.comparingInt(tc -> tc.getSuperiorStatements().size()))
-      .orElseThrow(() -> new InvalidTrustChainException("invalid_trust_chain",
-          "Unexpected selection failure"));
+      .orElseThrow(() -> invalidTrustChain("Unexpected selection failure"));
   }
 
   /**
    * Validate a single chain of EntityStatements
    */
-  public TrustChain validate(List<EntityStatement> chain)
-      throws InvalidTrustChainException, BadJOSEException, JOSEException {
+  public TrustChain validate(List<EntityStatement> chain) throws FederationException {
 
     List<EntityStatement> cleanedChain = stripIntermediateECs(chain);
 
@@ -88,8 +93,7 @@ public class TrustChainValidator {
     // RP Entity Configuration must be self-issued
     EntityStatement rpEC = cleanedChain.get(0);
     if (!rpEC.getClaimsSet().isSelfStatement()) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Entity Configuration of RP must be self-issued (iss == sub)");
+      throw invalidTrustChain("Entity Configuration of RP must be self-issued (iss == sub)");
     }
 
     // Build a TrustChain without leaf
@@ -98,44 +102,44 @@ public class TrustChainValidator {
     try {
       trustChain = new TrustChain(rpEC, withoutLeaf);
     } catch (IllegalArgumentException e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Invalid trust chain structure: " + e.getMessage(), e);
+      throw invalidTrustChain("Invalid trust chain structure: " + e.getMessage(), e);
     }
 
     // Verify the Trust Anchor is known
     EntityID taId = trustChain.getTrustAnchorEntityID();
     if (!trustAnchorRepository.isTrusted(taId.getValue())) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "No trusted Trust Anchor found: " + taId.getValue());
+      throw invalidTrustChain("No trusted Trust Anchor found: " + taId.getValue());
     }
 
     // Verify signatures using TA public key
     EntityStatement ta = cleanedChain.get(cleanedChain.size() - 1);
-    trustChain.verifySignatures(ta.getClaimsSet().getJWKSet());
+    try {
+      trustChain.verifySignatures(ta.getClaimsSet().getJWKSet());
+    } catch (BadJOSEException | JOSEException e) {
+      throw invalidTrustChain("Invalid signature: " + e.getMessage(), e);
+    }
 
     return trustChain;
   }
 
-  private void validateClaims(EntityStatement es) throws InvalidTrustChainException {
-    Date now = new Date();
+  private void validateClaims(EntityStatement es) throws FederationException {
+
+    Date now = Date.from(clock.instant());
     try {
       es.getClaimsSet().validateRequiredClaimsPresence();
     } catch (ParseException e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Missing or invalid required claims: " + e.getMessage(), e);
+      throw invalidTrustChain("Missing or invalid required claims: " + e.getMessage(), e);
     }
 
     Date iat = es.getClaimsSet().getIssueTime();
     Date exp = es.getClaimsSet().getExpirationTime();
 
     if (iat.after(now)) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Entity Statement has iat in the future: " + iat);
+      throw invalidTrustChain("Entity Statement has iat in the future: " + iat);
     }
 
     if (exp.before(now)) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Entity Statement is expired: " + exp);
+      throw invalidTrustChain("Entity Statement is expired: " + exp);
     }
   }
 

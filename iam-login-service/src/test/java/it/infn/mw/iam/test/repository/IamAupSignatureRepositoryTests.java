@@ -23,10 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -35,21 +38,28 @@ import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAupSignatureRepository repo;
+  IamAupSignatureRepository repo;
 
+  @Autowired
+  MutableClock clock;
 
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
@@ -58,7 +68,7 @@ class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Test
   void signatureCreationWorks() {
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
 
     IamAccount testAccount = findTestAccount();
@@ -77,7 +87,7 @@ class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Test
   void signatureCreationCanBeInvokedMultipleTimes() {
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
 
     IamAccount testAccount = findTestAccount();
@@ -102,7 +112,7 @@ class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Test
   void signatureUpdateUpdatesSignatureTime() {
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
 
@@ -115,7 +125,7 @@ class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Test
   void testServiceAccountThrowsExceptionOnAUPSignatureCreation() {
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
     testAccount.setServiceAccount(true);
@@ -132,7 +142,7 @@ class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Test
   void testServiceAccountThrowsExceptionOnDeleteSignatureForAccount() {
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
     repo.createSignatureForAccount(aup, testAccount, new Date());

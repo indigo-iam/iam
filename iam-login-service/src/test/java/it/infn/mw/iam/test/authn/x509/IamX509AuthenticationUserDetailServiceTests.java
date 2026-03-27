@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -56,11 +57,13 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
   @Mock
   IamTotpMfaProperties iamTotpMfaProperties;
 
+  Clock clock;
   IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
   PreAuthenticatedAuthenticationToken token;
 
   @BeforeEach
   void setup() {
+    clock = Clock.systemUTC();
     iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
         accountRepository, totpMfaRepository, inactiveAccountHandler, iamTotpMfaProperties);
     token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
@@ -81,7 +84,7 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
     IamAccount account = newAccount("test-user");
     when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
 
-    IamTotpMfa iamTotpMfa = new IamTotpMfa();
+    IamTotpMfa iamTotpMfa = new IamTotpMfa(clock.instant());
     iamTotpMfa.setActive(true);
     when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
 

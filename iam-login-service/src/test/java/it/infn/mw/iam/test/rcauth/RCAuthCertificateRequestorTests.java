@@ -104,12 +104,12 @@ class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
     verifyMockServerCalls();
   }
 
-  public void prepareCertificateResponse() {
+  public void prepareCertificateResponse() throws IOException {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
-      .andRespond(MockRestResponseCreators.withSuccess(TEST_0_CERT_STRING, MediaType.TEXT_PLAIN));
+      .andRespond(MockRestResponseCreators.withSuccess(getTest0CertString(), MediaType.TEXT_PLAIN));
   }
 
   public void prepareErrorResponse() {

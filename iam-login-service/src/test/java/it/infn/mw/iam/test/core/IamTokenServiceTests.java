@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -35,19 +36,22 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.IamTokenService;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-public class IamTokenServiceTests extends TestTokensUtils {
+class IamTokenServiceTests extends TokenGetterUtils {
 
-  public static final String TEST_CLIENT_ID = "client";
-  public static final String TESTUSER_USERNAME = "test";
+  static final String TEST_CLIENT_ID = "client";
+  static final String TESTUSER_USERNAME = "test";
 
   @Autowired
-  private IamTokenService tokenService;
+  IamTokenService tokenService;
+
+  @Autowired
+  ClientDetailsEntityService clientDetailsService;
 
   @Test
   void testPreAuthenticatedUserCannotGetToken() {
@@ -56,7 +60,7 @@ public class IamTokenServiceTests extends TestTokensUtils {
     savedAuth.setAuthenticated(true);
     savedAuth.setAuthorities(List.of(Authorities.ROLE_PRE_AUTHENTICATED));
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
 
     OAuth2Request req = new OAuth2Request(Map.of("grant_type", "authorization_code"),
         client.getClientId(), null, true, Set.of("openid"), null, null, null, null);

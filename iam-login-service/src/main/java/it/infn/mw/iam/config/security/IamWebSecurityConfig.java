@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
@@ -56,7 +57,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -80,6 +80,7 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -105,8 +106,7 @@ public class IamWebSecurityConfig {
     private OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler;
 
     @Autowired
-    @Qualifier("mitreAuthzRequestFilter")
-    private GenericFilterBean authorizationRequestFilter;
+    private AuthorizationRequestFilter authorizationRequestFilter;
 
     @Autowired
     @Qualifier("iamUserDetailsService")
@@ -150,6 +150,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
+
+    @Autowired
+    private Clock clock;
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
@@ -233,7 +236,7 @@ public class IamWebSecurityConfig {
 
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
-      return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
+      return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
     }
 
@@ -265,12 +268,10 @@ public class IamWebSecurityConfig {
     private UserLoginConfig userLoginConfig;
     private IamProperties iamProperties;
 
-    @Autowired
     public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
       this.iamProperties = iamProperties;
     }
-
 
     AccessDeniedHandler accessDeniedHandler() {
       return (request, response, authError) -> {

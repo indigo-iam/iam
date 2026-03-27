@@ -52,7 +52,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.access_token.store_on_database=true"})
 class ResourceOwnerPasswordCredentialsTests {
 
   static final String GRANT_TYPE = "password";

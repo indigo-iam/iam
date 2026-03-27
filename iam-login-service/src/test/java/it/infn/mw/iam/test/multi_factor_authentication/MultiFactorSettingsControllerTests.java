@@ -19,50 +19,63 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_URL;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
-  private MockMvc mvc;
+
   @Autowired
-  private WebApplicationContext context;
+  MockMvc mvc;
+
   @MockBean
-  private IamAccountRepository accountRepository;
+  IamAccountRepository accountRepository;
+
   @MockBean
-  private IamTotpMfaRepository totpMfaRepository;
+  IamTotpMfaRepository totpMfaRepository;
+
+  Clock clock;
+  IamAccount testAccount;
+  IamAccount mfaAccount;
+  IamTotpMfa totp;
 
   @BeforeEach
   void setup() {
 
-    when(accountRepository.findByUuid(TOTP_UUID)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
+    clock = Clock.systemUTC();
+
+    mfaAccount = getTotpMfaAccount(clock.instant());
+    totp = getTotpMfaFor(mfaAccount, clock.instant());
+    Mockito.when(accountRepository.findByUuid(mfaAccount.getUuid())).thenReturn(Optional.of(mfaAccount));
+    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
+    Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
   }
 
   @Test

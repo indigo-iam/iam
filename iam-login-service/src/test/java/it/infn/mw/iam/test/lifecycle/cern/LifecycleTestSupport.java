@@ -21,8 +21,6 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_IGNO
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -37,20 +35,12 @@ import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
-public interface LifecycleTestSupport {
+public interface LifecycleTestSupport extends StructuredScopeTestSupportConstants {
 
   String CERN_SSO_ISSUER = "https://auth.cern.ch/auth/realms/cern";
   String CERN_PERSON_ID = "12345678";
-
-  Instant LAST_MIDNIGHT = Instant.now().truncatedTo(ChronoUnit.DAYS);
-  Instant NOW = LAST_MIDNIGHT.plus(12, ChronoUnit.HOURS);
-  Instant DAY_BEFORE = LAST_MIDNIGHT.minus(1, ChronoUnit.SECONDS);
-
-  Instant ONE_MINUTE_AGO = NOW.minus(1, ChronoUnit.MINUTES);
-  Instant FOUR_DAYS_AGO = NOW.minus(4, ChronoUnit.DAYS);
-  Instant EIGHT_DAYS_AGO = NOW.minus(8, ChronoUnit.DAYS);
-  Instant THIRTY_ONE_DAYS_AGO = NOW.minus(31, ChronoUnit.DAYS);
 
   default IamLabel cernIgnoreLabel() {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();

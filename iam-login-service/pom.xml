@@ -22,7 +22,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.13.3</version>
+    <version>1.14.0</version>
   </parent>
 
   <groupId>it.infn.mw.iam-login-service</groupId>
@@ -188,6 +188,16 @@
     </dependency>
 
     <dependency>
+      <groupId>net.javacrumbs.shedlock</groupId>
+      <artifactId>shedlock-spring</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>net.javacrumbs.shedlock</groupId>
+      <artifactId>shedlock-provider-jdbc-template</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.eclipse.persistence</groupId>
       <artifactId>eclipselink</artifactId>
       <version>${eclipselink.version}</version>
@@ -338,6 +348,12 @@
       <groupId>com.mercateo</groupId>
       <artifactId>test-clock</artifactId>
       <version>${test-clock.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
     </dependency>
 

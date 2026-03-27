@@ -18,11 +18,13 @@ package it.infn.mw.iam.test.api.account.client;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
 import java.util.Date;
 
 import org.junit.jupiter.api.AfterEach;
@@ -30,10 +32,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -42,40 +46,44 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class AccountClientEndpointTests {
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAccountClientRepository accountClientRepo;
+  IamAccountClientRepository accountClientRepo;
 
   @Autowired
-  private IamClientRepository clientRepo;
+  IamClientRepository clientRepo;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
+
+  @Autowired
+  Clock clock;
+
+  long clientsCount;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
+    clientsCount = clientRepo.count();
   }
 
   @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  void cleanup() {
+    assertEquals(clientsCount, clientRepo.count());
   }
 
   private ClientDetailsEntity buildNewClient(String clientId) {
@@ -90,7 +98,7 @@ class AccountClientEndpointTests {
     IamAccountClient accountClient = new IamAccountClient();
     accountClient.setAccount(a);
     accountClient.setClient(c);
-    accountClient.setCreationTime(new Date());
+    accountClient.setCreationTime(Date.from(clock.instant()));
     return accountClientRepo.save(accountClient);
   }
 

@@ -18,9 +18,14 @@ package it.infn.mw.iam.test.openid_federation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.UndeclaredThrowableException;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,28 +33,26 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
-import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
 import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @ExtendWith(MockitoExtension.class)
 class TrustChainServiceTests {
 
@@ -60,29 +63,37 @@ class TrustChainServiceTests {
   RestTemplate restTemplate;
 
   @Mock
+  RestTemplateFactory restTemplateFactory;
+
   TrustChainValidator validator;
 
-  @Mock
   TrustChainResolver resolver;
 
-  @InjectMocks
   TrustChainService service;
 
-  TrustChain fakeChain;
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
 
-    TrustChainResolver realResolver = new TrustChainResolver();
-    TrustChainValidator realValidator = new TrustChainValidator(trustAnchorRepository);
-    ReflectionTestUtils.setField(realResolver, "restTemplate", restTemplate);
-    ReflectionTestUtils.setField(service, "validator", realValidator);
-    ReflectionTestUtils.setField(service, "resolver", realResolver);
+    when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
+    resolver = new TrustChainResolver(restTemplateFactory);
+    validator = new TrustChainValidator(clock, trustAnchorRepository);
+    service = new TrustChainService(resolver, validator);
+
+    when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
+    clock = new MutableClock(Clock.systemUTC());
+    validator = new TrustChainValidator(clock, trustAnchorRepository);
+    resolver = new TrustChainResolver(restTemplateFactory);
+    service = new TrustChainService(resolver, validator);
   }
 
-  private void mockRpToTaChain(boolean taTrusted) throws Exception {
+  private TrustChain mockRpToTaChain(boolean taTrusted) throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
+    TrustChain fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -90,9 +101,8 @@ class TrustChainServiceTests {
     String taEsJwt = taES.getSignedStatement().serialize();
 
     // Build TA EC (self-issued)
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null,
+        "https://ta.example/fetch", null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
     lenient()
@@ -111,6 +121,8 @@ class TrustChainServiceTests {
       .thenReturn(taEcJwt);
 
     lenient().when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(taTrusted);
+
+    return fakeChain;
   }
 
   @Test
@@ -127,22 +139,48 @@ class TrustChainServiceTests {
   void testUntrustedTrustAnchor() throws Exception {
     mockRpToTaChain(false);
 
-    assertThrows(InvalidTrustChainException.class,
+    FederationException e = assertThrows(FederationException.class,
         () -> service.validateFromEntityId("https://rp.example"));
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
+  }
+
+  @Test
+  void testFetchEntityIdWithUnsupportedProtocol() throws Exception {
+    mockRpToTaChain(true);
+
+    FederationException e = assertThrows(FederationException.class, () -> {
+      service.validateFromEntityId("http://rp.example");
+    });
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
+  }
+
+  @Test
+  void testFetchMalformedEntityId() throws Exception {
+    mockRpToTaChain(true);
+
+    FederationException e = assertThrows(FederationException.class, () -> {
+      service.validateFromEntityId("ht!tps://rp.example");
+    });
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
   }
 
   @Test
   void testResolveTrustChainFromRpToIntermediateToTa() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
+    TrustChain fakeChain =
+        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example", clock);
 
     // RP EC (leaf)
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
     // Intermediate EC (self-signed)
-    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta.example")),
-        "https://intermediate.example/fetch", null, null);
+    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", iat, exp,
+        List.of(new EntityID("https://ta.example")), "https://intermediate.example/fetch", null,
+        null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Intermediate ES → RP
@@ -154,9 +192,8 @@ class TrustChainServiceTests {
     String taToIntermJwt = taToInterm.getSignedStatement().serialize();
 
     // TA EC (self-signed)
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null,
+        "https://ta.example/fetch", null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
     when(
@@ -187,33 +224,34 @@ class TrustChainServiceTests {
 
   @Test
   void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
-    throws JOSEException, BadJOSEException {
+      throws JOSEException, FederationException {
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
     // Entity Configuration of RP
-    EntityStatement rpEC =
-        TrustChainTestFactory.selfEC("https://rp.example", new Date(),
-            new Date(System.currentTimeMillis() + 600000), List
-              .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
-            null, rpMetadata, null);
+    EntityStatement rpEC = TrustChainTestFactory.selfEC("https://rp.example", iat, exp,
+        List.of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
+        null, rpMetadata, null);
     String rpEcJwt = rpEC.getSignedStatement().serialize();
 
     // Entity Configuration of IA
-    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta.example")),
-        "https://intermediate.example/fetch", null, null);
+    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", iat, exp,
+        List.of(new EntityID("https://ta.example")), "https://intermediate.example/fetch", null,
+        null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Entity Configuration of TA
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null,
+        "https://ta.example/fetch", null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null, clock);
     TrustChain longerChain =
-        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
+        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example", clock);
 
     // Intermediate ES → RP
     EntityStatement intermToRp = longerChain.getSuperiorStatements().get(0);
@@ -249,6 +287,7 @@ class TrustChainServiceTests {
 
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
 
+    clock.advance(Duration.ofMillis(60));
     TrustChain resolved = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
@@ -256,39 +295,39 @@ class TrustChainServiceTests {
   }
 
   @Test
-  void testValidatorReturnsValidChain() throws JOSEException {
+  void testValidatorReturnsValidChain() throws JOSEException, FederationException {
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
     OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
     rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
     // Entity Configuration of RP
-    EntityStatement rpEC =
-        TrustChainTestFactory.selfEC("https://rp.example", new Date(),
-            new Date(System.currentTimeMillis() + 600000), List
-              .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
-            null, rpMetadata, null);
+    EntityStatement rpEC = TrustChainTestFactory.selfEC("https://rp.example", iat, exp,
+        List.of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
+        null, rpMetadata, null);
     String rpEcJwt = rpEC.getSignedStatement().serialize();
 
     // Entity Configuration of IA
-    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta1.example")),
-        "https://intermediate.example/fetch", null, null);
+    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", iat, exp,
+        List.of(new EntityID("https://ta1.example")), "https://intermediate.example/fetch", null,
+        null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Entity Configuration of trusted TA
-    EntityStatement trustedTaEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
+    EntityStatement trustedTaEC = TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null,
+        "https://ta.example/fetch", null, null);
     String trustedTaEcJwt = trustedTaEC.getSignedStatement().serialize();
 
     // Entity Configuration of untrusted TA
-    EntityStatement untrustedTaEC = TrustChainTestFactory.selfEC("https://ta1.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta1.example/fetch", null,
-        null);
+    EntityStatement untrustedTaEC = TrustChainTestFactory.selfEC("https://ta1.example", iat, exp,
+        null, "https://ta1.example/fetch", null, null);
     String untrustedTaEcJwt = untrustedTaEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null, clock);
     TrustChain longerChain =
-        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example");
+        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example", clock);
 
     // Intermediate ES → RP
     EntityStatement intermToRp = longerChain.getSuperiorStatements().get(0);
@@ -328,6 +367,7 @@ class TrustChainServiceTests {
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
     when(trustAnchorRepository.isTrusted("https://ta1.example")).thenReturn(false);
 
+    clock.advance(Duration.ofMillis(60));
     TrustChain resolved = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
@@ -336,35 +376,41 @@ class TrustChainServiceTests {
 
   @Test
   void testValidateClaimsThrowsWhenIatInFuture() throws JOSEException {
-    Date futureIat = new Date(System.currentTimeMillis() + 60000);
-    Date exp = new Date(System.currentTimeMillis() + 600000);
+    Date futureIat = Date.from(clock.instant().plusMillis(60000));
+    Date exp = Date.from(clock.instant().plusMillis(600000));
 
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", futureIat, exp, null,
         "https://rp.example/fetch", null, null);
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Entity Statement has iat in the future"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Entity Statement has iat in the future"));
   }
 
   @Test
   void testValidateClaimsThrowsWhenExpired() throws JOSEException {
-    Date iat = new Date(System.currentTimeMillis() - 600000);
-    Date exp = new Date(System.currentTimeMillis() - 60000);
+
+    Date iat = Date.from(clock.instant().minusMillis(600000));
+    Date exp = Date.from(clock.instant().minusMillis(60000));
 
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", iat, exp, null,
         "https://rp.example/fetch", null, null);
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Entity Statement is expired"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Entity Statement is expired"));
   }
 
   @Test
   void testValidateFromEntityConfiguration() throws Exception {
-    mockRpToTaChain(true);
+
+    TrustChain fakeChain = mockRpToTaChain(true);
     EntityStatement ec = fakeChain.getLeafSelfStatement();
 
     TrustChain result = service.validateFromEntityConfiguration(ec);
@@ -374,12 +420,15 @@ class TrustChainServiceTests {
 
   @Test
   void testValidateFromProvidedChain() throws Exception {
-    mockRpToTaChain(true);
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
+    TrustChain fakeChain = mockRpToTaChain(true);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     List<EntityStatement> superiors = fakeChain.getSuperiorStatements();
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null,
+        "https://ta.example/fetch", null, null);
     List<EntityStatement> chain = new ArrayList<>();
     chain.add(rpEC);
     chain.addAll(superiors);
@@ -394,11 +443,12 @@ class TrustChainServiceTests {
   void testFetchEntityConfigurationFailure() {
     String entityId = "https://rp.example";
 
-    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+    UndeclaredThrowableException ex = assertThrows(UndeclaredThrowableException.class,
         () -> ReflectionTestUtils.invokeMethod(resolver, "fetchEntityConfiguration", entityId));
-
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Failed to fetch EC"));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Failed to fetch EC"));
   }
 
   @Test
@@ -407,22 +457,29 @@ class TrustChainServiceTests {
     String subject = "https://rp.example";
     String issuer = "https://ta.example";
 
-    InvalidTrustChainException ex =
-        assertThrows(InvalidTrustChainException.class, () -> ReflectionTestUtils
-          .invokeMethod(resolver, "fetchEntityStatement", fetchEndpoint, issuer, subject));
+    when(restTemplate.getForObject(anyString(), eq(String.class))).thenReturn("");
 
-    assertEquals("invalid_trust_chain", ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("Failed to fetch entity statement"));
+    UndeclaredThrowableException ex =
+        assertThrows(UndeclaredThrowableException.class, () -> ReflectionTestUtils
+          .invokeMethod(resolver, "fetchEntityStatement", fetchEndpoint, issuer, subject));
+    assertTrue(ex.getCause() instanceof FederationException);
+    FederationException fe = (FederationException) ex.getCause();
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, fe.getErrorCode());
+    assertTrue(fe.getMessage().contains("Failed to fetch entity statement"));
   }
 
   @Test
   void testMissingFetchEndpoint() throws JOSEException {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+
+    final Date iat = Date.from(clock.instant());
+    final Date exp = Date.from(clock.instant().plusMillis(600000));
+
+    TrustChain fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, null, null, null);
+    EntityStatement taEC =
+        TrustChainTestFactory.selfEC("https://ta.example", iat, exp, null, null, null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
     when(
@@ -433,7 +490,8 @@ class TrustChainServiceTests {
         restTemplate.getForObject("https://ta.example/.well-known/openid-federation", String.class))
           .thenReturn(taEcJwt);
 
-    assertThrows(InvalidTrustChainException.class,
+    FederationException e = assertThrows(FederationException.class,
         () -> service.validateFromEntityId("https://rp.example"));
+    assertEquals(FederationException.INVALID_TRUST_CHAIN, e.getErrorCode());
   }
 }

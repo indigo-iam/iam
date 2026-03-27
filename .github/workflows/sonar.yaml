@@ -9,7 +9,7 @@ on:
     types: [opened, reopened, synchronize]
 
 jobs:
-  build:
+  build-and-static-analysis:
     name: Build and analyze
     runs-on: ubuntu-latest
     steps:

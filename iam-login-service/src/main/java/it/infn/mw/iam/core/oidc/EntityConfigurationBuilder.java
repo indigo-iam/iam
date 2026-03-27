@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ public class EntityConfigurationBuilder {
 
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
 
+  private final Clock clock;
   private final JWSSigner signer;
   private final RSAKey signingKey;
   private final Map<String, Object> jwks;
@@ -57,10 +59,12 @@ public class EntityConfigurationBuilder {
   private final long expirationSec;
   private final Map<String, Object> metadata;
 
-  public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
+  public EntityConfigurationBuilder(Clock clock, JWKSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider, OpenidFederationProperties fedProperties,
       IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint) {
-    signingKey = keyStore.getKeys()
+
+    this.clock = clock;
+    this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
       .map(k -> (RSAKey) k)
@@ -105,7 +109,7 @@ public class EntityConfigurationBuilder {
 
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(issuer)
-      .issueTime(new Date())
+      .issueTime(Date.from(clock.instant()))
       .expirationTime(Date.from(Instant.now().plusSeconds(expirationSec)))
       .claim("jwks", jwks)
       .claim("metadata", metadata)
@@ -137,9 +141,10 @@ public class EntityConfigurationBuilder {
     opMetadata.put("registration_endpoint", wellKnownInfo.get("registration_endpoint"));
     opMetadata.put("scopes_supported", wellKnownInfo.get("scopes_supported"));
     opMetadata.put("claims_supported", wellKnownInfo.get("claims_supported"));
-    opMetadata.put("client_registration_types_supported", List.of("explicit"));
+    opMetadata.put("client_registration_types_supported", List.of("explicit", "automatic"));
     opMetadata.put("federation_registration_endpoint",
         URI.create(iamProperties.getBaseUrl()).resolve("/iam/api/oid-fed/client-registration"));
+    opMetadata.put("request_uri_parameter_supported", false);
     return opMetadata;
   }
 

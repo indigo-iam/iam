@@ -27,15 +27,21 @@ import static org.mockito.Mockito.spy;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.SignatureException;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.Sets;
 
+import eu.emi.security.authn.x509.impl.PEMCredential;
 import eu.emi.security.authn.x509.proxy.ProxyCertificate;
 import eu.emi.security.authn.x509.proxy.ProxyCertificateOptions;
 import eu.emi.security.authn.x509.proxy.ProxyGenerator;
@@ -60,6 +67,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.rcauth.x509.DefaultProxyHelperService;
+import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @ExtendWith(MockitoExtension.class)
 class ProxyServiceTests extends ProxyCertificateTestSupport {
@@ -84,21 +94,28 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
 
   DefaultProxyCertificateService proxyService;
 
-  protected String generateTest0Proxy(Instant notBefore, Instant notAfter)
-      throws InvalidKeyException, CertificateParsingException, SignatureException,
-      NoSuchAlgorithmException, IOException {
+  MutableClock clock;
 
-    ProxyCertificateOptions opts =
-        new ProxyCertificateOptions(TEST_0_PEM_CREDENTIAL.getCertificateChain());
+  ProxyHelperService proxyHelper;
+
+  protected String generateTest0Proxy(ProxyHelperService proxyHelper, Instant notBefore,
+      Instant notAfter) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException,
+      IOException, KeyStoreException, CertificateException {
+
+    PEMCredential pemCredential = getTest0PemCredential();
+    ProxyCertificateOptions opts = new ProxyCertificateOptions(pemCredential.getCertificateChain());
     opts.setValidityBounds(Date.from(notBefore), Date.from(notAfter));
     opts.setType(ProxyType.RFC3820);
-    ProxyCertificate proxy = ProxyGenerator.generate(opts, TEST_0_PEM_CREDENTIAL.getKey());
+    ProxyCertificate proxy = ProxyGenerator.generate(opts, pemCredential.getKey());
     return proxyHelper.proxyCertificateToPemString(proxy);
   }
 
   @BeforeEach
   void setup() {
 
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+    clock = new MutableClock(Clock.fixed(Clock.systemUTC().instant(), ZoneId.of("Z")));
+    proxyHelper = new DefaultProxyHelperService(clock);
     proxyService = new DefaultProxyCertificateService(clock, accountRepo, properties, proxyHelper);
     lenient().when(principal.getName()).thenReturn(TEST_USER_USERNAME);
     lenient().when(account.getUsername()).thenReturn(TEST_USER_USERNAME);
@@ -120,8 +137,9 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  void testPrincipalWithoutProxyHandled() {
-    lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(TEST_0_IAM_X509_CERT));
+  void testPrincipalWithoutProxyHandled() throws IOException {
+    lenient().when(account.getX509Certificates())
+      .thenReturn(Sets.newHashSet(getTest0Cert(clock.instant())));
     lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
     assertThrows(ProxyNotFoundError.class, () -> proxyService.generateProxy(principal, request));
   }
@@ -130,10 +148,11 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   void testExpiredProxyHandled() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
-    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(AN_HOUR_AGO));
+    lenient().when(proxyCert.getExpirationTime())
+      .thenReturn(Date.from(clock.instant().minusSeconds(3600)));
 
     lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
@@ -142,13 +161,13 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   }
 
   @Test
-  void testProxyGenerationSuccess() throws InvalidKeyException, CertificateParsingException,
-      SignatureException, NoSuchAlgorithmException, IOException {
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+  void testProxyGenerationSuccess() throws InvalidKeyException, SignatureException,
+      NoSuchAlgorithmException, IOException, KeyStoreException, CertificateException {
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    String pemProxy = generateTest0Proxy(proxyHelper, clock.daysBefore(7), clock.daysAfter(365));
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(clock.daysAfter(365)));
     lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
     lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
@@ -158,54 +177,53 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
     lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
-
-    Instant notAfter = dto.getNotAfter().toInstant();
-
-    assertThat(Duration.between(NOW, notAfter)
-      .compareTo(Duration.ofSeconds(DEFAULT_PROXY_LIFETIME_SECONDS)), is(0));
 
     assertThat(dto.getIdentity(), is(TEST_0_SUBJECT));
     assertThat(dto.getSubject(), endsWith(TEST_0_SUBJECT));
     assertThat(dto.getIssuer(), endsWith(TEST_0_SUBJECT));
     assertThat(dto.getCertificateChain(), notNullValue());
 
+    Instant startRounded = clock.instant().truncatedTo(ChronoUnit.SECONDS);
+    Instant endRounded = dto.getNotAfter().toInstant().truncatedTo(ChronoUnit.SECONDS);
+
+    assertThat(Duration.between(startRounded, endRounded).toSeconds(), is(DEFAULT_PROXY_LIFETIME_SECONDS));
   }
 
   @Test
-  void testRequestLifetimeIsHonoured() throws InvalidKeyException, CertificateParsingException,
-      SignatureException, NoSuchAlgorithmException, IOException {
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+  void testRequestLifetimeIsHonoured() throws InvalidKeyException, SignatureException,
+      NoSuchAlgorithmException, IOException, KeyStoreException, CertificateException {
+
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
     lenient().when(request.getLifetimeSecs()).thenReturn(TimeUnit.HOURS.toSeconds(6));
 
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    String pemProxy = generateTest0Proxy(proxyHelper, clock.daysBefore(7), clock.daysAfter(365));
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(clock.daysAfter(365)));
     lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
     lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
-
 
     lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
 
-    Instant notAfter = dto.getNotAfter().toInstant();
+    Instant startRounded = clock.instant().truncatedTo(ChronoUnit.HOURS);
+    Instant endRounded = dto.getNotAfter().toInstant().truncatedTo(ChronoUnit.HOURS);
 
-    assertThat(
-        Duration.between(NOW, notAfter).compareTo(Duration.ofSeconds(TimeUnit.HOURS.toSeconds(6))),
-        is(0));
+    assertThat(Duration.between(startRounded, endRounded).toHours(), is(6L));
   }
 
   @Test
-  void testRequestLifetimeIsLimitedToDefaultProxyLifetime() throws InvalidKeyException,
-      CertificateParsingException, SignatureException, NoSuchAlgorithmException, IOException {
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+  void testRequestLifetimeIsLimitedToDefaultProxyLifetime()
+      throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException,
+      KeyStoreException, CertificateException {
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
     lenient().when(request.getLifetimeSecs()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS + 1);
 
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    String pemProxy = generateTest0Proxy(proxyHelper, clock.daysBefore(7), clock.daysAfter(365));
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(clock.daysAfter(365)));
     lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
     lenient().when(proxyCert.getChain()).thenReturn(pemProxy);
@@ -216,18 +234,17 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
 
     ProxyCertificateDTO dto = proxyService.generateProxy(principal, request);
 
-    Instant notAfter = dto.getNotAfter().toInstant();
+    Instant startRounded = clock.instant().truncatedTo(ChronoUnit.SECONDS);
+    Instant endRounded = dto.getNotAfter().toInstant().truncatedTo(ChronoUnit.SECONDS);
 
-    assertThat(Duration.between(NOW, notAfter)
-      .compareTo(Duration.ofSeconds(DEFAULT_PROXY_LIFETIME_SECONDS)), is(0));
+    assertThat(Duration.between(startRounded, endRounded).toSeconds(), is(DEFAULT_PROXY_LIFETIME_SECONDS));
   }
-
 
   @Test
   void testRequestIssuerIsHonoured() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
     lenient().when(request.getIssuer()).thenReturn("CN=A custom issuer");
@@ -242,9 +259,9 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   void testListProxies() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
+    lenient().when(proxyCert.getExpirationTime()).thenReturn(Date.from(clock.daysAfter(365)));
     lenient().when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
 
     lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
@@ -259,7 +276,7 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   void testListProxiesNoResults() throws InvalidKeyException, CertificateParsingException,
       SignatureException, NoSuchAlgorithmException, IOException {
 
-    IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
+    IamX509Certificate mockedTest0Cert = spy(getTest0Cert(clock.instant()));
     lenient().when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     lenient().when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 

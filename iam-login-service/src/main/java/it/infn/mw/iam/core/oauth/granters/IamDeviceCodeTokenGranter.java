@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.granters;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 
@@ -37,12 +38,14 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
 
   public static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
+  private final Clock clock;
   private final DeviceCodeService deviceCodeService;
 
-  public IamDeviceCodeTokenGranter(AuthorizationServerTokenServices tokenServices,
+  public IamDeviceCodeTokenGranter(Clock clock, AuthorizationServerTokenServices tokenServices,
       ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory,
       DeviceCodeService deviceCodeService) {
     super(tokenServices, clientDetailsService, requestFactory, GRANT_TYPE);
+    this.clock = clock;
     this.deviceCodeService = deviceCodeService;
   }
 
@@ -62,7 +65,7 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
       throw new InvalidGrantException("Invalid device code: " + deviceCode);
     }
 
-    final Date now = new Date();
+    final Date now = Date.from(clock.instant());
 
     // dc expiration checks
     if (dc.getExpiration() != null && dc.getExpiration().before(now)) {

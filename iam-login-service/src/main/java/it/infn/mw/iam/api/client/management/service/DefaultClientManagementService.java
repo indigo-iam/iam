@@ -15,16 +15,21 @@
  */
 package it.infn.mw.iam.api.client.management.service;
 
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
+import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +37,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
@@ -40,8 +46,6 @@ import it.infn.mw.iam.api.client.service.ClientConverter;
 import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
-import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -60,8 +64,10 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @Service
 @Validated
+@Transactional
 public class DefaultClientManagementService implements ClientManagementService {
 
   private final Clock clock;
@@ -123,10 +129,21 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
 
+    if (hasRelyingParty(client)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(entity, client.getExpiration(), client.getEntityId());
+      entity.setClientRelyingParty(clientRelyingParty);
+      entity.setRequestObjectSigningAlg(client.getRequestObjectSigningAlgorithm());
+    }
+
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
     return converter.registeredClientDtoFromEntity(entity);
+  }
+
+  private boolean hasRelyingParty(RegisteredClientDTO request) {
+    return request.getEntityId() != null;
   }
 
   @Override
@@ -166,7 +183,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    if (oldClient.getClientRelyingParty() != null) {
+    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
       throw new InvalidRequestException("Federated clients cannot be updated");
     }
 
@@ -180,6 +197,14 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setActive(oldClient.isActive());
     // Direct updates are disabled. Changes must be made via secret reset process
     newClient.setClientSecret(oldClient.getClientSecret());
+
+    if (hasRelyingParty(clientDTO)) {
+      ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,
+          clientDTO.getExpiration(), clientDTO.getEntityId());
+      newClient.setClientRelyingParty(clientRelyingParty);
+      newClient.setRequestObjectSigningAlg(clientDTO.getRequestObjectSigningAlgorithm());
+      newClient.setActive(true);
+    }
 
     newClient = clientService.updateClient(newClient);
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, newClient));
@@ -233,6 +258,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void assignClientOwner(String clientId, String accountId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
@@ -243,6 +269,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void removeClientOwner(String clientId, String accountId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
@@ -254,6 +281,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
       ClientDetailsEntity client) {
+
     OAuth2AccessTokenEntity token = oidcTokenService.createRegistrationAccessToken(client);
     return tokenService.saveAccessToken(token);
 
@@ -261,12 +289,14 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public RegisteredClientDTO rotateRegistrationAccessToken(@NotBlank String clientId) {
+
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    OAuth2AccessTokenEntity rat =
-        Optional.ofNullable(oidcTokenService.rotateRegistrationAccessTokenForClient(client))
-          .orElse(createRegistrationAccessTokenForClient(client));
+    OAuth2AccessTokenEntity rat = oidcTokenService.rotateRegistrationAccessTokenForClient(client);
+    if (Objects.isNull(rat)) {
+      rat = createRegistrationAccessTokenForClient(client);
+    }
 
     tokenService.saveAccessToken(rat);
 

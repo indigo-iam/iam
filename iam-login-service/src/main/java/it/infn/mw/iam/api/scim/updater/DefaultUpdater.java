@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater;
 
+import java.time.Clock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -28,15 +29,17 @@ public abstract class DefaultUpdater<T> implements Updater {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultUpdater.class);
 
+  final Clock clock;
   final UpdaterType type;
   final T newValue;
   final Consumer<T> setter;
   final Predicate<T> applyIf;
 
 
-  public DefaultUpdater(UpdaterType type, Consumer<T> consumer, T newVal,
+  protected DefaultUpdater(Clock clock, UpdaterType type, Consumer<T> consumer, T newVal,
       Predicate<T> predicate) {
 
+    this.clock = clock;
     this.type = type;
     this.newValue = newVal;
     this.setter = consumer;
@@ -44,8 +47,8 @@ public abstract class DefaultUpdater<T> implements Updater {
 
   }
 
-  public DefaultUpdater(UpdaterType type, Supplier<T> supplier, Consumer<T> consumer, T newVal) {
-    this(type, consumer, newVal, nullSafeNotEqualsMatcher(supplier));
+  protected DefaultUpdater(Clock clock, UpdaterType type, Supplier<T> supplier, Consumer<T> consumer, T newVal) {
+    this(clock, type, consumer, newVal, nullSafeNotEqualsMatcher(supplier));
 
   }
 

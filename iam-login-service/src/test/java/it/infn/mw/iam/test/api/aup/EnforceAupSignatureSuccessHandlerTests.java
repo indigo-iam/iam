@@ -19,6 +19,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 
 import javax.servlet.ServletException;
@@ -48,6 +50,9 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
 class EnforceAupSignatureSuccessHandlerTests {
+
+  @Mock
+  Clock clock;
 
   @Mock
   AuthenticationSuccessHandler delegate;
@@ -81,6 +86,7 @@ class EnforceAupSignatureSuccessHandlerTests {
 
   @BeforeEach
   void before() {
+    lenient().when(clock.instant()).thenReturn(Instant.now());
     lenient().when(request.getSession(false)).thenReturn(session);
     lenient().when(request.getSession()).thenReturn(session);
     lenient().when(auth.getName()).thenReturn("test");
@@ -138,7 +144,7 @@ class EnforceAupSignatureSuccessHandlerTests {
 
   @Test
   void testOAuthClientAuthenticationDoesNotResultInUserLoginTimeUpdate()
-    throws IOException, ServletException {
+      throws IOException, ServletException {
 
     OAuth2Authentication oauth = Mockito.mock(OAuth2Authentication.class);
     lenient().when(oauth.getName()).thenReturn("oauth-client-for-test");

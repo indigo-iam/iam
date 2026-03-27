@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -33,12 +34,12 @@ public class UsernameUpdater extends DefaultAccountUpdater<String, UsernameRepla
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
   private String oldUsername;
 
-  public UsernameUpdater(IamAccount account, UpdaterType type, Consumer<String> consumer,
+  public UsernameUpdater(Clock clock, IamAccount account, UpdaterType type, Consumer<String> consumer,
       String newVal, Predicate<String> predicate,
       AccountEventBuilder<String, UsernameReplacedEvent> eventBuilder,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo) {
-    super(account, type, consumer, newVal, predicate, eventBuilder);
+    super(clock, account, type, consumer, newVal, predicate, eventBuilder);
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
   }

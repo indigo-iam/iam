@@ -15,80 +15,92 @@
  */
 package it.infn.mw.iam.test.api.tokens;
 
+import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.TOKENS_MAX_PAGE_SIZE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
-import java.util.List;
+import java.time.Duration;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
-import com.google.common.collect.Lists;
-
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-public class RefreshTokenGetListTests extends TestTokensUtils {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
+@Transactional
+class RefreshTokenGetListTests extends TokenGetterUtils {
 
-  public static final String[] SCOPES = {"openid", "profile", "offline_access"};
+  static final String[] SCOPES = {"openid", "profile", "offline_access"};
 
-  public static final String TEST_CLIENT_ID = "token-lookup-client";
-  public static final String TEST_CLIENT2_ID = "password-grant";
-  public static final int FAKE_TOKEN_ID = 12345;
-  private static final String TESTUSER_USERNAME = "test_102";
-  private static final String TESTUSER2_USERNAME = "test_103";
-  private static final String PARTIAL_USERNAME = "test_10";
+  static final int FAKE_TOKEN_ID = 12345;
 
-  private static final String INJECTION_QUERY =
+  static final String INJECTION_QUERY =
       "1%; DELETE FROM access_token; SELECT * FROM refresh_token WHERE userId LIKE %";
 
-  @Autowired
-  private ScimResourceLocationProvider scimResourceLocationProvider;
+  static final Pageable FIRST_10 = new OffsetPageable(0, 10);
+  static final String DEFAULT_SCOPES = "openid offline_access";
 
   @Autowired
-  private IamOAuthRefreshTokenRepository tokenRepository;
+  ScimResourceLocationProvider scimResourceLocationProvider;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamOAuthRefreshTokenRepository refreshTokenRepository;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
-  void setup() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
+  void initSecurityContext() {
+    context.cleanupSecurityContext();
+    refreshTokenRepository.deleteAll();
+    assertEquals(0L, refreshTokenRepository.count());
   }
 
-  @AfterEach
-  void teardown() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
+  @Test
+  void forbiddenRefreshTokenList() throws Exception {
+
+    /* get list */
+    context.useBearerTestToken(new String[] {"openid", "profile"});
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
   }
 
   @Test
   void getEmptyRefreshTokenList() throws Exception {
 
-    assertThat(tokenRepository.count(), equalTo(0L));
-
     /* get list */
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList();
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -110,15 +122,15 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   @Test
   void getNotEmptyRefreshTokenListWithCountZero() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(tokenRepository.count(), equalTo(1L));
+    assertThat(refreshTokenRepository.count(), equalTo(1L));
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(0));
@@ -128,160 +140,150 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   @Test
   void getRefreshTokenListWithAttributes() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
-    IamAccount user = loadTestUser(TESTUSER_USERNAME);
-
-    OAuth2RefreshTokenEntity at =
-        buildAccessToken(client, TESTUSER_USERNAME, SCOPES).getRefreshToken();
+    context.useLocalTestUser();
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().attributes("user,idToken").build();
+        MultiValueMapBuilder.builder().attributes("user,expiration").build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(tokenRepository.count(), equalTo(1L));
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertEquals(1L, refreshTokenRepository.count());
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(1, atl.getItemsPerPage());
+    assertEquals(1, atl.getResources().size());
 
     RefreshToken remoteRt = atl.getResources().get(0);
 
-    assertThat(remoteRt.getId(), equalTo(at.getId()));
-    assertThat(remoteRt.getClient(), equalTo(null));
-    assertThat(remoteRt.getExpiration(), equalTo(null));
-    assertThat(remoteRt.getUser().getId(), equalTo(user.getUuid()));
-    assertThat(remoteRt.getUser().getUserName(), equalTo(user.getUsername()));
-    assertThat(remoteRt.getUser().getRef(),
-        equalTo(scimResourceLocationProvider.userLocation(user.getUuid())));
+    assertNull(remoteRt.getClient());
+    assertNotNull(remoteRt.getExpiration());
+    assertNotNull(remoteRt.getUser());
+    assertEquals(TEST_USERNAME, remoteRt.getUser().getUserName());
+    assertEquals(scimResourceLocationProvider.userLocation(TEST_UUID), remoteRt.getUser().getRef());
   }
 
   @Test
   void getRefreshTokenListWithClientIdFilter() throws Exception {
 
-    ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
-    ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
+    context.useLocalTestUser();
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    context.useLocalTestUser();
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    context.useAnotherLocalUser(TEST_CLIENT_ID);
+    assertNotNull(getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, ANOTHER_USERNAME,
+        ANOTHER_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
-    IamAccount user = loadTestUser(TESTUSER_USERNAME);
-
-    List<OAuth2RefreshTokenEntity> refreshTokens = Lists.newArrayList();
-    OAuth2RefreshTokenEntity target =
-        buildAccessToken(client1, TESTUSER_USERNAME, SCOPES).getRefreshToken();
-    refreshTokens.add(target);
-    refreshTokens.add(buildAccessToken(client2, TESTUSER_USERNAME, SCOPES).getRefreshToken());
+    assertThat(refreshTokenRepository.count(), equalTo(3L));
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().clientId(client1.getClientId()).build();
+        MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
+    assertThat(atl.getTotalResults(), equalTo(2L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getResources().size(), equalTo(2));
 
-    RefreshToken remoteRt = atl.getResources().get(0);
-
-    assertThat(remoteRt.getId(), equalTo(target.getId()));
-    assertThat(remoteRt.getClient().getId(), equalTo(target.getClient().getId()));
-    assertThat(remoteRt.getClient().getClientId(), equalTo(target.getClient().getClientId()));
-    assertThat(remoteRt.getClient().getRef(), equalTo(target.getClient().getClientUri()));
-
-    assertThat(remoteRt.getExpiration(), equalTo(target.getExpiration()));
-    assertThat(remoteRt.getUser().getId(), equalTo(user.getUuid()));
-    assertThat(remoteRt.getUser().getUserName(), equalTo(user.getUsername()));
-    assertThat(remoteRt.getUser().getRef(),
-        equalTo(scimResourceLocationProvider.userLocation(user.getUuid())));
+    atl.getResources()
+      .forEach(rt -> assertThat(rt.getClient().getClientId(), equalTo(PASSWORD_CLIENT_ID)));
   }
 
   @Test
   void getRefreshTokenListWithUserIdFilter() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME,
+        ADMIN_PASSWORD, DEFAULT_SCOPES));
 
-    IamAccount user1 = loadTestUser(TESTUSER_USERNAME);
-
-    List<OAuth2RefreshTokenEntity> refreshTokens = Lists.newArrayList();
-    OAuth2RefreshTokenEntity target =
-        buildAccessToken(client, TESTUSER_USERNAME, SCOPES).getRefreshToken();
-    refreshTokens.add(target);
-    refreshTokens.add(buildAccessToken(client, TESTUSER2_USERNAME, SCOPES).getRefreshToken());
+    assertThat(refreshTokenRepository.count(), equalTo(3L));
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().userId(user1.getUsername()).build();
+        MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
+    assertThat(atl.getTotalResults(), equalTo(2L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getResources().size(), equalTo(2));
 
-    RefreshToken remoteRt = atl.getResources().get(0);
-
-    assertThat(remoteRt.getId(), equalTo(target.getId()));
-    assertThat(remoteRt.getClient().getId(), equalTo(target.getClient().getId()));
-    assertThat(remoteRt.getClient().getClientId(), equalTo(target.getClient().getClientId()));
-    assertThat(remoteRt.getClient().getRef(), equalTo(target.getClient().getClientUri()));
-
-    assertThat(remoteRt.getExpiration(), equalTo(target.getExpiration()));
-    assertThat(remoteRt.getUser().getId(), equalTo(user1.getUuid()));
-    assertThat(remoteRt.getUser().getUserName(), equalTo(user1.getUsername()));
-    assertThat(remoteRt.getUser().getRef(),
-        equalTo(scimResourceLocationProvider.userLocation(user1.getUuid())));
+    atl.getResources().forEach(at -> {
+      assertThat(at.getUser().getUserName(), equalTo(TEST_USERNAME));
+      assertThat(at.getUser().getRef(),
+          equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+    });
   }
 
   @Test
   void getRefreshTokenListWithClientIdAndUserIdFilter() throws Exception {
 
-    ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
-    ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
+    context.useLocalTestUser(TEST_CLIENT_ID);
+    getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
+        DEFAULT_SCOPES);
+    context.useLocalAdminUser(PASSWORD_CLIENT_ID);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
+        DEFAULT_SCOPES);
 
-    IamAccount user1 = loadTestUser(TESTUSER_USERNAME);
+    assertThat(refreshTokenRepository.count(), equalTo(2L));
 
-    List<OAuth2RefreshTokenEntity> refreshTokens = Lists.newArrayList();
-    OAuth2RefreshTokenEntity target =
-        buildAccessToken(client1, TESTUSER_USERNAME, SCOPES).getRefreshToken();
-    refreshTokens.add(target);
-    refreshTokens.add(buildAccessToken(client1, TESTUSER2_USERNAME, SCOPES).getRefreshToken());
-    refreshTokens.add(buildAccessToken(client2, TESTUSER_USERNAME, SCOPES).getRefreshToken());
-    refreshTokens.add(buildAccessToken(client2, TESTUSER2_USERNAME, SCOPES).getRefreshToken());
+    MultiValueMap<String, String> params =
+        MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
 
-    MultiValueMap<String, String> params = MultiValueMapBuilder.builder()
-        .userId(user1.getUsername()).clientId(client1.getClientId()).build();
-
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
+    assertThat(atl.getTotalResults(), equalTo(0L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertThat(atl.getResources().size(), equalTo(0));
 
-    RefreshToken remoteRt = atl.getResources().get(0);
+    context.useLocalTestUser(PASSWORD_CLIENT_ID);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
+        DEFAULT_SCOPES);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
+        DEFAULT_SCOPES);
 
-    assertThat(remoteRt.getId(), equalTo(target.getId()));
-    assertThat(remoteRt.getClient().getId(), equalTo(target.getClient().getId()));
-    assertThat(remoteRt.getClient().getClientId(), equalTo(target.getClient().getClientId()));
-    assertThat(remoteRt.getClient().getRef(), equalTo(target.getClient().getClientUri()));
+    context.useBearerAdminToken();
+    atl = getRefreshTokenList(params);
 
-    assertThat(remoteRt.getExpiration(), equalTo(target.getExpiration()));
-    assertThat(remoteRt.getUser().getId(), equalTo(user1.getUuid()));
-    assertThat(remoteRt.getUser().getUserName(), equalTo(user1.getUsername()));
-    assertThat(remoteRt.getUser().getRef(),
-        equalTo(scimResourceLocationProvider.userLocation(user1.getUuid())));
+    assertThat(atl.getTotalResults(), equalTo(2L));
+    assertThat(atl.getStartIndex(), equalTo(1));
+    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertThat(atl.getResources().size(), equalTo(2));
+
+    atl.getResources().forEach(at -> {
+      assertThat(at.getClient().getClientId(), equalTo(PASSWORD_CLIENT_ID));
+      assertThat(at.getUser().getUserName(), equalTo(TEST_USERNAME));
+      assertThat(at.getUser().getRef(),
+          equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+    });
   }
 
   @Test
   void getRefreshTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
+    context.useLocalAdminUser();
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
+        DEFAULT_SCOPES);
 
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client, TESTUSER2_USERNAME, SCOPES);
+    assertThat(refreshTokenRepository.count(), equalTo(2L));
 
-    MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().userId(PARTIAL_USERNAME).build();
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().userId("tes").build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -293,14 +295,18 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   @Test
   void getRefreshTokenListLimitedToPageSizeFirstPage() throws Exception {
 
-    for (int i = 0; i < 2 * TOKENS_MAX_PAGE_SIZE; i++) {
-      buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
+    context.useLocalTestUser();
+    for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
+      getPasswordToken(DEFAULT_SCOPES);
     }
 
+    assertThat(refreshTokenRepository.count(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
+
+    context.useBearerAdminToken();
     /* get first page */
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList();
 
-    assertThat(atl.getTotalResults(), equalTo(2L * TOKENS_MAX_PAGE_SIZE));
+    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(TOKENS_MAX_PAGE_SIZE));
     assertThat(atl.getResources().size(), equalTo(TOKENS_MAX_PAGE_SIZE));
@@ -309,156 +315,170 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   @Test
   void getRefreshTokenListLimitedToPageSizeSecondPage() throws Exception {
 
-    for (int i = 0; i < 2 * TOKENS_MAX_PAGE_SIZE; i++) {
-      buildAccessToken(loadTestClient(TEST_CLIENT_ID), TESTUSER_USERNAME, SCOPES);
+    context.useLocalTestUser();
+    for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
+      getPasswordToken(DEFAULT_SCOPES);
     }
+
+    assertThat(refreshTokenRepository.count(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().startIndex(TOKENS_MAX_PAGE_SIZE).build();
 
+    context.useBearerAdminToken();
     /* get second page */
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L * TOKENS_MAX_PAGE_SIZE));
+    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
     assertThat(atl.getStartIndex(), equalTo(TOKENS_MAX_PAGE_SIZE));
-    assertThat(atl.getItemsPerPage(), equalTo(TOKENS_MAX_PAGE_SIZE));
-    assertThat(atl.getResources().size(), equalTo(TOKENS_MAX_PAGE_SIZE));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
+    assertThat(atl.getResources().size(), equalTo(1));
   }
 
   @Test
   void getRefreshTokenListFilterUserIdInjection() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
 
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-
-    assertThat(tokenRepository.count(), equalTo(1L));
+    assertThat(refreshTokenRepository.count(), equalTo(1L));
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(INJECTION_QUERY).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(0));
     assertThat(atl.getResources().size(), equalTo(0));
-
-    assertThat(tokenRepository.count(), equalTo(1L));
   }
 
   @Test
   void getAllValidRefreshTokensCountWithExpiredTokens() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
+    clock.advance(Duration.ofHours(40));
+    getPasswordToken(DEFAULT_SCOPES);
 
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client, TESTUSER_USERNAME, SCOPES);
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().build();
 
-    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
-
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
   @Test
   void getAllValidRefreshTokensCountForUserWithExpiredTokens() throws Exception {
 
-    ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
+    context.useLocalTestUser();
 
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client, TESTUSER2_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client, TESTUSER_USERNAME, SCOPES);
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
-    assertThat(tokenRepository.count(), equalTo(3L));
+    clock.advance(Duration.ofDays(40));
+
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+
+    context.useLocalAdminUser();
+
+    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME,
+        ADMIN_PASSWORD, DEFAULT_SCOPES).refreshToken());
+
+    assertThat(refreshTokenRepository.count(), equalTo(3L));
 
     Page<OAuth2RefreshTokenEntity> tokens =
-        tokenRepository.findAllValidRefreshTokens(new Date(), new OffsetPageable(0, 10));
-    assertThat(tokens.getTotalElements(), equalTo(2L));
-    tokens.forEach(t -> System.out.println(t.getExpiration()));
+        refreshTokenRepository.findAllValidRefreshTokens(clock.now(), FIRST_10);
+    assertEquals(2L, tokens.getTotalElements());
 
-    tokens = tokenRepository.findValidRefreshTokensForUser(TESTUSER_USERNAME, new Date(),
-        new OffsetPageable(0, 10));
+    tokens =
+        refreshTokenRepository.findValidRefreshTokensForUser(TEST_USERNAME, clock.now(), FIRST_10);
+    assertThat(tokens.getTotalElements(), equalTo(1L));
+    tokens =
+        refreshTokenRepository.findValidRefreshTokensForUser(ADMIN_USERNAME, clock.now(), FIRST_10);
     assertThat(tokens.getTotalElements(), equalTo(1L));
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().count(0).userId(TESTUSER_USERNAME).build();
+        MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
   @Test
   void getAllValidRefreshTokensCountForClientWithExpiredTokens() throws Exception {
 
-    ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
-    ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
+    clock.advance(Duration.ofDays(2));
+    getPasswordToken(DEFAULT_SCOPES);
 
-    buildAccessToken(client1, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client2, TESTUSER_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client1, TESTUSER_USERNAME, SCOPES);
-
-    assertThat(tokenRepository.count(), equalTo(3L));
+    assertThat(refreshTokenRepository.count(), equalTo(2L));
 
     Page<OAuth2RefreshTokenEntity> tokens =
-        tokenRepository.findAllValidRefreshTokens(new Date(), new OffsetPageable(0, 10));
-    assertThat(tokens.getTotalElements(), equalTo(2L));
-    tokens.forEach(t -> System.out.println(t.getExpiration()));
+        refreshTokenRepository.findAllValidRefreshTokens(clock.now(), FIRST_10);
+    assertThat(tokens.getTotalElements(), equalTo(1L));
 
-    tokens = tokenRepository.findValidRefreshTokensForClient(TEST_CLIENT_ID, new Date(),
-        new OffsetPageable(0, 10));
+    tokens = refreshTokenRepository.findValidRefreshTokensForClient(PASSWORD_CLIENT_ID, clock.now(),
+        FIRST_10);
     assertThat(tokens.getTotalElements(), equalTo(1L));
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().count(0).clientId(TEST_CLIENT_ID).build();
+        MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 
 
   @Test
   void getAllValidRefreshTokensCountForUserAndClientWithExpiredTokens() throws Exception {
 
-    ClientDetailsEntity client1 = loadTestClient(TEST_CLIENT_ID);
-    ClientDetailsEntity client2 = loadTestClient(TEST_CLIENT2_ID);
+    context.useLocalTestUser();
+    getPasswordToken(DEFAULT_SCOPES);
+    context.useLocalAdminUser();
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
+        DEFAULT_SCOPES);
+    clock.advance(Duration.ofDays(40));
+    context.useLocalTestUser();
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
+        DEFAULT_SCOPES);
+    context.useLocalAdminUser();
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
+        DEFAULT_SCOPES);
 
-    buildAccessToken(client1, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client1, TESTUSER2_USERNAME, SCOPES);
-    buildAccessToken(client2, TESTUSER_USERNAME, SCOPES);
-    buildAccessToken(client2, TESTUSER2_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client1, TESTUSER_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client2, TESTUSER_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client1, TESTUSER2_USERNAME, SCOPES);
-    buildAccessTokenWithExpiredRefreshToken(client2, TESTUSER2_USERNAME, SCOPES);
-
-    assertThat(tokenRepository.count(), equalTo(8L));
+    assertThat(refreshTokenRepository.count(), equalTo(4L));
 
     Page<OAuth2RefreshTokenEntity> tokens =
-        tokenRepository.findAllValidRefreshTokens(new Date(), new OffsetPageable(0, 10));
-    assertThat(tokens.getTotalElements(), equalTo(4L));
-    tokens.forEach(t -> System.out.println(t.getExpiration()));
+        refreshTokenRepository.findAllValidRefreshTokens(clock.now(), FIRST_10);
+    assertThat(tokens.getTotalElements(), equalTo(2L));
 
-    tokens = tokenRepository.findValidRefreshTokensForUserAndClient(TESTUSER_USERNAME,
-        TEST_CLIENT_ID, new Date(), new OffsetPageable(0, 10));
+    tokens = refreshTokenRepository.findValidRefreshTokensForUserAndClient(TEST_USERNAME,
+        PASSWORD_CLIENT_ID, clock.now(), FIRST_10);
     assertThat(tokens.getTotalElements(), equalTo(1L));
 
-    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0)
-        .userId(TESTUSER_USERNAME).clientId(TEST_CLIENT_ID).build();
+    MultiValueMap<String, String> params =
+        MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
 
+    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertThat(atl.getItemsPerPage(), equalTo(1));
   }
 }

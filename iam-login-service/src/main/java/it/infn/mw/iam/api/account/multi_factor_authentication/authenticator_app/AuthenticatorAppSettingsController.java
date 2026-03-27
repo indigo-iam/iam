@@ -92,7 +92,7 @@ public class AuthenticatorAppSettingsController {
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(totpMfa.getSecret(),
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt());
 
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);

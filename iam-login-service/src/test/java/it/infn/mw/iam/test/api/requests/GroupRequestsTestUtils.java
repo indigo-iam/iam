@@ -19,7 +19,6 @@ import static it.infn.mw.iam.core.IamGroupRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
 import static it.infn.mw.iam.core.IamGroupRequestStatus.REJECTED;
 
-import java.util.Date;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +32,7 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 public class GroupRequestsTestUtils {
 
@@ -79,6 +79,9 @@ public class GroupRequestsTestUtils {
   @Autowired
   protected ObjectMapper mapper;
 
+  @Autowired
+  MutableClock clock;
+
   protected GroupRequestDto buildGroupRequest(String userUuid, String groupName) {
     GroupRequestDto request = new GroupRequestDto();
     request.setGroupName(groupName);
@@ -108,7 +111,7 @@ public class GroupRequestsTestUtils {
     iamGroupRequest.setGroup(groupRepository.findByName(groupName).get());
     iamGroupRequest.setNotes(TEST_NOTES);
     iamGroupRequest.setStatus(status);
-    iamGroupRequest.setCreationTime(new Date());
+    iamGroupRequest.setCreationTime(clock.now());
     if (REJECTED.equals(status)) {
       iamGroupRequest.setMotivation(TEST_REJECT_MOTIVATION);
     }
