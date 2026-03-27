@@ -198,7 +198,7 @@ public class IamSamlProperties {
 
   public static class AuthnContextProperties {
 
-    private boolean enabled = true;
+    private boolean defined = true;
 
     private List<String> classRefs = Arrays.asList(
         "https://refeds.org/profile/mfa",
@@ -207,12 +207,12 @@ public class IamSamlProperties {
         "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"
     );
 
-    public boolean isEnabled() {
-      return enabled;
+    public boolean isDefined() {
+      return defined;
     }
 
-    public void setEnabled(boolean enabled) {
-      this.enabled = enabled;
+    public void setDefined(boolean defined) {
+      this.defined = defined;
     }
 
     public List<String> getClassRefs() {
