@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -44,13 +43,11 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.api.aup.AupService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -82,8 +79,6 @@ class TokenUtilsTests {
   JWTSigningAndValidationService jwtSigningService;
   @Mock
   ScopeFilter scopeFilter;
-  @Mock
-  AupService aupService;
 
   @InjectMocks
   TokenUtils tokenUtils;
@@ -91,11 +86,7 @@ class TokenUtilsTests {
   @BeforeEach
   void initClock() {
     lenient().when(clock.instant()).thenReturn(Clock.systemUTC().instant());
-    IamAup aup = new IamAup();
-    aup.setCreationTime(Date.from(clock.instant()));
-    aup.setSignatureValidityInDays(7L);
     lenient().when(iamProperties.getIssuer()).thenReturn(ISSUER);
-    lenient().when(aupService.findAup()).thenReturn(Optional.of(aup));
   }
 
   private SignedJWT mockJwt() {
@@ -109,13 +100,6 @@ class TokenUtilsTests {
     when(client.isActive()).thenReturn(isActive);
     when(clientRepository.findByClientId(clientId)).thenReturn(Optional.of(client));
     return client;
-  }
-
-  private IamAupSignature mockAupSignature(Date signatureTime) {
-
-    IamAupSignature aupSignature = mock(IamAupSignature.class);
-    lenient().when(aupSignature.getSignatureTime()).thenReturn(signatureTime);
-    return aupSignature;
   }
 
   private IamUserInfo mockUserInfo(boolean isEmailVerified) {
@@ -307,86 +291,6 @@ class TokenUtilsTests {
     InvalidTokenException e =
         assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
     assertEquals("User with uuid " + ACCOUNT_ID + " is not active", e.getMessage());
-  }
-
-  @Test
-  void validateUserTokenWithNoAupSignatureThrowsException() {
-
-    mockClient(CLIENT_ID, true);
-
-    SignedJWT jwt = mockJwt();
-    ParsedAccessToken token =
-        userToken(ISSUER, ACCOUNT_ID, CLIENT_ID, Date.from(clock.instant().plusSeconds(3600)), jwt);
-    mockValidateSignature(jwt, true);
-
-    mockAccount(ACCOUNT_ID, true, null, mockUserInfo(true));
-
-    InvalidTokenException e =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
-    assertEquals("User with uuid " + ACCOUNT_ID
-        + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
-  }
-
-  @Test
-  void validateUserTokenWithExpiredAupSignatureThrowsException() {
-
-    mockClient(CLIENT_ID, true);
-
-    SignedJWT jwt = mockJwt();
-    ParsedAccessToken token =
-        userToken(ISSUER, ACCOUNT_ID, CLIENT_ID, Date.from(clock.instant().plusSeconds(3600)), jwt);
-    mockValidateSignature(jwt, true);
-
-    mockAccount(ACCOUNT_ID, true,
-        mockAupSignature(Date.from(clock.instant().minus(Duration.ofDays(10)))),
-        mockUserInfo(true));
-
-    InvalidTokenException e =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
-    assertEquals("User with uuid " + ACCOUNT_ID
-        + " needs to sign AUP for this organization in order to proceed.", e.getMessage());
-  }
-
-  @Test
-  void validateUserTokenWithNotVerifiedEmailThrowsException() {
-
-    mockClient(CLIENT_ID, true);
-
-    SignedJWT jwt = mockJwt();
-    ParsedAccessToken token =
-        userToken(ISSUER, ACCOUNT_ID, CLIENT_ID, Date.from(clock.instant().plusSeconds(3600)), jwt);
-    mockValidateSignature(jwt, true);
-
-    mockAccount(ACCOUNT_ID, true,
-        mockAupSignature(Date.from(clock.instant().minus(Duration.ofDays(1)))),
-        mockUserInfo(false));
-
-    InvalidTokenException e =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(token));
-    assertEquals("User with uuid " + ACCOUNT_ID + " has a not verified email", e.getMessage());
-  }
-
-  @Test
-  void missingScopeClaimThrowsException() throws ParseException {
-
-    Date notExpired = Date.from(clock.instant().plusSeconds(3600));
-    SignedJWT jwt = mockJwt();
-    mockValidateSignature(jwt, true);
-    mockClient(CLIENT_ID, true);
-    ParsedAccessToken tokenNoScopes =
-        buildToken(ISSUER, CLIENT_ID, CLIENT_ID, notExpired, null, AUDIENCES, jwt);
-
-    InvalidTokenException e1 =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(tokenNoScopes));
-    assertEquals("missing or empty scope claim", e1.getMessage());
-
-    ParsedAccessToken tokenEmptyScopes =
-        buildToken(ISSUER, CLIENT_ID, CLIENT_ID, notExpired, Set.of(), AUDIENCES, jwt);
-
-    InvalidTokenException e2 =
-        assertThrows(InvalidTokenException.class, () -> tokenUtils.validate(tokenEmptyScopes));
-    assertEquals("missing or empty scope claim", e2.getMessage());
-
   }
 
   @Test

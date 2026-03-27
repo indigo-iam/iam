@@ -23,6 +23,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface TokenRevocationService {
 
+  public boolean isAccessTokenRevoked(String token);
+
   public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token);
 
   public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token);

@@ -72,6 +72,15 @@ public class IamTokenRevocationService implements TokenRevocationService {
   }
 
   @Override
+  public boolean isAccessTokenRevoked(String accessToken) {
+
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      return accessTokenRepo.findByTokenValue(tokenUtils.sha256(accessToken)).isEmpty();
+    }
+    return revokedAccessTokenRepo.findByHashValue(tokenUtils.sha256(accessToken)).isPresent();
+  }
+
+  @Override
   public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity accessToken) {
 
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {
