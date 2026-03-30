@@ -29,6 +29,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
+import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -63,6 +64,10 @@ public class CacheConfig {
           .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
           .build());
 
+    /* Access tokens by default expire in 1h */
+    cacheManager.registerCustomCache(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
+        Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(3600)).build());
+
     return cacheManager;
   }
 
@@ -76,7 +81,9 @@ public class CacheConfig {
     return builder -> builder.withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY, config)
       .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, config)
       .withCacheConfiguration(DefaultOidcDiscoveryService.CACHE_NAME,
-          config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())));
+          config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())))
+      .withCacheConfiguration(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
+          config.entryTtl(Duration.ofSeconds(3600)));
   }
 
 }

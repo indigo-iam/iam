@@ -18,11 +18,10 @@ package it.infn.mw.iam.api.scim.model;
 import static it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType.work;
 
 import javax.annotation.Generated;
-import javax.validation.constraints.NotNull;
-
 import javax.validation.constraints.Email;
-import org.hibernate.validator.constraints.Length;
 import javax.validation.constraints.NotEmpty;
+
+import org.hibernate.validator.constraints.Length;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,7 +32,6 @@ public class ScimEmail {
     work, home, other;
   }
 
-  @NotNull(message = "Please provide a value for email type")
   private final ScimEmailType type;
 
   @NotEmpty
@@ -41,15 +39,14 @@ public class ScimEmail {
   @Length(max = 128, message = "length must be less than 128")
   private final String value;
 
-  @NotNull(message = "Please provide a value for email primary")
   private final Boolean primary;
 
   @JsonCreator
   private ScimEmail(@JsonProperty("type") ScimEmailType type, @JsonProperty("value") String value,
       @JsonProperty("primary") Boolean primary) {
-    this.type = type;
+    this.type = type != null ? type : ScimEmailType.work;
     this.value = value;
-    this.primary = primary;
+    this.primary = primary != null ? primary : Boolean.FALSE;
   }
 
   private ScimEmail(Builder b) {

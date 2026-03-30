@@ -15,16 +15,11 @@
  */
 package it.infn.mw.iam.core.client;
 
-import java.util.Date;
-import java.util.List;
-
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.core.gc.GarbageCollector;
 
 @Component
 @Profile("openid-federation")
@@ -36,20 +31,14 @@ public class ExpiredFederationClientScheduler {
   public static final long ONE_HOUR_MSEC = 60 * ONE_MINUTE_MSEC;
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
-  private final IamClientRepository clientRepo;
-  private final ClientService clientService;
+  private final GarbageCollector garbageCollector;
 
-  public ExpiredFederationClientScheduler(IamClientRepository clientRepo,
-      ClientService clientService) {
-    this.clientRepo = clientRepo;
-    this.clientService = clientService;
+  public ExpiredFederationClientScheduler(GarbageCollector garbageCollector) {
+    this.garbageCollector = garbageCollector;
   }
 
   @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void disableExpiredClients() {
-    List<ClientDetailsEntity> clients = clientRepo.findActiveClientsExpiredBefore(new Date());
-    for (ClientDetailsEntity client : clients) {
-      clientService.updateClientStatus(client, false, "expired_client_task");
-    }
+    garbageCollector.clearExpiredClients(100);
   }
 }

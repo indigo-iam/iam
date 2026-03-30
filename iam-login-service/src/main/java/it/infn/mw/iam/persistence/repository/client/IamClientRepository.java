@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -33,7 +35,7 @@ public interface IamClientRepository extends PagingAndSortingRepository<ClientDe
   List<ClientDetailsEntity> findByClientNameLike(String clientName);
 
   @Query("select c from ClientDetailsEntity c join c.clientRelyingParty e where c.active = true and e.expiration < :dateTime")
-  List<ClientDetailsEntity> findActiveClientsExpiredBefore(@Param("dateTime") Date dateTime);
+  Page<ClientDetailsEntity> findActiveClientsExpiredBefore(Pageable pageable, @Param("dateTime") Date dateTime);
 
   @Query("select e.client from ClientRelyingPartyEntity e where e.entityId = :entityId")
   Optional<ClientDetailsEntity> findByEntityId(@Param("entityId") String entityId);

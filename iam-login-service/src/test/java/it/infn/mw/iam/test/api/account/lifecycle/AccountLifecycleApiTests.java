@@ -23,55 +23,59 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.util.Date;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.lifecycle.AccountLifecycleDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-public class AccountLifecycleApiTests extends TestSupport {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
 
-  public static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
+  static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
 
-  private static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
-
-  @Autowired
-  private IamAccountRepository repo;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @Autowired
-  private ObjectMapper mapper;
+  IamAccountRepository repo;
 
   @Autowired
-  private MockMvc mvc;
+  ObjectMapper mapper;
 
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MockMvc mvc;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -101,7 +105,7 @@ public class AccountLifecycleApiTests extends TestSupport {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void managingEndTimeRequiresAdminUser() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -119,7 +123,7 @@ public class AccountLifecycleApiTests extends TestSupport {
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   void setEndTimeWorksForAdminUserWithScope() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -132,7 +136,7 @@ public class AccountLifecycleApiTests extends TestSupport {
   @Test
   @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
   void setEndTimeDoesNotWork() throws Exception {
-    Date newEndTime = new Date();
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 
@@ -141,8 +145,4 @@ public class AccountLifecycleApiTests extends TestSupport {
         .contentType(APPLICATION_JSON))
       .andExpect(FORBIDDEN);
   }
-
-
-
-
 }

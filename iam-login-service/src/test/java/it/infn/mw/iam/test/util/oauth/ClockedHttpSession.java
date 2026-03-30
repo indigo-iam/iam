@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util.annotation;
+package it.infn.mw.iam.test.util.oauth;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.springframework.mock.web.MockHttpSession;
 
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.transaction.annotation.Transactional;
+public class ClockedHttpSession extends MockHttpSession {
 
-import it.infn.mw.iam.IamLoginService;
+  private final long customCreationTime;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
-@Transactional
-public @interface IamNoMvcTest {
+  public ClockedHttpSession(long creationTime) {
+    super();
+    this.customCreationTime = creationTime;
+  }
 
+  @Override
+  public long getCreationTime() {
+    return customCreationTime;
+  }
 }

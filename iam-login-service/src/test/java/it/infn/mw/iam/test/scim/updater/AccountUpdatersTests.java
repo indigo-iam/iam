@@ -28,21 +28,24 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -64,11 +67,15 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@ExtendWith(SpringExtension.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
 public class AccountUpdatersTests extends X509TestSupport {
 
   public static final String OLD = "old";
@@ -125,6 +132,9 @@ public class AccountUpdatersTests extends X509TestSupport {
   @Autowired
   private X509CertificateConverter x509Converter;
 
+  @Autowired
+  MutableClock clock;
+
   private IamAccount account;
   private IamAccount other;
 
@@ -142,16 +152,16 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Adders accountAdders() {
-    return AccountUpdaters.adders(accountRepo, accountService, encoder, account,
+    return AccountUpdaters.adders(clock, accountRepo, accountService, encoder, account,
         accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   private Removers accountRemovers() {
-    return AccountUpdaters.removers(accountRepo, accountService, account);
+    return AccountUpdaters.removers(clock, accountRepo, accountService, account);
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account,
+    return AccountUpdaters.replacers(clock, accountRepo, accountService, encoder, account,
         accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
@@ -682,22 +692,22 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  void testX509CertificateAdderWorks() {
+  void testX509CertificateAdderWorks() throws IOException {
 
-    Updater u = accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
 
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
 
   @Test
-  void testX509CertificateParsingWorks() {
+  void testX509CertificateParsingWorks() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display("test")
       .build();
 
@@ -705,101 +715,106 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  void testX509CertificateAdderWorksWithNoUpdate() {
+  void testX509CertificateAdderWorksWithNoUpdate() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u = accountAdders().x509Certificate(Lists.newArrayList(TEST_0_IAM_X509_CERT));
+    Updater u = accountAdders().x509Certificate(Lists.newArrayList(getTest0Cert(clock.instant())));
 
     assertThat(u.update(), is(false));
   }
 
   @Test
-  void testX509CertificateAdderFailsWhenX509CertificateIsLinkedToAnotherAccount() {
+  void testX509CertificateAdderFailsWhenX509CertificateIsLinkedToAnotherAccount()
+      throws IOException {
 
-    other.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    other.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(other);
     assertThrows(ScimResourceExistsException.class,
-        () -> accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT)).update());
+        () -> accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant())))
+          .update());
   }
 
   @Test
-  void testX509CertificateAdderWorksWithUpdate() {
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+  void testX509CertificateAdderWorksWithUpdate() throws IOException {
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u =
-        accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountAdders()
+      .x509Certificate(newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
-    account.linkX509Certificates(singletonList(TEST_1_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest1Cert(clock.instant())));
     accountRepo.save(account);
 
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
   }
 
   @Test
-  void testX509CertificateAdderWorksWithListContainingNull() {
+  void testX509CertificateAdderWorksWithListContainingNull() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, null));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant()), null));
 
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
 
   @Test
-  void testX509CertificateAdderWorksWithListContainingDuplicates() {
+  void testX509CertificateAdderWorksWithListContainingDuplicates() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountAdders().x509Certificate(
-        newArrayList(TEST_0_IAM_X509_CERT, TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant()),
+        getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
   }
 
   @Test
-  void testX509CertificateRemoverWorks() {
+  void testX509CertificateRemoverWorks() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest0Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
   }
 
   @Test
-  void testX509CertificateRemoverWorksWithNoUpdate() {
+  void testX509CertificateRemoverWorksWithNoUpdate() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest1Cert(clock.instant())));
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
 
   @Test
-  void testX509CertificateRemoverNoUpdateWithEmptyList() {
+  void testX509CertificateRemoverNoUpdateWithEmptyList() throws IOException {
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest1Cert(clock.instant())));
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(0));
   }
@@ -813,25 +828,26 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  void testX509CertificateRemoverWorksWithMultipleValues() {
+  void testX509CertificateRemoverWorksWithMultipleValues() throws IOException {
 
-    account.linkX509Certificates(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    account.linkX509Certificates(
+        newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u =
-        accountRemovers().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers()
+      .x509Certificate(newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
   }
 
   @Test
-  void testX509CertificateRemoverWorksWithNullAndDuplicatesValues() {
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+  void testX509CertificateRemoverWorksWithNullAndDuplicatesValues() throws IOException {
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountRemovers().x509Certificate(
-        newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT, null, TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest0Cert(clock.instant()),
+        getTest1Cert(clock.instant()), null, getTest1Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
   }

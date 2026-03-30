@@ -25,39 +25,41 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
-  private ScimGroup engineers;
-  private ScimUser lennon, kennedy, lincoln, reagan;
+  @Autowired
+  MutableClock clock;
+
+  ScimGroup engineers;
+  ScimUser lennon, kennedy, lincoln, reagan;
 
   List<ScimUser> members;
 
   @BeforeEach
   void initTests() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+
+    context.cleanupSecurityContext();
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
@@ -72,16 +74,6 @@ class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
     addMembers(engineers, members);
   }
 
-  @AfterEach
-  void teardownTests() throws Exception {
-    deleteScimResource(lennon);
-    deleteScimResource(kennedy);
-    deleteScimResource(lincoln);
-    deleteScimResource(reagan);
-    deleteScimResource(engineers);
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
   @Test
   void testGroupPatchReplaceWithEmptyGroup() throws Exception {
     List<ScimUser> emptyGroup = new ArrayList<>();
@@ -92,6 +84,7 @@ class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
     assertIsGroupMember(kennedy, engineersBeforeUpdate);
     assertIsGroupMember(lincoln, engineersBeforeUpdate);
 
+    clock.advance(Duration.ofMillis(100));
     //@formatter:off
     mvc.perform(patch(engineers.getMeta().getLocation())
         .contentType(SCIM_CONTENT_TYPE)

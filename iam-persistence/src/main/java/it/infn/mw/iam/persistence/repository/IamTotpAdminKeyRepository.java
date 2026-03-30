@@ -13,23 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.time;
+package it.infn.mw.iam.persistence.repository;
 
-/**
- * Time provider interface.
- *
- */
-@FunctionalInterface
-public interface TimeProvider {
+import org.springframework.data.jpa.repository.JpaRepository;
 
-  /**
-   * Returns the current time in milliseconds
-   * 
-   * @return the difference, measured in milliseconds, between the current time and midnight,
-   * January 1, 1970 UTC.
-   * 
-   * @see System#currentTimeMillis()
-   */
-  public long currentTimeMillis();
+import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
+
+public interface IamTotpAdminKeyRepository extends JpaRepository<IamTotpAdminKey, Long> {
 
 }

@@ -94,7 +94,7 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock, OidcTokenRequestor tokenRequestor,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
@@ -103,7 +103,7 @@ public class OidcConfiguration {
       AuthRequestUrlBuilder authRequestUrlBuilder,
       AuthRequestOptionsService authRequestOptionsService, JWKSetCacheService validationServices) {
 
-    OidcClientFilter filter = new OidcClientFilter();
+    OidcClientFilter filter = new OidcClientFilter(clock, tokenRequestor, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
     filter.setIssuerService(issuerService);
     filter.setServerConfigurationService(serverConfigurationService);
@@ -113,7 +113,6 @@ public class OidcConfiguration {
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
     filter.setValidationServices(validationServices);
-    filter.setTokenRequestor(tokenRequestor);
 
     return filter;
   }

@@ -23,6 +23,7 @@ import static it.infn.mw.iam.registration.validation.RegistrationRequestValidati
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -50,13 +51,15 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrDbRequestValidatorService.class);
 
+  final Clock clock;
   final CernHrDBApiService hrDbApi;
   final CernProperties cernProperties;
 
-  public CernHrDbRequestValidatorService(IamProperties properties,
+  public CernHrDbRequestValidatorService(Clock clock, IamProperties properties,
       ApplicationEventPublisher eventPublisher, CernHrDBApiService hrDbApi,
       CernProperties cernProperties) {
     super(properties, eventPublisher);
+    this.clock = clock;
     this.hrDbApi = hrDbApi;
     this.cernProperties = cernProperties;
   }
@@ -122,7 +125,7 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
       Optional<ParticipationDTO> ep = CernHrLifecycleUtils.getMostRecentMembership(
           voPersonDTO.get().getParticipations(), cernProperties.getExperimentName());
 
-      if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate())) {
+      if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(clock, ep.get().getEndDate())) {
         addPersonIdLabel(registrationRequest, cernPersonId);
         synchronizeInfo(registrationRequest, voPersonDTO.get());
         registrationRequest.setAffiliation(ep.get().getInstitute().getName());

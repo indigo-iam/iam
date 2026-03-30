@@ -15,8 +15,10 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
+import java.time.Instant;
+import java.util.Date;
+
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
@@ -32,51 +34,27 @@ public class IamTotpMfaServiceTestSupport extends IamTotpMfaCommons {
 
   public static final String TOTP_CODE = "123456";
 
-  protected final IamAccount TOTP_MFA_ACCOUNT;
-  protected final IamAuthority ROLE_USER_AUTHORITY;
+  protected IamAccount getAccount(Instant instant) {
 
-  protected final IamTotpMfa TOTP_MFA;
-
-  public IamTotpMfaServiceTestSupport() {
-    ROLE_USER_AUTHORITY = new IamAuthority("ROLE_USER");
-
-    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
-    TOTP_MFA_ACCOUNT.setUuid(TOTP_MFA_ACCOUNT_UUID);
-    TOTP_MFA_ACCOUNT.setUsername(TOTP_MFA_ACCOUNT_USERNAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_MFA_ACCOUNT_EMAIL);
-    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_MFA_ACCOUNT_GIVEN_NAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_MFA_ACCOUNT_FAMILY_NAME);
-
-    TOTP_MFA = new IamTotpMfa();
-    TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
-    TOTP_MFA.setSecret(getEncryptedCode(TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT));
-    TOTP_MFA.setActive(true);
-
-    TOTP_MFA.touch();
+    IamAccount a = IamAccount.newAccount();
+    a.setUuid(TOTP_MFA_ACCOUNT_UUID);
+    a.setUsername(TOTP_MFA_ACCOUNT_USERNAME);
+    a.getUserInfo().setEmail(TOTP_MFA_ACCOUNT_EMAIL);
+    a.getUserInfo().setGivenName(TOTP_MFA_ACCOUNT_GIVEN_NAME);
+    a.getUserInfo().setFamilyName(TOTP_MFA_ACCOUNT_FAMILY_NAME);
+    a.setCreationTime(Date.from(instant));
+    a.setLastUpdateTime(Date.from(instant));
+    return a;
   }
 
-  public IamAccount cloneAccount(IamAccount account) {
-    IamAccount newAccount = IamAccount.newAccount();
-    newAccount.setUuid(account.getUuid());
-    newAccount.setUsername(account.getUsername());
-    newAccount.getUserInfo().setEmail(account.getUserInfo().getEmail());
-    newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
-    newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
+  protected IamTotpMfa getTotpMfaForAccount(IamAccount account, Instant instant) {
 
-    newAccount.touch();
-
-    return newAccount;
-  }
-
-  public IamTotpMfa cloneTotpMfa(IamTotpMfa totpMfa) {
-    IamTotpMfa newTotpMfa = new IamTotpMfa();
-    newTotpMfa.setAccount(totpMfa.getAccount());
-    newTotpMfa.setSecret(totpMfa.getSecret());
-    newTotpMfa.setActive(totpMfa.isActive());
-
-    newTotpMfa.touch();
-
-    return newTotpMfa;
+    IamTotpMfa t = new IamTotpMfa(instant);
+    t.setAccount(account);
+    t.setSecret(getEncryptedCode(TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT));
+    t.setActive(true);
+    t.touch(instant);
+    return t;
   }
 
   public String getEncryptedCode(String plaintext, String key) {

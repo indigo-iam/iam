@@ -26,45 +26,54 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  AccountLifecycleTests.TestConfig.class})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class})
 @TestPropertySource(
-  properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
-class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport
-  implements LifecycleTestSupport {
+    properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
+@Transactional
+class AccountLifecycleNoRemovalExpiredAccountTests implements LifecycleTestSupport {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @Autowired
-  private IamAccountRepository repo;
+  IamAccountRepository repo;
 
   @Autowired
-  private ExpiredAccountsHandler handler;
+  ExpiredAccountsHandler handler;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   void testSuspendedLabelWorks() {
     IamAccount testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
-    testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
+    testAccount.setEndTime(Date.from(clock.daysBefore(9)));
     repo.save(testAccount);
     Date lastUpdateTime = testAccount.getLastUpdateTime();
 
     handler.handleExpiredAccounts();
 
     testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
     assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
@@ -73,7 +82,7 @@ class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport
     handler.handleExpiredAccounts();
 
     testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
     assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
@@ -87,16 +96,16 @@ class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport
   @Test
   void testNoRemovalWorks() {
     IamAccount testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
-    testAccount.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
+    testAccount.setEndTime(Date.from(clock.daysBefore(31)));
     repo.save(testAccount);
 
     handler.handleExpiredAccounts();
 
     testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
 
@@ -105,7 +114,7 @@ class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport
     assertThat(statusLabel.get().getValue(),
         is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
 
-    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
+    Optional<IamAccount> account = repo.findByUuid(TEST_UUID);
     assertThat(account.isPresent(), is(true));
   }
 

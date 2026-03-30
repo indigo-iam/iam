@@ -17,12 +17,12 @@ package it.infn.mw.iam.persistence.repository;
 
 import java.util.Optional;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
 public interface IamTotpMfaRepository
-    extends CrudRepository<IamTotpMfa, Long>, IamTotpMfaRepositoryCustom {
+    extends JpaRepository<IamTotpMfa, Long>, IamTotpMfaRepositoryCustom {
 
   Optional<IamTotpMfa> findByAccountId(Long id);
 }

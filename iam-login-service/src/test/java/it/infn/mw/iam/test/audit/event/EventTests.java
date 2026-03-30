@@ -24,6 +24,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,8 +74,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 class EventTests extends X509TestSupport {
 
@@ -118,12 +120,12 @@ class EventTests extends X509TestSupport {
   private ScimMemberRef accountRef;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     group = groupProvisioning.create(ScimGroup.builder(GROUPNAME).build());
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -288,10 +290,10 @@ class EventTests extends X509TestSupport {
   }
 
   @Test
-  void testAddX509CertificateEvent() {
+  void testAddX509CertificateEvent() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
       .subjectDn(TEST_0_SUBJECT)
       .issuerDn(TEST_0_ISSUER)
@@ -310,16 +312,16 @@ class EventTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest0CertString()));
 
     assertThat(emailRepo.countAllMessages(), equalTo(0));
   }
 
   @Test
-  void testRemoveX509CertificateEvent() {
+  void testRemoveX509CertificateEvent() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .subjectDn(TEST_1_SUBJECT)
       .issuerDn(TEST_1_ISSUER)
@@ -338,7 +340,7 @@ class EventTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest1CertString()));
 
     assertThat(emailRepo.countAllMessages(), equalTo(0));
   }

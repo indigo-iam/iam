@@ -34,7 +34,7 @@ import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -61,6 +61,9 @@ class TokenRevocationServiceTests extends EndpointsTestUtils {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  TokenUtils tokenUtils;
+
   @Test
   void registrationTokenUntouchedWhenRevokingClientTokens() throws Exception {
 
@@ -69,12 +72,12 @@ class TokenRevocationServiceTests extends EndpointsTestUtils {
       .grantTypes(GrantType.AUTHORIZATION_CODE.getValue())
       .build();
 
-    RegisteredClientDTO registerResponse = mapper.readValue(mvc.perform(post(REGISTER_ENDPOINT)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(clientJson))
-        .andExpect(status().isCreated())
-        .andReturn().getResponse()
-        .getContentAsString(), RegisteredClientDTO.class);
+    RegisteredClientDTO registerResponse = mapper.readValue(mvc
+      .perform(post(REGISTER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(clientJson))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
 
     ClientDetailsEntity client =
         clientService.findClientByClientId(registerResponse.getClientId()).orElseThrow();
@@ -82,31 +85,40 @@ class TokenRevocationServiceTests extends EndpointsTestUtils {
     clientRepo.save(client);
 
     TokenEndpointResponse tokenResponse = parseTokens(new AccessTokenGetter().grantType("password")
-        .clientId(client.getClientId())
-        .clientSecret(client.getClientSecret())
-        .username(TEST_USERNAME)
-        .password(TEST_PASSWORD)
-        .scope("openid profile offline_access")
-        .getTokenResponseObject());
+      .clientId(client.getClientId())
+      .clientSecret(client.getClientSecret())
+      .username(TEST_USERNAME)
+      .password(TEST_PASSWORD)
+      .scope("openid profile offline_access")
+      .getTokenResponseObject());
 
     String accessToken = tokenResponse.accessToken();
     String refreshToken = tokenResponse.refreshToken();
     assertThat(accessToken, notNullValue());
     assertThat(refreshToken, notNullValue());
 
-    OAuth2AccessTokenEntity registrationToken = accessTokenRepo.findByTokenValue(IamTokenService.sha256(registerResponse.getRegistrationAccessToken())).orElseThrow();
-    assertThat(accessTokenRepo.findAccessTokens(client.getId()).stream().filter(at -> at.getScope().contains("registration_token")).findAny().isPresent(), is(false));
+    OAuth2AccessTokenEntity registrationToken = accessTokenRepo
+      .findByTokenValue(tokenUtils.sha256(registerResponse.getRegistrationAccessToken()))
+      .orElseThrow();
+    assertThat(accessTokenRepo.findAccessTokens(client.getId())
+      .stream()
+      .filter(at -> at.getScope().contains("registration_token"))
+      .findAny()
+      .isPresent(), is(false));
     assertThat(accessTokenRepo.findRegistrationToken(client.getId()).isPresent(), is(true));
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(), is(registerResponse.getRegistrationAccessToken()));
+    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(),
+        is(registerResponse.getRegistrationAccessToken()));
     assertThat(revokeService.isAccessTokenRevoked(registrationToken), is(false));
     revokeService.revokeAccessTokens(client);
     revokeService.revokeRefreshTokens(client);
     assertThat(accessTokenRepo.findRegistrationToken(client.getId()).isPresent(), is(true));
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(), is(registerResponse.getRegistrationAccessToken()));
+    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(),
+        is(registerResponse.getRegistrationAccessToken()));
     assertThat(accessTokenRepo.findAccessTokens(client.getId()).size(), is(0));
     assertThat(revokeService.isAccessTokenRevoked(registrationToken), is(false));
     clientService.deleteClient(client);
-    assertThat(accessTokenRepo.findByTokenValue(registrationToken.getTokenValueHash()).isPresent(), is(false));
+    assertThat(accessTokenRepo.findByTokenValue(registrationToken.getTokenValueHash()).isPresent(),
+        is(false));
 
   }
 }

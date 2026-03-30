@@ -20,6 +20,7 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsLast;
 
+import java.time.Clock;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
@@ -96,11 +97,12 @@ public class CernHrLifecycleUtils {
       .findFirst();
   }
 
-  public static boolean isActiveMembership(Date endTime) {
+  public static boolean isActiveMembership(Clock clock, Date endTime) {
     if (endTime == null) {
       return true;
     }
-    return DateTimeComparator.getDateOnlyInstance().compare(endTime, new Date()) >= 0;
+    return DateTimeComparator.getDateOnlyInstance()
+      .compare(endTime, Date.from(clock.instant())) >= 0;
   }
 
   public static boolean isAccountIgnored(IamAccount a) {

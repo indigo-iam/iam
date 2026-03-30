@@ -1,0 +1,32 @@
+name: Token not in database tests
+
+on: [push] 
+
+jobs:
+  build-and-test-token-not-in-db:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        cache: maven
+        java-version: 17
+
+    - name: Run tests when ATs are not stored in the db
+      env:
+        IAM_DB_HOST: localhost
+      run: |
+        sudo systemctl start mysql
+        mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
+        mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
+        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
+        mysql -uroot -proot -e "FLUSH PRIVILEGES;"
+        mvn -Dspring.profiles.active=mysql-test -Diam.access_token.store_on_database=false -q package

@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.in;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,6 +88,7 @@ import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @ExtendWith(MockitoExtension.class)
 public class DefaultAccountUpdaterFactoryTests {
@@ -125,11 +127,13 @@ public class DefaultAccountUpdaterFactoryTests {
   @Mock
   IamOAuthRefreshTokenRepository refreshTokenRepo;
 
+  MutableClock clock = new MutableClock(Clock.systemUTC());
+
   OidcIdConverter oidcConverter = new OidcIdConverter();
   SamlIdConverter samlConverter = new SamlIdConverter();
   SshKeyConverter sshKeyConverter = new SshKeyConverter();
   X509CertificateConverter x509Converter =
-      new X509CertificateConverter(new X509CertificateChainParserImpl());
+      new X509CertificateConverter(clock, new X509CertificateChainParserImpl());
 
   DefaultAccountUpdaterFactory factory;
 
@@ -138,7 +142,7 @@ public class DefaultAccountUpdaterFactoryTests {
   @BeforeEach
   void init() {
 
-    factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, accessTokenRepo,
+    factory = new DefaultAccountUpdaterFactory(clock, encoder, repo, accountService, accessTokenRepo,
         refreshTokenRepo, oidcConverter, samlConverter, sshKeyConverter, x509Converter,
         usernameValidator, groupRepo);
   }

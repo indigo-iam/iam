@@ -28,16 +28,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.repository.OAuth2TokenRepository;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.core.userinfo.DefaultOAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
@@ -60,6 +61,9 @@ public class OAuth2AuthenticationScopeResolverTests {
 
   @Mock
   OAuth2AuthenticationDetails authDetails;
+
+  @Mock
+  OAuth2TokenEntityService tokenService;
 
   @InjectMocks
   DefaultOAuth2AuthenticationScopeResolver scopeResolver;
@@ -90,7 +94,8 @@ public class OAuth2AuthenticationScopeResolverTests {
   void tokenNotFoundInRepoRaisesIllegalArgumentException() {
     lenient().when(auth.getDetails()).thenReturn(authDetails);
     lenient().when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
-    assertThrows(IllegalArgumentException.class, () -> scopeResolver.resolveScope(auth));
+    lenient().when(tokenService.readAccessToken(TOKEN_VALUE)).thenThrow(new InvalidTokenException("Token not found"));
+    assertThrows(InvalidTokenException.class, () -> scopeResolver.resolveScope(auth));
   }
 
   @Test
@@ -99,6 +104,7 @@ public class OAuth2AuthenticationScopeResolverTests {
     lenient().when(authDetails.getTokenValue()).thenReturn(TOKEN_VALUE);
     lenient().when(repo.getAccessTokenByValue(TOKEN_VALUE)).thenReturn(tokenEntity);
     lenient().when(tokenEntity.getScope()).thenReturn(Sets.newHashSet("openid"));
+    lenient().when(tokenService.readAccessToken(TOKEN_VALUE)).thenReturn(tokenEntity);
     Set<String> scopes = scopeResolver.resolveScope(auth);
     assertThat(scopes, hasSize(1));
     assertThat(scopes, hasItem("openid"));

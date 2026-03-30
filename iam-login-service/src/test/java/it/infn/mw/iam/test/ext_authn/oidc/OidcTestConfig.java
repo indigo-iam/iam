@@ -57,7 +57,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public UserInfoFetcher userInfoFetcher() {
+  UserInfoFetcher userInfoFetcher() {
 
     UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
     return fetcher;
@@ -65,13 +65,13 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public RestTemplateFactory restTemplateFactory() {
+  RestTemplateFactory restTemplateFactory() {
     return new MockRestTemplateFactory();
   }
 
   @Bean
   @Primary
-  public IssuerService oidcIssuerService() {
+  IssuerService oidcIssuerService() {
 
     StaticSingleIssuerService issuerService = new StaticSingleIssuerService();
     issuerService.setIssuer(TEST_OIDC_ISSUER);
@@ -82,7 +82,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public ServerConfigurationService mockServerConfigurationService() {
+  ServerConfigurationService mockServerConfigurationService() {
 
     ServerConfiguration sc = new ServerConfiguration();
     sc.setIssuer(TEST_OIDC_ISSUER);
@@ -100,7 +100,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public ClientConfigurationService staticClientConfiguration() {
+  ClientConfigurationService staticClientConfiguration() {
 
     RegisteredClient rc = new RegisteredClient();
     rc.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
@@ -119,7 +119,7 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
+  JWKSetCacheService mockjwkSetCacheService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JWTSigningAndValidationService signatureValidator =
@@ -134,14 +134,14 @@ public class OidcTestConfig {
 
   @Bean
   @Primary
-  public JWKSetKeyStore mockOidcProviderKeyStore() {
+  JWKSetKeyStore mockOidcProviderKeyStore() {
     JWKSetKeyStore ks = new JWKSetKeyStore();
     ks.setLocation(new ClassPathResource("/oidc/mock_op_keys.jks"));
     return ks;
   }
 
   @Bean
-  public MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
+  MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
     return new MockOIDCProvider(mapper, mockOidcProviderKeyStore());
   }
 

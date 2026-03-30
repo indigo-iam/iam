@@ -18,12 +18,16 @@ package it.infn.mw.iam.config;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
@@ -36,9 +40,13 @@ import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 
 @Configuration
 @EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "20m")
 @Profile({"prod", "dev"})
 public class TaskConfig implements SchedulingConfigurer {
 
@@ -152,5 +160,13 @@ public class TaskConfig implements SchedulingConfigurer {
     taskRegistrar.setScheduler(taskScheduler);
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
+  }
+
+  @Bean
+  LockProvider lockProvider(DataSource dataSource) {
+    return new JdbcTemplateLockProvider(JdbcTemplateLockProvider.Configuration.builder()
+      .withJdbcTemplate(new JdbcTemplate(dataSource))
+      .usingDbTime()
+      .build());
   }
 }

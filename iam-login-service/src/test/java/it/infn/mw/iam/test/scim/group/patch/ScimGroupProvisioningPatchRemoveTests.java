@@ -26,15 +26,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Lists;
 
@@ -43,24 +41,27 @@ import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
-  private ScimGroup engineers;
-  private ScimUser lennon, lincoln, kennedy;
+  @Autowired
+  MutableClock clock;
+
+  ScimGroup engineers;
+  ScimUser lennon, lincoln, kennedy;
 
   List<ScimUser> members;
 
   @BeforeEach
   void initTests() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
@@ -72,15 +73,6 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
     members.add(kennedy);
 
     addMembers(engineers, members);
-  }
-
-  @AfterEach
-  void teardownTests() throws Exception {
-    deleteScimResource(lennon);
-    deleteScimResource(lincoln);
-    deleteScimResource(kennedy);
-    deleteScimResource(engineers);
-    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
@@ -100,6 +92,8 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
       Thread.sleep(1000);
     } catch (InterruptedException e) {
     }
+
+    clock.advance(Duration.ofMillis(100));
 
     //@formatter:off
     mvc.perform(patch(engineers.getMeta().getLocation())

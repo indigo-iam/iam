@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -67,14 +68,14 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK,
-  properties = {"notification.certificateUpdate = true",
-    "notification.admin-notification-policy = notify-admins"})
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"notification.certificateUpdate = true",
+        "notification.admin-notification-policy = notify-admins"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 @Transactional
 class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
-  implements CertificateLinkingNotificationUtil {
+    implements CertificateLinkingNotificationUtil {
 
   private static final String USERNAME = "event_user";
   private static final String GIVENNAME = "Event";
@@ -114,10 +115,10 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
   private ScimUser user;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -146,12 +147,12 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
 
     // Building the certificates
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
       .build();
 
     ScimX509Certificate cert2 = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_2_CERT_STRING)
+      .pemEncodedCertificate(getTest2CertString())
       .display(TEST_2_CERT_LABEL)
       .build();
 
@@ -219,10 +220,10 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
   }
 
   @Test
-  void testAddX509CertificateEventNotification() {
+  void testAddX509CertificateEventNotification() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
       .subjectDn(TEST_0_SUBJECT)
       .issuerDn(TEST_0_ISSUER)
@@ -241,7 +242,7 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
     assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest0CertString()));
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
@@ -261,10 +262,10 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
   }
 
   @Test
-  void testRemoveX509CertificateEventEventNotification() {
+  void testRemoveX509CertificateEventEventNotification() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .subjectDn(TEST_1_SUBJECT)
       .issuerDn(TEST_1_ISSUER)
@@ -283,7 +284,7 @@ class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
     assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest1CertString()));
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 

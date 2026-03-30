@@ -26,10 +26,12 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
@@ -38,16 +40,18 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
 
-  private final static String DELETE_URL = "/iam/group_requests/{uuid}";
-  private static final String EXPECTED_USER_NOT_FOUND = "expected user not found";
-  private static final String EXPECTED_GROUP_NOT_FOUND = "expected group not found";
+  static final String DELETE_URL = "/iam/group_requests/{uuid}";
+  static final String EXPECTED_USER_NOT_FOUND = "expected user not found";
+  static final String EXPECTED_GROUP_NOT_FOUND = "expected group not found";
 
   @Autowired
   private IamAccountRepository accountRepo;

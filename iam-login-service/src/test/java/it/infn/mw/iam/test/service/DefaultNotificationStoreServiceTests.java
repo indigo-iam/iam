@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -45,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.DefaultNotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -68,7 +68,7 @@ public class DefaultNotificationStoreServiceTests {
   private IamEmailNotificationRepository notificationRepo;
 
   @Mock
-  private TimeProvider timeProvider;
+  private Clock clock;
 
   @Mock
   private NotificationProperties properties;
@@ -116,7 +116,7 @@ public class DefaultNotificationStoreServiceTests {
 
     lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
       .thenReturn(Arrays.asList(notification));
-    lenient().when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
+    lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
 
     service.clearExpiredNotifications();
 
@@ -142,7 +142,7 @@ public class DefaultNotificationStoreServiceTests {
 
     lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
       .thenReturn(emptyList());
-    lenient().when(timeProvider.currentTimeMillis()).thenReturn(twoDaysAfterNow.getTime());
+    lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
 
     service.clearExpiredNotifications();
 

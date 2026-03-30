@@ -21,6 +21,8 @@ public interface GarbageCollector {
 
   void clearExpiredAuthorizationCodes(int count);
 
+  void clearExpiredClients(int count);
+
   void clearExpiredDeviceCodes(int count);
 
   void clearExpiredRevokedTokens(int count);

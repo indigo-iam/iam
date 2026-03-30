@@ -52,21 +52,27 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
 
     JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
-    final Optional<IamAccount> account;
-    if (accessToken.getAuthenticationHolder().getUserAuth() != null) {
-      String subject = claims.getSubject();
+    String subject = claims.getSubject();
+    String clientId = accessToken.getClient().getClientId();
+    Optional<IamAccount> account;
+    if (!subject.equals(clientId)) {
       account = getAccountService().findByUuid(subject);
     } else {
       account = Optional.empty();
     }
 
+    OAuth2Authentication auth;
+    if (accessToken.getAuthenticationHolder() != null) {
+      auth = accessToken.getAuthenticationHolder().getAuthentication();
+    } else {
+      auth = null;
+    }
+
     scopeToClaimService.getClaimsForScopeSet(accessToken.getScope())
-      .forEach(claim -> resolveAndAddClaimValueToResult(claim,
-          accessToken.getAuthenticationHolder().getAuthentication(), account, result));
+      .forEach(claim -> resolveAndAddClaimValueToResult(claim, auth, account, result));
 
     AarcExtraClaimNames.INTROSPECTION_REQUIRED_CLAIMS
-      .forEach(claim -> resolveAndAddClaimValueToResult(claim,
-          accessToken.getAuthenticationHolder().getAuthentication(), account, result));
+      .forEach(claim -> resolveAndAddClaimValueToResult(claim, auth, account, result));
 
     // add all the others avoiding duplicates/override
     claims.getClaims().forEach(result::putIfAbsent);

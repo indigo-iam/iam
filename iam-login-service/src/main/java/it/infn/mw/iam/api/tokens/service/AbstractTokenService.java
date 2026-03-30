@@ -15,14 +15,33 @@
  */
 package it.infn.mw.iam.api.tokens.service;
 
+import java.time.Clock;
+import java.util.Date;
 import java.util.List;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 
 public abstract class AbstractTokenService<T> implements TokenService<T> {
 
+  protected Clock clock;
+  protected IamProperties properties;
+  protected TokenRevocationService revokeService;
+
+  protected AbstractTokenService(Clock clock, IamProperties properties, TokenRevocationService revokeService) {
+
+    this.clock = clock;
+    this.properties = properties;
+    this.revokeService = revokeService;
+  }
+
+  protected Date now() {
+
+    return Date.from(clock.instant());
+  }
 
   protected OffsetPageable getOffsetPageable(TokensPageRequest pageRequest) {
 
@@ -37,8 +56,9 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
     return pageRequest.getCount() == 0;
   }
 
-  protected ListResponseDTO<T> buildListResponse(List<T> resources, OffsetPageable op, long totalElements) {
-    
+  protected ListResponseDTO<T> buildListResponse(List<T> resources, OffsetPageable op,
+      long totalElements) {
+
     ListResponseDTO.Builder<T> builder = ListResponseDTO.builder();
     builder.itemsPerPage(resources.size());
     builder.startIndex((int) op.getOffset() + 1);
@@ -46,4 +66,5 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
     builder.totalResults(totalElements);
     return builder.build();
   }
+
 }

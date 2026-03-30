@@ -22,19 +22,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.sql.Date;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.Date;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
@@ -42,52 +41,58 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@TestPropertySource(properties = {"proxycert.enabled=true"})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"proxycert.enabled=true"})
+@AutoConfigureMockMvc
+@Transactional
 class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
+
+  @Autowired
+  ProxyHelperService proxyHelper;
 
   @Autowired
   IamProperties iamProperties;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  MockMvc mvc;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private void linkProxyToTestAccount() throws Exception {
+
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
     IamX509Certificate cert = testAccount.getX509Certificates().iterator().next();
     IamX509ProxyCertificate proxyCert = new IamX509ProxyCertificate();
 
-    Instant current = Instant.now();
-    Instant plusOneYearDuration = current.plus(Duration.ofDays(365));
+    Date current = clock.now();
+    Date plusOneYearDate = Date.from(clock.daysAfter(365));
 
-    proxyCert.setChain(generateTest0Proxy(current, plusOneYearDuration));
-    proxyCert.setExpirationTime(Date.from(plusOneYearDuration));
+    proxyCert.setChain(generateTest0Proxy(proxyHelper, current, plusOneYearDate));
+    proxyCert.setExpirationTime(plusOneYearDate);
     proxyCert.setCertificate(cert);
     cert.setProxy(proxyCert);
 
@@ -116,7 +121,7 @@ class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-    scopes = {"proxy:generate"})
+      scopes = {"proxy:generate"})
   @Test
   void proxyApiRequiresRegisteredProxy() throws Exception {
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
@@ -125,7 +130,7 @@ class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-    scopes = {"proxy:generate"})
+      scopes = {"proxy:generate"})
   @Test
   void proxyRequestIsValidated() throws Exception {
     linkProxyToTestAccount();
@@ -136,7 +141,7 @@ class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-    scopes = {"proxy:generate"})
+      scopes = {"proxy:generate"})
   @Test
   void proxyRequestIssuerIsValidated() throws Exception {
 
@@ -148,7 +153,7 @@ class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},
-    scopes = {"proxy:generate"})
+      scopes = {"proxy:generate"})
   @Test
   void proxyGenerationWorks() throws Exception {
     linkProxyToTestAccount();

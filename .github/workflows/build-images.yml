@@ -1,9 +1,9 @@
-name: build & packaging
+name: Build & Test
 
 on: [push, pull_request] 
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +25,7 @@ jobs:
         mvn -version
         mvn -B license:check
 
-    - name: Build, test, package
+    - name: Build & MySQL tests
       env:
         IAM_DB_HOST: localhost
       run: |
@@ -35,6 +35,29 @@ jobs:
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
         mvn -Dspring.profiles.active=mysql-test -q package install
+
+  build-docker-images:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        cache: maven
+        java-version: 17
+
+    - name: Build & Package
+      run: |
+        mvn -DskipTests package install
 
     - name: Copy artifacts to docker dir
       run: |

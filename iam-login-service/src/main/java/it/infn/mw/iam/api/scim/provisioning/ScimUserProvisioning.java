@@ -35,13 +35,14 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVIC
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
 import static java.lang.Boolean.TRUE;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.Set;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -98,6 +99,7 @@ public class ScimUserProvisioning
           ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
           ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
 
+  private final Clock clock;
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
@@ -110,7 +112,7 @@ public class ScimUserProvisioning
 
   private ApplicationEventPublisher eventPublisher;
 
-  public ScimUserProvisioning(IamAccountService accountService,
+  public ScimUserProvisioning(Clock clock, IamAccountService accountService,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, IamAccountRepository accountRepository,
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
@@ -120,12 +122,13 @@ public class ScimUserProvisioning
       IamGroupRepository groupRepository, Set<UpdaterType> enabledUpdaters,
       AccountUtils accountUtils, X509CertificateConverter x509Converter) {
 
+    this.clock = clock;
     this.notificationProperties = notificationProperties;
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.notificationFactory = notificationFactory;
-    this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
+    this.updatersFactory = new DefaultAccountUpdaterFactory(clock, passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
     this.enabledUpdaters = enabledUpdaters;
@@ -496,7 +499,7 @@ public class ScimUserProvisioning
       updatedAccount.setActive(existingAccount.isActive());
     }
 
-    updatedAccount.touch();
+    updatedAccount.touch(clock.instant());
 
     accountRepository.save(updatedAccount);
 
@@ -530,7 +533,7 @@ public class ScimUserProvisioning
 
     if (oneUpdaterChangedAccount) {
 
-      account.touch();
+      account.touch(clock.instant());
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
         handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
@@ -604,7 +607,7 @@ public class ScimUserProvisioning
         updaters.stream().filter(AccountUpdater::update).toList();
 
     if (!updatesToPublish.isEmpty()) {
-      account.touch();
+      account.touch(clock.instant());
       accountRepository.save(account);
       updatesToPublish.forEach(u -> u.publishUpdateEvent(this, eventPublisher));
     }

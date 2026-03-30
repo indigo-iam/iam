@@ -283,7 +283,7 @@ public class IamConfig {
 
   @Bean
   Clock defaultClock() {
-    return Clock.systemDefaultZone();
+    return Clock.systemUTC();
   }
 
   @Bean

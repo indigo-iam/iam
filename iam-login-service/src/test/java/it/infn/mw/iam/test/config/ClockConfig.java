@@ -13,27 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.service.client;
+package it.infn.mw.iam.test.config;
 
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
-import com.mercateo.test.clock.TestClock;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @TestConfiguration
-public class ClientTestConfig {
-
-  public static Instant NOW = Instant.parse("2020-01-01T00:00:00.00Z");
+public class ClockConfig {
 
   @Bean
   @Primary
-  Clock mockClock() {
-    return TestClock.fixed(NOW, ZoneId.systemDefault());
+  Clock testClock() {
+    return new MutableClock(Clock.systemUTC());
   }
-
 }

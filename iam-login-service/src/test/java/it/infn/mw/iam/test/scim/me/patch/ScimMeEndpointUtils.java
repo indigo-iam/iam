@@ -25,8 +25,9 @@ import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-public class ScimMeEndpointUtils {
+public class ScimMeEndpointUtils extends TokenGetterUtils {
 
   protected final ScimName TESTUSER_NEWNAME =
       ScimName.builder().givenName("AAA").familyName("BBB").build();

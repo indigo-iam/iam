@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,29 +29,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SuppressWarnings("deprecation")
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 public class TokenLifetimeConfigurableTests {
 
   public static final String TEST_USERNAME = "test";
@@ -70,7 +72,7 @@ public class TokenLifetimeConfigurableTests {
 
   private static final long TOLERANCE = 5;
   private static final long DEFAULT_ACCESS_TOKEN_LIFETIME = 3600L;
-  private static final long DEFAULT_REFRESH_TOKEN_LIFETIME = 2592000L;
+  private static final long DEFAULT_REFRESH_TOKEN_LIFETIME = 86400L;
 
   @Autowired
   private ObjectMapper mapper;
@@ -79,18 +81,10 @@ public class TokenLifetimeConfigurableTests {
   private ClientManagementService managementService;
 
   @Autowired
-  private ClientService clientService;
-
-  @Autowired
   private MockMvc mvc;
 
-  @BeforeEach
-  void setup() {
-    ClientDetailsEntity client = clientService.findClientByClientId(PASSWORD_GRANT_CLIENT_ID)
-      .orElseThrow(clientNotFound(PASSWORD_GRANT_CLIENT_SECRET));
-    assertNull(client.getRefreshTokenValiditySeconds());
-    client.setRefreshTokenValiditySeconds(2592000);
-  }
+  @Autowired
+  MutableClock clock;
 
   @Test
   void testTokenLifetimeRequestPasswordFlow() throws Exception {
@@ -249,7 +243,7 @@ public class TokenLifetimeConfigurableTests {
     String refreshwithConfiguredAccessToken = configuredAccessToken.getRefreshToken().toString();
     JWTClaimsSet rtClaims = JWTParser.parse(refreshwithConfiguredAccessToken).getJWTClaimsSet();
     assertNotNull(rtClaims.getExpirationTime());
-    Date currentTime = new Date();
+    Date currentTime = clock.now();
     diffInSeconds = (rtClaims.getExpirationTime().getTime() - currentTime.getTime()) / 1000;
     assertThat(diffInSeconds,
         allOf(greaterThanOrEqualTo(DEFAULT_REFRESH_TOKEN_LIFETIME - TOLERANCE),
@@ -310,7 +304,7 @@ public class TokenLifetimeConfigurableTests {
     String ordinaryRefresh = ordinaryToken.getRefreshToken().toString();
     JWTClaimsSet rtClaims = JWTParser.parse(ordinaryRefresh).getJWTClaimsSet();
     assertNotNull(rtClaims.getExpirationTime());
-    Date currentTime = new Date();
+    Date currentTime = clock.now();
     diffInSeconds = (rtClaims.getExpirationTime().getTime() - currentTime.getTime()) / 1000;
     assertThat(diffInSeconds,
         allOf(greaterThanOrEqualTo(DEFAULT_REFRESH_TOKEN_LIFETIME - TOLERANCE),

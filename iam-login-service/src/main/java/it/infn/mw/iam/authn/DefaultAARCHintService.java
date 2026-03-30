@@ -18,8 +18,6 @@ package it.infn.mw.iam.authn;
 import java.util.List;
 import java.util.Objects;
 
-import it.infn.mw.iam.config.oidc.OidcProvider;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -30,6 +28,7 @@ import com.google.common.base.Strings;
 import it.infn.mw.iam.authn.error.InvalidAARCHintError;
 import it.infn.mw.iam.authn.saml.DefaultMetadataLookupService;
 import it.infn.mw.iam.authn.saml.model.IdpDescription;
+import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 
 @Service
@@ -41,8 +40,6 @@ public class DefaultAARCHintService implements AARCHintService {
 
   private DefaultMetadataLookupService samlProviders;
 
-
-  @Autowired
   public DefaultAARCHintService(@Value("${iam.baseUrl}") String url,
       OidcValidatedProviders oidcProvicers) {
     this.baseUrl = url;

@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.time;
+package it.infn.mw.iam.core;
 
-import org.springframework.stereotype.Component;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * 
- * A {@link TimeProvider} implementation that leverages {@link System#currentTimeMillis()} to return
- * the time.
- *
- */
-@Component
-public class SystemTimeProvider implements TimeProvider {
+import com.nimbusds.jose.Header;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.SignedJWT;
 
-  @Override
-  public long currentTimeMillis() {
+public record ParsedAccessToken(String issuer, String sub, String clientId, Date expiration,
+    Set<String> scopes, Set<String> audiences, Header header, Payload payload,
+    Base64URL signature, SignedJWT jwt, String refreshToken, Map<String, Object> external) {
 
-    return System.currentTimeMillis();
+  public boolean isClient() {
+    return clientId.equals(sub);
   }
-
 }

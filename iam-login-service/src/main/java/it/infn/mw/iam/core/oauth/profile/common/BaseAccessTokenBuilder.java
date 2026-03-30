@@ -21,6 +21,7 @@ import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACT;
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.EXTERNAL_AUTHN;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 
@@ -56,6 +57,8 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -146,10 +149,16 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       handleClientTokenExchange(builder, authentication);
     }
 
-    /* add ACR claim if present */
-    if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
-        && savedAuth.getAdditionalInfo().get(ACR) != null) {
-      builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
+    if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth) {
+      if (savedAuth.getAdditionalInfo().get(ACR) != null) {
+        builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
+      }
+      if (savedAuth.getSourceClass() != null && (savedAuth.getSourceClass()
+        .equals(SamlExternalAuthenticationToken.class.getName())
+          || savedAuth.getSourceClass().equals(OidcExternalAuthenticationToken.class.getName()))) {
+        builder.claim(EXTERNAL_AUTHN,
+            claimValueHelper.resolveClaim(EXTERNAL_AUTHN, authentication, account));
+      }
     }
 
     /* update token scopes filtering the requested ones */
@@ -223,7 +232,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
   protected boolean isIncludeScope() {
 
-    return getProperties().getAccessToken().isIncludeScope();
+    return getProperties().getAccessToken().isIncludeScope()
+        || !getProperties().getAccessToken().isStoreOnDatabase();
   }
 
   protected boolean isIncludeNbf() {
