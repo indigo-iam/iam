@@ -178,10 +178,10 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (21, 'email'),
   (21, 'address'),
   (21, 'phone'),
+  (22, 'openid'),
   (22, 'profile'),
-  (22, 'email'),
-  (23, 'openid'),
-  (23, 'profile');
+  (23, 'profile'),
+  (23, 'email');
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
