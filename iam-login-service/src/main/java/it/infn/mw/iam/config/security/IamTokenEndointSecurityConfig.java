@@ -33,13 +33,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.authn.PublicClientAwareCcFilter;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
@@ -67,6 +68,9 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   @Autowired
   private IamProperties iamProperties;
 
+  @Autowired
+  private ClientService clientService;
+
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
@@ -75,9 +79,8 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   }
 
   @Bean
-  public ClientCredentialsTokenEndpointFilter ccFilter() throws Exception {
-    ClientCredentialsTokenEndpointFilter filter =
-        new ClientCredentialsTokenEndpointFilter(TOKEN_ENDPOINT);
+  public PublicClientAwareCcFilter publicClientAwareCcFilter() throws Exception {
+    PublicClientAwareCcFilter filter = new PublicClientAwareCcFilter(TOKEN_ENDPOINT, clientService);
     filter.setAllowOnlyPost(true);
     filter.setAuthenticationManager(authenticationManager());
     return filter;
@@ -113,7 +116,7 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
             .antMatchers(TOKEN_ENDPOINT).authenticated()
             .and()
             .addFilterBefore(jwtBearerFilter(), AbstractPreAuthenticatedProcessingFilter.class)
-            .addFilterAfter(ccFilter(), BasicAuthenticationFilter.class)
+            .addFilterAfter(publicClientAwareCcFilter(), BasicAuthenticationFilter.class)
         .exceptionHandling()
             .authenticationEntryPoint(authenticationEntryPoint)
             .accessDeniedHandler(new OAuth2AccessDeniedHandler())

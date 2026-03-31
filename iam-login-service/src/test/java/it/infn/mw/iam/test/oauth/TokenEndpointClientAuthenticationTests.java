@@ -77,19 +77,15 @@ class TokenEndpointClientAuthenticationTests {
   @Test
   void testTokenEndpointFormClientWithNoAuthenticationFailed() throws Exception {
     // Replicate: When user is changing client auth method to No authentication from others, 
-    // the previous secret value persist in the database. So when the client is in use, it is still checking for the secret.
-    String clientId = "public-client-having-secret";
-    String clientSecret = "";
+    // the previous secret value persist in the database.
+    String clientId = "public-client-with-secret";
 
-    // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
         .param("grant_type", GRANT_TYPE)
-        .param("client_id", clientId)
-        .param("client_secret", clientSecret)
-        .param("scope", SCOPE))
-      .andDo(print())
-      .andExpect(status().isUnauthorized());
-    // @formatter:on
+        .param("client_id", clientId))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope", containsString("profile")))
+      .andExpect(jsonPath("$.scope", containsString("email")));
   }
 
   @Test

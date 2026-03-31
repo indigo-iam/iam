@@ -133,7 +133,7 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.itemsPerPage").value(10))
       .andExpect(jsonPath("$.startIndex").value(13))
       .andExpect(jsonPath("$.Resources", hasSize(10)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("public-client-having-secret"));
+      .andExpect(jsonPath("$.Resources[0].client_id").value("public-client-with-secret"));
   }
 
   @Test

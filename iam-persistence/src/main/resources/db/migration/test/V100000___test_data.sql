@@ -29,7 +29,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
   (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
   (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true),
-  (22, 'public-client-having-secret', 'secret', 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true);
+  (22, 'public-client-with-secret', 'secret', 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -176,7 +176,9 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (21, 'profile'),
   (21, 'email'),
   (21, 'address'),
-  (21, 'phone');
+  (21, 'phone'),
+  (22, 'profile'),
+  (22, 'email');
 
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
@@ -234,7 +236,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (20, 'authorization_code'),
   (20, 'password'),
   (20, 'refresh_token'),
-  (20, 'urn:ietf:params:oauth:grant-type:device_code');
+  (20, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (22, 'client_credentials');
 
 
 INSERT INTO client_contact (owner_id, contact) VALUES
