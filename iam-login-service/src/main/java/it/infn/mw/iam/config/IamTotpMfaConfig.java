@@ -41,6 +41,7 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
@@ -64,6 +65,9 @@ public class IamTotpMfaConfig {
 
   @Autowired
   private AccountUtils accountUtils;
+
+  @Autowired
+  private LoginLockoutService lockoutService;
 
   /**
    * Responsible for generating new TOTP secrets
@@ -138,7 +142,7 @@ public class IamTotpMfaConfig {
 
   @Bean
   MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
-    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, lockoutService);
   }
 
 }

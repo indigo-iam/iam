@@ -17,9 +17,9 @@
 
 angular.module('dashboardApp').factory('UserService', UserService);
 
-UserService.$inject = ['$q', '$rootScope', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService', 'AuthenticatorAppService'];
+UserService.$inject = ['$q', '$rootScope', '$http', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService', 'AuthenticatorAppService'];
 
-function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService, AuthenticatorAppService) {
+function UserService($q, $rootScope, $http, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService, AuthenticatorAppService) {
     var service = {
         getUser: getUser,
         getMe: getMe,
@@ -54,6 +54,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 if (result[2] !== null) {
                     user.isMfaActive = result[2];
                 }
+                user.lockoutInfo = { suspended: false };
                 return user;
             }).catch(function (error) {
                 console.error('Error loading authenticated user information: ', error);
@@ -64,7 +65,8 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
     function getUser(userId) {
         return $q
             .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId),
-            AuthenticatorAppService.getMfaSettingsForAccount(userId)
+            AuthenticatorAppService.getMfaSettingsForAccount(userId),
+            $http.get('/iam/account/' + userId + '/lockout').catch(function () { return { data: { suspended: false } }; })
             ])
             .then(function (result) {
                 var user = result[0].data;
@@ -82,6 +84,9 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 if (result[3] !== null) {
                     user.isMfaActive = result[3];
                 }
+
+                user.lockoutInfo = result[4].data;
+
                 return user;
             })
             .catch(function (error) {

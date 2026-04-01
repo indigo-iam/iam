@@ -17,8 +17,10 @@
 package it.infn.mw.iam.test.core;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,6 +48,7 @@ import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 
 @ExtendWith(MockitoExtension.class)
 class IamLocalAuthenticationProviderTests {
@@ -63,6 +67,8 @@ class IamLocalAuthenticationProviderTests {
   IamAccountRepository accountRepo;
   @Mock
   LocalAuthenticationProperties localAuthn;
+  @Mock
+  LoginLockoutService lockoutService;
 
   Clock clock;
   IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
@@ -72,7 +78,7 @@ class IamLocalAuthenticationProviderTests {
 
     when(properties.getLocalAuthn()).thenReturn(localAuthn);
     iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds,
-        passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
+        passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties, lockoutService));
     clock = Clock.systemUTC();
   }
 
@@ -97,9 +103,31 @@ class IamLocalAuthenticationProviderTests {
     ExtendedAuthenticationToken newToken =
         (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
 
-    assertFalse(newToken.isAuthenticated());
-    // Verify that super.authenticate was not called
-    verify(iamLocalAuthenticationProvider, never())
-      .authenticate(any(UsernamePasswordAuthenticationToken.class));
-  }
+        assertFalse(newToken.isAuthenticated());
+        // Verify that super.authenticate was not called
+        verify(iamLocalAuthenticationProvider, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+  @Test
+  void lockedExceptionBlocksAuthentication() {
+        // Not pre-authenticated; enters the if(!isPreAuthenticated) block where checkIamAccountLockout lives
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("locked", "cred");
+        doThrow(new LockedException("Suspended")).when(lockoutService).checkIamAccountLockout("locked");
+
+        assertThrows(LockedException.class, () -> iamLocalAuthenticationProvider.authenticate(token));
+        verify(accountRepo, never()).findByUsername(anyString());
+    }
+
+  @Test
+  void resetCalledOnNonMfaSuccess() {
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("user", "cred");
+        token.setPreAuthenticated(true);
+        IamAccount account = newAccount("user");
+        when(accountRepo.findByUsername("user")).thenReturn(Optional.of(account));
+        when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+
+        iamLocalAuthenticationProvider.authenticate(token);
+
+        verify(lockoutService).resetFailedAttempts("user");
+    }
 }

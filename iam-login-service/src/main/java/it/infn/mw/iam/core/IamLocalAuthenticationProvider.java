@@ -36,6 +36,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
@@ -52,6 +53,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final LoginLockoutService lockoutService;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
@@ -59,13 +61,15 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties,
+      LoginLockoutService lockoutService) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.lockoutService = lockoutService;
   }
 
   /**
@@ -84,14 +88,25 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
 
+    String username = String.valueOf(authentication.getPrincipal());
+
     // If not preauthenticated then the first step is to validate the default login credentials.
     // Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
     if (!isPreAuthenticated) {
-      UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
-          authentication.getPrincipal(), authentication.getCredentials());
-      authentication = super.authenticate(userpassToken);
+
+      lockoutService.checkIamAccountLockout(username);
+
+      try {
+        UsernamePasswordAuthenticationToken userpassToken =
+            new UsernamePasswordAuthenticationToken(
+                authentication.getPrincipal(), authentication.getCredentials());
+        authentication = super.authenticate(userpassToken);
+      } catch (BadCredentialsException e) {
+        lockoutService.recordFailedAttempt(username);
+        throw e;
+      }
     }
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
@@ -120,6 +135,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       }
 
       // Construct a new authentication object for the PRE_AUTHENTICATED user.
+      // Don't reset lockout yet -> TOTP verification still pending.
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), currentAuthorities);
       token.setAuthenticated(false);
@@ -128,7 +144,10 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
       // MFA is not enabled on this account, construct a new authentication object for the FULLY
-      // AUTHENTICATED user, granting their normal authorities
+      // AUTHENTICATED user, granting their normal authorities.
+      // Full auth clear any lockout state.
+      lockoutService.resetFailedAttempts(authentication.getName());
+
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), authentication.getAuthorities());
       token.setAuthenticationMethodReferences(refs);
