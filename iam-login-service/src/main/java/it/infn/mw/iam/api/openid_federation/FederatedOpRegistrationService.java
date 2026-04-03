@@ -229,9 +229,10 @@ public class FederatedOpRegistrationService {
     }
 
     List<String> grantTypesClaim = getStringList(rpMetadata, "grant_types");
-    Set<AuthorizationGrantType> grantTypes = Optional.ofNullable(grantTypesClaim)
-      .orElse(List.of(GrantType.AUTHORIZATION_CODE.getValue()))
-      .stream()
+    if (grantTypesClaim.isEmpty()) {
+      grantTypesClaim = List.of(GrantType.AUTHORIZATION_CODE.getValue());
+    }
+    Set<AuthorizationGrantType> grantTypes = grantTypesClaim.stream()
       .map(AuthorizationGrantType::fromGrantType)
       .collect(Collectors.toSet());
     dtoClient.setGrantTypes(grantTypes);
@@ -239,7 +240,9 @@ public class FederatedOpRegistrationService {
     Set<String> supportedResponseTypes =
         Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
     List<String> responseTypesClaim = getStringList(rpMetadata, "response_types");
-    if (responseTypesClaim != null) {
+    if (responseTypesClaim.isEmpty()) {
+      dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
+    } else {
       Set<OAuthResponseType> responseTypes = responseTypesClaim.stream()
         .filter(supportedResponseTypes::contains)
         .map(OAuthResponseType::fromResponseType)
@@ -248,8 +251,6 @@ public class FederatedOpRegistrationService {
         throw invalidClientMetadata("Unsupported response type");
       }
       dtoClient.setResponseTypes(responseTypes);
-    } else {
-      dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
     }
 
     String scope = rpMetadata.getAsString("scope");
@@ -295,7 +296,7 @@ public class FederatedOpRegistrationService {
     if (value instanceof Collection<?>) {
       return ((Collection<?>) value).stream().map(Object::toString).toList();
     }
-    return null;
+    return List.of();
   }
 
   private void validateJwt(EntityStatement es, String issuer) throws FederationException {
@@ -335,7 +336,7 @@ public class FederatedOpRegistrationService {
       throws FederationException {
     String taId = es.getClaimsSet().getStringClaim("trust_anchor");
     if (!trustAnchorRepository.isTrusted(taId)) {
-      throw invalidTrustChain("No trusted Trust Anchor found: " + taId);
+      throw invalidClientMetadata("No trusted Trust Anchor found: " + taId);
     }
 
     boolean match = authorityHints.stream().anyMatch(hint -> hint.equals(taId));

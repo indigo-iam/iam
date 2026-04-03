@@ -282,7 +282,6 @@ class FederatedOpRegistrationServiceTests {
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build();
     SignedJWT signedJWT = new SignedJWT(header, claims.build());
     signedJWT.sign(signer);
-    String rpJwt = signedJWT.serialize();
-    return rpJwt;
+    return signedJWT.serialize();
   }
 }
