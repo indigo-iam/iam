@@ -31,6 +31,7 @@ import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 
 import java.text.ParseException;
@@ -64,15 +65,19 @@ class DashboardConfigServiceTest {
   DefaultClientManagementService clientService;
 
   @Mock
+  ApplicationEventPublisher eventPublisher;
+
+  @Mock
   IamProperties iamProperties;
 
   private DashboardConfigService getService() {
-    return new DashboardConfigService(clientRepository, clientService, iamProperties);
+    return new DashboardConfigService(clientRepository, clientService, eventPublisher, iamProperties);
   }
 
   @Test
   void testCheckRecordConfiguration() {
-    ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES);
+    ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES,
+        true);
 
     assertEquals(true, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
   }
@@ -81,23 +86,27 @@ class DashboardConfigServiceTest {
   void testFailCheckRecordWithWrongConfigurations() {
     Set<String> scopesWithoutRequired = Sets.newHashSet("FAKE_SCOPE");
     ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE,
-        scopesWithoutRequired);
+        scopesWithoutRequired, true);
     assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
 
     scopesWithoutRequired = Sets.newHashSet("openid");
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, scopesWithoutRequired);
+    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, scopesWithoutRequired, true);
     assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
 
-    client = createClientDashboard(CLIENT_ID, "test_secret", BASE_URL, AUTH_GRAND_TYPE, SCOPES);
+    client = createClientDashboard(CLIENT_ID, "test_secret", BASE_URL, AUTH_GRAND_TYPE, SCOPES, true);
     assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
 
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, "https://fake.url", AUTH_GRAND_TYPE, SCOPES);
+    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, "https://fake.url", AUTH_GRAND_TYPE, SCOPES, true);
     assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
 
     client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL,
         Set.of(AuthorizationGrantType.CODE.getGrantType()),
-        SCOPES);
+        SCOPES, true);
     assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
+
+    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES, false);
+    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
+
   }
 
   @Test
@@ -134,7 +143,7 @@ class DashboardConfigServiceTest {
   }
 
   private ClientDetailsEntity createClientDashboard(String clientId, String clientSecret,
-      String redirectUris, Set<String> grantTypes, Set<String> scopes) {
+      String redirectUris, Set<String> grantTypes, Set<String> scopes, boolean isActive) {
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(clientId);
     client.setClientSecret(clientSecret);
@@ -143,11 +152,12 @@ class DashboardConfigServiceTest {
     client.setRedirectUris(Set.of(redirectUris));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    client.setActive(isActive);
     return client;
   }
 
   private ClientDetailsEntity setClientDashboard() {
-    return createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES);
+    return createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES, true);
   }
 
   private void mockDashboardProperties(boolean isENabled, String clientId, String secret) {

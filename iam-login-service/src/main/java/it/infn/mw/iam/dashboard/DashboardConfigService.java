@@ -26,6 +26,7 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
@@ -35,6 +36,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 
 @Service
 public class DashboardConfigService {
@@ -48,14 +50,17 @@ public class DashboardConfigService {
 
   private final IamClientRepository clientRepository;
   private final DefaultClientManagementService clientService;
+  private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
   public DashboardConfigService(
       IamClientRepository clientRepository,
       DefaultClientManagementService clientService,
+      ApplicationEventPublisher aep,
       IamProperties iamProperties) {
     this.clientService = clientService;
     this.clientRepository = clientRepository;
+    this.eventPublisher = aep;
     this.iamProperties = iamProperties;
   }
 
@@ -97,7 +102,8 @@ public class DashboardConfigService {
         && hasValidRedirectUris(client, url)
         && supportsAuthorizationCodeGrant(client)
         && usesClientSecretBasicAuth(client)
-        && usesPKCES256(client);
+        && usesPKCES256(client)
+        && client.isActive();
   }
 
   private void createRecordDashboard(String clientId, String secret, String url) throws ParseException {
@@ -124,32 +130,34 @@ public class DashboardConfigService {
     client.setClientSecret(secret);
     client.setRedirectUris(Set.of(url));
     client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    client.setActive(true);
 
     clientRepository.save(client);
+    eventPublisher.publishEvent(new ClientUpdatedEvent(this, client));
   }
 
   private boolean hasAllRequiredScopes(ClientDetailsEntity client) {
-    return client.getScope().containsAll(DASHBOARD_SCOPES);
+    return client.getScope() != null && client.getScope().containsAll(DASHBOARD_SCOPES);
   }
 
   private boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
-    return client.getClientSecret().equals(clientSecret);
+    return clientSecret.equals(client.getClientSecret());
   }
 
   private boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
-    return client.getRedirectUris().equals(Set.of(url));
+    return Set.of(url).equals(client.getRedirectUris());
   }
 
   private boolean supportsAuthorizationCodeGrant(ClientDetailsEntity client) {
-    return client.getGrantTypes().equals(
-        Set.of(AuthorizationGrantType.CODE.getGrantType(), AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
+    return Set.of(AuthorizationGrantType.CODE.getGrantType(), AuthorizationGrantType.REFRESH_TOKEN.getGrantType())
+        .equals(client.getGrantTypes());
   }
 
   private boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
-    return client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_BASIC);
+    return AuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod());
   }
 
   private boolean usesPKCES256(ClientDetailsEntity client) {
-    return client.getCodeChallengeMethod().getName().equals(PKCEAlgorithm.S256.toString());
+    return PKCEAlgorithm.S256.toString().equals(client.getCodeChallengeMethod().getName());
   }
 }
