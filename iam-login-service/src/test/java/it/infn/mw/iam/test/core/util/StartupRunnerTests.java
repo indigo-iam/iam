@@ -15,11 +15,15 @@
  */
 package it.infn.mw.iam.test.core.util;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.text.ParseException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,24 +48,24 @@ class StartupRunnerTests {
   }
 
   @Test
-  void testRunnerInitializesDashboard() {
+  void testRunnerInitializesDashboard() throws ParseException {
     when(service.isEnabled()).thenReturn(true);
-    when(service.init()).thenReturn(true);
     runner.run(mock(ApplicationArguments.class));
-    verify(service, times(1)).init();
+    assertDoesNotThrow(() -> runner.run(mock(ApplicationArguments.class)));
+    verify(service, times(2)).init();
   }
 
   @Test
-  void testRunnerDoesNotInitializeDashboard() {
+  void testRunnerDoesNotInitializeDashboard() throws ParseException {
     when(service.isEnabled()).thenReturn(false);
     runner.run(mock(ApplicationArguments.class));
     verify(service, times(0)).init();
   }
 
   @Test
-  void testRunnerThrowsExceptionOnInitializationFailure() {
+  void testRunnerThrowsExceptionOnInitializationFailure() throws ParseException {
     when(service.isEnabled()).thenReturn(true);
-    when(service.init()).thenThrow(new IllegalStateException());
+    doThrow(new ParseException("Test exception", 0)).when(service).init();
     assertThrows(IllegalStateException.class, () -> runner.run(mock(ApplicationArguments.class)));
     verify(service, times(1)).init();
   }
