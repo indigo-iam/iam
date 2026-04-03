@@ -32,10 +32,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +67,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.IamLoginService;
@@ -101,6 +113,9 @@ class FederatedOpRegistrationServiceTests {
   @Autowired
   RestTemplateFactory rtf;
 
+  @Autowired
+  Clock clock;
+
   @MockBean
   ServerConfigurationService serverConfigurationService;
 
@@ -137,8 +152,9 @@ class FederatedOpRegistrationServiceTests {
         URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
 
-    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
-    String rpJwt = rpEC.getSignedStatement().serialize();
+    Date exp = fakeChain.resolveExpirationTime();
+
+    String rpJwt = opJwtResponse(exp);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -148,9 +164,9 @@ class FederatedOpRegistrationServiceTests {
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(rpEC.getEntityID().getValue());
+    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(client.isPresent());
-    assertEquals("OIDFed OP client", client.get().getClientName());
+    assertEquals("OIDFed remote client", client.get().getClientName());
   }
 
   @Test
@@ -210,8 +226,8 @@ class FederatedOpRegistrationServiceTests {
         URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
 
-    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
-    String rpJwt = rpEC.getSignedStatement().serialize();
+    Date exp = fakeChain.resolveExpirationTime();
+    String rpJwt = opJwtResponse(exp);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -230,8 +246,43 @@ class FederatedOpRegistrationServiceTests {
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<ClientDetailsEntity> newOp = clientRepo.findByEntityId(rpEC.getEntityID().getValue());
+    Optional<ClientDetailsEntity> newOp = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(newOp.isPresent());
     assertNotEquals(expiredOp.get().getClientId(), newOp.get().getClientId());
+  }
+
+  private String opJwtResponse(Date exp) throws JOSEException {
+    String issuer = "https://op.example.com";
+    Date iat = Date.from(clock.instant());
+    String subject = "http://localhost:8080";
+    String audience = "http://localhost:8080";
+    String clientId = "registered-client";
+    String clientSecret = "secret";
+    String redirectUri = subject + "/openid_connect_login";
+    String scopes = "openid profile";
+
+    Map<String, Object> clientMetadata = new HashMap<>();
+    clientMetadata.put("client_id", clientId);
+    clientMetadata.put("client_secret", clientSecret);
+    clientMetadata.put("redirect_uris", Set.of(redirectUri));
+    clientMetadata.put("scope", scopes);
+
+    JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(issuer)
+      .subject(subject)
+      .issueTime(iat)
+      .expirationTime(exp)
+      .audience(audience);
+
+    claims.claim("trust_anchor", "https://trust-anchor.sandbox.eosc.grnet.gr");
+    claims.claim("authority_hints", List.of("https://trust-anchor.sandbox.eosc.grnet.gr"));
+    claims.claim("metadata", Map.of("openid_relying_party", clientMetadata));
+
+    RSAKey rsaKey = TrustChainTestFactory.keyFor(issuer);
+    JWSSigner signer = new RSASSASigner(rsaKey);
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build();
+    SignedJWT signedJWT = new SignedJWT(header, claims.build());
+    signedJWT.sign(signer);
+    String rpJwt = signedJWT.serialize();
+    return rpJwt;
   }
 }

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,10 +56,12 @@ public class ExplicitRegistrationEntityStatementBuilder {
   private final String issuer;
   private final long expirationSec;
   private final Map<String, Object> metadata;
+  private final Clock clock;
 
   public ExplicitRegistrationEntityStatementBuilder(JWKSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider, OpenidFederationProperties fedProperties,
-      IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint) {
+      IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint, Clock clock) {
+    this.clock = clock;
     signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
@@ -95,7 +98,7 @@ public class ExplicitRegistrationEntityStatementBuilder {
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(issuer)
       .audience(opEntityId)
-      .issueTime(new Date())
+      .issueTime(Date.from(clock.instant()))
       .expirationTime(Date.from(Instant.now().plusSeconds(expirationSec)))
       .claim("jwks", jwks)
       .claim("authority_hints", authorityHints)

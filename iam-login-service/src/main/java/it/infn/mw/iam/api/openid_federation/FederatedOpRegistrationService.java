@@ -16,12 +16,17 @@
 package it.infn.mw.iam.api.openid_federation;
 
 import static it.infn.mw.iam.core.oidc.FederationException.invalidClientMetadata;
+import static it.infn.mw.iam.core.oidc.FederationException.invalidRedirectUri;
 import static it.infn.mw.iam.core.oidc.FederationException.invalidRequest;
 import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 
 import java.net.URI;
 import java.text.ParseException;
+import java.time.Clock;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,14 +45,26 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.crypto.Ed25519Verifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.id.Audience;
+import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
-import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 
-import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
+import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
@@ -57,7 +74,9 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.oidc.ExplicitRegistrationEntityStatementBuilder;
 import it.infn.mw.iam.core.oidc.FederationException;
+import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
 import it.infn.mw.iam.core.oidc.TrustChainService;
+import net.minidev.json.JSONObject;
 
 @Service
 @Profile("openid-federation")
@@ -67,25 +86,30 @@ public class FederatedOpRegistrationService {
 
   private final TrustChainService tcService;
   private final ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder;
-  private final ClientRegistrationService clientRegistrationService;
+  private final ClientManagementService clientManagementService;
   private final ClientService clientService;
   private final OpenidFederationProperties oidFedProperties;
+  private final TrustAnchorRepository trustAnchorRepository;
   private final RestTemplate restTemplate;
+  private final Clock clock;
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      ClientRegistrationService clientRegistrationService, ClientService clientService,
-      OpenidFederationProperties oidFedProperties, RestTemplateFactory restTemplateFactory) {
+      ClientManagementService clientManagementService, ClientService clientService,
+      OpenidFederationProperties oidFedProperties, TrustAnchorRepository trustAnchorRepository,
+      RestTemplateFactory restTemplateFactory, Clock clock) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
-    this.clientRegistrationService = clientRegistrationService;
+    this.clientManagementService = clientManagementService;
     this.clientService = clientService;
     this.oidFedProperties = oidFedProperties;
+    this.trustAnchorRepository = trustAnchorRepository;
     this.restTemplate = restTemplateFactory.newRestTemplate();
+    this.clock = clock;
   }
 
   public RegisteredClientDTO registerOp(String issuer, Optional<ClientDetailsEntity> existingClient)
@@ -108,16 +132,25 @@ public class FederatedOpRegistrationService {
 
     // 5. POST explicit registration request
     String responseJwt = postRegistration(regEndpoint, registrationJwt);
-    SignedJWT signedResponse = SignedJWT.parse(responseJwt);
 
-    // 6. Persist client
-    RegisteredClientDTO dtoClient = createClientDtoFromOpMetadata(opEc);
-    dtoClient.setExpiration(trustChain.resolveExpirationTime());
-    dtoClient.setRequestObjectSigningAlgorithm(signedResponse.getHeader().getAlgorithm());
+    EntityStatement es = null;
+    try {
+      es = EntityStatement.parse(responseJwt);
+    } catch (com.nimbusds.oauth2.sdk.ParseException e) {
+      throw invalidTrustChain("Failed to parse JWT: " + e.getMessage(), e);
+    }
+
+    // 6. Validate OP response
+    validateJwt(es, issuer);
+    validateTrustAnchorAndAuthorityHints(authorityHints, es);
+    validateSignature(responseJwt, trustChain);
+
+    // 7. Persist client
+    RegisteredClientDTO dtoClient =
+        createClientDtoFromOpResponse(es.getSignedStatement().getJWTClaimsSet());
     dtoClient.setClientType(ClientType.EXTERNAL);
 
-    RegisteredClientDTO registeredClient =
-        clientRegistrationService.registerClient(dtoClient, null);
+    RegisteredClientDTO registeredClient = clientManagementService.saveNewClient(dtoClient);
 
     if (existingClient.isPresent()) {
       clientService.deleteClient(existingClient.get());
@@ -167,27 +200,47 @@ public class FederatedOpRegistrationService {
     }
   }
 
-  private RegisteredClientDTO createClientDtoFromOpMetadata(EntityStatement opEc)
-      throws FederationException {
+  private RegisteredClientDTO createClientDtoFromOpResponse(JWTClaimsSet jwtClaimSet)
+      throws FederationException, ParseException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
-    OIDCProviderMetadata metadata = opEc.getClaimsSet().getOPMetadata();
 
-    dtoClient.setClientName("OIDFed OP client");
-    Set<AuthorizationGrantType> grantTypes = Optional.ofNullable(metadata.getGrantTypes())
-      .orElse(List.of(GrantType.AUTHORIZATION_CODE))
+    JSONObject rpMetadata = extractRpMetadata(jwtClaimSet);
+
+    String clientName = rpMetadata.getAsString("client_name");
+    if (clientName != null) {
+      dtoClient.setClientName(clientName);
+    } else {
+      dtoClient.setClientName("OIDFed remote client");
+    }
+
+    String clientId = rpMetadata.getAsString("client_id");
+    dtoClient.setClientId(clientId);
+
+    String clientSecret = rpMetadata.getAsString("client_secret");
+    if (clientSecret != null) {
+      dtoClient.setClientSecret(clientSecret);
+    }
+
+    String authMethod = rpMetadata.getAsString("token_endpoint_auth_method");
+    if (authMethod != null) {
+      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.valueOf(authMethod));
+    } else {
+      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    }
+
+    List<String> grantTypesClaim = getStringList(rpMetadata, "grant_types");
+    Set<AuthorizationGrantType> grantTypes = Optional.ofNullable(grantTypesClaim)
+      .orElse(List.of(GrantType.AUTHORIZATION_CODE.getValue()))
       .stream()
-      .map(GrantType::getValue)
       .map(AuthorizationGrantType::fromGrantType)
       .collect(Collectors.toSet());
-
     dtoClient.setGrantTypes(grantTypes);
-    dtoClient.setRedirectUris(Set.of(iamBaseUrl + "/openid_connect_login"));
+
     Set<String> supportedResponseTypes =
         Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
-    if (metadata.getResponseTypes() != null) {
-      Set<OAuthResponseType> responseTypes = metadata.getResponseTypes()
-        .stream()
-        .map(ResponseType::toString)
+    List<String> responseTypesClaim = getStringList(rpMetadata, "response_types");
+    if (responseTypesClaim != null) {
+      Set<OAuthResponseType> responseTypes = responseTypesClaim.stream()
         .filter(supportedResponseTypes::contains)
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet());
@@ -198,17 +251,127 @@ public class FederatedOpRegistrationService {
     } else {
       dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
     }
-    dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
-    if (metadata.getScopes() != null) {
-      dtoClient.setScope(metadata.getScopes().toStringList().stream().collect(Collectors.toSet()));
+
+    String scope = rpMetadata.getAsString("scope");
+    if (scope != null) {
+      dtoClient.setScope(Set.of(scope.split(" ")));
     } else {
       dtoClient.setScope(Set.of("openid"));
     }
-    dtoClient.setEntityId(opEc.getEntityID().getValue());
-    Optional.ofNullable(metadata.getJWKSetURI())
-      .ifPresent(uri -> dtoClient.setJwksUri(uri.toASCIIString()));
+
+    String jwksUri = rpMetadata.getAsString("jwks_uri");
+    if (jwksUri != null) {
+      dtoClient.setJwksUri(jwksUri);
+    }
+
+    List<String> redirectUris = getStringList(rpMetadata, "redirect_uris");
+    if (redirectUris == null || redirectUris.isEmpty()) {
+      throw invalidRedirectUri("Missing redirect URIs");
+    }
+    dtoClient.setRedirectUris(Set.copyOf(getStringList(rpMetadata, "redirect_uris")));
+
+    dtoClient.setEntityId(jwtClaimSet.getIssuer());
+
+    dtoClient.setExpiration(jwtClaimSet.getExpirationTime());
 
     LOG.debug("Client metadata mapped successfully for OP: {}", dtoClient.getEntityId());
     return dtoClient;
+  }
+
+  private JSONObject extractRpMetadata(JWTClaimsSet claims)
+      throws FederationException, ParseException {
+    Map<String, Object> metadataMap = claims.getJSONObjectClaim("metadata");
+    JSONObject metadataJson = new JSONObject(metadataMap);
+
+    try {
+      return JSONObjectUtils.getJSONObject(metadataJson, "openid_relying_party");
+    } catch (com.nimbusds.oauth2.sdk.ParseException e) {
+      throw invalidClientMetadata("Invalid or missing openid_relying_party metadata. " + e);
+    }
+  }
+
+  private List<String> getStringList(JSONObject json, String key) {
+    Object value = json.get(key);
+    if (value instanceof Collection<?>) {
+      return ((Collection<?>) value).stream().map(Object::toString).toList();
+    }
+    return null;
+  }
+
+  private void validateJwt(EntityStatement es, String issuer) throws FederationException {
+    Date now = Date.from(clock.instant());
+    try {
+      es.getClaimsSet().validateRequiredClaimsPresence();
+    } catch (com.nimbusds.oauth2.sdk.ParseException e) {
+      throw invalidTrustChain("Missing or invalid required claims: " + e.getMessage(), e);
+    }
+
+    Date iat = es.getClaimsSet().getIssueTime();
+    Date exp = es.getClaimsSet().getExpirationTime();
+
+    if (iat.after(now)) {
+      throw invalidTrustChain("Entity Statement has iat in the future: " + iat);
+    }
+
+    if (exp.before(now)) {
+      throw invalidTrustChain("Entity Statement is expired: " + exp);
+    }
+
+    if (!es.getClaimsSet().getIssuer().getValue().equals(issuer)) {
+      throw invalidTrustChain("Invalid issuer");
+    }
+
+    if (!es.getClaimsSet().getSubject().getValue().equals(iamBaseUrl)) {
+      throw invalidTrustChain("Invalid subject");
+    }
+
+    List<Audience> audience = es.getClaimsSet().getAudience();
+    if (audience == null || audience.stream().noneMatch(aud -> iamBaseUrl.equals(aud.getValue()))) {
+      throw invalidTrustChain("Invalid audience");
+    }
+  }
+
+  private void validateTrustAnchorAndAuthorityHints(List<String> authorityHints, EntityStatement es)
+      throws FederationException {
+    String taId = es.getClaimsSet().getStringClaim("trust_anchor");
+    if (!trustAnchorRepository.isTrusted(taId)) {
+      throw invalidTrustChain("No trusted Trust Anchor found: " + taId);
+    }
+
+    boolean match = authorityHints.stream().anyMatch(hint -> hint.equals(taId));
+    if (!match) {
+      throw invalidClientMetadata("Authority hints do not lead to the trust anchor");
+    }
+  }
+
+  private void validateSignature(String jwt, TrustChain tc)
+      throws ParseException, FederationException, JOSEException {
+    SignedJWT signedJwt = SignedJWT.parse(jwt);
+    JWSHeader header = signedJwt.getHeader();
+    String kid = header.getKeyID();
+
+    EntityStatement immediateSuperior = tc.getSuperiorStatements().get(0);
+    JWKSet jwkSet = immediateSuperior.getClaimsSet().getJWKSet();
+    JWK jwk = jwkSet.getKeyByKeyId(kid);
+
+    if (jwk == null) {
+      throw invalidClientMetadata("Signing key not trusted by federation");
+    }
+
+    JWSVerifier verifier;
+
+    if (jwk instanceof RSAKey rsaKey) {
+      verifier = new RSASSAVerifier(rsaKey);
+    } else if (jwk instanceof ECKey ecKey) {
+      verifier = new ECDSAVerifier(ecKey);
+    } else if (jwk instanceof OctetKeyPair okpKey) {
+      verifier = new Ed25519Verifier(okpKey);
+    } else {
+      throw invalidClientMetadata("Unsupported key type: " + jwk.getKeyType());
+    }
+
+    if (!signedJwt.verify(verifier)) {
+      throw invalidClientMetadata("Invalid JWT signature");
+    }
   }
 }

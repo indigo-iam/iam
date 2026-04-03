@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -48,10 +47,10 @@ public class TrustChainTestFactory {
 
   private static final Map<String, RSAKey> KEYS = new HashMap<>();
 
-  private static RSAKey keyFor(String entity) {
+  public static RSAKey keyFor(String entity) {
     return KEYS.computeIfAbsent(entity, id -> {
       try {
-        return new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
+        return new RSAKeyGenerator(2048).keyID("test-kid").generate();
       } catch (JOSEException e) {
         throw new RuntimeException(e);
       }
@@ -178,7 +177,8 @@ public class TrustChainTestFactory {
   }
 
   /** Trust Chain: RP → Intermediate → TA */
-  public static TrustChain createRpToIntermediateToTaChain(String ta, Clock clock) throws JOSEException {
+  public static TrustChain createRpToIntermediateToTaChain(String ta, Clock clock)
+      throws JOSEException {
 
     final Date iat = Date.from(clock.instant());
     final Date exp = Date.from(clock.instant().plusMillis(600000));

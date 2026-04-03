@@ -16,7 +16,8 @@
 package it.infn.mw.iam.api.openid_federation;
 
 import java.text.ParseException;
-import java.util.Date;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -42,15 +43,18 @@ public class FederationClientConfigurationService implements ClientConfiguration
   @Autowired
   private FederatedOpRegistrationService federationRegistrationService;
 
+  @Autowired
+  private Clock clock;
+
   @Override
   public RegisteredClient getClientConfiguration(ServerConfiguration serverConfig) {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(serverConfig.getIssuer());
 
     if (client.isPresent()) {
-      Date expiration = client.get().getClientRelyingParty().getExpiration();
+      Instant expiration = client.get().getClientRelyingParty().getExpiration().toInstant();
 
-      if (expiration.after(new Date())) {
+      if (expiration.isAfter(clock.instant())) {
         return toRegisteredClient(client.get());
       }
     }
