@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.dashboard;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -110,12 +111,12 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void testInit() {
+  void testInit() throws ParseException {
     ClientDetailsEntity dashboard = setClientDashboard();
     when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(dashboard));
 
     mockDashboardProperties(true, CLIENT_ID, CLIENT_SECRET);
-    assertEquals(true, getService().init());
+    assertDoesNotThrow(() -> getService().init());
   }
 
   @Test
@@ -124,7 +125,7 @@ class DashboardConfigServiceTest {
     mockDashboardProperties(true, newClientId, CLIENT_SECRET);
 
     assertThat(clientRepository.findByClientId(newClientId).isPresent(), is(false));
-    assertEquals(true, getService().init());
+    assertDoesNotThrow(() -> getService().init());
     verify(clientService, times(1)).saveNewClient(any());
     verify(clientRepository, times(0)).save(any());
   }
@@ -137,7 +138,7 @@ class DashboardConfigServiceTest {
     when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(dashboard));
 
     assertThat(clientRepository.findByClientId(newClientId).isPresent(), is(false));
-    assertEquals(true, getService().init());
+    assertDoesNotThrow(() -> getService().init());
     verify(clientService, times(0)).saveNewClient(any());
     verify(clientRepository, times(1)).save(any());
   }

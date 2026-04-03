@@ -16,6 +16,8 @@
 
 package it.infn.mw.iam.core.util;
 
+import java.text.ParseException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -42,10 +44,11 @@ public class StartupRunner implements ApplicationRunner {
       return;
     }
 
-    boolean isValid = dashboardConfigService.init();
-    if (!isValid) {
-      throw new IllegalStateException(
-          "Dashboard client record does not exist or is not valid. Please check the dashboard client properties and ensure that a record with the specified client id, client secret and redirect uri exists in the database");
+    try {
+      dashboardConfigService.init();
+    } catch (ParseException e) {
+      LOG.error("Error initializing dashboard client configuration", e);
+      throw new IllegalStateException("Error during dashboard client initialization. Startup failed. Please check the logged error.", e);
     }
   }
 }

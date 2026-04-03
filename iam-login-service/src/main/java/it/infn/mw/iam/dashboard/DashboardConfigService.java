@@ -68,7 +68,11 @@ public class DashboardConfigService {
     return iamProperties.getDashboard().isEnabled();
   }
 
-  public boolean init() {
+  public void init() throws ParseException {
+    if (!isEnabled()) {
+      return;
+    }
+
     DashboardProperties dashboardProperties = iamProperties.getDashboard();
     String iamUrl = iamProperties.getBaseUrl();
     String clientId = dashboardProperties.getClientId();
@@ -78,13 +82,8 @@ public class DashboardConfigService {
 
     if (!dashboardRecord.isPresent()) {
       LOG.info("Dashboard client does not exist and it will be created.");
-      try {
-        createRecordDashboard(clientId, clientSecret, url);
-        return true;
-      } catch (Exception e) {
-        LOG.error("Error saving dashboard client: {}", e.getMessage());
-        return false;
-      }
+      createRecordDashboard(clientId, clientSecret, url);
+      return;
     }
 
     ClientDetailsEntity client = dashboardRecord.get();
@@ -93,7 +92,6 @@ public class DashboardConfigService {
       LOG.warn("Changes on default dashboard client configuration found: restoring expected configuration.");
       updateRecordDashboard(client, clientSecret, url);
     }
-    return true;
   }
 
   public boolean checkRecordConfiguration(ClientDetailsEntity client, String clientSecret, String url) {
