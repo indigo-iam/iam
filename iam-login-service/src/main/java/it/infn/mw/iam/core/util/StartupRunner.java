@@ -38,8 +38,7 @@ public class StartupRunner implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) {
     if (!dashboardConfigService.isEnabled()) {
-      LOG.info(
-          "Dashboard client is disabled, skipping checks for the dashboard client properties and the presence of the record for the dashboard client");
+      LOG.info("Skipping dashboard client initialization.");
       return;
     }
 

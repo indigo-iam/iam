@@ -72,7 +72,7 @@ public class DashboardConfigService {
     Optional<ClientDetailsEntity> dashboardRecord = clientRepository.findByClientId(clientId);
 
     if (!dashboardRecord.isPresent()) {
-      LOG.info("The client record for dashboard does not exist. Creating record with default configuration...");
+      LOG.info("Dashboard client does not exist and it will be created.");
       try {
         createRecordDashboard(clientId, clientSecret, url);
         return true;
@@ -85,7 +85,7 @@ public class DashboardConfigService {
     ClientDetailsEntity client = dashboardRecord.get();
     boolean isValid = checkRecordConfiguration(client, clientSecret, url);
     if (!isValid) {
-      LOG.warn("The record is not properly configured. Updating Dashboard client.");
+      LOG.warn("Changes on default dashboard client configuration found: restoring expected configuration.");
       updateRecordDashboard(client, clientSecret, url);
     }
     return true;
