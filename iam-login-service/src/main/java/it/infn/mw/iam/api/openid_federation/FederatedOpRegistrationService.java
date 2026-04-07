@@ -23,6 +23,7 @@ import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -137,7 +138,7 @@ public class FederatedOpRegistrationService {
     try {
       es = EntityStatement.parse(responseJwt);
     } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-      throw invalidTrustChain("Failed to parse JWT: " + e.getMessage(), e);
+      throw invalidClientMetadata("Failed to parse JWT: " + e);
     }
 
     // 6. Validate OP response
@@ -162,15 +163,16 @@ public class FederatedOpRegistrationService {
   private List<String> selectAuthorityHints(TrustChain trustChain, String issuer)
       throws FederationException {
 
-    List<String> chainIssuers = trustChain.getSuperiorStatements()
-      .stream()
-      .map(es -> es.getClaimsSet().getIssuer().getValue())
-      .distinct()
-      .toList();
+    String commonTA = trustChain.getTrustAnchorEntityID().getValue();
 
+    List<String> selected = new ArrayList<>();
     List<String> configuredHints = oidFedProperties.getEntityConfiguration().getAuthorityHints();
-
-    List<String> selected = chainIssuers.stream().filter(configuredHints::contains).toList();
+    for (String hint : configuredHints) {
+      TrustChain tc = tcService.validateFromEntityId(hint);
+      if (commonTA.equals(tc.getTrustAnchorEntityID().getValue())) {
+        selected.add(hint);
+      }
+    }
 
     if (selected.isEmpty()) {
       throw invalidTrustChain("No valid authority_hints found for OP: " + issuer);
@@ -287,7 +289,7 @@ public class FederatedOpRegistrationService {
     try {
       return JSONObjectUtils.getJSONObject(metadataJson, "openid_relying_party");
     } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-      throw invalidClientMetadata("Invalid or missing openid_relying_party metadata. " + e);
+      throw invalidClientMetadata("Invalid or missing openid_relying_party metadata: " + e);
     }
   }
 
@@ -304,31 +306,31 @@ public class FederatedOpRegistrationService {
     try {
       es.getClaimsSet().validateRequiredClaimsPresence();
     } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-      throw invalidTrustChain("Missing or invalid required claims: " + e.getMessage(), e);
+      throw invalidClientMetadata("Missing or invalid required claims: " + e);
     }
 
     Date iat = es.getClaimsSet().getIssueTime();
     Date exp = es.getClaimsSet().getExpirationTime();
 
     if (iat.after(now)) {
-      throw invalidTrustChain("Entity Statement has iat in the future: " + iat);
+      throw invalidClientMetadata("Entity Statement has iat in the future: " + iat);
     }
 
     if (exp.before(now)) {
-      throw invalidTrustChain("Entity Statement is expired: " + exp);
+      throw invalidClientMetadata("Entity Statement is expired: " + exp);
     }
 
     if (!es.getClaimsSet().getIssuer().getValue().equals(issuer)) {
-      throw invalidTrustChain("Invalid issuer");
+      throw invalidClientMetadata("Invalid issuer");
     }
 
     if (!es.getClaimsSet().getSubject().getValue().equals(iamBaseUrl)) {
-      throw invalidTrustChain("Invalid subject");
+      throw invalidClientMetadata("Invalid subject");
     }
 
     List<Audience> audience = es.getClaimsSet().getAudience();
     if (audience == null || audience.stream().noneMatch(aud -> iamBaseUrl.equals(aud.getValue()))) {
-      throw invalidTrustChain("Invalid audience");
+      throw invalidClientMetadata("Invalid audience");
     }
   }
 

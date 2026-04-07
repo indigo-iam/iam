@@ -147,7 +147,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testOpRegistration() throws Exception {
+  void testRpRegistration() throws Exception {
     fakeChain = TrustChainTestFactory.createOpToTaChain(null,
         URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
@@ -170,10 +170,15 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testOpRegistrationFailureWhenCommonAuthorityHintsNotFound() throws Exception {
+  void testRpRegistrationFailsWhenNoAuthorityHintsLeadToTA() throws Exception {
     fakeChain = TrustChainTestFactory.createOpToTaChain(null,
         URI.create("https://op.example.com/jwk"), "https://ta.example.com");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
+    when(trustChainService.validateFromEntityId("https://op.example.com")).thenReturn(fakeChain);
+
+    TrustChain hintTrustChain = TrustChainTestFactory.createOpToTaChain(null,
+        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
+    when(trustChainService.validateFromEntityId("https://trust-anchor.sandbox.eosc.grnet.gr"))
+      .thenReturn(hintTrustChain);
 
     MvcResult result = mvc.perform(get("/openid_connect_login?iss=https://op.example.com"))
       .andExpect(status().isFound())
@@ -188,7 +193,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRegisteredOpRedirectsToAuthorize() throws Exception {
+  void testRegisteredRpRedirectsToAuthorize() throws Exception {
     Optional<ClientDetailsEntity> registeredOp = clientRepo.findByClientId("client");
     LocalDate today = LocalDate.now();
     LocalDate tomorrow = today.plusDays(1);
@@ -204,7 +209,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testOpRegistrationHttpError() throws Exception {
+  void testRpRegistrationHttpError() throws Exception {
     fakeChain = TrustChainTestFactory.createOpToTaChain(null,
         URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
@@ -221,7 +226,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testExpiredOpIsDeletedAndRegisteredAgain() throws Exception {
+  void testExpiredRpIsDeletedAndRegisteredAgain() throws Exception {
     fakeChain = TrustChainTestFactory.createOpToTaChain(null,
         URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
