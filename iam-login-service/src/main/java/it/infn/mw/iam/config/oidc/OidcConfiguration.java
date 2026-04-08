@@ -35,6 +35,7 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -54,6 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
 import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
@@ -74,6 +76,7 @@ import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
@@ -94,7 +97,8 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock, OidcTokenRequestor tokenRequestor,
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock,
+      OidcTokenRequestor tokenRequestor,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
@@ -196,7 +200,9 @@ public class OidcConfiguration {
 
   @Bean
   ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers,
-      Environment env) {
+      Environment env, IamClientRepository clientRepo,
+      @Autowired(required = false) FederatedOpRegistrationService federationRegistrationService,
+      Clock clock) {
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -212,7 +218,8 @@ public class OidcConfiguration {
 
     if (clients.isEmpty()
         && Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals)) {
-      return new FederationClientConfigurationService();
+      return new FederationClientConfigurationService(clientRepo, federationRegistrationService,
+          clock);
     }
 
     if (clients.isEmpty()) {
