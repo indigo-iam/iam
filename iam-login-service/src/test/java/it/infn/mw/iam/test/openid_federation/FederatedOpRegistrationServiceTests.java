@@ -304,6 +304,15 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
+  void testInvalidAudienceInOpResponse() throws Exception {
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+    String aud = "invalid-aud";
+
+    performCall(ISS, SUB, iat, exp, aud, TA);
+  }
+
+  @Test
   void testInvalidIssuerInOpResponse() throws Exception {
     String iss = "https://wrong-op.example.com";
     Date iat = Date.from(clock.instant());
