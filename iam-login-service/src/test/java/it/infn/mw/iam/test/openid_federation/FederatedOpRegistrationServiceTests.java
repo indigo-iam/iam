@@ -65,6 +65,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,13 +93,16 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
     classes = {IamLoginService.class, FederatedOpRegistrationServiceTests.TestConfig.class},
     webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+@TestPropertySource(properties = {
+    "openid-federation.trust-anchors=https://ta1.example.com,https://ta2.example.com",
+    "openid-federation.entity-configuration.authority-hints=https://ta1.example.com,https://auth-hint.example.com"})
 @Transactional
 class FederatedOpRegistrationServiceTests {
 
   private static final String ISS = "https://op.example.com";
   private static final String SUB = "http://localhost:8080";
   private static final String AUD = "http://localhost:8080";
-  private static final String TA = "https://trust-anchor.sandbox.eosc.grnet.gr";
+  private static final String TA = "https://ta1.example.com";
 
   @TestConfiguration
   public static class TestConfig {
@@ -149,12 +153,12 @@ class FederatedOpRegistrationServiceTests {
     mockRtf.resetServer();
 
     fakeChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
+        URI.create("https://op.example.com/jwk"), "https://ta1.example.com");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
   }
 
   @Test
-  void federationServiceIsLoaded() {
+  void testFederationServiceIsLoaded() {
     assertThat(clientConfigurationService).isInstanceOf(FederationClientConfigurationService.class);
   }
 
@@ -185,8 +189,8 @@ class FederatedOpRegistrationServiceTests {
     when(trustChainService.validateFromEntityId("https://op.example.com")).thenReturn(fakeChain);
 
     TrustChain hintTrustChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
-    when(trustChainService.validateFromEntityId("https://trust-anchor.sandbox.eosc.grnet.gr"))
+        URI.create("https://op.example.com/jwk"), "https://ta1.example.com");
+    when(trustChainService.validateFromEntityId("https://ta1.example.com"))
       .thenReturn(hintTrustChain);
 
     MvcResult result = mvc.perform(get("/openid_connect_login?iss=https://op.example.com"))
@@ -260,7 +264,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testJwtParsingFailure() throws Exception {
+  void testOpResponseParsingFailure() throws Exception {
     String rpJwt = "fake-jwt";
 
     mockRtf.getMockServer()
@@ -274,14 +278,14 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWhenMissingClaimInJwt() throws Exception {
+  void testMissingClaimInOpResponse() throws Exception {
     Date exp = fakeChain.resolveExpirationTime();
 
     performCall(ISS, SUB, null, exp, AUD, TA);
   }
 
   @Test
-  void testRpRegistrationWhenJwtIatInFuture() throws Exception {
+  void testIatSetInFutureInOpResponse() throws Exception {
     Instant tomorrowInstant = clock.instant().plus(1, ChronoUnit.DAYS);
     Date iat = Date.from(tomorrowInstant);
     Date exp = fakeChain.resolveExpirationTime();
@@ -290,7 +294,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWithExpiredJwt() throws Exception {
+  void testExpiredOpResponse() throws Exception {
     Date iat = Date.from(clock.instant());
     Instant yesterdayInstant = clock.instant().minus(1, ChronoUnit.DAYS);
     Date yesterday = Date.from(yesterdayInstant);
@@ -299,7 +303,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWithNoAudienceInJwt() throws Exception {
+  void testNoAudienceInOpResponse() throws Exception {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
@@ -307,7 +311,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWithInvalidIssuerInJwt() throws Exception {
+  void testInvalidIssuerInOpResponse() throws Exception {
     String iss = "https://wrong-op.example.com";
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
@@ -316,7 +320,7 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWithInvalidSubjectInJwt() throws Exception {
+  void testInvalidSubjectInOpResponse() throws Exception {
     String sub = "http://wrong-sub.com";
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
@@ -325,10 +329,19 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testRpRegistrationWithInvalidTrustAnchorInJwt() throws Exception {
+  void testInvalidTrustAnchorInOpResponse() throws Exception {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
     String ta = "https://ta.example.com";
+
+    performCall(ISS, SUB, iat, exp, AUD, ta);
+  }
+
+  @Test
+  void testAuthorityHintsDontLeadToTAPresentInOpResponse() throws Exception {
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+    String ta = "https://ta2.example.com";
 
     performCall(ISS, SUB, iat, exp, AUD, ta);
   }
@@ -339,11 +352,13 @@ class FederatedOpRegistrationServiceTests {
     String clientSecret = "secret";
     String redirectUri = sub + "/openid_connect_login";
     String scopes = "openid profile";
+    String responseTypes = "code";
 
     Map<String, Object> clientMetadata = new HashMap<>();
     clientMetadata.put("client_id", clientId);
     clientMetadata.put("client_secret", clientSecret);
     clientMetadata.put("redirect_uris", Set.of(redirectUri));
+    clientMetadata.put("response_types", Set.of(responseTypes));
     clientMetadata.put("scope", scopes);
 
     JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(iss)
@@ -353,7 +368,7 @@ class FederatedOpRegistrationServiceTests {
       .audience(aud);
 
     claims.claim("trust_anchor", ta);
-    claims.claim("authority_hints", List.of("https://trust-anchor.sandbox.eosc.grnet.gr"));
+    claims.claim("authority_hints", List.of("https://ta1.example.com"));
     claims.claim("metadata", Map.of("openid_relying_party", clientMetadata));
 
     RSAKey rsaKey = TrustChainTestFactory.keyFor(iss);
