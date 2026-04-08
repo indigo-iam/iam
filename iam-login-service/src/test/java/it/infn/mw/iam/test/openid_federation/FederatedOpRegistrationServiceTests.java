@@ -33,8 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +82,7 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
@@ -92,6 +95,10 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @Transactional
 class FederatedOpRegistrationServiceTests {
 
+  private static final String ISS = "https://op.example.com";
+  private static final String SUB = "http://localhost:8080";
+  private static final String AUD = "http://localhost:8080";
+
   @TestConfiguration
   public static class TestConfig {
     @Bean
@@ -102,19 +109,19 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Autowired
+  Clock clock;
+
+  @Autowired
   MockMvc mvc;
+
+  @Autowired
+  RestTemplateFactory rtf;
 
   @Autowired
   ClientConfigurationService clientConfigurationService;
 
   @Autowired
   IamClientRepository clientRepo;
-
-  @Autowired
-  RestTemplateFactory rtf;
-
-  @Autowired
-  Clock clock;
 
   @MockBean
   ServerConfigurationService serverConfigurationService;
@@ -127,7 +134,7 @@ class FederatedOpRegistrationServiceTests {
   MockRestTemplateFactory mockRtf;
 
   @BeforeEach
-  void setup() {
+  void setup() throws JOSEException, FederationException {
     ServerConfiguration sc = new ServerConfiguration();
     sc.setIssuer("https://op.example.com");
     sc.setAuthorizationEndpointUri("https://op.example.com/authorize");
@@ -139,6 +146,10 @@ class FederatedOpRegistrationServiceTests {
 
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetServer();
+
+    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
+        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
+    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
   }
 
   @Test
@@ -148,13 +159,10 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRpRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-
+    Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse(exp);
+    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -210,10 +218,6 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRpRegistrationHttpError() throws Exception {
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
       .andExpect(method(HttpMethod.POST))
@@ -227,12 +231,10 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testExpiredRpIsDeletedAndRegisteredAgain() throws Exception {
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://trust-anchor.sandbox.eosc.grnet.gr");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-
+    Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
-    String rpJwt = opJwtResponse(exp);
+
+    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -256,14 +258,76 @@ class FederatedOpRegistrationServiceTests {
     assertNotEquals(expiredOp.get().getClientId(), newOp.get().getClientId());
   }
 
-  private String opJwtResponse(Date exp) throws JOSEException {
-    String issuer = "https://op.example.com";
+  @Test
+  void testJwtParsingFailure() throws Exception {
+    String rpJwt = "fake-jwt";
+
+    mockRtf.getMockServer()
+      .expect(requestTo("https://op.example.com/fedreg"))
+      .andExpect(method(HttpMethod.POST))
+      .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
+
+    mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrlPattern("/login?error=true"));
+  }
+
+  @Test
+  void testRpRegistrationWhenMissingClaimInJwt() throws Exception {
+    Date exp = fakeChain.resolveExpirationTime();
+
+    performCall(ISS, SUB, null, exp, AUD);
+  }
+
+  @Test
+  void testRpRegistrationWhenJwtIatInFuture() throws Exception {
+    Instant tomorrowInstant = clock.instant().plus(1, ChronoUnit.DAYS);
+    Date iat = Date.from(tomorrowInstant);
+    Date exp = fakeChain.resolveExpirationTime();
+
+    performCall(ISS, SUB, iat, exp, AUD);
+  }
+
+  @Test
+  void testRpRegistrationWithExpiredJwt() throws Exception {
     Date iat = Date.from(clock.instant());
-    String subject = "http://localhost:8080";
-    String audience = "http://localhost:8080";
+    Instant yesterdayInstant = clock.instant().minus(1, ChronoUnit.DAYS);
+    Date yesterday = Date.from(yesterdayInstant);
+
+    performCall(ISS, SUB, iat, yesterday, AUD);
+  }
+
+  @Test
+  void testRpRegistrationWithNoAudienceInJwt() throws Exception {
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+
+    performCall(ISS, SUB, iat, exp, null);
+  }
+
+  @Test
+  void testRpRegistrationWithInvalidIssuerInJwt() throws Exception {
+    String iss = "https://wrong-op.example.com";
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+
+    performCall(iss, SUB, iat, exp, AUD);
+  }
+
+  @Test
+  void testRpRegistrationWithInvalidSubjectInJwt() throws Exception {
+    String sub = "http://wrong-sub.com";
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+
+    performCall(ISS, sub, iat, exp, AUD);
+  }
+
+  private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud)
+      throws JOSEException {
     String clientId = "registered-client";
     String clientSecret = "secret";
-    String redirectUri = subject + "/openid_connect_login";
+    String redirectUri = sub + "/openid_connect_login";
     String scopes = "openid profile";
 
     Map<String, Object> clientMetadata = new HashMap<>();
@@ -272,21 +336,35 @@ class FederatedOpRegistrationServiceTests {
     clientMetadata.put("redirect_uris", Set.of(redirectUri));
     clientMetadata.put("scope", scopes);
 
-    JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(issuer)
-      .subject(subject)
+    JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(iss)
+      .subject(sub)
       .issueTime(iat)
       .expirationTime(exp)
-      .audience(audience);
+      .audience(aud);
 
     claims.claim("trust_anchor", "https://trust-anchor.sandbox.eosc.grnet.gr");
     claims.claim("authority_hints", List.of("https://trust-anchor.sandbox.eosc.grnet.gr"));
     claims.claim("metadata", Map.of("openid_relying_party", clientMetadata));
 
-    RSAKey rsaKey = TrustChainTestFactory.keyFor(issuer);
+    RSAKey rsaKey = TrustChainTestFactory.keyFor(iss);
     JWSSigner signer = new RSASSASigner(rsaKey);
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build();
     SignedJWT signedJWT = new SignedJWT(header, claims.build());
     signedJWT.sign(signer);
     return signedJWT.serialize();
+  }
+
+  private void performCall(String iss, String sub, Date iat, Date exp, String aud)
+      throws Exception {
+    String rpJwt = opJwtResponse(iss, sub, iat, exp, aud);
+
+    mockRtf.getMockServer()
+      .expect(requestTo("https://op.example.com/fedreg"))
+      .andExpect(method(HttpMethod.POST))
+      .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
+
+    mvc.perform(get("/openid_connect_login?iss=" + ISS))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrlPattern("/login?error=true"));
   }
 }
