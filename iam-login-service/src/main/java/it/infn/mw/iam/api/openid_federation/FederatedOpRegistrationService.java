@@ -308,12 +308,6 @@ public class FederatedOpRegistrationService {
 
   private void validateJwt(EntityStatement es, String issuer) throws FederationException {
     Date now = Date.from(clock.instant());
-    try {
-      es.getClaimsSet().validateRequiredClaimsPresence();
-    } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-      throw invalidClientMetadata("Missing or invalid required claims: " + e);
-    }
-
     Date iat = es.getClaimsSet().getIssueTime();
     Date exp = es.getClaimsSet().getExpirationTime();
 

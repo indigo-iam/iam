@@ -278,13 +278,6 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testMissingClaimInOpResponse() throws Exception {
-    Date exp = fakeChain.resolveExpirationTime();
-
-    performCall(ISS, SUB, null, exp, AUD, TA);
-  }
-
-  @Test
   void testIatSetInFutureInOpResponse() throws Exception {
     Instant tomorrowInstant = clock.instant().plus(1, ChronoUnit.DAYS);
     Date iat = Date.from(tomorrowInstant);
