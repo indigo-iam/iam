@@ -15,17 +15,15 @@
  */
 package it.infn.mw.voms;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
 import java.util.Date;
+import java.util.List;
 
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.request.VOMSResponse;
@@ -65,10 +63,10 @@ class VomsAcLegacyEncodingTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasItem("/test/Role=NULL/Capability=NULL"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertTrue(attrs.getFQANs().contains("/test/Role=NULL/Capability=NULL"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -94,13 +92,12 @@ class VomsAcLegacyEncodingTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(4));
-    assertThat(attrs.getFQANs(),
-        contains("/test/Role=VO-Admin/Capability=NULL", "/test/Role=NULL/Capability=NULL",
-            "/test/sub/Role=NULL/Capability=NULL", "/test/sub/subsub/Role=NULL/Capability=NULL"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
-
+    assertEquals(4, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs()
+      .containsAll(List.of("/test/Role=VO-Admin/Capability=NULL", "/test/Role=NULL/Capability=NULL",
+          "/test/sub/Role=NULL/Capability=NULL", "/test/sub/subsub/Role=NULL/Capability=NULL")));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 }

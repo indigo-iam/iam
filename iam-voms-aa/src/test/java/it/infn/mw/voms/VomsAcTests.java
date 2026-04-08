@@ -15,20 +15,15 @@
  */
 package it.infn.mw.voms;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayWithSize;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.italiangrid.voms.VOMSAttribute;
@@ -71,9 +66,8 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(),
-        containsString("Client is not authenticated"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage().contains("Client is not authenticated"));
   }
 
   @Test
@@ -85,8 +79,8 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(), containsString("User unknown to this VO"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage().contains("User unknown to this VO"));
   }
 
   @Test
@@ -102,8 +96,8 @@ class VomsAcTests extends TestSupport {
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
 
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(), containsString("User unknown to this VO"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage().contains("User unknown to this VO"));
   }
 
   @Test
@@ -120,9 +114,9 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
 
-    assertThat(response.errorMessages()[0].getMessage(), containsString("is not active"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage().contains("is not active"));
 
   }
 
@@ -140,11 +134,10 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasItem("/test"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
-
+    assertTrue(attrs.getFQANs().contains("/test"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -162,9 +155,8 @@ class VomsAcTests extends TestSupport {
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
 
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(), containsString("User unknown to this VO"));
-
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage().contains("User unknown to this VO"));
   }
 
   @Test
@@ -194,10 +186,9 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
-
-    assertThat(response.errorMessages()[0].getMessage(),
-        containsString("User test needs to sign AUP for this organization in order to proceed."));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage()
+      .contains("User test needs to sign AUP for this organization in order to proceed."));
 
     aupRepo.delete(aup);
 
@@ -208,7 +199,7 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response2 = parser.parse(new ByteArrayInputStream(xmlResponse2));
-    assertThat(response2.hasErrors(), is(false));
+    assertFalse(response2.hasErrors());
   }
 
 
@@ -232,13 +223,13 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(3));
-    assertThat(attrs.getFQANs(), hasItem("/test"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub/subsub"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertEquals(3, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs().contains("/test"));
+    assertTrue(attrs.getFQANs().contains("/test/sub"));
+    assertTrue(attrs.getFQANs().contains("/test/sub/subsub"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -259,12 +250,12 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(2));
-    assertThat(attrs.getFQANs(), hasItem("/test"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertEquals(2, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs().contains("/test"));
+    assertTrue(attrs.getFQANs().contains("/test/sub"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -286,13 +277,13 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(3));
-    assertThat(attrs.getFQANs(), hasItem("/test"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub/optional"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertEquals(3, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs().contains("/test"));
+    assertTrue(attrs.getFQANs().contains("/test/sub"));
+    assertTrue(attrs.getFQANs().contains("/test/sub/optional"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -317,11 +308,11 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(3));
-    assertThat(attrs.getFQANs(), contains("/test/sub", "/test/sub/subsub", "/test"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertEquals(3, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs().containsAll(List.of("/test/sub", "/test/sub/subsub", "/test")));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -346,13 +337,12 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(4));
-    assertThat(attrs.getFQANs(),
-        contains("/test/Role=VO-Admin", "/test", "/test/sub", "/test/sub/subsub"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
-
+    assertEquals(4, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs()
+      .containsAll(List.of("/test/Role=VO-Admin", "/test", "/test/sub", "/test/sub/subsub")));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -375,12 +365,11 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), hasSize(2));
-    assertThat(attrs.getFQANs(), contains("/test/optional/Role=VO-Admin", "/test"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
-
+    assertEquals(2, attrs.getFQANs().size());
+    assertTrue(attrs.getFQANs().containsAll(List.of("/test/optional/Role=VO-Admin", "/test")));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -401,9 +390,9 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(),
-        containsString("User is not authorized to request attribute"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage()
+      .contains("User is not authorized to request attribute"));
   }
 
   @Test
@@ -422,12 +411,10 @@ class VomsAcTests extends TestSupport {
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
 
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getGenericAttributes(), hasSize(1));
-    assertThat(attrs.getGenericAttributes().get(0).getName(), is("test"));
-    assertThat(attrs.getGenericAttributes().get(0).getValue(), is("test"));
-    assertThat(attrs.getGenericAttributes().get(0).getContext(),
-        is(properties.getAa().getVoName()));
-
+    assertEquals(1, attrs.getGenericAttributes().size());
+    assertEquals("test", attrs.getGenericAttributes().get(0).getName());
+    assertEquals("test", attrs.getGenericAttributes().get(0).getValue());
+    assertEquals(properties.getAa().getVoName(), attrs.getGenericAttributes().get(0).getContext());
   }
 
   @Test
@@ -450,7 +437,7 @@ class VomsAcTests extends TestSupport {
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
     VOMSAttribute attrs = getAttributeCertificate(response);
 
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
 
     final long oneHourInSeconds = TimeUnit.HOURS.toSeconds(1);
     xmlResponse = mvc
@@ -464,7 +451,7 @@ class VomsAcTests extends TestSupport {
     response = parser.parse(new ByteArrayInputStream(xmlResponse));
     attrs = getAttributeCertificate(response);
 
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_1_HOUR)));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_1_HOUR)) > 0);
   }
 
   @Test
@@ -483,9 +470,9 @@ class VomsAcTests extends TestSupport {
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
 
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages(), arrayWithSize(1));
-    assertThat(response.errorMessages()[0].getMessage(), is("lifetime must be a positive integer"));
+    assertTrue(response.hasErrors());
+    assertEquals(1, response.errorMessages().length);
+    assertEquals("lifetime must be a positive integer", response.errorMessages()[0].getMessage());
 
     xmlResponse =
         mvc.perform(get("/generate-ac").param("lifetime", "pippo").headers(test0VOMSHeaders()))
@@ -496,10 +483,10 @@ class VomsAcTests extends TestSupport {
 
     response = parser.parse(new ByteArrayInputStream(xmlResponse));
 
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages(), arrayWithSize(1));
-    assertThat(response.errorMessages()[0].getMessage(),
-        containsString("Failed to convert property value"));
+    assertTrue(response.hasErrors());
+    assertEquals(1, response.errorMessages().length);
+    assertTrue(
+        response.errorMessages()[0].getMessage().contains("Failed to convert property value"));
   }
 
   @Test
@@ -525,14 +512,14 @@ class VomsAcTests extends TestSupport {
       .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(false));
+    assertFalse(response.hasErrors());
     VOMSAttribute attrs = getAttributeCertificate(response);
-    assertThat(attrs.getFQANs(), not(hasItem("/another")));
-    assertThat(attrs.getFQANs(), hasSize(3));
-    assertThat(attrs.getFQANs(), hasItem("/test"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
-    assertThat(attrs.getFQANs(), hasItem("/test/sub/subsub"));
-    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+    assertEquals(3, attrs.getFQANs().size());
+    assertFalse(attrs.getFQANs().contains("/another"));
+    assertTrue(attrs.getFQANs().contains("/test"));
+    assertTrue(attrs.getFQANs().contains("/test/sub"));
+    assertTrue(attrs.getFQANs().contains("/test/sub/subsub"));
+    assertFalse(attrs.getNotAfter().compareTo(Date.from(NOW_PLUS_12_HOURS)) > 0);
   }
 
   @Test
@@ -558,8 +545,8 @@ class VomsAcTests extends TestSupport {
           .getContentAsByteArray();
 
     VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
-    assertThat(response.hasErrors(), is(true));
-    assertThat(response.errorMessages()[0].getMessage(),
-        containsString("User is not authorized to request attribute"));
+    assertTrue(response.hasErrors());
+    assertTrue(response.errorMessages()[0].getMessage()
+      .contains("User is not authorized to request attribute"));
   }
 }

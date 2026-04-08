@@ -16,8 +16,8 @@
 package it.infn.mw.voms;
 
 import static it.infn.mw.voms.aa.VOMSNamingScheme.isQualifiedRole;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,11 +34,11 @@ class NamingSchemeTests {
     String[] groupFqans = {"/test", "/test/subgroup", "/dteam"};
 
     for (String fqan : roleFqans) {
-      assertThat(isQualifiedRole(fqan), is(true));
+      assertTrue(isQualifiedRole(fqan));
     }
 
     for (String fqan : groupFqans) {
-      assertThat(isQualifiedRole(fqan), is(false));
+      assertFalse(isQualifiedRole(fqan));
     }
   }
 }

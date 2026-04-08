@@ -15,8 +15,7 @@
  */
 package it.infn.mw.voms;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,21 +39,21 @@ class FqanEncodingTests {
   @Test
   void testNullEncoding() {
 
-    assertThat(nullEncoding.encodeFQAN(GROUP_FQAN), is(GROUP_FQAN));
-    assertThat(nullEncoding.decodeFQAN(GROUP_FQAN), is(GROUP_FQAN));
-    assertThat(nullEncoding.encodeFQAN(ROLE_FQAN), is(ROLE_FQAN));
-    assertThat(nullEncoding.decodeFQAN(ROLE_FQAN), is(ROLE_FQAN));
+    assertEquals(GROUP_FQAN, nullEncoding.encodeFQAN(GROUP_FQAN));
+    assertEquals(GROUP_FQAN, nullEncoding.decodeFQAN(GROUP_FQAN));
+    assertEquals(ROLE_FQAN, nullEncoding.encodeFQAN(ROLE_FQAN));
+    assertEquals(ROLE_FQAN, nullEncoding.decodeFQAN(ROLE_FQAN));
   }
 
   @Test
   void testLegacyEncoding() {
 
-    assertThat(legacyEncoding.encodeFQAN(GROUP_FQAN), is(GROUP_FQAN_LEGACY));
-    assertThat(legacyEncoding.decodeFQAN(GROUP_FQAN_LEGACY), is(GROUP_FQAN));
-    assertThat(legacyEncoding.decodeFQAN(GROUP_FQAN), is(GROUP_FQAN));
+    assertEquals(GROUP_FQAN_LEGACY, legacyEncoding.encodeFQAN(GROUP_FQAN));
+    assertEquals(GROUP_FQAN, legacyEncoding.decodeFQAN(GROUP_FQAN_LEGACY));
+    assertEquals(GROUP_FQAN, legacyEncoding.decodeFQAN(GROUP_FQAN));
 
-    assertThat(legacyEncoding.encodeFQAN(ROLE_FQAN), is(ROLE_FQAN_LEGACY));
-    assertThat(legacyEncoding.decodeFQAN(ROLE_FQAN_LEGACY), is(ROLE_FQAN));
-    assertThat(legacyEncoding.decodeFQAN(ROLE_FQAN), is(ROLE_FQAN));
+    assertEquals(ROLE_FQAN_LEGACY, legacyEncoding.encodeFQAN(ROLE_FQAN));
+    assertEquals(ROLE_FQAN, legacyEncoding.decodeFQAN(ROLE_FQAN_LEGACY));
+    assertEquals(ROLE_FQAN, legacyEncoding.decodeFQAN(ROLE_FQAN));
   }
 }
