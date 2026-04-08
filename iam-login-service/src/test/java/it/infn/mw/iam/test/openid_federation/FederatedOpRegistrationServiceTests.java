@@ -98,6 +98,7 @@ class FederatedOpRegistrationServiceTests {
   private static final String ISS = "https://op.example.com";
   private static final String SUB = "http://localhost:8080";
   private static final String AUD = "http://localhost:8080";
+  private static final String TA = "https://trust-anchor.sandbox.eosc.grnet.gr";
 
   @TestConfiguration
   public static class TestConfig {
@@ -162,7 +163,7 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD);
+    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD, TA);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -234,7 +235,7 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD);
+    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD, TA);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))
@@ -276,7 +277,7 @@ class FederatedOpRegistrationServiceTests {
   void testRpRegistrationWhenMissingClaimInJwt() throws Exception {
     Date exp = fakeChain.resolveExpirationTime();
 
-    performCall(ISS, SUB, null, exp, AUD);
+    performCall(ISS, SUB, null, exp, AUD, TA);
   }
 
   @Test
@@ -285,7 +286,7 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(tomorrowInstant);
     Date exp = fakeChain.resolveExpirationTime();
 
-    performCall(ISS, SUB, iat, exp, AUD);
+    performCall(ISS, SUB, iat, exp, AUD, TA);
   }
 
   @Test
@@ -294,7 +295,7 @@ class FederatedOpRegistrationServiceTests {
     Instant yesterdayInstant = clock.instant().minus(1, ChronoUnit.DAYS);
     Date yesterday = Date.from(yesterdayInstant);
 
-    performCall(ISS, SUB, iat, yesterday, AUD);
+    performCall(ISS, SUB, iat, yesterday, AUD, TA);
   }
 
   @Test
@@ -302,7 +303,7 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    performCall(ISS, SUB, iat, exp, null);
+    performCall(ISS, SUB, iat, exp, null, TA);
   }
 
   @Test
@@ -311,7 +312,7 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    performCall(iss, SUB, iat, exp, AUD);
+    performCall(iss, SUB, iat, exp, AUD, TA);
   }
 
   @Test
@@ -320,10 +321,19 @@ class FederatedOpRegistrationServiceTests {
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    performCall(ISS, sub, iat, exp, AUD);
+    performCall(ISS, sub, iat, exp, AUD, TA);
   }
 
-  private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud)
+  @Test
+  void testRpRegistrationWithInvalidTrustAnchorInJwt() throws Exception {
+    Date iat = Date.from(clock.instant());
+    Date exp = fakeChain.resolveExpirationTime();
+    String ta = "https://ta.example.com";
+
+    performCall(ISS, SUB, iat, exp, AUD, ta);
+  }
+
+  private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud, String ta)
       throws JOSEException {
     String clientId = "registered-client";
     String clientSecret = "secret";
@@ -342,7 +352,7 @@ class FederatedOpRegistrationServiceTests {
       .expirationTime(exp)
       .audience(aud);
 
-    claims.claim("trust_anchor", "https://trust-anchor.sandbox.eosc.grnet.gr");
+    claims.claim("trust_anchor", ta);
     claims.claim("authority_hints", List.of("https://trust-anchor.sandbox.eosc.grnet.gr"));
     claims.claim("metadata", Map.of("openid_relying_party", clientMetadata));
 
@@ -354,9 +364,9 @@ class FederatedOpRegistrationServiceTests {
     return signedJWT.serialize();
   }
 
-  private void performCall(String iss, String sub, Date iat, Date exp, String aud)
+  private void performCall(String iss, String sub, Date iat, Date exp, String aud, String ta)
       throws Exception {
-    String rpJwt = opJwtResponse(iss, sub, iat, exp, aud);
+    String rpJwt = opJwtResponse(iss, sub, iat, exp, aud, ta);
 
     mockRtf.getMockServer()
       .expect(requestTo("https://op.example.com/fedreg"))

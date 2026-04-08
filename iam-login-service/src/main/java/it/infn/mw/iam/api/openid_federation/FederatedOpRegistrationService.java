@@ -23,7 +23,6 @@ import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -165,17 +164,13 @@ public class FederatedOpRegistrationService {
 
     String commonTA = trustChain.getTrustAnchorEntityID().getValue();
 
-    List<String> selected = new ArrayList<>();
     List<String> configuredHints = oidFedProperties.getEntityConfiguration().getAuthorityHints();
-    for (String hint : configuredHints) {
-      TrustChain tc = tcService.validateFromEntityId(hint);
-      if (commonTA.equals(tc.getTrustAnchorEntityID().getValue())) {
-        selected.add(hint);
-      }
-    }
+    List<String> selected =
+        configuredHints.stream().filter(hint -> leadsToTA(hint, commonTA)).toList();
 
     if (selected.isEmpty()) {
-      throw invalidTrustChain("No valid authority_hints found for OP: " + issuer);
+      throw invalidTrustChain(
+          "No authority_hints lead to trust anchor " + commonTA + " for OP: " + issuer);
     }
 
     return selected;
@@ -301,6 +296,16 @@ public class FederatedOpRegistrationService {
     return List.of();
   }
 
+  private boolean leadsToTA(String hint, String trustAnchor) {
+    try {
+      TrustChain tc = tcService.validateFromEntityId(hint);
+      return tc != null && tc.getTrustAnchorEntityID() != null
+          && trustAnchor.equals(tc.getTrustAnchorEntityID().getValue());
+    } catch (FederationException e) {
+      return false;
+    }
+  }
+
   private void validateJwt(EntityStatement es, String issuer) throws FederationException {
     Date now = Date.from(clock.instant());
     try {
@@ -341,9 +346,9 @@ public class FederatedOpRegistrationService {
       throw invalidClientMetadata("No trusted Trust Anchor found: " + taId);
     }
 
-    boolean match = authorityHints.stream().anyMatch(hint -> hint.equals(taId));
+    boolean match = authorityHints.stream().anyMatch(hint -> leadsToTA(hint, taId));
     if (!match) {
-      throw invalidClientMetadata("Authority hints do not lead to the trust anchor");
+      throw invalidClientMetadata("None of the authority_hints leads to the trust anchor: " + taId);
     }
   }
 
