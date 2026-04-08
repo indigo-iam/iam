@@ -17,7 +17,6 @@
 
 package it.infn.mw.iam.test.actuator;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,16 +36,15 @@ import it.infn.mw.iam.IamLoginService;
 class ExternalServiceProbeActuatorTests extends ActuatorTestSupport {
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Test
   void testUnauthenticatedHealthEndpointRequest() throws Exception {
 
     mvc.perform(get(HEALTH_ENDPOINT))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", is(STATUS_UP)))
-      .andExpect(jsonPath("$.components.externalConnectivity.status", is(STATUS_UP)));
-
+      .andExpect(jsonPath("$.status").value(STATUS_UP))
+      .andExpect(jsonPath("$.components.externalConnectivity.status").value(STATUS_UP));
   }
 
 }

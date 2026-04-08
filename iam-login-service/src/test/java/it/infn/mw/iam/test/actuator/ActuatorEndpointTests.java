@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.test.actuator;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,30 +22,34 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
 class ActuatorEndpointTests extends ActuatorTestSupport {
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private IamProperties iamProperties;
+  IamProperties iamProperties;
 
   @Test
   void testUnauthenticatedHealthEndpointRequest() throws Exception {
 
     mvc.perform(get(HEALTH_ENDPOINT))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
-      .andExpect(jsonPath("$.components.db.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.status").value(STATUS_UP))
+      .andExpect(jsonPath("$.components.db.status").value(STATUS_UP))
       .andExpect(jsonPath("$.components.db.detail").doesNotExist())
-      .andExpect(jsonPath("$.components.diskSpace.status", equalTo(STATUS_UP)))
-      .andExpect(jsonPath("$.components.ping.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.components.diskSpace.status").value(STATUS_UP))
+      .andExpect(jsonPath("$.components.ping.status").value(STATUS_UP))
       .andExpect(jsonPath("$.components.diskSpace.detail").doesNotExist());
 
   }
@@ -57,9 +59,9 @@ class ActuatorEndpointTests extends ActuatorTestSupport {
 
     mvc.perform(get(INFO_ENDPOINT))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.git", notNullValue()))
-      .andExpect(jsonPath("$.build", notNullValue()))
-      .andExpect(jsonPath("$.build.name", equalTo("IAM Login Service")));
+      .andExpect(jsonPath("$.git").exists())
+      .andExpect(jsonPath("$.build").exists())
+      .andExpect(jsonPath("$.build.name").value("IAM Login Service"));
   }
 
   @Test
@@ -68,8 +70,8 @@ class ActuatorEndpointTests extends ActuatorTestSupport {
       .perform(get(HEALTH_ENDPOINT).with(httpBasic(iamProperties.getActuatorUser().getUsername(),
           iamProperties.getActuatorUser().getPassword())))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
-      .andExpect(jsonPath("$.components.diskSpace.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.status").value(STATUS_UP))
+      .andExpect(jsonPath("$.components.diskSpace.status").value(STATUS_UP))
       .andExpect(jsonPath("$.components.diskSpace.details").exists());
   }
 
