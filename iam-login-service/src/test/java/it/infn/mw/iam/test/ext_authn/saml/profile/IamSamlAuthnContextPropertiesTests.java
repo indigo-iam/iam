@@ -16,35 +16,41 @@
 package it.infn.mw.iam.test.ext_authn.saml.profile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
 import it.infn.mw.iam.config.saml.IamSamlProperties.AuthnContextProperties;
 
 class IamSamlAuthnContextPropertiesTests {
+
   @Test
-  void checkDefaultsAreCorrect() {
+  void defaultsContainFourRefs() {
     AuthnContextProperties props = new AuthnContextProperties();
-    assertTrue(props.isDefined());
     assertEquals(4, props.getClassRefs().size());
+    assertTrue(props.getClassRefs().contains("https://refeds.org/profile/mfa"));
+    assertTrue(props.getClassRefs().contains("https://refeds.org/profile/sfa"));
+    assertTrue(props.getClassRefs().contains("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"));
+    assertTrue(props.getClassRefs().contains("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"));
   }
 
   @Test
-  void setDefinedWorksAsExpected() {
-    AuthnContextProperties props = new AuthnContextProperties();
-    props.setDefined(false);
-    assertFalse(props.isDefined());
-  }
-
-  @Test
-  void setClassRefsWorksAsExpected() {
+  void setClassRefsOverridesDefaults() {
     AuthnContextProperties props = new AuthnContextProperties();
     List<String> custom = Arrays.asList("urn:federation:authentication:windows");
     props.setClassRefs(custom);
     assertEquals(1, props.getClassRefs().size());
     assertEquals("urn:federation:authentication:windows", props.getClassRefs().get(0));
+  }
+
+  @Test
+  void emptyListClearsDefaults() {
+    AuthnContextProperties props = new AuthnContextProperties();
+    props.setClassRefs(new ArrayList<>());
+    assertTrue(props.getClassRefs().isEmpty());
   }
 }

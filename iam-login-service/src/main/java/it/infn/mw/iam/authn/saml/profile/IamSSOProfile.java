@@ -16,6 +16,7 @@
 package it.infn.mw.iam.authn.saml.profile;
 
 import javax.xml.namespace.QName;
+import static java.util.Objects.isNull;
 
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
@@ -80,7 +81,7 @@ public class IamSSOProfile extends WebSSOProfileImpl {
 
   private void configureAuthnContext(AuthnRequest request) {
 
-    if (!authnContextProperties.isDefined()) {
+    if (isNull(authnContextProperties.getClassRefs()) || authnContextProperties.getClassRefs().isEmpty()) {
       // Actively clear any AuthnContext the parent class may have already set.
       // This ensures NO RequestedAuthnContext is sent letting the IdP decide.
       request.setRequestedAuthnContext(null);

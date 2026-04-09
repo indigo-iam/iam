@@ -45,10 +45,12 @@ saml:
       require-rs: ${IAM_SAML_METADATA_REQUIRE_RS:false}
 
   authn-context:
-    defined: ${IAM_SAML_AUTHN_CONTEXT_DEFINED:true}
-    # Set defined to false to send no AuthnContext at all (IdP determines the appropriate authentication assurance).
-    # To customise the AuthnContextClassRef values, add a class-refs list
-    # at the same indentation level as 'defined' above. For example:
-    # class-refs:
-    #   - urn:federation:authentication:windows
-    #   - urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified
+    # Edit class-refs to customise the AuthnContextClassRef values sent in SAML requests.
+    # Set to an empty list to send no AuthnContext at all (IdP decides):
+    # class-refs: []
+    # (or)
+    class-refs:
+      - https://refeds.org/profile/mfa
+      - https://refeds.org/profile/sfa
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified

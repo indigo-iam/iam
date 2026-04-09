@@ -15,8 +15,10 @@
  */
 package it.infn.mw.iam.test.ext_authn.saml.profile;
 
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,11 +37,13 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, SamlTestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"saml.authn-context.class-refs="})
-class IamSamlAuthnContextDisabledTests extends SamlAuthenticationTestSupport {
+@TestPropertySource(properties = {
+    "saml.authn-context.class-refs[0]=urn:federation:authentication:windows",
+    "saml.authn-context.class-refs[1]=urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"})
+class IamSamlAuthnContextCustomRefsTests extends SamlAuthenticationTestSupport {
 
   @Test
-  void emptyClassRefsSendsNoAuthnContext() throws Exception {
+  void customConfigSendsOnlyConfiguredRefs() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
         .andExpect(status().isOk())
@@ -49,6 +53,15 @@ class IamSamlAuthnContextDisabledTests extends SamlAuthenticationTestSupport {
 
     AuthnRequest authnRequest = getAuthnRequestFromSession(session);
 
-    assertThat(authnRequest.getRequestedAuthnContext(), nullValue());
+    assertThat(authnRequest.getRequestedAuthnContext(), notNullValue());
+    assertThat(authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs(), hasSize(2));
+
+    assertThat(authnRequest.getRequestedAuthnContext()
+        .getAuthnContextClassRefs().get(0).getAuthnContextClassRef(),
+        is("urn:federation:authentication:windows"));
+
+    assertThat(authnRequest.getRequestedAuthnContext()
+        .getAuthnContextClassRefs().get(1).getAuthnContextClassRef(),
+        is("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"));
   }
 }
