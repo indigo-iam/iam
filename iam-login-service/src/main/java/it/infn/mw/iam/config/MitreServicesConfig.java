@@ -333,11 +333,6 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  DeviceCodeService defaultDeviceCodeService() {
-    return new DefaultDeviceCodeService();
-  }
-
-  @Bean
   SelfAssertionValidator selfAssertionValidator() {
     return new SelfAssertionValidator();
   }

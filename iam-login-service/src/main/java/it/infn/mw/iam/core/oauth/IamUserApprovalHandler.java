@@ -24,7 +24,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_S
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.time.Clock;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -176,9 +175,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       Date timeout = null;
       if (remember.equals("one-hour")) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 1);
-        timeout = cal.getTime();
+        timeout = Date.from(clock.instant().plusSeconds(3600));
       }
 
       ApprovedSite newSite =
