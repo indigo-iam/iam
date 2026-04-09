@@ -117,7 +117,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
     List<DeviceCode> expiredDeviceCodes =
         deviceCodeRepo.findExpired(Date.from(clock.instant()));
     deviceCodeRepo.deleteAll(expiredDeviceCodes);
-    if (expiredDeviceCodes.size() > 0) {
+    if (expiredDeviceCodes.isEmpty()) {
       LOG.info("Removed {} expired device codes", expiredDeviceCodes.size());
     }
   }
