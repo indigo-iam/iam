@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.gc;
 
 import java.time.Clock;
 import java.util.Date;
+import java.util.List;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
@@ -113,11 +114,11 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredDeviceCodes(int count) {
 
-    Page<DeviceCode> expiredDeviceCodes =
-        deviceCodeRepo.getExpiredCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
+    List<DeviceCode> expiredDeviceCodes =
+        deviceCodeRepo.findExpired(Date.from(clock.instant()));
     deviceCodeRepo.deleteAll(expiredDeviceCodes);
-    if (expiredDeviceCodes.getTotalElements() > 0) {
-      LOG.info("Removed {} expired device codes", expiredDeviceCodes.getTotalElements());
+    if (expiredDeviceCodes.size() > 0) {
+      LOG.info("Removed {} expired device codes", expiredDeviceCodes.size());
     }
   }
 

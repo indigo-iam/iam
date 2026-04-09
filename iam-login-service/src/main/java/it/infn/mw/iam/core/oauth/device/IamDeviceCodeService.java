@@ -43,7 +43,8 @@ public class IamDeviceCodeService implements DeviceCodeService {
   private final IamDeviceCodeRepository codeRepository;
   private final SecureRandom random;
 
-  public IamDeviceCodeService(Clock clock, IamDeviceCodeRepository codeRepository, SecureRandom random) {
+  public IamDeviceCodeService(Clock clock, IamDeviceCodeRepository codeRepository,
+      SecureRandom random) {
     this.clock = clock;
     this.codeRepository = codeRepository;
     this.random = random;
@@ -58,12 +59,11 @@ public class IamDeviceCodeService implements DeviceCodeService {
   @Override
   public DeviceCode approveDeviceCode(DeviceCode dc, OAuth2Authentication o2Auth) {
 
-    DeviceCode found = codeRepository.findById(dc.getId()).orElseThrow();
-    found.setApproved(true);
+    dc.setApproved(true);
     AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
     authHolder.setAuthentication(o2Auth);
-    found.setAuthenticationHolder(authHolder);
-    return codeRepository.save(found);
+    dc.setAuthenticationHolder(authHolder);
+    return codeRepository.save(dc);
   }
 
   @Override
@@ -95,22 +95,22 @@ public class IamDeviceCodeService implements DeviceCodeService {
 
     String deviceCode = UUID.randomUUID().toString();
     String userCode = generateToken().toUpperCase();
-    DeviceCode dc = new DeviceCode(deviceCode, userCode, requestedScopes, client.getClientId(), parameters);
+    DeviceCode dc =
+        new DeviceCode(deviceCode, userCode, requestedScopes, client.getClientId(), parameters);
 
     if (client.getDeviceCodeValiditySeconds() != null) {
-      Date expiration = Date.from(clock.instant().plusSeconds(client.getDeviceCodeValiditySeconds()));
+      Date expiration =
+          Date.from(clock.instant().plusSeconds(client.getDeviceCodeValiditySeconds()));
       dc.setExpiration(expiration);
     }
     dc.setApproved(false);
 
     return codeRepository.save(dc);
-    
+
   }
 
   @Override
   public void clearExpiredDeviceCodes() {
-
-    return;
   }
 
 }
