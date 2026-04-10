@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.registration.cern.mock;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -47,10 +48,13 @@ public class MockCernAuthController implements CernHrDBApiService {
   @Autowired
   CernProperties properties;
 
+  @Autowired
+  Clock clock;
+
   @GetMapping("/mock-cern-auth")
   public String mockCernAuthentication(HttpSession session) {
 
-    OidcSecurityContextBuilder builder = new OidcSecurityContextBuilder();
+    OidcSecurityContextBuilder builder = new OidcSecurityContextBuilder(clock);
 
     builder.claim(properties.getPersonIdClaim(), "987654321")
       .claim("email", "test@example.org")

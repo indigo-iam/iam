@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.rcauth;
 
+import java.time.Clock;
+
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
@@ -66,7 +68,8 @@ public class RCAuthTestSupport extends X509TestSupport {
   protected JWKSetKeyStore rcAuthKeyStore = rcAuthKeyStore();
   protected JWSAlgorithm jwsAlgo = JWSAlgorithm.RS256;
 
-  protected IdTokenBuilder tokenBuilder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
+  protected IdTokenBuilder tokenBuilder =
+      new IdTokenBuilder(Clock.systemUTC(), rcAuthKeyStore, jwsAlgo);
 
   public JWKSetKeyStore rcAuthKeyStore() {
     JWKSetKeyStore ks = new JWKSetKeyStore();

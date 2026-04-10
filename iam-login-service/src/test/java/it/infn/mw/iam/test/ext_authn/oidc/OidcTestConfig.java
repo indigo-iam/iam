@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -141,8 +142,8 @@ public class OidcTestConfig {
   }
 
   @Bean
-  MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
-    return new MockOIDCProvider(mapper, mockOidcProviderKeyStore());
+  MockOIDCProvider mockOidcProvider(Clock clock, ObjectMapper mapper) {
+    return new MockOIDCProvider(clock, mapper, mockOidcProviderKeyStore());
   }
 
 }
