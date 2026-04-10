@@ -34,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.mfa.IamTotpSecretRotationService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamTotpAdminKeyRepository;
@@ -45,16 +46,19 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 class IamTotpMfaKeyRotationTests {
 
   @Mock
-  private IamTotpMfaProperties mfaProperties;
+  IamTotpMfaProperties mfaProperties;
 
   @Mock
-  private IamTotpMfaRepository totpRepository;
+  IamTotpMfaRepository totpRepository;
 
   @Mock
-  private IamTotpAdminKeyRepository adminKeyRepository;
+  IamTotpAdminKeyRepository adminKeyRepository;
 
   @Mock
-  private PasswordEncoder passwordEncoder;
+  PasswordEncoder passwordEncoder;
+
+  @Mock
+  IamAccount account;
 
   final String currentKey = "define-new-key";
   final String oldKey = "define-old-key";
@@ -106,9 +110,12 @@ class IamTotpMfaKeyRotationTests {
     String encryptedWithOld =
         IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(rawSecret, oldPassword);
 
+    when(account.getUsername()).thenReturn("test-user");
+
     IamTotpMfa totp = new IamTotpMfa();
     totp.setId(1L);
     totp.setSecret(encryptedWithOld);
+    totp.setAccount(account);
 
     when(mfaProperties.getOldPasswordToDecrypt()).thenReturn(oldPassword);
     when(mfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(newPassword);
