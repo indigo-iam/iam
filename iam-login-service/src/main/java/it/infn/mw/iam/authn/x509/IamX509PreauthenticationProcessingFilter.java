@@ -19,8 +19,10 @@ import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBe
 
 import java.io.IOException;
 import java.security.cert.X509Certificate;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,6 +62,8 @@ public class IamX509PreauthenticationProcessingFilter
 
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
 
+  private final Clock clock;
+
   private final X509AuthenticationCredentialExtractor credentialExtractor;
 
   private final AuthenticationSuccessHandler successHandler;
@@ -68,9 +72,11 @@ public class IamX509PreauthenticationProcessingFilter
 
   private final IamProperties iamProperties;
 
-  public IamX509PreauthenticationProcessingFilter(X509AuthenticationCredentialExtractor extractor,
+  public IamX509PreauthenticationProcessingFilter(Clock clock, X509AuthenticationCredentialExtractor extractor,
       AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler,
       IamX509CertificateRepository certificateRepo, IamProperties iamProperties) {
+
+    this.clock = clock;
     setCheckForPrincipalChanges(false);
     setAuthenticationManager(authenticationManager);
     this.credentialExtractor = extractor;
@@ -153,11 +159,9 @@ public class IamX509PreauthenticationProcessingFilter
             .findFirst());
 
     Optional<Date> expirationDate = userCertificate.map(X509Certificate::getNotAfter);
-    Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.MONTH, 1);
-    Date minTimeBeforeExpiration = calendar.getTime();
+    Date minTimeBeforeExpiration = Date.from(clock.instant().plus(Duration.ofDays(30)));
 
-    // Verifying the expirationdate is present within the certificate
+    // Verifying the expiration date is present within the certificate
     if (ceritificateVisability != HIDDEN) {
       if (expirationDate.isPresent() && expirationDate.get().before(minTimeBeforeExpiration)) {
 

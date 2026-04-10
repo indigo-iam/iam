@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -383,9 +382,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     assertThat(signatureResponse.getSignatureTime().compareTo(signature.getSignatureTime()), is(0));
 
     AupSignatureDTO dto = new AupSignatureDTO();
-    Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.HOUR, 2);
-    dto.setSignatureTime(calendar.getTime());
+    dto.setSignatureTime(Date.from(clock.instant().plus(Duration.ofHours(2))));
 
     AupSignatureDTO updatedSignature = mapper.readValue(mvc
       .perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)

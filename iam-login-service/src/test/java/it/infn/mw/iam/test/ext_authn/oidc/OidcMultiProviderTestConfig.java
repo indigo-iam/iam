@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -64,27 +65,27 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public UserInfoFetcher userInfoFetcher() {
+  UserInfoFetcher userInfoFetcher() {
     UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
     return fetcher;
   }
 
   @Bean
   @Primary
-  public RestTemplateFactory restTemplateFactory() {
+  RestTemplateFactory restTemplateFactory() {
     return new MockRestTemplateFactory();
   }
 
   @Bean
   @Primary
-  public IssuerService oidcIssuerService() {
+  IssuerService oidcIssuerService() {
     return new IamThirdPartyIssuerService();
   }
 
 
   @Bean
   @Primary
-  public ServerConfigurationService mockServerConfigurationService() {
+  ServerConfigurationService mockServerConfigurationService() {
 
     ServerConfiguration sc01 = new ServerConfiguration();
     sc01.setIssuer(TEST_OIDC_01_ISSUER);
@@ -110,7 +111,7 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public ClientConfigurationService staticClientConfiguration() {
+  ClientConfigurationService staticClientConfiguration() {
 
     RegisteredClient rc = new RegisteredClient();
     rc.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
@@ -129,7 +130,7 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
+  JWKSetCacheService mockjwkSetCacheService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JWTSigningAndValidationService signatureValidator =
@@ -146,14 +147,14 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public JWKSetKeyStore mockOidcProviderKeyStore() {
+  JWKSetKeyStore mockOidcProviderKeyStore() {
     JWKSetKeyStore ks = new JWKSetKeyStore();
     ks.setLocation(new ClassPathResource("/oidc/mock_op_keys.jks"));
     return ks;
   }
 
   @Bean
-  public MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
-    return new MockOIDCProvider(mapper, mockOidcProviderKeyStore());
+  MockOIDCProvider mockOidcProvider(Clock clock, ObjectMapper mapper) {
+    return new MockOIDCProvider(clock, mapper, mockOidcProviderKeyStore());
   }
 }

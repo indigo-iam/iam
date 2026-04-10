@@ -17,8 +17,9 @@ package it.infn.mw.iam.test.util.oidc;
 
 import static com.google.common.collect.Maps.newHashMap;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +57,10 @@ public class IdTokenBuilder {
   
   Map<String, String> customClaims = newHashMap();
 
-  public IdTokenBuilder(JWKSetKeyStore keyStore, JWSAlgorithm algo) {
-    Calendar cal = Calendar.getInstance();
-    issueTime = cal.getTime();
-    cal.add(Calendar.HOUR, 1);
-    expirationTime = cal.getTime();
+  public IdTokenBuilder(Clock clock, JWKSetKeyStore keyStore, JWSAlgorithm algo) {
+
+    issueTime = Date.from(clock.instant());
+    expirationTime = Date.from(clock.instant().plus(Duration.ofHours(1)));
     jwtId = UUID.randomUUID().toString();
     this.keyStore = keyStore;
     this.signingAlgo = algo;
@@ -75,7 +75,6 @@ public class IdTokenBuilder {
       }
     }
   }
-
 
   public IdTokenBuilder issuer(String issuer) {
     this.issuer = issuer;
