@@ -41,7 +41,6 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.SystemScope;
@@ -234,7 +233,7 @@ public class IamDeviceEndpointController {
       OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
       OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
 
-      approveDevice(dc, o2Auth);
+      deviceCodeService.approveDeviceCode(dc, o2Auth);
 
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
       return DEVICE_APPROVED_PAGE;
@@ -281,7 +280,7 @@ public class IamDeviceEndpointController {
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
 
-    approveDevice(dc, o2Auth);
+    deviceCodeService.approveDeviceCode(dc, o2Auth);
 
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, auth);
@@ -320,15 +319,6 @@ public class IamDeviceEndpointController {
 
     // just for tests validation
     model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));
-  }
-
-  private void approveDevice(DeviceCode dc, OAuth2Authentication o2Auth) {
-
-    dc.setApproved(true);
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(o2Auth);
-    dc.setAuthenticationHolder(authHolder);
-    deviceCodeRepository.save(dc);
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,

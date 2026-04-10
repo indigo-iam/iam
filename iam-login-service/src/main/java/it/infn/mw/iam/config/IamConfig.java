@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
@@ -353,5 +354,10 @@ public class IamConfig {
       MaxAgeService maxAgeService) {
     return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
         maxAgeService);
+  }
+
+  @Bean
+  SecureRandom defaultSecureRandom() {
+    return new SecureRandom();
   }
 }

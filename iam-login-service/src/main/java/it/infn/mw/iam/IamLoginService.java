@@ -16,6 +16,7 @@
 package it.infn.mw.iam;
 
 import org.mitre.discovery.web.DiscoveryEndpoint;
+import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
@@ -97,7 +98,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=ConnectTokenEnhancer.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultOAuth2ProviderTokenService.class)
+        value=DefaultOAuth2ProviderTokenService.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=DefaultDeviceCodeService.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(
