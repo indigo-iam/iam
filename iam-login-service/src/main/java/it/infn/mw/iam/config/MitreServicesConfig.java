@@ -258,8 +258,6 @@ public class MitreServicesConfig {
     return new InMemoryClientLogoLoadingService();
   }
 
-
-
   @Bean
   SymmetricKeyJWTValidatorCacheService defaultSimmetricKeyJWTValidatorCacheService() {
 
