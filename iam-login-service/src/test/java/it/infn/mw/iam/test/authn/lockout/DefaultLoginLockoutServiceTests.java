@@ -74,10 +74,10 @@ class DefaultLoginLockoutServiceTests {
   void setup() {
     lockoutProps = new LoginLockoutProperties();
     lockoutProps.setEnabled(true);
-    lockoutProps.setMaxFailedAttempts(2);
-    lockoutProps.setLockoutMinutes(30);
-    lockoutProps.setMaxConcurrentFailures(2);
-    lockoutProps.setDisableAfterMaxFailures(true);
+    lockoutProps.setMaxFailedAttemptsBeforeSuspension(2);
+    lockoutProps.setSuspensionDurationMinutes(30);
+    lockoutProps.setMaxSuspensionRounds(2);
+    lockoutProps.setDisableAfterMaxSuspensionRounds(true);
 
     when(iamProperties.getLoginLockout()).thenReturn(lockoutProps);
     service = new DefaultLoginLockoutService(lockoutRepo, accountRepo, iamProperties);
@@ -189,7 +189,7 @@ class DefaultLoginLockoutServiceTests {
   void secondFailureKeepsOriginalFirstFailureTime() {
     when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
-    lockoutProps.setMaxFailedAttempts(5);
+    lockoutProps.setMaxFailedAttemptsBeforeSuspension(5);
 
     service.recordFailedAttempt(USERNAME);
     ArgumentCaptor<IamAccountLoginLockout> captor = ArgumentCaptor.forClass(IamAccountLoginLockout.class);
@@ -274,7 +274,7 @@ class DefaultLoginLockoutServiceTests {
 
   @Test
   void keepsSuspendingIndefinitelyWhenDisableIsFalse() {
-    lockoutProps.setDisableAfterMaxFailures(false);
+    lockoutProps.setDisableAfterMaxSuspensionRounds(false);
 
     when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
@@ -334,28 +334,28 @@ class DefaultLoginLockoutServiceTests {
   }
 
   @Test
-  void validateZeroMaxFailedAttemptsThrows() {
-    lockoutProps.setMaxFailedAttempts(0);
+  void validateZeroMaxFailedAttemptsBeforeSuspensionThrows() {
+    lockoutProps.setMaxFailedAttemptsBeforeSuspension(0);
     assertThrows(IllegalStateException.class, () -> service.validateConfiguration());
   }
 
   @Test
-  void validateZeroLockoutMinutesThrows() {
-    lockoutProps.setLockoutMinutes(0);
+  void validateZeroSuspensionDurationMinutesThrows() {
+    lockoutProps.setSuspensionDurationMinutes(0);
     assertThrows(IllegalStateException.class, () -> service.validateConfiguration());
   }
 
   @Test
   void validateZeroMaxConcurrentWithDisableTrueThrows() {
-    lockoutProps.setMaxConcurrentFailures(0);
-    lockoutProps.setDisableAfterMaxFailures(true);
+    lockoutProps.setMaxSuspensionRounds(0);
+    lockoutProps.setDisableAfterMaxSuspensionRounds(true);
     assertThrows(IllegalStateException.class, () -> service.validateConfiguration());
   }
 
   @Test
   void validateZeroMaxConcurrentWithDisableFalseDoesNotThrow() {
-    lockoutProps.setMaxConcurrentFailures(0);
-    lockoutProps.setDisableAfterMaxFailures(false);
+    lockoutProps.setMaxSuspensionRounds(0);
+    lockoutProps.setDisableAfterMaxSuspensionRounds(false);
     assertDoesNotThrow(() -> service.validateConfiguration());
   }
 }

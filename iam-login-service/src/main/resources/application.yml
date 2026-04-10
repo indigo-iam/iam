@@ -203,10 +203,10 @@ iam:
 
   login-lockout:
     enabled: ${IAM_ACCOUNT_LOGIN_LOCKOUT_ENABLED:false}
-    disable-after-max-failures: ${IAM_ACCOUNT_LOGIN_LOCKOUT_DISABLE_AFTER_MAX_FAILURES:false}
-    max-failed-attempts: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS:3}
-    lockout-minutes: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MINUTES:30}
-    max-concurrent-failures: ${IAM_ACCOUNT_LOGIN_LOCKOUT_MAX_CONCURRENT_FAILURES:2}
+    disable-after-max-suspension-rounds: ${IAM_ACCOUNT_LOGIN_DISABLE_AFTER_MAX_SUSPENSION_ROUNDS:false}
+    max-failed-attempts-before-suspension: ${IAM_ACCOUNT_LOGIN_MAX_FAILED_ATTEMPTS_BEFORE_SUSPENSION:3}
+    suspension-duration-minutes: ${IAM_ACCOUNT_LOGIN_SUSPENSION_DURATION_MINUTES:30}
+    max-suspension-rounds: ${IAM_ACCOUNT_LOGIN_MAX_SUSPENSION_ROUNDS:2}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}

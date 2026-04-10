@@ -58,19 +58,19 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       return;
     }
 
-    if (properties.getMaxFailedAttempts() < 1) {
+    if (properties.getMaxFailedAttemptsBeforeSuspension() < 1) {
       throw new IllegalStateException(
           "iam.login-lockout.max-failed-attempts must be >= 1. "
               + "Please provide the maximum number of failed login attempts allowed before suspension.");
     }
 
-    if (properties.getLockoutMinutes() < 1) {
+    if (properties.getSuspensionDurationMinutes() < 1) {
       throw new IllegalStateException(
           "iam.login-lockout.lockout-minutes must be >= 1. "
               + "Please provide the suspension duration in minutes.");
     }
 
-    if (properties.isDisableAfterMaxFailures() && properties.getMaxConcurrentFailures() < 1) {
+    if (properties.isDisableAfterMaxSuspensionRounds() && properties.getMaxSuspensionRounds() < 1) {
       throw new IllegalStateException(
           "iam.login-lockout.max-concurrent-failures must be >= 1 when disable-after-max-failures is true. "
               + "Please provide the maximum number of suspension rounds allowed before the account is permanently disabled.");
@@ -78,8 +78,8 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
 
     LOG.info("Iam Account Login lockout enabled: max-failed-attempts={}, lockout-minutes={}, "
         + "max-concurrent-failures={}, disable-after-max-failures={}",
-        properties.getMaxFailedAttempts(), properties.getLockoutMinutes(),
-        properties.getMaxConcurrentFailures(), properties.isDisableAfterMaxFailures());
+        properties.getMaxFailedAttemptsBeforeSuspension(), properties.getSuspensionDurationMinutes(),
+        properties.getMaxSuspensionRounds(), properties.isDisableAfterMaxSuspensionRounds());
   }
 
   @Override
@@ -159,30 +159,30 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
     lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);
 
     LOG.info("Failed login attempt {} of {} for account '{}'", lockout.getFailedAttempts(),
-        properties.getMaxFailedAttempts(), username);
+        properties.getMaxFailedAttemptsBeforeSuspension(), username);
 
-    if (lockout.getFailedAttempts() >= properties.getMaxFailedAttempts()) {
+    if (lockout.getFailedAttempts() >= properties.getMaxFailedAttemptsBeforeSuspension()) {
 
       lockout.setLockoutCount(lockout.getLockoutCount() + 1);
 
-      if (properties.isDisableAfterMaxFailures()
-          && lockout.getLockoutCount() > properties.getMaxConcurrentFailures()) {
+      if (properties.isDisableAfterMaxSuspensionRounds()
+          && lockout.getLockoutCount() > properties.getMaxSuspensionRounds()) {
         // All suspension rounds exhausted; disable the account and clean up
         account.setActive(false);
         accountRepo.save(account);
         lockoutRepo.delete(lockout);
         LOG.warn("Account '{}' disabled after {} suspension rounds", username,
-            properties.getMaxConcurrentFailures());
+            properties.getMaxSuspensionRounds());
         return;
       }
 
       // Suspend for the configured duration
-      Instant suspendUntil = now.plus(properties.getLockoutMinutes(), ChronoUnit.MINUTES);
+      Instant suspendUntil = now.plus(properties.getSuspensionDurationMinutes(), ChronoUnit.MINUTES);
       lockout.setSuspendedUntil(Date.from(suspendUntil));
 
       LOG.warn("Account '{}' suspended until {} (round {} of {})", username,
           lockout.getSuspendedUntil(), lockout.getLockoutCount(),
-          properties.getMaxConcurrentFailures());
+          properties.getMaxSuspensionRounds());
     }
 
     lockoutRepo.save(lockout);

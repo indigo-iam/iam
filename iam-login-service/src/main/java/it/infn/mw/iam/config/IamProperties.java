@@ -710,10 +710,10 @@ public class IamProperties {
   public static class LoginLockoutProperties {
 
     private boolean enabled = false;
-    private int maxFailedAttempts = 3;
-    private int lockoutMinutes = 30;
-    private int maxConcurrentFailures = 2;
-    private boolean disableAfterMaxFailures = true;
+    private int maxFailedAttemptsBeforeSuspension = 3;
+    private int suspensionDurationMinutes = 30;
+    private int maxSuspensionRounds = 2;
+    private boolean disableAfterMaxSuspensionRounds = false;
 
     public boolean isEnabled() {
       return enabled;
@@ -723,36 +723,36 @@ public class IamProperties {
       this.enabled = enabled;
     }
 
-    public int getMaxFailedAttempts() {
-      return maxFailedAttempts;
+    public int getMaxFailedAttemptsBeforeSuspension() {
+      return maxFailedAttemptsBeforeSuspension;
     }
 
-    public void setMaxFailedAttempts(int maxFailedAttempts) {
-      this.maxFailedAttempts = maxFailedAttempts;
+    public void setMaxFailedAttemptsBeforeSuspension(int maxFailedAttemptsBeforeSuspension) {
+      this.maxFailedAttemptsBeforeSuspension = maxFailedAttemptsBeforeSuspension;
     }
 
-    public int getLockoutMinutes() {
-      return lockoutMinutes;
+    public int getSuspensionDurationMinutes() {
+      return suspensionDurationMinutes;
     }
 
-    public void setLockoutMinutes(int lockoutMinutes) {
-      this.lockoutMinutes = lockoutMinutes;
+    public void setSuspensionDurationMinutes(int suspensionDurationMinutes) {
+      this.suspensionDurationMinutes = suspensionDurationMinutes;
     }
 
-    public int getMaxConcurrentFailures() {
-      return maxConcurrentFailures;
+    public int getMaxSuspensionRounds() {
+      return maxSuspensionRounds;
     }
 
-    public void setMaxConcurrentFailures(int maxConcurrentFailures) {
-      this.maxConcurrentFailures = maxConcurrentFailures;
+    public void setMaxSuspensionRounds(int maxSuspensionRounds) {
+      this.maxSuspensionRounds = maxSuspensionRounds;
     }
 
-    public boolean isDisableAfterMaxFailures() {
-      return disableAfterMaxFailures;
+    public boolean isDisableAfterMaxSuspensionRounds() {
+      return disableAfterMaxSuspensionRounds;
     }
 
-    public void setDisableAfterMaxFailures(boolean disableAfterMaxFailures) {
-      this.disableAfterMaxFailures = disableAfterMaxFailures;
+    public void setDisableAfterMaxSuspensionRounds(boolean disableAfterMaxSuspensionRounds) {
+      this.disableAfterMaxSuspensionRounds = disableAfterMaxSuspensionRounds;
     }
   }
 

@@ -110,7 +110,6 @@ class IamLocalAuthenticationProviderTests {
 
   @Test
   void lockedExceptionBlocksAuthentication() {
-        // Not pre-authenticated; enters the if(!isPreAuthenticated) block where checkIamAccountLockout lives
         ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("locked", "cred");
         doThrow(new LockedException("Suspended")).when(lockoutService).checkIamAccountLockout("locked");
 

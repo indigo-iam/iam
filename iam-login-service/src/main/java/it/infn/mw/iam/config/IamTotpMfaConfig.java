@@ -66,9 +66,6 @@ public class IamTotpMfaConfig {
   @Autowired
   private AccountUtils accountUtils;
 
-  @Autowired
-  private LoginLockoutService lockoutService;
-
   /**
    * Responsible for generating new TOTP secrets
    * 
@@ -141,8 +138,7 @@ public class IamTotpMfaConfig {
   }
 
   @Bean
-  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
+  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService, LoginLockoutService lockoutService) {
     return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, lockoutService);
   }
-
 }
