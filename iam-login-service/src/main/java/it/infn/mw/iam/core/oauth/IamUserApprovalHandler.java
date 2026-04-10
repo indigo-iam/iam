@@ -39,6 +39,7 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
+import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
@@ -67,13 +68,14 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private final SystemScopeService systemScopeService;
   private final AccountUtils accountUtils;
   private final ClientService clientService;
+  private final StatsService statsService;
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   public IamUserApprovalHandler(Clock clock, ClientDetailsEntityService clientDetailsService,
       ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
       SystemScopeService systemScopeService, AccountUtils accountUtils,
-      ClientService clientService) {
+      ClientService clientService, StatsService statsService) {
     this.clock = clock;
     this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
@@ -81,6 +83,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     this.systemScopeService = systemScopeService;
     this.accountUtils = accountUtils;
     this.clientService = clientService;
+    this.statsService = statsService;
   }
 
   @Override
@@ -119,6 +122,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
         ap.setAccessDate(Date.from(clock.instant()));
         approvedSiteService.save(ap);
+        statsService.resetCache();
 
         authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
@@ -180,6 +184,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       ApprovedSite newSite =
           approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
+      statsService.resetCache();
       String newSiteId = newSite.getId().toString();
       authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
     }

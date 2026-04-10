@@ -25,6 +25,7 @@ import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
+import org.mitre.openid.connect.service.impl.DefaultApprovedSiteService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.view.UserInfoView;
@@ -103,7 +104,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=DefaultDeviceCodeService.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultOAuth2AuthorizationCodeService.class)
+        value=DefaultOAuth2AuthorizationCodeService.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=DefaultApprovedSiteService.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

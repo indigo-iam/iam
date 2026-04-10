@@ -33,7 +33,6 @@ import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
 import org.mitre.openid.connect.service.DynamicClientValidationService;
@@ -43,7 +42,6 @@ import org.mitre.openid.connect.service.PairwiseIdentiferService;
 import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
-import org.mitre.openid.connect.service.impl.DefaultApprovedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultBlacklistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultOIDCTokenService;
 import org.mitre.openid.connect.service.impl.DefaultStatsService;
@@ -286,12 +284,6 @@ public class MitreServicesConfig {
   UserInfoService defaultUserInfoService() {
 
     return new DefaultUserInfoService();
-  }
-
-  @Bean
-  ApprovedSiteService defaultApprovedSiteService() {
-
-    return new DefaultApprovedSiteService();
   }
 
   @Bean
