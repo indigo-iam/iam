@@ -261,6 +261,10 @@ public class FederatedOpRegistrationService {
     if (jwksUri != null) {
       dtoClient.setJwksUri(jwksUri);
     }
+    Object jwksObj = rpMetadata.get("jwks");
+    if (jwksObj != null) {
+      dtoClient.setJwk(jwksObj.toString());
+    }
 
     List<String> redirectUris = getStringList(rpMetadata, "redirect_uris");
     if (redirectUris == null || redirectUris.isEmpty()) {
