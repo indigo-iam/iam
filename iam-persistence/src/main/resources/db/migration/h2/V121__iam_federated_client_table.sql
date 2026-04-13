@@ -13,8 +13,6 @@ CREATE TABLE IF NOT EXISTS iam_federated_client (
 	created_at TIMESTAMP,
 	active BOOLEAN,
 	
-	scope VARCHAR(2048),
-	
 	expiration TIMESTAMP NOT NULL,
     entity_id VARCHAR(512) NOT NULL,
 	
