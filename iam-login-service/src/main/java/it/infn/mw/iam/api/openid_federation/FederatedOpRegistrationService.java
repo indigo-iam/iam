@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -96,9 +95,9 @@ public class FederatedOpRegistrationService {
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      IamFederatedClientService federateClientsService,
-      OpenidFederationProperties oidFedProperties, TrustAnchorRepository trustAnchorRepository,
-      RestTemplateFactory restTemplateFactory, Clock clock) {
+      IamFederatedClientService federateClientsService, OpenidFederationProperties oidFedProperties,
+      TrustAnchorRepository trustAnchorRepository, RestTemplateFactory restTemplateFactory,
+      Clock clock) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
@@ -146,7 +145,6 @@ public class FederatedOpRegistrationService {
     // 7. Persist client
     RegisteredClientDTO dtoClient =
         createClientDtoFromOpResponse(es.getSignedStatement().getJWTClaimsSet());
-    dtoClient.setClientType(ClientType.EXTERNAL);
 
     RegisteredClientDTO registeredClient = federateClientsService.saveClient(dtoClient);
 

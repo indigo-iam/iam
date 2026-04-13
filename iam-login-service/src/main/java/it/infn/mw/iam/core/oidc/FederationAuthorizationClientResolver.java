@@ -30,7 +30,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletResponse;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -155,7 +154,6 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
       dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
       dtoClient.setClientId(clientId);
-      dtoClient.setClientType(ClientType.INTERNAL);
       dtoClient.setRequestObjectSigningAlgorithm(jwt.getHeader().getAlgorithm());
 
       Optional<ClientDetailsEntity> maybeClient = clientRepo.findByClientId(clientId);

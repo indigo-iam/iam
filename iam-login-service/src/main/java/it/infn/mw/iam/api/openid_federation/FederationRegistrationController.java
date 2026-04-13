@@ -21,7 +21,6 @@ import java.text.ParseException;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -101,7 +100,6 @@ public class FederationRegistrationController {
     // 4. Create RegisteredClientDTO from RP metadata
     RegisteredClientDTO dtoClient = clientMapper.createClientDtoFromRpMetadata(rpRequest);
     dtoClient.setExpiration(trustChain.resolveExpirationTime());
-    dtoClient.setClientType(ClientType.INTERNAL);
 
     // 5. Register the client by using the already existing service
     RegisteredClientDTO registeredClient =

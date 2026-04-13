@@ -371,8 +371,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
 
     if (hasRelyingParty(request)) {
-      ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(client,
-          request.getExpiration(), request.getEntityId(), request.getClientType());
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(client, request.getExpiration(), request.getEntityId());
       client.setClientRelyingParty(clientRelyingParty);
     }
 

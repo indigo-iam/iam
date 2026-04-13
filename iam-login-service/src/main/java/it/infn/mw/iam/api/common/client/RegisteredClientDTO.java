@@ -29,7 +29,6 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -257,11 +256,6 @@ public class RegisteredClientDTO {
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private String entityId;
-
-  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  @JsonFormat(shape = JsonFormat.Shape.STRING)
-  private ClientType clientType;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
@@ -543,14 +537,6 @@ public class RegisteredClientDTO {
 
   public void setEntityId(String entityId) {
     this.entityId = entityId;
-  }
-
-  public ClientType getClientType() {
-    return clientType;
-  }
-
-  public void setClientType(ClientType clientType) {
-    this.clientType = clientType;
   }
 
   public String getJwk() {
