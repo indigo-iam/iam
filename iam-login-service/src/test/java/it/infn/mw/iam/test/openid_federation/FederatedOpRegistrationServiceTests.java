@@ -46,9 +46,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
@@ -85,7 +82,8 @@ import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
+import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
@@ -126,7 +124,7 @@ class FederatedOpRegistrationServiceTests {
   ClientConfigurationService clientConfigurationService;
 
   @Autowired
-  IamClientRepository clientRepo;
+  IamFederatedClientRepository clientRepo;
 
   @MockBean
   ServerConfigurationService serverConfigurationService;
@@ -141,19 +139,18 @@ class FederatedOpRegistrationServiceTests {
   @BeforeEach
   void setup() throws JOSEException, FederationException {
     ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer("https://op.example.com");
-    sc.setAuthorizationEndpointUri("https://op.example.com/authorize");
-    sc.setTokenEndpointUri("https://op.example.com/token");
-    sc.setJwksUri("https://op.example.com/jwks");
+    sc.setIssuer(ISS);
+    sc.setAuthorizationEndpointUri(ISS + "/authorize");
+    sc.setTokenEndpointUri(ISS + "/token");
+    sc.setJwksUri(ISS + "/jwks");
 
-    when(serverConfigurationService.getServerConfiguration("https://op.example.com"))
-      .thenReturn(sc);
+    when(serverConfigurationService.getServerConfiguration(ISS)).thenReturn(sc);
 
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetServer();
 
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
-        URI.create("https://op.example.com/jwk"), "https://ta1.example.com");
+    fakeChain = TrustChainTestFactory.createOpToTaChain(ISS, null, URI.create(ISS + "/jwk"),
+        "https://ta1.example.com");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
   }
 
@@ -164,31 +161,45 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRpRegistration() throws Exception {
+    ServerConfiguration sc = new ServerConfiguration();
+    sc.setIssuer("https://remote-op.example.com");
+    sc.setAuthorizationEndpointUri("https://remote-op.example.com/authorize");
+    sc.setTokenEndpointUri("https://remote-op.example.com/token");
+    sc.setJwksUri("https://remote-op.example.com/jwks");
+
+    when(serverConfigurationService.getServerConfiguration("https://remote-op.example.com"))
+      .thenReturn(sc);
+
+    fakeChain = TrustChainTestFactory.createOpToTaChain("https://remote-op.example.com", null,
+        URI.create("https://remote-op.example.com/jwk"), "https://ta1.example.com");
+    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
+
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse(ISS, SUB, iat, exp, AUD, TA);
+    String rpJwt = opJwtResponse("https://remote-op.example.com", SUB, iat, exp, AUD, TA);
 
     mockRtf.getMockServer()
-      .expect(requestTo("https://op.example.com/fedreg"))
+      .expect(requestTo("https://remote-op.example.com/fedreg"))
       .andExpect(method(HttpMethod.POST))
       .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
-    mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
+    mvc.perform(get("/openid_connect_login?iss=" + "https://remote-op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId("https://op.example.com");
+    Optional<IamFederatedClientEntity> client =
+        clientRepo.findByEntityId("https://remote-op.example.com");
     assertTrue(client.isPresent());
     assertEquals("OIDFed remote client", client.get().getClientName());
   }
 
   @Test
   void testRpRegistrationFailsWhenNoAuthorityHintsLeadToTA() throws Exception {
-    fakeChain = TrustChainTestFactory.createOpToTaChain(null,
+    fakeChain = TrustChainTestFactory.createOpToTaChain(ISS, null,
         URI.create("https://op.example.com/jwk"), "https://ta.example.com");
     when(trustChainService.validateFromEntityId("https://op.example.com")).thenReturn(fakeChain);
 
-    TrustChain hintTrustChain = TrustChainTestFactory.createOpToTaChain(null,
+    TrustChain hintTrustChain = TrustChainTestFactory.createOpToTaChain(ISS, null,
         URI.create("https://op.example.com/jwk"), "https://ta1.example.com");
     when(trustChainService.validateFromEntityId("https://ta1.example.com"))
       .thenReturn(hintTrustChain);
@@ -207,13 +218,12 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRegisteredRpRedirectsToAuthorize() throws Exception {
-    Optional<ClientDetailsEntity> registeredOp = clientRepo.findByClientId("client");
+    Optional<IamFederatedClientEntity> registeredOp = clientRepo.findByClientId("federated-client");
     LocalDate today = LocalDate.now();
     LocalDate tomorrow = today.plusDays(1);
     Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    ClientRelyingPartyEntity client = new ClientRelyingPartyEntity(registeredOp.get(), tomorrowDate,
-        "https://op.example.com", ClientType.EXTERNAL);
-    registeredOp.get().setClientRelyingParty(client);
+    registeredOp.get().setExpiration(tomorrowDate);
+    registeredOp.get().setEntityId("https://op.example.com");
     clientRepo.save(registeredOp.get());
 
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
@@ -246,19 +256,12 @@ class FederatedOpRegistrationServiceTests {
       .andExpect(method(HttpMethod.POST))
       .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
-    Optional<ClientDetailsEntity> expiredOp = clientRepo.findByClientId("client");
-    LocalDate today = LocalDate.now();
-    LocalDate yesteday = today.minusDays(1);
-    Date tomorrowDate = Date.from(yesteday.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    ClientRelyingPartyEntity client = new ClientRelyingPartyEntity(expiredOp.get(), tomorrowDate,
-        "https://op.example.com", ClientType.EXTERNAL);
-    expiredOp.get().setClientRelyingParty(client);
-    clientRepo.save(expiredOp.get());
+    Optional<IamFederatedClientEntity> expiredOp = clientRepo.findByClientId("federated-client");
 
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<ClientDetailsEntity> newOp = clientRepo.findByEntityId("https://op.example.com");
+    Optional<IamFederatedClientEntity> newOp = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(newOp.isPresent());
     assertNotEquals(expiredOp.get().getClientId(), newOp.get().getClientId());
   }

@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity.ClientType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +63,6 @@ import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
-import it.infn.mw.iam.api.client.management.service.ClientManagementService;
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -74,8 +71,10 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.oidc.ExplicitRegistrationEntityStatementBuilder;
 import it.infn.mw.iam.core.oidc.FederationException;
+import it.infn.mw.iam.core.oidc.IamFederatedClientService;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
 import it.infn.mw.iam.core.oidc.TrustChainService;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 import net.minidev.json.JSONObject;
 
 @Service
@@ -86,8 +85,7 @@ public class FederatedOpRegistrationService {
 
   private final TrustChainService tcService;
   private final ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder;
-  private final ClientManagementService clientManagementService;
-  private final ClientService clientService;
+  private final IamFederatedClientService federateClientsService;
   private final OpenidFederationProperties oidFedProperties;
   private final TrustAnchorRepository trustAnchorRepository;
   private final RestTemplate restTemplate;
@@ -98,21 +96,21 @@ public class FederatedOpRegistrationService {
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      ClientManagementService clientManagementService, ClientService clientService,
+      IamFederatedClientService federateClientsService,
       OpenidFederationProperties oidFedProperties, TrustAnchorRepository trustAnchorRepository,
       RestTemplateFactory restTemplateFactory, Clock clock) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
-    this.clientManagementService = clientManagementService;
-    this.clientService = clientService;
+    this.federateClientsService = federateClientsService;
     this.oidFedProperties = oidFedProperties;
     this.trustAnchorRepository = trustAnchorRepository;
     this.restTemplate = restTemplateFactory.newRestTemplate();
     this.clock = clock;
   }
 
-  public RegisteredClientDTO registerOp(String issuer, Optional<ClientDetailsEntity> existingClient)
+  public RegisteredClientDTO registerOp(String issuer,
+      Optional<IamFederatedClientEntity> existingClient)
       throws JOSEException, ParseException, FederationException {
 
     validateIssuer(issuer);
@@ -150,10 +148,10 @@ public class FederatedOpRegistrationService {
         createClientDtoFromOpResponse(es.getSignedStatement().getJWTClaimsSet());
     dtoClient.setClientType(ClientType.EXTERNAL);
 
-    RegisteredClientDTO registeredClient = clientManagementService.saveNewClient(dtoClient);
+    RegisteredClientDTO registeredClient = federateClientsService.saveClient(dtoClient);
 
     if (existingClient.isPresent()) {
-      clientService.deleteClient(existingClient.get());
+      federateClientsService.deleteClient(existingClient.get());
     }
 
     return registeredClient;

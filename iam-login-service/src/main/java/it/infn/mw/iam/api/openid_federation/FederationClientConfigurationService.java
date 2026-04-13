@@ -20,7 +20,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
@@ -31,16 +30,17 @@ import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.oidc.FederationException;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
+import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 
 @Profile("openid-federation")
 public class FederationClientConfigurationService implements ClientConfigurationService {
 
-  private final IamClientRepository clientRepo;
+  private final IamFederatedClientRepository clientRepo;
   private final FederatedOpRegistrationService federationRegistrationService;
   private final Clock clock;
 
-  public FederationClientConfigurationService(IamClientRepository clientRepo,
+  public FederationClientConfigurationService(IamFederatedClientRepository clientRepo,
       FederatedOpRegistrationService federationRegistrationService, Clock clock) {
     this.clientRepo = clientRepo;
     this.federationRegistrationService = federationRegistrationService;
@@ -50,10 +50,11 @@ public class FederationClientConfigurationService implements ClientConfiguration
   @Override
   public RegisteredClient getClientConfiguration(ServerConfiguration serverConfig) {
 
-    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(serverConfig.getIssuer());
+    Optional<IamFederatedClientEntity> client =
+        clientRepo.findByEntityId(serverConfig.getIssuer());
 
     if (client.isPresent()) {
-      Instant expiration = client.get().getClientRelyingParty().getExpiration().toInstant();
+      Instant expiration = client.get().getExpiration().toInstant();
 
       if (expiration.isAfter(clock.instant())) {
         return toRegisteredClient(client.get());
@@ -72,7 +73,7 @@ public class FederationClientConfigurationService implements ClientConfiguration
     }
   }
 
-  private RegisteredClient toRegisteredClient(ClientDetailsEntity entity) {
+  private RegisteredClient toRegisteredClient(IamFederatedClientEntity entity) {
     RegisteredClient rc = new RegisteredClient();
     rc.setClientId(entity.getClientId());
     rc.setClientSecret(entity.getClientSecret());

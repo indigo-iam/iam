@@ -19,6 +19,7 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.http.client.HttpClient;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
@@ -35,7 +36,6 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,7 +43,6 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -75,8 +74,8 @@ import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
@@ -200,9 +199,8 @@ public class OidcConfiguration {
 
   @Bean
   ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers,
-      Environment env, IamClientRepository clientRepo,
-      @Autowired(required = false) FederatedOpRegistrationService federationRegistrationService,
-      Clock clock) {
+      IamFederatedClientRepository clientRepo,
+      Optional<FederatedOpRegistrationService> federationRegistrationService, Clock clock) {
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -216,10 +214,9 @@ public class OidcConfiguration {
       clients.put(provider.getIssuer(), rc);
     });
 
-    if (clients.isEmpty()
-        && Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals)) {
-      return new FederationClientConfigurationService(clientRepo, federationRegistrationService,
-          clock);
+    if (clients.isEmpty() && federationRegistrationService.isPresent()) {
+      return new FederationClientConfigurationService(clientRepo,
+          federationRegistrationService.get(), clock);
     }
 
     if (clients.isEmpty()) {
