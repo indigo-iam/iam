@@ -199,12 +199,8 @@ public class FederatedOpRegistrationService {
 
     JSONObject rpMetadata = extractRpMetadata(jwtClaimSet);
 
-    String clientName = rpMetadata.getAsString("client_name");
-    if (clientName != null) {
-      dtoClient.setClientName(clientName);
-    } else {
-      dtoClient.setClientName("OIDFed remote client");
-    }
+    dtoClient.setClientName(
+        Optional.ofNullable(rpMetadata.getAsString("client_name")).orElse("OIDFed remote client"));
 
     String clientId = rpMetadata.getAsString("client_id");
     dtoClient.setClientId(clientId);
@@ -214,12 +210,10 @@ public class FederatedOpRegistrationService {
       dtoClient.setClientSecret(clientSecret);
     }
 
-    String authMethod = rpMetadata.getAsString("token_endpoint_auth_method");
-    if (authMethod != null) {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.valueOf(authMethod));
-    } else {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
-    }
+    dtoClient.setTokenEndpointAuthMethod(
+        Optional.ofNullable(rpMetadata.getAsString("token_endpoint_auth_method"))
+          .map(TokenEndpointAuthenticationMethod::valueOf)
+          .orElse(TokenEndpointAuthenticationMethod.client_secret_basic));
 
     List<String> grantTypesClaim = getStringList(rpMetadata, "grant_types");
     if (grantTypesClaim.isEmpty()) {
