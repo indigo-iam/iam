@@ -17,23 +17,28 @@ package it.infn.mw.iam.test.oauth.revocation;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class RevocationEndpointTests extends EndpointsTestUtils {
 
   private static final String INVALID_TOKEN_VALUE = "not-a-token";
@@ -134,6 +139,9 @@ class RevocationEndpointTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
+    mvc.perform(get(SCIM_ME).header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+      .andExpect(status().isOk());
+
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -149,6 +157,9 @@ class RevocationEndpointTests extends EndpointsTestUtils {
             .param(OAuth2ParameterNames.TOKEN, accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
+
+    mvc.perform(get(SCIM_ME).header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test

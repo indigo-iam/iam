@@ -18,7 +18,6 @@ package it.infn.mw.iam.core;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,11 +44,9 @@ import com.google.common.hash.Hashing;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.api.aup.AupService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -68,12 +65,11 @@ public class TokenUtils {
   private final IamClientRepository clientRepository;
   private final JWTSigningAndValidationService jwtSigningService;
   private final ScopeFilter scopeFilter;
-  private final AupService aupService;
 
   public TokenUtils(Clock clock, IamProperties iamProperties,
       IamOAuthAccessTokenRepository accessTokenRepo, IamAccountRepository accountRepository,
       IamClientRepository clientRepository, JWTSigningAndValidationService jwtSigningService,
-      ScopeFilter scopeFilter, AupService aupService) {
+      ScopeFilter scopeFilter) {
 
     this.clock = clock;
     this.iamProperties = iamProperties;
@@ -82,7 +78,6 @@ public class TokenUtils {
     this.clientRepository = clientRepository;
     this.jwtSigningService = jwtSigningService;
     this.scopeFilter = scopeFilter;
-    this.aupService = aupService;
   }
 
   public ParsedAccessToken parseAccessToken(String accessToken) {
@@ -102,7 +97,7 @@ public class TokenUtils {
       return new ParsedAccessToken(issuer, sub, clientId, expiration, scopeSet, audiences,
           jwt.getHeader(), jwt.getPayload(), jwt.getSignature(), jwt, refreshToken, external);
     } catch (ParseException e) {
-      throw new InvalidTokenException("Token parsing error: " + e.getMessage());
+      throw invalidToken("Token parsing error: " + e.getMessage());
     }
   }
 
@@ -112,8 +107,7 @@ public class TokenUtils {
       return getClientAuthentication(token.clientId(), token.scopes(), token.audiences());
     }
     IamAccount account = accountRepository.findByUuid(token.sub())
-      .orElseThrow(
-          () -> new InvalidTokenException("User with subject " + token.sub() + " not found"));
+      .orElseThrow(() -> invalidToken("User with subject " + token.sub() + " not found"));
     Set<SimpleGrantedAuthority> authorities = account.getAuthorities()
       .stream()
       .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
@@ -130,7 +124,6 @@ public class TokenUtils {
     validateIssuer(token);
     validateExpiration(token);
     validateClientId(token);
-    validateScopes(token);
     if (!token.isClient()) {
       validateSub(token);
     }
@@ -139,18 +132,11 @@ public class TokenUtils {
   private void validateClientId(ParsedAccessToken token) {
 
     if (Objects.isNull(token.clientId())) {
-      throw new InvalidTokenException("client_id claim not found on token");
+      throw invalidToken("client_id claim not found on token");
     }
     ClientDetailsEntity client = clientRepository.findByClientId(token.clientId()).orElseThrow();
     if (!client.isActive()) {
-      throw new InvalidTokenException("Client with id " + token.clientId() + " is not active");
-    }
-  }
-
-  private void validateScopes(ParsedAccessToken token) {
-
-    if (token.scopes() == null || token.scopes().isEmpty()) {
-      throw new InvalidTokenException("missing or empty scope claim");
+      throw invalidToken("Client with id " + token.clientId() + " is not active");
     }
   }
 
@@ -160,17 +146,17 @@ public class TokenUtils {
     Objects.requireNonNull(token.jwt().getPayload());
     if (!jwtSigningService.validateSignature(token.jwt())) {
       LOG.warn("Invalid signature for token {}", token.jwt().getPayload().toJSONObject());
-      throw new InvalidTokenException("Invalid token signature");
+      throw invalidToken("Invalid token signature");
     }
     LOG.debug("Valid signature for token {}", token.jwt().getPayload().toJSONObject());
   }
 
   private void validateExpiration(Date exp) {
     if (Objects.isNull(exp)) {
-      throw new InvalidTokenException("Access token exp claim is required");
+      throw invalidToken("Access token exp claim is required");
     }
     if (Date.from(clock.instant()).after(exp)) {
-      throw new InvalidTokenException("The access token is expired");
+      throw invalidToken("The access token is expired");
     }
   }
 
@@ -187,50 +173,28 @@ public class TokenUtils {
   private void validateIssuer(ParsedAccessToken token) {
 
     if (Objects.isNull(token.issuer()) || !iamProperties.getIssuer().equals(token.issuer())) {
-      throw new InvalidTokenException("Invalid access token issuer");
+      throw invalidToken("Invalid access token issuer");
     }
   }
 
   private void validateSub(ParsedAccessToken token) {
 
     IamAccount account = accountRepository.findByUuid(token.sub())
-      .orElseThrow(() -> new InvalidTokenException("User with uuid " + token.sub() + " not found"));
+      .orElseThrow(() -> invalidToken("User with uuid " + token.sub() + " not found"));
     validateAccount(account);
   }
 
   private void validateAccount(IamAccount account) {
 
     if (!account.isActive()) {
-      throw new InvalidTokenException("User with uuid " + account.getUuid() + " is not active");
-    }
-    if (account.getUserInfo().getEmailVerified() != null
-        && !account.getUserInfo().getEmailVerified().booleanValue()) {
-      throw new InvalidTokenException(
-          "User with uuid " + account.getUuid() + " has a not verified email");
-    }
-    Optional<IamAup> aup = aupService.findAup();
-    if (aup.isPresent()) {
-      // User test needs to sign AUP for this organization in order to proceed.
-      if (account.getAupSignature() == null) {
-        throw new InvalidTokenException("User with uuid " + account.getUuid()
-            + " needs to sign AUP for this organization in order to proceed.");
-      }
-      Instant signatureExpiration = account.getAupSignature()
-        .getSignatureTime()
-        .toInstant()
-        .plus(Duration.ofDays(aup.get().getSignatureValidityInDays()));
-      if (signatureExpiration.isBefore(clock.instant())) {
-        throw new InvalidTokenException("User with uuid " + account.getUuid()
-            + " needs to sign AUP for this organization in order to proceed.");
-      }
+      throw invalidToken("User with uuid " + account.getUuid() + " is not active");
     }
   }
 
   private void validateUser(String username) {
 
     IamAccount account = accountRepository.findByUsername(username)
-      .orElseThrow(
-          () -> new InvalidTokenException("User with username " + username + " not found"));
+      .orElseThrow(() -> invalidToken("User with username " + username + " not found"));
     validateAccount(account);
   }
 
@@ -283,16 +247,16 @@ public class TokenUtils {
 
     if (accessTokenOnDb.isPresent()) {
       if (isExpired(accessTokenOnDb.get())) {
-        throw new InvalidTokenException("The access token is expired");
+        throw invalidToken("The access token is expired");
       }
       return accessTokenOnDb;
     }
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {
       ParsedAccessToken token = parseAccessToken(accessTokenValue);
       if (isExpired(token)) {
-        throw new InvalidTokenException("The access token is expired");
+        throw invalidToken("The access token is expired");
       }
-      throw new InvalidTokenException("Access token not found");
+      throw invalidToken("Access token not found");
     }
     return Optional.empty();
   }
@@ -327,5 +291,9 @@ public class TokenUtils {
     if (userAuth != null) {
       validateUser(userAuth.getName());
     }
+  }
+
+  public static InvalidTokenException invalidToken(String errroMessage) {
+    return new InvalidTokenException(errroMessage);
   }
 }

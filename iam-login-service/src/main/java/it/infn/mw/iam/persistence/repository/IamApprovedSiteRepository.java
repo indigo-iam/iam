@@ -16,6 +16,7 @@
 package it.infn.mw.iam.persistence.repository;
 
 import java.util.Date;
+import java.util.List;
 
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.springframework.data.domain.Page;
@@ -28,5 +29,11 @@ public interface IamApprovedSiteRepository extends JpaRepository<ApprovedSite, L
 
   @Query("select a from ApprovedSite a where a.timeoutDate is not null and a.timeoutDate <= :timestamp")
   Page<ApprovedSite> getExpiredCodes(@Param("timestamp") Date timestamp, Pageable pageable);
+
+  List<ApprovedSite> findByClientId(String clientId);
+
+  List<ApprovedSite> findByUserId(String userId);
+
+  List<ApprovedSite> findByClientIdAndUserId(String clientId, String userId);
 
 }

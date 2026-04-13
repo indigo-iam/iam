@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.model.ApprovedSite;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -155,6 +156,9 @@ public interface IamOAuthAccessTokenRepository
 
   @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= :timestamp")
   Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op, @Param("timestamp") Date timestamp);
+
+  @Query("select a from OAuth2AccessTokenEntity a where a.approvedSite = :approvedSite")
+  List<OAuth2AccessTokenEntity> findTokensForApprovedSite(@Param("approvedSite") ApprovedSite approvedSite);
   // @formatter:on
 
 }

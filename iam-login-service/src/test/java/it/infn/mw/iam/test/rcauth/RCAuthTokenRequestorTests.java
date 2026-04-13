@@ -24,6 +24,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
 import java.text.ParseException;
+import java.time.Clock;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -74,15 +75,18 @@ class RCAuthTokenRequestorTests extends RCAuthTestSupport {
   }
 
   @Autowired
-  private RCAuthTokenRequestor tokenRequestor;
+  RCAuthTokenRequestor tokenRequestor;
 
   @Autowired
-  private RestTemplateFactory rtf;
+  RestTemplateFactory rtf;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
-  private MockRestTemplateFactory mockRtf;
+  @Autowired
+  Clock clock;
+
+  MockRestTemplateFactory mockRtf;
 
   @BeforeEach
   void setup() {
@@ -167,7 +171,7 @@ class RCAuthTokenRequestorTests extends RCAuthTestSupport {
   }
 
   void prepareTokenResponse(String nonce) throws JsonProcessingException, JOSEException {
-    IdTokenBuilder builder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
+    IdTokenBuilder builder = new IdTokenBuilder(clock, rcAuthKeyStore, jwsAlgo);
 
     String idToken = builder.sub(SUB).issuer(ISSUER).customClaim(CERT_SUBJECT_DN_CLAIM, DN).build();
 

@@ -204,6 +204,9 @@ public class IamTokenService implements OAuth2TokenEntityService {
       tokenUtils.validate(accessTokenOnDb.get());
       return accessTokenOnDb.get().getAuthenticationHolder().getAuthentication();
     }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
     ParsedAccessToken token = parseAndValidate(accessTokenValue);
     return tokenUtils.getAuthentication(token);
   }
@@ -223,6 +226,9 @@ public class IamTokenService implements OAuth2TokenEntityService {
     if (accessTokenOnDb.isPresent()) {
       return accessTokenOnDb.get();
     }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
     return buildAccessToken(parseAndValidate(accessTokenValue));
   }
 
@@ -238,15 +244,11 @@ public class IamTokenService implements OAuth2TokenEntityService {
       entity.setRefreshToken(refreshToken);
     }
     entity.setTokenValueHash(tokenUtils.sha256(accessToken.jwt().serialize()));
-    if (revocationService.isAccessTokenRevoked(entity)) {
-      throw new InvalidTokenException("The access token has been revoked");
-    }
     entity.setClient(loadClient(accessToken.clientId()));
     entity.getAdditionalInformation().clear();
     List<String> notAllowed = List.of("scope", "exp");
     entity.getAdditionalInformation().putAll(accessToken.payload().toJSONObject());
     entity.getAdditionalInformation().keySet().removeIf(notAllowed::contains);
-
     return entity;
   }
 

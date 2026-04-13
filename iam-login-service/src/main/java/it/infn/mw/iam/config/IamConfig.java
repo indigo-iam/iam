@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
@@ -23,7 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,7 +36,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import com.google.common.collect.Maps;
@@ -104,7 +103,6 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
-@SuppressWarnings("deprecation")
 @Configuration
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
@@ -287,11 +285,6 @@ public class IamConfig {
   }
 
   @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
-  }
-
-  @Bean
   PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
@@ -353,5 +346,10 @@ public class IamConfig {
       MaxAgeService maxAgeService) {
     return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
         maxAgeService);
+  }
+
+  @Bean
+  SecureRandom defaultSecureRandom() {
+    return new SecureRandom();
   }
 }

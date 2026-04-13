@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +98,9 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Autowired
   MockMvc mvc;
+
+  @Autowired
+  Clock clock;
 
   MockRestTemplateFactory mockRtf;
 
@@ -196,7 +200,7 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
   }
 
   void prepareTokenResponse(String nonce) throws JsonProcessingException, JOSEException {
-    IdTokenBuilder builder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
+    IdTokenBuilder builder = new IdTokenBuilder(clock, rcAuthKeyStore, jwsAlgo);
 
     String idToken = builder.sub(SUB).issuer(ISSUER).customClaim(CERT_SUBJECT_DN_CLAIM, DN).build();
 
