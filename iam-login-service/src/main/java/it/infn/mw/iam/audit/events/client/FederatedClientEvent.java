@@ -25,7 +25,7 @@ public abstract class FederatedClientEvent extends IamAuditApplicationEvent {
 
   private final IamFederatedClientEntity client;
 
-  public FederatedClientEvent(Object source, IamFederatedClientEntity client, String message) {
+  protected FederatedClientEvent(Object source, IamFederatedClientEntity client, String message) {
     super(IamEventCategory.CLIENT, source, message);
     this.client = client;
   }

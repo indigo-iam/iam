@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.model;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
 
@@ -30,20 +31,25 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nimbusds.jose.jwk.JWKSet;
 
 @Entity
 @Table(name = "iam_federated_client")
-public class IamFederatedClientEntity {
+public class IamFederatedClientEntity implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   @Id
   @Column(name = "id")
+  @JsonIgnore
   private Long id;
 
   @Column(name = "client_id", nullable = false)
   private String clientId;
 
   @Column(name = "client_secret")
+  @JsonIgnore
   private String clientSecret;
 
   @Column(name = "client_name", nullable = false)
