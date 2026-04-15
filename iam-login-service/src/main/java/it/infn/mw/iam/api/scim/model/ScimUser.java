@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_USER_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
 
 import java.util.ArrayList;
@@ -83,6 +84,9 @@ public class ScimUser extends ScimResource {
   @Valid
   private final ScimIndigoUser indigoUser;
 
+  @Valid
+  private final ScimAarcUser aarcUser;
+
   @JsonCreator
   private ScimUser(@JsonProperty("id") String id, @JsonProperty("externalId") String externalId,
       @JsonProperty("meta") ScimMeta meta, @JsonProperty("schemas") Set<String> schemas,
@@ -98,7 +102,8 @@ public class ScimUser extends ScimResource {
       @JsonProperty("photos") List<ScimPhoto> photos,
       @JsonProperty("groups") Set<ScimGroupRef> groups,
       @JsonProperty("x509Certificates") List<ScimX509Certificate> x509Certificates,
-      @JsonProperty(INDIGO_USER_SCHEMA) ScimIndigoUser indigoUser) {
+      @JsonProperty(INDIGO_USER_SCHEMA) ScimIndigoUser indigoUser,
+      @JsonProperty(AARC_USER_SCHEMA) ScimAarcUser aarcUser) {
 
     super(id, externalId, meta, schemas);
 
@@ -119,6 +124,7 @@ public class ScimUser extends ScimResource {
     this.groups = groups;
     this.addresses = addresses;
     this.indigoUser = indigoUser;
+    this.aarcUser = aarcUser;
   }
 
   private ScimUser(Builder b) {
@@ -142,6 +148,11 @@ public class ScimUser extends ScimResource {
       this.indigoUser = b.indigoUserBuilder.build();
     } else {
       this.indigoUser = null;
+    }
+    if (!b.aarcUserBuilder.equals(ScimAarcUser.builder())) {
+      this.aarcUser = b.aarcUserBuilder.build();
+    } else {
+      this.aarcUser = null;
     }
     this.groups = b.groups;
     this.password = b.password;
@@ -289,6 +300,12 @@ public class ScimUser extends ScimResource {
     return groups != null && !groups.isEmpty();
   }
 
+  @JsonProperty(value = ScimConstants.AARC_USER_SCHEMA)
+  public ScimAarcUser getAarcUser() {
+
+    return aarcUser;
+  }
+
   public static Builder builder(String username) {
 
     return new Builder(username);
@@ -319,11 +336,13 @@ public class ScimUser extends ScimResource {
     private List<ScimAddress> addresses = new ArrayList<>();
     private List<ScimPhoto> photos = new ArrayList<>();
     private ScimIndigoUser.Builder indigoUserBuilder = ScimIndigoUser.builder();
+    private ScimAarcUser.Builder aarcUserBuilder = ScimAarcUser.builder();
 
     public Builder() {
       super();
       schemas.add(USER_SCHEMA);
       schemas.add(INDIGO_USER_SCHEMA);
+      schemas.add(AARC_USER_SCHEMA);
     }
 
     public Builder(String userName) {
@@ -577,10 +596,19 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder voPersonId(String voPersonId) {
+      aarcUserBuilder.voPersonId(voPersonId);
+      return this;
+    }
+
+    public Builder organizationName(String organizationName) {
+      aarcUserBuilder.organizationName(organizationName);
+      return this;
+    }
+
     public ScimUser build() {
 
       return new ScimUser(this);
     }
-
   }
 }
