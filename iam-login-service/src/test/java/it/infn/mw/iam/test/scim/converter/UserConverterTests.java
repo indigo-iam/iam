@@ -35,12 +35,13 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.Organisation;
 import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @ExtendWith(MockitoExtension.class)
-class UserConverterTest {
+class UserConverterTests {
 
   @Mock
   private ScimResourceLocationProvider resourceLocationProvider;
@@ -60,13 +61,16 @@ class UserConverterTest {
   private ScimProperties scimProperties;
   @Mock
   private IamProperties iamProperties;
+  @Mock
+  private Organisation org;
 
   private UserConverter userConverter;
 
   @BeforeEach
   void setup() {
-
     lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
+    lenient().when(iamProperties.getOrganisation()).thenReturn(org);
+    lenient().when(iamProperties.getOrganisation().getName()).thenReturn("indigo-dc");
     userConverter = new UserConverter(scimProperties, resourceLocationProvider, addressConverter,
         oidcIdConverter, sshKeyConverter, samlIdConverter, x509CertificateIamConverter,
         groupManagerService, iamProperties);

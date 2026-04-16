@@ -18,14 +18,14 @@ package it.infn.mw.iam.api.scim.model;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(value = {"voPersonId", "organizationName", "schacHomeOrganization",
+    "voPersonExternalAffiliation", "assurance"}, allowGetters = true)
 public class ScimAarcUser {
 
   public enum AARC_USER_SCHEMA {
@@ -51,20 +51,16 @@ public class ScimAarcUser {
     }
   }
 
-  @NotNull
   private final String voPersonId;
 
   private final String organizationName;
 
   private final String schacHomeOrganization;
 
-  @NotNull
   private final List<ScimAffiliation> voPersonExternalAffiliations;
 
-  @Valid
   private final List<ScimAssurance> assurance;
 
-  @Valid
   private final List<ScimEntitlement> entitlements;
 
   @JsonCreator
@@ -126,7 +122,7 @@ public class ScimAarcUser {
 
     private String organizationName;
     private String schacHomeOrganization;
-    private List<ScimAffiliation> voPersonExternalAffiliations;
+    private List<ScimAffiliation> voPersonExternalAffiliations = new LinkedList<>();
     private List<ScimAssurance> assurance = new LinkedList<>();
     private List<ScimEntitlement> entitlements = new LinkedList<>();
 
@@ -145,7 +141,7 @@ public class ScimAarcUser {
       return this;
     }
 
-    public Builder voPersonExternalAffiliation(ScimAffiliation affiliation) {
+    public Builder addVoPersonExternalAffiliation(ScimAffiliation affiliation) {
       this.voPersonExternalAffiliations.add(affiliation);
       return this;
     }

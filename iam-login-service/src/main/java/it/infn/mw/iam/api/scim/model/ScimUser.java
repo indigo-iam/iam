@@ -606,6 +606,11 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder addVoPersonExternalAffiliation(ScimAffiliation value) {
+      aarcUserBuilder.addVoPersonExternalAffiliation(value);
+      return this;
+    }
+
     public ScimUser build() {
 
       return new ScimUser(this);

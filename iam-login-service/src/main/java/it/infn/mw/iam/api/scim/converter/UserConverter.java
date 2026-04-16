@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
+import it.infn.mw.iam.api.scim.model.ScimAffiliation;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
@@ -243,9 +244,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       builder.affiliation(entity.getAffiliation());
     }
 
-    builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
-    builder.organizationName(iamProperties.getOrganisation().getName());
-
     for (LabelDescriptor ld : scimProperties.getIncludeLabels()) {
       entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
         .ifPresent(el -> builder.addLabel(ScimLabel.builder()
@@ -275,6 +273,17 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     if (scimProperties.isIncludeAuthorities()) {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
+    }
+
+    builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
+    builder.organizationName(iamProperties.getOrganisation().getName());
+
+    if (entity.hasAffiliation()) {
+      builder.addVoPersonExternalAffiliation(new ScimAffiliation(
+          entity.getAffiliation() + "@" + iamProperties.getOrganisation().getName()));
+    } else {
+      builder.addVoPersonExternalAffiliation(
+          new ScimAffiliation("member" + "@" + iamProperties.getOrganisation().getName()));
     }
 
     return builder.build();
