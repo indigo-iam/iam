@@ -611,6 +611,16 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder addAarcName(ScimAarcName name) {
+      aarcUserBuilder.name(name);
+      return this;
+    }
+
+    public Builder addAarcEmail(String email) {
+      aarcUserBuilder.email(email);
+      return this;
+    }
+
     public ScimUser build() {
 
       return new ScimUser(this);

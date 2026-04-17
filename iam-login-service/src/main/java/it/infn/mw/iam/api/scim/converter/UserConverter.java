@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
+import it.infn.mw.iam.api.scim.model.ScimAarcName;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
 import it.infn.mw.iam.api.scim.model.ScimAffiliation;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
@@ -277,6 +278,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
     builder.organizationName(iamProperties.getOrganisation().getName());
+    builder.addAarcName(new ScimAarcName(getScimName(entity)));
+    builder.addAarcEmail(entity.getUserInfo().getEmail());
 
     if (entity.hasAffiliation()) {
       builder.addVoPersonExternalAffiliation(new ScimAffiliation(

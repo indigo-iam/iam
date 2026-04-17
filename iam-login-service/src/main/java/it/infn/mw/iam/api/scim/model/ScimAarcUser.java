@@ -24,13 +24,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@JsonIgnoreProperties(value = {"voPersonId", "organizationName", "schacHomeOrganization",
-    "voPersonExternalAffiliation", "assurance"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"voPersonId", "name", "email", "organizationName",
+    "schacHomeOrganization", "voPersonExternalAffiliation", "assurance"}, allowGetters = true)
 public class ScimAarcUser {
 
   public enum AARC_USER_SCHEMA {
 
     // @formatter:off
+    NAME(ScimConstants.AARC_USER_SCHEMA + ".name"),
+    EMAIL(ScimConstants.AARC_USER_SCHEMA + ".email"),
     VOPERSON_ID(ScimConstants.AARC_USER_SCHEMA + ".voPersonId"),
     ORGANIZATION_NAME(ScimConstants.AARC_USER_SCHEMA + ".organizationName"),
     SCHAC_HOME_ORGANIZATION(ScimConstants.AARC_USER_SCHEMA + ".schacHomeOrganization"),
@@ -53,6 +55,10 @@ public class ScimAarcUser {
 
   private final String voPersonId;
 
+  private final ScimAarcName name;
+
+  private final String email;
+
   private final String organizationName;
 
   private final String schacHomeOrganization;
@@ -65,6 +71,7 @@ public class ScimAarcUser {
 
   @JsonCreator
   private ScimAarcUser(@JsonProperty("voPersonId") String voPersonId,
+      @JsonProperty("name") ScimAarcName name, @JsonProperty("email") String email,
       @JsonProperty("organizationName") String organizationName,
       @JsonProperty("schacHomeOrganization") String schacHomeOrganization,
       @JsonProperty("voPersonExternalAffiliations") List<ScimAffiliation> voPersonExternalAffiliations,
@@ -72,6 +79,8 @@ public class ScimAarcUser {
       @JsonProperty("entitlements") List<ScimEntitlement> entitlements) {
 
     this.voPersonId = voPersonId;
+    this.name = name;
+    this.email = email;
     this.organizationName = organizationName;
     this.schacHomeOrganization = schacHomeOrganization;
     this.voPersonExternalAffiliations = voPersonExternalAffiliations;
@@ -81,6 +90,8 @@ public class ScimAarcUser {
 
   private ScimAarcUser(Builder b) {
     this.voPersonId = b.voPersonId;
+    this.name = b.name;
+    this.email = b.email;
     this.organizationName = b.organizationName;
     this.schacHomeOrganization = b.schacHomeOrganization;
     this.voPersonExternalAffiliations = b.voPersonExternalAffiliations;
@@ -94,6 +105,14 @@ public class ScimAarcUser {
 
   public String getOrganizationName() {
     return organizationName;
+  }
+
+  public ScimAarcName getName() {
+    return name;
+  }
+
+  public String getEmail() {
+    return email;
   }
 
   public String getSchacHomeOrganization() {
@@ -119,7 +138,8 @@ public class ScimAarcUser {
   public static class Builder {
 
     private String voPersonId;
-
+    private ScimAarcName name;
+    private String email;
     private String organizationName;
     private String schacHomeOrganization;
     private List<ScimAffiliation> voPersonExternalAffiliations = new LinkedList<>();
@@ -128,6 +148,16 @@ public class ScimAarcUser {
 
     public Builder voPersonId(String voPersonId) {
       this.voPersonId = voPersonId;
+      return this;
+    }
+
+    public Builder name(ScimAarcName name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder email(String email) {
+      this.email = email;
       return this;
     }
 
