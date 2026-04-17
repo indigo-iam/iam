@@ -112,7 +112,7 @@
   }
 
   function UsersListController($q, $scope, $rootScope, $uibModal, ModalService,
-    UsersService, Utils, clipboardService, toaster) {
+    UsersService, Utils, clipboardService, toaster, $http, AccountLifecycleService, FindService) {
 
     var self = this;
 
@@ -125,6 +125,22 @@
       self.totalResults = self.total;
       self.sortByValue = "name";
       self.sortDirection = "asc";
+      self.suspendedUuids = [];
+      self.showingInactive = false;
+      self.inactiveDays = 180;
+      self.inactiveReportEnabled = false;
+
+      $http.get('/iam/account/lockout/suspended').then(function (r) {
+        self.suspendedUuids = r.data;
+      });
+
+      AccountLifecycleService.inactiveAccountsReportEnabled().then(function (enabled) {
+        self.inactiveReportEnabled = enabled;
+      });
+    };
+
+    self.isSuspended = function (user) {
+      return self.suspendedUuids.indexOf(user.id) !== -1;
     };
 
     $scope.$on('refreshUsersList', function (e) {
@@ -144,7 +160,15 @@
 
     self.resetFilter = function () {
       self.filter = undefined;
+      self.showingInactive = false;
       self.searchUsers(1);
+    };
+
+    self.showInactiveAccounts = function () {
+      self.filter = undefined;
+      self.showingInactive = true;
+      self.currentPage = 1;
+      self.searchUsers();
     };
 
     self.searchUsers = function () {
@@ -185,6 +209,12 @@
     };
 
     self.getUsersList = function (startIndex, count, filter, sortByValue, sortDirection) {
+      if (self.showingInactive) {
+        return FindService.findAccountsInactiveSince(self.inactiveDays, startIndex, count)
+          .then(function (data) {
+            return { data: data };
+          });
+      }
       if (filter === undefined) {
         return UsersService.getUsersSortedBy(startIndex, count, sortByValue, sortDirection);
       }
@@ -261,6 +291,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/users/userslist/users.userslist.component.html',
         controller: ['$q', '$scope', '$rootScope', '$uibModal', 'ModalService',
-          'UsersService', 'Utils', 'clipboardService', 'toaster', UsersListController]
+          'UsersService', 'Utils', 'clipboardService', 'toaster', '$http',
+          'AccountLifecycleService', 'FindService', UsersListController]
       });
 })();

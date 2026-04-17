@@ -82,4 +82,9 @@ public class ConfigurationController {
   public boolean readOnlyAccountEndTime() {
     return lifecycleProperties.getAccount().isReadOnlyEndTime();
   }
+
+  @RequestMapping(method = GET, value = "/lifecycle/account/inactive-accounts-report-enabled")
+  public boolean inactiveAccountsReportEnabled() {
+    return lifecycleProperties.getAccount().isInactiveAccountsReportEnabled();
+  }
 }

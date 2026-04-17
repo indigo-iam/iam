@@ -71,4 +71,8 @@ public interface NotificationFactory {
 
   IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
       IamX509Certificate x509Credential);
+
+  IamEmailNotification createInactivityWarningMessage(IamAccount account,
+      long gracePeriodDays);
+
 }

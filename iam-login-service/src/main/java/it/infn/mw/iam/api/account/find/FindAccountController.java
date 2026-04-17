@@ -20,24 +20,31 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationErro
 import static java.util.Objects.isNull;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 
 @RestController
 @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
 public class FindAccountController {
 
   public static final String INVALID_FIND_ACCOUNT_REQUEST = "Invalid find account request";
+  public static final String INACTIVE_ACCOUNTS_REPORT_DISABLED =
+      "Inactive accounts report is disabled";
 
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
@@ -48,11 +55,16 @@ public class FindAccountController {
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
       "/iam/account/find/notingroup/{groupUuid}";
   public static final String FIND_BY_AUTHORITY_RESOURCE = "/iam/account/find/byauthority";
+  public static final String FIND_INACTIVE_SINCE_DAYS_RESOURCE =
+      "/iam/account/find/inactivesincedays";
 
   final FindAccountService service;
+  final LifecycleProperties lifecycleProperties;
 
-  public FindAccountController(FindAccountService service) {
+  public FindAccountController(FindAccountService service,
+      LifecycleProperties lifecycleProperties) {
     this.service = service;
+    this.lifecycleProperties = lifecycleProperties;
   }
 
   @GetMapping(value = FIND_BY_LABEL_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
@@ -125,4 +137,22 @@ public class FindAccountController {
     return service.findAccountByAuthority(authority, buildPageRequest(count, startIndex, 10));
   }
 
+  @GetMapping(value = FIND_INACTIVE_SINCE_DAYS_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  public ListResponseDTO<ScimUser> findInactiveSinceDays(
+      @RequestParam(required = false, defaultValue = "180") int days,
+      @RequestParam(required = false) final Integer count,
+      @RequestParam(required = false) final Integer startIndex) {
+
+    if (!lifecycleProperties.getAccount().isInactiveAccountsReportEnabled()) {
+      throw new InactiveAccountsReportDisabledError(INACTIVE_ACCOUNTS_REPORT_DISABLED);
+    }
+
+    return service.findAccountsInactiveSince(days, buildPageRequest(count, startIndex, 10));
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(InactiveAccountsReportDisabledError.class)
+  public ErrorDTO inactiveAccountsReportDisabled(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
 }

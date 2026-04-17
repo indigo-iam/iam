@@ -144,6 +144,14 @@ public interface IamAccountRepository
     Page<IamAccount> findByLabelNameAndValue(@Param("name") String name,
             @Param("value") String value, Pageable op);
 
+    @Query("select a from IamAccount a where a.active = true and a.endTime is null and a.serviceAccount = false "
+        + "and ((a.lastLoginTime is null and a.creationTime < :threshold) or (a.lastLoginTime is not null and a.lastLoginTime < :threshold))")
+    Page<IamAccount> findInactiveAccountsSince(@Param("threshold") Date threshold, Pageable op);
+
+    @Query("select a from IamAccount a where a.active = true and a.endTime is null and a.serviceAccount = false "
+    + "and (a.lastLoginTime is null or a.lastLoginTime < :threshold)")
+    Page<IamAccount> findAccountsInactiveSince(@Param("threshold") Date threshold, Pageable op);
+
     @Query("select a from IamAccount a where a.active = FALSE")
     Page<IamAccount> findInactiveAccounts(Pageable op);
 

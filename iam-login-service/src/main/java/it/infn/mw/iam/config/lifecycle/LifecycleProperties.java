@@ -48,6 +48,39 @@ public class LifecycleProperties {
     }
 
   }
+
+  public static class InactiveAccountsTaskProperties {
+    boolean removeInactiveAccounts = false;
+    String cronSchedule = "0 */5 * * * *";
+
+    @Min(value = 0L)
+    Integer suspensionGracePeriodDays = 30;
+
+    public boolean isRemoveInactiveAccounts() {
+      return removeInactiveAccounts;
+    }
+
+    public void setRemoveInactiveAccounts(boolean removeInactiveAccounts) {
+      this.removeInactiveAccounts = removeInactiveAccounts;
+    }
+
+    public String getCronSchedule() {
+      return cronSchedule;
+    }
+
+    public void setCronSchedule(String cronSchedule) {
+      this.cronSchedule = cronSchedule;
+    }
+
+    public Integer getSuspensionGracePeriodDays() {
+      return suspensionGracePeriodDays;
+    }
+
+    public void setSuspensionGracePeriodDays(Integer suspensionGracePeriodDays) {
+      this.suspensionGracePeriodDays = suspensionGracePeriodDays;
+    }
+  }
+
   public static class ExpiredAccountPolicyProperties {
 
     @Min(value = 0L)
@@ -93,8 +126,15 @@ public class LifecycleProperties {
     
     TaskProperties expiredAccountsTask = new TaskProperties();
     
-    boolean readOnlyEndTime  = false;
-    
+    boolean readOnlyEndTime = false;
+
+    boolean inactiveAccountsReportEnabled = false;
+
+    @Min(value = 0L)
+    Integer inactiveAccountDays = 180;
+
+    InactiveAccountsTaskProperties inactiveAccountsTask = new InactiveAccountsTaskProperties();
+
     public Integer getAccountLifetimeDays() {
       return accountLifetimeDays;
     }
@@ -126,7 +166,31 @@ public class LifecycleProperties {
     public void setReadOnlyEndTime(boolean readOnlyEndTime) {
       this.readOnlyEndTime = readOnlyEndTime;
     }
-    
+
+    public boolean isInactiveAccountsReportEnabled() {
+      return inactiveAccountsReportEnabled;
+    }
+
+    public void setInactiveAccountsReportEnabled(boolean inactiveAccountsReportEnabled) {
+      this.inactiveAccountsReportEnabled = inactiveAccountsReportEnabled;
+    }
+
+    public Integer getInactiveAccountDays() {
+      return inactiveAccountDays;
+    }
+
+    public void setInactiveAccountDays(Integer inactiveAccountDays) {
+      this.inactiveAccountDays = inactiveAccountDays;
+    }
+
+    public InactiveAccountsTaskProperties getInactiveAccountsTask() {
+      return inactiveAccountsTask;
+    }
+
+    public void setInactiveAccountsTask(InactiveAccountsTaskProperties inactiveAccountsTask) {
+      this.inactiveAccountsTask = inactiveAccountsTask;
+    }
+
   }
 
   @Valid

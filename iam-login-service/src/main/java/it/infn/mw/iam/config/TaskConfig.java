@@ -39,6 +39,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.InactiveAccountsTask;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
@@ -72,6 +73,7 @@ public class TaskConfig implements SchedulingConfigurer {
   private LifecycleProperties lifecycleProperties;
   private ExpiredAccountsHandler expiredAccountsHandler;
   private AupReminderTask aupReminderTask;
+  private InactiveAccountsTask inactiveAccountsTask;
   private ExecutorService taskScheduler;
   private GarbageCollector garbageCollector;
 
@@ -95,7 +97,8 @@ public class TaskConfig implements SchedulingConfigurer {
       RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
-      ExecutorService taskScheduler, GarbageCollector garbageCollector) {
+      ExecutorService taskScheduler, GarbageCollector garbageCollector,
+      InactiveAccountsTask inactiveAccountsTask) {
 
     this.notificationStoreService = notificationStoreService;
     this.registrationRequestRepository = registrationRequestRepository;
@@ -106,6 +109,7 @@ public class TaskConfig implements SchedulingConfigurer {
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
     this.garbageCollector = garbageCollector;
+    this.inactiveAccountsTask = inactiveAccountsTask;
   }
 
   @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
@@ -191,12 +195,24 @@ public class TaskConfig implements SchedulingConfigurer {
     }
   }
 
+  public void scheduleInactiveAccountsTask(final ScheduledTaskRegistrar taskRegistrar) {
+    if (!lifecycleProperties.getAccount().getInactiveAccountsTask().isRemoveInactiveAccounts()) {
+      LOG.debug("Inactive accounts task is disabled");
+    } else {
+      final String cronSchedule =
+          lifecycleProperties.getAccount().getInactiveAccountsTask().getCronSchedule();
+      LOG.info("Scheduling inactive accounts task with schedule: {}", cronSchedule);
+      taskRegistrar.addCronTask(inactiveAccountsTask, cronSchedule);
+    }
+  }
+
   @Override
   public void configureTasks(final ScheduledTaskRegistrar taskRegistrar) {
     taskRegistrar.setScheduler(taskScheduler);
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
     scheduledCleanUpExpireRegistrationTask(taskRegistrar);
+    scheduleInactiveAccountsTask(taskRegistrar);
   }
 
   @Bean

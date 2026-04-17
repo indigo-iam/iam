@@ -388,6 +388,27 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
+  public IamEmailNotification createInactivityWarningMessage(IamAccount account,
+      long gracePeriodDays) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("gracePeriodDays", gracePeriodDays);
+
+    String subject = "Account inactivity warning";
+
+    IamEmailNotification notification = createMessage("inactivityWarning.ftl", model,
+        IamNotificationType.ACCOUNT_INACTIVITY_WARNING, subject,
+        asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created inactivity warning message for account {}", account.getUserInfo().getName());
+
+    return notification;
+  }
+
+  @Override
   public IamEmailNotification createAccountRestoredMessage(IamAccount account) {
     String recipient = account.getUserInfo().getName();
 
