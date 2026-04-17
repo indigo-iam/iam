@@ -29,13 +29,9 @@ import it.infn.mw.iam.config.saml.IamSamlProperties.AuthnContextProperties;
 class IamSamlAuthnContextPropertiesTests {
 
   @Test
-  void defaultsContainFourRefs() {
+  void defaultsContainNoClassRefsInCodebase() {
     AuthnContextProperties props = new AuthnContextProperties();
-    assertEquals(4, props.getClassRefs().size());
-    assertTrue(props.getClassRefs().contains("https://refeds.org/profile/mfa"));
-    assertTrue(props.getClassRefs().contains("https://refeds.org/profile/sfa"));
-    assertTrue(props.getClassRefs().contains("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"));
-    assertTrue(props.getClassRefs().contains("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"));
+    assertEquals(0, props.getClassRefs().size());
   }
 
   @Test

@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config.saml;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -198,12 +198,7 @@ public class IamSamlProperties {
 
   public static class AuthnContextProperties {
 
-    private List<String> classRefs = Arrays.asList(
-        "https://refeds.org/profile/mfa",
-        "https://refeds.org/profile/sfa",
-        "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
-        "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"
-    );
+    private List<String> classRefs = new ArrayList<>();
 
     public List<String> getClassRefs() {
       return classRefs;
