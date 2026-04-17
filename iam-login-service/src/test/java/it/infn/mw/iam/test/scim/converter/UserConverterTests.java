@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,6 +88,9 @@ class UserConverterTests {
     iamAccount.setUsername("Test User");
     iamAccount.setUuid("UUID");
     iamAccount.setUserInfo(userInfo);
+    iamAccount.setGroups(Set.of());
+
+    userInfo.setIamAccount(iamAccount);
 
     ScimUser scimUser = userConverter.dtoFromEntity(iamAccount);
     assertEquals("Test user affiliation", scimUser.getIndigoUser().getAffiliation());
