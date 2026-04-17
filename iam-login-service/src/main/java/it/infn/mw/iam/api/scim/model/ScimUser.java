@@ -621,6 +621,16 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder addAssurance(ScimAssurance assurance) {
+      aarcUserBuilder.addAssurance(assurance);
+      return this;
+    }
+
+    public Builder addEntitlements(ScimEntitlement entitlement) {
+      aarcUserBuilder.addEntitlement(entitlement);
+      return this;
+    }
+
     public ScimUser build() {
 
       return new ScimUser(this);
