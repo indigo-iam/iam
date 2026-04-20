@@ -149,7 +149,7 @@ public class ScimUser extends ScimResource {
     } else {
       this.indigoUser = null;
     }
-    if (!b.aarcUserBuilder.equals(ScimAarcUser.builder())) {
+    if (b.enableAarc && !b.aarcUserBuilder.equals(ScimAarcUser.builder())) {
       this.aarcUser = b.aarcUserBuilder.build();
     } else {
       this.aarcUser = null;
@@ -337,12 +337,22 @@ public class ScimUser extends ScimResource {
     private List<ScimPhoto> photos = new ArrayList<>();
     private ScimIndigoUser.Builder indigoUserBuilder = ScimIndigoUser.builder();
     private ScimAarcUser.Builder aarcUserBuilder = ScimAarcUser.builder();
+    private boolean enableAarc = false;
 
     public Builder() {
       super();
       schemas.add(USER_SCHEMA);
       schemas.add(INDIGO_USER_SCHEMA);
-      schemas.add(AARC_USER_SCHEMA);
+    }
+
+    public Builder enableAarc(boolean enableAarc) {
+      this.enableAarc = enableAarc;
+      if (enableAarc) {
+        schemas.add(AARC_USER_SCHEMA);
+      } else {
+        schemas.remove(AARC_USER_SCHEMA);
+      }
+      return this;
     }
 
     public Builder(String userName) {

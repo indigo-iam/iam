@@ -287,23 +287,27 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
     }
 
-    builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
-    builder.organizationName(iamProperties.getOrganisation().getName());
-    builder.addAarcName(new ScimAarcName(getScimName(entity)));
-    builder.addAarcEmail(entity.getUserInfo().getEmail());
+    builder.enableAarc(scimProperties.isEnableAarc());
 
-    if (entity.hasAffiliation()) {
-      builder.addVoPersonExternalAffiliation(new ScimAffiliation(
-          entity.getAffiliation() + "@" + iamProperties.getOrganisation().getName()));
-    } else {
-      builder.addVoPersonExternalAffiliation(
-          new ScimAffiliation("member" + "@" + iamProperties.getOrganisation().getName()));
+    if (scimProperties.isEnableAarc()) {
+      builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
+      builder.organizationName(iamProperties.getOrganisation().getName());
+      builder.addAarcName(new ScimAarcName(getScimName(entity)));
+      builder.addAarcEmail(entity.getUserInfo().getEmail());
+
+      if (entity.hasAffiliation()) {
+        builder.addVoPersonExternalAffiliation(new ScimAffiliation(
+            entity.getAffiliation() + "@" + iamProperties.getOrganisation().getName()));
+      } else {
+        builder.addVoPersonExternalAffiliation(
+            new ScimAffiliation("member" + "@" + iamProperties.getOrganisation().getName()));
+      }
+
+      DEFAULT_LOA.forEach(a -> builder.addAssurance(new ScimAssurance(a)));
+
+      resolveGroups(entity.getUserInfo())
+        .forEach(e -> builder.addEntitlements(new ScimEntitlement(e)));
     }
-
-    DEFAULT_LOA.forEach(a -> builder.addAssurance(new ScimAssurance(a)));
-
-    resolveGroups(entity.getUserInfo())
-      .forEach(e -> builder.addEntitlements(new ScimEntitlement(e)));
 
     return builder.build();
   }
