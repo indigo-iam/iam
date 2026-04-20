@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.util.Date;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -33,6 +34,7 @@ import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 
 @Service
+@Profile("openid-federation")
 @Transactional
 public class IamFederatedClientService {
 
