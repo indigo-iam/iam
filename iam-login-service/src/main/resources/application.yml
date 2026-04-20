@@ -191,6 +191,11 @@ iam:
   client:
     track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
+  dashboard:
+    enabled: ${IAM_DASHBOARD_ENABLED:false}
+    client-id: ${IAM_DASHBOARD_CLIENT_ID:}
+    client-secret: ${IAM_DASHBOARD_CLIENT_SECRET:}
+
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
   oidc-discovery-cleanup-period-secs: ${IAM_OIDC_DISCOVERY_CLEANUP_PERIOD_SECS:86400}
