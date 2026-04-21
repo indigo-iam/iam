@@ -15,8 +15,9 @@
  */
 package it.infn.mw.iam.test.ext_authn.saml.profile;
 
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,10 +37,10 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class, SamlTestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"saml.authn-context.class-refs="})
-class IamSamlAuthnContextDisabledTests extends SamlAuthenticationTestSupport {
+class IamSamlAuthnContextEmptyRefsTests extends SamlAuthenticationTestSupport {
 
   @Test
-  void emptyClassRefsSendsNoAuthnContext() throws Exception {
+  void emptyClassRefsSendsEmptyRequestedAuthnContext() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
         .andExpect(status().isOk())
@@ -49,6 +50,7 @@ class IamSamlAuthnContextDisabledTests extends SamlAuthenticationTestSupport {
 
     AuthnRequest authnRequest = getAuthnRequestFromSession(session);
 
-    assertThat(authnRequest.getRequestedAuthnContext(), nullValue());
+    assertThat(authnRequest.getRequestedAuthnContext(), notNullValue());
+    assertThat(authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs(), empty());
   }
 }

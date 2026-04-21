@@ -15,8 +15,11 @@
  */
 package it.infn.mw.iam.authn.saml.profile;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import javax.xml.namespace.QName;
-import static java.util.Objects.isNull;
 
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
@@ -81,26 +84,33 @@ public class IamSSOProfile extends WebSSOProfileImpl {
 
   private void configureAuthnContext(AuthnRequest request) {
 
-    if (isNull(authnContextProperties.getClassRefs()) || authnContextProperties.getClassRefs().isEmpty()) {
-      // Actively clear any AuthnContext the parent class may have already set.
-      // This ensures NO RequestedAuthnContext is sent letting the IdP decide.
-      request.setRequestedAuthnContext(null);
+    List<String> requiredClassRefs = authnContextProperties.getClassRefs();
+    if (requiredClassRefs == null) {
       return;
     }
 
-    // Clear and replace with the configured list (admin-defined or defaults)
+    RequestedAuthnContext requestedAuthnContext = request.getRequestedAuthnContext();
     SAMLObjectBuilder<RequestedAuthnContext> builder =
         getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
-    RequestedAuthnContext requestedAuthnContext = builder.buildObject();
-    request.setRequestedAuthnContext(requestedAuthnContext);
+    if (requestedAuthnContext == null) {
+      requestedAuthnContext = builder.buildObject();
+      request.setRequestedAuthnContext(requestedAuthnContext);
+    }
+
+    Set<String> existingRefs = requestedAuthnContext.getAuthnContextClassRefs()
+      .stream()
+      .map(AuthnContextClassRef::getAuthnContextClassRef)
+      .collect(Collectors.toSet());
 
     SAMLObjectBuilder<AuthnContextClassRef> contextRefBuilder =
         getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
 
-    for (String ref : authnContextProperties.getClassRefs()) {
-      AuthnContextClassRef classRef = contextRefBuilder.buildObject();
-      classRef.setAuthnContextClassRef(ref);
-      requestedAuthnContext.getAuthnContextClassRefs().add(classRef);
+    for (String ref : requiredClassRefs) {
+      if (!existingRefs.contains(ref)) {
+        AuthnContextClassRef classRef = contextRefBuilder.buildObject();
+        classRef.setAuthnContextClassRef(ref);
+        requestedAuthnContext.getAuthnContextClassRefs().add(classRef);
+      }
     }
   }
 
