@@ -45,8 +45,8 @@ import it.infn.mw.voms.aa.VOMSResponse;
 import it.infn.mw.voms.aa.VOMSResponse.Outcome;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
-import it.infn.mw.voms.audit.events.VomsFailureResponseEvent;
-import it.infn.mw.voms.audit.events.VomsSuccessResponseEvent;
+import it.infn.mw.voms.audit.events.VomsProxyDeniedEvent;
+import it.infn.mw.voms.audit.events.VomsProxyIssuedEvent;
 import it.infn.mw.voms.properties.VomsProperties;
 
 
@@ -189,11 +189,11 @@ public class VOMSController extends VOMSControllerSupport implements Application
     if (log.isInfoEnabled()) {
       if (Outcome.SUCCESS.equals(c.getResponse().getOutcome())) {
         String successMessage = "User " + userStr(c) + " got successful VOMS response " + successResponse(c);
-        eventPublisher.publishEvent(new VomsSuccessResponseEvent(this, successMessage));
+        eventPublisher.publishEvent(new VomsProxyIssuedEvent(this, successMessage));
         log.debug(successMessage);
       } else {
         String failureMessage = "User " + userStr(c) + " got failure VOMS response " + errorResponse(c);
-        eventPublisher.publishEvent(new VomsFailureResponseEvent(this, failureMessage));
+        eventPublisher.publishEvent(new VomsProxyDeniedEvent(this, failureMessage));
         log.debug(failureMessage);
       }
     }

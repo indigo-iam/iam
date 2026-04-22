@@ -15,11 +15,11 @@
  */
 package it.infn.mw.voms.audit.events;
 
-public class VomsSuccessResponseEvent extends VomsResponseEvent {
+public class VomsProxyIssuedEvent extends VomsResponseEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public VomsSuccessResponseEvent(Object source, String message) {
+  public VomsProxyIssuedEvent(Object source, String message) {
     super(source, message);
   }
 } 
