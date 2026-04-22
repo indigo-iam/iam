@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.authn;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
@@ -35,15 +35,15 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 public class DefaultAARCHintService implements AARCHintService {
 
   private String baseUrl;
-
   private OidcValidatedProviders oidcProviders;
-
-  private DefaultMetadataLookupService samlProviders;
+  private ObjectProvider<DefaultMetadataLookupService> samlServiceProvider;
 
   public DefaultAARCHintService(@Value("${iam.baseUrl}") String url,
-      OidcValidatedProviders oidcProvicers) {
+      OidcValidatedProviders oidcProvicers,
+      ObjectProvider<DefaultMetadataLookupService> samlServiceProvider) {
     this.baseUrl = url;
     this.oidcProviders = oidcProvicers;
+    this.samlServiceProvider = samlServiceProvider;
   }
 
   protected void hintSanityChecks(String hint) {
@@ -56,40 +56,39 @@ public class DefaultAARCHintService implements AARCHintService {
     }
   }
 
-  @Autowired
-  public void setSaml(@Lazy DefaultMetadataLookupService samlProviders) {
-    this.samlProviders = samlProviders;
-  }
-
   @Override
   public String resolve(String aarcHint) {
+
     hintSanityChecks(aarcHint);
 
-    int indexOfNestedHints = aarcHint.indexOf('?');
-
-    // Currently not accepting the nested hint parameters
-    String aarcHintEntityID =
-        (indexOfNestedHints != -1) ? aarcHint.substring(0, indexOfNestedHints) : aarcHint;
+    String aarcHintEntityID = resolveEntityId(aarcHint);
 
     List<OidcProvider> availableOidcProviders = oidcProviders.getValidatedProviders();
-    List<IdpDescription> availableSamlProviders = samlProviders.listIdps();
+
+    DefaultMetadataLookupService samlService = samlServiceProvider.getIfAvailable();
+    List<IdpDescription> availableSamlProviders =
+        samlService != null ? samlService.listIdps() : Collections.emptyList();
 
     // OIDC redirect
     if (availableOidcProviders.stream()
       .anyMatch(provider -> provider.getIssuer().equals(aarcHintEntityID))) {
 
       return String.format("%s/openid_connect_login?iss=%s", baseUrl, aarcHintEntityID);
-
-      // SAML redirect
-    } else if (availableSamlProviders.stream()
+    }
+    // SAML redirect
+    if (availableSamlProviders.stream()
       .anyMatch(provider -> provider.getEntityId().equals(aarcHintEntityID))) {
 
       return String.format("%s/saml/login?idp=%s", baseUrl, aarcHintEntityID);
-
-    } else {
-
-      throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHintEntityID));
     }
+    throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHintEntityID));
+  }
+
+  private String resolveEntityId(String aarcHint) {
+
+    // Currently we're not accepting the nested hint parameters
+    int i = aarcHint.indexOf('?');
+    return i == -1 ? aarcHint : aarcHint.substring(0, i);
   }
 }
 
