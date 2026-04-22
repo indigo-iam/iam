@@ -19,6 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -96,11 +97,6 @@ class AarcAuthenticationHintServiceTests {
   }
 
   @Test
-  void testInvalidSchemeHint() {
-    assertThrows(InvalidAARCHintError.class, () -> service.resolve("whatever:sdsdad"));
-  }
-
-  @Test
   void testSamlWorks() {
     String url = service.resolve(SAML_ENTITYID);
     assertThat(url, is(String.format("%s/saml/login?idp=%s", BASE_URL, SAML_ENTITYID)));
@@ -112,4 +108,63 @@ class AarcAuthenticationHintServiceTests {
     assertThat(url, is(String.format("%s/openid_connect_login?iss=%s", BASE_URL, OIDC_ISSUER)));
   }
 
+  @Test
+  void testSamlNotAvailable() {
+    when(samlServiceProvider.getIfAvailable()).thenReturn(null);
+    assertThrows(
+        InvalidAARCHintError.class,
+        () -> service.resolve(SAML_ENTITYID)
+    );
+  }
+
+  @Test
+  void testNestedHintOidc() {
+    String hint = OIDC_ISSUER + "?foo=bar";
+    String url = service.resolve(hint);
+    assertThat(url, is(
+        String.format("%s/openid_connect_login?iss=%s", BASE_URL, OIDC_ISSUER)
+    ));
+  }
+
+  @Test
+  void testNestedHintSaml() {
+    String hint = SAML_ENTITYID + "?param=value";
+    String url = service.resolve(hint);
+    assertThat(url, is(
+        String.format("%s/saml/login?idp=%s", BASE_URL, SAML_ENTITYID)
+    ));
+  }
+
+  @Test
+  void testUnsupportedHint() {
+    assertThrows(
+        InvalidAARCHintError.class,
+        () -> service.resolve("https://unknown-idp.example.org")
+    );
+  }
+
+  @Test
+  void testNoProvidersAvailable() {
+    when(oidcProviders.getValidatedProviders()).thenReturn(List.of());
+    when(samlProviders.listIdps()).thenReturn(List.of());
+    assertThrows(
+        InvalidAARCHintError.class,
+        () -> service.resolve(OIDC_ISSUER)
+    );
+  }
+
+  @Test
+  void testOidcPrecedenceOverSaml() {
+    // same identifier in both
+    OidcProvider oidc = new OidcProvider();
+    oidc.setIssuer(SAML_ENTITYID);
+    when(oidcProviders.getValidatedProviders()).thenReturn(List.of(oidc));
+    IdpDescription idp = new IdpDescription();
+    idp.setEntityId(SAML_ENTITYID);
+    when(samlProviders.listIdps()).thenReturn(List.of(idp));
+    String url = service.resolve(SAML_ENTITYID);
+    assertThat(url, is(
+        String.format("%s/openid_connect_login?iss=%s", BASE_URL, SAML_ENTITYID)
+    ));
+  }
 }
