@@ -25,9 +25,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import it.infn.mw.iam.authn.DefaultAARCHintService;
 import it.infn.mw.iam.authn.error.InvalidAARCHintError;
@@ -46,14 +46,24 @@ class AarcAuthenticationHintServiceTests {
   @Mock
   private OidcValidatedProviders oidcProviders;
 
-  @InjectMocks
-  private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL, oidcProviders);
-
   @Mock
   private DefaultMetadataLookupService samlProviders;
 
+  @Mock
+  private ObjectProvider<DefaultMetadataLookupService> samlServiceProvider;
+
+  private DefaultAARCHintService service;
+
   @BeforeEach
   void setUp() {
+
+    service = new DefaultAARCHintService(
+        BASE_URL,
+        oidcProviders,
+        samlServiceProvider
+    );
+
+    lenient().when(samlServiceProvider.getIfAvailable()).thenReturn(samlProviders);
 
     // Populating known Oidc's
     OidcProvider oidcProvider = new OidcProvider();
