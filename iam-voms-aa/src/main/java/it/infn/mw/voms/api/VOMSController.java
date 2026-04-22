@@ -22,6 +22,8 @@ import java.text.SimpleDateFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,12 +45,14 @@ import it.infn.mw.voms.aa.VOMSResponse;
 import it.infn.mw.voms.aa.VOMSResponse.Outcome;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
+import it.infn.mw.voms.audit.events.VomsProxyDeniedEvent;
+import it.infn.mw.voms.audit.events.VomsProxyIssuedEvent;
 import it.infn.mw.voms.properties.VomsProperties;
 
 
 @RestController
 @Transactional
-public class VOMSController extends VOMSControllerSupport {
+public class VOMSController extends VOMSControllerSupport implements ApplicationEventPublisherAware {
 
   private final Logger log = LoggerFactory.getLogger(VOMSController.class);
 
@@ -61,6 +65,7 @@ public class VOMSController extends VOMSControllerSupport {
   private final ACGenerator acGenerator;
   private final VOMSResponseBuilder responseBuilder;
   private final AUPSignatureCheckService signatureCheckService;
+  private ApplicationEventPublisher eventPublisher;
 
   public VOMSController(AttributeAuthority aa, VomsProperties props, ACGenerator acGenerator,
       VOMSResponseBuilder responseBuilder, AUPSignatureCheckService signatureCheckService) {
@@ -69,6 +74,10 @@ public class VOMSController extends VOMSControllerSupport {
     this.acGenerator = acGenerator;
     this.responseBuilder = responseBuilder;
     this.signatureCheckService = signatureCheckService;
+  }
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
   }
 
   protected VOMSRequestContext initVomsRequestContext(IamX509AuthenticationCredential cred,
@@ -179,9 +188,13 @@ public class VOMSController extends VOMSControllerSupport {
   private void logOutcome(VOMSRequestContext c) {
     if (log.isInfoEnabled()) {
       if (Outcome.SUCCESS.equals(c.getResponse().getOutcome())) {
-        log.info("User {} got successful VOMS response {} ", userStr(c), successResponse(c));
+        String successMessage = "User " + userStr(c) + " got successful VOMS response " + successResponse(c);
+        eventPublisher.publishEvent(new VomsProxyIssuedEvent(this, successMessage));
+        log.debug(successMessage);
       } else {
-        log.info("User {} got failure VOMS response {}", userStr(c), errorResponse(c));
+        String failureMessage = "User " + userStr(c) + " got failure VOMS response " + errorResponse(c);
+        eventPublisher.publishEvent(new VomsProxyDeniedEvent(this, failureMessage));
+        log.debug(failureMessage);
       }
     }
   }
