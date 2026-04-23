@@ -177,6 +177,17 @@
 							</c:choose>
 						</p>
 					</c:forEach>
+
+					&nbsp;
+
+					<legend style="margin-bottom: 0;">
+						<spring:message code="approve.remember.title"/>:
+					</legend>
+
+					<label class="radio">
+						<input type="radio" name="remember" value="none" checked>
+						<spring:message code="approve.remember.next_time"/>
+					</label>
 					<hr>
 					<div style="text-align: center;">
 						<spring:message code="approve.label.authorize"
