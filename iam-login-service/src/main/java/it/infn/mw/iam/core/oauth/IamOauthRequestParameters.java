@@ -33,7 +33,6 @@ public abstract class IamOauthRequestParameters {
   public static final String ERROR_STRING = "error";
 
   public static final String APPROVAL_ATTRIBUTE_KEY = "approved";
-  public static final String HIDE_REMEMBER_DECISION = "noremember";
 
   private IamOauthRequestParameters() {}
 

@@ -22,7 +22,6 @@ import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.HIDE_REMEMBER_DECISION;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
@@ -286,7 +285,6 @@ public class IamDeviceEndpointController {
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, auth);
 
     model.put(APPROVAL_ATTRIBUTE_KEY, true);
-    model.put(HIDE_REMEMBER_DECISION, null);
 
     return DEVICE_APPROVED_PAGE;
   }
