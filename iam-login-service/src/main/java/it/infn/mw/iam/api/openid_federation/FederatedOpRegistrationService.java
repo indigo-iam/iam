@@ -292,10 +292,14 @@ public class FederatedOpRegistrationService {
 
   private boolean leadsToTA(String hint, String trustAnchor) {
     try {
+      if (trustAnchor.equals(hint)) {
+        return true;
+      }
       TrustChain tc = tcService.validateFromEntityId(hint);
       return tc != null && tc.getTrustAnchorEntityID() != null
           && trustAnchor.equals(tc.getTrustAnchorEntityID().getValue());
     } catch (FederationException e) {
+      LOG.debug("Invalid hint {} towards TA {}: {}", hint, trustAnchor, e.getMessage());
       return false;
     }
   }

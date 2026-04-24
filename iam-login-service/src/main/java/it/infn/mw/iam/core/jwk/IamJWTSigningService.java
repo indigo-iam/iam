@@ -46,7 +46,6 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.error.StartupError;
 
-
 public class IamJWTSigningService implements JWTSigningAndValidationService {
 
   public static final String SIGNATURE_VALIDATION_CACHE = "jwtSignatureValidation";
