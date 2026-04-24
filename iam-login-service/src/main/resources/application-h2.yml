@@ -36,9 +36,6 @@ spring:
 
   jpa:
     database-platform: org.eclipse.persistence.platform.database.H2Platform
-    properties:
-      eclipselink.ddl-generation: none
-      eclipselink.ddl-generation.output-mode: none
 
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:true}

@@ -102,7 +102,7 @@ public class EnforceAupFilter implements Filter {
     Optional<IamAup> defaultAup = aupRepo.findDefaultAup();
 
     if (!authenticatedUser.isPresent() || !defaultAup.isPresent()) {
-      LOG.warn(
+      LOG.debug(
           "[ENFORCE_AUP] Skip enforcement due to missing prerequisites: userPresent={} defaultAupPresent={}",
           authenticatedUser.isPresent(), defaultAup.isPresent());
       chain.doFilter(request, response);

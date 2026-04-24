@@ -73,7 +73,7 @@ import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
+@ActiveProfiles({"h2-test", "openid-federation"})
 @IamMockMvcIntegrationTest
 class AutomaticClientRegistrationTests {
 

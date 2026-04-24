@@ -49,7 +49,7 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {

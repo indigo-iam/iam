@@ -31,6 +31,9 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true),
   (22, 'whitelist-client', 'secret', 'Client which is not requiring confirmation access', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
 
+UPDATE client_details SET client_description = 'implicit-flow-client description'
+WHERE id = 13 AND client_id = 'implicit-flow-client';
+
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
   token_endpoint_auth_method, require_auth_time, token_endpoint_auth_signing_alg, jwks) VALUES

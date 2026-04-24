@@ -15,32 +15,32 @@
 #
 
 server:
-  address: localhost
-  port: 15000
+  address: ${VOMS_AA_BINDING_ADDRESS:0.0.0.0}
+  port: ${VOMS_AA_PORT:8080}
+  forward-headers-strategy: ${VOMS_AA_FORWARD_HEADERS_STRATEGY:none}
   max-http-header-size: 16000
-    
-  
+
 spring:
-  flyway:
-    table: schema_version
-  
+  profiles:
+    default: mysql
+
   main:
     banner-mode: "off"
     allow-circular-references: true
-  
+
   jpa:
     open-in-view: false
-  
+
 voms:
   tls:
-    certificate-path: /etc/grid-security/voms/hostcert.pem
-    private-key-path: /etc/grid-security/voms/hostkey.pem
-    trust-anchors-dir: /etc/grid-security/certificates
-    trust-anchors-refresh-interval-secs: 14400
+    certificate-path: ${VOMS_AA_TLS_CERTIFICATE_PATH:/certs/hostcert.pem}
+    private-key-path: ${VOMS_AA_TLS_PRIVATE_KEY_PATH:/certs/hostkey.pem}
+    trust-anchors-dir: ${VOMS_AA_TLS_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
+    trust-anchors-refresh-interval-secs: ${VOMS_AA_TLS_TRUST_ANCHORS_REFRESH_INTERVAL_SECS:14400}
   aa:
-    host: ${server.address}
-    port: ${server.port}
-    vo-name: test
-    optional-group-label: wlcg.optional-group
-    voms-role-label: voms.role
-    use-legacy-fqan-encoding: false
+    host: ${VOMS_AA_BINDING_ADDRESS:0.0.0.0}
+    port: ${VOMS_AA_PORT:8080}
+    vo-name: ${VOMS_AA_VONAME:test}
+    optional-group-label: ${VOMS_AA_OPTIONAL_GROUP_LABEL:wlcg.optional-group}
+    voms-role-label: ${VOMS_AA_VOMS_ROLE_LABEL:voms.role}
+    use-legacy-fqan-encoding: ${VOMS_AA_USE_LEGACY_FQAN_ENCODING:false}

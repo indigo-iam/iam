@@ -18,9 +18,25 @@
 -->
 
 <configuration>
-  <include
-    resource="org/springframework/boot/logging/logback/base.xml" />
+  <include resource="org/springframework/boot/logging/logback/base.xml" />
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
+  <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+    <File>${IAM_LOG_PATH:=/var/log/iam}/iam-audit.log</File>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <FileNamePattern>${IAM_LOG_PATH:-/var/log/iam}/iam-audit-%d{yyyy-MM-dd}.log.gz</FileNamePattern>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>${FILE_LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="AUDIT" additivity="false" level="INFO">
+    <appender-ref ref="AUDIT" />
+  </logger>
   <logger name="org.springframework" level="OFF" />
   <logger name="org.testcontainers" level="INFO"/>
   <logger name="com.github.dockerjava" level="INFO"/>

@@ -14,4 +14,8 @@
 # limitations under the License.
 #
 
-#
+logging:
+  level:
+    com:
+      zaxxer:
+        hikari: DEBUG
