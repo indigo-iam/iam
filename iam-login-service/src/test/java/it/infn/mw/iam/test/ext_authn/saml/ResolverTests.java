@@ -40,6 +40,7 @@ import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.NameIDType;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.schema.XSAny;
+import org.opensaml.xml.schema.XSString;
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.authn.saml.util.ChainedCollectingSamlIdResolver;
@@ -331,7 +332,7 @@ class ResolverTests {
     XSAny attributeValue = mock(XSAny.class);
     NameID nameid = mock(NameID.class);
     XMLObject object = mock(XMLObject.class);
-
+    XSString xsString = mock(XSString.class);
 
     when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
 
@@ -376,10 +377,9 @@ class ResolverTests {
     result = resolver.resolveSamlUserIdentifier(cred);
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
-    assertThat(result.getErrorMessages().get(0),
-        is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
-            + "attribute value is not an XSAny"));
-
+    assertThat(result.getErrorMessages().get(0), is(
+        "Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10': unsupported attribute value type "
+            + "(expected XSAny or XSString)"));
 
     when(attribute.getAttributeValues()).thenReturn(asList(attributeValue));
     when(attribute.hasChildren()).thenReturn(false);
@@ -397,7 +397,7 @@ class ResolverTests {
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
-            + "attribute value first children value is not a NameID"));
+            + "attribute first child value is not a NameID"));
 
     when(attributeValue.getOrderedChildren()).thenReturn(asList(nameid));
     when(nameid.getFormat()).thenReturn(NameIDType.UNSPECIFIED);
@@ -408,6 +408,20 @@ class ResolverTests {
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "resolved NameID is not persistent: " + NameIDType.UNSPECIFIED));
+
+    when(attribute.getAttributeValues()).thenReturn(asList(xsString));
+    when(xsString.getValue()).thenReturn("test-user-id");
+
+    result = resolver.resolveSamlUserIdentifier(cred);
+
+    assertThat(result.getResolvedIds().isEmpty(), is(false));
+    assertThat(result.getErrorMessages().isEmpty(), is(true));
+    assertThat(result.getResolvedIds().size(), is(1));
+
+    IamSamlId samlId = result.getResolvedIds().get(0);
+    assertThat(samlId.getUserId(), is("test-user-id"));
+    assertThat(samlId.getIdpId(), is("entityId"));
+    assertThat(samlId.getAttributeId(), is(Saml2Attribute.EPTID.getAttributeName()));
   }
 
   @Test
