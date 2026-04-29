@@ -23,8 +23,10 @@ import java.util.Set;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUserPatchRequest {
@@ -35,6 +37,8 @@ public class ScimUserPatchRequest {
 
   @NotEmpty
   @Valid
+  @JsonProperty("Operations")
+  @JsonAlias("operations")
   private List<ScimPatchOperation<ScimUser>> operations;
 
   public ScimUserPatchRequest() {
