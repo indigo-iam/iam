@@ -49,16 +49,16 @@ public class JWTCriptoConfig {
   }
 
   @Bean
-  @Profile("!test")
-  JwkKeyStore loadProductionKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
+  @Profile("prod")
+  JwkKeyStore defaultKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
     String location = iamProperties.getJwk().getKeystoreLocation();
     LOG.info("Loading JWT keystore from: {}", location);
     return loader.load(location);
   }
 
   @Bean
-  @Profile({"test"})
-  JwkKeyStore generateOrLoadTestKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
+  @Profile({"!prod"})
+  JwkKeyStore testKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
 
     String location = iamProperties.getJwk().getKeystoreLocation();
 
