@@ -22,18 +22,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ResourceLoader;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.jwk.JwkKeyStore;
-import it.infn.mw.iam.util.JwkKeyStoreLoader;
+import it.infn.mw.iam.config.IamProperties.JWKProperties;
+import it.infn.mw.iam.config.JWTCriptoConfig;
 
 @SpringBootTest(classes = {IamLoginService.class})
 public class JwkKeyStoreStartupTest {
 
+  static final String DEFAULT_KEYSTORE_LOCATION = "classpath:keystore.jwks";
+
   private final ApplicationContextRunner contextRunner =
-      new ApplicationContextRunner().withUserConfiguration(TestConfig.class)
+      new ApplicationContextRunner().withUserConfiguration(JWTCriptoConfig.class, TestConfig.class)
         .withPropertyValues("spring.profiles.active=prod");
 
   @Test
@@ -42,7 +43,7 @@ public class JwkKeyStoreStartupTest {
       assertThat(context).hasFailed();
 
       assertThat(context.getStartupFailure())
-        .hasMessageContaining("JWK keystore location must be configured");
+        .hasMessageContaining("Error loading JWK keystore from " + DEFAULT_KEYSTORE_LOCATION);
     });
   }
 
@@ -50,24 +51,12 @@ public class JwkKeyStoreStartupTest {
   static class TestConfig {
 
     @Bean
-    JwkKeyStoreLoader jwkKeyStoreLoader(ResourceLoader resourceLoader) {
-      return new JwkKeyStoreLoader(resourceLoader);
-    }
-
-    @Bean
     IamProperties iamProperties() {
-      return new IamProperties();
-    }
-
-    @Bean(name = "defaultKeyStore")
-    JwkKeyStore defaultKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
-      String location = iamProperties.getJwk().getKeystoreLocation();
-
-      if (location == null || location.isBlank()) {
-        throw new IllegalStateException("JWK keystore location must be configured");
-      }
-
-      return loader.load(location);
+      JWKProperties jwk = new JWKProperties();
+      jwk.setKeystoreLocation(DEFAULT_KEYSTORE_LOCATION);
+      IamProperties props = new IamProperties();
+      props.setJwk(jwk);
+      return props;
     }
   }
 }
