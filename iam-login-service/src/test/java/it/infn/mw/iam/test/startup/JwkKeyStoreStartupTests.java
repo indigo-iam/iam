@@ -29,7 +29,7 @@ import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.config.JWTCriptoConfig;
 
 @SpringBootTest(classes = {IamLoginService.class})
-public class JwkKeyStoreStartupTest {
+public class JwkKeyStoreStartupTests {
 
   static final String DEFAULT_KEYSTORE_LOCATION = "classpath:keystore.jwks";
 
