@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -475,8 +476,8 @@ class DeviceCodeTests extends EndpointsTestUtils {
 
     mvc.perform(get("/" + ApprovedSiteAPI.URL).session(session))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
-      .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)));
+      .andExpect(jsonPath("$[*].clientId", not(hasItem(DEVICE_CODE_CLIENT_ID))))
+      .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))));
 
     mvc
       .perform(post(TOKEN_ENDPOINT).with(httpBasic("client", "secret"))
