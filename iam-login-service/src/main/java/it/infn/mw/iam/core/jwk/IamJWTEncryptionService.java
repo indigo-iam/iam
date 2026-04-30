@@ -21,7 +21,6 @@ import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildDecrypter;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildEncrypter;
-import static java.util.Objects.isNull;
 
 import java.util.Collection;
 import java.util.Map;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,25 +67,25 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
   private final String defaultJweEncryptKeyId;
   private final String defaultJweDecryptKeyId;
 
-  private final JWKSetKeyStore keystore;
+  private final JwkKeyStore keystore;
 
-  public IamJWTEncryptionService(IamProperties properties, JWKSetKeyStore keyStore) {
-    checkNotNull(keyStore, "Please provide a keystore");
+  public IamJWTEncryptionService(JwkKeyStore keystore, IamProperties properties) {
+    checkNotNull(keystore, "Please provide a keystore");
     checkNotNull(properties, "Please provide properties");
-    this.keystore = keyStore;
+    this.keystore = keystore;
     this.defaultJweEncryptKeyId = properties.getJwk().getDefaultJweEncryptKeyId();
     this.defaultJweDecryptKeyId = properties.getJwk().getDefaultJweDecryptKeyId();
     initializeEncryptersAndDecrypters();
   }
 
-  public IamJWTEncryptionService(JWKSetKeyStore keyStore, String defaultKeyId) {
-    checkNotNull(keyStore, "Please provide a keystore");
-    checkArgument(!keyStore.getKeys().isEmpty(), "Please provide a non-empty keystore");
-    this.keystore = keyStore;
+  public IamJWTEncryptionService(JwkKeyStore keystore, Optional<String> defaultKeyId) {
+    checkNotNull(keystore, "Please provide a keystore");
+    checkArgument(!keystore.getKeys().isEmpty(), "Please provide a non-empty keystore");
+    this.keystore = keystore;
 
-    if (!isNull(defaultKeyId)) {
-      this.defaultJweDecryptKeyId = defaultKeyId;
-      this.defaultJweEncryptKeyId = defaultKeyId;
+    if (defaultKeyId.isPresent()) {
+      this.defaultJweDecryptKeyId = defaultKeyId.get();
+      this.defaultJweEncryptKeyId = defaultKeyId.get();
     } else {
       JWK firstKey = keystore.getKeys().stream().findFirst().orElseThrow();
       this.defaultJweDecryptKeyId = firstKey.getKeyID();
@@ -95,13 +93,7 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
     }
 
     initializeEncryptersAndDecrypters();
-
   }
-
-  public IamJWTEncryptionService(JWKSetKeyStore keyStore) {
-    this(keyStore, null);
-  }
-
 
   @Override
   public void encryptJwt(JWEObject jwt) {
@@ -115,7 +107,6 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
     } catch (JOSEException e) {
       LOG.error(ENCRYPTION_ERROR_MSG, e.getMessage());
     }
-
   }
 
   @Override
@@ -128,7 +119,6 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
     } catch (JOSEException e) {
       LOG.error(DECRYPTION_ERROR_MSG, e.getMessage());
     }
-
   }
 
   @Override
@@ -146,7 +136,6 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
     return allEncryptionMethods;
   }
 
-
   private void registerProvider(JWEProvider provider) {
     allAlgorithms.addAll(provider.supportedJWEAlgorithms());
     allEncryptionMethods.addAll(provider.supportedEncryptionMethods());
@@ -162,7 +151,6 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
     registerProvider(decrypter);
     decrypters.put(jwk.getKeyID(), decrypter);
   }
-
 
   protected void buildEncrypterDecrypter(JWK jwk) {
     try {

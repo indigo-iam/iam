@@ -23,6 +23,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.UUID;
@@ -64,6 +65,10 @@ import it.infn.mw.iam.test.util.oidc.TokenResponse;
     "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
     "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class RCAuthTokenRequestorTests extends RCAuthTestSupport {
+
+  public RCAuthTokenRequestorTests() throws IOException, ParseException {
+    super();
+  }
 
   @TestConfiguration
   public static class TestConfig {

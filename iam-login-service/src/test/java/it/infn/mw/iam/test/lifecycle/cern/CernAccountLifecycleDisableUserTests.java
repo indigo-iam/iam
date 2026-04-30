@@ -229,7 +229,7 @@ class CernAccountLifecycleDisableUserTests implements LifecycleTestSupport {
   @Test
   void testEndTimeIsNotSynchronizedIfSkipLabelIsPresent() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));

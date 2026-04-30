@@ -15,20 +15,20 @@
  */
 package it.infn.mw.iam.core.web.aup;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
@@ -36,35 +36,40 @@ import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 @Component
 public class AupReminderTask {
 
-  @Autowired
-  IamAccountRepository accounts;
+  private final Clock clock;
+  private final IamAupRepository aupRepo;
+  private final NotificationFactory notification;
+  private final IamAupSignatureRepository aupSignatureRepo;
+  private final IamEmailNotificationRepository emailNotificationRepo;
 
-  @Autowired
-  IamAupRepository aupRepo;
+  public AupReminderTask(Clock clock, NotificationFactory notification, IamAupRepository aupRepo,
+      IamEmailNotificationRepository emailNotificationRepo,
+      IamAupSignatureRepository aupSignatureRepo) {
 
-  @Autowired
-  NotificationFactory notification;
-
-  @Autowired
-  IamAupSignatureRepository aupSignatureRepo;
-
-  @Autowired
-  IamEmailNotificationRepository emailNotificationRepo;
+    this.clock = clock;
+    this.notification = notification;
+    this.aupRepo = aupRepo;
+    this.emailNotificationRepo = emailNotificationRepo;
+    this.aupSignatureRepo = aupSignatureRepo;
+  }
 
   public void sendAupReminders() {
     aupRepo.findDefaultAup().ifPresent(aup -> {
-      LocalDate currentDate = LocalDate.now();
+
+      Instant currentInstant = clock.instant();
+
       if (aup.getSignatureValidityInDays() > 0) {
-        LocalDate expirationDate = currentDate.minusDays(aup.getSignatureValidityInDays());
-        Date expirationDateAsDate = toDate(expirationDate);
-        Date expirationDatePlusOneDayAsDate = toDate(expirationDate.plusDays(1));
+
+        Instant signatureTarget = clock.instant().minus(Duration.ofDays(aup.getSignatureValidityInDays())).truncatedTo(ChronoUnit.DAYS);
+        Date signatureMin = Date.from(signatureTarget);
+        Date signatureMax = Date.from(signatureTarget.plus(Duration.ofDays(1)));
         List<Integer> reminderIntervals = parseReminderIntervals(aup.getAupRemindersInDays());
 
         reminderIntervals.forEach(
-            interval -> processRemindersForInterval(aup, currentDate, interval, expirationDate));
+            interval -> processRemindersForInterval(aup, currentInstant, interval, signatureTarget));
 
         List<IamAupSignature> expiredSignatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
-            expirationDateAsDate, expirationDatePlusOneDayAsDate);
+            signatureMin, signatureMax);
 
         // check if an email of type AUP_EXPIRATION does not already exist, because it is never deleted
         expiredSignatures.forEach(s -> {
@@ -76,19 +81,19 @@ public class AupReminderTask {
     });
   }
 
-  private void processRemindersForInterval(IamAup aup, LocalDate currentDate, Integer interval,
-      LocalDate expirationDate) {
-    LocalDate reminderDate = expirationDate.plusDays(interval);
-    Date reminderDateAsDate = toDate(reminderDate);
-    Date reminderDatePlusOneAsDate = toDate(reminderDate.plusDays(1));
-    Date tomorrowAsDate = toDate(currentDate.plusDays(1));
+  private void processRemindersForInterval(IamAup aup, Instant currentDate, Integer interval,
+      Instant expirationDate) {
+
+    Date signatureMin = Date.from(expirationDate.plus(Duration.ofDays(interval)).truncatedTo(ChronoUnit.DAYS));
+    Date signatureMax = Date.from(expirationDate.plus(Duration.ofDays(interval + 1L)).truncatedTo(ChronoUnit.DAYS));
+    Date tomorrow = Date.from(currentDate.plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.DAYS));
 
     List<IamAupSignature> signatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
-        reminderDateAsDate, reminderDatePlusOneAsDate);
+        signatureMin, signatureMax);
 
     // check if an email of type AUP_REMINDER does not already exist, because it is never deleted
     signatures.forEach(s -> {
-      if (isAupReminderEmailNotAlreadySentFor(s.getAccount(), tomorrowAsDate) && !s.getAccount().isServiceAccount()) {
+      if (isAupReminderEmailNotAlreadySentFor(s.getAccount(), tomorrow) && !s.getAccount().isServiceAccount()) {
         notification.createAupReminderMessage(s.getAccount(), aup);
       }
     });
@@ -102,10 +107,6 @@ public class AupReminderTask {
   public boolean isAupReminderEmailNotAlreadySentFor(IamAccount account, Date tomorrowAsDate) {
     return emailNotificationRepo.countAupRemindersPerAccount(account.getUserInfo().getEmail(),
         tomorrowAsDate) == 0;
-  }
-
-  private Date toDate(LocalDate localDate) {
-    return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
   }
 
   private static List<Integer> parseReminderIntervals(String aupRemindersInDays) {

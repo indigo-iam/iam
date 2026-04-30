@@ -21,11 +21,14 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_IGNO
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import org.joda.time.LocalDate;
 
 import com.google.common.collect.Sets;
 
@@ -71,13 +74,33 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
     return IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(s.name()).build();
   }
 
-  default VOPersonDTO voPerson(String personId) {
-    return voPerson(personId, getTestAccount(), getTestParticipations());
+  default VOPersonDTO voPerson(Clock clock, String personId) {
+    return voPerson(personId, getTestAccount(), getTestParticipations(clock));
   }
 
-  default VOPersonDTO voPerson(String personId, Date endDate) {
-    Date startDate = endDate == null ? LocalDate.now().minusDays(365).toDate()
-        : LocalDate.fromDateFields(endDate).minusDays(365).toDate();
+  default Instant getUtcStartOfDayForDaysAgo(Clock clock, int daysAgo) {
+    ZoneId zone = clock.getZone();
+    return LocalDate.now(clock).minusDays(daysAgo).atStartOfDay(zone).toInstant();
+  }
+
+  default Instant getUtcStartOfDayForDaysAfter(Clock clock, int daysAfter) {
+    ZoneId zone = clock.getZone();
+    return LocalDate.now(clock).plusDays(daysAfter).atStartOfDay(zone).toInstant();
+  }
+
+  default Instant getUtcStartOfDayForDaysAgoFromBase(Instant base, ZoneId zone, int daysAgo) {
+    return base
+            .atZone(zone)
+            .toLocalDate()
+            .minusDays(daysAgo)
+            .atStartOfDay(zone)
+            .toInstant();
+  }
+
+  default VOPersonDTO voPerson(Clock clock, String personId, Date endDate) {
+
+    Date startDate = endDate == null ? Date.from(getUtcStartOfDayForDaysAgo(clock, 365))
+        : Date.from(getUtcStartOfDayForDaysAgoFromBase(endDate.toInstant(), clock.getZone(), 365));
     return voPerson(personId, getTestAccount(),
         Sets.newHashSet(getParticipation("test", startDate, endDate)));
   }
@@ -86,18 +109,18 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
     return voPerson(personId, getTestAccount(), Sets.newHashSet());
   }
 
-  default VOPersonDTO expiredVoPerson(String personId) {
+  default VOPersonDTO expiredVoPerson(Clock clock, String personId) {
     return voPerson(personId, getTestAccount(),
-        Sets.newHashSet(getExpiredParticipation("test", 20)));
+        Sets.newHashSet(getExpiredParticipation(clock, "test", 20)));
   }
 
-  default VOPersonDTO removedVoPerson(String personId) {
+  default VOPersonDTO removedVoPerson(Clock clock, String personId) {
     return voPerson(personId, getTestAccount(),
-        Sets.newHashSet(getExpiredParticipation("test", 40)));
+        Sets.newHashSet(getExpiredParticipation(clock, "test", 40)));
   }
 
-  default VOPersonDTO noEmailVoPerson(String personId) {
-    VOPersonDTO personDTO = voPerson(personId);
+  default VOPersonDTO noEmailVoPerson(Clock clock, String personId) {
+    VOPersonDTO personDTO = voPerson(clock, personId);
     personDTO.setEmail(null);
     return personDTO;
   }
@@ -119,19 +142,19 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
     return account;
   }
 
-  default ParticipationDTO getUnlimitedParticipation(String experiment) {
-    Date startDate = LocalDate.now().minusDays(365).toDate();
+  default ParticipationDTO getUnlimitedParticipation(Clock clock, String experiment) {
+    Date startDate = Date.from(getUtcStartOfDayForDaysAgo(clock, 365));
     return getParticipation(experiment, startDate, null);
   }
 
-  default ParticipationDTO getLimitedParticipation(String experiment) {
-    Date startDate = LocalDate.now().minusDays(365).toDate();
-    Date endDate = LocalDate.now().plusDays(365).toDate();
+  default ParticipationDTO getLimitedParticipation(Clock clock, String experiment) {
+    Date startDate = Date.from(getUtcStartOfDayForDaysAgo(clock, 365));
+    Date endDate = Date.from(startDate.toInstant().plus(Duration.ofDays(365)));
     return getParticipation(experiment, startDate, endDate);
   }
 
-  default Set<ParticipationDTO> getTestParticipations() {
-    return Sets.newHashSet(getLimitedParticipation("test"));
+  default Set<ParticipationDTO> getTestParticipations(Clock clock) {
+    return Sets.newHashSet(getLimitedParticipation(clock, "test"));
   }
 
   default ParticipationDTO getParticipation(String experiment, Date startDate, Date endDate) {
@@ -143,11 +166,13 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
     return p;
   }
 
-  default ParticipationDTO getExpiredParticipation(String experiment, int daysAgo) {
+  default ParticipationDTO getExpiredParticipation(Clock clock, String experiment, int daysAgo) {
+    Date startDate = Date.from(getUtcStartOfDayForDaysAgo(clock, daysAgo + 365));
+    Date endDate = Date.from(startDate.toInstant().plus(Duration.ofDays(365)));
     ParticipationDTO p = new ParticipationDTO();
     p.setExperiment(experiment);
-    p.setStartDate(LocalDate.now().minusDays(daysAgo + 365).toDate());
-    p.setEndDate(LocalDate.now().minusDays(daysAgo).toDate());
+    p.setStartDate(startDate);
+    p.setEndDate(endDate);
     p.setInstitute(getTestInstitute());
     return p;
   }

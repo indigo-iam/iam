@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -68,9 +69,12 @@ class ClientLastUsedTests extends TokenGetterUtils {
   @Autowired
   MutableClock clock;
 
+  LocalDate now;
+
   @BeforeEach
   void init() {
     context.cleanupSecurityContext();
+    now = LocalDate.ofInstant(clock.instant(), ZoneId.of("UTC"));
   }
 
   @Test
@@ -91,7 +95,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     iamProperties.getClient().setTrackLastUsed(true);
     assertNotNull(getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
         "password", "openid").accessToken());
-    assertLastUsedIs(LOOKUP_CLIENT_ID, clock.localDate());
+    assertLastUsedIs(LOOKUP_CLIENT_ID, now);
   }
 
   @Test
@@ -107,7 +111,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     assertNotNull(
         getPasswordToken(POST_CLIENT_ID, POST_CLIENT_SECRET, TEST_347_USER, "password", "openid")
           .accessToken());
-    assertLastUsedIs(POST_CLIENT_ID, clock.localDate());
+    assertLastUsedIs(POST_CLIENT_ID, now);
   }
 
   @Test
@@ -133,7 +137,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     TokenRequest tokenRequest =
         new TokenRequest(emptyMap(), LOOKUP_CLIENT_ID, Collections.emptySet(), "");
     tokenService.refreshAccessToken(refreshToken, tokenRequest);
-    assertLastUsedIs(LOOKUP_CLIENT_ID, clock.localDate());
+    assertLastUsedIs(LOOKUP_CLIENT_ID, now);
   }
 
   @Test
@@ -158,7 +162,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     TokenRequest tokenRequest =
         new TokenRequest(emptyMap(), TEST_CLIENT_ID, Collections.emptySet(), "");
     tokenService.refreshAccessToken(refreshToken, tokenRequest);
-    assertLastUsedIs(TEST_CLIENT_ID, clock.localDate());
+    assertLastUsedIs(TEST_CLIENT_ID, now);
   }
 
   private void assertLastUsedIs(String clientId, LocalDate expected) {

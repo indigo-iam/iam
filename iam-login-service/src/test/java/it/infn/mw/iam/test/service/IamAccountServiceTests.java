@@ -138,7 +138,7 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
   IamProperties.RegistrationProperties registrationProperties =
       new IamProperties.RegistrationProperties();
 
-  Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
+  Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
 
   DefaultIamAccountService accountService;
 

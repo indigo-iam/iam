@@ -15,31 +15,35 @@
  */
 package it.infn.mw.iam.util;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Objects;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
+import com.nimbusds.jose.jwk.JWKSet;
+
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 
-public class JWKKeystoreLoader {
+public final class JwkKeyStoreLoader {
 
-  final ResourceLoader loader;
+  private final ResourceLoader resourceLoader;
 
-  public JWKKeystoreLoader(ResourceLoader resourceLoader) {
-    this.loader = resourceLoader;
+  public JwkKeyStoreLoader(ResourceLoader resourceLoader) {
+    this.resourceLoader = Objects.requireNonNull(resourceLoader);
   }
 
-  public JWKSetKeyStore loadKeystoreFromLocation(String keyStoreLocation) {
+  public JwkKeyStore load(String location) {
     try {
-      Resource keyStoreResource = loader.getResource(keyStoreLocation);
+      Resource resource = resourceLoader.getResource(location);
+      JWKSet jwkSet = JwkSetLoader.load(resource);
+      return JwkKeyStore.from(jwkSet);
 
-      JWKSetKeyStore keyStore = new JWKSetKeyStore();
-      keyStore.setLocation(keyStoreResource);
-
-      return keyStore;
-    } catch (Exception e) {
-      throw new IAMJWTKeystoreError("Error initializing JWKProperties keystore: " + e.getMessage(), e);
+    } catch (IOException | ParseException e) {
+      throw new IAMJWTKeystoreError(
+          "Error loading JWK keystore from " + location, e);
     }
   }
-
 }

@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   private static final String VERIFIER_NOT_FOUND_MSG = "JWS verifier not found for key {}";
   private static final String KEY_INIT_ERROR_MSG = "Error initializing keys";
 
-  private final JWKSetKeyStore keystore;
+  private final JwkKeyStore keystore;
 
   private final Set<JWSAlgorithm> allAlgorithms = newHashSet();
   private Map<String, JWSSigner> signers = newHashMap();
@@ -70,7 +69,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   private final JWSAlgorithm defaultAlgorithm;
   private final String defaultSignerKeyId;
 
-  public IamJWTSigningService(JWKProperties properties, JWKSetKeyStore keystore) {
+  public IamJWTSigningService(JwkKeyStore keystore, JWKProperties properties) {
     checkNotNull(keystore, "null keystore");
     checkNotNull(properties, "null properties");
 
@@ -82,12 +81,11 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     initializeSignersAndVerifiers();
   }
 
-  public IamJWTSigningService(JWKSetKeyStore keystore) {
+  public IamJWTSigningService(JwkKeyStore keystore) {
     this(keystore, null, null);
   }
 
-  public IamJWTSigningService(JWKSetKeyStore keystore, String defaultKeyId,
-      String defaultAlgorithm) {
+  public IamJWTSigningService(JwkKeyStore keystore, String defaultKeyId, String defaultAlgorithm) {
     checkNotNull(keystore, "null keystore");
     checkArgument(!keystore.getKeys().isEmpty(), "Please provide a non-empty keystore");
     this.keystore = keystore;
