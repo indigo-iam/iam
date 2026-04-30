@@ -59,6 +59,7 @@ spring:
      "h2-test": "h2,saml,registration"
      "mysql-test": "saml,registration"
      "prod": "mysql,flyway-repair"
+     "test": "h2-test,mysql-test,dev"
 
   jpa:
     generate-ddl: true
