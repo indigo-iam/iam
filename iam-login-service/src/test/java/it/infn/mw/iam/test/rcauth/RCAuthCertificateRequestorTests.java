@@ -24,6 +24,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,10 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
+
+  public RCAuthCertificateRequestorTests() throws IOException, ParseException {
+    super();
+  }
 
   @TestConfiguration
   public static class TestConfig {
