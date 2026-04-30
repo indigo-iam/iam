@@ -35,7 +35,7 @@
 * Make new dashboard client credentials configurable on bootstrap
 * Add storage.poll matcher in wlcg-scopes profile
 * Upgrade voms-api-java from 3.3.6 to 3.3.8
-* Add API endpoint for approved site with client details (
+* Add API endpoint for approved site with client details
 * Make SAML authn-context class-refs list configurable
 * Refactor VOMS-AA yaml configuration files
 * Enhance/optimize IAM login service yaml profiles
