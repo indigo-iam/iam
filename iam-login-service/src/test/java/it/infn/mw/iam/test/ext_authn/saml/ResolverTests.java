@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opensaml.saml2.core.Attribute;
@@ -56,6 +57,17 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 
 class ResolverTests {
 
+  Attribute attribute;
+  SAMLCredential cred;
+  SamlUserIdentifierResolver resolver;
+
+  @BeforeEach
+  void setup() {
+    attribute = mock(Attribute.class);
+    cred = mock(SAMLCredential.class);
+    resolver = new EPTIDUserIdentifierResolver();
+  }
+
   @Test
   void testSamlIdResolverAttributeResolution() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
@@ -67,8 +79,6 @@ class ResolverTests {
 
   @Test
   void emptyNameIdResolverTest() {
-
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getNameID()).thenReturn(null);
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
@@ -85,10 +95,8 @@ class ResolverTests {
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn("format");
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getNameID()).thenReturn(nameId);
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
-
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
 
@@ -109,7 +117,6 @@ class ResolverTests {
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn("format");
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getNameID()).thenReturn(nameId);
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
@@ -124,8 +131,6 @@ class ResolverTests {
 
   @Test
   void persistentNameIdResolverTestNoNameId() {
-
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
@@ -143,7 +148,6 @@ class ResolverTests {
     Mockito.when(nameId.getValue()).thenReturn("nameid");
     Mockito.when(nameId.getFormat()).thenReturn(NameIDType.PERSISTENT);
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getNameID()).thenReturn(nameId);
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
@@ -163,7 +167,6 @@ class ResolverTests {
 
     assertThat(resolver, is(not(nullValue())));
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -182,12 +185,10 @@ class ResolverTests {
 
   @Test
   void attributeNotFoundResolverTest() {
-
     SamlIdResolvers resolvers = new SamlIdResolvers();
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
     assertThat(resolver, is(not(nullValue())));
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     Mockito.when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -202,8 +203,7 @@ class ResolverTests {
   }
 
   @Test
-  void ChainedResolverReturnsErrorsIfNoMatchedSamlIds() {
-
+  void chainedResolverReturnsErrorsIfNoMatchedSamlIds() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
@@ -213,7 +213,6 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -238,8 +237,7 @@ class ResolverTests {
   }
 
   @Test
-  void ChainedResolverTestSuccess() {
-
+  void chainedResolverTestSuccess() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
@@ -249,7 +247,6 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     when(cred.getAttributeAsString(Saml2Attribute.EPUID.getAttributeName()))
       .thenReturn("123456789@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -264,7 +261,6 @@ class ResolverTests {
 
   @Test
   void returnAllMatchedSamlIdResolvers() {
-
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
@@ -274,7 +270,6 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     when(cred.getAttributeAsString(Saml2Attribute.EPUID.getAttributeName()))
       .thenReturn("123456789@test.org");
     when(cred.getAttributeAsString(Saml2Attribute.SUBJECT_ID.getAttributeName()))
@@ -292,17 +287,14 @@ class ResolverTests {
 
   @Test
   void getNameTest() {
-
     SamlIdResolvers resolvers = new SamlIdResolvers();
     NamedSamlUserIdentifierResolver subjectIdResolver =
         resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
     assertThat(subjectIdResolver.getName(), is(Saml2Attribute.SUBJECT_ID.name()));
   }
 
-
   @Test
   void epitdAttributeIsRegisteredInResolversTest() {
-
     SamlIdResolvers resolvers = new SamlIdResolvers();
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.EPTID);
     assertThat(resolver, is(instanceOf(EPTIDUserIdentifierResolver.class)));
@@ -310,11 +302,7 @@ class ResolverTests {
 
   @Test
   void eptidAttributeNotFoundTest() {
-
-    SAMLCredential cred = Mockito.mock(SAMLCredential.class);
     when(cred.getRemoteEntityID()).thenReturn("entityId");
-
-    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -325,19 +313,8 @@ class ResolverTests {
   }
 
   @Test
-  void eptidAttributeValuesSanityChecksTest() {
-
-    Attribute attribute = mock(Attribute.class);
-    SAMLCredential cred = mock(SAMLCredential.class);
-    XSAny attributeValue = mock(XSAny.class);
-    NameID nameid = mock(NameID.class);
-    XMLObject object = mock(XMLObject.class);
-    XSString xsString = mock(XSString.class);
-
-    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
-
+  void failureWhenRemoteEntityIdIsMissing() {
     when(attribute.getAttributeValues()).thenReturn(null);
-    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -345,74 +322,147 @@ class ResolverTests {
     assertThat(result.getErrorMessages().get(0), is(
         "Malformed assertion while looking for attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10': "
             + "remoteEntityID null or empty"));
+  }
 
+  @Test
+  void failureWhenAttributeValuesIsNull() {
     when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+    when(attribute.getAttributeValues()).thenReturn(null);
 
-    result = resolver.resolveSamlUserIdentifier(cred);
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "null or empty list of values"));
+  }
 
+  @Test
+  void failureWhenAttributeValuesIsEmpty() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
     when(attribute.getAttributeValues()).thenReturn(emptyList());
-    result = resolver.resolveSamlUserIdentifier(cred);
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "null or empty list of values"));
+  }
 
-    when(attribute.getAttributeValues()).thenReturn(asList(nameid, nameid, nameid));
-    result = resolver.resolveSamlUserIdentifier(cred);
+  @Test
+  void failureWhenMultipleValuesPresent() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+
+    NameID nameid = mock(NameID.class);
+    when(attribute.getAttributeValues()).thenReturn(asList(nameid, nameid));
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "more than one value found"));
+  }
 
+  @Test
+  void failureWhenUnsupportedType() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+
+    XMLObject object = mock(XMLObject.class);
     when(attribute.getAttributeValues()).thenReturn(asList(object));
-    result = resolver.resolveSamlUserIdentifier(cred);
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0), is(
         "Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10': unsupported attribute value type "
             + "(expected XSAny or XSString)"));
+  }
 
-    when(attribute.getAttributeValues()).thenReturn(asList(attributeValue));
-    when(attribute.hasChildren()).thenReturn(false);
-    result = resolver.resolveSamlUserIdentifier(cred);
+  @Test
+  void failureWhenXSAnyHasNoChildren() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+
+    XSAny xsAny = mock(XSAny.class);
+    when(xsAny.hasChildren()).thenReturn(false);
+
+    when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "attribute value has no children elements"));
+  }
 
-    when(attributeValue.hasChildren()).thenReturn(true);
-    when(attributeValue.getOrderedChildren()).thenReturn(asList(object));
-    result = resolver.resolveSamlUserIdentifier(cred);
+  @Test
+  void failureWhenXSAnyDoesNotContainNameID() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+
+    XSAny xsAny = mock(XSAny.class);
+    XMLObject object = mock(XMLObject.class);
+
+    when(xsAny.hasChildren()).thenReturn(true);
+    when(xsAny.getOrderedChildren()).thenReturn(asList(object));
+
+    when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "attribute first child value is not a NameID"));
+  }
 
-    when(attributeValue.getOrderedChildren()).thenReturn(asList(nameid));
-    when(nameid.getFormat()).thenReturn(NameIDType.UNSPECIFIED);
+  @Test
+  void failureWhenNameIdIsNotPersistent() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
 
-    result = resolver.resolveSamlUserIdentifier(cred);
+    XSAny xsAny = mock(XSAny.class);
+    NameID nameId = mock(NameID.class);
+
+    when(xsAny.hasChildren()).thenReturn(true);
+    when(xsAny.getOrderedChildren()).thenReturn(asList(nameId));
+    when(nameId.getFormat()).thenReturn(NameIDType.UNSPECIFIED);
+
+    when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
         is("Attribute 'eduPersonTargetedId:urn:oid:1.3.6.1.4.1.5923.1.1.1.10' is malformed: "
             + "resolved NameID is not persistent: " + NameIDType.UNSPECIFIED));
+  }
 
-    when(attribute.getAttributeValues()).thenReturn(asList(xsString));
+  @Test
+  void successfullyResolveUserIdFromXSString() {
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
+
+    XSString xsString = mock(XSString.class);
     when(xsString.getValue()).thenReturn("test-user-id");
 
-    result = resolver.resolveSamlUserIdentifier(cred);
+    when(attribute.getAttributeValues()).thenReturn(asList(xsString));
+
+    SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
     assertThat(result.getErrorMessages().isEmpty(), is(true));
@@ -426,8 +476,6 @@ class ResolverTests {
 
   @Test
   void eptidResolutionSuccess() {
-    Attribute attribute = mock(Attribute.class);
-    SAMLCredential cred = mock(SAMLCredential.class);
     XSAny attributeValue = mock(XSAny.class);
     NameID nameid = mock(NameID.class);
 
@@ -442,7 +490,6 @@ class ResolverTests {
     when(nameid.getNameQualifier()).thenReturn("nameIdNameQualifier");
     when(nameid.getSPNameQualifier()).thenReturn("nameIdSPNameQualifier");
 
-    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
@@ -453,8 +500,6 @@ class ResolverTests {
 
   @Test
   void eptidResolutionSuccessNameidWithoutFormatAttribute() {
-    Attribute attribute = mock(Attribute.class);
-    SAMLCredential cred = mock(SAMLCredential.class);
     XSAny attributeValue = mock(XSAny.class);
     NameID nameid = mock(NameID.class);
 
@@ -468,7 +513,6 @@ class ResolverTests {
     when(nameid.getNameQualifier()).thenReturn("nameIdNameQualifier");
     when(nameid.getSPNameQualifier()).thenReturn("nameIdSPNameQualifier");
 
-    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
