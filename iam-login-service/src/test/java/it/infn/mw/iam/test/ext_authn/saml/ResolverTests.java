@@ -59,13 +59,11 @@ class ResolverTests {
 
   Attribute attribute;
   SAMLCredential cred;
-  SamlUserIdentifierResolver resolver;
 
   @BeforeEach
   void setup() {
     attribute = mock(Attribute.class);
     cred = mock(SAMLCredential.class);
-    resolver = new EPTIDUserIdentifierResolver();
   }
 
   @Test
@@ -82,7 +80,6 @@ class ResolverTests {
     Mockito.when(cred.getNameID()).thenReturn(null);
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
-
     Optional<IamSamlId> resolvedId =
         resolver.resolveSamlUserIdentifier(cred).getResolvedIds().stream().findFirst();
 
@@ -99,7 +96,6 @@ class ResolverTests {
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
-
     IamSamlId resolvedId = resolver.resolveSamlUserIdentifier(cred)
       .getResolvedIds()
       .stream()
@@ -121,8 +117,8 @@ class ResolverTests {
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
@@ -134,8 +130,8 @@ class ResolverTests {
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
@@ -152,8 +148,8 @@ class ResolverTests {
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(false));
     assertThat(result.getErrorMessages().isEmpty(), is(true));
     assertThat(result.getResolvedIds().get(0).getUserId(), is("nameid"));
@@ -162,7 +158,6 @@ class ResolverTests {
   @Test
   void mailIdResolverTest() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
-
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.MAIL);
 
     assertThat(resolver, is(not(nullValue())));
@@ -179,7 +174,6 @@ class ResolverTests {
 
     assertThat(resolvedId.getUserId(), equalTo("test@test.org"));
     assertThat(resolvedId.getAttributeId(), equalTo(Saml2Attribute.MAIL.getAttributeName()));
-
     assertThat(resolvedId.getIdpId(), equalTo("entityId"));
   }
 
@@ -187,6 +181,7 @@ class ResolverTests {
   void attributeNotFoundResolverTest() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
     SamlUserIdentifierResolver resolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
+
     assertThat(resolver, is(not(nullValue())));
 
     Mockito.when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
@@ -194,9 +189,9 @@ class ResolverTests {
     Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
-
     assertThat(result.getErrorMessages().get(0),
         containsString(format("Attribute '%s:%s' not found in assertion",
             Saml2Attribute.SUBJECT_ID.getAlias(), Saml2Attribute.SUBJECT_ID.getAttributeName())));
@@ -205,11 +200,8 @@ class ResolverTests {
   @Test
   void chainedResolverReturnsErrorsIfNoMatchedSamlIds() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
-
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
-
     SamlUserIdentifierResolver uniqueIdResolver = resolvers.byAttribute(Saml2Attribute.EPUID);
-
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
@@ -219,19 +211,17 @@ class ResolverTests {
 
     SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().size(), is(3));
     assertThat(result.getErrorMessages().get(0),
         containsString(format("Attribute '%s:%s' not found in assertion",
             Saml2Attribute.SUBJECT_ID.getAlias(), Saml2Attribute.SUBJECT_ID.getAttributeName())));
-
     assertThat(result.getErrorMessages().get(1),
         containsString(format("Attribute '%s:%s' not found in assertion",
             Saml2Attribute.EPUID.getAlias(), Saml2Attribute.EPUID.getAttributeName())));
-
     assertThat(result.getErrorMessages().get(2),
         containsString("NameID element not found in samlAssertion"));
   }
@@ -239,11 +229,8 @@ class ResolverTests {
   @Test
   void chainedResolverTestSuccess() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
-
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
-
     SamlUserIdentifierResolver uniqueIdResolver = resolvers.byAttribute(Saml2Attribute.EPUID);
-
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
@@ -253,8 +240,8 @@ class ResolverTests {
 
     SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(false));
     assertThat(result.getResolvedIds().get(0).getUserId(), is("123456789@test.org"));
   }
@@ -262,11 +249,8 @@ class ResolverTests {
   @Test
   void returnAllMatchedSamlIdResolvers() {
     SamlIdResolvers resolvers = new SamlIdResolvers();
-
     SamlUserIdentifierResolver subjectIdResolver = resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
-
     SamlUserIdentifierResolver uniqueIdResolver = resolvers.byAttribute(Saml2Attribute.EPUID);
-
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
@@ -277,8 +261,8 @@ class ResolverTests {
 
     SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
-
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(false));
     assertThat(result.getResolvedIds().size(), is(2));
     assertThat(result.getResolvedIds().get(0).getUserId(), is("subject_id"));
@@ -290,6 +274,7 @@ class ResolverTests {
     SamlIdResolvers resolvers = new SamlIdResolvers();
     NamedSamlUserIdentifierResolver subjectIdResolver =
         resolvers.byAttribute(Saml2Attribute.SUBJECT_ID);
+
     assertThat(subjectIdResolver.getName(), is(Saml2Attribute.SUBJECT_ID.name()));
   }
 
@@ -304,7 +289,9 @@ class ResolverTests {
   void eptidAttributeNotFoundTest() {
     when(cred.getRemoteEntityID()).thenReturn("entityId");
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0),
@@ -316,7 +303,9 @@ class ResolverTests {
   void failureWhenRemoteEntityIdIsMissing() {
     when(attribute.getAttributeValues()).thenReturn(null);
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
+
     assertThat(result.getResolvedIds().isEmpty(), is(true));
     assertThat(result.getErrorMessages().isEmpty(), is(false));
     assertThat(result.getErrorMessages().get(0), is(
@@ -330,6 +319,7 @@ class ResolverTests {
     when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
     when(attribute.getAttributeValues()).thenReturn(null);
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -345,6 +335,7 @@ class ResolverTests {
     when(cred.getAttribute(Saml2Attribute.EPTID.getAttributeName())).thenReturn(attribute);
     when(attribute.getAttributeValues()).thenReturn(emptyList());
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -362,6 +353,7 @@ class ResolverTests {
     NameID nameid = mock(NameID.class);
     when(attribute.getAttributeValues()).thenReturn(asList(nameid, nameid));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -379,6 +371,7 @@ class ResolverTests {
     XMLObject object = mock(XMLObject.class);
     when(attribute.getAttributeValues()).thenReturn(asList(object));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -398,6 +391,7 @@ class ResolverTests {
 
     when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -420,6 +414,7 @@ class ResolverTests {
 
     when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -443,6 +438,7 @@ class ResolverTests {
 
     when(attribute.getAttributeValues()).thenReturn(asList(xsAny));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(true));
@@ -462,6 +458,7 @@ class ResolverTests {
 
     when(attribute.getAttributeValues()).thenReturn(asList(xsString));
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
@@ -490,6 +487,7 @@ class ResolverTests {
     when(nameid.getNameQualifier()).thenReturn("nameIdNameQualifier");
     when(nameid.getSPNameQualifier()).thenReturn("nameIdSPNameQualifier");
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
@@ -513,6 +511,7 @@ class ResolverTests {
     when(nameid.getNameQualifier()).thenReturn("nameIdNameQualifier");
     when(nameid.getSPNameQualifier()).thenReturn("nameIdSPNameQualifier");
 
+    SamlUserIdentifierResolver resolver = new EPTIDUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
     assertThat(result.getResolvedIds().isEmpty(), is(false));
