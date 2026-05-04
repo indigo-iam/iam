@@ -26,20 +26,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"iam.jwk.default-key-id=iam1",
-  "iam.jwk.keystore-location=classpath:/jwk/iam-keys.jwks"})
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.jwk.default-key-id=iam1",
+        "iam.jwk.keystore-location=classpath:/jwk/iam-keys.jwks"})
+@AutoConfigureMockMvc
+@Transactional
 class JWKDefaultKeyTests extends EndpointsTestUtils implements JWKTestSupport {
 
   private String getAccessTokenForUser() throws Exception {

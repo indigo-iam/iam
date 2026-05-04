@@ -16,7 +16,11 @@ COPY --from=builder indigo-iam/application/ ./
 
 RUN apt-get update && apt-get upgrade -y && \
   apt-get install -y zip && \
-  zip -d WEB-INF/lib/angular-ui-bootstrap-2.5.6.jar META-INF/resources/webjars/angular-ui-bootstrap/2.5.6/dist/.DS_Store && \
-  rm -f WEB-INF/classes/keystore.jwks
+  zip -d WEB-INF/lib/angular-ui-bootstrap-2.5.6.jar META-INF/resources/webjars/angular-ui-bootstrap/2.5.6/dist/.DS_Store
+
+RUN if [ -f WEB-INF/classes/keystore.jwks ]; then \
+    echo "ERROR: keystore.jwks should not be present in the image"; \
+    exit 1; \
+  fi
 
 CMD ["/bin/sh", "-c", "java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher"]
