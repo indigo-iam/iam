@@ -21,7 +21,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,6 +32,7 @@ import it.infn.mw.iam.authn.oidc.OidcClientError;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 
 public class MockOIDCProvider implements OidcTokenRequestor {
@@ -40,13 +40,13 @@ public class MockOIDCProvider implements OidcTokenRequestor {
   private JWSAlgorithm signingAlgo = JWSAlgorithm.RS256;
 
   private final Clock clock;
-  private final JWKSetKeyStore keyStore;
+  private final JwkKeyStore keyStore;
   private final ObjectMapper mapper;
 
   private String lastTokenResponse;
   private OidcClientError clientError;
 
-  public MockOIDCProvider(Clock clock, ObjectMapper mapper, JWKSetKeyStore keyStore) {
+  public MockOIDCProvider(Clock clock, ObjectMapper mapper, JwkKeyStore keyStore) {
     this.clock = clock;
     this.keyStore = keyStore;
     this.mapper = mapper;

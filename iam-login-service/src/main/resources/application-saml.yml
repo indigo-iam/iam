@@ -43,3 +43,14 @@ saml:
       require-valid-signature: ${IAM_SAML_METADATA_REQUIRE_VALID_SIGNATURE:false}
       require-sirtfi: ${IAM_SAML_METADATA_REQUIRE_SIRTFI:false}
       require-rs: ${IAM_SAML_METADATA_REQUIRE_RS:false}
+
+  authn-context:
+    # Edit class-refs to customise the AuthnContextClassRef values sent in SAML requests.
+    # Set to an empty list to send no AuthnContext at all (IdP decides):
+    # class-refs: []
+    # (or)
+    class-refs:
+      - https://refeds.org/profile/mfa
+      - https://refeds.org/profile/sfa
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified

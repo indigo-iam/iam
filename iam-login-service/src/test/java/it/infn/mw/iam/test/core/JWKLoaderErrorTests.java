@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
-import it.infn.mw.iam.util.JWKKeystoreLoader;
+import it.infn.mw.iam.util.JwkKeyStoreLoader;
 
 class JWKLoaderErrorTests {
 
@@ -30,8 +30,8 @@ class JWKLoaderErrorTests {
   @Test
   void testStartupError() {
 
-    JWKKeystoreLoader kl = new JWKKeystoreLoader(rl);
-    assertThrows(IAMJWTKeystoreError.class, () -> kl.loadKeystoreFromLocation("/does/not/exists"));
+    JwkKeyStoreLoader kl = new JwkKeyStoreLoader(rl);
+    assertThrows(IAMJWTKeystoreError.class, () -> kl.load("/does/not/exists"));
   }
 
 }

@@ -303,7 +303,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     LocalDate signatureTime = account.getAupSignature()
       .getSignatureTime()
       .toInstant()
-      .atZone(ZoneId.systemDefault())
+      .atZone(ZoneId.of("UTC"))
       .toLocalDate();
     LocalDate signatureValidTime = signatureTime.plusDays(signatureValidityInDays);
     long missingDays = ChronoUnit.DAYS.between(now, signatureValidTime);

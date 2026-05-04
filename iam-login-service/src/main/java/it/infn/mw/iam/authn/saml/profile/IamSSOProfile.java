@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.saml.profile;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +36,15 @@ import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.websso.WebSSOProfileImpl;
 import org.springframework.security.saml.websso.WebSSOProfileOptions;
 
+import it.infn.mw.iam.config.saml.IamSamlProperties.AuthnContextProperties;
+
 public class IamSSOProfile extends WebSSOProfileImpl {
+
+  private final AuthnContextProperties authnContextProperties;
+
+  public IamSSOProfile(AuthnContextProperties authnContextProperties) {
+    this.authnContextProperties = authnContextProperties;
+  }
 
   private void spidNameIDPolicy(AuthnRequest request) {
     @SuppressWarnings("unchecked")
@@ -75,7 +82,13 @@ public class IamSSOProfile extends WebSSOProfileImpl {
     return (SAMLObjectBuilder<T>) builderFactory.getBuilder(elementName);
   }
 
-  private void addRefedsAuthnContexts(AuthnRequest request) {
+  private void configureAuthnContext(AuthnRequest request) {
+
+    List<String> requiredClassRefs = authnContextProperties.getClassRefs();
+    if (requiredClassRefs == null) {
+      return;
+    }
+
     RequestedAuthnContext requestedAuthnContext = request.getRequestedAuthnContext();
     SAMLObjectBuilder<RequestedAuthnContext> builder =
         getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
@@ -83,11 +96,6 @@ public class IamSSOProfile extends WebSSOProfileImpl {
       requestedAuthnContext = builder.buildObject();
       request.setRequestedAuthnContext(requestedAuthnContext);
     }
-
-    List<String> requiredClassRefs =
-        Arrays.asList("https://refeds.org/profile/mfa", "https://refeds.org/profile/sfa",
-            "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
-            "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified");
 
     Set<String> existingRefs = requestedAuthnContext.getAuthnContextClassRefs()
       .stream()
@@ -114,7 +122,7 @@ public class IamSSOProfile extends WebSSOProfileImpl {
     AuthnRequest request =
         super.getAuthnRequest(context, options, assertionConsumer, bindingService);
 
-    addRefedsAuthnContexts(request);
+    configureAuthnContext(request);
 
     if (options instanceof IamSSOProfileOptions) {
       IamSSOProfileOptions ssoOptions = (IamSSOProfileOptions) options;

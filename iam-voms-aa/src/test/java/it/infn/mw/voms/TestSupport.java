@@ -85,7 +85,7 @@ public class TestSupport {
     @Bean
     @Primary
     Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
+      return Clock.fixed(NOW, ZoneId.of("UTC"));
     }
   }
 

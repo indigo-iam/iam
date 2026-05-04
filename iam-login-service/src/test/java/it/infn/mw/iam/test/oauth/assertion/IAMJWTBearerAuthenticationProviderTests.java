@@ -81,7 +81,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
   IAMJWTBearerAuthenticationProvider provider;
 
-  Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
+  Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
 
   @BeforeEach
   void setup() {

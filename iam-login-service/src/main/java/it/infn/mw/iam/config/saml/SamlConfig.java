@@ -301,7 +301,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     @Bean
     @Profile("saml")
     WebSSOProfile webSSOprofile() {
-      return new IamSSOProfile();
+      return new IamSSOProfile(samlProperties.getAuthnContext());
     }
 
 

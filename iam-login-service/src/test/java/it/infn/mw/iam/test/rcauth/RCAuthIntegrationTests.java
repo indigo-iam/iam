@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.time.Clock;
 import java.util.UUID;
 
@@ -80,6 +81,10 @@ import it.infn.mw.iam.test.util.oidc.TokenResponse;
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class RCAuthIntegrationTests extends RCAuthTestSupport {
+
+  public RCAuthIntegrationTests() throws IOException, ParseException {
+    super();
+  }
 
   @TestConfiguration
   public static class TestConfig {
