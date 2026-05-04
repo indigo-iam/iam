@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,8 +30,11 @@ public class ApplicationFailedEventListener implements ApplicationListener<Appli
   @Override
   public void onApplicationEvent(ApplicationFailedEvent event) {
 
-    LOG.error("Application failed to start: {}", event.getException().getMessage());
-    LOG.error("Cause: {}", event.getException().getCause().getMessage(),
+    Throwable root =
+        NestedExceptionUtils.getMostSpecificCause(event.getException());
+
+    LOG.error("Application failed to start: {}", root.getMessage());
+    LOG.debug("Cause: {}", event.getException().getCause().getMessage(),
         event.getException().getCause());
   }
 }

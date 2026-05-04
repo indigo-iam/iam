@@ -15,72 +15,119 @@
  */
 package it.infn.mw.iam.test.config;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
-import javax.validation.ConstraintValidatorContext;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import it.infn.mw.iam.api.client.management.validation.DashboardConfigValidator;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
 class DashboardConfigValidatorTests {
 
-  private final DashboardConfigValidator validator = new DashboardConfigValidator();
-  private final ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
-  private static DashboardProperties dashboardProperties;
+  private Validator validator;
+  private DashboardProperties dashboardProperties;
 
   @BeforeEach
   void setup() {
+    
+    ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    validator = factory.getValidator();
+
     dashboardProperties = new DashboardProperties();
     dashboardProperties.setEnabled(true);
     dashboardProperties.setClientId("client-dashboard");
-    dashboardProperties.setClientSecret("0tlkqGPJD2vWN1dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
+    dashboardProperties.setClientSecret(
+        "0tlkqGPJD2vWN1dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
   }
 
   @Test
-  void testSkipValidation() {
-    dashboardProperties = new DashboardProperties();
+  void testSkipValidationWhenDisabled() {
+
     dashboardProperties.setEnabled(false);
     dashboardProperties.setClientId(null);
     dashboardProperties.setClientSecret(null);
-    assertTrue(validator.isValid(dashboardProperties, context));
+
+    assertTrue(validate().isEmpty());
   }
 
   @Test
-  void testDashboardPropertiesValid() {
-    assertTrue(validator.isValid(dashboardProperties, context));
+  void testValidDashboardProperties() {
+
+    assertTrue(validate().isEmpty());
   }
 
   @Test
-  void testIsNotValidDashboardSecret() {
-    invalidSecret("too-short-client-secret");
-    invalidSecret("too-long-client-secret-82gbV6OEwGBCPMmcFPXg5-4wRJXnKc-4wds5odwrFiY4wds5odwrF");
-    invalidSecret("0tlkqGPJD2vWN1/dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
-    invalidSecret(null);
-    invalidSecret("");
+  void testClientIdRequired() {
+    dashboardProperties.setClientId(null);
+
+    assertViolation(
+        "dashboard.clientId is required when dashboard is enabled");
   }
 
   @Test
-  void testIsNotValidDashboardClientIdNull() {
-    invalidClientId(null);
-    invalidClientId("id");
-    invalidClientId("client-with-special-chars/");
-    invalidClientId("client with spaces");
-    invalidClientId("too long client-id over 255 characters " + "a".repeat(256));
-    invalidClientId("");
+  void testClientIdInvalidFormat() {
+    dashboardProperties.setClientId("bad/id");
+
+    assertViolation(
+        "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'");
   }
 
-  private void invalidSecret(String secret) {
-    dashboardProperties.setClientSecret(secret);
-    assertFalse(validator.isValid(dashboardProperties, context));
+  @Test
+  void testClientSecretRequired() {
+    dashboardProperties.setClientSecret(null);
+
+    assertViolation(
+        "dashboard.clientSecret is required when dashboard is enabled");
   }
 
-  private void invalidClientId(String clientId) {
-    dashboardProperties.setClientId(clientId);
-    assertFalse(validator.isValid(dashboardProperties, context));
+  @Test
+  void testClientSecretInvalidFormat() {
+    dashboardProperties.setClientSecret("short");
+
+    assertViolation(
+        "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'");
+  }
+
+  @Test
+  void testMultipleViolations() {
+
+    dashboardProperties.setClientId("x");
+    dashboardProperties.setClientSecret("short");
+
+    Set<String> messages = validateMessages();
+
+    assertEquals(2, messages.size());
+
+    assertTrue(messages.contains(
+        "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'"));
+
+    assertTrue(messages.contains(
+        "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'"));
+  }
+
+  private Set<ConstraintViolation<DashboardProperties>> validate() {
+    return validator.validate(dashboardProperties);
+  }
+
+  private Set<String> validateMessages() {
+    return validate().stream()
+        .map(ConstraintViolation::getMessage)
+        .collect(Collectors.toSet());
+  }
+
+  private void assertViolation(String expectedMessage) {
+    Set<String> messages = validateMessages();
+
+    assertEquals(1, messages.size());
+    assertTrue(messages.contains(expectedMessage));
   }
 }
