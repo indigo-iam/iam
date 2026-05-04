@@ -16,118 +16,209 @@
 package it.infn.mw.iam.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
+import org.mitre.oauth2.model.PKCEAlgorithm;
+import org.mitre.oauth2.service.SystemScopeService;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.dashboard.DashboardConfigService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
-class DashboardConfigValidatorTests {
+@ExtendWith(MockitoExtension.class)
+class DashboardConfigServiceTests {
 
-  private Validator validator;
-  private DashboardProperties dashboardProperties;
+  private static final String BASE_URL = "https://iam.example.org";
+  private static final String CLIENT_ID = "dashboard-client";
+  private static final String CLIENT_SECRET = "abcdefghijklmnopqrstuvwxyz123456";
+  private static final String NEW_SECRET = "123456abcdefghijklmnopqrstuvwxyz";
+  private static final String CALLBACK = BASE_URL + "/ui/api/auth/oauth2/callback/indigo-iam";
+
+  @Mock
+  private IamClientRepository clientRepository;
+
+  @Mock
+  private DefaultClientManagementService clientService;
+
+  @Mock
+  private ApplicationEventPublisher eventPublisher;
+
+  @Mock
+  private IamProperties iamProperties;
+
+  @Mock
+  private IamProperties.DashboardProperties dashboardProperties;
+
+  @InjectMocks
+  private DashboardConfigService service;
 
   @BeforeEach
   void setup() {
-    
-    ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-    validator = factory.getValidator();
 
-    dashboardProperties = new DashboardProperties();
-    dashboardProperties.setEnabled(true);
-    dashboardProperties.setClientId("client-dashboard");
-    dashboardProperties.setClientSecret(
-        "0tlkqGPJD2vWN1dgTqi3xn-PAJ7EMgNKFFUOydZPsTLkIouqQFmfioJcvfk0V2Xt");
+    lenient().when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
+    lenient().when(iamProperties.getBaseUrl()).thenReturn(BASE_URL);
+
+    lenient().when(dashboardProperties.isEnabled()).thenReturn(true);
+    lenient().when(dashboardProperties.getClientId()).thenReturn(CLIENT_ID);
+    lenient().when(dashboardProperties.getClientSecret()).thenReturn(CLIENT_SECRET);
   }
 
   @Test
-  void testSkipValidationWhenDisabled() {
+  void initDoesNothingWhenDashboardDisabled() throws Exception {
 
-    dashboardProperties.setEnabled(false);
-    dashboardProperties.setClientId(null);
-    dashboardProperties.setClientSecret(null);
+    when(dashboardProperties.isEnabled()).thenReturn(false);
 
-    assertTrue(validate().isEmpty());
+    service.init();
+
+    verifyNoInteractions(clientRepository, clientService, eventPublisher);
   }
 
   @Test
-  void testValidDashboardProperties() {
+  void initCreatesClientWhenMissing() throws Exception {
 
-    assertTrue(validate().isEmpty());
+    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.empty());
+
+    service.init();
+
+    verify(clientService).saveNewClient(any(RegisteredClientDTO.class));
+    verifyNoInteractions(eventPublisher);
   }
 
   @Test
-  void testClientIdRequired() {
-    dashboardProperties.setClientId(null);
+  void initDoesNothingWhenClientAlreadyConsistent() throws Exception {
 
-    assertViolation(
-        "dashboard.clientId is required when dashboard is enabled");
+    ClientDetailsEntity client = validClient();
+
+    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.init();
+
+    verify(clientRepository, never()).save(any());
+    verify(eventPublisher, never()).publishEvent(any());
   }
 
   @Test
-  void testClientIdInvalidFormat() {
-    dashboardProperties.setClientId("bad/id");
+  void initRotatesSecretWhenSecretChanged() throws Exception {
 
-    assertViolation(
-        "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'");
+    ClientDetailsEntity client = validClient();
+    client.setClientSecret(NEW_SECRET);
+
+    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.init();
+
+    verify(clientRepository).save(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+
+    assertEquals(CLIENT_SECRET, client.getClientSecret());
   }
 
   @Test
-  void testClientSecretRequired() {
-    dashboardProperties.setClientSecret(null);
+  void initRepairsStructuralDrift() throws Exception {
 
-    assertViolation(
-        "dashboard.clientSecret is required when dashboard is enabled");
+    ClientDetailsEntity client = validClient();
+    client.setRedirectUris(Set.of("https://wrong.example.org"));
+
+    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.init();
+
+    verify(clientRepository).save(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+
+    assertEquals(Set.of(CALLBACK), client.getRedirectUris());
   }
 
   @Test
-  void testClientSecretInvalidFormat() {
-    dashboardProperties.setClientSecret("short");
+  void initRepairsDriftAndRotatesSecret() throws Exception {
 
-    assertViolation(
-        "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'");
+    ClientDetailsEntity client = validClient();
+    client.setClientSecret(NEW_SECRET);
+    client.setActive(false);
+
+    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.init();
+
+    verify(clientRepository).save(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+
+    assertEquals(CLIENT_SECRET, client.getClientSecret());
+    assertTrue(client.isActive());
   }
 
   @Test
-  void testMultipleViolations() {
+  void detectsSecretRotation() {
 
-    dashboardProperties.setClientId("x");
-    dashboardProperties.setClientSecret("short");
+    ClientDetailsEntity client = validClient();
+    client.setClientSecret("different-secret");
 
-    Set<String> messages = validateMessages();
-
-    assertEquals(2, messages.size());
-
-    assertTrue(messages.contains(
-        "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'"));
-
-    assertTrue(messages.contains(
-        "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'"));
+    assertTrue(DashboardConfigService.hasSecretRotation(client, CLIENT_SECRET));
   }
 
-  private Set<ConstraintViolation<DashboardProperties>> validate() {
-    return validator.validate(dashboardProperties);
+  @Test
+  void detectsNoSecretRotation() {
+
+    ClientDetailsEntity client = validClient();
+
+    assertFalse(DashboardConfigService.hasSecretRotation(client, CLIENT_SECRET));
   }
 
-  private Set<String> validateMessages() {
-    return validate().stream()
-        .map(ConstraintViolation::getMessage)
-        .collect(Collectors.toSet());
+  @Test
+  void detectsConfigurationDrift() {
+
+    ClientDetailsEntity client = validClient();
+    client.setActive(false);
+
+    assertTrue(DashboardConfigService.hasConfigurationDrift(client, CALLBACK));
   }
 
-  private void assertViolation(String expectedMessage) {
-    Set<String> messages = validateMessages();
+  @Test
+  void detectsNoConfigurationDrift() {
 
-    assertEquals(1, messages.size());
-    assertTrue(messages.contains(expectedMessage));
+    ClientDetailsEntity client = validClient();
+
+    assertFalse(DashboardConfigService.hasConfigurationDrift(client, CALLBACK));
+  }
+
+  private ClientDetailsEntity validClient() {
+
+    ClientDetailsEntity client = new ClientDetailsEntity();
+
+    client.setClientId(CLIENT_ID);
+    client.setClientSecret(CLIENT_SECRET);
+    client.setActive(true);
+    client.setScope(Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS,
+        "email", "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write"));
+    client.setRedirectUris(Set.of(CALLBACK));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
+        AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
+    client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
+
+    return client;
   }
 }
