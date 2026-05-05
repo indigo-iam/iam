@@ -97,6 +97,10 @@ iam:
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
   showSql: ${IAM_DATABASE_SHOW_SQL:false}
 
+  opa:
+    enable: false
+    host: localhost
+
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:}
     default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
