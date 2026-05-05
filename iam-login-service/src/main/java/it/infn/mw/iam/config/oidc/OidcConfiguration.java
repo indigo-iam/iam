@@ -16,8 +16,10 @@
 package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,7 +36,6 @@ import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.client.service.impl.DynamicServerConfigurationService;
 import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,8 +69,10 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.service.CompositeClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.service.SafeStaticClientConfigurationService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
@@ -202,6 +205,8 @@ public class OidcConfiguration {
       IamFederatedClientRepository clientRepo,
       Optional<FederatedOpRegistrationService> federationRegistrationService, Clock clock) {
 
+    List<ClientConfigurationService> services = new ArrayList<>();
+
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
     providers.getValidatedProviders().forEach(provider -> {
@@ -214,19 +219,19 @@ public class OidcConfiguration {
       clients.put(provider.getIssuer(), rc);
     });
 
-    if (clients.isEmpty() && federationRegistrationService.isPresent()) {
-      return new FederationClientConfigurationService(clientRepo,
-          federationRegistrationService.get(), clock);
+    if (!clients.isEmpty()) {
+      services.add(new SafeStaticClientConfigurationService(clients));
     }
 
-    if (clients.isEmpty()) {
+    federationRegistrationService.ifPresent(service -> {
+      services.add(new FederationClientConfigurationService(clientRepo, service, clock));
+    });
+
+    if (services.isEmpty()) {
       return new NullClientConfigurationService();
     }
 
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
+    return new CompositeClientConfigurationService(services);
   }
 
   @Bean

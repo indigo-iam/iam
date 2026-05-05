@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.openid_federation;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,7 +45,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +76,6 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
@@ -121,9 +118,6 @@ class FederatedOpRegistrationServiceTests {
   RestTemplateFactory rtf;
 
   @Autowired
-  ClientConfigurationService clientConfigurationService;
-
-  @Autowired
   IamFederatedClientRepository clientRepo;
 
   @MockBean
@@ -152,11 +146,6 @@ class FederatedOpRegistrationServiceTests {
     fakeChain = TrustChainTestFactory.createOpToTaChain(ISS, null, URI.create(ISS + "/jwk"),
         "https://ta1.example.com");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-  }
-
-  @Test
-  void testFederationServiceIsLoaded() {
-    assertThat(clientConfigurationService).isInstanceOf(FederationClientConfigurationService.class);
   }
 
   @Test
