@@ -15,13 +15,22 @@
  */
 package it.infn.mw.iam.config;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ResourceLoader;
+
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
 
 import it.infn.mw.iam.config.error.IAMJWTKeystoreError;
 import it.infn.mw.iam.core.jwk.IamJWTEncryptionService;
@@ -39,11 +48,46 @@ public class JWTCriptoConfig {
     return new JwkKeyStoreLoader(resourceLoader);
   }
 
-  @Bean(name = "defaultKeyStore")
+  @Bean
+  @Profile("prod")
   JwkKeyStore defaultKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
     String location = iamProperties.getJwk().getKeystoreLocation();
     LOG.info("Loading JWT keystore from: {}", location);
     return loader.load(location);
+  }
+
+  @Bean
+  @Profile({"!prod"})
+  JwkKeyStore testKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
+
+    String location = iamProperties.getJwk().getKeystoreLocation();
+
+    if (location != null && !location.isBlank()) {
+      try {
+        LOG.info("Loading JWT keystore from: {}", location);
+        return loader.load(location);
+      } catch (Exception e) {
+        LOG.warn("Failed to load keystore from {}. Falling back to in-memory JWKS", location, e);
+      }
+    }
+
+    try {
+      KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+      keyPairGenerator.initialize(2048);
+      KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+      RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+        .privateKey((RSAPrivateKey) keyPair.getPrivate())
+        .keyID("rsa1")
+        .build();
+
+      JWKSet jwkSet = new JWKSet(rsaKey);
+      LOG.warn("Using in-memory generated JWKS (dev/test only!)");
+      return JwkKeyStore.from(jwkSet);
+
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to generate in-memory JWKS", e);
+    }
   }
 
   @Bean(name = "defaultsignerService")
