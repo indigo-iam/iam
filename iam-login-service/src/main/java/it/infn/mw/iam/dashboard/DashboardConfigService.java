@@ -21,40 +21,40 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 public class DashboardConfigService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
-  private static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
-  private static final Set<String> DASHBOARD_SCOPES =
+  public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
+  public static final Set<String> DASHBOARD_SCOPES =
       Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email", "profile",
           "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
   private final IamClientRepository clientRepository;
-  private final DefaultClientManagementService clientService;
+  private final ClientManagementService clientService;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
   public DashboardConfigService(IamClientRepository clientRepository,
-      DefaultClientManagementService clientService, ApplicationEventPublisher aep,
+      ClientManagementService clientService, ApplicationEventPublisher aep,
       IamProperties iamProperties) {
     this.clientService = clientService;
     this.clientRepository = clientRepository;
