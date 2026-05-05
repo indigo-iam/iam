@@ -45,7 +45,7 @@ class DashboardConfigurationStartupTests {
           "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456")
       .run(context -> {
         assertNull(context.getStartupFailure());
-        assertEquals(context.getBeanNamesForType(IamProperties.class).length, 1);
+        assertEquals(1, context.getBeanNamesForType(IamProperties.class).length);
       });
   }
 

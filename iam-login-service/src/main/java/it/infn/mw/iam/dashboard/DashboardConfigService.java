@@ -76,16 +76,15 @@ public class DashboardConfigService {
     String clientSecret = props.getClientSecret();
     String redirectUri = iamProperties.getBaseUrl() + DASHBOARD_CALLBACK;
 
-    Optional<ClientDetailsEntity> record = clientRepository.findByClientId(clientId);
+    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
 
-    if (record.isEmpty()) {
+    if (client.isEmpty()) {
       LOG.info("Dashboard client does not exist. Creating it.");
       createRecordDashboard(clientId, clientSecret, redirectUri);
       return;
     }
 
-    ClientDetailsEntity client = record.get();
-    reconcileClient(client, clientSecret, redirectUri);
+    reconcileClient(client.get(), clientSecret, redirectUri);
   }
 
   private void reconcileClient(ClientDetailsEntity client, String configuredSecret,

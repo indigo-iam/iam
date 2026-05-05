@@ -43,7 +43,7 @@ import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class DashboardConfigServiceTest {
+class DashboardConfigServiceTest {
 
   @Mock
   IamClientRepository clientRepository;
@@ -83,8 +83,7 @@ public class DashboardConfigServiceTest {
 
     ClientDetailsEntity client = clientWithSecret(oldSecret);
 
-    when(clientRepository.findByClientId("dashboard-client"))
-        .thenReturn(Optional.of(client));
+    when(clientRepository.findByClientId("dashboard-client")).thenReturn(Optional.of(client));
 
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(true);
@@ -94,8 +93,7 @@ public class DashboardConfigServiceTest {
 
     service.init();
 
-    ArgumentCaptor<ClientDetailsEntity> captor =
-        ArgumentCaptor.forClass(ClientDetailsEntity.class);
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
 
     verify(clientRepository).save(captor.capture());
 
@@ -112,8 +110,7 @@ public class DashboardConfigServiceTest {
 
     ClientDetailsEntity client = clientWithSecret(secret);
 
-    when(clientRepository.findByClientId("dashboard-client"))
-        .thenReturn(Optional.of(client));
+    when(clientRepository.findByClientId("dashboard-client")).thenReturn(Optional.of(client));
 
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(true);
@@ -134,8 +131,7 @@ public class DashboardConfigServiceTest {
 
     client.setRedirectUris(Set.of("https://wrong-uri"));
 
-    when(clientRepository.findByClientId("dashboard-client"))
-        .thenReturn(Optional.of(client));
+    when(clientRepository.findByClientId("dashboard-client")).thenReturn(Optional.of(client));
 
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(true);
@@ -152,8 +148,7 @@ public class DashboardConfigServiceTest {
   @Test
   void missingClientCreatesNewOne() throws ParseException {
 
-    when(clientRepository.findByClientId("dashboard-client"))
-        .thenReturn(Optional.empty());
+    when(clientRepository.findByClientId("dashboard-client")).thenReturn(Optional.empty());
 
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(true);
