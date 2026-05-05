@@ -137,7 +137,7 @@ class ClientConfigurationServiceTests {
   }
 
   @Test
-  void throwsExceptionWhenIssuerIsNotConfigured() {
+  void throwExceptionWhenIssuerIsNotConfigured() {
     SafeStaticClientConfigurationService service =
         new SafeStaticClientConfigurationService(Collections.emptyMap());
 
