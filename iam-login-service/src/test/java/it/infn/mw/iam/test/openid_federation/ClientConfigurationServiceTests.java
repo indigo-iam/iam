@@ -138,8 +138,7 @@ class ClientConfigurationServiceTests {
 
   @Test
   void throwExceptionWhenIssuerIsNotConfigured() {
-    SafeStaticClientConfigurationService service =
-        new SafeStaticClientConfigurationService(Collections.emptyMap());
+    service = new SafeStaticClientConfigurationService(Collections.emptyMap());
 
     ServerConfiguration sc = new ServerConfiguration();
     sc.setIssuer("https://unknown.org");
