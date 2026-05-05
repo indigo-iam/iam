@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +49,7 @@ import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class ClientConfigurationServiceTests {
+class ClientConfigurationServiceTests {
 
   @Mock
   IamFederatedClientRepository clientRepo;
@@ -133,6 +134,19 @@ public class ClientConfigurationServiceTests {
 
     assertThatThrownBy(() -> service.getClientConfiguration(sc))
       .isInstanceOf(AuthenticationServiceException.class);
+  }
+
+  @Test
+  void throwsExceptionWhenIssuerIsNotConfigured() {
+    SafeStaticClientConfigurationService service =
+        new SafeStaticClientConfigurationService(Collections.emptyMap());
+
+    ServerConfiguration sc = new ServerConfiguration();
+    sc.setIssuer("https://unknown.org");
+
+    assertThatThrownBy(() -> service.getClientConfiguration(sc))
+      .isInstanceOf(ClientConfigurationNotFoundException.class)
+      .hasMessageContaining("No static client for issuer");
   }
 
   @Test

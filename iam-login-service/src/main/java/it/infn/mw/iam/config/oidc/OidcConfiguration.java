@@ -223,9 +223,8 @@ public class OidcConfiguration {
       services.add(new SafeStaticClientConfigurationService(clients));
     }
 
-    federationRegistrationService.ifPresent(service -> {
-      services.add(new FederationClientConfigurationService(clientRepo, service, clock));
-    });
+    federationRegistrationService.ifPresent(service -> services
+      .add(new FederationClientConfigurationService(clientRepo, service, clock)));
 
     if (services.isEmpty()) {
       return new NullClientConfigurationService();
