@@ -1,18 +1,20 @@
 package it.infn.mw.iam.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 @ConfigurationProperties(prefix = "opa")
 public class OPAProperties {
-    private boolean enabled;
+    private boolean enable;
     private String host;
 
-    public void setEnable(boolean enabled) {
-        this.enabled = enabled;
+    public void setEnable(boolean enable) {
+        this.enable = enable;
     }
 
     public boolean isEnabled() {
-        return this.enabled;
+        return this.enable;
     }
 
     public void setHost(String host) {
