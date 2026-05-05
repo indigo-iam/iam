@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.client.management.validation;
 
-import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -25,7 +25,7 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({FIELD})
+@Target({TYPE})
 @Constraint(validatedBy = DashboardConfigValidator.class)
 public @interface ValidDashboard {
   String message() default "Invalid dashboard client configuration";

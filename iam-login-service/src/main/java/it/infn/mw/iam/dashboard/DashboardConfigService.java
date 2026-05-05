@@ -21,42 +21,40 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 public class DashboardConfigService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
-  private static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
-  private static final Set<String> DASHBOARD_SCOPES = Set.of(SystemScopeService.OPENID_SCOPE,
-      SystemScopeService.OFFLINE_ACCESS, "email",
-      "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
+  public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
+  public static final Set<String> DASHBOARD_SCOPES =
+      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email", "profile",
+          "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
   private final IamClientRepository clientRepository;
-  private final DefaultClientManagementService clientService;
+  private final ClientManagementService clientService;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
-  public DashboardConfigService(
-      IamClientRepository clientRepository,
-      DefaultClientManagementService clientService,
-      ApplicationEventPublisher aep,
+  public DashboardConfigService(IamClientRepository clientRepository,
+      ClientManagementService clientService, ApplicationEventPublisher aep,
       IamProperties iamProperties) {
     this.clientService = clientService;
     this.clientRepository = clientRepository;
@@ -73,38 +71,62 @@ public class DashboardConfigService {
       return;
     }
 
-    DashboardProperties dashboardProperties = iamProperties.getDashboard();
-    String iamUrl = iamProperties.getBaseUrl();
-    String clientId = dashboardProperties.getClientId();
-    String clientSecret = dashboardProperties.getClientSecret();
-    String url = iamUrl + DASHBOARD_CALLBACK;
-    Optional<ClientDetailsEntity> dashboardRecord = clientRepository.findByClientId(clientId);
+    DashboardProperties props = iamProperties.getDashboard();
+    String clientId = props.getClientId();
+    String clientSecret = props.getClientSecret();
+    String redirectUri = iamProperties.getBaseUrl() + DASHBOARD_CALLBACK;
 
-    if (!dashboardRecord.isPresent()) {
-      LOG.info("Dashboard client does not exist and it will be created.");
-      createRecordDashboard(clientId, clientSecret, url);
+    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
+
+    if (client.isEmpty()) {
+      LOG.info("Dashboard client does not exist. Creating it.");
+      createRecordDashboard(clientId, clientSecret, redirectUri);
       return;
     }
 
-    ClientDetailsEntity client = dashboardRecord.get();
-    boolean isValid = checkRecordConfiguration(client, clientSecret, url);
-    if (!isValid) {
-      LOG.warn("Changes on default dashboard client configuration found: restoring expected configuration.");
-      updateRecordDashboard(client, clientSecret, url);
+    reconcileClient(client.get(), clientSecret, redirectUri);
+  }
+
+  private void reconcileClient(ClientDetailsEntity client, String configuredSecret,
+      String redirectUri) {
+
+    boolean structuralDrift = hasConfigurationDrift(client, redirectUri);
+    boolean secretRotated = hasSecretRotation(client, configuredSecret);
+
+    if (!structuralDrift && !secretRotated) {
+      return;
     }
+    if (secretRotated) {
+      LOG.info("Dashboard client secret rotation detected.");
+    }
+    if (structuralDrift) {
+      LOG.warn("Dashboard client configuration drift detected. Restoring expected configuration.");
+    }
+
+    updateRecordDashboard(client, configuredSecret, redirectUri);
   }
 
-  public boolean checkRecordConfiguration(ClientDetailsEntity client, String clientSecret, String url) {
-    return hasAllRequiredScopes(client)
-        && hasValidClientSecret(client, clientSecret)
-        && hasValidRedirectUris(client, url)
-        && supportsAuthorizationCodeGrant(client)
-        && usesClientSecretBasicAuth(client)
-        && usesPKCES256(client)
-        && client.isActive();
+  public static boolean hasSecretRotation(ClientDetailsEntity client, String configuredSecret) {
+
+    return !configuredSecret.equals(client.getClientSecret());
   }
 
-  private void createRecordDashboard(String clientId, String secret, String url) throws ParseException {
+  public static boolean hasConfigurationDrift(ClientDetailsEntity client, String redirectUri) {
+
+    return !hasAllRequiredScopes(client) || !hasValidRedirectUris(client, redirectUri)
+        || !supportsAuthorizationCodeGrant(client) || !usesClientSecretBasicAuth(client)
+        || !usesPKCES256(client) || !client.isActive();
+  }
+
+  public boolean checkRecordConfiguration(ClientDetailsEntity client, String clientSecret,
+      String url) {
+    return hasAllRequiredScopes(client) && hasValidClientSecret(client, clientSecret)
+        && hasValidRedirectUris(client, url) && supportsAuthorizationCodeGrant(client)
+        && usesClientSecretBasicAuth(client) && usesPKCES256(client) && client.isActive();
+  }
+
+  private void createRecordDashboard(String clientId, String secret, String url)
+      throws ParseException {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setScope(DASHBOARD_SCOPES);
     client.setClientId(clientId);
@@ -122,8 +144,8 @@ public class DashboardConfigService {
 
   private void updateRecordDashboard(ClientDetailsEntity client, String secret, String url) {
     client.setScope(DASHBOARD_SCOPES);
-    client.setGrantTypes(
-        Set.of(AuthorizationGrantType.CODE.getGrantType(), AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
+        AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setClientSecret(secret);
     client.setRedirectUris(Set.of(url));
@@ -134,28 +156,30 @@ public class DashboardConfigService {
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, client));
   }
 
-  private boolean hasAllRequiredScopes(ClientDetailsEntity client) {
+  public static boolean hasAllRequiredScopes(ClientDetailsEntity client) {
     return client.getScope() != null && client.getScope().containsAll(DASHBOARD_SCOPES);
   }
 
-  private boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
+  public static boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
     return clientSecret.equals(client.getClientSecret());
   }
 
-  private boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
+  public static boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
     return Set.of(url).equals(client.getRedirectUris());
   }
 
-  private boolean supportsAuthorizationCodeGrant(ClientDetailsEntity client) {
-    return Set.of(AuthorizationGrantType.CODE.getGrantType(), AuthorizationGrantType.REFRESH_TOKEN.getGrantType())
-        .equals(client.getGrantTypes());
+  public static boolean supportsAuthorizationCodeGrant(ClientDetailsEntity client) {
+    return Set
+      .of(AuthorizationGrantType.CODE.getGrantType(),
+          AuthorizationGrantType.REFRESH_TOKEN.getGrantType())
+      .equals(client.getGrantTypes());
   }
 
-  private boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
+  public static boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
     return AuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod());
   }
 
-  private boolean usesPKCES256(ClientDetailsEntity client) {
+  public static boolean usesPKCES256(ClientDetailsEntity client) {
     return PKCEAlgorithm.S256.toString().equals(client.getCodeChallengeMethod().getName());
   }
 }
