@@ -57,7 +57,7 @@ public class JWTCriptoConfig {
   }
 
   @Bean
-  @Profile({"!prod"})
+  @Profile({"dev", "h2-test", "mysql-test"})
   JwkKeyStore testKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
 
     String location = iamProperties.getJwk().getKeystoreLocation();
@@ -67,7 +67,7 @@ public class JWTCriptoConfig {
         LOG.info("Loading JWT keystore from: {}", location);
         return loader.load(location);
       } catch (Exception e) {
-        LOG.warn("Failed to load keystore from {}. Falling back to in-memory JWKS", location, e);
+        LOG.error("Failed to load keystore from {}. Falling back to in-memory JWKS", location);
       }
     }
 
