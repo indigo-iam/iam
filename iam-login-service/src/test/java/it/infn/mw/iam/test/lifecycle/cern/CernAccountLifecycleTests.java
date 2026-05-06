@@ -32,6 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -685,4 +686,12 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(testAccount.getUserInfo().getEmail(), is(preSyncEmail));
   }
 
+  @Test
+  void isValidShouldReturnTrueWhenEndTimeIsNull() {
+
+    Date now = Date.from(clock.instant());
+    IamAccount account = IamAccount.newAccount();
+    account.setEndTime(null);
+    assertTrue(account.isValid(now));
+  }
 }
