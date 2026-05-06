@@ -58,7 +58,7 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @IamRandomPortIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
-@ActiveProfiles({"h2", "wlcg-scopes", "registration"})
+@ActiveProfiles({"h2-test", "wlcg-scopes", "registration"})
 class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired

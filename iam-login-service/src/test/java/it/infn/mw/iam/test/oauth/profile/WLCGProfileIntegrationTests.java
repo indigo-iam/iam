@@ -87,7 +87,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 @SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@ActiveProfiles({"h2", "wlcg-scopes"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 @TestPropertySource(properties = {
 // @formatter:off
   "iam.jwt-profile.default-profile=wlcg",

@@ -28,7 +28,7 @@ import org.springframework.test.context.TestPropertySource;
 import it.infn.mw.iam.IamLoginService;
 
 @SuppressWarnings("deprecation")
-@ActiveProfiles({"h2"})
+@ActiveProfiles({"h2-test"})
 @SpringBootTest(classes = {IamLoginService.class})
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=false"})
 class ApplicationStartupSuccessTests {

@@ -55,7 +55,7 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 @SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@ActiveProfiles({"h2", "wlcg-scopes", "registration"})
+@ActiveProfiles({"h2-test", "wlcg-scopes", "registration"})
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 
