@@ -44,7 +44,6 @@ public class DashboardConfigService {
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
-  public static final String DASHBOARD_CLIENT_DESCRIPTION = "Creating trust, one token at a time";
   public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
       Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email", "profile",
@@ -133,7 +132,6 @@ public class DashboardConfigService {
     client.setScope(DASHBOARD_SCOPES);
     client.setClientId(clientId);
     client.setClientName(DASHBOARD_CLIENT_NAME);
-    client.setClientDescription(DASHBOARD_CLIENT_DESCRIPTION);
     client.setClientSecret(secret);
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     client.setAccessTokenValiditySeconds(3600);
