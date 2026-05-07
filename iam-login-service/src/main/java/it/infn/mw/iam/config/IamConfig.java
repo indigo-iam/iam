@@ -15,9 +15,13 @@
  */
 package it.infn.mw.iam.config;
 
+import static java.util.Collections.singletonList;
+
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -26,7 +30,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
 import org.h2.server.web.WebServlet;
+import org.mitre.jwt.assertion.AssertionValidator;
+import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
+import org.mitre.oauth2.assertion.AssertionOAuth2RequestFactory;
 import org.mitre.oauth2.repository.SystemScopeRepository;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.mitre.oauth2.service.DeviceCodeService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,8 +50,24 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
+import org.springframework.security.oauth2.provider.CompositeTokenGranter;
+import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
+import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
+import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
+import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
@@ -51,9 +77,25 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
+import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
+import it.infn.mw.iam.core.oauth.granters.ChainedTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.JwtAssertionTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
@@ -96,6 +138,7 @@ import it.infn.mw.iam.core.oidc.LoginHintService;
 import it.infn.mw.iam.core.oidc.MaxAgeService;
 import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
 import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
@@ -113,6 +156,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
+@SuppressWarnings("deprecation")
 @Configuration
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
@@ -309,9 +353,10 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
-    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
+  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils,
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter =
+        new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
     FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
@@ -351,9 +396,7 @@ public class IamConfig {
 
   @Bean
   AuthorizationRequestFilter authorizationRequestFilter(AuthorizationClientResolver clientResolver,
-      LoginHintService loginHintService,
-      PromptService promptService,
-      MaxAgeService maxAgeService) {
+      LoginHintService loginHintService, PromptService promptService, MaxAgeService maxAgeService) {
     return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
         maxAgeService);
   }
@@ -392,5 +435,110 @@ public class IamConfig {
         log.debug("Properties: {}", hikari.getDataSourceProperties());
       }
     };
+  }
+
+  @Bean
+  WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
+
+    return new DefaultWebResponseExceptionTranslator();
+  }
+
+  @Bean(name = "iamAuthenticationEventPublisher")
+  AuthenticationEventPublisher iamAuthenticationEventPublisher() {
+    return new IamAuthenticationEventPublisher();
+  }
+
+  @Bean(name = "authenticationManager")
+  AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
+      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService) {
+
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setUserDetailsService(iamUserDetailsService);
+    provider.setPasswordEncoder(passwordEncoder);
+
+    ProviderManager pm =
+        new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+
+    pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
+    return pm;
+
+  }
+
+  @Bean
+  TokenGranter tokenGranter(AuthenticationManager authenticationManager, Clock clock,
+      IamProperties iamProperties, OAuth2TokenEntityService tokenServices,
+      OAuth2RequestFactory requestFactory,
+      @Qualifier("iamClientDetailsEntityService") ClientDetailsEntityService clientDetailsService,
+      AssertionOAuth2RequestFactory assertionFactory,
+      @Qualifier("jwtAssertionValidator") AssertionValidator assertionValidator,
+      AUPSignatureCheckService signatureCheckService,
+      AuthorizationCodeServices authorizationCodeServices, TokenExchangePdp tokenExchangePdp,
+      DeviceCodeService deviceCodeService, TokenUtils tokenUtils, AccountUtils accountUtils) {
+
+    IamResourceOwnerPasswordTokenGranter resourceOwnerPasswordCredentialGranter =
+        new IamResourceOwnerPasswordTokenGranter(authenticationManager, tokenServices,
+            clientDetailsService, requestFactory);
+
+    resourceOwnerPasswordCredentialGranter.setAccountUtils(accountUtils);
+    resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
+
+    IamRefreshTokenGranter refreshTokenGranter =
+        new IamRefreshTokenGranter(tokenServices, clientDetailsService, requestFactory);
+    refreshTokenGranter.setAccountUtils(accountUtils);
+    refreshTokenGranter.setSignatureCheckService(signatureCheckService);
+
+    TokenExchangeTokenGranter tokenExchangeGranter =
+        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory,
+            iamProperties, tokenUtils, accountUtils, signatureCheckService, tokenExchangePdp);
+
+    return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
+        new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+            clientDetailsService, requestFactory),
+        new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        refreshTokenGranter,
+        new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        resourceOwnerPasswordCredentialGranter,
+        new JwtAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory,
+            assertionFactory, assertionValidator),
+        new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices,
+            clientDetailsService, requestFactory, deviceCodeService)));
+  }
+
+  @Bean
+  ClientCredentialsTokenEndpointFilter ccFilter(
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
+      ClientService clientService) {
+
+    ClientCredentialsTokenEndpointFilter filter =
+        new ClientCredentialsTokenEndpointFilter("/token");
+    filter.setAllowOnlyPost(true);
+
+    DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
+    dao.setUserDetailsService(userDetailsService);
+    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+
+    ClientBasicAuthenticationProvider authProvider =
+        new ClientBasicAuthenticationProvider(dao, clientService);
+    filter.setAuthenticationManager(new ProviderManager(List.of(authProvider)));
+
+    return filter;
+  }
+
+  @Bean
+  TokenEndpointJwtClientAuthFilter jwtClientAuthFilter(
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
+      Clock clock, IamProperties iamProperties, ClientKeyCacheService validators) {
+
+    TokenEndpointJwtClientAuthFilter filter =
+        new TokenEndpointJwtClientAuthFilter(new AntPathRequestMatcher("/token"));
+
+    TokenEndpointJwtClientAuthenticationProvider authProvider =
+        new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties,
+            userDetailsService.getClientDetailsService(), validators);
+
+    filter.setAuthenticationManager(new ProviderManager(singletonList(authProvider)));
+
+    return filter;
   }
 }

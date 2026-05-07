@@ -31,7 +31,6 @@ import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -49,10 +48,10 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties;
 
-public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvider {
+public class TokenEndpointJwtClientAuthenticationProvider implements AuthenticationProvider {
 
   public static final Logger LOG =
-      LoggerFactory.getLogger(IAMJWTBearerAuthenticationProvider.class);
+      LoggerFactory.getLogger(TokenEndpointJwtClientAuthenticationProvider.class);
 
   private static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
 
@@ -66,7 +65,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
   private final String tokenEndpoint;
 
-  public IAMJWTBearerAuthenticationProvider(Clock clock, IamProperties iamProperties,
+  public TokenEndpointJwtClientAuthenticationProvider(Clock clock, IamProperties iamProperties,
       ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
 
     this.clock = clock;
@@ -184,19 +183,18 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    JWTBearerAssertionAuthenticationToken jwtAuth =
-        (JWTBearerAssertionAuthenticationToken) authentication;
+    JwtAssertionAuthenticationToken jwtAuth =
+        (JwtAssertionAuthenticationToken) authentication;
 
     ClientDetailsEntity client = clientService.loadClientByClientId(jwtAuth.getName());
 
     if (isNull(client)) {
-      throw new UsernameNotFoundException("Unknown client: " + jwtAuth.getName());
+      throw new UsernameNotFoundException("Client not found");
     }
 
     try {
 
-
-      final JWT jwt = jwtAuth.getJwt();
+      final JWT jwt = (JWT) jwtAuth.getCredentials();
 
       if (isNull(jwt)) {
         invalidBearerAssertion("Null JWT in authentication token");
@@ -217,7 +215,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
       Set<GrantedAuthority> authorities = new HashSet<>(client.getAuthorities());
       authorities.add(ROLE_CLIENT);
 
-      return new JWTBearerAssertionAuthenticationToken(jwt, authorities);
+      return new JwtAssertionAuthenticationToken(jwt, authorities);
 
     } catch (ParseException e) {
       throw new AuthenticationServiceException("JWT parse error:" + e.getMessage(), e);
@@ -227,7 +225,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return JWTBearerAssertionAuthenticationToken.class.isAssignableFrom(authentication);
+    return JwtAssertionAuthenticationToken.class.isAssignableFrom(authentication);
   }
 
 }

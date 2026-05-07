@@ -127,6 +127,9 @@ public interface StructuredScopeTestSupportConstants {
   static final String CERN_USER = "cern-user";
   static final String CERN_USER_UUID = "e7de071b-578f-46ec-a2f1-6f9844a50aa5";
 
+  static final String JWT_AUTH_CLIENT_ID = "jwt-auth-private_key_jwt";
+  static final String JWT_AUTH_CLIENT_SECRET = "secret";
+
   public static final ResultMatcher OK = status().isOk();
   public static final ResultMatcher NO_CONTENT = status().isNoContent();
   public static final ResultMatcher BAD_REQUEST = status().isBadRequest();

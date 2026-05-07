@@ -38,7 +38,6 @@ import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -53,11 +52,12 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
+import it.infn.mw.iam.core.oauth.assertion.JwtAssertionAuthenticationToken;
+import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 
 @ExtendWith(MockitoExtension.class)
-class IAMJWTBearerAuthenticationProviderTests
-    implements IAMJWTBearerAuthenticationProviderTestSupport {
+class TokenEndpointJwtClientAuthenticationProviderTests
+    implements TokenEndpointJwtClientAuthenticationProviderTestSupport {
 
   static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
@@ -71,7 +71,7 @@ class IAMJWTBearerAuthenticationProviderTests
   IamProperties iamProperties;
 
   @Mock
-  JWTBearerAssertionAuthenticationToken authentication;
+  JwtAssertionAuthenticationToken authentication;
 
   @Mock
   JWTSigningAndValidationService validator;
@@ -79,7 +79,7 @@ class IAMJWTBearerAuthenticationProviderTests
   @Mock
   ClientDetailsEntity client;
 
-  IAMJWTBearerAuthenticationProvider provider;
+  TokenEndpointJwtClientAuthenticationProvider provider;
 
   Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
 
@@ -93,8 +93,8 @@ class IAMJWTBearerAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    provider =
-        new IAMJWTBearerAuthenticationProvider(clock, iamProperties, clientService, validators);
+    provider = new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties, clientService,
+        validators);
   }
 
   @Test
@@ -104,13 +104,13 @@ class IAMJWTBearerAuthenticationProviderTests
 
     UsernameNotFoundException e =
         assertThrows(UsernameNotFoundException.class, () -> provider.authenticate(authentication));
-    assertThat(e.getMessage(), containsString("Unknown client"));
+    assertThat(e.getMessage(), containsString("Client not found"));
   }
 
   @Test
   void testPlainJwtTriggersException() {
 
-    lenient().when(authentication.getJwt())
+    lenient().when(authentication.getCredentials())
       .thenReturn(new PlainJWT(new JWTClaimsSet.Builder().subject("sub").build()));
 
     AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
@@ -129,7 +129,7 @@ class IAMJWTBearerAuthenticationProviderTests
   @Test
   void testUnsupportClientAuthMethodTriggersException() throws JOSEException {
 
-    lenient().when(authentication.getJwt()).thenReturn(macSignJwt(JUST_SUB_JWT));
+    lenient().when(authentication.getCredentials()).thenReturn(macSignJwt(JUST_SUB_JWT));
 
     lenient().when(client.getTokenEndpointAuthMethod())
       .thenReturn(null, AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
@@ -151,7 +151,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -168,7 +168,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -186,7 +186,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
     testForAllAlgos(client, a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -208,7 +208,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -221,7 +221,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -241,7 +241,7 @@ class IAMJWTBearerAuthenticationProviderTests
 
       JWSHeader header = new JWSHeader(a);
       SignedJWT jws = new SignedJWT(header, JUST_SUB_JWT);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -253,7 +253,7 @@ class IAMJWTBearerAuthenticationProviderTests
           new JWTClaimsSet.Builder().issuer("invalid-issuer").subject(JWT_AUTH_NAME).build();
 
       jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -274,7 +274,7 @@ class IAMJWTBearerAuthenticationProviderTests
       JWTClaimsSet claimSet =
           new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME).subject(JWT_AUTH_NAME).build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -297,7 +297,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .expirationTime(Date.from(clock.instant().minusSeconds(301)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -321,7 +321,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .notBeforeTime(Date.from(clock.instant().plusSeconds(900)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -345,7 +345,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .issueTime(Date.from(clock.instant().plusSeconds(1000)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -368,7 +368,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -392,7 +392,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .audience(singletonList("invalid-audience"))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -416,7 +416,7 @@ class IAMJWTBearerAuthenticationProviderTests
         .audience(singletonList(ISSUER_TOKEN_ENDPOINT))
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
       try {
         provider.authenticate(authentication);
@@ -441,11 +441,11 @@ class IAMJWTBearerAuthenticationProviderTests
         .jwtID(UUID.randomUUID().toString())
         .build();
       SignedJWT jws = new SignedJWT(header, claimSet);
-      lenient().when(authentication.getJwt()).thenReturn(jws);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
 
 
-      JWTBearerAssertionAuthenticationToken authToken =
-          (JWTBearerAssertionAuthenticationToken) provider.authenticate(authentication);
+      JwtAssertionAuthenticationToken authToken =
+          (JwtAssertionAuthenticationToken) provider.authenticate(authentication);
       assertThat(authToken.isAuthenticated(), is(true));
       assertThat(authToken.getName(), is(JWT_AUTH_NAME));
       assertThat(authToken.getAuthorities(), hasItem(ROLE_CLIENT_AUTHORITY));
