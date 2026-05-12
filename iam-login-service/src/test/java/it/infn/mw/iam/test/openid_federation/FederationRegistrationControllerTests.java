@@ -72,7 +72,7 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
+@ActiveProfiles({"h2-test", "openid-federation"})
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc

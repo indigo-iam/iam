@@ -36,6 +36,10 @@ scope:
     type: path
     prefix: storage.stage
     path: /
+  - name: storage.poll
+    type: path
+    prefix: storage.poll
+    path: /
   - name: wlcg.groups
     type: regexp
     regexp: ^wlcg\.groups(?::((?:\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$

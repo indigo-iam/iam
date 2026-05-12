@@ -37,7 +37,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.util.JWKKeystoreLoader;
+import it.infn.mw.iam.util.JwkKeyStoreLoader;
 
 public class JWTBearerClientAuthenticationIntegrationTestSupport extends EndpointsTestUtils {
 
@@ -76,10 +76,10 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
   public JWTSigningAndValidationService loadSignerService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
-    JWKKeystoreLoader keystoreLoader = new JWKKeystoreLoader(loader);
+    JwkKeyStoreLoader keystoreLoader = new JwkKeyStoreLoader(loader);
 
     JWTSigningAndValidationService svc =
-        new IamJWTSigningService(keystoreLoader.loadKeystoreFromLocation(TEST_KEYSTORE_LOCATION),
+        new IamJWTSigningService(keystoreLoader.load(TEST_KEYSTORE_LOCATION),
             "rsa1", JWSAlgorithm.RS256.getName());
 
     return svc;

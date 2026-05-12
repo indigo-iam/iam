@@ -40,6 +40,7 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       EnumSet.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
+  private static final int BCRYPT_MAX_SIZE = 72;
   private static final SecureRandom RNG = new SecureRandom();
 
   private final ClientRegistrationProperties properties;
@@ -95,9 +96,7 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
 
   @Override
   public String generateClientSecret() {
-    return
-        Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
-          .replace("=", "");
+    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray()).substring(0, BCRYPT_MAX_SIZE);
   }
 
 }

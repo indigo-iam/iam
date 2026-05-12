@@ -36,7 +36,6 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
@@ -123,7 +122,6 @@ class OidcDiscoveryCacheTests {
 
   @Nested
   @SpringBootTest(properties = {"cache.enabled=true", "cache.redis.enabled=true"})
-  @ActiveProfiles({"h2-test", "dev"})
   @EnableCaching
   class RedisCacheTest {
 
@@ -138,7 +136,6 @@ class OidcDiscoveryCacheTests {
 
   @Nested
   @SpringBootTest(properties = {"cache.enabled=false"})
-  @ActiveProfiles({"h2-test", "dev"})
   @EnableCaching
   class NoCacheTest {
 

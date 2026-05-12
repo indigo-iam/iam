@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.ParseException;
 
 import javax.servlet.http.HttpSession;
 
@@ -69,6 +70,10 @@ import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 
 @ExtendWith(MockitoExtension.class)
 class RequestServiceTests extends RCAuthTestSupport {
+
+  public RequestServiceTests() throws IOException, ParseException {
+    super();
+  }
 
   @Mock
   IamProperties iamProps;

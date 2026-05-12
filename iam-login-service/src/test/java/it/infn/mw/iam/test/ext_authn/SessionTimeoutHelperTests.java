@@ -35,7 +35,7 @@ public class SessionTimeoutHelperTests {
   public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
   public static final Instant NOW_PLUS_60_SECS = NOW.plus(Duration.ofSeconds(60));
 
-  Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
+  Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
 
   @Test
   void testTimeout() {

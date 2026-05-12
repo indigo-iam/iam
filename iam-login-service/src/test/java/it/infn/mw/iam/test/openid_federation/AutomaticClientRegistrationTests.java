@@ -39,9 +39,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
@@ -68,12 +66,14 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ActiveProfiles({"h2-test", "dev", "openid-federation"})
+@ActiveProfiles({"h2-test", "openid-federation"})
 @IamMockMvcIntegrationTest
 class AutomaticClientRegistrationTests {
 
@@ -106,8 +106,8 @@ class AutomaticClientRegistrationTests {
     rsaJWK = new RSAKeyGenerator(2048).keyID("rsa1").generate();
 
     jwkSet = new JWKSet(rsaJWK.toPublicJWK());
-    JWKSetKeyStore keyStore = new JWKSetKeyStore(jwkSet);
-    JWTSigningAndValidationService validator = new DefaultJWTSigningAndValidationService(keyStore);
+    JwkKeyStore keyStore = JwkKeyStore.from(jwkSet);
+    JWTSigningAndValidationService validator = new IamJWTSigningService(keyStore);
 
     when(jwkService.getValidator(anyString())).thenReturn(validator);
   }

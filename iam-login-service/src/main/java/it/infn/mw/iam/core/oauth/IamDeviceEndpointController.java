@@ -251,7 +251,6 @@ public class IamDeviceEndpointController {
   @PostMapping(value = "/" + USER_CODE_URL + "/approve")
   public String confirmAccess(@RequestParam("user_code") String userCode,
       @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
-      @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
       ModelMap model, Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
@@ -282,7 +281,7 @@ public class IamDeviceEndpointController {
 
     deviceCodeService.approveDeviceCode(dc, o2Auth);
 
-    setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
+    setAuthzRequestAfterApproval(authorizationRequest, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, auth);
 
     model.put(APPROVAL_ATTRIBUTE_KEY, true);
@@ -322,11 +321,11 @@ public class IamDeviceEndpointController {
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
-      String remember, Boolean approve) {
+      Boolean approve) {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
-    approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
+    approvalParameters.put(REMEMBER_PARAMETER_KEY, "none");
     approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
 
     Set<String> scopes = authorizationRequest.getScope();

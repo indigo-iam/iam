@@ -37,12 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -57,15 +57,15 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning.JitTestConfig.CountAccountCreatedEventsListener;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, JitTestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"saml.jit-account-provisioning.enabled=true",
-    "saml.jit-account-provisioning.trusted-idps=" + SamlAuthenticationTestSupport.DEFAULT_IDP_ID})
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"saml.jit-account-provisioning.enabled=true",
+        "saml.jit-account-provisioning.trusted-idps="
+            + SamlAuthenticationTestSupport.DEFAULT_IDP_ID})
+@AutoConfigureMockMvc
 @Transactional
 public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSupport {
 

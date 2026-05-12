@@ -57,6 +57,22 @@ class ScimApiAccessTests extends ScimTestSupport {
   }
 
   @Test
+  void userAddedToGroupLegacy() throws Exception {
+
+    String token = passwordToken("scim:read scim:write", "admin", "password");
+
+    JsonNode user = createScimUser(token, random("member"));
+    JsonNode group = createScimGroup(token, random("group"));
+
+    addUserToGroupLegacy(token, group.get("id").asText(), user.get("id").asText());
+
+    JsonNode updatedUser = getResource(token, SCIM_USERS + "/" + user.get("id").asText());
+
+    String uuidGroup = updatedUser.get("groups").get(0).get("value").asText();
+    assertEquals(uuidGroup, group.get("id").asText());
+  }
+
+  @Test
   void wrongGroupContentOnCreation() throws Exception {
 
     String token = scimRwToken();

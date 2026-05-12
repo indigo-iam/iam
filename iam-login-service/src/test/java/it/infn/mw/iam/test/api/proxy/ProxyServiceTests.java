@@ -36,12 +36,10 @@ import java.security.cert.CertificateParsingException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -113,8 +111,7 @@ class ProxyServiceTests extends ProxyCertificateTestSupport {
   @BeforeEach
   void setup() {
 
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-    clock = new MutableClock(Clock.fixed(Clock.systemUTC().instant(), ZoneId.of("Z")));
+    clock = new MutableClock(Clock.systemUTC());
     proxyHelper = new DefaultProxyHelperService(clock);
     proxyService = new DefaultProxyCertificateService(clock, accountRepo, properties, proxyHelper);
     lenient().when(principal.getName()).thenReturn(TEST_USER_USERNAME);
