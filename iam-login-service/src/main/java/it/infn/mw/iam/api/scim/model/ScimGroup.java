@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
-import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 
 import java.util.Collections;
@@ -101,7 +100,6 @@ public final class ScimGroup extends ScimResource {
       super();
       schemas.add(GROUP_SCHEMA);
       schemas.add(INDIGO_GROUP_SCHEMA);
-      schemas.add(AARC_GROUP_SCHEMA);
       this.displayName = displayName;
       indigoGroup = ScimIndigoGroup.getBuilder().build();
     }

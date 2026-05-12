@@ -21,5 +21,4 @@ public interface ScimConstants {
   final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
   final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
   final String AARC_USER_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:User";
-  final String AARC_GROUP_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:Group";
 }
