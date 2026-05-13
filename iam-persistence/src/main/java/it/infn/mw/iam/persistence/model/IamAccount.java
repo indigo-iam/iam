@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.persistence.model;
 
-import static java.lang.Boolean.logicalOr;
 import static java.util.Objects.isNull;
 
 import java.io.Serializable;
@@ -622,7 +621,10 @@ public class IamAccount implements Serializable {
   }
 
   public boolean isValid(Date now) {
-    return logicalOr(isNull(endTime), endTime.after(now));
+    if (isNull(endTime)) {
+      return true;
+    }
+    return endTime.after(now);
   }
 
   public boolean isServiceAccount() {

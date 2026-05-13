@@ -611,7 +611,7 @@ public class IamProperties {
     }
   }
 
-  @Validated
+  @ValidDashboard
   public static class DashboardProperties {
 
     private boolean enabled = false;
@@ -771,7 +771,6 @@ public class IamProperties {
 
   private AarcProfile aarcProfile = new AarcProfile();
 
-  @ValidDashboard
   private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {

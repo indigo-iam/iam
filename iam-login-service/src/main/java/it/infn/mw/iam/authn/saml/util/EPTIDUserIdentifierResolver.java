@@ -25,6 +25,7 @@ import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.NameIDType;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.schema.XSAny;
+import org.opensaml.xml.schema.XSString;
 import org.springframework.security.saml.SAMLCredential;
 
 import com.google.common.base.Strings;
@@ -73,42 +74,48 @@ public class EPTIDUserIdentifierResolver extends AttributeUserIdentifierResolver
             attribute.getAlias(), attribute.getAttributeName())));
     }
 
-
     XMLObject maybeAttributeValue = eptidAttr.getAttributeValues().get(0);
 
-    if (!(maybeAttributeValue instanceof XSAny)) {
-      return SamlUserIdentifierResolutionResult
-        .failure(List.of(format("Attribute '%s:%s' is malformed: attribute value is not an XSAny",
-            attribute.getAlias(), attribute.getAttributeName())));
-    }
+    String userId;
 
-    if (!maybeAttributeValue.hasChildren()) {
-      return SamlUserIdentifierResolutionResult.failure(
-          List.of(format("Attribute '%s:%s' is malformed: attribute value has no children elements",
+    if (maybeAttributeValue instanceof XSAny xsAny) {
+
+      if (!xsAny.hasChildren()) {
+        return SamlUserIdentifierResolutionResult.failure(List
+          .of(format("Attribute '%s:%s' is malformed: attribute value has no children elements",
+              attribute.getAlias(), attribute.getAttributeName())));
+      }
+
+      XMLObject child = xsAny.getOrderedChildren().get(0);
+
+      if (!(child instanceof NameID nameId)) {
+        return SamlUserIdentifierResolutionResult.failure(List
+          .of(format("Attribute '%s:%s' is malformed: attribute first child value is not a NameID",
+              attribute.getAlias(), attribute.getAttributeName())));
+      }
+
+      if (!isNull(nameId.getFormat()) && !nameId.getFormat().equals(NameIDType.PERSISTENT)) {
+        return SamlUserIdentifierResolutionResult.failure(
+            List.of(format("Attribute '%s:%s' is malformed: resolved NameID is not persistent: %s",
+                attribute.getAlias(), attribute.getAttributeName(), nameId.getFormat())));
+      }
+
+      userId = nameId.getValue();
+
+    } else if (maybeAttributeValue instanceof XSString xsString) {
+
+      userId = xsString.getValue();
+
+    } else {
+      return SamlUserIdentifierResolutionResult.failure(List.of(
+          format("Attribute '%s:%s': unsupported attribute value type (expected XSAny or XSString)",
               attribute.getAlias(), attribute.getAttributeName())));
     }
 
-    XMLObject maybeNameId = maybeAttributeValue.getOrderedChildren().get(0);
-
-    if (!(maybeNameId instanceof NameID)) {
-      return SamlUserIdentifierResolutionResult.failure(List.of(format(
-          "Attribute '%s:%s' is malformed: attribute value first children value is not a NameID",
-          attribute.getAlias(), attribute.getAttributeName())));
-    }
-
-    NameID nameId = (NameID) maybeNameId;
-
-    if (!isNull(nameId.getFormat()) && !nameId.getFormat().equals(NameIDType.PERSISTENT)) {
-      return SamlUserIdentifierResolutionResult.failure(
-          List.of(format("Attribute '%s:%s' is malformed: resolved NameID is not persistent: %s",
-              attribute.getAlias(), attribute.getAttributeName(), nameId.getFormat())));
-    }
-
     IamSamlId samlId = new IamSamlId();
-
     samlId.setIdpId(samlCredential.getRemoteEntityID());
     samlId.setAttributeId(attribute.getAttributeName());
-    samlId.setUserId(nameId.getValue());
+    samlId.setUserId(userId);
 
     return SamlUserIdentifierResolutionResult.success(List.of(samlId));
   }

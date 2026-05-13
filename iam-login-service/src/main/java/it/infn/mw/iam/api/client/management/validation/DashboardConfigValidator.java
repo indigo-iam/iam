@@ -26,21 +26,55 @@ import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
 @Component
 @Scope("prototype")
-public class DashboardConfigValidator implements ConstraintValidator<ValidDashboard, DashboardProperties> {
+public class DashboardConfigValidator
+    implements ConstraintValidator<ValidDashboard, DashboardProperties> {
 
   private static final String CLIENT_ID_REGEX = "^[a-zA-Z0-9\\-._~]{4,256}$";
   private static final String CLIENT_SECRET_REGEX = "^[a-zA-Z0-9\\-._~]{32,72}$";
 
   @Override
-  public boolean isValid(DashboardProperties dashboardProperties, ConstraintValidatorContext context) {
+  public boolean isValid(DashboardProperties dashboardProperties,
+      ConstraintValidatorContext context) {
+
     if (dashboardProperties == null || !dashboardProperties.isEnabled()) {
       return true;
     }
-    boolean validClientId = dashboardProperties.getClientId() != null
-        && dashboardProperties.getClientId().matches(CLIENT_ID_REGEX);
-    boolean validClientSecret = dashboardProperties.getClientSecret() != null
-        && dashboardProperties.getClientSecret().matches(CLIENT_SECRET_REGEX);
 
-    return validClientId && validClientSecret;
+    boolean valid = true;
+
+    context.disableDefaultConstraintViolation();
+
+    if (dashboardProperties.getClientId() == null || dashboardProperties.getClientId().isBlank()) {
+      addViolation(context, "dashboard.clientId is required when dashboard is enabled", "clientId");
+      valid = false;
+
+    } else if (!dashboardProperties.getClientId().matches(CLIENT_ID_REGEX)) {
+      addViolation(context,
+          "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'",
+          "clientId");
+      valid = false;
+    }
+
+    if (dashboardProperties.getClientSecret() == null
+        || dashboardProperties.getClientSecret().isBlank()) {
+      addViolation(context, "dashboard.clientSecret is required when dashboard is enabled",
+          "clientSecret");
+      valid = false;
+
+    } else if (!dashboardProperties.getClientSecret().matches(CLIENT_SECRET_REGEX)) {
+      addViolation(context,
+          "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'",
+          "clientSecret");
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  private void addViolation(ConstraintValidatorContext context, String message, String property) {
+
+    context.buildConstraintViolationWithTemplate(message)
+      .addPropertyNode(property)
+      .addConstraintViolation();
   }
 }
