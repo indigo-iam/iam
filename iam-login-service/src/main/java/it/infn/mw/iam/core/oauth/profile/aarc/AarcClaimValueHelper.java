@@ -39,8 +39,7 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @SuppressWarnings("deprecation")
 public class AarcClaimValueHelper extends IamClaimValueHelper {
 
-  public static final String AARC_VERSION_URI =
-      "https://aarc-community.org/attribute/profile/version/1.0";
+  public static final String AARC_VERSION_URI = "https://aarc-community.org/attribute/profile/version/1.0";
   public static final String REFEDS_ASSURANCE_URI = "https://refeds.org/assurance";
   public static final String REFEDS_ASSURANCE_IAP_LOW_URI = "https://refeds.org/assurance/IAP/low";
 
@@ -107,7 +106,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
               AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
-            if (account.get().getAffiliation() != null) {
+            if (account.get().getUserInfo().getAffiliation() != null) {
               scopedAffiliations
                 .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
                     properties.getOrganisation().getName()));
