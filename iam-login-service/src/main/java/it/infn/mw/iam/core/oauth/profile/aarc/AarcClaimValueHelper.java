@@ -108,9 +108,8 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
             if (account.get().getAffiliation() != null) {
-              scopedAffiliations
-                .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
-                    properties.getOrganisation().getName()));
+              scopedAffiliations.add(format(SCOPED_FORMAT, account.get().getAffiliation(),
+                  properties.getOrganisation().getName()));
             }
             String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
                 Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));

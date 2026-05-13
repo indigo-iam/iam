@@ -54,7 +54,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "unchecked"})
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
@@ -150,7 +150,6 @@ class AarcClaimValueHelperTests {
     assertThat(urns, empty());
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void testResolveScopedAffiliations() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
@@ -176,6 +175,31 @@ class AarcClaimValueHelperTests {
 
     assertThat(result, hasSize(2));
     assertThat(result, hasItem("member@" + properties.getOrganisation().getName()));
+    assertThat(result, hasItem("external@test.org"));
+  }
+
+  @Test
+  void testResolveScopedAffiliationsWithNullAffiliation() {
+    OAuth2Authentication auth = mock(OAuth2Authentication.class);
+
+    Map<String, String> additionalInfo = new HashMap<>();
+    additionalInfo.put("VPSA", "external@test.org");
+
+    SavedUserAuthentication savedAuth = new SavedUserAuthentication();
+    savedAuth.setSourceClass(OidcExternalAuthenticationToken.class.getName());
+    savedAuth.setAdditionalInfo(additionalInfo);
+
+    when(auth.getUserAuthentication()).thenReturn(savedAuth);
+
+    IamAccount account = mock(IamAccount.class);
+    IamUserInfo accountUserInfo = mock(IamUserInfo.class);
+
+    when(account.getUserInfo()).thenReturn(accountUserInfo);
+
+    Set<String> result = (Set<String>) helper
+      .resolveClaim(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION, auth, Optional.of(account));
+
+    assertThat(result, hasSize(1));
     assertThat(result, hasItem("external@test.org"));
   }
 }
