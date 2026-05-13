@@ -83,6 +83,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
+import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -305,8 +306,9 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  SystemScopeService defaultSystemScopeService(ScopeMatcherRegistry registry) {
-    return new IamSystemScopeService(registry);
+  SystemScopeService defaultSystemScopeService(IamScopeRepository scopeRepository,
+      ScopeMatcherRegistry registry) {
+    return new IamSystemScopeService(scopeRepository, registry);
   }
 
   @Bean

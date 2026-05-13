@@ -19,6 +19,7 @@ import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
+import org.mitre.oauth2.service.impl.DefaultSystemScopeService;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
@@ -106,7 +107,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=DefaultOAuth2AuthorizationCodeService.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultApprovedSiteService.class)
+        value=DefaultApprovedSiteService.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+      value=DefaultSystemScopeService.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(
