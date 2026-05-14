@@ -28,45 +28,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
     "schacHomeOrganization", "voPersonExternalAffiliation", "assurance"}, allowGetters = true)
 public class ScimAarcUser {
 
-  public enum AARC_USER_SCHEMA {
-
-    // @formatter:off
-    NAME(ScimConstants.AARC_USER_SCHEMA + ".name"),
-    EMAIL(ScimConstants.AARC_USER_SCHEMA + ".email"),
-    VOPERSON_ID(ScimConstants.AARC_USER_SCHEMA + ".voPersonId"),
-    ORGANIZATION_NAME(ScimConstants.AARC_USER_SCHEMA + ".organizationName"),
-    SCHAC_HOME_ORGANIZATION(ScimConstants.AARC_USER_SCHEMA + ".schacHomeOrganization"),
-    VO_PERSON_EXTERNAL_AFFILIATIONS(ScimConstants.AARC_USER_SCHEMA + ".voPersonExternalAffiliations"),
-    ASSURANCE(ScimConstants.AARC_USER_SCHEMA + ".assurance"),
-    ENTITLEMENTS(ScimConstants.AARC_USER_SCHEMA + ".entitlements");
-    // @formatter:on
-
-    private final String text;
-
-    AARC_USER_SCHEMA(String text) {
-      this.text = text;
-    }
-
-    @Override
-    public String toString() {
-      return text;
-    }
-  }
-
   private final String voPersonId;
-
   private final ScimAarcName name;
-
   private final String email;
-
   private final String organizationName;
-
   private final String schacHomeOrganization;
-
   private final List<ScimAffiliation> voPersonExternalAffiliations;
-
   private final List<ScimAssurance> assurance;
-
   private final List<ScimEntitlement> entitlements;
 
   @JsonCreator
