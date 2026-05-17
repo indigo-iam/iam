@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -35,7 +37,8 @@ public class IamSystemScopeService implements SystemScopeService {
   private final IamScopeRepository scopeRepository;
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
-  private static final Set<String> RESERVED_VALUES = Set.of("registration-token", "resource-token");
+  private static final Set<String> RESERVED_VALUES =
+      Set.of(REGISTRATION_TOKEN_SCOPE, RESOURCE_TOKEN_SCOPE);
 
   private Function<String, SystemScope> stringToSystemScope = scopeStr -> {
     if (scopeStr == null || scopeStr.isBlank()) {
@@ -96,12 +99,12 @@ public class IamSystemScopeService implements SystemScopeService {
 
   @Override
   public SystemScope getById(Long id) {
-    return scopeRepository.findById(id).orElse(null);
+    return scopeRepository.findById(id).orElseThrow(this::notFound);
   }
 
   @Override
   public SystemScope getByValue(String value) {
-    return scopeRepository.findByValue(value).stream().findFirst().orElse(null);
+    return scopeRepository.findByValue(value).stream().findFirst().orElseThrow(this::notFound);
   }
 
   @Override
@@ -112,7 +115,7 @@ public class IamSystemScopeService implements SystemScopeService {
   @Override
   public SystemScope save(SystemScope scope) {
     if (RESERVED_VALUES.contains(scope.getValue())) {
-      return null;
+      throw invalidScopeValue();
     }
     return scopeRepository.save(scope);
   }
@@ -143,7 +146,9 @@ public class IamSystemScopeService implements SystemScopeService {
 
   @Override
   public Set<SystemScope> removeRestrictedAndReservedScopes(Set<SystemScope> scopes) {
-    return scopes.stream().filter(s -> !s.isRestricted() && !isReserved(s)).collect(Collectors.toSet());
+    return scopes.stream()
+      .filter(s -> !s.isRestricted() && !isReserved(s))
+      .collect(Collectors.toSet());
   }
 
   @Override
@@ -155,4 +160,11 @@ public class IamSystemScopeService implements SystemScopeService {
     return RESERVED_VALUES.contains(scope.getValue());
   }
 
+  private ResponseStatusException notFound() {
+    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Scope value not found");
+  }
+
+  private ResponseStatusException invalidScopeValue() {
+    return new ResponseStatusException(HttpStatus.BAD_REQUEST, "Scope value not valid");
+  }
 }
