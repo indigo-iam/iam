@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = "/api/scopes")
+@RequestMapping(value = {"/api/scopes", "/iam/api/scopes"})
 public class ScopeApiController {
 
   private final SystemScopeService scopeService;
