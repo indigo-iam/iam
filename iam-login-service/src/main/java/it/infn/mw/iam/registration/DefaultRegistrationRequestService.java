@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.transaction.Transactional;
+
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -424,5 +427,17 @@ public class DefaultRegistrationRequestService
     }
 
     return handleApprove(request);
+  }
+
+  @Override
+  @Transactional
+  public void cleanupExpiredRequests(Instant expiryTime) {
+    int deletedAccounts = accountService.deleteAccountsForExpiredRegistrations(expiryTime);
+    int deletedRegistrations = requestRepository.deleteExpiredRegistrations(expiryTime);
+
+    if (deletedRegistrations > 0) {
+      LOG.info("Cleanup removed {} registrations and {} accounts",
+          deletedRegistrations, deletedAccounts);
+    }
   }
 }

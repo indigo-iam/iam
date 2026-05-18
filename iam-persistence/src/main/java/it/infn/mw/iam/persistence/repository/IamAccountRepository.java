@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -210,4 +211,11 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
     List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
+
+    @Modifying
+    @Query("DELETE FROM IamAccount a WHERE a.id IN (" +
+                    "SELECT r.account.id FROM IamRegistrationRequest r " +
+                    "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
+                    "AND r.creationTime < :expiryTime)")
+    int deleteAccountsForExpiredRegistrations(@Param("expiryTime") Instant expiryTime);
 }

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.user;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 
@@ -255,4 +256,6 @@ public interface IamAccountService {
    * @return the updated signer account
    */
   IamAccount signAup(IamAccount account, IamAup aup);
+
+  int deleteAccountsForExpiredRegistrations(Instant expiryTime);
 }

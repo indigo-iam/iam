@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +42,7 @@ import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
+import it.infn.mw.iam.registration.RegistrationRequestService;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
@@ -61,6 +64,7 @@ public class TaskConfig implements SchedulingConfigurer {
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
   private NotificationStoreService notificationStoreService;
+  private RegistrationRequestService registrationRequestService;
   private NotificationDeliveryTask deliveryTask;
   private LifecycleProperties lifecycleProperties;
   private ExpiredAccountsHandler expiredAccountsHandler;
@@ -74,12 +78,23 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
+  @Value("${iam.registration.expiry-days:7}")
+  private long expiryDays;
+  
+  @Value("${iam.cleanup.expired.registration.cron.enable:true}")
+  private boolean cleanupExpiredRegistrationCronScheduleEnable;
+
+  @Value("${iam.cleanup.expired.registration.cron:0 */2 * * * *}")
+  private String cleanupExpiredRegistrationCronSchedule;
+
   public TaskConfig(NotificationStoreService notificationStoreService,
+      RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
       ExecutorService taskScheduler, GarbageCollector garbageCollector) {
 
     this.notificationStoreService = notificationStoreService;
+    this.registrationRequestService = registrationRequestService;
     this.deliveryTask = deliveryTask;
     this.lifecycleProperties = lifecycleProperties;
     this.expiredAccountsHandler = expiredAccountsHandler;
@@ -128,6 +143,22 @@ public class TaskConfig implements SchedulingConfigurer {
   public void scheduledAupRemindersTask() {
 
     aupReminderTask.sendAupReminders();
+  }
+
+  public void scheduledCleanUpExpireRegistrationTask(final ScheduledTaskRegistrar taskRegistrar) {
+    if (!cleanupExpiredRegistrationCronScheduleEnable) {
+      LOG.info("Expired accounts task is disabled");
+    } else {
+      LOG.info("Scheduling expired registration task with schedule: {}", cleanupExpiredRegistrationCronSchedule);
+      taskRegistrar.addCronTask(this::scheduledCleanUpExpireRegistration, cleanupExpiredRegistrationCronSchedule);
+    }
+  }
+
+  // @Scheduled(cron = "0 6 16 * * ?")
+  public void scheduledCleanUpExpireRegistration() {
+    LOG.info("Running cleanup with expiryDays={}", expiryDays);
+    Instant expiryTime = Instant.now().minus(expiryDays, ChronoUnit.DAYS);
+    registrationRequestService.cleanupExpiredRequests(expiryTime);
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

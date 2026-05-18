@@ -28,6 +28,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -803,6 +804,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         iamAupSignatureRepo.createSignatureForAccount(aup, account, Date.from(clock.instant()));
     eventPublisher.publishEvent(new AupSignedEvent(this, signature));
     return account;
+  }
+
+  @Override
+  public int deleteAccountsForExpiredRegistrations(Instant expiryTime) {
+    return accountRepo.deleteAccountsForExpiredRegistrations(expiryTime);
   }
 
 }

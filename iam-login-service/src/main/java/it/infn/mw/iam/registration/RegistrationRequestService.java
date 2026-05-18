@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.registration;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,5 +44,7 @@ public interface RegistrationRequestService {
   Boolean usernameAvailable(String username);
 
   Boolean emailAvailable(String emailAddress);
+
+  void cleanupExpiredRequests(Instant expiryTime);
 
 }
