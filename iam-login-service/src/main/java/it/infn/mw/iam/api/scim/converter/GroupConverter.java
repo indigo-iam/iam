@@ -23,11 +23,14 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.scim.model.ScimAarcGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
+import it.infn.mw.iam.api.scim.model.ScimGroup.Builder;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
+import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
@@ -35,10 +38,11 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 public class GroupConverter implements Converter<ScimGroup, IamGroup> {
 
   private final ScimResourceLocationProvider resourceLocationProvider;
+  private final ScimProperties scimProperties;
 
-  public GroupConverter(ScimResourceLocationProvider rlp) {
-
+  public GroupConverter(ScimResourceLocationProvider rlp, ScimProperties scimProperties) {
     this.resourceLocationProvider = rlp;
+    this.scimProperties = scimProperties;
   }
 
   /**
@@ -103,11 +107,19 @@ public class GroupConverter implements Converter<ScimGroup, IamGroup> {
       scimIndigoGroup.labels(labels);
     }
 
-    return ScimGroup.builder(entity.getName())
+    Builder builder = ScimGroup.builder(entity.getName())
       .id(entity.getUuid())
       .meta(meta)
-      .indigoGroup(scimIndigoGroup.build())
-      .build();
+      .indigoGroup(scimIndigoGroup.build());
+
+    builder.enableAarc(scimProperties.isEnableAarc());
+
+    if (scimProperties.isEnableAarc()) {
+      ScimAarcGroup aarcGroup = ScimAarcGroup.builder().members(members).build();
+      builder.aarcGroup(aarcGroup);
+    }
+
+    return builder.build();
   }
 
 }
