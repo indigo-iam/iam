@@ -104,7 +104,6 @@ public final class ScimGroup extends ScimResource {
     private Set<ScimMemberRef> members = new HashSet<>();
     private ScimIndigoGroup indigoGroup = null;
     private ScimAarcGroup aarcGroup = null;
-    private boolean enableAarc = false;
 
     public Builder(String displayName) {
       super();
@@ -115,8 +114,6 @@ public final class ScimGroup extends ScimResource {
     }
 
     public Builder enableAarc(boolean enableAarc) {
-
-      this.enableAarc = enableAarc;
 
       if (enableAarc) {
         schemas.add(AARC_GROUP_SCHEMA);

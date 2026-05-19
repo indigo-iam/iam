@@ -17,32 +17,45 @@ package it.infn.mw.iam.api.scim.converter;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.model.ScimAarcGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroup.Builder;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
+import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.config.scim.ScimProperties;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Service
 public class GroupConverter implements Converter<ScimGroup, IamGroup> {
 
   private final ScimResourceLocationProvider resourceLocationProvider;
   private final ScimProperties scimProperties;
+  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
 
-  public GroupConverter(ScimResourceLocationProvider rlp, ScimProperties scimProperties) {
+
+  public GroupConverter(ScimResourceLocationProvider rlp, ScimProperties scimProperties,
+      IamAccountRepository accountRepo, IamAccountService accountService) {
     this.resourceLocationProvider = rlp;
     this.scimProperties = scimProperties;
+    this.accountRepo = accountRepo;
+    this.accountService = accountService;
   }
 
   /**
@@ -115,11 +128,23 @@ public class GroupConverter implements Converter<ScimGroup, IamGroup> {
     builder.enableAarc(scimProperties.isEnableAarc());
 
     if (scimProperties.isEnableAarc()) {
+      long totalUsers = accountRepo.count();
+      OffsetPageable pr = new OffsetPageable(0, (int) totalUsers);
+      Page<IamAccount> accounts = accountService.findGroupMembers(entity, pr);
+      Set<ScimMemberRef> members = new HashSet<>();
+
+      for (IamAccount a : accounts.getContent()) {
+        members.add(ScimMemberRef.builder()
+          .value(a.getUuid())
+          .display(a.getUserInfo().getName())
+          .ref(resourceLocationProvider.userLocation(a.getUuid()))
+          .build());
+      }
+
       ScimAarcGroup aarcGroup = ScimAarcGroup.builder().members(members).build();
       builder.aarcGroup(aarcGroup);
     }
 
     return builder.build();
   }
-
 }
