@@ -38,7 +38,7 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @TestPropertySource(properties = "scim.enable-aarc=true")
-public class ScimAarcGroupTests {
+class ScimAarcGroupTests {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
