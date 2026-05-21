@@ -147,16 +147,15 @@ public class TaskConfig implements SchedulingConfigurer {
 
   public void scheduledCleanUpExpireRegistrationTask(final ScheduledTaskRegistrar taskRegistrar) {
     if (!cleanupExpiredRegistrationCronScheduleEnable) {
-      LOG.info("Expired accounts task is disabled");
+      LOG.info("Expired registration request clean up task is disabled");
     } else {
-      LOG.info("Scheduling expired registration task with schedule: {}", cleanupExpiredRegistrationCronSchedule);
+      LOG.info("Scheduling expired registration request clean up task with schedule: {}", cleanupExpiredRegistrationCronSchedule);
       taskRegistrar.addCronTask(this::scheduledCleanUpExpireRegistration, cleanupExpiredRegistrationCronSchedule);
     }
   }
 
-  // @Scheduled(cron = "0 6 16 * * ?")
-  public void scheduledCleanUpExpireRegistration() {
-    LOG.info("Running cleanup with expiryDays={}", expiryDays);
+  private void scheduledCleanUpExpireRegistration() {
+    LOG.info("Running cleanup with expiryDays= {}", expiryDays);
     Instant expiryTime = Instant.now().minus(expiryDays, ChronoUnit.DAYS);
     registrationRequestService.cleanupExpiredRequests(expiryTime);
   }
@@ -191,6 +190,7 @@ public class TaskConfig implements SchedulingConfigurer {
     taskRegistrar.setScheduler(taskScheduler);
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
+    scheduledCleanUpExpireRegistrationTask(taskRegistrar);
   }
 
   @Bean

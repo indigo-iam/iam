@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -217,5 +216,15 @@ public interface IamAccountRepository
                     "SELECT r.account.id FROM IamRegistrationRequest r " +
                     "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
                     "AND r.creationTime < :expiryTime)")
-    int deleteAccountsForExpiredRegistrations(@Param("expiryTime") Instant expiryTime);
+    int deleteAccountsForExpiredRegistrations(@Param("expiryTime") Date expiryTime);
+
+    @Query("SELECT r.account.id FROM IamRegistrationRequest r " +
+                    "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
+                    "AND r.creationTime < :expiryTime")
+    List<Long> findAccountIdsForExpiredRegistrations(@Param("expiryTime") Date expiryTime);
+
+    @Modifying
+    @Query("DELETE FROM IamAccount a WHERE a.id IN :ids")
+    int deleteAccountsByIds(@Param("ids") List<Long> ids);
+
 }

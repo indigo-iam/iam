@@ -807,8 +807,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public int deleteAccountsForExpiredRegistrations(Instant expiryTime) {
-    return accountRepo.deleteAccountsForExpiredRegistrations(expiryTime);
+  public int deleteAccountsForExpiredRegistrations(List<Long> ids) {
+    return accountRepo.deleteAccountsByIds(ids);
   }
 
 }

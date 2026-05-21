@@ -432,12 +432,19 @@ public class DefaultRegistrationRequestService
   @Override
   @Transactional
   public void cleanupExpiredRequests(Instant expiryTime) {
-    int deletedAccounts = accountService.deleteAccountsForExpiredRegistrations(expiryTime);
-    int deletedRegistrations = requestRepository.deleteExpiredRegistrations(expiryTime);
 
-    if (deletedRegistrations > 0) {
-      LOG.info("Cleanup removed {} registrations and {} accounts",
-          deletedRegistrations, deletedAccounts);
+    Date expiryDate = Date.from(expiryTime);
+    List<Long> accountIds = requestRepository.findAccountIdsForExpiredRegistrations(expiryDate);
+
+    if (accountIds.isEmpty()) {
+      LOG.debug("Cleanup skipped: no expired registrations found (expiryTime= {})", expiryTime);
+      return;
     }
+
+    int deletedRegistrations = requestRepository.deleteExpiredRegistrations(expiryDate);
+    int deletedAccounts = accountService.deleteAccountsForExpiredRegistrations(accountIds);
+
+    LOG.info("Cleanup removed {} registrations and {} accounts (expiryTime= {})",
+        deletedRegistrations, deletedAccounts, expiryTime);
   }
 }

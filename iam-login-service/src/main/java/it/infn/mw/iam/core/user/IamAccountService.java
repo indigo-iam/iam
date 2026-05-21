@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.core.user;
 
-import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -257,5 +257,12 @@ public interface IamAccountService {
    */
   IamAccount signAup(IamAccount account, IamAup aup);
 
-  int deleteAccountsForExpiredRegistrations(Instant expiryTime);
+  
+  /**
+   * Deletes {@link IamAccount} records associated with the given account IDs.
+   *
+   * @param ids list of account IDs to delete
+   * @return number of accounts successfully deleted
+   */
+  int deleteAccountsForExpiredRegistrations(List<Long> ids);
 }
