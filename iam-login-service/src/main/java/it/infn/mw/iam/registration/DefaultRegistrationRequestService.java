@@ -108,6 +108,10 @@ public class DefaultRegistrationRequestService
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
+  public DefaultRegistrationRequestService(LabelDTOConverter labelConverter) {
+    this.labelConverter = labelConverter;
+  }
+
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
       .orElseThrow(() -> new ScimResourceNotFoundException(
@@ -223,8 +227,7 @@ public class DefaultRegistrationRequestService
   public RegistrationRequestDto confirmRequest(String confirmationKey) {
 
     IamRegistrationRequest request = requestRepository.findByAccountConfirmationKey(confirmationKey)
-      .orElseThrow(() -> new ScimResourceNotFoundException(String
-        .format("No registration request found for registration_key [%s]", confirmationKey)));
+      .orElseThrow(() -> new ScimResourceNotFoundException("No registration request found"));
 
     return handleConfirm(request);
   }
