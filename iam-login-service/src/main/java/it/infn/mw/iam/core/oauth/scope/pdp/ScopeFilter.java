@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -30,8 +31,17 @@ public interface ScopeFilter {
 
   public Set<String> filterScopes(Set<String> scopes, IamAccount account);
 
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
+  default public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {
+    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication()));
+    return authHolder;
+  }
 
-  public OAuth2Authentication filterScopes(OAuth2Authentication authHolder);
-
+  default public OAuth2Authentication filterScopes(OAuth2Authentication authn) {
+    OAuth2Request oldRequest = authn.getOAuth2Request();
+    OAuth2Request updatedRequest = new OAuth2Request(oldRequest.getRequestParameters(), oldRequest.getClientId(),
+        oldRequest.getAuthorities(), oldRequest.isApproved(), filterScopes(oldRequest.getScope(), authn),
+        oldRequest.getResourceIds(), oldRequest.getRedirectUri(), oldRequest.getResponseTypes(),
+        oldRequest.getExtensions());
+    return new OAuth2Authentication(updatedRequest, authn.getUserAuthentication());
+  }
 }
