@@ -49,9 +49,6 @@ import org.mitre.openid.connect.service.impl.DefaultUserInfoService;
 import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.DummyResourceSetService;
 import org.mitre.openid.connect.service.impl.InMemoryClientLogoLoadingService;
-import org.mitre.openid.connect.service.impl.MITREidDataService_1_0;
-import org.mitre.openid.connect.service.impl.MITREidDataService_1_1;
-import org.mitre.openid.connect.service.impl.MITREidDataService_1_2;
 import org.mitre.openid.connect.service.impl.MatchLoginHintsAgainstUsers;
 import org.mitre.openid.connect.service.impl.UUIDPairwiseIdentiferService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
@@ -225,24 +222,6 @@ public class MitreServicesConfig {
 
     return new IamClientValidationService(registry, scopeService, validator, blacklistService,
         config, clientService);
-  }
-
-  @Bean
-  MITREidDataService_1_0 mitreDataService10() {
-
-    return new MITREidDataService_1_0();
-  }
-
-  @Bean
-  MITREidDataService_1_1 mitreDataService11() {
-
-    return new MITREidDataService_1_1();
-  }
-
-  @Bean
-  MITREidDataService_1_2 mitreDataService12() {
-
-    return new MITREidDataService_1_2();
   }
 
   @Bean

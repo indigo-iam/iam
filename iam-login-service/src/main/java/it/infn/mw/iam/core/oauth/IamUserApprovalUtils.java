@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -33,7 +34,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -47,8 +47,9 @@ public class IamUserApprovalUtils {
   private final UserInfoService userInfoService;
   private final JWTProfileResolver profileResolver;
 
-  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService, StatsService statsService,
-      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
+  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService,
+      StatsService statsService, UserInfoService userInfoService,
+      JWTProfileResolver profileResolver) {
     this.clock = clock;
     this.scopeService = scopeService;
     this.statsService = statsService;
@@ -56,20 +57,24 @@ public class IamUserApprovalUtils {
     this.profileResolver = profileResolver;
   }
 
-  public Set<String> sortScopes(Set<SystemScope> scopes) {
+  // public Set<SystemScope> sortScopes(Set<SystemScope> scopes) {
+  //
+  // Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
+  // Set<SystemScope> systemScopes = scopeService.getAllSorted();
+  //
+  // systemScopes.forEach(s -> {
+  // if (scopes.contains(s)) {
+  // sortedScopes.add(s);
+  // }
+  // });
+  //
+  // sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+  // return sortedScopes;
+  // }
 
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-    Set<SystemScope> systemScopes = scopeService.getAll();
+  public Set<String> sortScopes(Set<String> scopes) {
 
-    systemScopes.forEach(s -> {
-      if (scopes.contains(s)) {
-        sortedScopes.add(s);
-      }
-    });
-
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
-
-    return scopeService.toStrings(sortedScopes);
+    return scopes.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   public Map<String, Map<String, String>> claimsForScopes(Authentication authUser,

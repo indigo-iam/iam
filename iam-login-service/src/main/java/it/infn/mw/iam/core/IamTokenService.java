@@ -42,7 +42,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -375,10 +374,10 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
   private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
 
-    Set<String> filteredScopes = scopeFilter.filterScopes(request.getScope(), authentication);
-    Set<SystemScope> scopes = scopeService.fromStrings(filteredScopes);
-    scopes = scopeService.removeReservedScopes(scopes);
-    return scopeService.toStrings(scopes);
+    if (scopeService.hasReserved(request.getScope())) {
+      throw new InvalidScopeException("Invalid reserved scope requested");
+    }
+    return scopeFilter.filterScopes(request.getScope(), authentication);
   }
 
   private void handleCodeChallenge(OAuth2Request request) {
@@ -559,37 +558,30 @@ public class IamTokenService implements OAuth2TokenEntityService {
   private Set<String> computeRefreshedScopes(TokenRequest authRequest,
       AuthenticationHolderEntity authHolder, Optional<IamAccount> account) {
 
-    /* load reserved scopes from database */
-    Set<String> reservedScopes = scopeService.toStrings(scopeService.getReserved());
-    /* retrieve authorized scopes from refresh token */
     Set<String> authorizedScopes =
         Sets.newHashSet(authHolder.getAuthentication().getOAuth2Request().getScope());
-    authorizedScopes.removeAll(reservedScopes);
-    /* get current requested scopes, if present */
-    Set<String> requestedScopes = new HashSet<>();
-    if (authRequest.getScope() != null) {
-      requestedScopes.addAll(authRequest.getScope());
-    }
-    requestedScopes.removeAll(reservedScopes);
-
-    /* compute scopes to be filtered */
     Set<String> scopesToFilter = new HashSet<>();
-    if (requestedScopes.isEmpty()) {
+    if (authRequest.getScope() == null || authRequest.getScope().isEmpty()) {
       scopesToFilter.addAll(authorizedScopes);
     } else {
-      /* Check for up-scoping */
-      if (!scopeService.scopesMatch(authorizedScopes, requestedScopes)) {
-        String errorMsg = "Up-scoping is not allowed.";
-        LOG.error(errorMsg);
-        throw new InvalidScopeException(errorMsg);
+      if (scopeService.hasReserved(authRequest.getScope())) {
+        throw new InvalidScopeException("Invalid reserved scope requested");
       }
-      scopesToFilter.addAll(requestedScopes);
+      scopesToFilter.addAll(authRequest.getScope()); 
     }
-
+    /* Check for up-scoping */
+    if (!scopeService.scopesMatch(authorizedScopes, scopesToFilter)) {
+      String errorMsg = "Up-scoping is not allowed.";
+      LOG.error(errorMsg);
+      throw new InvalidScopeException(errorMsg);
+    }
+    Set<String> filteredScopes = new HashSet<>();
     if (account.isPresent()) {
-      return scopeFilter.filterScopes(scopesToFilter, account.get());
+      filteredScopes.addAll(scopeFilter.filterScopes(scopesToFilter, account.get()));
+    } else {
+      filteredScopes.addAll(scopeFilter.filterScopes(scopesToFilter, authHolder.getAuthentication()));
     }
-    return scopeFilter.filterScopes(authHolder).getScope();
+    return filteredScopes;
   }
 
   @Override

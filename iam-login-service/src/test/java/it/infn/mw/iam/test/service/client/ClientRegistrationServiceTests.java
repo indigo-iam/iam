@@ -459,33 +459,33 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   @Test
   void testReservedScopesAreFilteredOut() {
 
-    scopeService.getReserved().forEach(ss -> {
-      final String reservedScope = ss.getValue();
-      RegisteredClientDTO request = new RegisteredClientDTO();
-      request.setClientName("example");
-      request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
-      request.setRedirectUris(Set.of("https://example/cb"));
-      request.setScope(Set.of(reservedScope, "openid"));
+    Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE, SystemScopeService.RESOURCE_TOKEN_SCOPE)
+      .forEach(reservedScope -> {
+        RegisteredClientDTO request = new RegisteredClientDTO();
+        request.setClientName("example");
+        request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+        request.setRedirectUris(Set.of("https://example/cb"));
+        request.setScope(Set.of(reservedScope, "openid"));
 
-      RegisteredClientDTO response = null;
-      try {
-        response = service.registerClient(request, userAuth);
-      } catch (ParseException e) {
-        fail("Unexpected JSON mapping problem");
-      }
+        RegisteredClientDTO response = null;
+        try {
+          response = service.registerClient(request, userAuth);
+        } catch (ParseException e) {
+          fail("Unexpected JSON mapping problem");
+        }
 
-      assertThat(response.getScope(), hasItem("openid"));
-      assertThat(response.getScope(), not(hasItem(reservedScope)));
+        assertThat(response.getScope(), hasItem("openid"));
+        assertThat(response.getScope(), not(hasItem(reservedScope)));
 
-      response.getScope().add(reservedScope);
-      try {
-        response = service.updateClient(response.getClientId(), response, userAuth);
-      } catch (ParseException e) {
-        fail("Unexpected JSON mapping problem");
-      }
-      assertThat(response.getScope(), not(hasItem(reservedScope)));
+        response.getScope().add(reservedScope);
+        try {
+          response = service.updateClient(response.getClientId(), response, userAuth);
+        } catch (ParseException e) {
+          fail("Unexpected JSON mapping problem");
+        }
+        assertThat(response.getScope(), not(hasItem(reservedScope)));
 
-    });
+      });
   }
 
   @Test

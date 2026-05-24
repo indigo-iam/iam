@@ -35,7 +35,6 @@ import org.mitre.openid.connect.repository.impl.JpaApprovedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaBlacklistedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaPairwiseIdentifierRepository;
 import org.mitre.openid.connect.repository.impl.JpaWhitelistedSiteRepository;
-import org.mitre.openid.connect.service.impl.MITREidDataService_1_3;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -110,10 +109,5 @@ public class MitreRepositoryConfig {
   @Bean
   DeviceCodeRepository deviceCodeRepository() {
     return new JpaDeviceCodeRepository();
-  }
-  
-  @Bean
-  MITREidDataService_1_3 dataService13() {
-    return new MITREidDataService_1_3();
   }
 }

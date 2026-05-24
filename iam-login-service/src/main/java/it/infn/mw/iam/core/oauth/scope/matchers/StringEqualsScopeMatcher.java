@@ -32,6 +32,11 @@ public class StringEqualsScopeMatcher implements ScopeMatcher {
   }
 
   @Override
+  public String toString() {
+    return String.format("%s", expectedValue);
+  }
+
+  @Override
   @Generated("eclipse")
   public int hashCode() {
     final int prime = 31;

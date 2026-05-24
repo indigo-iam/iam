@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 
 import org.h2.server.web.WebServlet;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -318,11 +317,9 @@ public class IamConfig {
   }
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
-      SystemScopeRepository scopeRepo) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
-        scopeRepo);
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties));
   }
 
   @Bean

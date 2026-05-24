@@ -5,7 +5,12 @@ INSERT INTO system_scope(scope, description, icon, restricted, default_scope, st
   ('storage.modify:/', 'Grants modify privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
   ('storage.stage:/', 'Grants recall privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
   ('storage.create:/', 'Grants creation privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
-  ('wlcg.groups', 'WLCG groups', null, false, false, true, 'Group parametric scope');
+  ('wlcg.groups', 'WLCG groups', null, false, false, true, 'Group parametric scope'),
+  ('wlcg','WLCG scope', null, false, false, false, null),
+  ('read-tasks','read tasks scope', null, false, false, false, null),
+  ('write-tasks','write tasks scope', null, false, false, false, null),
+  ('voperson_scoped_affiliation','VOPerson scoped affiliation scope', null, false, false, false, null),
+  ('attr','attr scope', null, false, false, false, null);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,

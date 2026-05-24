@@ -182,7 +182,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void cleanupRequestedScopesOnUpdate(RegisteredClientDTO request,
       Authentication authentication, ClientDetailsEntity oldClient) {
 
-    systemScopeService.getReserved().forEach(s -> request.getScope().remove(s.getValue()));
+    request.getScope().remove(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+    request.getScope().remove(SystemScopeService.RESOURCE_TOKEN_SCOPE);
 
     if (!accountUtils.isAdmin(authentication)) {
       Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
@@ -216,7 +217,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   }
 
   private void removeCustomScopes(ClientDetailsEntity entity) {
-    Set<ScopeMatcher> matchers = systemScopeService.getAll()
+    Set<ScopeMatcher> matchers = systemScopeService.getAllSorted()
       .stream()
       .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
       .collect(toSet());
@@ -234,7 +235,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (entity.getScope().isEmpty()) {
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
-      systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
+      entity.getScope().remove(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+      entity.getScope().remove(SystemScopeService.RESOURCE_TOKEN_SCOPE);
       if (registrationProperties.isAdminOnlyCustomScopes()
           && !accountUtils.isAdmin(authentication)) {
         removeCustomScopes(entity);

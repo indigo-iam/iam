@@ -16,6 +16,7 @@
 package it.infn.mw.iam.persistence.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,13 +24,13 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface IamScopeRepository extends JpaRepository<SystemScope, Long>{
 
-  List<SystemScope> findByValue(String value);
+  Optional<SystemScope> findByValue(String value);
 
-  List<SystemScope> findByDefaultScopeTrue();
+  List<SystemScope> findByIsDefaultScopeTrue();
 
-  List<SystemScope> findByRestrictedTrue();
+  List<SystemScope> findByIsRestrictedTrue();
 
-  List<SystemScope> findByRestrictedFalse();
+  List<SystemScope> findByIsRestrictedFalse();
 
   @Query("""
       SELECT s
@@ -41,7 +42,7 @@ public interface IamScopeRepository extends JpaRepository<SystemScope, Long>{
   @Query("""
       SELECT s
       FROM SystemScope s
-      WHERE s.restricted = true
+      WHERE s.isRestricted = true
         AND s.value IN ('registration-token', 'resource-token')
   """)
   List<SystemScope> findRestrictedAndReservedScopes();

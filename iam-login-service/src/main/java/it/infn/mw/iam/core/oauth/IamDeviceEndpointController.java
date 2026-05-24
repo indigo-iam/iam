@@ -20,11 +20,9 @@ import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
@@ -47,7 +45,6 @@ import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.token.DeviceTokenGranter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
@@ -71,12 +68,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Controller
 public class IamDeviceEndpointController {
+
+  public static final String DEVICE_CODE_URL = "devicecode";
+  public static final String USER_CODE_URL = "device";
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
@@ -222,9 +223,9 @@ public class IamDeviceEndpointController {
 
     model.put("client", client);
 
-    Set<String> sortedAndFilteredScopes = userApprovalUtils.sortScopes(
-        scopeService.fromStrings(scopeFilter.filterScopes(authorizationRequest.getScope(), authn)));
-    dc.setScope(sortedAndFilteredScopes);
+    Set<String> sortedAndFilteredScopes = userApprovalUtils
+      .sortScopes(scopeFilter.filterScopes(authorizationRequest.getScope(), authn));
+    dc.setScopes(sortedAndFilteredScopes);
     deviceCodeRepository.save(dc);
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
@@ -292,15 +293,15 @@ public class IamDeviceEndpointController {
   private void checkAuthzGrant(ClientDetailsEntity client) {
     Collection<String> authorizedGrantTypes = client.getAuthorizedGrantTypes();
     if (authorizedGrantTypes != null && !authorizedGrantTypes.isEmpty()
-        && !authorizedGrantTypes.contains(DeviceTokenGranter.GRANT_TYPE)) {
-      throw new InvalidClientException("Unauthorized grant type: " + DeviceTokenGranter.GRANT_TYPE);
+        && !authorizedGrantTypes.contains(IamDeviceCodeTokenGranter.GRANT_TYPE)) {
+      throw new InvalidClientException("Unauthorized grant type: " + IamDeviceCodeTokenGranter.GRANT_TYPE);
     }
   }
 
   private void setModelForConsentPage(ModelMap model, Authentication authn, DeviceCode dc,
       ClientDetailsEntity client) {
 
-    Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
+    Set<SystemScope> scopes = scopeService.fromStrings(dc.getScopes());
 
     model.put("dc", dc);
     model.put("scopes", scopes);
@@ -317,7 +318,7 @@ public class IamDeviceEndpointController {
     }
 
     // just for tests validation
-    model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));
+    model.put("scope", OAuth2Utils.formatParameterList(dc.getScopes()));
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,

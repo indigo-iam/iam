@@ -260,16 +260,13 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.refresh_token").exists())
-      .andExpect(jsonPath("$.scope").exists())
-      .andExpect(jsonPath("$.scope", containsString("openid")))
-      .andExpect(jsonPath("$.scope", containsString("profile")))
-      .andExpect(jsonPath("$.scope", containsString("offline_access")))
-      .andExpect(jsonPath("$.scope", containsString("storage.read:/path")))
       .andReturn()
       .getResponse()
       .getContentAsString();
 
     String refreshToken = mapper.readTree(tokenResponse).get("refresh_token").asText();
+    String accessToken = mapper.readTree(tokenResponse).get("access_token").asText();
+    checkAccessTokenScopes(accessToken, Set.of("openid", "profile", "offline_access", "storage.read:/path"));
 
     tokenResponse = mvc
       .perform(post("/token").param("grant_type", "refresh_token")
@@ -281,15 +278,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getResponse()
       .getContentAsString();
 
-    String accessToken = mapper.readTree(tokenResponse).get("access_token").asText();
-
-    JWT token = JWTParser.parse(accessToken);
-    JWTClaimsSet claims = token.getJWTClaimsSet();
-
-    assertTrue(claims.getStringClaim("scope").contains("openid"));
-    assertTrue(claims.getStringClaim("scope").contains("profile"));
-    assertTrue(claims.getStringClaim("scope").contains("offline_access"));
-    assertTrue(claims.getStringClaim("scope").contains("storage.read:/path"));
+    accessToken = mapper.readTree(tokenResponse).get("access_token").asText();
+    checkAccessTokenScopes(accessToken, Set.of("openid", "profile", "offline_access", "storage.read:/path"));
 
     mvc
       .perform(post("/token").param("grant_type", "refresh_token")
@@ -360,7 +350,7 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").param("username", testAccount.getUsername())
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -404,7 +394,6 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
     List<String> scopes =
         Arrays.asList(mapper.readTree(tokenResponse).get("scope").asText().split(" "));
     assertTrue(scopes.contains("openid"));
-    assertTrue(scopes.contains("openid"));
     assertTrue(scopes.contains("profile"));
     assertTrue(scopes.contains("offline_access"));
     assertFalse(scopes.contains("storage.read:/"));
@@ -427,7 +416,6 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     scopes = Arrays.asList(claims.getStringClaim("scope").split(" "));
-    assertTrue(scopes.contains("openid"));
     assertTrue(scopes.contains("openid"));
     assertTrue(scopes.contains("profile"));
     assertTrue(scopes.contains("offline_access"));
@@ -703,7 +691,6 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(jsonPath("$.error_description", equalTo("Up-scoping is not allowed.")));
 
     scopePolicyRepo.delete(up);
-
   }
 
 }

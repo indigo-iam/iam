@@ -78,7 +78,7 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
     }
 
     // inherit the (approved) scopes from the original request
-    tokenRequest.setScope(dc.getScope());
+    tokenRequest.setScope(dc.getScopes());
 
     OAuth2Authentication auth =
         new OAuth2Authentication(getRequestFactory().createOAuth2Request(client, tokenRequest),

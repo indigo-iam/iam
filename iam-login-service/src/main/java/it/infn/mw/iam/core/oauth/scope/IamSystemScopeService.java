@@ -19,12 +19,14 @@ import static java.util.stream.Collectors.toSet;
 
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,8 +46,8 @@ public class IamSystemScopeService implements SystemScopeService {
     if (scopeStr == null || scopeStr.isBlank()) {
       return null;
     }
-    SystemScope scopeFromDatabase = getByValue(scopeStr);
-    return scopeFromDatabase == null ? new SystemScope(scopeStr) : scopeFromDatabase;
+    Optional<SystemScope> scopeFromDatabase = getByValue(scopeStr);
+    return scopeFromDatabase.isEmpty() ? new SystemScope(scopeStr) : scopeFromDatabase.get();
   };
 
   private Function<SystemScope, String> systemScopeToString = scope -> {
@@ -73,38 +75,41 @@ public class IamSystemScopeService implements SystemScopeService {
   }
 
   @Override
-  public Set<SystemScope> getAll() {
-    return scopeRepository.findAll().stream().collect(Collectors.toSet());
+  public Set<SystemScope> getAllSorted() {
+    return scopeRepository.findAll(Sort.by("value")).stream().collect(Collectors.toSet());
   }
 
   @Override
   public Set<SystemScope> getDefaults() {
-    return scopeRepository.findByDefaultScopeTrue().stream().collect(Collectors.toSet());
-  }
-
-  @Override
-  public Set<SystemScope> getReserved() {
-    return scopeRepository.findReservedScopes().stream().collect(Collectors.toSet());
+    return scopeRepository.findByIsDefaultScopeTrue().stream().collect(Collectors.toSet());
   }
 
   @Override
   public Set<SystemScope> getRestricted() {
-    return scopeRepository.findByRestrictedTrue().stream().collect(Collectors.toSet());
+    return scopeRepository.findByIsRestrictedTrue().stream().collect(Collectors.toSet());
   }
 
   @Override
   public Set<SystemScope> getUnrestricted() {
-    return scopeRepository.findByRestrictedFalse().stream().collect(Collectors.toSet());
+    return scopeRepository.findByIsRestrictedFalse().stream().collect(Collectors.toSet());
   }
 
   @Override
-  public SystemScope getById(Long id) {
-    return scopeRepository.findById(id).orElseThrow(this::notFound);
+  public Optional<SystemScope> getById(Long id) {
+    return scopeRepository.findById(id);
   }
 
   @Override
-  public SystemScope getByValue(String value) {
-    return scopeRepository.findByValue(value).stream().findFirst().orElseThrow(this::notFound);
+  public Optional<SystemScope> getByValue(String value) {
+    if (!value.contains(":")) {
+      return scopeRepository.findByValue(value);
+    }
+    String prefix = value.split(":")[0];
+    Optional<SystemScope> scopeByPrefix = scopeRepository.findByValue(prefix);
+    if (scopeByPrefix.isPresent()) {
+      return scopeByPrefix;
+    }
+    return scopeRepository.findByValue(prefix + ":/");
   }
 
   @Override
@@ -147,21 +152,23 @@ public class IamSystemScopeService implements SystemScopeService {
   @Override
   public Set<SystemScope> removeRestrictedAndReservedScopes(Set<SystemScope> scopes) {
     return scopes.stream()
-      .filter(s -> !s.isRestricted() && !isReserved(s))
+      .filter(s -> !s.isRestricted() && !isReserved(s.getValue()))
       .collect(Collectors.toSet());
   }
 
+//  @Override
+//  public Set<String> removeReservedScopes(Set<String> scopes) {
+//    return scopes.stream().filter(s -> !isReserved(s)).collect(Collectors.toSet());
+//  }
+
   @Override
-  public Set<SystemScope> removeReservedScopes(Set<SystemScope> scopes) {
-    return scopes.stream().filter(s -> !isReserved(s)).collect(Collectors.toSet());
+  public boolean isReserved(String scope) {
+    return RESERVED_VALUES.contains(scope);
   }
 
-  private boolean isReserved(SystemScope scope) {
-    return RESERVED_VALUES.contains(scope.getValue());
-  }
-
-  private ResponseStatusException notFound() {
-    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Scope value not found");
+  @Override
+  public boolean hasReserved(Set<String> scopes) {
+    return scopes.stream().anyMatch(this::isReserved);
   }
 
   private ResponseStatusException invalidScopeValue() {

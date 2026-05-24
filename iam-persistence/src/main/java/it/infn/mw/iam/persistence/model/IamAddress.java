@@ -27,38 +27,38 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name="iam_address")
-public class IamAddress  implements Serializable{
-  
+@Table(name = "iam_address")
+public class IamAddress implements Serializable {
+
   private static final long serialVersionUID = 1L;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  
-  @OneToOne(mappedBy="address")
+
+  @OneToOne(mappedBy = "address")
   private IamUserInfo userInfo;
-  
+
   @Column(length = 128)
   private String formatted;
-  
-  @Column(name="streetaddress", length = 128)
+
+  @Column(name = "streetaddress", length = 128)
   private String streetAddress;
-  
+
   @Column(length = 128)
   private String locality;
-  
+
   @Column(length = 128)
   private String region;
-  
-  @Column(name="postalcode", length = 16)
+
+  @Column(name = "postalcode", length = 16)
   private String postalCode;
-  
+
   @Column(length = 2)
   private String country;
-  
+
   public IamAddress() {
-    // empty ctor
+    // empty constructor
   }
 
   public Long getId() {
@@ -181,5 +181,5 @@ public class IamAddress  implements Serializable{
       return false;
     return true;
   }
-  
+
 }

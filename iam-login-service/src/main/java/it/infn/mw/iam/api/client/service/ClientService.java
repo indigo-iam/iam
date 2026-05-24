@@ -50,4 +50,5 @@ public interface ClientService {
   void deleteClient(ClientDetailsEntity client);
 
   void useClient(ClientDetailsEntity client);
+
 }

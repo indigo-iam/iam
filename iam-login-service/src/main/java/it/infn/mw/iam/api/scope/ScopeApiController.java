@@ -16,10 +16,12 @@
 package it.infn.mw.iam.api.scope;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping(value = {"/api/scopes", "/iam/api/scopes"})
@@ -47,7 +50,7 @@ public class ScopeApiController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public List<SystemScopeDto> getAllScopes() {
-    return scopeService.getAll()
+    return scopeService.getAllSorted()
       .stream()
       .map(scopeConverter::dtoFromEntity)
       .collect(Collectors.toList());
@@ -75,13 +78,23 @@ public class ScopeApiController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
   public SystemScopeDto getById(@PathVariable Long id) {
-    SystemScope entity = scopeService.getById(id);
-    return scopeConverter.dtoFromEntity(entity);
+    Optional<SystemScope> scope = scopeService.getById(id);
+    if (scope.isEmpty()) {
+      throw notFound();
+    }
+    return scopeConverter.dtoFromEntity(scope.get());
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
   @DeleteMapping(value = "/{id}")
   public void deleteScope(@PathVariable Long id) {
-    scopeService.remove(scopeService.getById(id));
+    Optional<SystemScope> scope = scopeService.getById(id);
+    if (scope.isPresent()) {
+      scopeService.remove(scope.get());
+    }
+  }
+
+  private ResponseStatusException notFound() {
+    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Scope value not found");
   }
 }

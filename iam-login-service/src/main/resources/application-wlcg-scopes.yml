@@ -16,30 +16,6 @@
 
 scope:
   matchers:
-  - name: storage.read
-    type: path
-    prefix: storage.read
-    path: /
-  - name: storage.write
-    type: path
-    prefix: storage.write
-    path: /
-  - name: storage.modify
-    type: path
-    prefix: storage.modify
-    path: /
-  - name: storage.create
-    type: path
-    prefix: storage.create
-    path: /
-  - name: storage.stage
-    type: path
-    prefix: storage.stage
-    path: /
-  - name: storage.poll
-    type: path
-    prefix: storage.poll
-    path: /
   - name: wlcg.groups
     type: regexp
     regexp: ^wlcg\.groups(?::((?:\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$

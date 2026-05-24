@@ -70,8 +70,9 @@ public class IamOAuthConfirmationController {
 
   private IamUserApprovalUtils userApprovalUtils;
 
-  public IamOAuthConfirmationController(IamClientRepository clientRepository, SystemScopeService scopeService,
-      RedirectResolver redirectResolver, IamUserApprovalUtils userApprovalUtils) {
+  public IamOAuthConfirmationController(IamClientRepository clientRepository,
+      SystemScopeService scopeService, RedirectResolver redirectResolver,
+      IamUserApprovalUtils userApprovalUtils) {
 
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
@@ -126,9 +127,8 @@ public class IamOAuthConfirmationController {
     // the authorization request already contains PDP filtered
     // scopes among the request parameters due to the
     // IamOAuth2RequestFactory.createAuthorizationRequest() object
-    Set<String> scopes =
-        OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope"));
-    scopes = userApprovalUtils.sortScopes(scopeService.fromStrings(scopes));
+    Set<String> scopes = userApprovalUtils
+      .sortScopes(OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope")));
 
     authRequest.setScope(scopes);
 
@@ -153,10 +153,9 @@ public class IamOAuthConfirmationController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
 
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
-    
+
     if (authRequest.getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources",
-          splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
+      model.put("resources", splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
     }
 
   }

@@ -20,6 +20,16 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.DeviceCode;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.openid.connect.model.ApprovedSite;
+import org.mitre.openid.connect.model.BlacklistedSite;
+import org.mitre.openid.connect.model.WhitelistedSite;
+import org.mitre.uma.model.Permission;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
@@ -36,6 +46,37 @@ import org.springframework.orm.jpa.vendor.EclipseLinkJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.jta.JtaTransactionManager;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupKey;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamAddress;
+import it.infn.mw.iam.persistence.model.IamAttribute;
+import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
+import it.infn.mw.iam.persistence.model.IamAuthority;
+import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
+import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.model.IamExternalAuthenticationAttribute;
+import it.infn.mw.iam.persistence.model.IamExternalAuthenticationDetails;
+import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.model.IamLabel;
+import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
+import it.infn.mw.iam.persistence.model.IamOidcId;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.model.IamSamlId;
+import it.infn.mw.iam.persistence.model.IamScopeMatchingPolicy;
+import it.infn.mw.iam.persistence.model.IamScopePolicy;
+import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
+import it.infn.mw.iam.persistence.model.IamTokenExchangeScopePolicy;
+import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 
 @Configuration
 @EnableTransactionManagement
@@ -89,34 +130,73 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   @Override
   public LocalContainerEntityManagerFactoryBean entityManagerFactory(
-
       final EntityManagerFactoryBuilder factoryBuilder) {
 
-    return factoryBuilder.dataSource(dataSource)
-      .packages("org.mitre", "it.infn.mw.iam.persistence")
-      .persistenceUnit("defaultPersistenceUnit")
-      .properties(getVendorProperties())
-      .build();
-
+    return factoryBuilder
+        .dataSource(dataSource)
+        .persistenceUnit("defaultPersistenceUnit")
+        .properties(getVendorProperties())
+        .packages(
+        ApprovedSite.class,
+        AuthenticationHolderEntity.class,
+        BlacklistedSite.class,
+        ClientDetailsEntity.class,
+        DeviceCode.class,
+        OAuth2AccessTokenEntity.class,
+        OAuth2RefreshTokenEntity.class,
+        Permission.class,
+        SystemScope.class,
+        WhitelistedSite.class,
+        IamAccount.class,
+        IamAccountGroupKey.class,
+        IamAccountGroupMembership.class,
+        IamAddress.class,
+        IamAttribute.class,
+        IamAup.class,
+        IamAupSignature.class,
+        IamAuthority.class,
+        IamClientMatchingPolicy.class,
+        IamEmailNotification.class,
+        IamExternalAuthenticationAttribute.class,
+        IamExternalAuthenticationDetails.class,
+        IamGroup.class,
+        IamGroupRequest.class,
+        IamLabel.class,
+        IamNotificationReceiver.class,
+        IamOidcId.class,
+        IamRegistrationRequest.class,
+        IamRevokedAccessToken.class,
+        IamSamlId.class,
+        IamScopeMatchingPolicy.class,
+        IamScopePolicy.class,
+        IamSshKey.class,
+        IamTokenExchangePolicyEntity.class,
+        IamTokenExchangeScopePolicy.class,
+        IamTotpAdminKey.class,
+        IamTotpMfa.class,
+        IamUserInfo.class,
+        IamX509Certificate.class,
+        IamX509ProxyCertificate.class
+      ).build();
   }
 
   @Bean(name = {"defaultTransactionManager", "transactionManager"})
-  public PlatformTransactionManager defaultTransactionManager() {
+  PlatformTransactionManager defaultTransactionManager() {
 
     return new JpaTransactionManager();
   }
 
   @Bean
   @Profile("no-flyway")
-  public FlywayMigrationStrategy flywayMigrationStrategy() {
+  FlywayMigrationStrategy flywayMigrationStrategy() {
     return f -> {
-      //  empty on purpose
-    }; 
+      // empty on purpose
+    };
   }
 
   @Bean
   @Profile("flyway-repair")
-  public FlywayMigrationStrategy flywayRepairStrategy() {
+  FlywayMigrationStrategy flywayRepairStrategy() {
     return f -> {
       f.repair();
       f.migrate();
