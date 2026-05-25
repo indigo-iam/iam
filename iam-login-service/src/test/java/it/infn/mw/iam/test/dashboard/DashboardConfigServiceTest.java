@@ -111,7 +111,7 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void testInit() throws ParseException {
+  void testInit() {
     ClientDetailsEntity dashboard = setClientDashboard();
     when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(dashboard));
 

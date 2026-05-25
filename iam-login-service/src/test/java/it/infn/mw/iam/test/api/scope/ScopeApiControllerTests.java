@@ -126,7 +126,7 @@ class ScopeApiControllerTests {
 
   @Test
   @WithMockUser(roles = "ADMIN")
-  void createScopeShouldReturn400WhenValueIsReserved() throws Exception {
+  void createScopeShouldReturn400WhenValueIsReserved() {
 
     Set
       .of(IamSystemScopeService.REGISTRATION_TOKEN_SCOPE,
@@ -187,6 +187,8 @@ class ScopeApiControllerTests {
     mockMvc.perform(delete("/api/scopes/" + addedScope.getId())).andExpect(status().isOk());
 
     Assertions.assertTrue(scopeService.getById(addedScope.getId()).isEmpty());
+
+    mockMvc.perform(delete("/api/scopes/" + addedScope.getId())).andExpect(status().isOk());
   }
 
   @Test

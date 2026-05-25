@@ -108,6 +108,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -308,18 +309,21 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
-    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
+  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils,
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter =
+        new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
     FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
+      IamScopeRepository scopeRespository) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties));
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
+        scopeRespository);
   }
 
   @Bean
@@ -348,9 +352,7 @@ public class IamConfig {
 
   @Bean
   AuthorizationRequestFilter authorizationRequestFilter(AuthorizationClientResolver clientResolver,
-      LoginHintService loginHintService,
-      PromptService promptService,
-      MaxAgeService maxAgeService) {
+      LoginHintService loginHintService, PromptService promptService, MaxAgeService maxAgeService) {
     return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
         maxAgeService);
   }

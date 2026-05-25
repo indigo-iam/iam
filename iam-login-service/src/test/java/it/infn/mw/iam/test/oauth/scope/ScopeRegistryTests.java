@@ -57,57 +57,82 @@ class ScopeRegistryTests {
 
   @BeforeEach
   void setup() {
-    SystemScope testScope = new SystemScope("test:/whatever");
-    lenient().when(scopeRepo.findAll()).thenReturn(List.of(testScope));
+
+    SystemScope structuredTestScope = buildScope(1L, "test:/", false, false, true);
+    SystemScope openidScope = buildScope(2L, "openid", true, false, false);
+    SystemScope profileScope = buildScope(3L, "profile", false, false, false);
+    SystemScope testScope = buildScope(4L, "test", false, false, false);
+    lenient().when(scopeRepo.findAll())
+      .thenReturn(List.of(structuredTestScope, openidScope, profileScope, testScope));
+  }
+
+  private SystemScope buildScope(Long id, String value, boolean isDefault, boolean isRestricted,
+      boolean isStructured) {
+    SystemScope scope = new SystemScope();
+    scope.setId(id);
+    scope.setValue(value);
+    scope.setDefaultScope(isDefault);
+    scope.setRestricted(isRestricted);
+    scope.setStructured(isStructured);
+    return scope;
   }
 
   @Test
-  void testEmptyScopes() {
+  void testEmptyCustomScopeMatchers() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(emptySet());
+        new DefaultScopeMatcherRegistry(emptySet(), scopeRepo);
 
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
+    when(client.getScope()).thenReturn(Sets.newHashSet("openid", "test", "test:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));
-    assertThat(matchers, hasSize(2));
+    assertThat(matchers, hasSize(3));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
-    assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("test")));
+    assertThat(matchers, hasItem(structuredPathMatcher("test", "/whatever")));
   }
 
   @Test
-  void testNonMatchingScope() {
+  void testRegexpMatchingStructuredScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")));
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")), scopeRepo);
 
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
+    when(client.getScope()).thenReturn(Sets.newHashSet("test"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));
-    assertThat(matchers, hasSize(2));
-    assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
-    assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
+    assertThat(matchers, hasSize(1));
+    assertThat(matchers, hasItem(stringEqualsMatcher("test")));
+
+    when(client.getScope()).thenReturn(Sets.newHashSet("test:/path"));
+    matchers = matcherRegistry.findMatchersForClient(client);
+
+    assertThat(matchers, not(nullValue()));
+    assertThat(matchers, hasSize(1));
+    assertThat(matchers, hasItem(regexpMatcher("^test:/.*$")));
   }
 
   @Test
   void testMatchingScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")));
+        new DefaultScopeMatcherRegistry(emptySet(), scopeRepo);
 
-    when(client.getScope())
-      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
+    when(client.getScope()).thenReturn(
+        Sets.newHashSet("openid", "profile", "test", "test:/whatever", "unknown-structured:/whatever", "unknown-scope"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));
-    assertThat(matchers, hasSize(5));
+    assertThat(matchers, hasSize(6));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
     assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
     assertThat(matchers, hasItem(stringEqualsMatcher("test")));
-    assertThat(matchers, hasItem(regexpMatcher("^test:/.*$")));
-    assertThat(matchers, hasItem(structuredPathMatcher("storage.create","/whatever")));
+    assertThat(matchers, not(hasItem(regexpMatcher("^test:/.*$"))));
+    assertThat(matchers, hasItem(structuredPathMatcher("test", "/whatever")));
+    assertThat(matchers, hasItem(structuredPathMatcher("unknown-structured", "/whatever")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("unknown-scope")));
   }
 
 }

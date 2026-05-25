@@ -19,8 +19,11 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.mitre.oauth2.model.SystemScope;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
+
+import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SuppressWarnings("deprecation")
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
@@ -28,9 +31,12 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   public static final String SCOPE_CACHE_KEY = "scope-matcher";
 
   private final Set<ScopeMatcher> customMatchers;
+  private final IamScopeRepository scopeRepository;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers) {
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers,
+      IamScopeRepository scopeRepository) {
     this.customMatchers = customMatchers;
+    this.scopeRepository = scopeRepository;
   }
 
   @Override
@@ -47,15 +53,18 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
 
-    Optional<ScopeMatcher> customRegexpMatcher = customMatchers.stream()
-        .filter(RegexpScopeMatcher.class::isInstance)
-        .filter(m -> m.matches(scope))
-        .findFirst();
-    if (customRegexpMatcher.isPresent()) {
-      return customRegexpMatcher.get();
+    // Search for RegExp custom matchers
+    for (ScopeMatcher matcher : customMatchers) {
+      if (matcher instanceof RegexpScopeMatcher && matcher.matches(scope)) {
+        return matcher;
+      }
     }
     try {
-      return StructuredPathScopeMatcher.fromString(scope);
+      return scopeRepository.findByValue(scope)
+        .map(dbScope -> dbScope.isStructured() ? StructuredPathScopeMatcher.fromString(scope)
+            : StringEqualsScopeMatcher.stringEqualsMatcher(scope))
+        .orElseGet(() -> StructuredPathScopeMatcher.fromString(scope));
+
     } catch (Exception e) {
       return StringEqualsScopeMatcher.stringEqualsMatcher(scope);
     }
