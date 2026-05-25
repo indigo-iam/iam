@@ -81,7 +81,6 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
 
   @BeforeEach
   void setup() {
-
     lenient().when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
     lenient().when(accountService.createAccount(any())).thenAnswer(invocation -> {
       IamAccount account = (IamAccount) invocation.getArguments()[0];
@@ -110,7 +109,6 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
 
   @Test
   void testUnresolvedSamlIdSanityChecks() {
-
     UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
         () -> userDetailsService.loadUserBySAML(cred));
     assertThat(e.getMessage(),
@@ -216,6 +214,22 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
       .thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
+      .thenReturn(T1_GIVEN_NAME);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
+      .thenReturn(T1_SN);
+
+    User user = (User) userDetailsService.loadUserBySAML(cred);
+    assertThat(user.getUsername(), equalTo(T1_EPUID));
+  }
+
+  @Test
+  void testFriendlyAttributeAliasIsAccepted() {
+    lenient().when(resolver.resolveSamlUserIdentifier(cred))
+      .thenReturn(success(List.of(T1_SAML_ID)));
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+      .thenReturn(null);
+    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAlias())).thenReturn(T1_MAIL);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))

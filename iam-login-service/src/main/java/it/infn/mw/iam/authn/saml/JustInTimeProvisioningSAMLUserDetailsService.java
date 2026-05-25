@@ -43,13 +43,11 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetailsServiceSupport
     implements SAMLUserDetailsService {
 
-
   private final IamAccountRepository repo;
   private final IamAccountService accountService;
   private final Optional<Set<String>> trustedIdpEntityIds;
 
   private final MappingPropertiesResolver mappingResolver;
-
 
   public JustInTimeProvisioningSAMLUserDetailsService(SamlUserIdentifierResolver resolver,
       IamAccountService accountService, InactiveAccountAuthenticationHander inactiveAccountHandler,
@@ -76,14 +74,13 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
   protected void samlCredentialAttributesChecks(SAMLCredential credential,
       EnumSet<Saml2Attribute> requiredAttributes) {
     for (Saml2Attribute a : requiredAttributes) {
-      if (credential.getAttributeAsString(a.getAttributeName()) == null) {
+      if (getAttributeAsString(credential, a) == null) {
         throw new UsernameNotFoundException(String.format(
             "Error provisioning user! SAML credential is missing required attribute: %s (%s)",
             a.getAlias(), a.getAttributeName()));
       }
     }
   }
-
 
   private void safeSetUsername(IamAccount account, String username, String defaultUsername) {
     if (username.length() < 128) {
@@ -134,11 +131,15 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
     }
   }
 
-
   private String getAttributeAsString(SAMLCredential credential, Saml2Attribute attribute) {
-    return credential.getAttributeAsString(attribute.getAttributeName());
-  }
+    String value = credential.getAttributeAsString(attribute.getAttributeName());
 
+    if (value == null) {
+      value = credential.getAttributeAsString(attribute.getAlias());
+    }
+
+    return value;
+  }
 
   private IamAccount provisionAccount(SAMLCredential credential, IamSamlId samlId) {
 
