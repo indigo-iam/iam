@@ -122,7 +122,7 @@ public class IamSystemScopeService implements SystemScopeService {
     if (RESERVED_VALUES.contains(scope.getValue())) {
       throw invalidScopeValue();
     }
-    return scopeRepository.save(scope);
+    return scopeRepository.saveAndFlush(scope);
   }
 
   @Override
