@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
 
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
@@ -529,7 +531,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     request.setRedirectUris(Set.of("https://example/cb"));
     request.setScope(Set.of("customscope", "openid"));
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
 
@@ -554,7 +557,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     request.setRedirectUris(Set.of("https://example/cb"));
     request.setScope(Set.of("customscope", "openid"));
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
 
@@ -574,7 +578,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertNotNull(registrationProperties);
     registrationProperties.setAdminOnlyCustomScopes(true);
     assertTrue(registrationProperties.isAdminOnlyCustomScopes());
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
 
@@ -600,7 +605,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertNotNull(registrationProperties);
     registrationProperties.setAdminOnlyCustomScopes(false);
     assertFalse(registrationProperties.isAdminOnlyCustomScopes());
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     assertFalse(defaultScopes.contains("customscope"));
     assertTrue(defaultScopes.contains("openid"));
 
@@ -631,7 +637,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setClientName("example");
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     request.setRedirectUris(Set.of("https://example/cb"));
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
@@ -664,7 +671,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setClientName("example");
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     request.setRedirectUris(new HashSet<>(Set.of("https://example/cb")));
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     Set<String> scopes = new HashSet<>(Set.of("openid"));
     assertTrue(defaultScopes.contains("openid"));
     request.setScope(scopes);
@@ -692,7 +700,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertNotNull(registrationProperties);
     registrationProperties.setAdminOnlyCustomScopes(true);
     assertTrue(registrationProperties.isAdminOnlyCustomScopes());
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -725,7 +734,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertNotNull(registrationProperties);
     registrationProperties.setAdminOnlyCustomScopes(false);
     assertFalse(registrationProperties.isAdminOnlyCustomScopes());
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
     assertFalse(defaultScopes.contains("customscope"));
 
     RegisteredClientDTO request = new RegisteredClientDTO();
@@ -795,7 +805,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   @Test
   void noScopeYeldsDefaultScopes() throws ParseException {
 
-    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> defaultScopes =
+        scopeService.getDefaults().stream().map(SystemScope::getValue).collect(Collectors.toSet());
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");

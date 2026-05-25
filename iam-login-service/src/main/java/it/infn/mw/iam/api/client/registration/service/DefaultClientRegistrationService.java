@@ -23,6 +23,8 @@ import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import static java.util.stream.Collectors.toSet;
 
 import javax.validation.constraints.NotBlank;
@@ -30,6 +32,7 @@ import javax.validation.constraints.NotBlank;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -233,7 +236,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void cleanupRequestedScopes(ClientDetailsEntity entity, Authentication authentication) {
 
     if (entity.getScope().isEmpty()) {
-      entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
+      entity.getScope()
+        .addAll(systemScopeService.getDefaults()
+          .stream()
+          .map(SystemScope::getValue)
+          .collect(Collectors.toSet()));
     } else {
       entity.getScope().remove(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
       entity.getScope().remove(SystemScopeService.RESOURCE_TOKEN_SCOPE);

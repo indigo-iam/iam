@@ -62,7 +62,6 @@
             defaultScope: false,
             structured: false,
             structuredParamDescription: null,
-            structuredValue: null
           };
           if ($scope.scopeCreationForm) {
             $scope.scopeCreationForm.$setPristine();
@@ -84,7 +83,6 @@
           newScope.defaultScope = self.scope.defaultScope;
           newScope.structured = self.scope.structured;
           newScope.structuredParamDescription = null;
-          newScope.structuredValue = null
 
           console.info("Adding scope ... ", newScope.value);
 
@@ -131,7 +129,6 @@
             defaultScope: self.scope.defaultScope,
             structured: self.scope.structured,
             structuredParamDescription: null,
-            structuredValue: null
           }
 
           console.info("Updating scope ... ", editedScope.value, editedScope);

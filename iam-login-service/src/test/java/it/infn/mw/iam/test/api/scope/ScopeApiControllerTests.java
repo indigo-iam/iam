@@ -101,8 +101,7 @@ class ScopeApiControllerTests {
   @WithMockUser(roles = "ADMIN")
   void createScope() throws Exception {
 
-    SystemScopeDto dto = new SystemScopeDto();
-    dto.setValue("scope.read");
+    SystemScopeDto dto = SystemScopeDto.builder().value("scope.read").build();
 
     mockMvc
       .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
@@ -112,11 +111,24 @@ class ScopeApiControllerTests {
   }
 
   @Test
+  @WithMockUser(roles = "ADMIN")
+  void createStructuredScope() throws Exception {
+
+    SystemScopeDto dto = SystemScopeDto.builder().value("prefix:/").structured(true).build();
+
+    mockMvc
+      .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(dto)))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.value").value("prefix:/"))
+      .andExpect(jsonPath("$.structured").value(true));
+  }
+
+  @Test
   @WithMockUser(roles = "USER")
   void createScopeShouldReturn403WhenUserIsNotAdmin() throws Exception {
 
-    SystemScopeDto dto = new SystemScopeDto();
-    dto.setValue("scope.read");
+    SystemScopeDto dto = SystemScopeDto.builder().value("scope.read").build();
 
     mockMvc
       .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
@@ -134,8 +146,8 @@ class ScopeApiControllerTests {
       .stream()
       .forEach(reservedScope -> {
 
-        SystemScopeDto dto = new SystemScopeDto();
-        dto.setValue(reservedScope);
+        SystemScopeDto dto = SystemScopeDto.builder().value(reservedScope).build();
+
         try {
           mockMvc
             .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
@@ -156,14 +168,15 @@ class ScopeApiControllerTests {
     newScope.setDefaultScope(false);
     newScope.setRestricted(false);
     newScope.setStructured(false);
-    SystemScope addedScope = scopeService.save(newScope);
+    SystemScope addedScope = scopeService.create(newScope);
 
-    SystemScopeDto dto = new SystemScopeDto();
-    dto.setId(addedScope.getId() + 10); // id should be ignored
-    dto.setValue(addedScope.getValue() + "-updated");
-    dto.setDescription("Brand new description");
-    dto.setDefaultScope(true);
-    dto.setRestricted(true);
+    SystemScopeDto dto = SystemScopeDto.builder()
+      .id(addedScope.getId() + 10) // id should be ignored
+      .value(addedScope.getValue() + "-updated")
+      .description("Brand new description")
+      .defaultScope(true)
+      .restricted(true)
+      .build();
 
     mockMvc
       .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
@@ -182,7 +195,7 @@ class ScopeApiControllerTests {
     newScope.setDefaultScope(false);
     newScope.setRestricted(false);
     newScope.setStructured(false);
-    SystemScope addedScope = scopeService.save(newScope);
+    SystemScope addedScope = scopeService.create(newScope);
 
     mockMvc.perform(delete("/api/scopes/" + addedScope.getId())).andExpect(status().isOk());
 

@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.StatsService;
@@ -42,16 +41,13 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 public class IamUserApprovalUtils {
 
   private final Clock clock;
-  private final SystemScopeService scopeService;
   private final StatsService statsService;
   private final UserInfoService userInfoService;
   private final JWTProfileResolver profileResolver;
 
-  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService,
-      StatsService statsService, UserInfoService userInfoService,
-      JWTProfileResolver profileResolver) {
+  public IamUserApprovalUtils(Clock clock, StatsService statsService,
+      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
     this.clock = clock;
-    this.scopeService = scopeService;
     this.statsService = statsService;
     this.userInfoService = userInfoService;
     this.profileResolver = profileResolver;
@@ -66,9 +62,9 @@ public class IamUserApprovalUtils {
       Set<SystemScope> scopes) {
 
     UserInfo user = userInfoService.getByUsername(authUser.getName());
-    ScopeClaimTranslationService scopeClaimTranslationService =
-        profileResolver.resolveProfile(scopeService.toStrings(scopes))
-          .getScopeClaimTranslationService();
+    ScopeClaimTranslationService scopeClaimTranslationService = profileResolver
+      .resolveProfile(scopes.stream().map(SystemScope::getValue).collect(Collectors.toSet()))
+      .getScopeClaimTranslationService();
 
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
     if (user != null) {

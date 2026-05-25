@@ -32,6 +32,7 @@ public class SystemScopeDtoConverter implements Converter<SystemScopeDto, System
     entity.setIcon(dto.getIcon());
     entity.setRestricted(dto.isRestricted());
     entity.setValue(dto.getValue());
+    entity.setStructured(dto.isStructured());
     return entity;
   }
 
@@ -44,6 +45,7 @@ public class SystemScopeDtoConverter implements Converter<SystemScopeDto, System
       .description(entity.getDescription())
       .icon(entity.getIcon())
       .restricted(entity.isRestricted())
+      .structured(entity.isStructured())
       .build();
   }
 

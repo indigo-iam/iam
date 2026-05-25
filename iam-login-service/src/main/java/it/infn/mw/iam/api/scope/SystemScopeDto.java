@@ -32,6 +32,8 @@ public class SystemScopeDto {
 
   private boolean restricted;
 
+  private boolean structured;
+
   public SystemScopeDto() {}
 
   private SystemScopeDto(Builder builder) {
@@ -41,54 +43,35 @@ public class SystemScopeDto {
     this.icon = builder.icon;
     this.defaultScope = builder.defaultScope;
     this.restricted = builder.restricted;
+    this.structured = builder.structured;
   }
 
   public Long getId() {
     return id;
   }
 
-  public void setId(Long id) {
-    this.id = id;
-  }
-
   public String getValue() {
     return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
   }
 
   public String getDescription() {
     return description;
   }
 
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
   public String getIcon() {
     return icon;
-  }
-
-  public void setIcon(String icon) {
-    this.icon = icon;
   }
 
   public boolean isDefaultScope() {
     return defaultScope;
   }
 
-  public void setDefaultScope(boolean defaultScope) {
-    this.defaultScope = defaultScope;
-  }
-
   public boolean isRestricted() {
     return restricted;
   }
 
-  public void setRestricted(boolean restricted) {
-    this.restricted = restricted;
+  public boolean isStructured() {
+    return structured;
   }
 
   public static Builder builder() {
@@ -103,6 +86,7 @@ public class SystemScopeDto {
     private String icon;
     private boolean defaultScope;
     private boolean restricted;
+    private boolean structured;
 
     public Builder id(Long id) {
       this.id = id;
@@ -131,6 +115,11 @@ public class SystemScopeDto {
 
     public Builder restricted(boolean restricted) {
       this.restricted = restricted;
+      return this;
+    }
+
+    public Builder structured(boolean structured) {
+      this.structured = structured;
       return this;
     }
 

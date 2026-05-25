@@ -57,6 +57,7 @@ import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.mitre.uma.service.ResourceSetService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
@@ -286,8 +287,8 @@ public class MitreServicesConfig {
 
   @Bean
   SystemScopeService defaultSystemScopeService(IamScopeRepository scopeRepository,
-      ScopeMatcherRegistry registry) {
-    return new IamSystemScopeService(scopeRepository, registry);
+      ScopeMatcherRegistry registry, ApplicationEventPublisher eventPublisher) {
+    return new IamSystemScopeService(scopeRepository, registry, eventPublisher);
   }
 
   @Bean

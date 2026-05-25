@@ -27,22 +27,38 @@
 		<table id="scope-table" class="table table-hover table-striped">
 			<thead>
 				<tr>
-					<th></th>
 					<th>Scope</th>
+					<th>Type</th>
 					<th>Description</th>
 					<th></th>
 				</tr>
 			</thead>
 			<tbody>
 				<tr ng-repeat="scope in $ctrl.scopes">
-					<td class="align-middle"><i class="fa fa-flag"
-						ng-if="scope.defaultScope == true"
-						title="This Scope is automatically assigned to newly registered clients."></i>
-						<i class="fa fa-ban" ng-if="scope.restricted == true"
-						title="This Scope can be used only by administrators. It is not available for dynamic registration."></i>
-						<i ng-if="scope.restricted != true && scope.defaultScope != true"></i></td>
-					<td class="align-middle"><a
-						class="label label-primary" style="cursor: default"><i class="fa fa-{{scope.icon}}"></i>&nbsp;{{scope.value}}</a>
+					<td class="align-left">
+						<a class="label label-primary" style="cursor: default">{{scope.value}}</a></td>
+					<td class="align-middle">
+						<a
+							class="label label-default"
+							style="cursor: default; margin-left: 4pt;"
+							ng-if="scope.defaultScope"
+							title="This scope is automatically assigned to newly registered clients.">
+						default
+						</a>
+						<a
+							class="label label-danger"
+							style="cursor: default; margin-left: 4pt;"
+							ng-if="scope.restricted"
+							title="This scope can be used only by administrators. It is not available for dynamic registration.">
+						restricted
+						</a>
+						<a
+							class="label label-warning"
+							style="cursor: default; margin-left: 4pt;"
+							ng-if="scope.structured"
+							title="This scope has a parametric path which follows the separator character ':'.">
+						parametric
+						</a>
 					</td>
 					<td class="align-middle"><small>{{scope.description}}</small>
 					</td>

@@ -22,9 +22,11 @@ import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
+import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.RevocationEndpoint;
@@ -138,7 +140,10 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   }
 
   protected void updateSupportedScopes() {
-    supportedScopes = systemScopeService.toStrings(systemScopeService.getUnrestricted());
+    supportedScopes = systemScopeService.getUnrestricted()
+      .stream()
+      .map(SystemScope::getValue)
+      .collect(Collectors.toSet());
   }
 
   private String buildEndpointUrl(String endpoint) {

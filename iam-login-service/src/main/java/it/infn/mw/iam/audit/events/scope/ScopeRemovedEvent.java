@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.scope;
 
-public enum IamEventCategory {
-  NONE,
-  ACCOUNT,
-  GROUP,
-  REGISTRATION,
-  AUTHENTICATION,
-  AUTHORIZATION,
-  SCOPE_POLICY,
-  AUP,
-  MEMBERSHIP,
-  CLIENT,
-  TOKEN,
-  SCOPE
+import org.mitre.oauth2.model.SystemScope;
+
+public class ScopeRemovedEvent extends ScopeEvent {
+
+  private static final long serialVersionUID = 4469452544575412615L;
+
+  public ScopeRemovedEvent(Object source, SystemScope scope, String message) {
+    super(source, scope, message);
+  }
+
 }

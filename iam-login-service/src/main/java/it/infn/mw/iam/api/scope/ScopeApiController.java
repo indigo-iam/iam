@@ -59,7 +59,7 @@ public class ScopeApiController {
   public SystemScopeDto create(@RequestBody SystemScopeDto dto) {
     SystemScope newScope = scopeConverter.entityFromDto(dto);
     newScope.setId(null);
-    return scopeConverter.dtoFromEntity(scopeService.save(newScope));
+    return scopeConverter.dtoFromEntity(scopeService.create(newScope));
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
@@ -68,7 +68,7 @@ public class ScopeApiController {
   public SystemScopeDto update(@PathVariable Long id, @RequestBody SystemScopeDto dto) {
     SystemScope newScope = scopeConverter.entityFromDto(dto);
     newScope.setId(id);
-    return scopeConverter.dtoFromEntity(scopeService.save(newScope));
+    return scopeConverter.dtoFromEntity(scopeService.update(newScope));
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
@@ -84,10 +84,7 @@ public class ScopeApiController {
   @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
   @DeleteMapping(value = "/{id}")
   public void deleteScope(@PathVariable Long id) {
-    Optional<SystemScope> scope = scopeService.getById(id);
-    if (scope.isPresent()) {
-      scopeService.remove(scope.get());
-    }
+    scopeService.remove(id);
   }
 
   private ResponseStatusException notFound() {
