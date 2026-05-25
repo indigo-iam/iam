@@ -50,9 +50,8 @@ public class IamSystemScopeService implements SystemScopeService {
     return scopeFromDatabase.isEmpty() ? new SystemScope(scopeStr) : scopeFromDatabase.get();
   };
 
-  private Function<SystemScope, String> systemScopeToString = scope -> {
-    return scope == null ? null : scope.getValue();
-  };
+  private Function<SystemScope, String> systemScopeToString =
+      scope -> scope == null ? null : scope.getValue();;
 
   public IamSystemScopeService(IamScopeRepository scopeRepository,
       ScopeMatcherRegistry matcherRegistry) {
@@ -155,11 +154,6 @@ public class IamSystemScopeService implements SystemScopeService {
       .filter(s -> !s.isRestricted() && !isReserved(s.getValue()))
       .collect(Collectors.toSet());
   }
-
-//  @Override
-//  public Set<String> removeReservedScopes(Set<String> scopes) {
-//    return scopes.stream().filter(s -> !isReserved(s)).collect(Collectors.toSet());
-//  }
 
   @Override
   public boolean isReserved(String scope) {

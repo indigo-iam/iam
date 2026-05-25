@@ -57,21 +57,6 @@ public class IamUserApprovalUtils {
     this.profileResolver = profileResolver;
   }
 
-  // public Set<SystemScope> sortScopes(Set<SystemScope> scopes) {
-  //
-  // Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-  // Set<SystemScope> systemScopes = scopeService.getAllSorted();
-  //
-  // systemScopes.forEach(s -> {
-  // if (scopes.contains(s)) {
-  // sortedScopes.add(s);
-  // }
-  // });
-  //
-  // sortedScopes.addAll(Sets.difference(scopes, systemScopes));
-  // return sortedScopes;
-  // }
-
   public Set<String> sortScopes(Set<String> scopes) {
 
     return scopes.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));

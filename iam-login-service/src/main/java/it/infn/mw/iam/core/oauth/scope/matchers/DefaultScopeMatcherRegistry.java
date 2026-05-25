@@ -48,7 +48,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   public ScopeMatcher findMatcherForScope(String scope) {
 
     Optional<ScopeMatcher> customRegexpMatcher = customMatchers.stream()
-        .filter(m -> m instanceof RegexpScopeMatcher)
+        .filter(RegexpScopeMatcher.class::isInstance)
         .filter(m -> m.matches(scope))
         .findFirst();
     if (customRegexpMatcher.isPresent()) {
@@ -56,9 +56,8 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
     }
     try {
       return StructuredPathScopeMatcher.fromString(scope);
-    } catch (Throwable e) {
-      // skip
+    } catch (Exception e) {
+      return StringEqualsScopeMatcher.stringEqualsMatcher(scope);
     }
-    return StringEqualsScopeMatcher.stringEqualsMatcher(scope);
   }
 }

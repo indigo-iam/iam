@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.scope;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -50,10 +49,7 @@ public class ScopeApiController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public List<SystemScopeDto> getAllScopes() {
-    return scopeService.getAllSorted()
-      .stream()
-      .map(scopeConverter::dtoFromEntity)
-      .collect(Collectors.toList());
+    return scopeService.getAllSorted().stream().map(scopeConverter::dtoFromEntity).toList();
   }
 
   /* hasRole('ROLE_ADMIN') used to be backward compatible with MitreID Scope API */

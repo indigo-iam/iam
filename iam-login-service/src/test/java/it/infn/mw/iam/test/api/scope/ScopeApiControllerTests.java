@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.scope;
 
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scope.SystemScopeDto;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
@@ -123,6 +126,29 @@ class ScopeApiControllerTests {
 
   @Test
   @WithMockUser(roles = "ADMIN")
+  void createScopeShouldReturn400WhenValueIsReserved() throws Exception {
+
+    Set
+      .of(IamSystemScopeService.REGISTRATION_TOKEN_SCOPE,
+          IamSystemScopeService.RESOURCE_TOKEN_SCOPE)
+      .stream()
+      .forEach(reservedScope -> {
+
+        SystemScopeDto dto = new SystemScopeDto();
+        dto.setValue(reservedScope);
+        try {
+          mockMvc
+            .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(dto)))
+            .andExpect(status().isBadRequest());
+        } catch (Exception e) {
+          fail("Exception was not expected: " + e.getMessage());
+        }
+      });
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
   void updateScope() throws Exception {
 
     SystemScope newScope = new SystemScope();
@@ -169,5 +195,5 @@ class ScopeApiControllerTests {
     mockMvc.perform(get("/api/scopes")).andExpect(status().isUnauthorized());
   }
 
-  
+
 }
