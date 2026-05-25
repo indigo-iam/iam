@@ -53,7 +53,7 @@ public class ScopeApiController {
   }
 
   /* hasRole('ROLE_ADMIN') used to be backward compatible with MitreID Scope API */
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SystemScopeDto create(@RequestBody SystemScopeDto dto) {
@@ -62,7 +62,7 @@ public class ScopeApiController {
     return scopeConverter.dtoFromEntity(scopeService.create(newScope));
   }
 
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @PutMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SystemScopeDto update(@PathVariable Long id, @RequestBody SystemScopeDto dto) {
@@ -81,7 +81,7 @@ public class ScopeApiController {
     return scopeConverter.dtoFromEntity(scope.get());
   }
 
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or hasRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @DeleteMapping(value = "/{id}")
   public void deleteScope(@PathVariable Long id) {
     scopeService.remove(id);
