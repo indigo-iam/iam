@@ -131,11 +131,11 @@ public class IamSystemScopeService implements SystemScopeService {
       return scopeRepository.findByValue(value);
     }
     String prefix = value.split(":")[0];
-    Optional<SystemScope> scopeByPrefix = scopeRepository.findByValue(prefix);
+    Optional<SystemScope> scopeByPrefix = scopeRepository.findByValue(prefix + ":/");
     if (scopeByPrefix.isPresent()) {
       return scopeByPrefix;
     }
-    return scopeRepository.findByValue(prefix + ":/");
+    return scopeRepository.findByValue(prefix);
   }
 
   @Override
@@ -157,6 +157,15 @@ public class IamSystemScopeService implements SystemScopeService {
   public SystemScope create(SystemScope scope) {
 
     scope.setId(null);
+    scopeValueValidation(scope);
+    SystemScope createdScope = scopeRepository.saveAndFlush(scope);
+    eventPublisher.publishEvent(new ScopeCreatedEvent(this, createdScope,
+        "Scope '" + createdScope.getValue() + "' created."));
+    return createdScope;
+  }
+
+  private void scopeValueValidation(SystemScope scope) {
+
     if (isReserved(scope.getValue())) {
       LOG.error("Invalid reserved scope value '{}'", scope.getValue());
       throw invalidScopeValue();
@@ -169,10 +178,6 @@ public class IamSystemScopeService implements SystemScopeService {
       LOG.error("Structured scopes MUST end with ':/'");
       throw invalidScopeValue();
     }
-    SystemScope createdScope = scopeRepository.saveAndFlush(scope);
-    eventPublisher.publishEvent(new ScopeCreatedEvent(this, createdScope,
-        "Scope '" + createdScope.getValue() + "' created."));
-    return createdScope;
   }
 
   @Override
@@ -224,15 +229,8 @@ public class IamSystemScopeService implements SystemScopeService {
     if (previousScope.isEmpty()) {
       throw idNotFound();
     }
-    if (isReserved(previousScope.get().getValue()) || isProtected(previousScope.get().getValue())) {
-      LOG.error("Reserved and protected scopes like {} cannot be updated",
-          previousScope.get().getValue());
-      throw invalidScopeValue();
-    }
-    if (isReserved(scope.getValue()) || isProtected(scope.getValue())) {
-      LOG.error("Reserved and protected scopes like {} cannot be updated", scope.getValue());
-      throw invalidScopeValue();
-    }
+    scopeValueValidation(previousScope.get());
+    scopeValueValidation(scope);
     SystemScope updatedScope = scopeRepository.saveAndFlush(scope);
     eventPublisher.publishEvent(new ScopeUpdatedEvent(this, updatedScope, previousScope.get(),
         "Scope with id " + updatedScope.getId() + " updated."));

@@ -188,6 +188,65 @@ class ScopeApiControllerTests {
 
   @Test
   @WithMockUser(roles = "ADMIN")
+  void updateWithReservedScopeValues() throws Exception {
+
+    SystemScope newScope = new SystemScope();
+    newScope.setValue("updated-scope");
+    newScope.setDefaultScope(false);
+    newScope.setRestricted(false);
+    newScope.setStructured(false);
+    SystemScope addedScope = scopeService.create(newScope);
+
+    IamSystemScopeService.RESERVED_VALUES.forEach(scope -> {
+      SystemScopeDto dto = SystemScopeDto.builder()
+        .id(addedScope.getId())
+        .value(scope)
+        .description("Reserved scope used")
+        .build();
+
+      try {
+        mockMvc
+          .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(dto)))
+          .andExpect(status().isBadRequest());
+      } catch (Exception e) {
+        fail("This call is not expected to fail!");
+      }
+    });
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void updateWithProtectedScopeValues() throws Exception {
+
+    SystemScope newScope = new SystemScope();
+    newScope.setValue("updated-scope");
+    newScope.setDefaultScope(false);
+    newScope.setRestricted(false);
+    newScope.setStructured(false);
+    SystemScope addedScope = scopeService.create(newScope);
+
+    IamSystemScopeService.PROTECTED_SCOPES.forEach(scope -> {
+      SystemScopeDto dto = SystemScopeDto.builder()
+        .id(addedScope.getId())
+        .value(scope)
+        .description("Protected scope used")
+        .build();
+
+      try {
+        mockMvc
+          .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(dto)))
+          .andExpect(status().isBadRequest());
+      } catch (Exception e) {
+        fail("This call is not expected to fail!");
+      }
+    });
+
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
   void deleteShouldRemoveScope() throws Exception {
 
     SystemScope newScope = new SystemScope();

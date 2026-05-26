@@ -16,10 +16,8 @@
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SystemScope;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 

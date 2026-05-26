@@ -27,7 +27,7 @@ public abstract class ScopeEvent extends IamAuditApplicationEvent {
 
   private final SystemScope scope;
 
-  public ScopeEvent(Object source, SystemScope scope, String message) {
+  protected ScopeEvent(Object source, SystemScope scope, String message) {
     super(IamEventCategory.SCOPE,source, message);
     this.scope = scope;
   }
