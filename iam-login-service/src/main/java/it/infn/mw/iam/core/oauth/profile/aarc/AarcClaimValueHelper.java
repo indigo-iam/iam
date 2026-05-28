@@ -112,7 +112,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
                   properties.getOrganisation().getName()));
             }
             String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
-                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+                Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));
             if (externalScopedAffiliation != null) {
               scopedAffiliations.add(externalScopedAffiliation);
             }
