@@ -19,7 +19,6 @@ import static java.lang.String.format;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -85,11 +84,23 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
 
     final String SCOPED_FORMAT = "%s@%s";
 
+    Optional<SavedUserAuthentication> userAuth =
+        AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
+
     if (account.isPresent()) {
       switch (claimName) {
         case AarcExtraClaimNames.AARC_VER:
           return AARC_VERSION_URI;
         case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
+          if (userAuth.isPresent()) {
+            Set<String> loa = new HashSet<>(DEFAULT_LOA);
+            String remoteLoa = firstOf(userAuth.get().getAdditionalInfo(),
+                Set.of("eduPersonAssurance", "urn:oid:1.3.6.1.4.1.5923.1.1.1.11"));
+            if (remoteLoa != null) {
+              loa.add(remoteLoa);
+            }
+            return loa;
+          }
           return DEFAULT_LOA;
         case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
           return resolveGroups(account.get().getUserInfo());
@@ -100,11 +111,6 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
               properties.getOrganisation().getName());
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
-          if (Objects.isNull(auth)) {
-            return null;
-          }
-          Optional<SavedUserAuthentication> userAuth =
-              AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
             if (account.get().getAffiliation() != null) {
