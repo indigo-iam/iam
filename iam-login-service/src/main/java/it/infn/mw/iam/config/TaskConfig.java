@@ -81,10 +81,10 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${iam.registration.expiry-days:7}")
   private long expiryDays;
   
-  @Value("${iam.cleanup.expired.registration.cron.enable:true}")
-  private boolean cleanupExpiredRegistrationCronScheduleEnable;
+  @Value("${iam.cleanup.expired.registration.enabled:true}")
+  private boolean cleanupExpiredRegistrationCronScheduleEnabled;
 
-  @Value("${iam.cleanup.expired.registration.cron:0 */2 * * * *}")
+  @Value("${iam.cleanup.expired.registration.cron:0 0 7 * * *}")
   private String cleanupExpiredRegistrationCronSchedule;
 
   public TaskConfig(NotificationStoreService notificationStoreService,
@@ -146,7 +146,7 @@ public class TaskConfig implements SchedulingConfigurer {
   }
 
   public void scheduledCleanUpExpireRegistrationTask(final ScheduledTaskRegistrar taskRegistrar) {
-    if (!cleanupExpiredRegistrationCronScheduleEnable) {
+    if (!cleanupExpiredRegistrationCronScheduleEnabled) {
       LOG.info("Expired registration request clean up task is disabled");
     } else {
       LOG.info("Scheduling expired registration request clean up task with schedule: {}", cleanupExpiredRegistrationCronSchedule);
