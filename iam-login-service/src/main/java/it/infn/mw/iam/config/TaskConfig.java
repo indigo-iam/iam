@@ -78,7 +78,7 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
-  @Value("${iam.registration.expiry-days:7}")
+  @Value("${iam.cleanup.expired.registration.expiry-days:7}")
   private long expiryDays;
   
   @Value("${iam.cleanup.expired.registration.enabled:true}")
@@ -157,7 +157,7 @@ public class TaskConfig implements SchedulingConfigurer {
   private void scheduledCleanUpExpireRegistration() {
     LOG.info("Running cleanup with expiryDays= {}", expiryDays);
     Instant expiryTime = Instant.now().minus(expiryDays, ChronoUnit.DAYS);
-    registrationRequestService.cleanupExpiredRequests(expiryTime);
+    registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

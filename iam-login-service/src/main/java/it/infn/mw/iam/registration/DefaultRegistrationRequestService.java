@@ -431,7 +431,7 @@ public class DefaultRegistrationRequestService
 
   @Override
   @Transactional
-  public void cleanupExpiredRequests(Instant expiryTime) {
+  public void cleanupExpiredRegistrationRequests(Instant expiryTime) {
 
     Date expiryDate = Date.from(expiryTime);
     List<Long> accountIds = requestRepository.findAccountIdsForExpiredRegistrations(expiryDate);

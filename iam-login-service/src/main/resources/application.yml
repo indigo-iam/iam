@@ -196,8 +196,9 @@ iam:
   cleanup:
     expired:
       registration:
+        expiry-days: ${IAM_CLEANUP_EXPIRED_REGISTRATION_EXPIRY_DAYS:7}
         enabled: ${IAM_CLEANUP_EXPIRED_REGISTRATION_CRON_ENABLED:true}
-        cron: ${IAM_CLEANUP_EXPIRED_REGISTRATION_CRON:0 0/2 * * * *}
+        cron: ${IAM_CLEANUP_EXPIRED_REGISTRATION_CRON:0 0 7 * * *}
         
 
 cache:

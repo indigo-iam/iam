@@ -74,7 +74,7 @@ class RegistrationRequestServiceTests {
         when(accountService.deleteAccountsForExpiredRegistrations(accountIds))
                 .thenReturn(2);
 
-        registrationRequestService.cleanupExpiredRequests(expiryTime);
+        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
 
         verify(requestRepository).findAccountIdsForExpiredRegistrations(expiryDate);
         verify(requestRepository).deleteExpiredRegistrations(expiryDate);
@@ -87,7 +87,7 @@ class RegistrationRequestServiceTests {
         when(requestRepository.findAccountIdsForExpiredRegistrations(expiryDate))
                 .thenReturn(Collections.emptyList());
 
-        registrationRequestService.cleanupExpiredRequests(expiryTime);
+        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
 
         verify(accountService, never()).deleteAccountsForExpiredRegistrations(Collections.emptyList());
     }
@@ -106,7 +106,7 @@ class RegistrationRequestServiceTests {
         when(accountService.deleteAccountsForExpiredRegistrations(accountIds))
                 .thenReturn(1);
 
-        registrationRequestService.cleanupExpiredRequests(expiryTime);
+        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
 
         InOrder inOrder = inOrder(requestRepository, accountService);
 
@@ -122,7 +122,7 @@ class RegistrationRequestServiceTests {
                 .thenThrow(new RuntimeException("DB failure"));
 
         assertThrows(RuntimeException.class,
-                () -> registrationRequestService.cleanupExpiredRequests(expiryTime));
+                () -> registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime));
 
         verify(requestRepository, never()).deleteExpiredRegistrations(any());
         verify(accountService, never()).deleteAccountsForExpiredRegistrations(any());

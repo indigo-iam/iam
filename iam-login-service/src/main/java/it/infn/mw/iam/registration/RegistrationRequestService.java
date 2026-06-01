@@ -45,6 +45,6 @@ public interface RegistrationRequestService {
 
   Boolean emailAvailable(String emailAddress);
 
-  void cleanupExpiredRequests(Instant expiryTime);
+  void cleanupExpiredRegistrationRequests(Instant expiryTime);
 
 }

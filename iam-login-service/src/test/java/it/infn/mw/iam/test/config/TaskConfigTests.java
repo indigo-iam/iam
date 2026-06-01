@@ -102,7 +102,7 @@ class TaskConfigTests {
         task.run();
 
         verify(registrationRequestService, times(1))
-                .cleanupExpiredRequests(any(Instant.class));
+                .cleanupExpiredRegistrationRequests(any(Instant.class));
     }
 
     @Test
@@ -128,7 +128,7 @@ class TaskConfigTests {
         ArgumentCaptor<Instant> instantCaptor = ArgumentCaptor.forClass(Instant.class);
 
         verify(registrationRequestService)
-                .cleanupExpiredRequests(instantCaptor.capture());
+                .cleanupExpiredRegistrationRequests(instantCaptor.capture());
 
         Instant actual = instantCaptor.getValue();
 
