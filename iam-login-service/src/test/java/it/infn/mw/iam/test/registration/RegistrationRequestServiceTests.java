@@ -61,7 +61,7 @@ class RegistrationRequestServiceTests {
     }
 
     @Test
-    public void shouldDeleteRegistrationsAndAccounts() {
+    void shouldDeleteRegistrationsAndAccounts() {
 
         List<Long> accountIds = List.of(1L, 2L);
 
@@ -82,7 +82,7 @@ class RegistrationRequestServiceTests {
     }
 
     @Test
-    public void shouldHandleNoExpiredRegistrations() {
+    void shouldHandleNoExpiredRegistrations() {
 
         when(requestRepository.findAccountIdsForExpiredRegistrations(expiryDate))
                 .thenReturn(Collections.emptyList());
@@ -93,7 +93,7 @@ class RegistrationRequestServiceTests {
     }
 
     @Test
-    public void shouldDeleteRegistrationsBeforeAccounts() {
+    void shouldDeleteRegistrationsBeforeAccounts() {
 
         List<Long> accountIds = List.of(1L);
 
@@ -116,7 +116,7 @@ class RegistrationRequestServiceTests {
     }
 
     @Test
-    public void shouldPropagateExceptionAndRollback() {
+    void shouldPropagateExceptionAndRollback() {
 
         when(requestRepository.findAccountIdsForExpiredRegistrations(any()))
                 .thenThrow(new RuntimeException("DB failure"));

@@ -42,7 +42,7 @@ import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.registration.RegistrationRequestService;
 
 @ExtendWith(MockitoExtension.class)
-public class TaskConfigTests {
+class TaskConfigTests {
     @Mock
     private ScheduledTaskRegistrar taskRegistrar;
 
