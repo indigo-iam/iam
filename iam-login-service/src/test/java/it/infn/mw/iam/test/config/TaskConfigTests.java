@@ -62,7 +62,7 @@ class TaskConfigTests {
     void shouldNotScheduleTaskWhenDisabled() {
 
         ReflectionTestUtils.setField(taskConfig,
-                "cleanupExpiredRegistrationCronScheduleEnable", false);
+                "cleanupExpiredRegistrationCronScheduleEnabled", false);
 
         taskConfig.scheduledCleanUpExpireRegistrationTask(taskRegistrar);
 
@@ -74,7 +74,7 @@ class TaskConfigTests {
     void shouldScheduleTaskWhenEnabled() {
 
         ReflectionTestUtils.setField(taskConfig,
-                "cleanupExpiredRegistrationCronScheduleEnable", true);
+                "cleanupExpiredRegistrationCronScheduleEnabled", true);
 
         taskConfig.scheduledCleanUpExpireRegistrationTask(taskRegistrar);
 
@@ -86,7 +86,7 @@ class TaskConfigTests {
     void shouldExecuteScheduledTaskAndCallService() {
 
         ReflectionTestUtils.setField(taskConfig,
-                "cleanupExpiredRegistrationCronScheduleEnable", true);
+                "cleanupExpiredRegistrationCronScheduleEnabled", true);
 
         ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
 
@@ -109,7 +109,7 @@ class TaskConfigTests {
     void shouldCalculateCorrectExpiryTime() {
 
         ReflectionTestUtils.setField(taskConfig,
-                "cleanupExpiredRegistrationCronScheduleEnable", true);
+                "cleanupExpiredRegistrationCronScheduleEnabled", true);
 
         ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
 
