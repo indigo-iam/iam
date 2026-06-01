@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -226,5 +227,26 @@ class AarcClaimValueHelperTests {
     assertThat(result, hasItem("https://refeds.org/assurance/IAP/medium"));
     assertThat(result, hasItem("https://refeds.org/assurance/IAP/low"));
     assertThat(result, hasItem("https://refeds.org/assurance"));
+  }
+
+  @Test
+  void testResolveSchacHomeOrganization() {
+    OAuth2Authentication auth = mock(OAuth2Authentication.class);
+
+    Map<String, String> additionalInfo = new HashMap<>();
+    additionalInfo.put("urn:oid:1.3.6.1.4.1.25178.1.2.9", "infn.it");
+
+    SavedUserAuthentication savedAuth = new SavedUserAuthentication();
+    savedAuth.setSourceClass(OidcExternalAuthenticationToken.class.getName());
+    savedAuth.setAdditionalInfo(additionalInfo);
+
+    when(auth.getUserAuthentication()).thenReturn(savedAuth);
+
+    IamAccount account = mock(IamAccount.class);
+
+    String result = (String) helper.resolveClaim(AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION, auth,
+        Optional.of(account));
+
+    assertEquals("infn.it", result);
   }
 }

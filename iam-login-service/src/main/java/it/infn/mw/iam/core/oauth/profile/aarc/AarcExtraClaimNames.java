@@ -45,17 +45,19 @@ public interface AarcExtraClaimNames extends BaseExtraClaimNames {
 
   String VOPERSON_EXTERNAL_AFFILIATION = "voperson_external_affiliation";
 
+  String SCHAC_HOME_ORGANIZATION = "schac_home_organization";
+
   public static final Set<String> ACCESS_TOKEN_REQUIRED_CLAIMS =
       Set.of(VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS);
 
   public static final Set<String> ID_TOKEN_REQUIRED_CLAIMS =
       Set.of(VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS);
 
-  public static final Set<String> INTROSPECTION_REQUIRED_CLAIMS =
-      Set.of(AARC_VER, VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS, VOPERSON_EXTERNAL_AFFILIATION);
+  public static final Set<String> INTROSPECTION_REQUIRED_CLAIMS = Set.of(AARC_VER, VOPERSON_ID,
+      EDUPERSON_ASSURANCE, ENTITLEMENTS, VOPERSON_EXTERNAL_AFFILIATION);
 
   public static final Set<String> USERINFO_REQUIRED_CLAIMS =
       Set.of(AARC_VER, VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS, ORGANIZATION_NAME,
-          VOPERSON_EXTERNAL_AFFILIATION, JWTClaimNames.SUBJECT, StandardClaimNames.NAME, StandardClaimNames.GIVEN_NAME,
-          StandardClaimNames.FAMILY_NAME, StandardClaimNames.EMAIL);
+          VOPERSON_EXTERNAL_AFFILIATION, JWTClaimNames.SUBJECT, StandardClaimNames.NAME,
+          StandardClaimNames.GIVEN_NAME, StandardClaimNames.FAMILY_NAME, StandardClaimNames.EMAIL);
 }

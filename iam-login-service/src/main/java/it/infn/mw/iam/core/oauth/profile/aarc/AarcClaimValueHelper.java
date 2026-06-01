@@ -125,6 +125,11 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
             return scopedAffiliations;
           }
           return null;
+        case AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION:
+          if (userAuth.isPresent()) {
+            return userAuth.get().getAdditionalInfo().get("urn:oid:1.3.6.1.4.1.25178.1.2.9");
+          }
+          return null;
         default:
           return super.resolveClaim(claimName, auth, account);
       }
