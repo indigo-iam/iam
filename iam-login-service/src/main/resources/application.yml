@@ -202,11 +202,11 @@ iam:
         
 
   login-lockout:
-    enabled: ${IAM_ACCOUNT_LOGIN_LOCKOUT_ENABLED:false}
-    disable-after-max-suspension-rounds: ${IAM_ACCOUNT_LOGIN_DISABLE_AFTER_MAX_SUSPENSION_ROUNDS:false}
-    max-failed-attempts-before-suspension: ${IAM_ACCOUNT_LOGIN_MAX_FAILED_ATTEMPTS_BEFORE_SUSPENSION:3}
-    suspension-duration-minutes: ${IAM_ACCOUNT_LOGIN_SUSPENSION_DURATION_MINUTES:30}
-    max-suspension-rounds: ${IAM_ACCOUNT_LOGIN_MAX_SUSPENSION_ROUNDS:2}
+    enabled: ${IAM_LOGIN_LOCKOUT_ENABLED:false}
+    disable-after-max-suspension-rounds: ${IAM_LOGIN_LOCKOUT_DISABLE_AFTER_MAX_SUSPENSION_ROUNDS:false}
+    max-failed-attempts-before-suspension: ${IAM_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS_BEFORE_SUSPENSION:3}
+    suspension-duration-minutes: ${IAM_LOGIN_LOCKOUT_SUSPENSION_DURATION_MINUTES:30}
+    max-suspension-rounds: ${IAM_LOGIN_LOCKOUT_MAX_SUSPENSION_ROUNDS:2}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
@@ -274,9 +274,10 @@ management:
       show-details: when-authorized
       roles:
       - ACTUATOR
+      
     metrics:
       enabled: true
-
+    
 rcauth:
   enabled: ${IAM_RCAUTH_ENABLED:false}
   label: ${IAM_RCAUTH_LABEL:RCAuth.eu online CA}

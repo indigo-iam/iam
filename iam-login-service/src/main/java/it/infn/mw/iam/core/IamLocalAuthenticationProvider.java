@@ -88,7 +88,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
 
-    String username = String.valueOf(authentication.getPrincipal());
+    String username = authentication.getName();
 
     // If not preauthenticated then the first step is to validate the default login credentials.
     // Therefore, we convert the

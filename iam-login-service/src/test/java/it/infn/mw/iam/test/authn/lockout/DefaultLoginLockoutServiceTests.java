@@ -239,7 +239,7 @@ class DefaultLoginLockoutServiceTests {
   }
 
   @Test
-  void disablesAccountAfterMaxSuspensionRounds() {
+  void disableAccountAfterMaxSuspensionRounds() {
     when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
 

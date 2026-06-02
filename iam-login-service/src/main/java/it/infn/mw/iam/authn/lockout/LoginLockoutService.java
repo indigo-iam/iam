@@ -17,14 +17,15 @@ package it.infn.mw.iam.authn.lockout;
 
 /**
  * Tracks failed login attempts and enforces temporary suspensions
- *  and permanent account disabling, if `disable-after-max-failures` enabled.
+ *  and permanent account disabling, if `disable-after-max-suspension-rounds` enabled.
  *
  * Password failures and TOTP failures share the same counter. The lifecycle:
  *
- * User fails {max-failed-attempts} times => suspended for {lockout-minutes}.
+ * User fails {max-failed-attempts-before-suspension} times => suspended for
+ * {suspension-duration-minutes}.
  * Suspension expires => counter resets, user gets another round of attempts.
- * If {disable-after-max-failures} is true:
- *   after {max-concurrent-failures} suspension rounds the account is disabled.
+ * If {disable-after-max-suspension-rounds} is true:
+ *   after {max-suspension-rounds} suspension rounds the account is disabled.
  * If false (default): the account is never disabled, only repeatedly suspended.
  * An admin can clear a lockout at any time.
  */
@@ -40,7 +41,7 @@ public interface LoginLockoutService {
   /**
    * Records a single failed attempt (password or TOTP). When the attempt count reaches the
    * threshold the account is suspended. When all suspension rounds are exhausted and
-   * disable-after-max-failures is true, the account is disabled and the lockout row is deleted.
+   * disable-after-max-suspension-rounds is true, the account is disabled and the lockout row is deleted.
    */
   void recordFailedAttempt(String username);
 

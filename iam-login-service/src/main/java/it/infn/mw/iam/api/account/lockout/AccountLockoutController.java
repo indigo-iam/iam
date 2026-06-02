@@ -52,7 +52,7 @@ public class AccountLockoutController {
         && Instant.now().isBefore(lockout.get().getSuspendedUntil().toInstant())) {
       return ResponseEntity.ok(Map.of(
           "suspended", true,
-          "suspendedUntil", lockout.get().getSuspendedUntil().getTime()));
+          "suspendedUntil", lockout.get().getSuspendedUntil()));
     }
 
     return ResponseEntity.ok(Map.of("suspended", false));
