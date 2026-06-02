@@ -133,7 +133,7 @@ public class IamSystemScopeService implements SystemScopeService {
         return new SystemScope(scope);
       }
       return found;
-    }).collect(Collectors.toSet());
+    }).collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
@@ -144,7 +144,7 @@ public class IamSystemScopeService implements SystemScopeService {
     return scopes.stream()
       .map(SystemScope::getValue)
       .filter(Objects::nonNull)
-      .collect(Collectors.toSet());
+      .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
