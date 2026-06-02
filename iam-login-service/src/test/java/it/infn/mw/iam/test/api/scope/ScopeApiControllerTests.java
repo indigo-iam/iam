@@ -187,7 +187,7 @@ class ScopeApiControllerTests {
 
   @Test
   @WithMockUser(roles = "ADMIN")
-  void updateWithReservedScopeValues() throws Exception {
+  void updateWithReservedScopeValues() {
 
     SystemScope newScope = new SystemScope();
     newScope.setValue("updated-scope");
@@ -215,7 +215,7 @@ class ScopeApiControllerTests {
 
   @Test
   @WithMockUser(roles = "ADMIN")
-  void updateWithProtectedScopeValues() throws Exception {
+  void updateWithProtectedScopeValues() {
 
     SystemScope newScope = new SystemScope();
     newScope.setValue("updated-scope");

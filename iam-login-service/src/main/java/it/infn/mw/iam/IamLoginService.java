@@ -18,7 +18,6 @@ package it.infn.mw.iam;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.oauth2.web.RevocationEndpoint;
@@ -78,8 +77,6 @@ excludeFilters = {
         value=CorsFilter.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=OAuthConfirmationController.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DeviceEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=TofuUserApprovalHandler.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,

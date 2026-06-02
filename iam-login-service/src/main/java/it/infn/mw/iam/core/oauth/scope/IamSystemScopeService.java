@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth.scope;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,11 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicates;
-import com.google.common.base.Strings;
-import com.google.common.collect.Collections2;
 
 import it.infn.mw.iam.audit.events.scope.ScopeCreatedEvent;
 import it.infn.mw.iam.audit.events.scope.ScopeRemovedEvent;
@@ -120,28 +116,35 @@ public class IamSystemScopeService implements SystemScopeService {
 
     if (isReserved(entity.getValue()) || isProtected(entity.getValue())) {
       LOG.error("Reserved and protected scopes like {} cannot be removed", entity.getValue());
-      throw new InvalidRequestException("Invalid reserved/protected scope"); 
+      throw new InvalidRequestException("Invalid reserved/protected scope");
     }
     scopeRepository.delete(entity);
     eventPublisher.publishEvent(new ScopeRemovedEvent(this, entity, "Deleted scope."));
   }
 
   @Override
-  public Set<SystemScope> fromStrings(Set<String> scope) {
-    if (scope == null) {
-      return null;
+  public Set<SystemScope> fromStrings(Set<String> scopes) {
+    if (scopes == null || scopes.isEmpty()) {
+      return new LinkedHashSet<>();
     }
-    return new LinkedHashSet<>(Collections2
-      .filter(Collections2.transform(scope, stringToSystemScope), Predicates.notNull()));
+    return scopes.stream().map(scope -> {
+      SystemScope found = getByValue(scope);
+      if (found == null) {
+        return new SystemScope(scope);
+      }
+      return found;
+    }).collect(Collectors.toSet());
   }
 
   @Override
-  public Set<String> toStrings(Set<SystemScope> scope) {
-    if (scope == null) {
-      return null;
+  public Set<String> toStrings(Set<SystemScope> scopes) {
+    if (scopes == null || scopes.isEmpty()) {
+      return new LinkedHashSet<>();
     }
-    return new LinkedHashSet<>(Collections2
-      .filter(Collections2.transform(scope, systemScopeToString), Predicates.notNull()));
+    return scopes.stream()
+      .map(SystemScope::getValue)
+      .filter(Objects::nonNull)
+      .collect(Collectors.toSet());
   }
 
   @Override
@@ -185,11 +188,11 @@ public class IamSystemScopeService implements SystemScopeService {
 
     if (isReserved(scope.getValue())) {
       LOG.error("Invalid reserved scope value '{}'", scope.getValue());
-      throw new InvalidRequestException("Invalid reserved scope"); 
+      throw new InvalidRequestException("Invalid reserved scope");
     }
     if (isProtected(scope.getValue())) {
       LOG.error("Invalid protected scope value '{}'", scope.getValue());
-      throw new InvalidRequestException("Invalid protected scope"); 
+      throw new InvalidRequestException("Invalid protected scope");
     }
   }
 
@@ -208,28 +211,4 @@ public class IamSystemScopeService implements SystemScopeService {
   protected ResponseStatusException idNotFound() {
     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Scope id not found");
   }
-
-  private Function<String, SystemScope> stringToSystemScope = new Function<String, SystemScope>() {
-    @Override
-    public SystemScope apply(String input) {
-      if (Strings.isNullOrEmpty(input)) {
-        return null;
-      }
-      SystemScope s = getByValue(input);
-      if (s == null) {
-        return new SystemScope(input);
-      }
-      return s;
-    }
-  };
-
-  private Function<SystemScope, String> systemScopeToString = new Function<SystemScope, String>() {
-    @Override
-    public String apply(SystemScope input) {
-      if (input == null) {
-        return null;
-      }
-      return input.getValue();
-    }
-  };
 }

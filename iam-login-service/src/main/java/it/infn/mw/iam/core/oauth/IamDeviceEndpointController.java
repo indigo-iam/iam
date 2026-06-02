@@ -20,11 +20,9 @@ import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
@@ -77,6 +75,9 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @SuppressWarnings("deprecation")
 @Controller
 public class IamDeviceEndpointController {
+
+  public static final String DEVICE_CODE_URL = "devicecode";
+  public static final String USER_CODE_URL = "device";
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
