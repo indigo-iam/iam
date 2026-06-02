@@ -81,6 +81,7 @@ import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -459,8 +460,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   @Test
   void testReservedScopesAreFilteredOut() {
 
-    scopeService.getReserved().forEach(ss -> {
-      final String reservedScope = ss.getValue();
+    IamSystemScopeService.RESERVED_VALUES.forEach(reservedScope -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
       request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));

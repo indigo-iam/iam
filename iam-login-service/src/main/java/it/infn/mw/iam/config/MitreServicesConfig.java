@@ -77,7 +77,6 @@ import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
@@ -302,11 +301,6 @@ public class MitreServicesConfig {
   BlacklistedSiteService defaultBlacklistedSiteService() {
 
     return new DefaultBlacklistedSiteService();
-  }
-
-  @Bean
-  SystemScopeService defaultSystemScopeService(ScopeMatcherRegistry registry) {
-    return new IamSystemScopeService(registry);
   }
 
   @Bean

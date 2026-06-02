@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.persistence.repository;
 
-public enum IamEventCategory {
-  NONE,
-  ACCOUNT,
-  GROUP,
-  REGISTRATION,
-  AUTHENTICATION,
-  AUTHORIZATION,
-  SCOPE_POLICY,
-  AUP,
-  MEMBERSHIP,
-  CLIENT,
-  TOKEN,
-  SCOPE
+import java.util.List;
+import java.util.Optional;
+
+import org.mitre.oauth2.model.SystemScope;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IamScopeRepository extends JpaRepository<SystemScope, Long>{
+
+  Optional<SystemScope> findByValue(String value);
+
+  List<SystemScope> findByDefaultScopeTrue();
+
+  List<SystemScope> findByRestrictedTrue();
+
+  List<SystemScope> findByRestrictedFalse();
+
 }
