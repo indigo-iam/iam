@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import it.infn.mw.iam.core.web.group.GroupRequestReminderTask;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -206,6 +208,45 @@ class GroupRequestReminderTaskTests {
     }
   }
 
+  @Test
+  void skipsWhenMisconfigured() throws Exception {
+    setTaskField("thresholdDays", 0);
+    try {
+      IamGroup group = groupRepo.findByName(GROUP_NAME).orElseThrow();
+      IamAccount account = accountRepo.findByUsername("test_100").orElseThrow();
+      assignGroupManager(account, group);
+      savePendingRequest(account, group, 5);
+
+      reminderTask.sendReminders();
+
+      assertThat(getReminders(), hasSize(0));
+    } finally {
+      setTaskField("thresholdDays", 1);
+    }
+  }
+
+  @Test
+  void doesNotDuplicateRecipientWhoIsManagerAndAdmin() throws Exception {
+    setTaskField("notifyAdmins", true);
+    try {
+      IamGroup group = groupRepo.findByName(GROUP_NAME).orElseThrow();
+      IamAccount account = accountRepo.findByUsername("test_100").orElseThrow();
+      assignGroupManager(account, group);
+      assignAdmin(account);
+      savePendingRequest(account, group, 5);
+
+      reminderTask.sendReminders();
+
+      List<IamEmailNotification> reminders = getReminders();
+      assertThat(reminders, hasSize(1));
+      List<String> addresses = reminders.get(0).getReceivers().stream()
+          .map(IamNotificationReceiver::getEmailAddress).collect(Collectors.toList());
+      assertThat(addresses, hasSize(addresses.stream().distinct().collect(Collectors.toList()).size()));
+    } finally {
+      setTaskField("notifyAdmins", false);
+    }
+  }
+
   private List<IamEmailNotification> getReminders() {
     return emailRepo.findByNotificationType(IamNotificationType.GROUP_MEMBERSHIP_REMINDER);
   }
@@ -220,6 +261,13 @@ class GroupRequestReminderTaskTests {
     String gmAuth = String.format("ROLE_GM:%s", group.getUuid());
     IamAuthority auth = authoritiesRepo.findByAuthority(gmAuth)
         .orElseGet(() -> authoritiesRepo.save(new IamAuthority(gmAuth)));
+    account.getAuthorities().add(auth);
+    accountRepo.save(account);
+  }
+
+  private void assignAdmin(IamAccount account) {
+    IamAuthority auth = authoritiesRepo.findByAuthority("ROLE_ADMIN")
+        .orElseGet(() -> authoritiesRepo.save(new IamAuthority("ROLE_ADMIN")));
     account.getAuthorities().add(auth);
     accountRepo.save(account);
   }
