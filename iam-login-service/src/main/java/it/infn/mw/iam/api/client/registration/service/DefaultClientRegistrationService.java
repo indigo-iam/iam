@@ -19,6 +19,8 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Objects;
+
 import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
@@ -444,7 +446,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
-    newClient.setClientSecret(oldClient.getClientSecret());
+    if (ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
+    } else if (!ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(null);
+    } else {
+      newClient.setClientSecret(oldClient.getClientSecret());
+    }
     newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
     newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
     newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
@@ -455,8 +465,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
-    // Direct updates are disabled. Changes must be made via secret reset process
-    newClient.setClientSecret(oldClient.getClientSecret());
 
     // If user isn't admin upscoping doesn't change
     if (!accountUtils.isAdmin(authentication)) {

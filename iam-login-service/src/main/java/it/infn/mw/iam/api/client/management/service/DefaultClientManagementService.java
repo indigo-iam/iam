@@ -190,13 +190,20 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
+    if (ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
+    } else if (!ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(null);
+    } else {
+      newClient.setClientSecret(oldClient.getClientSecret());
+    }
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setClientId(oldClient.getClientId());
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setDynamicallyRegistered(oldClient.isDynamicallyRegistered());
     newClient.setActive(oldClient.isActive());
-    // Direct updates are disabled. Changes must be made via secret reset process
-    newClient.setClientSecret(oldClient.getClientSecret());
 
     if (hasRelyingParty(clientDTO)) {
       ClientRelyingPartyEntity clientRelyingParty = new ClientRelyingPartyEntity(newClient,

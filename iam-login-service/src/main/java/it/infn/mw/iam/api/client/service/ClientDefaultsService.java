@@ -15,9 +15,16 @@
  */
 package it.infn.mw.iam.api.client.service;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 
 public interface ClientDefaultsService {
+
+  public static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
+      EnumSet.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
 
   ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client);
   String generateClientSecret();
