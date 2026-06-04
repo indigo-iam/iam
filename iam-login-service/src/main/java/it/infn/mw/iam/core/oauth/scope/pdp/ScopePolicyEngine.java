@@ -17,26 +17,8 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Set;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
-
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@Component
-@ConditionalOnProperty("iam.opa.enable=true")
-public class OPAScopeFilter implements ScopeFilter {
-    public OPAScopeFilter() {
-        // ...
-    }
-
-    @Override
-    public Set<String> filterScopes(Set<String> scopes, Authentication authn) {
-        // ...
-    }
-
-    @Override
-    public Set<String> filterScopes(Set<String> scopes, IamAccount account) {
-        // ...
-    }
+public interface ScopePolicyEngine {
+    public Set<String> apply(Set<String> requestedScopes, IamAccount account);
 }
