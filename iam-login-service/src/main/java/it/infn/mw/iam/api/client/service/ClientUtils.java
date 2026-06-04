@@ -19,7 +19,6 @@ import static java.util.Objects.isNull;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,7 +36,7 @@ import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 public class ClientUtils {
 
   public static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
-      EnumSet.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
+      Set.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
   private static final int BCRYPT_MAX_SIZE = 72;
