@@ -38,7 +38,7 @@ import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
 @Transactional
-public class PublicClientsTests extends OidcMockMvcTestSupport {
+class PublicClientsTests extends OidcMockMvcTestSupport {
 
   @Autowired
   ClientManagementService clientManagementService;
@@ -77,7 +77,7 @@ public class PublicClientsTests extends OidcMockMvcTestSupport {
           .getStatus());
 
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
-    client = clientManagementService.updateClient(client.getClientId(), client);
+    clientManagementService.updateClient(client.getClientId(), client);
 
     JsonNode json = assert200AndParse(
         postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, ""));
@@ -109,7 +109,7 @@ public class PublicClientsTests extends OidcMockMvcTestSupport {
         registrationResponse.getClientId(), "").getResponse().getStatus());
 
     updatedClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
-    updatedClient = clientRegistrationService.updateClient(registrationResponse.getClientId(),
+    clientRegistrationService.updateClient(registrationResponse.getClientId(),
         updatedClient, userAuth);
 
     JsonNode json = assert200AndParse(postForm(TOKEN_ENDPOINT,

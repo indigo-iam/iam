@@ -43,8 +43,8 @@ import org.springframework.validation.annotation.Validated;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
-import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
@@ -73,7 +73,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final Clock clock;
   private final ClientService clientService;
   private final ClientConverter converter;
-  private final ClientDefaultsService defaultsService;
+  private final ClientUtils clientUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
   private final OIDCTokenService oidcTokenService;
@@ -82,14 +82,14 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
-      ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
+      ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
       IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
       IamTokenService tokenService, ApplicationEventPublisher aep,
       NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
-    this.defaultsService = defaultsService;
+    this.clientUtils = clientUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
     this.oidcTokenService = oidcTokenService;
@@ -136,7 +136,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       entity.setRequestObjectSigningAlg(client.getRequestObjectSigningAlgorithm());
     }
 
-    defaultsService.setupClientDefaults(entity);
+    clientUtils.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
     return converter.registeredClientDtoFromEntity(entity);
@@ -190,10 +190,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
-    if (ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
         newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(defaultsService.generateClientSecret());
-    } else if (!ClientDefaultsService.AUTH_METHODS_REQUIRING_SECRET.contains(
+      newClient.setClientSecret(clientUtils.generateClientSecret());
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
         newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(null);
     } else {
@@ -240,7 +240,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(defaultsService.generateClientSecret());
+    client.setClientSecret(clientUtils.generateClientSecret());
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
     return converter.registeredClientDtoFromEntity(client);

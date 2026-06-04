@@ -19,6 +19,8 @@ import static java.util.Objects.isNull;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
@@ -32,7 +34,10 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 
 @Service
-public class DefaultClientDefaultsService implements ClientDefaultsService {
+public class ClientUtils {
+
+  public static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
+      EnumSet.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
   private static final int BCRYPT_MAX_SIZE = 72;
@@ -40,11 +45,10 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
 
   private final ClientRegistrationProperties properties;
 
-  public DefaultClientDefaultsService(ClientRegistrationProperties properties) {
+  public ClientUtils(ClientRegistrationProperties properties) {
     this.properties = properties;
   }
 
-  @Override
   public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
 
     if (isNull(client.getClientId())) {
@@ -89,9 +93,9 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
     return client;
   }
 
-  @Override
   public String generateClientSecret() {
-    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray()).substring(0, BCRYPT_MAX_SIZE);
+    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
+      .substring(0, BCRYPT_MAX_SIZE);
   }
 
 }
