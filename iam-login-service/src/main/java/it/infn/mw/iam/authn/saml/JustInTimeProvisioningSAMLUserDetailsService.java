@@ -74,7 +74,7 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
   protected void samlCredentialAttributesChecks(SAMLCredential credential,
       EnumSet<Saml2Attribute> requiredAttributes) {
     for (Saml2Attribute a : requiredAttributes) {
-      if (getAttributeAsString(credential, a) == null) {
+      if (a.resolveValue(credential) == null) {
         throw new UsernameNotFoundException(String.format(
             "Error provisioning user! SAML credential is missing required attribute: %s (%s)",
             a.getAlias(), a.getAttributeName()));
@@ -112,33 +112,22 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
     Saml2Attribute familyName = Saml2Attribute.byAlias(mappingProperties.getFamilyNameAttribute());
     Saml2Attribute email = Saml2Attribute.byAlias(mappingProperties.getEmailAttribute());
 
-    newAccount.getUserInfo().setGivenName(getAttributeAsString(credential, givenName));
+    newAccount.getUserInfo().setGivenName(givenName.resolveValue(credential));
 
-    newAccount.getUserInfo().setFamilyName(getAttributeAsString(credential, familyName));
+    newAccount.getUserInfo().setFamilyName(familyName.resolveValue(credential));
 
-    newAccount.getUserInfo().setEmail(getAttributeAsString(credential, email));
+    newAccount.getUserInfo().setEmail(email.resolveValue(credential));
 
     final UsernameMappingPolicy mp = mappingProperties.getUsernameMappingPolicy();
 
     if (attributeValuePolicy.equals(mp)) {
       if (!isNull(mappingProperties.getUsernameAttribute())) {
         Saml2Attribute username = Saml2Attribute.byAlias(mappingProperties.getUsernameAttribute());
-        safeSetUsername(newAccount, getAttributeAsString(credential, username),
-            newAccount.getUsername());
+        safeSetUsername(newAccount, username.resolveValue(credential), newAccount.getUsername());
       }
     } else if (samlIdPolicy.equals(mp)) {
       safeSetUsername(newAccount, samlId.getUserId(), newAccount.getUsername());
     }
-  }
-
-  private String getAttributeAsString(SAMLCredential credential, Saml2Attribute attribute) {
-    String value = credential.getAttributeAsString(attribute.getAttributeName());
-
-    if (value == null) {
-      value = credential.getAttributeAsString(attribute.getAlias());
-    }
-
-    return value;
   }
 
   private IamAccount provisionAccount(SAMLCredential credential, IamSamlId samlId) {

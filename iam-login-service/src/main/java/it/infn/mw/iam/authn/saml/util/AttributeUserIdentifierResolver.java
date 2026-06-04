@@ -36,7 +36,7 @@ public class AttributeUserIdentifierResolver extends AbstractSamlUserIdentifierR
   public SamlUserIdentifierResolutionResult resolveSamlUserIdentifier(
       SAMLCredential samlCredential) {
 
-    String attributeValue = samlCredential.getAttributeAsString(attribute.getAttributeName());
+    String attributeValue = attribute.resolveValue(samlCredential);
 
     if (attributeValue == null) {
       return SamlUserIdentifierResolutionResult
@@ -50,6 +50,5 @@ public class AttributeUserIdentifierResolver extends AbstractSamlUserIdentifierR
     samlId.setUserId(attributeValue);
 
     return SamlUserIdentifierResolutionResult.success(List.of(samlId));
-
   }
 }

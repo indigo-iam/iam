@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.opensaml.saml2.core.Attribute;
@@ -78,20 +77,20 @@ public class SamlExternalAuthenticationToken
     ri.setSubject(samlId.getUserId());
     ri.setSubjectAttribute(samlId.getAttributeId());
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(GIVEN_NAME.getAttributeName()))) {
-      ri.setGivenName(cred.getAttributeAsString(GIVEN_NAME.getAttributeName()));
+    if (!isNullOrEmpty(GIVEN_NAME.resolveValue(cred))) {
+      ri.setGivenName(GIVEN_NAME.resolveValue(cred));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(SN.getAttributeName()))) {
-      ri.setFamilyName(cred.getAttributeAsString(SN.getAttributeName()));
+    if (!isNullOrEmpty(SN.resolveValue(cred))) {
+      ri.setFamilyName(SN.resolveValue(cred));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(MAIL.getAttributeName()))) {
-      ri.setEmail(cred.getAttributeAsString(MAIL.getAttributeName()));
+    if (!isNullOrEmpty(MAIL.resolveValue(cred))) {
+      ri.setEmail(MAIL.resolveValue(cred));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(EPPN.getAttributeName()))) {
-      ri.setSuggestedUsername(cred.getAttributeAsString(EPPN.getAttributeName()));
+    if (!isNullOrEmpty(EPPN.resolveValue(cred))) {
+      ri.setSuggestedUsername(EPPN.resolveValue(cred));
     }
 
     Map<String, String> additionalAttrs = Maps.newHashMap();
@@ -120,7 +119,7 @@ public class SamlExternalAuthenticationToken
 
     for (Attribute attr : cred.getAttributes()) {
 
-      Optional<Saml2Attribute> maybeKnownAttr = Saml2Attribute.byName(attr.getName());
+      Optional<Saml2Attribute> maybeKnownAttr = resolveAttribute(attr.getName());
 
       String attrName = attr.getName();
 
@@ -130,11 +129,25 @@ public class SamlExternalAuthenticationToken
 
       String attrVal = cred.getAttributeAsString(attr.getName());
 
-      if (!Objects.isNull(attrVal)) {
+      if (attrVal != null) {
         authnInfo.put(attrName, attrVal);
       }
     }
 
     return authnInfo;
+  }
+
+  private Optional<Saml2Attribute> resolveAttribute(String name) {
+    Optional<Saml2Attribute> attr = Saml2Attribute.byName(name);
+
+    if (attr.isPresent()) {
+      return attr;
+    }
+
+    try {
+      return Optional.of(Saml2Attribute.byAlias(name));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
   }
 }

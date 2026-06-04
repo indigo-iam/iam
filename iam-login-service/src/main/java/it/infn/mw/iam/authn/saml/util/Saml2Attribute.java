@@ -17,8 +17,11 @@ package it.infn.mw.iam.authn.saml.util;
 
 import java.util.Optional;
 
+import org.springframework.security.saml.SAMLCredential;
+
 public enum Saml2Attribute {
 
+  //@formatter:off
   EPUID("eduPersonUniqueId", "urn:oid:1.3.6.1.4.1.5923.1.1.1.13"),
   EPTID("eduPersonTargetedId", "urn:oid:1.3.6.1.4.1.5923.1.1.1.10"),
   EPPN("eduPersonPrincipalName", "urn:oid:1.3.6.1.4.1.5923.1.1.1.6"),
@@ -44,16 +47,16 @@ public enum Saml2Attribute {
   CERN_LAST_NAME("cernLastName", "http://schemas.xmlsoap.org/claims/Lastname"),
   CERN_HOME_INSTITUTE("cernHomeInstitute", "http://schemas.xmlsoap.org/claims/HomeInstitute"),
   CERN_AUTH_LEVEL("cernAuthLevel", "http://schemas.xmlsoap.org/claims/AuthLevel");
-  
-  
+  //@formatter:on
+
   private String alias;
   private String attributeName;
-  
+
   private Saml2Attribute(String alias, String attributeName) {
     this.alias = alias;
     this.attributeName = attributeName;
   }
-  
+
   public String getAlias() {
     return alias;
   }
@@ -61,7 +64,7 @@ public enum Saml2Attribute {
   public String getAttributeName() {
     return attributeName;
   }
-  
+
   public static Optional<Saml2Attribute> byName(String name) {
     for (Saml2Attribute a : Saml2Attribute.values()) {
       if (a.getAttributeName().equals(name)) {
@@ -73,12 +76,21 @@ public enum Saml2Attribute {
   }
 
   public static Saml2Attribute byAlias(String alias) {
-    for (Saml2Attribute a: Saml2Attribute.values()) {
+    for (Saml2Attribute a : Saml2Attribute.values()) {
       if (a.getAlias().equals(alias)) {
         return a;
       }
     }
-    
-    throw new IllegalArgumentException("Unknown SAML 2 attribute: "+alias);
+
+    throw new IllegalArgumentException("Unknown SAML 2 attribute: " + alias);
+  }
+
+  public String resolveValue(SAMLCredential credential) {
+    String value = credential.getAttributeAsString(getAttributeName());
+
+    if (value == null) {
+      value = credential.getAttributeAsString(getAlias());
+    }
+    return value;
   }
 }
