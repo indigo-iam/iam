@@ -179,7 +179,7 @@ public class IamSystemScopeService implements SystemScopeService {
 
   @Override
   public Set<SystemScope> getAllSorted() {
-    return scopeRepository.findAll(Sort.by("value").ascending())
+    return scopeRepository.findAll(Sort.by("id").ascending())
       .stream()
       .collect(Collectors.toCollection(LinkedHashSet::new));
   }

@@ -378,8 +378,7 @@ public class IamTokenService implements OAuth2TokenEntityService {
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(request.getScope());
     filteredScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
-    scopeFilter.filterScopes(filteredScopes, authentication);
-    return filteredScopes;
+    return scopeFilter.filterScopes(filteredScopes, authentication);
   }
 
   private void handleCodeChallenge(OAuth2Request request) {
