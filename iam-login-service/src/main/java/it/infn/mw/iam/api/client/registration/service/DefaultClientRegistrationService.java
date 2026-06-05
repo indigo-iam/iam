@@ -66,6 +66,7 @@ import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -184,7 +185,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void cleanupRequestedScopesOnUpdate(RegisteredClientDTO request,
       Authentication authentication, ClientDetailsEntity oldClient) {
 
-    systemScopeService.getReserved().forEach(s -> request.getScope().remove(s.getValue()));
+    IamSystemScopeService.RESERVED_VALUES.forEach(request.getScope()::remove);
 
     if (!accountUtils.isAdmin(authentication)) {
       Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
@@ -236,7 +237,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (entity.getScope().isEmpty()) {
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
-      systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
+      IamSystemScopeService.RESERVED_VALUES.forEach(entity.getScope()::remove);
       if (registrationProperties.isAdminOnlyCustomScopes()
           && !accountUtils.isAdmin(authentication)) {
         removeCustomScopes(entity);

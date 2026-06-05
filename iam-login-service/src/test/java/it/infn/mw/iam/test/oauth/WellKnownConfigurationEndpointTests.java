@@ -175,7 +175,7 @@ class WellKnownConfigurationEndpointTests {
   void testWellKnownCacheEviction() throws Exception {
 
     SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
-    scopeService.save(scope);
+    scopeService.create(scope);
 
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())
@@ -184,7 +184,7 @@ class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
 
     scope = new SystemScope(SYSTEM_SCOPE_1);
-    scopeService.save(scope);
+    scopeService.create(scope);
 
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())

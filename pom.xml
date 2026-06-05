@@ -52,7 +52,7 @@
 
     <junit.version>5.14.1</junit.version>
 
-    <mitreid.version>1.3.7.cnaf-20260427</mitreid.version>
+    <mitreid.version>2.0.0.cnaf-20260603</mitreid.version>
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
     <voms.version>3.3.8</voms.version>
