@@ -91,7 +91,7 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
   void testX509AuthenticationSuccessUserNotFound() throws Exception {
     mvc.perform(MockMvcRequestBuilders.get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
   }
 
   @Test
@@ -114,7 +114,7 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"))
+      .andExpect(redirectedUrl("/login"))
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_CAN_LOGIN_KEY, is(TRUE)));
 
@@ -153,7 +153,7 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"))
+      .andExpect(redirectedUrl("/login"))
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_SUSPENDED_ACCOUNT_KEY, is(TRUE)));
 
@@ -181,7 +181,7 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
       .perform(MockMvcRequestBuilders.get("/")
         .headers(test0SSLHeadersVerificationFailed("verification failed")))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
   }
 
 

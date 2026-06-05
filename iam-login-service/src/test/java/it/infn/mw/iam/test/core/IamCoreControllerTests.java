@@ -84,11 +84,10 @@ class IamCoreControllerTests {
   @Test
   void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
 
-    // Here the spring security filter assumes we run on localhost:80
     mvc.perform(get("/"))
       .andDo(print())
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
 
     mvc.perform(get("/login"))
       .andDo(print())
