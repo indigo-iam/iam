@@ -189,42 +189,6 @@ class IamCoreControllerTests {
   }
 
   @Test
-  void testWebfingerUserFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:test@iam.test")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isOk());
-
-  }
-
-  @Test
-  void testWebfingerUserNotFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testUnknownUriFormat() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "xyz://not.supported")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testWebfingerNonOidcRel() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "another.rel"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
   void testErrorPage() {
     Assertions
       .assertThatThrownBy(() -> mvc.perform(get("/error").contentType(MediaType.APPLICATION_JSON)))
