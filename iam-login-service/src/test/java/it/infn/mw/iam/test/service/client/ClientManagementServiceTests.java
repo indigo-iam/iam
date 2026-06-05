@@ -58,6 +58,7 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -262,6 +263,54 @@ class ClientManagementServiceTests {
     assertTrue(updatedClient.isDynamicallyRegistered());
     assertNotNull(updatedClient.getRegistrationClientUri());
     assertTrue(updatedClient.getGrantTypes().containsAll(Set.of(CLIENT_CREDENTIALS, DEVICE_CODE)));
+  }
+
+  @Test
+  void testSwitchingFromBasicAuthnToPublicClientUnsetSecret() throws ParseException {
+
+    userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
+    when(userAuth.getName()).thenReturn("test");
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
+
+    String clientId = response.getClientId();
+    RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
+    assertNotNull(client.getClientSecret());
+
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
+
+    assertEquals(TokenEndpointAuthenticationMethod.none, updatedClient.getTokenEndpointAuthMethod());
+    assertNull(updatedClient.getClientSecret());
+  }
+
+  @Test
+  void testSwitchingFromPublicClientToBasicAuthnRotatesSecret() throws ParseException {
+
+    userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
+    when(userAuth.getName()).thenReturn("test");
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    request.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
+
+    String clientId = response.getClientId();
+    RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
+    assertNull(client.getClientSecret());
+    assertEquals(TokenEndpointAuthenticationMethod.none, client.getTokenEndpointAuthMethod());
+
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
+
+    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic, updatedClient.getTokenEndpointAuthMethod());
+    assertNotNull(updatedClient.getClientSecret());
   }
 
   @Test
