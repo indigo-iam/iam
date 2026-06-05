@@ -76,21 +76,13 @@ public class SamlExternalAuthenticationToken
     ri.setSubject(samlId.getUserId());
     ri.setSubjectAttribute(samlId.getAttributeId());
 
-    if (GIVEN_NAME.resolveValue(cred).isPresent()) {
-      ri.setGivenName(GIVEN_NAME.resolveValue(cred).get());
-    }
+    GIVEN_NAME.resolveValue(cred).ifPresent(ri::setGivenName);
 
-    if (SN.resolveValue(cred).isPresent()) {
-      ri.setFamilyName(SN.resolveValue(cred).get());
-    }
+    SN.resolveValue(cred).ifPresent(ri::setFamilyName);
 
-    if (MAIL.resolveValue(cred).isPresent()) {
-      ri.setEmail(MAIL.resolveValue(cred).get());
-    }
+    MAIL.resolveValue(cred).ifPresent(ri::setEmail);
 
-    if (EPPN.resolveValue(cred).isPresent()) {
-      ri.setSuggestedUsername(EPPN.resolveValue(cred).get());
-    }
+    EPPN.resolveValue(cred).ifPresent(ri::setSuggestedUsername);
 
     Map<String, String> additionalAttrs = Maps.newHashMap();
     additionalAttrs.putAll(buildAuthnInfoMap());
