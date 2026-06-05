@@ -70,19 +70,28 @@ public class SamlExternalAuthenticationToken
     ExternalAuthenticationRegistrationInfo ri =
         new ExternalAuthenticationRegistrationInfo(ExternalAuthenticationType.SAML);
 
-    SAMLCredential cred = (SAMLCredential) getExternalAuthentication().getCredentials();
-
     ri.setIssuer(samlId.getIdpId());
     ri.setSubject(samlId.getUserId());
     ri.setSubjectAttribute(samlId.getAttributeId());
 
-    GIVEN_NAME.resolveValue(cred).ifPresent(ri::setGivenName);
+    SAMLCredential cred = (SAMLCredential) getExternalAuthentication().getCredentials();
+    Map<Saml2Attribute, String> samlAttributes = Saml2Attribute.resolveValues(cred);
 
-    SN.resolveValue(cred).ifPresent(ri::setFamilyName);
+    if (samlAttributes.containsKey(GIVEN_NAME)) {
+      ri.setGivenName(samlAttributes.get(GIVEN_NAME));
+    }
 
-    MAIL.resolveValue(cred).ifPresent(ri::setEmail);
+    if (samlAttributes.containsKey(SN)) {
+      ri.setFamilyName(samlAttributes.get(SN));
+    }
 
-    EPPN.resolveValue(cred).ifPresent(ri::setSuggestedUsername);
+    if (samlAttributes.containsKey(MAIL)) {
+      ri.setEmail(samlAttributes.get(MAIL));
+    }
+
+    if (samlAttributes.containsKey(EPPN)) {
+      ri.setSuggestedUsername(samlAttributes.get(EPPN));
+    }
 
     Map<String, String> additionalAttrs = Maps.newHashMap();
     additionalAttrs.putAll(buildAuthnInfoMap());
@@ -110,7 +119,7 @@ public class SamlExternalAuthenticationToken
 
     for (Attribute attr : cred.getAttributes()) {
 
-      Optional<Saml2Attribute> maybeKnownAttr = resolveAttribute(attr.getName());
+      Optional<Saml2Attribute> maybeKnownAttr = Saml2Attribute.resolve(attr.getName());
 
       String attrName = attr.getName();
 
@@ -126,19 +135,5 @@ public class SamlExternalAuthenticationToken
     }
 
     return authnInfo;
-  }
-
-  private Optional<Saml2Attribute> resolveAttribute(String name) {
-    Optional<Saml2Attribute> attr = Saml2Attribute.byName(name);
-
-    if (attr.isPresent()) {
-      return attr;
-    }
-
-    try {
-      return Optional.of(Saml2Attribute.byAlias(name));
-    } catch (IllegalArgumentException e) {
-      return Optional.empty();
-    }
   }
 }

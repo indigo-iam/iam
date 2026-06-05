@@ -15,8 +15,13 @@
  */
 package it.infn.mw.iam.authn.saml.util;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
+import org.opensaml.saml2.core.Attribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.saml.SAMLCredential;
 
 public enum Saml2Attribute {
@@ -49,6 +54,8 @@ public enum Saml2Attribute {
   CERN_AUTH_LEVEL("cernAuthLevel", "http://schemas.xmlsoap.org/claims/AuthLevel");
   //@formatter:on
 
+  public static final Logger LOG = LoggerFactory.getLogger(Saml2Attribute.class);
+
   private String alias;
   private String attributeName;
 
@@ -65,32 +72,33 @@ public enum Saml2Attribute {
     return attributeName;
   }
 
-  public static Optional<Saml2Attribute> byName(String name) {
+  public static Saml2Attribute from(String input) {
     for (Saml2Attribute a : Saml2Attribute.values()) {
-      if (a.getAttributeName().equals(name)) {
-        return Optional.of(a);
-      }
-    }
-
-    return Optional.empty();
-  }
-
-  public static Saml2Attribute byAlias(String alias) {
-    for (Saml2Attribute a : Saml2Attribute.values()) {
-      if (a.getAlias().equals(alias)) {
+      if (a.getAlias().equals(input) || a.getAttributeName().equals(input)) {
         return a;
       }
     }
-
-    throw new IllegalArgumentException("Unknown SAML 2 attribute: " + alias);
+    throw new IllegalArgumentException("SAML2Attribute not found for: " + input);
   }
 
-  public Optional<String> resolveValue(SAMLCredential credential) {
-    Optional<String> value =
-        Optional.ofNullable(credential.getAttributeAsString(getAttributeName()));
-    if (value.isEmpty()) {
-      return Optional.ofNullable(credential.getAttributeAsString(getAlias()));
+  public static Optional<Saml2Attribute> resolve(String input) {
+    try {
+      return Optional.of(from(input));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
     }
-    return value;
+  }
+
+  public static Map<Saml2Attribute, String> resolveValues(SAMLCredential credential) {
+    Map<Saml2Attribute, String> attributes = new HashMap<>();
+    for (Attribute a : credential.getAttributes()) {
+      try {
+        attributes.put(Saml2Attribute.from(a.getName()),
+            credential.getAttributeAsString(a.getName()));
+      } catch (IllegalArgumentException e) {
+        LOG.debug("SAML attribute {} not supported", a.getName());
+      }
+    }
+    return attributes;
   }
 }

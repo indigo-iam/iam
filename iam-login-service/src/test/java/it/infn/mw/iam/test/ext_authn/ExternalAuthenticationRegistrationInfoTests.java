@@ -179,7 +179,6 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getEmail(), equalTo("test@test.org"));
   }
 
-
   @Test
   void testSamlAdditionalAttributes() throws NoSuchAlgorithmException, CertificateException,
     KeyStoreException, IOException, SecurityException, SignatureException, MarshallingException {
