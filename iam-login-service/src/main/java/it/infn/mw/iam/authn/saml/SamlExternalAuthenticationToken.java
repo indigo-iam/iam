@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.saml;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoBuilder.SAML_TYPE;
 import static it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoBuilder.TYPE_ATTR;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.EPPN;
@@ -77,20 +76,20 @@ public class SamlExternalAuthenticationToken
     ri.setSubject(samlId.getUserId());
     ri.setSubjectAttribute(samlId.getAttributeId());
 
-    if (!isNullOrEmpty(GIVEN_NAME.resolveValue(cred))) {
-      ri.setGivenName(GIVEN_NAME.resolveValue(cred));
+    if (GIVEN_NAME.resolveValue(cred).isPresent()) {
+      ri.setGivenName(GIVEN_NAME.resolveValue(cred).get());
     }
 
-    if (!isNullOrEmpty(SN.resolveValue(cred))) {
-      ri.setFamilyName(SN.resolveValue(cred));
+    if (SN.resolveValue(cred).isPresent()) {
+      ri.setFamilyName(SN.resolveValue(cred).get());
     }
 
-    if (!isNullOrEmpty(MAIL.resolveValue(cred))) {
-      ri.setEmail(MAIL.resolveValue(cred));
+    if (MAIL.resolveValue(cred).isPresent()) {
+      ri.setEmail(MAIL.resolveValue(cred).get());
     }
 
-    if (!isNullOrEmpty(EPPN.resolveValue(cred))) {
-      ri.setSuggestedUsername(EPPN.resolveValue(cred));
+    if (EPPN.resolveValue(cred).isPresent()) {
+      ri.setSuggestedUsername(EPPN.resolveValue(cred).get());
     }
 
     Map<String, String> additionalAttrs = Maps.newHashMap();

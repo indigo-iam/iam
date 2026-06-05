@@ -85,11 +85,11 @@ public enum Saml2Attribute {
     throw new IllegalArgumentException("Unknown SAML 2 attribute: " + alias);
   }
 
-  public String resolveValue(SAMLCredential credential) {
-    String value = credential.getAttributeAsString(getAttributeName());
-
-    if (value == null) {
-      value = credential.getAttributeAsString(getAlias());
+  public Optional<String> resolveValue(SAMLCredential credential) {
+    Optional<String> value =
+        Optional.ofNullable(credential.getAttributeAsString(getAttributeName()));
+    if (value.isEmpty()) {
+      return Optional.ofNullable(credential.getAttributeAsString(getAlias()));
     }
     return value;
   }
