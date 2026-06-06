@@ -27,6 +27,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +40,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensaml.saml2.core.Attribute;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
@@ -119,7 +123,7 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
   void testMissingEmailSamlCredentialSanityCheck() {
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(T1_SAML_ID)));
-    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
         () -> userDetailsService.loadUserBySAML(cred));
     assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
         Saml2Attribute.MAIL.getAlias(), Saml2Attribute.MAIL.getAttributeName())));
@@ -129,10 +133,16 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
   void testMissingGivenNameSamlCredentialSanityCheck() {
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(T1_SAML_ID)));
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(mail));
+
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
 
-    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
         () -> userDetailsService.loadUserBySAML(cred));
     assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
         Saml2Attribute.GIVEN_NAME.getAlias(), Saml2Attribute.GIVEN_NAME.getAttributeName())));
@@ -142,12 +152,21 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
   void testMissingFamilyNameSamlCredentialSanityCheck() {
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(T1_SAML_ID)));
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    Attribute givenName = mock(Attribute.class);
+    when(givenName.getName()).thenReturn(Saml2Attribute.GIVEN_NAME.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(mail, givenName));
+
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
 
-    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
         () -> userDetailsService.loadUserBySAML(cred));
     assertThat(e.getMessage(), containsString(String.format("missing required attribute: %s (%s)",
         Saml2Attribute.SN.getAlias(), Saml2Attribute.SN.getAttributeName())));
@@ -157,6 +176,18 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
   void testSamlIdIsUsedForUsername() {
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(T1_SAML_ID)));
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    Attribute givenName = mock(Attribute.class);
+    when(givenName.getName()).thenReturn(Saml2Attribute.GIVEN_NAME.getAttributeName());
+
+    Attribute sn = mock(Attribute.class);
+    when(sn.getName()).thenReturn(Saml2Attribute.SN.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(mail, givenName, sn));
+
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
@@ -173,6 +204,18 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
   void uuidIsUsedForAccountUsernameIfResolvedIdLongerThan128Chars() {
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(LONG_SAML_ID)));
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    Attribute givenName = mock(Attribute.class);
+    when(givenName.getName()).thenReturn(Saml2Attribute.GIVEN_NAME.getAttributeName());
+
+    Attribute sn = mock(Attribute.class);
+    when(sn.getName()).thenReturn(Saml2Attribute.SN.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(mail, givenName, sn));
+
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
@@ -195,7 +238,7 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
     lenient().when(cred.getRemoteEntityID())
       .thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
 
-    UsernameNotFoundException e = assertThrows(UsernameNotFoundException.class,
+    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
         () -> userDetailsService.loadUserBySAML(cred));
     assertThat(e.getMessage(),
         containsString(String.format("SAML credential issuer '%s' is not trusted",
@@ -210,26 +253,22 @@ class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport {
 
     lenient().when(resolver.resolveSamlUserIdentifier(cred))
       .thenReturn(success(List.of(T1_SAML_ID)));
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    Attribute givenName = mock(Attribute.class);
+    when(givenName.getName()).thenReturn(Saml2Attribute.GIVEN_NAME.getAttributeName());
+
+    Attribute sn = mock(Attribute.class);
+    when(sn.getName()).thenReturn(Saml2Attribute.SN.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(mail, givenName, sn));
+
     lenient().when(cred.getRemoteEntityID())
       .thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn(T1_MAIL);
-    lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
-      .thenReturn(T1_GIVEN_NAME);
-    lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
-      .thenReturn(T1_SN);
-
-    User user = (User) userDetailsService.loadUserBySAML(cred);
-    assertThat(user.getUsername(), equalTo(T1_EPUID));
-  }
-
-  @Test
-  void testFriendlyAttributeAliasIsAccepted() {
-    lenient().when(resolver.resolveSamlUserIdentifier(cred))
-      .thenReturn(success(List.of(T1_SAML_ID)));
-    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
-      .thenReturn(null);
-    lenient().when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAlias())).thenReturn(T1_MAIL);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
     lenient().when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))

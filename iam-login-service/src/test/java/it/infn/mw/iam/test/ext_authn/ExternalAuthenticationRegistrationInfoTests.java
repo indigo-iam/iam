@@ -36,6 +36,7 @@ import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.xml.io.MarshallingException;
 import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.signature.SignatureException;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
@@ -52,13 +53,12 @@ import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.ext_authn.saml.SamlTestConfig;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlAssertionBuilder;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, SamlTestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
-public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticationTestSupport {
+@AutoConfigureMockMvc
+class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticationTestSupport {
 
   public static final String ENTITY_ID = "https://assertion-consumer.example";
   public static final String ASSERTION_CONSUMER_URL = "https://assertion-consumer.example/saml";
@@ -151,6 +151,17 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     SAMLCredential cred = mock(SAMLCredential.class);
     when(cred.getRemoteEntityID()).thenReturn("test-saml-issuer");
 
+    Attribute givenName = mock(Attribute.class);
+    when(givenName.getName()).thenReturn(Saml2Attribute.GIVEN_NAME.getAttributeName());
+
+    Attribute sn = mock(Attribute.class);
+    when(sn.getName()).thenReturn(Saml2Attribute.SN.getAttributeName());
+
+    Attribute mail = mock(Attribute.class);
+    when(mail.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(givenName, sn, mail));
+
     when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn("Test Given Name");
     when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName()))
@@ -181,7 +192,7 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
 
   @Test
   void testSamlAdditionalAttributes() throws NoSuchAlgorithmException, CertificateException,
-    KeyStoreException, IOException, SecurityException, SignatureException, MarshallingException {
+      KeyStoreException, IOException, SecurityException, SignatureException, MarshallingException {
 
     ExpiringUsernameAuthenticationToken token = mock(ExpiringUsernameAuthenticationToken.class);
 
@@ -226,5 +237,4 @@ public class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticat
     assertThat(uri.getEmail(), equalTo(T1_MAIL));
     assertThat(uri.getAdditionalAttributes().get("urn:oid:1.2.3.4.5"), equalTo("12345"));
   }
-
 }
