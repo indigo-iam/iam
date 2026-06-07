@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 
@@ -87,130 +88,199 @@ public class X509TestSupport {
 
   public static final String RCAUTH_CA_SUBJECT = "CN=RCAuth Mock CA,O=INDIGO-IAM,C=IT";
 
-  protected X509Certificate TEST_0_CERT;
-  protected X509Certificate OLD_TEST_0_CERT;
-  protected X509Certificate TEST_1_CERT;
-  protected X509Certificate TEST_0_DER_CERT;
-  protected X509Certificate TEST_2_CERT;
-
-  protected String TEST_0_CERT_STRING;
-  protected String OLD_TEST_0_CERT_STRING;
-  protected String TEST_1_CERT_STRING;
-  protected String TEST_2_CERT_STRING;
-  protected byte[] TEST_0_DER_CERT_BYTES;
-
-  protected String TEST_0_CERT_STRING_NGINX;
-  protected String TEST_1_CERT_STRING_NGINX;
-  protected String TEST_2_CERT_STRING_NGINX;
-  protected String TEST_0_CERT_STRING_NGINX_NEW;
-  protected String TEST_0_CERT_STRING_HAPROXY;
-
-  protected IamX509Certificate TEST_0_IAM_X509_CERT;
-  protected IamX509Certificate OLD_TEST_0_IAM_X509_CERT;
-  protected IamX509Certificate TEST_1_IAM_X509_CERT;
-  protected IamX509Certificate TEST_2_IAM_X509_CERT;
   protected IamX509Certificate TEST_3_IAM_X509_CERT;
 
-  protected PEMCredential TEST_0_PEM_CREDENTIAL;
+  public static final String TEST_0_CERT_LABEL = "TEST 0 cert label";
+  public static final String TEST_1_CERT_LABEL = "TEST 1 cert label";
+  public static final String TEST_2_CERT_LABEL = "TEST 2 cert label";
+  public static final String OLD_TEST_0_CERT_LABEL = "Old TEST 0 cert label";
 
-  protected String TEST_0_CERT_LABEL = "TEST 0 cert label";
-  protected String TEST_1_CERT_LABEL = "TEST 1 cert label";
-  protected String TEST_2_CERT_LABEL = "TEST 2 cert label";
-  protected String OLD_TEST_0_CERT_LABEL = "Old TEST 0 cert label";
-
-  protected String TEST_USERNAME = "test";
-  protected String TEST_100_USERNAME = "test_100";
-  protected String TEST_PASSWORD = "password";
+  public static final String TEST_USERNAME = "test";
+  public static final String TEST_100_USERNAME = "test_100";
+  public static final String TEST_PASSWORD = "password";
 
   protected X509Credential RCAUTH_CA_CRED;
 
-  protected X509TestSupport() {
-    try {
-      TEST_0_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_0_CERT_PATH)));
+  // TEST 0
 
-      TEST_0_CERT = CertificateUtils.loadCertificate(
-          new ByteArrayInputStream(TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
-          Encoding.PEM);
+  protected String getTest0CertString() throws IOException {
 
-      TEST_0_DER_CERT_BYTES = Files.readAllBytes(Paths.get(TEST_0_DER_CERT_PATH));
+    return new String(Files.readAllBytes(Paths.get(TEST_0_CERT_PATH)));
+  }
 
-      TEST_0_DER_CERT = CertificateUtils
-        .loadCertificate(new ByteArrayInputStream(TEST_0_DER_CERT_BYTES), Encoding.DER);
+  protected X509Certificate getTest0Cert() throws IOException {
+    return CertificateUtils.loadCertificate(
+        new ByteArrayInputStream(getTest0CertString().getBytes(StandardCharsets.US_ASCII)),
+        Encoding.PEM);
+  }
 
-      TEST_1_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_1_CERT_PATH)));
+  protected IamX509Certificate getTest0Cert(Instant instant) throws IOException {
 
-      TEST_1_CERT = CertificateUtils.loadCertificate(
-          new ByteArrayInputStream(TEST_1_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
-          Encoding.PEM);
+    Date now = Date.from(instant);
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setCertificate(getTest0CertString());
+    cert.setSubjectDn(TEST_0_SUBJECT);
+    cert.setIssuerDn(TEST_0_ISSUER);
+    cert.setLabel(TEST_0_CERT_LABEL);
+    cert.setPrimary(false);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+    return cert;
+  }
 
-      OLD_TEST_0_CERT_STRING = new String(Files.readAllBytes(Paths.get(OLD_TEST_0_CERT_PATH)));
+  protected byte[] getTest0DerCertBytes() throws IOException {
 
-      OLD_TEST_0_CERT = CertificateUtils.loadCertificate(
-          new ByteArrayInputStream(OLD_TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
-          Encoding.PEM);
+    return Files.readAllBytes(Paths.get(TEST_0_DER_CERT_PATH));
+  }
 
-      TEST_2_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_2_CERT_PATH)));
+  protected X509Certificate getTest0DerCert() throws IOException {
 
-      TEST_2_CERT = CertificateUtils.loadCertificate(
-          new ByteArrayInputStream(TEST_2_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
-          Encoding.PEM);
+    return CertificateUtils.loadCertificate(new ByteArrayInputStream(getTest0DerCertBytes()),
+        Encoding.DER);
+  }
 
-      TEST_0_IAM_X509_CERT = new IamX509Certificate();
-      TEST_0_IAM_X509_CERT.setCertificate(TEST_0_CERT_STRING);
-      TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
-      TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
-      TEST_0_IAM_X509_CERT.setLabel(TEST_0_CERT_LABEL);
-      TEST_0_IAM_X509_CERT.setPrimary(false);
+  // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
+  protected String getTest0CertNginx() throws IOException {
 
-      OLD_TEST_0_IAM_X509_CERT = new IamX509Certificate();
-      OLD_TEST_0_IAM_X509_CERT.setCertificate(OLD_TEST_0_CERT_STRING);
-      OLD_TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
-      OLD_TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
-      OLD_TEST_0_IAM_X509_CERT.setLabel(OLD_TEST_0_CERT_LABEL);
-      OLD_TEST_0_IAM_X509_CERT.setPrimary(false);
+    return getTest0CertString().replace('\n', '\t');
+  }
 
-      TEST_1_IAM_X509_CERT = new IamX509Certificate();
-      TEST_1_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
-      TEST_1_IAM_X509_CERT.setSubjectDn(TEST_1_SUBJECT);
-      TEST_1_IAM_X509_CERT.setIssuerDn(TEST_1_ISSUER);
-      TEST_1_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
-      TEST_1_IAM_X509_CERT.setPrimary(false);
+  // This is how NGINX encodes certificate in the header when $ssl_client_escaped_cert is used
+  protected String getTest0CertNginxEscaped() throws IOException {
 
-      TEST_2_IAM_X509_CERT = new IamX509Certificate();
-      TEST_2_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
-      TEST_2_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
-      TEST_2_IAM_X509_CERT.setIssuerDn(TEST_1_ISSUER);
-      TEST_2_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
-      TEST_2_IAM_X509_CERT.setPrimary(false);
+    return URLEncoder.encode(getTest0CertString(), StandardCharsets.UTF_8);
+  }
 
-      TEST_3_IAM_X509_CERT = new IamX509Certificate();
-      TEST_3_IAM_X509_CERT.setCertificate(TEST_2_CERT_STRING);
-      TEST_3_IAM_X509_CERT.setSubjectDn(TEST_2_SUBJECT);
-      TEST_3_IAM_X509_CERT.setIssuerDn(TEST_2_ISSUER);
-      TEST_3_IAM_X509_CERT.setLabel(TEST_2_CERT_LABEL);
-      TEST_3_IAM_X509_CERT.setPrimary(false);
+  // This is how HAProxy encodes certificate in the header when [ssl_c_der,base64] is used
+  protected String getTest0CertHaProxy() throws IOException {
 
-      // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
-      TEST_0_CERT_STRING_NGINX = TEST_0_CERT_STRING.replace('\n', '\t');
-      TEST_1_CERT_STRING_NGINX = TEST_1_CERT_STRING.replace('\n', '\t');
-      TEST_2_CERT_STRING_NGINX = TEST_2_CERT_STRING.replace('\n', '\t');
+    return Base64.getEncoder().encodeToString(getTest0DerCertBytes());
+  }
 
-      // This is how NGINX encodes certificate in the header when $ssl_client_escaped_cert is used
-      TEST_0_CERT_STRING_NGINX_NEW = URLEncoder.encode(TEST_0_CERT_STRING, StandardCharsets.UTF_8);
+  protected PEMCredential getTest0PemCredential()
+      throws KeyStoreException, CertificateException, IOException {
 
-      // This is how HAProxy encodes certificate in the header when [ssl_c_der,base64] is used
-      TEST_0_CERT_STRING_HAPROXY = Base64.getEncoder().encodeToString(TEST_0_DER_CERT_BYTES);
+    return new PEMCredential(TEST_0_KEY_PATH, TEST_0_CERT_PATH, "pass".toCharArray());
+  }
 
-      TEST_0_PEM_CREDENTIAL =
-          new PEMCredential(TEST_0_KEY_PATH, TEST_0_CERT_PATH, "pass".toCharArray());
+  // Old Test 0
 
-      RCAUTH_CA_CRED =
-          new KeystoreCredential(RCAUTH_CA_CERT_PATH, RCAUTH_CA_CERT_PASSWORD.toCharArray(),
-              RCAUTH_CA_CERT_PASSWORD.toCharArray(), null, "PKCS12");
+  protected String getOldTest0CertString() throws IOException {
 
-    } catch (IOException | KeyStoreException | CertificateException e) {
-      throw new AssertionError(e.getMessage(), e);
-    }
+    return new String(Files.readAllBytes(Paths.get(OLD_TEST_0_CERT_PATH)));
+  }
+
+  protected X509Certificate getOldTest0Cert() throws IOException {
+    return CertificateUtils.loadCertificate(
+        new ByteArrayInputStream(getOldTest0CertString().getBytes(StandardCharsets.US_ASCII)),
+        Encoding.PEM);
+  }
+
+  protected IamX509Certificate getOldTest0Cert(Instant instant) throws IOException {
+
+    Date now = Date.from(instant);
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setCertificate(getOldTest0CertString());
+    cert.setSubjectDn(TEST_0_SUBJECT);
+    cert.setIssuerDn(TEST_0_ISSUER);
+    cert.setLabel(OLD_TEST_0_CERT_LABEL);
+    cert.setPrimary(false);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+    return cert;
+  }
+
+  // Test 1
+
+  protected String getTest1CertString() throws IOException {
+
+    return new String(Files.readAllBytes(Paths.get(TEST_1_CERT_PATH)));
+  }
+
+  protected X509Certificate getTest1Cert() throws IOException {
+    return CertificateUtils.loadCertificate(
+        new ByteArrayInputStream(getTest1CertString().getBytes(StandardCharsets.US_ASCII)),
+        Encoding.PEM);
+  }
+
+  protected IamX509Certificate getTest1Cert(Instant instant) throws IOException {
+
+    Date now = Date.from(instant);
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setCertificate(getTest1CertString());
+    cert.setSubjectDn(TEST_1_SUBJECT);
+    cert.setIssuerDn(TEST_1_ISSUER);
+    cert.setLabel(TEST_1_CERT_LABEL);
+    cert.setPrimary(false);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+    return cert;
+  }
+
+  // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
+  protected String getTest1CertNginx() throws IOException {
+
+    return getTest1CertString().replace('\n', '\t');
+  }
+
+  // Test 2
+
+  protected String getTest2CertString() throws IOException {
+
+    return new String(Files.readAllBytes(Paths.get(TEST_2_CERT_PATH)));
+  }
+
+  protected X509Certificate getTest2Cert() throws IOException {
+    return CertificateUtils.loadCertificate(
+        new ByteArrayInputStream(getTest2CertString().getBytes(StandardCharsets.US_ASCII)),
+        Encoding.PEM);
+  }
+
+  // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
+  protected String getTest2CertNginx() throws IOException {
+
+    return getTest2CertString().replace('\n', '\t');
+  }
+
+  protected IamX509Certificate getTest2Cert(Instant instant) throws IOException {
+
+    Date now = Date.from(instant);
+    IamX509Certificate cert = new IamX509Certificate();
+    // Certificate of Test 1!!
+    cert.setCertificate(getTest1CertString());
+    // Subject of Test 0!!
+    cert.setSubjectDn(TEST_0_SUBJECT);
+    // Issuer DN of Test 1!!
+    cert.setIssuerDn(TEST_1_ISSUER);
+    // Certificate label of Test 1!!
+    cert.setLabel(TEST_1_CERT_LABEL);
+    cert.setPrimary(false);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+    return cert;
+  }
+
+  // Test 3
+
+  protected IamX509Certificate getTest3Cert(Instant instant) throws IOException {
+
+    Date now = Date.from(instant);
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setCertificate(getTest2CertString());
+    cert.setSubjectDn(TEST_2_SUBJECT);
+    cert.setIssuerDn(TEST_2_ISSUER);
+    cert.setLabel(TEST_2_CERT_LABEL);
+    cert.setPrimary(false);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+    return cert;
+  }
+
+  // RCAUTH CA CRED
+  protected X509Credential getRCAuthCaCred() throws KeyStoreException, IOException {
+
+    return new KeystoreCredential(RCAUTH_CA_CERT_PATH, RCAUTH_CA_CERT_PASSWORD.toCharArray(),
+        RCAUTH_CA_CERT_PASSWORD.toCharArray(), null, "PKCS12");
   }
 
   protected void mockVerifyHeader(HttpServletRequest request, String content) {
@@ -226,7 +296,7 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(redirectedUrl("/login"))
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -239,7 +309,7 @@ public class X509TestSupport {
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test"))
       .andReturn()
       .getRequest()
@@ -253,7 +323,7 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(redirectedUrl("/login"))
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -266,7 +336,7 @@ public class X509TestSupport {
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test_100"))
       .andReturn()
       .getRequest()
@@ -280,7 +350,7 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test1SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(redirectedUrl("/login"))
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -293,7 +363,7 @@ public class X509TestSupport {
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test"))
       .andReturn()
       .getRequest()
@@ -307,7 +377,7 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test2SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(redirectedUrl("/login"))
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -320,7 +390,7 @@ public class X509TestSupport {
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test"))
       .andReturn()
       .getRequest()
@@ -329,17 +399,17 @@ public class X509TestSupport {
     return session;
   }
 
-  protected void linkTest1CertificateToAccount(IamAccount account) {
+  protected void linkTest1CertificateToAccount(IamAccount account, Instant instant)
+      throws IOException {
     IamX509Certificate test1Cert = new IamX509Certificate();
     test1Cert.setPrimary(false);
 
-    test1Cert.setCertificate(TEST_1_CERT_STRING);
+    test1Cert.setCertificate(getTest1CertString());
     test1Cert.setSubjectDn(TEST_1_SUBJECT);
     test1Cert.setIssuerDn(TEST_1_ISSUER);
-
     test1Cert.setLabel(TEST_1_CERT_LABEL);
 
-    Date now = new Date();
+    Date now = Date.from(instant);
 
     test1Cert.setCreationTime(now);
     test1Cert.setLastUpdateTime(now);
@@ -348,13 +418,14 @@ public class X509TestSupport {
     account.getX509Certificates().add(test1Cert);
   }
 
-  protected void linkTest0CertificateToAccount(IamAccount account) {
+  protected void linkTest0CertificateToAccount(IamAccount account, Instant instant)
+      throws IOException {
     IamX509Certificate test0Cert = new IamX509Certificate();
     test0Cert.setPrimary(true);
 
-    Date now = new Date();
+    Date now = Date.from(instant);
 
-    test0Cert.setCertificate(TEST_0_CERT_STRING);
+    test0Cert.setCertificate(getTest0CertString());
     test0Cert.setSubjectDn(TEST_0_SUBJECT);
     test0Cert.setIssuerDn(TEST_0_ISSUER);
     test0Cert.setLabel(TEST_0_CERT_LABEL);
@@ -367,16 +438,15 @@ public class X509TestSupport {
   }
 
   protected void linkCertificateToAccount(IamAccount account, String subjectDN, String issuerDN,
-      String label) {
+      String label, Instant instant) {
+
     IamX509Certificate cert = new IamX509Certificate();
     cert.setPrimary(false);
-
     cert.setSubjectDn(subjectDN);
     cert.setIssuerDn(issuerDN);
-
     cert.setLabel(label);
 
-    Date now = new Date();
+    Date now = Date.from(instant);
 
     cert.setCreationTime(now);
     cert.setLastUpdateTime(now);
@@ -385,26 +455,28 @@ public class X509TestSupport {
     account.getX509Certificates().add(cert);
   }
 
-  protected HttpHeaders test0SSLHeadersVerificationSuccess() {
+  protected HttpHeaders test0SSLHeadersVerificationSuccess() throws IOException {
     return test0SSLHeaders(true, null);
   }
 
-  protected HttpHeaders test1SSLHeadersVerificationSuccess() {
+  protected HttpHeaders test1SSLHeadersVerificationSuccess() throws IOException {
     return test1SSLHeaders(true, null);
   }
 
-  protected HttpHeaders test2SSLHeadersVerificationSuccess() {
+  protected HttpHeaders test2SSLHeadersVerificationSuccess() throws IOException {
     return test2SSLHeaders(true, null);
   }
 
-  protected HttpHeaders test0SSLHeadersVerificationFailed(String verificationError) {
+  protected HttpHeaders test0SSLHeadersVerificationFailed(String verificationError)
+      throws IOException {
     return test0SSLHeaders(false, verificationError);
   }
 
-  private HttpHeaders test0SSLHeaders(boolean verified, String verificationError) {
+  private HttpHeaders test0SSLHeaders(boolean verified, String verificationError)
+      throws IOException {
     HttpHeaders headers = new HttpHeaders();
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
-        TEST_0_CERT_STRING_NGINX);
+        getTest0CertNginx());
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
         TEST_0_SUBJECT);
@@ -437,10 +509,12 @@ public class X509TestSupport {
     return headers;
   }
 
-  private HttpHeaders test2SSLHeaders(boolean verified, String verificationError) {
+  private HttpHeaders test2SSLHeaders(boolean verified, String verificationError)
+      throws IOException {
+
     HttpHeaders headers = new HttpHeaders();
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
-        TEST_1_CERT_STRING_NGINX);
+        getTest1CertNginx());
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
         TEST_1_SUBJECT);
@@ -473,10 +547,12 @@ public class X509TestSupport {
     return headers;
   }
 
-  private HttpHeaders test1SSLHeaders(boolean verified, String verificationError) {
+  private HttpHeaders test1SSLHeaders(boolean verified, String verificationError)
+      throws IOException {
+
     HttpHeaders headers = new HttpHeaders();
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
-        TEST_1_CERT_STRING_NGINX);
+        getTest1CertNginx());
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
         TEST_0_SUBJECT);
@@ -509,11 +585,11 @@ public class X509TestSupport {
     return headers;
   }
 
-  protected void mockHttpRequestWithTest0SSLHeaders(HttpServletRequest request) {
+  protected void mockHttpRequestWithTest0SSLHeaders(HttpServletRequest request) throws IOException {
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
-      .thenReturn(TEST_0_CERT_STRING_NGINX);
+      .thenReturn(getTest0CertNginx());
 
     Mockito
       .when(request
@@ -552,11 +628,13 @@ public class X509TestSupport {
 
   }
 
-  protected void mockHttpRequestWithTest0SSLHeadersNginxNew(HttpServletRequest request) {
+  protected void mockHttpRequestWithTest0SSLHeadersNginxNew(HttpServletRequest request)
+      throws IOException {
+
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
-      .thenReturn(TEST_0_CERT_STRING_NGINX_NEW);
+      .thenReturn(getTest0CertNginxEscaped());
 
     Mockito
       .when(request
@@ -595,11 +673,13 @@ public class X509TestSupport {
 
   }
 
-  protected void mockHttpRequestWithTest0SSLHeadersHAProxy(HttpServletRequest request) {
+  protected void mockHttpRequestWithTest0SSLHeadersHAProxy(HttpServletRequest request)
+      throws IOException {
+
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
-      .thenReturn(TEST_0_CERT_STRING_HAPROXY);
+      .thenReturn(getTest0CertHaProxy());
 
     Mockito
       .when(request

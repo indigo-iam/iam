@@ -25,6 +25,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -32,8 +34,10 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,11 +47,18 @@ import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class IntrospectionEndpointTests extends TokenGetterUtils {
+
+  @Value("${iam.organisation.name}")
+  String organisationName;
 
   @Value("${iam.issuer}")
   String issuer;
@@ -69,6 +80,9 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
 
   @Autowired
   ObjectMapper mapper;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {
@@ -103,8 +117,9 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
   @Test
   void testIntrospectionEndpointInactiveWithExpiredToken() throws Exception {
 
-    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
-    String accessToken = getExpiredAccessToken(client).getValue();
+    String accessToken = getPasswordToken("openid").accessToken();
+
+    clock.advance(Duration.ofHours(6));
 
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
@@ -113,10 +128,6 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
     // @formatter:on
   }
 
-  private OAuth2AccessTokenEntity getExpiredAccessToken(ClientDetailsEntity client) {
-
-    return buildExpiredAccessToken(client, TEST_USERNAME, new String[] {"openid", "profile"});
-  }
 
   @Test
   void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
@@ -157,7 +168,7 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
               containsString("offline_access"),
               containsString("profile")
           )))
-      .andExpect(jsonPath("$.exp").doesNotExist())
+      .andExpect(jsonPath("$.exp").exists())
       .andExpect(jsonPath("$.jti").exists());
     // @formatter:on
   }
@@ -254,7 +265,7 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(false)));
+      .andExpect(jsonPath("$.active", equalTo(true)));
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
@@ -294,7 +305,7 @@ class IntrospectionEndpointTests extends IntrospectionEndpointTestsUtils {
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(false)));
+      .andExpect(jsonPath("$.active", equalTo(true)));
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));

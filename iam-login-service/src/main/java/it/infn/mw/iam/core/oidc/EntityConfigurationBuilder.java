@@ -16,13 +16,13 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +40,7 @@ import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -49,6 +50,7 @@ public class EntityConfigurationBuilder {
 
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
 
+  private final Clock clock;
   private final JWSSigner signer;
   private final RSAKey signingKey;
   private final Map<String, Object> jwks;
@@ -57,10 +59,12 @@ public class EntityConfigurationBuilder {
   private final long expirationSec;
   private final Map<String, Object> metadata;
 
-  public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
+  public EntityConfigurationBuilder(Clock clock, JwkKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider, OpenidFederationProperties fedProperties,
       IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint) {
-    signingKey = keyStore.getKeys()
+
+    this.clock = clock;
+    this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
       .map(k -> (RSAKey) k)
@@ -105,7 +109,7 @@ public class EntityConfigurationBuilder {
 
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(issuer)
-      .issueTime(new Date())
+      .issueTime(Date.from(clock.instant()))
       .expirationTime(Date.from(Instant.now().plusSeconds(expirationSec)))
       .claim("jwks", jwks)
       .claim("metadata", metadata)

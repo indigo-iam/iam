@@ -15,119 +15,177 @@
  */
 package it.infn.mw.iam.core.gc;
 
-import java.util.Collection;
+import java.time.Clock;
+import java.util.Date;
+import java.util.List;
 
-import org.mitre.data.DefaultPageCriteria;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.openid.connect.service.ApprovedSiteService;
+import org.mitre.openid.connect.model.ApprovedSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
+import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Service
 public class DefaultGarbageCollector implements GarbageCollector {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultGarbageCollector.class);
 
-  private final ApprovedSiteService approvedSiteService;
+  private final Clock clock;
+  private final IamApprovedSiteRepository approvedSiteRepository;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
-  private final DeviceCodeRepository deviceCodeRepo;
-  private final AuthenticationHolderRepository authenticationHolderRepository;
+  private final IamDeviceCodeRepository deviceCodeRepo;
+  private final IamAuthenticationHolderRepository authenticationHolderRepository;
   private final IamRevokedAccessTokenRepository revokedAccessTokenRepo;
-  private final AuthorizationCodeRepository authzCodeRepo;
+  private final IamAuthorizationCodeRepository authzCodeRepo;
+  private final IamClientRepository clientRepository;
+  private final ClientService clientService;
 
-  public DefaultGarbageCollector(ApprovedSiteService approvedSiteService,
+  public DefaultGarbageCollector(Clock clock, IamApprovedSiteRepository approvedSiteRepository,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, DeviceCodeRepository deviceCodeRepo,
-      AuthenticationHolderRepository authenticationHolderRepository,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, IamDeviceCodeRepository deviceCodeRepo,
+      IamAuthenticationHolderRepository authenticationHolderRepository,
       IamRevokedAccessTokenRepository revokedAccessTokenRepo,
-      AuthorizationCodeRepository authzCodeRepo) {
+      IamAuthorizationCodeRepository authzCodeRepo, IamClientRepository clientRepository,
+      ClientService clientService) {
 
-    this.approvedSiteService = approvedSiteService;
+    this.clock = clock;
+    this.approvedSiteRepository = approvedSiteRepository;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
     this.deviceCodeRepo = deviceCodeRepo;
     this.authenticationHolderRepository = authenticationHolderRepository;
     this.revokedAccessTokenRepo = revokedAccessTokenRepo;
     this.authzCodeRepo = authzCodeRepo;
+    this.clientRepository = clientRepository;
+    this.clientService = clientService;
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredApprovedSites", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredApprovedSites(int count) {
-    approvedSiteService.clearExpiredSites();
+
+    Page<ApprovedSite> expiredSites = approvedSiteRepository
+      .getExpiredCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
+    LOG.debug("Found {} expired approved sites", expiredSites.getTotalElements());
+    approvedSiteRepository.deleteAll(expiredSites);
+    if (expiredSites.getTotalElements() > 0) {
+      LOG.info("Removed {} expired approved sites", expiredSites.getTotalElements());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredAuthzCodes", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredAuthorizationCodes(int count) {
 
-    Collection<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo.getExpiredCodes();
-    LOG.debug("Found {} expired authorization codes", expiredAuthzCodes.size());
-    expiredAuthzCodes.forEach(authzCodeRepo::remove);
+    Page<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo
+      .getExpiredAuthorizationCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
+    LOG.debug("Found {} expired authorization codes", expiredAuthzCodes.getTotalElements());
+    authzCodeRepo.deleteAll(expiredAuthzCodes);
+    if (expiredAuthzCodes.getTotalElements() > 0) {
+      LOG.info("Removed {} expired authorization codes", expiredAuthzCodes.getTotalElements());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredDeviceCodes", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredDeviceCodes(int count) {
 
-    Collection<DeviceCode> expiredDeviceCodes = deviceCodeRepo.getExpiredCodes();
-    expiredDeviceCodes.forEach(deviceCodeRepo::remove);
-    LOG.debug("Removed {} expired device codes", expiredDeviceCodes.size());
+    List<DeviceCode> expiredDeviceCodes =
+        deviceCodeRepo.findExpired(Date.from(clock.instant()));
+    deviceCodeRepo.deleteAll(expiredDeviceCodes);
+    if (expiredDeviceCodes.isEmpty()) {
+      LOG.info("Removed {} expired device codes", expiredDeviceCodes.size());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredRevokedTokens", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredRevokedTokens(int count) {
 
-    Page<IamRevokedAccessToken> revokedTokens =
-        revokedAccessTokenRepo.findExpired(new OffsetPageable(0, 100));
-    revokedTokens.forEach(revokedAccessTokenRepo::delete);
-    LOG.debug("Removed {} revoked access tokens", revokedTokens.getTotalElements());
+    Page<IamRevokedAccessToken> revokedTokens = revokedAccessTokenRepo
+      .findExpired(Date.from(clock.instant()), new OffsetPageable(0, count));
+    revokedAccessTokenRepo.deleteAll(revokedTokens);
+    if (revokedTokens.getTotalElements() > 0) {
+      LOG.info("Removed {} revoked access tokens", revokedTokens.getTotalElements());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredAccessTokens", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredAccessTokens(int count) {
 
     Page<OAuth2AccessTokenEntity> expiredAccessTokens =
-        accessTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
-    expiredAccessTokens.forEach(accessTokenRepo::delete);
-    LOG.debug("Removed {} expired access tokens", expiredAccessTokens.getNumberOfElements());
+        accessTokenRepo.findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
+    accessTokenRepo.deleteAll(expiredAccessTokens);
+    if (expiredAccessTokens.getTotalElements() > 0) {
+      LOG.info("Removed {} expired access tokens", expiredAccessTokens.getTotalElements());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteExpiredRefreshTokens", lockAtLeastFor = "1m", lockAtMostFor = "15m")
+  @Transactional(value = "defaultTransactionManager")
   public void clearExpiredRefreshTokens(int count) {
 
-    Page<OAuth2RefreshTokenEntity> expiredRefreshTokens =
-        refreshTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
-    expiredRefreshTokens.forEach(refreshTokenRepo::delete);
-    LOG.debug("Removed {} expired refresh tokens", expiredRefreshTokens.getNumberOfElements());
+    Page<OAuth2RefreshTokenEntity> expiredRefreshTokens = refreshTokenRepo
+      .findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
+    refreshTokenRepo.deleteAll(expiredRefreshTokens);
+    if (expiredRefreshTokens.getTotalElements() > 0) {
+      LOG.info("Removed {} expired refresh tokens", expiredRefreshTokens.getTotalElements());
+    }
   }
 
   @Override
+  @SchedulerLock(name = "deleteAuthenticationHolder", lockAtLeastFor = "1m", lockAtMostFor = "15m")
+  @Transactional(value = "defaultTransactionManager")
   public void clearOrphanedAuthenticationHolder(int count) {
 
-    Collection<AuthenticationHolderEntity> orphanedHolders =
-        authenticationHolderRepository.getOrphanedAuthenticationHolders(new DefaultPageCriteria());
-    orphanedHolders.forEach(authenticationHolderRepository::remove);
-    LOG.debug("Removed {} orphaned authentication holders", orphanedHolders.size());
+    Page<AuthenticationHolderEntity> orphanedHolders = authenticationHolderRepository
+      .getOrphans(new OffsetPageable(0, count), Date.from(clock.instant()));
+    authenticationHolderRepository.deleteAll(orphanedHolders);
+    if (orphanedHolders.getTotalElements() > 0) {
+      LOG.info("Removed {} orphaned authentication holders", orphanedHolders.getTotalElements());
+    }
+  }
+
+  @Override
+  @SchedulerLock(name = "suspendExpiredClients", lockAtLeastFor = "1m", lockAtMostFor = "15m")
+  @Transactional(value = "defaultTransactionManager")
+  public void clearExpiredClients(int count) {
+
+    Page<ClientDetailsEntity> expiredClients = clientRepository
+      .findActiveClientsExpiredBefore(new OffsetPageable(0, count), Date.from(clock.instant()));
+    expiredClients.getContent()
+      .forEach(client -> clientService.updateClientStatus(client, false, "expired_client_task"));
+    if (expiredClients.getTotalElements() > 0) {
+      LOG.info("Suspended {} expired clients", expiredClients.getTotalElements());
+    }
   }
 
 }

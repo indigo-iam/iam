@@ -50,9 +50,7 @@ public class DefaultClientService implements ClientService {
   private ApplicationEventPublisher eventPublisher;
 
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo,
-      ApplicationEventPublisher eventPublisher
-      ) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
@@ -81,7 +79,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-        .orElseGet(newAccountClient(owner, client));
+      .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -101,7 +99,8 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
+      String userId) {
     client.setActive(status);
     client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
@@ -122,7 +121,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-          .map(IamAccountClient::getClient);
+        .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -157,13 +156,13 @@ public class DefaultClientService implements ClientService {
   @Override
   public void useClient(ClientDetailsEntity client) {
 
-    LocalDate now = LocalDate.now();
+    LocalDate today = LocalDate.now(clock);
     if (client.getClientLastUsed() == null) {
-      client.setClientLastUsed(new ClientLastUsedEntity(client, now));
+      client.setClientLastUsed(new ClientLastUsedEntity(client, today));
       return;
     }
-    if (client.getClientLastUsed().getLastUsed().isBefore(now)) {
-      client.getClientLastUsed().setLastUsed(now);
+    if (!today.equals(client.getClientLastUsed().getLastUsed())) {
+      client.getClientLastUsed().setLastUsed(today);
     }
   }
 

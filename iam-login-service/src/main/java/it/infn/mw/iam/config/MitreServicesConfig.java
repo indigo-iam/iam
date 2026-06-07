@@ -30,11 +30,9 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
-import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
 import org.mitre.openid.connect.service.DynamicClientValidationService;
@@ -44,7 +42,6 @@ import org.mitre.openid.connect.service.PairwiseIdentiferService;
 import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
-import org.mitre.openid.connect.service.impl.DefaultApprovedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultBlacklistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultOIDCTokenService;
 import org.mitre.openid.connect.service.impl.DefaultStatsService;
@@ -80,7 +77,6 @@ import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
@@ -259,8 +255,6 @@ public class MitreServicesConfig {
     return new InMemoryClientLogoLoadingService();
   }
 
-
-
   @Bean
   SymmetricKeyJWTValidatorCacheService defaultSimmetricKeyJWTValidatorCacheService() {
 
@@ -292,12 +286,6 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  ApprovedSiteService defaultApprovedSiteService() {
-
-    return new DefaultApprovedSiteService();
-  }
-
-  @Bean
   StatsService defaultStatsService() {
 
     return new DefaultStatsService();
@@ -316,11 +304,6 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  SystemScopeService defaultSystemScopeService(ScopeMatcherRegistry registry) {
-    return new IamSystemScopeService(registry);
-  }
-
-  @Bean
   ResourceSetService defaultResourceSetService() {
 
     return new DummyResourceSetService();
@@ -330,11 +313,6 @@ public class MitreServicesConfig {
   ClientKeyCacheService defaultClientKeyCacheService() {
 
     return new ClientKeyCacheService();
-  }
-
-  @Bean
-  DeviceCodeService defaultDeviceCodeService() {
-    return new DefaultDeviceCodeService();
   }
 
   @Bean

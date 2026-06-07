@@ -22,128 +22,159 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
-import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.model.ClientLastUsedEntity;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.provider.TokenRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-public class ClientLastUsedTests extends TestTokensUtils {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ClientLastUsedTests extends TokenGetterUtils {
 
-    public static final String POST_CLIENT = "post-client";
-    public static final String TOKEN_LOOKUP_CLIENT = "token-lookup-client";
-    public static final String TEST_347_USER = "test_347";
-    public static final String[] SCOPES = { "offline_access" };
+  static final String TEST_347_USER = "test_347";
+  static final String SCOPES = "offline_access";
 
-    @Autowired
-    IamProperties iamProperties;
+  @Autowired
+  IamProperties iamProperties;
 
-  @Test
-  void testClientLastUsedCreationOnTokenCreation() {
-        // Initially, the last used is null
-        ClientDetailsEntity client = loadTestClient(TOKEN_LOOKUP_CLIENT);
-        assertNull(client.getClientLastUsed());
+  @Autowired
+  ClientDetailsEntityService clientDetailsService;
 
-        // When the last used date is not tracked, it is not updated and remains null
-        iamProperties.getClient().setTrackLastUsed(false);
-        buildAccessToken(client, TEST_347_USER, SCOPES);
-        assertNull(client.getClientLastUsed());
+  @Autowired
+  IamTokenService tokenService;
 
-        // When the last used date is tracked, it is created with the current date
-        iamProperties.getClient().setTrackLastUsed(true);
-        buildAccessToken(client, TEST_347_USER, SCOPES);
-        assertNotNull(client.getClientLastUsed());
-        LocalDate lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate today = LocalDate.now();
-        assertEquals(today, lastUsed);
-    }
+  @Autowired
+  SecurityContextUtils context;
 
-  @Test
-  void testLastUsedUpdateOnTokenCreation() {
-        iamProperties.getClient().setTrackLastUsed(true);
+  @Autowired
+  MutableClock clock;
 
-        // Initially, the last used date is set to the default value
-        ClientDetailsEntity client = loadTestClient(POST_CLIENT);
-        assertNotNull(client.getClientLastUsed());
-        LocalDate lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate defaultDate = LocalDate.of(1994, 3, 19);
-        assertEquals(defaultDate, lastUsed);
+  LocalDate now;
 
-        // After creating a token, the last used date is updated
-        buildAccessToken(client, TEST_347_USER, SCOPES);
-        assertNotNull(client.getClientLastUsed());
-        lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate today = LocalDate.now();
-        assertEquals(today, lastUsed);
-    }
+  @BeforeEach
+  void init() {
+    context.cleanupSecurityContext();
+    now = LocalDate.ofInstant(clock.instant(), ZoneId.of("UTC"));
+  }
 
   @Test
-  void testClientLastUsedCreationOnTokenRefresh() {
-        iamProperties.getClient().setTrackLastUsed(false);
+  void testClientLastUsedCreationOnTokenCreation() throws Exception {
 
-        ClientDetailsEntity client = loadTestClient(TOKEN_LOOKUP_CLIENT);
-        assertTrue(client.isAllowRefresh());
+    // Initially, the last used is null
+    assertNotYetUsed(LOOKUP_CLIENT_ID);
 
-        // Initially, the last used date is null
-        OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TEST_347_USER, SCOPES);
-        assertNull(client.getClientLastUsed());
+    context.useLocalUser(LOOKUP_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
 
-        // After refreshing the access token, the last used date is created with the
-        // current date
-        iamProperties.getClient().setTrackLastUsed(true);
-        OAuth2RefreshTokenEntity refreshToken = accessToken.getRefreshToken();
-        TokenRequest tokenRequest = new TokenRequest(emptyMap(), TOKEN_LOOKUP_CLIENT, Collections.emptySet(), "");
-        tokenService.refreshAccessToken(refreshToken.getValue(), tokenRequest);
-        assertNotNull(client.getClientLastUsed());
-        LocalDate lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate today = LocalDate.now();
-        assertEquals(today, lastUsed);
-    }
+    // When the last used date is not tracked, it is not updated and remains null
+    iamProperties.getClient().setTrackLastUsed(false);
+    assertNotNull(getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
+        "password", "openid").accessToken());
+    assertNotYetUsed(LOOKUP_CLIENT_ID);
+
+    // When the last used date is tracked, it is created with the current date
+    iamProperties.getClient().setTrackLastUsed(true);
+    assertNotNull(getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
+        "password", "openid").accessToken());
+    assertLastUsedIs(LOOKUP_CLIENT_ID, now);
+  }
 
   @Test
-  void testClientLastUsedUpdateOnTokenRefresh() {
-        iamProperties.getClient().setTrackLastUsed(false);
+  void testLastUsedUpdateOnTokenCreation() throws Exception {
 
-        // Get a client with a default last used date and able to generate refresh
-        // tokens
-        ClientDetailsEntity client = loadTestClient(POST_CLIENT);
-        client.setGrantTypes(Set.of("refresh_token"));
-        assertTrue(client.isAllowRefresh());
+    iamProperties.getClient().setTrackLastUsed(true);
 
-        // Initially, the last used date is set to the default value
-        assertNotNull(client.getClientLastUsed());
-        LocalDate lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate defaultDate = LocalDate.of(1994, 3, 19);
-        assertEquals(defaultDate, lastUsed);
+    // Initially, the last used date is set to the value created through a test migration
+    assertLastUsedIs(POST_CLIENT_ID, LocalDate.of(1994, 3, 19));
 
-        // After creating an access token, the last used date is not updated
-        OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TEST_347_USER, SCOPES);
-        assertNotNull(client.getClientLastUsed());
-        lastUsed = client.getClientLastUsed().getLastUsed();
-        assertEquals(defaultDate, lastUsed);
+    context.useLocalUser(POST_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
+    // After creating a token, the last used date is updated
+    assertNotNull(
+        getPasswordToken(POST_CLIENT_ID, POST_CLIENT_SECRET, TEST_347_USER, "password", "openid")
+          .accessToken());
+    assertLastUsedIs(POST_CLIENT_ID, now);
+  }
 
-        // After refreshing the access token, the last used date is updated
-        iamProperties.getClient().setTrackLastUsed(true);
-        OAuth2RefreshTokenEntity refreshToken = accessToken.getRefreshToken();
-        TokenRequest tokenRequest = new TokenRequest(emptyMap(), POST_CLIENT, Collections.emptySet(), "");
-        tokenService.refreshAccessToken(refreshToken.getValue(), tokenRequest);
-        assertNotNull(client.getClientLastUsed());
-        lastUsed = client.getClientLastUsed().getLastUsed();
-        LocalDate today = LocalDate.now();
-        assertEquals(today, lastUsed);
-    }
+  @Test
+  void testClientLastUsedCreationOnTokenRefresh() throws Exception {
 
+    // Initially, the last used is null
+    assertNotYetUsed(LOOKUP_CLIENT_ID);
+
+    iamProperties.getClient().setTrackLastUsed(false);
+
+    assertTrue(clientDetailsService.loadClientByClientId(LOOKUP_CLIENT_ID).isAllowRefresh());
+
+    context.useLocalUser(LOOKUP_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
+    // Initially, the last used date is null
+    String refreshToken = getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
+        "password", "openid offline_access").refreshToken();
+    assertNotNull(refreshToken);
+    assertNotYetUsed(LOOKUP_CLIENT_ID);
+
+    // After refreshing the access token, the last used date is created with the
+    // current date
+    iamProperties.getClient().setTrackLastUsed(true);
+    TokenRequest tokenRequest =
+        new TokenRequest(emptyMap(), LOOKUP_CLIENT_ID, Collections.emptySet(), "");
+    tokenService.refreshAccessToken(refreshToken, tokenRequest);
+    assertLastUsedIs(LOOKUP_CLIENT_ID, now);
+  }
+
+  @Test
+  void testClientLastUsedUpdateOnTokenRefresh() throws Exception {
+
+    iamProperties.getClient().setTrackLastUsed(false);
+
+    // Get a client with a default last used date and able to generate refresh tokens
+    assertTrue(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID).isAllowRefresh());
+    // Initially, the last used date is set to the default value
+    assertLastUsedIs(TEST_CLIENT_ID, LocalDate.of(1994, 3, 21));
+
+    context.useLocalUser(TEST_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
+    // After creating an access token, the last used date is not updated
+    String refreshToken = getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, TEST_347_USER,
+        "password", "openid offline_access").refreshToken();
+    assertNotNull(refreshToken);
+    assertLastUsedIs(TEST_CLIENT_ID, LocalDate.of(1994, 3, 21));
+
+    // After refreshing the access token, the last used date is updated
+    iamProperties.getClient().setTrackLastUsed(true);
+    TokenRequest tokenRequest =
+        new TokenRequest(emptyMap(), TEST_CLIENT_ID, Collections.emptySet(), "");
+    tokenService.refreshAccessToken(refreshToken, tokenRequest);
+    assertLastUsedIs(TEST_CLIENT_ID, now);
+  }
+
+  private void assertLastUsedIs(String clientId, LocalDate expected) {
+
+    ClientLastUsedEntity lastUsedEntity =
+        clientDetailsService.loadClientByClientId(clientId).getClientLastUsed();
+    assertNotNull(lastUsedEntity);
+    assertEquals(expected, lastUsedEntity.getLastUsed());
+  }
+
+  private void assertNotYetUsed(String clientId) {
+
+    assertNull(clientDetailsService.loadClientByClientId(clientId).getClientLastUsed());
+  }
 }

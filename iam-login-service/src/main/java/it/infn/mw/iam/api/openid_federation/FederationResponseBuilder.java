@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -41,6 +41,7 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.jwk.JWKUtils;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 
 @Service
 @Profile("openid-federation")
@@ -49,11 +50,13 @@ public class FederationResponseBuilder {
   @Value("${iam.issuer}")
   private String opEntityId;
 
+  private final Clock clock;
   private final JWSSigner signer;
   private final RSAKey signingKey;
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
 
-  public FederationResponseBuilder(JWKSetKeyStore keyStore) {
+  public FederationResponseBuilder(Clock clock, JwkKeyStore keyStore) {
+    this.clock = clock;
     this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
@@ -71,7 +74,7 @@ public class FederationResponseBuilder {
 
   public String build(RegisteredClientDTO registered, TrustChain trustChain) throws JOSEException {
 
-    Date iat = new Date();
+    Date iat = Date.from(clock.instant());
 
     Date exp = registered.getExpiration();
 

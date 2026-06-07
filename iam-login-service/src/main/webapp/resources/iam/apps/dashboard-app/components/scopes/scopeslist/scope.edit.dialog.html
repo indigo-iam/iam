@@ -39,23 +39,28 @@
 				<div class="col-sm-10">
 					<input class="form-control" name="description" id="description"
 						type="text" ng-model="$ctrl.scope.description"
-						placeholder="description" required ng-minlength="1" /> <span
-						class="glyphicon form-control-feedback"
+						placeholder="description" required ng-minlength="1" />
+					<span class="glyphicon form-control-feedback"
 						ng-class="{'glyphicon-remove': scopeEditionForm.description.$dirty && scopeEditionForm.description.$invalid, 'glyphicon-ok': scopeEditionForm.description.$dirty && scopeEditionForm.description.$valid}"
-						style="right: 15px"></span> <span class="help-block"
+						style="right: 15px"></span>
+					<span class="help-block"
 						ng-show="scopeEditionForm.description.$dirty && scopeEditionForm.description.$error.required">
-						This is a required field</span> <small>Human-readable text
-						description</small>
+						This is a required field</span>
+					<small>Human-readable text description</small>
 				</div>
 			</div>
 		</div>
 
 		<div class="control-group" id="defaultScope">
 			<div class="controls">
-				<label class="checkboxDefaultScope"><i class="fa fa-flag"></i>&nbsp;
-					<input type="checkbox" ng-model="$ctrl.scope.defaultScope"></span>
-					Default Scope</span> </label></br> <small>Newly-created clients get this scope
-					by default?</small>
+				<label class="checkboxDefaultScope">
+					<i class="fa fa-flag"></i>
+					&nbsp;
+					<input type="checkbox" ng-model="$ctrl.scope.defaultScope"/>
+					<span>Default Scope</span>
+				</label>
+				</br>
+				<small>Newly-created clients get this scope by default?</small>
 			</div>
 		</div>
 
@@ -63,11 +68,31 @@
 
 		<div class="control-group" id="restricted">
 			<div class="controls">
-				<label class="checkboxRestricted"><i class="fa fa-ban"></i>&nbsp;
-					<input type="checkbox" ng-model="$ctrl.scope.restricted"></span>
-					Restricted</span> </label></br> <small>Restricted scopes are only usable by
-					system administrators and are unavailable to dynamically registered
-					clients and protected resources</small>
+				<label class="checkboxRestricted">
+					<i class="fa fa-ban"></i>
+					&nbsp;
+					<input type="checkbox" ng-model="$ctrl.scope.restricted"/>
+					<span>Restricted</span>
+				</label>
+				</br>
+				<small>Restricted scopes are only usable by system administrators and are unavailable
+					to dynamically registered clients and protected resources</small>
+			</div>
+		</div>
+
+		</br>
+
+		<div class="control-group" id="structured">
+			<div class="controls">
+				<label class="checkboxStructured">
+					<i class="fa fa-magic"></i>
+					&nbsp;
+					<input type="checkbox" ng-model="$ctrl.scope.structured"/>
+					<span>Structured</span>
+				</label>
+				</br>
+				<small>Structured are in the form prefix:suffix.
+					The path parametric scopes have a file path in the suffix part.</small>
 			</div>
 		</div>
 

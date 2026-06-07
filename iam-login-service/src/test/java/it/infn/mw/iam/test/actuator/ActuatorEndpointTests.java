@@ -23,15 +23,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class ActuatorEndpointTests extends ActuatorTestSupport {
 

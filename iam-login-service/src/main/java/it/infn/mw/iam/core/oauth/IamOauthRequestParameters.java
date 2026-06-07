@@ -18,8 +18,6 @@ package it.infn.mw.iam.core.oauth;
 public abstract class IamOauthRequestParameters {
 
   public static final String AUTHZ_CODE_URL = "/oauth/confirm_access";
-  public static final String DEVICE_CODE_URL = "devicecode";
-  public static final String USER_CODE_URL = "device";
 
   public static final String REQUEST_USER_CODE_STRING = "requestUserCode";
 

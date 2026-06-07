@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oidc;
 
 import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -39,9 +40,12 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 public class TrustChainValidator {
 
   public static final Logger LOG = LoggerFactory.getLogger(TrustChainValidator.class);
+
+  private final Clock clock;
   private final TrustAnchorRepository trustAnchorRepository;
 
-  public TrustChainValidator(TrustAnchorRepository trustAnchorRepository) {
+  public TrustChainValidator(Clock clock, TrustAnchorRepository trustAnchorRepository) {
+    this.clock = clock;
     this.trustAnchorRepository = trustAnchorRepository;
   }
 
@@ -119,7 +123,8 @@ public class TrustChainValidator {
   }
 
   private void validateClaims(EntityStatement es) throws FederationException {
-    Date now = new Date();
+
+    Date now = Date.from(clock.instant());
     try {
       es.getClaimsSet().validateRequiredClaimsPresence();
     } catch (ParseException e) {

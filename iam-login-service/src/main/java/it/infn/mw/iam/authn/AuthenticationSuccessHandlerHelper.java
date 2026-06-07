@@ -15,8 +15,13 @@
  */
 package it.infn.mw.iam.authn;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Collection;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.WebAttributes;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -37,15 +43,13 @@ import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 
 public class AuthenticationSuccessHandlerHelper {
 
   private static final Logger logger =
       LoggerFactory.getLogger(AuthenticationSuccessHandlerHelper.class);
 
+  private final Clock clock;
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
@@ -53,9 +57,12 @@ public class AuthenticationSuccessHandlerHelper {
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public AuthenticationSuccessHandlerHelper(AccountUtils accountUtils, String iamBaseUrl,
-      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
-    IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+  public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
+      String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
+      IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
+      IamTotpMfaProperties iamTotpMfaProperties) {
+
+    this.clock = clock;
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
@@ -74,7 +81,7 @@ public class AuthenticationSuccessHandlerHelper {
       response.sendRedirect(MFA_ACTIVATE_URL);
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
-    }  else {
+    } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }
   }
@@ -82,7 +89,7 @@ public class AuthenticationSuccessHandlerHelper {
   private boolean isMfaActive(Authentication authentication) {
     final String username = authentication.getName();
     IamAccount account = accountRepo.findByUsername(username)
-        .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     return iamTotpMfaService.isAuthenticatorAppActive(account);
   }
@@ -121,8 +128,8 @@ public class AuthenticationSuccessHandlerHelper {
     AuthenticationSuccessHandler delegate =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
-    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(delegate,
-        aupSignatureCheckService, accountUtils, accountRepo);
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
+        delegate, aupSignatureCheckService, accountUtils, accountRepo);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 

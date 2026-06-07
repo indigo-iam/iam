@@ -1,5 +1,54 @@
 # Changelog
 
+## 1.14.0 (2026-05-04)
+
+## Features
+
+## What's Changed
+
+* Added support for AARC-G061 IDP hinting guideline
+* Added a paginated Group Requests API
+* Added support for signed RPMs
+* Aligned authorization between the SCIM `/me` endpoint and the corresponding `Users/{id}` endpoint
+* Ensured the client secret is returned only upon client creation and secret rotation
+* Prevented multiple AUP reminder emails from being sent
+* Added support for X.509 linking during registration
+* Fix unhandled errors in the IAM account clients endpoint
+* Added a client option to disable upscoping during token exchange
+* Added a Dockerfile for VOMS-AA and renamed the final image to `indigoiam/iam-voms-aa`
+* Stopped redirecting pre-authenticated users to the AUP page
+* Added a filter to enforce MFA for all users
+* Added a list of claims based on the requested scopes when introspecting AARC tokens
+* Fixed a TLS issue when downloading SAML metadata files
+* Fixed a duplicate key error for case-insensitive `info_key`
+* Added support for AARC-G052 Proxied Token Introspection implementation
+* Added support for OpenID Federation automatic client registration
+* Added support for a TOTP encryption key rotation mechanism during bootstrap
+* Added an option which allows to not store access tokens in the database
+* Follow RFC-4086 when creating the authorization code value
+* New dashboard client credentials configurable on bootstrap
+* Added storage.poll matcher in wlcg-scopes profile
+* Upgraded voms-api-java from 3.3.6 to 3.3.8 in order to upgrade to Bouncy Castle v1.84
+* Added alternative API endpoint for getting the approved site list with client details
+* Added SAML authn-context class-refs configurable list
+* Refactored VOMS-AA yaml configuration files
+* Enhanced/optimized IAM login service yaml profiles
+* Added support for AUDIT log in VOMS-AA service
+* Always prompt users to authorize scopes on device flow
+* Changed default remember decision to none during authorization code flow
+* Removed test keystore from the generated RPM
+* Support for XSString as SAML attribute value type
+
+### Notes for VOMS-AA
+
+* Docker image name has changed from `indigoiam/voms-aa-bp` to `indigoiam/iam-voms-aa`
+* The service no longer logs issued proxies at INFO logging level
+* New AUDIT events have been added: VomsProxyIssuedEvent, VomsProxyDeniedEvent
+
+### Notes for INDIGO IAM
+
+* The error returned on asking for a Token Exchange with an expired or malformed subject token has been changed from `invalid_token` to `invalid_grant`, according to the [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html). The response HTTP status code changed also from 401 to a proper 400.
+
 ## 1.13.4 (2025-01-26)
 
 ## What's Changed

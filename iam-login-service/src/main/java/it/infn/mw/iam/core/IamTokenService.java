@@ -21,7 +21,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHA
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE_METHOD;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_VERIFIER;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
@@ -43,7 +42,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -52,6 +50,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
@@ -64,7 +65,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
-import com.google.common.hash.Hashing;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.util.Base64URL;
@@ -81,9 +81,10 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -101,46 +102,49 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamTokenService.class);
 
+  private final Clock clock;
+  private final IamProperties iamProperties;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final IamAuthenticationHolderRepository authenticationHolderRepo;
   private final ClientService clientService;
-  private final IamAccountRepository accountRepository;
+  private final IamAccountService accountService;
   private final JWTSigningAndValidationService jwtSigningService;
   private final TokenRevocationService revocationService;
   private final OIDCTokenService connectTokenService;
   private final SystemScopeService scopeService;
   private final JWTProfileResolver profileResolver;
   private final ApplicationEventPublisher eventPublisher;
-  private final IamProperties iamProperties;
   private final ScopeFilter scopeFilter;
-  private final Clock clock;
+  private final TokenUtils tokenUtils;
 
   private final MessageDigest sha256Digest;
 
-  public IamTokenService(Clock clock, IamOAuthAccessTokenRepository accessTokenRepo,
+  public IamTokenService(Clock clock, IamProperties iamProperties,
+      IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo,
       IamAuthenticationHolderRepository authenticationHolderRepo, ClientService clientService,
-      IamAccountRepository accountRepository, JWTSigningAndValidationService jwtSigningService,
+      IamAccountService accountService, JWTSigningAndValidationService jwtSigningService,
       TokenRevocationService revocationService, OIDCTokenService connectTokenService,
       SystemScopeService scopeService, JWTProfileResolver profileResolver,
-      ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
-      ScopeFilter scopeFilter) throws NoSuchAlgorithmException {
+      ApplicationEventPublisher eventPublisher, ScopeFilter scopeFilter, TokenUtils tokenUtils)
+      throws NoSuchAlgorithmException {
 
+    this.iamProperties = iamProperties;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
     this.authenticationHolderRepo = authenticationHolderRepo;
     this.clientService = clientService;
-    this.accountRepository = accountRepository;
+    this.accountService = accountService;
     this.jwtSigningService = jwtSigningService;
     this.revocationService = revocationService;
     this.connectTokenService = connectTokenService;
     this.scopeService = scopeService;
     this.profileResolver = profileResolver;
     this.eventPublisher = eventPublisher;
-    this.iamProperties = iamProperties;
     this.scopeFilter = scopeFilter;
     this.clock = clock;
+    this.tokenUtils = tokenUtils;
 
     this.sha256Digest = MessageDigest.getInstance("SHA-256");
   }
@@ -149,7 +153,9 @@ public class IamTokenService implements OAuth2TokenEntityService {
   public Set<OAuth2AccessTokenEntity> getAllAccessTokensForUser(String id) {
 
     Set<OAuth2AccessTokenEntity> results = Sets.newLinkedHashSet();
-    results.addAll(accessTokenRepo.findAccessTokensForUser(id));
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      results.addAll(accessTokenRepo.findAccessTokensForUser(id));
+    }
     return results;
   }
 
@@ -176,31 +182,80 @@ public class IamTokenService implements OAuth2TokenEntityService {
   @Override
   public OAuth2AccessTokenEntity saveAccessToken(OAuth2AccessTokenEntity accessToken) {
 
-    AuthenticationHolderEntity ah =
-        authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
-    accessToken.setAuthenticationHolder(ah);
-    return accessTokenRepo.saveAndFlush(accessToken);
+    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)
+        || iamProperties.getAccessToken().isStoreOnDatabase()) {
+
+      AuthenticationHolderEntity ah =
+          authenticationHolderRepo.saveAndFlush(accessToken.getAuthenticationHolder());
+      accessToken.setAuthenticationHolder(ah);
+      return accessTokenRepo.saveAndFlush(accessToken);
+    }
+
+    return accessToken;
   }
 
   @Override
   public OAuth2Authentication loadAuthentication(String accessTokenValue)
       throws AuthenticationException {
 
-    return readAccessToken(accessTokenValue).getAuthenticationHolder().getAuthentication();
+    Optional<OAuth2AccessTokenEntity> accessTokenOnDb =
+        tokenUtils.loadFromDatabase(accessTokenValue);
+    if (accessTokenOnDb.isPresent()) {
+      tokenUtils.validate(accessTokenOnDb.get());
+      return accessTokenOnDb.get().getAuthenticationHolder().getAuthentication();
+    }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
+    ParsedAccessToken token = parseAndValidate(accessTokenValue);
+    return tokenUtils.getAuthentication(token);
+  }
+
+  private ParsedAccessToken parseAndValidate(String accessTokenValue) {
+
+    ParsedAccessToken token = tokenUtils.parseAccessToken(accessTokenValue);
+    tokenUtils.validate(token);
+    return token;
   }
 
   @Override
   public OAuth2AccessTokenEntity readAccessToken(String accessTokenValue) {
 
-    String hValue = sha256(accessTokenValue);
-    OAuth2AccessTokenEntity accessToken = accessTokenRepo.findByTokenValue(hValue)
-      .orElseThrow(() -> new InvalidTokenException("Access token not found"));
-
-    if (accessToken.isExpired()) {
-      throw new InvalidTokenException("The access token is expired");
+    Optional<OAuth2AccessTokenEntity> accessTokenOnDb =
+        tokenUtils.loadFromDatabase(accessTokenValue);
+    if (accessTokenOnDb.isPresent()) {
+      return accessTokenOnDb.get();
     }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
+    return buildAccessToken(parseAndValidate(accessTokenValue));
+  }
 
-    return accessToken;
+  private OAuth2AccessTokenEntity buildAccessToken(ParsedAccessToken accessToken) {
+
+    OAuth2AccessTokenEntity entity = new OAuth2AccessTokenEntity();
+    entity.setJwt(accessToken.jwt());
+    entity.setExpiration(accessToken.expiration());
+    entity.setScope(accessToken.scopes());
+    entity.setTokenType(OAuth2AccessToken.BEARER_TYPE);
+    if (!Objects.isNull(accessToken.refreshToken())) {
+      OAuth2RefreshToken refreshToken = new DefaultOAuth2RefreshToken(accessToken.refreshToken());
+      entity.setRefreshToken(refreshToken);
+    }
+    entity.setTokenValueHash(tokenUtils.sha256(accessToken.jwt().serialize()));
+    entity.setClient(loadClient(accessToken.clientId()));
+    entity.getAdditionalInformation().clear();
+    List<String> notAllowed = List.of("scope", "exp");
+    entity.getAdditionalInformation().putAll(accessToken.payload().toJSONObject());
+    entity.getAdditionalInformation().keySet().removeIf(notAllowed::contains);
+    return entity;
+  }
+
+  private ClientDetailsEntity loadClient(String clientId) {
+
+    return clientService.findClientByClientId(clientId)
+      .orElseThrow(() -> new InvalidTokenException("Client not found with client id " + clientId));
   }
 
   @Override
@@ -221,7 +276,7 @@ public class IamTokenService implements OAuth2TokenEntityService {
     Optional<IamAccount> account = Optional.empty();
     if (!authentication.isClientOnly()) {
       String username = authentication.getName();
-      account = accountRepository.findByUsername(username);
+      account = accountService.findByUsername(username);
     }
 
     if (hasCodeChallenge(request)) {
@@ -320,10 +375,10 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
   private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
 
-    Set<String> filteredScopes = scopeFilter.filterScopes(request.getScope(), authentication);
-    Set<SystemScope> scopes = scopeService.fromStrings(filteredScopes);
-    scopes = scopeService.removeReservedScopes(scopes);
-    return scopeService.toStrings(scopes);
+    Set<String> filteredScopes = new HashSet<>();
+    filteredScopes.addAll(request.getScope());
+    filteredScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
+    return scopeFilter.filterScopes(filteredScopes, authentication);
   }
 
   private void handleCodeChallenge(OAuth2Request request) {
@@ -377,18 +432,19 @@ public class IamTokenService implements OAuth2TokenEntityService {
       AuthenticationHolderEntity authHolder) {
 
     String jti = UUID.randomUUID().toString();
-    Date iat = new Date();
+    Instant iat = clock.instant();
     Date exp = null;
 
     if (client.getRefreshTokenValiditySeconds() != null
         && client.getRefreshTokenValiditySeconds() > 0) {
-      exp = new Date(System.currentTimeMillis() + client.getRefreshTokenValiditySeconds() * 1000L);
+      exp = Date
+        .from(iat.plus(client.getRefreshTokenValiditySeconds(), ChronoUnit.SECONDS));
     }
 
     JWTClaimsSet.Builder refreshClaims = new JWTClaimsSet.Builder();
     refreshClaims.jwtID(jti);
     refreshClaims.issuer(iamProperties.getIssuer());
-    refreshClaims.issueTime(iat);
+    refreshClaims.issueTime(Date.from(iat));
     refreshClaims.expirationTime(exp);
     refreshClaims.serializeNullClaims(false);
     PlainJWT refreshJwt = new PlainJWT(refreshClaims.build());
@@ -426,7 +482,7 @@ public class IamTokenService implements OAuth2TokenEntityService {
     Optional<IamAccount> account = Optional.empty();
     if (!newOAuth2Authentication.isClientOnly()) {
       String username = newOAuth2Authentication.getName();
-      account = accountRepository.findByUsername(username);
+      account = accountService.findByUsername(username);
     }
 
     ClientDetailsEntity requestingClient =
@@ -503,18 +559,16 @@ public class IamTokenService implements OAuth2TokenEntityService {
   private Set<String> computeRefreshedScopes(TokenRequest authRequest,
       AuthenticationHolderEntity authHolder, Optional<IamAccount> account) {
 
-    /* load reserved scopes from database */
-    Set<String> reservedScopes = scopeService.toStrings(scopeService.getReserved());
     /* retrieve authorized scopes from refresh token */
     Set<String> authorizedScopes =
         Sets.newHashSet(authHolder.getAuthentication().getOAuth2Request().getScope());
-    authorizedScopes.removeAll(reservedScopes);
+    authorizedScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
     /* get current requested scopes, if present */
     Set<String> requestedScopes = new HashSet<>();
     if (authRequest.getScope() != null) {
       requestedScopes.addAll(authRequest.getScope());
     }
-    requestedScopes.removeAll(reservedScopes);
+    requestedScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
 
     /* compute scopes to be filtered */
     Set<String> scopesToFilter = new HashSet<>();
@@ -534,10 +588,6 @@ public class IamTokenService implements OAuth2TokenEntityService {
       return scopeFilter.filterScopes(scopesToFilter, account.get());
     }
     return scopeFilter.filterScopes(authHolder).getScope();
-  }
-
-  public static String sha256(String tokenString) {
-    return Hashing.sha256().hashString(tokenString, StandardCharsets.UTF_8).toString();
   }
 
   @Override
@@ -599,5 +649,13 @@ public class IamTokenService implements OAuth2TokenEntityService {
   public OAuth2AccessTokenEntity getRegistrationAccessTokenForClient(ClientDetailsEntity client) {
 
     return accessTokenRepo.findRegistrationToken(client.getId()).orElse(null);
+  }
+
+  private boolean isResourceAccessToken(OAuth2AccessTokenEntity entity) {
+    return entity.getScope().contains(SystemScopeService.RESOURCE_TOKEN_SCOPE);
+  }
+
+  private boolean isRegistrationAccessToken(OAuth2AccessTokenEntity entity) {
+    return entity.getScope().contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
   }
 }

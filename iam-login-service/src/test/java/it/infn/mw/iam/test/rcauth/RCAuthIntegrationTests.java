@@ -37,6 +37,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.IOException;
+import java.text.ParseException;
+import java.time.Clock;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +82,10 @@ import it.infn.mw.iam.test.util.oidc.TokenResponse;
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class RCAuthIntegrationTests extends RCAuthTestSupport {
 
+  public RCAuthIntegrationTests() throws IOException, ParseException {
+    super();
+  }
+
   @TestConfiguration
   public static class TestConfig {
     @Bean
@@ -96,6 +103,9 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
 
   @Autowired
   MockMvc mvc;
+
+  @Autowired
+  Clock clock;
 
   MockRestTemplateFactory mockRtf;
 
@@ -195,7 +205,7 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
   }
 
   void prepareTokenResponse(String nonce) throws JsonProcessingException, JOSEException {
-    IdTokenBuilder builder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
+    IdTokenBuilder builder = new IdTokenBuilder(clock, rcAuthKeyStore, jwsAlgo);
 
     String idToken = builder.sub(SUB).issuer(ISSUER).customClaim(CERT_SUBJECT_DN_CLAIM, DN).build();
 
@@ -211,12 +221,12 @@ class RCAuthIntegrationTests extends RCAuthTestSupport {
       .andRespond(withSuccess(mapper.writeValueAsString(tr), MediaType.APPLICATION_JSON));
   }
 
-  public void prepareCertificateResponse() {
+  public void prepareCertificateResponse() throws IOException {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
-      .andRespond(withSuccess(TEST_0_CERT_STRING, TEXT_PLAIN));
+      .andRespond(withSuccess(getTest0CertString(), TEXT_PLAIN));
   }
 
   void verifyMockServerCalls() {

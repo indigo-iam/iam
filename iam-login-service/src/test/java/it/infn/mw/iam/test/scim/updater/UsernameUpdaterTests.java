@@ -16,73 +16,92 @@
 package it.infn.mw.iam.test.scim.updater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.api.tokens.MultiValueMapBuilder;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-public class UsernameUpdaterTests extends TestTokensUtils {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
+@Transactional
+class UsernameUpdaterTests extends TokenGetterUtils {
 
-  public static final String OLD = "oldusername";
-  public static final String NEW = "newusername";
-  public static final String TEST_CLIENT_ID = "token-lookup-client";
-  public static final String[] SCOPES = {"openid", "profile", "offline_access"};
-
-  private IamAccount account;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final String OLD = "oldusername";
+  static final String NEW = "newusername";
 
   @Autowired
-  private UsernameValidator usernameValidator;
+  UsernameValidator usernameValidator;
+
+  @Autowired
+  IamOAuthAccessTokenRepository accessTokenRepository;
+
+  @Autowired
+  IamOAuthRefreshTokenRepository refreshTokenRepository;
+
+  @Autowired
+  IamAccountRepository accountRepository;
+
+  @Autowired
+  PasswordEncoder encoder;
+
+  @Autowired
+  IamAccountService accountService;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
+
+  IamAccount account;
 
   @BeforeEach
   void setup() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
-    accessTokenRepository.deleteAll();
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    clearAllTokens();
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private IamAccount newAccount(String username) {
     IamAccount account = new IamAccount();
     account.setUsername(username);
+    account.setPassword("password");
+    account.setActive(true);
     account.setUuid(UUID.randomUUID().toString());
     IamUserInfo userInfo = new IamUserInfo();
     userInfo.setEmail(String.format("%s@test.io", username));
@@ -95,18 +114,19 @@ public class UsernameUpdaterTests extends TestTokensUtils {
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepository, accountService, encoder, account,
+    return AccountUpdaters.replacers(clock, accountRepository, accountService, encoder, account,
         accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   @Test
   void testUsernameReplacerWorks() throws JsonParseException, JsonMappingException,
-    UnsupportedEncodingException, IOException, Exception {
+      UnsupportedEncodingException, IOException, Exception {
 
     account = newAccount(OLD);
 
-    buildAccessToken(loadTestClient(TEST_CLIENT_ID), OLD, SCOPES);
-    assertThat(accessTokenRepository.count(), equalTo(1L));
+    context.useLocalUser(OLD, PASSWORD_CLIENT_ID, USER_AUTHORITIES);
+    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, OLD, "password",
+        "openid offline_access");
 
     Updater u = accountReplacers().username(NEW);
     assertThat(u.update(), is(true));
@@ -114,11 +134,14 @@ public class UsernameUpdaterTests extends TestTokensUtils {
 
     MultiValueMap<String, String> filterOldUsername =
         MultiValueMapBuilder.builder().userId(OLD).build();
+
+    context.useBearerAdminToken();
     ListResponseDTO<AccessToken> oldAccessTokens = getAccessTokenList(filterOldUsername);
     ListResponseDTO<RefreshToken> oldRefreshTokens = getRefreshTokenList(filterOldUsername);
 
     MultiValueMap<String, String> filterNewUsername =
         MultiValueMapBuilder.builder().userId(NEW).build();
+
     ListResponseDTO<AccessToken> newAccessTokens = getAccessTokenList(filterNewUsername);
     ListResponseDTO<RefreshToken> newRefreshTokens = getRefreshTokenList(filterNewUsername);
 

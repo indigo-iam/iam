@@ -24,83 +24,82 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
 import it.infn.mw.iam.test.util.WithMockSAMLUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-class DefaultFieldsValidationTests extends TestSupport {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstants {
 
-  private final String TEST_USERNAME = "test-attributes";
-  private final String TEST_EMAIL = TEST_USERNAME + "@example.org";
-  private final String TEST_GIVENNAME = "Test";
-  private final String TEST_FAMILYNAME = "User";
+  static final String TEST_ATTRIBUTES_USERNAME = "test-attributes";
+  static final String TEST_ATTRIBUTES_EMAIL = TEST_ATTRIBUTES_USERNAME + "@example.org";
+  static final String TEST_ATTRIBUTES_GIVENNAME = "Test";
+  static final String TEST_ATTRIBUTES_FAMILYNAME = "User";
 
-  private final String SAML_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
-  private final String SAML_USERNAME = "saml-username";
-  private final String SAML_EMAIL = SAML_USERNAME + "@example.org";
-  private final String SAML_GIVENNAME = "SAML";
-  private final String SAML_FAMILYNAME = "Remote";
+  static final String SAML_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
+  static final String SAML_USERNAME = "saml-username";
+  static final String SAML_EMAIL = SAML_USERNAME + "@example.org";
+  static final String SAML_GIVENNAME = "SAML";
+  static final String SAML_FAMILYNAME = "Remote";
 
-  private final String OIDC_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
-  private final String OIDC_USERNAME = "oidc-username";
-  private final String OIDC_EMAIL = OIDC_USERNAME + "@example.org";
-  private final String OIDC_GIVENNAME = "OIDC";
-  private final String OIDC_FAMILYNAME = "Remote";
-
-  @Autowired
-  private ObjectMapper objectMapper;
+  static final String OIDC_SUBJECT = "a957c196-0cac-4c24-a36f-972f2fa916a9";
+  static final String OIDC_USERNAME = "oidc-username";
+  static final String OIDC_EMAIL = OIDC_USERNAME + "@example.org";
+  static final String OIDC_GIVENNAME = "OIDC";
+  static final String OIDC_FAMILYNAME = "Remote";
 
   @Autowired
-  private MockOAuth2Filter oauth2Filter;
+  ObjectMapper objectMapper;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private IamAccountRepository iamAccountRepo;
+  IamAccountRepository iamAccountRepo;
 
   @Autowired
-  private IamRegistrationRequestRepository registrationRequestRepo;
+  IamRegistrationRequestRepository registrationRequestRepo;
+
+  @Autowired
+  SecurityContextUtils context;
 
   @BeforeEach
   void setup() {
-    oauth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   private RegistrationRequestDto createTestRegistrationRequest() {
 
     RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname(TEST_GIVENNAME);
-    request.setFamilyname(TEST_FAMILYNAME);
-    request.setEmail(TEST_EMAIL);
-    request.setUsername(TEST_USERNAME);
+    request.setGivenname(TEST_ATTRIBUTES_GIVENNAME);
+    request.setFamilyname(TEST_ATTRIBUTES_FAMILYNAME);
+    request.setEmail(TEST_ATTRIBUTES_EMAIL);
+    request.setUsername(TEST_ATTRIBUTES_USERNAME);
     request.setNotes("Some short notes...");
     return request;
   }
@@ -136,13 +135,13 @@ class DefaultFieldsValidationTests extends TestSupport {
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isOk());
 
-    IamAccount account = iamAccountRepo.findByEmail(TEST_EMAIL)
+    IamAccount account = iamAccountRepo.findByEmail(TEST_ATTRIBUTES_EMAIL)
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
-    assertThat(account.getUsername(), is(TEST_USERNAME));
-    assertThat(account.getUserInfo().getGivenName(), is(TEST_GIVENNAME));
-    assertThat(account.getUserInfo().getFamilyName(), is(TEST_FAMILYNAME));
-    assertThat(account.getUserInfo().getEmail(), is(TEST_EMAIL));
+    assertThat(account.getUsername(), is(TEST_ATTRIBUTES_USERNAME));
+    assertThat(account.getUserInfo().getGivenName(), is(TEST_ATTRIBUTES_GIVENNAME));
+    assertThat(account.getUserInfo().getFamilyName(), is(TEST_ATTRIBUTES_FAMILYNAME));
+    assertThat(account.getUserInfo().getEmail(), is(TEST_ATTRIBUTES_EMAIL));
     assertThat(account.getConfirmationKey(), notNullValue());
     assertThat(account.isActive(), is(false));
     assertThat(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).isEmpty(), is(true));
@@ -159,7 +158,7 @@ class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
   void samlAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
@@ -191,8 +190,8 @@ class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-    email = OIDC_EMAIL)
+      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+      email = OIDC_EMAIL)
   void oidcAuthenticatedRequestWorksAndNicknameIsNotSet() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
@@ -224,7 +223,7 @@ class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
   void samlAuthenticatedRequestValidWhenManipulated() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
@@ -274,8 +273,8 @@ class DefaultFieldsValidationTests extends TestSupport {
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-    email = OIDC_EMAIL)
+      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+      email = OIDC_EMAIL)
   void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();

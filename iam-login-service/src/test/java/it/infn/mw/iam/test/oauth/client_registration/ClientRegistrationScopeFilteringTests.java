@@ -33,7 +33,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@ActiveProfiles({"h2", "wlcg-scopes"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 class ClientRegistrationScopeFilteringTests extends ClientRegistrationTestSupport {
 
   @Autowired

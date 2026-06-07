@@ -28,6 +28,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import java.time.Clock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +44,6 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.JavaMailNotificationDelivery;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -67,7 +68,7 @@ public class JavamailNotificationDeliveryTests {
   IamEmailNotificationRepository notificationRepo;
 
   @Mock
-  TimeProvider timeProvider;
+  Clock clock;
 
   @Mock
   NotificationProperties properties;
@@ -84,6 +85,7 @@ public class JavamailNotificationDeliveryTests {
   @BeforeEach
   void setup() {
 
+    lenient().when(clock.instant()).thenReturn(Clock.systemUTC().instant());
     lenient().when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
   }
 

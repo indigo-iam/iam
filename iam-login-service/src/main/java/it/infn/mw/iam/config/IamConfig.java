@@ -15,31 +15,39 @@
  */
 package it.infn.mw.iam.config;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.sql.DataSource;
+
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.session.web.http.DefaultCookieSerializer;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import com.google.common.collect.Maps;
+import com.zaxxer.hikari.HikariDataSource;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -88,6 +96,7 @@ import it.infn.mw.iam.core.oidc.LoginHintService;
 import it.infn.mw.iam.core.oidc.MaxAgeService;
 import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
@@ -104,7 +113,6 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
-@SuppressWarnings("deprecation")
 @Configuration
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
@@ -283,12 +291,7 @@ public class IamConfig {
 
   @Bean
   Clock defaultClock() {
-    return Clock.systemDefaultZone();
-  }
-
-  @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
+    return Clock.systemUTC();
   }
 
   @Bean
@@ -353,5 +356,41 @@ public class IamConfig {
       MaxAgeService maxAgeService) {
     return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
         maxAgeService);
+  }
+
+  @Bean
+  SecureRandom defaultSecureRandom() {
+    return new SecureRandom();
+  }
+
+  @Bean
+  LocaleResolver localeResolver() {
+
+    SessionLocaleResolver slr = new SessionLocaleResolver();
+    slr.setDefaultLocale(Locale.US);
+    return slr;
+  }
+
+  @Bean
+  MessageSource messageSource() {
+
+    DefaultResourceLoader loader = new DefaultResourceLoader();
+
+    PoliteJsonMessageSource messageSource = new PoliteJsonMessageSource();
+    messageSource.setBaseDirectory(loader.getResource("classpath:/i18n/"));
+    messageSource.setUseCodeAsDefaultMessage(true);
+
+    return messageSource;
+  }
+
+  @Bean
+  CommandLineRunner logDs(DataSource ds) {
+    Logger log = LoggerFactory.getLogger("DataSourceLogger");
+    return args -> {
+      if (ds instanceof HikariDataSource hikari) {
+        log.debug("JDBC URL: {}", hikari.getJdbcUrl());
+        log.debug("Properties: {}", hikari.getDataSourceProperties());
+      }
+    };
   }
 }

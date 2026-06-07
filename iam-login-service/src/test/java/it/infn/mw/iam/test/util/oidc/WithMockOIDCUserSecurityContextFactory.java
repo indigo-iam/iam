@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.util.oidc;
 
+import java.time.Clock;
+
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
@@ -24,11 +26,16 @@ import it.infn.mw.iam.util.test.OidcSecurityContextBuilder;
 public class WithMockOIDCUserSecurityContextFactory
     implements WithSecurityContextFactory<WithMockOIDCUser> {
 
+  private Clock clock;
+
+  public WithMockOIDCUserSecurityContextFactory(Clock clock) {
+    this.clock = clock;
+  }
 
   @Override
   public SecurityContext createSecurityContext(WithMockOIDCUser annotation) {
 
-    OidcSecurityContextBuilder builder = new OidcSecurityContextBuilder();
+    OidcSecurityContextBuilder builder = new OidcSecurityContextBuilder(clock);
 
     builder.issuer(annotation.issuer())
       .subject(annotation.subject())

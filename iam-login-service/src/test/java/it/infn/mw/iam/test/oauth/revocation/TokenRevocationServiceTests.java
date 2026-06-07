@@ -15,98 +15,115 @@
  */
 package it.infn.mw.iam.test.oauth.revocation;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.oauth2.sdk.GrantType;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
+@Transactional
 class TokenRevocationServiceTests extends EndpointsTestUtils {
 
   @Autowired
-  private TokenRevocationService revokeService;
+  TokenRevocationService revokeService;
 
   @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepo;
+  IamOAuthAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  private ClientService clientService;
+  ClientService clientService;
 
   @Autowired
-  private IamClientRepository clientRepo;
+  IamClientRepository clientRepo;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
+
+  @Autowired
+  TokenUtils tokenUtils;
 
   @Test
   void registrationTokenUntouchedWhenRevokingClientTokens() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid profile offline_access")
-      .grantTypes(GrantType.AUTHORIZATION_CODE.getValue())
+      .grantTypes(AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
       .build();
 
-    RegisteredClientDTO registerResponse = mapper.readValue(mvc.perform(post(REGISTER_ENDPOINT)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(clientJson))
-        .andExpect(status().isCreated())
-        .andReturn().getResponse()
-        .getContentAsString(), RegisteredClientDTO.class);
+    RegisteredClientDTO registerResponse = mapper.readValue(mvc
+      .perform(post(REGISTER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(clientJson))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
 
     ClientDetailsEntity client =
         clientService.findClientByClientId(registerResponse.getClientId()).orElseThrow();
-    client.getGrantTypes().add(GrantType.PASSWORD.getValue());
+    client.getGrantTypes().add(AuthorizationGrantType.PASSWORD.getValue());
     clientRepo.save(client);
 
     TokenEndpointResponse tokenResponse = parseTokens(new AccessTokenGetter().grantType("password")
-        .clientId(client.getClientId())
-        .clientSecret(client.getClientSecret())
-        .username(TEST_USERNAME)
-        .password(TEST_PASSWORD)
-        .scope("openid profile offline_access")
-        .getTokenResponseObject());
+      .clientId(client.getClientId())
+      .clientSecret(client.getClientSecret())
+      .username(TEST_USERNAME)
+      .password(TEST_PASSWORD)
+      .scope("openid profile offline_access")
+      .getTokenResponseObject());
 
     String accessToken = tokenResponse.accessToken();
     String refreshToken = tokenResponse.refreshToken();
-    assertThat(accessToken, notNullValue());
-    assertThat(refreshToken, notNullValue());
+    assertNotNull(accessToken);
+    assertNotNull(refreshToken);
 
-    OAuth2AccessTokenEntity registrationToken = accessTokenRepo.findByTokenValue(IamTokenService.sha256(registerResponse.getRegistrationAccessToken())).orElseThrow();
-    assertThat(accessTokenRepo.findAccessTokens(client.getId()).stream().filter(at -> at.getScope().contains("registration_token")).findAny().isPresent(), is(false));
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).isPresent(), is(true));
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(), is(registerResponse.getRegistrationAccessToken()));
-    assertThat(revokeService.isAccessTokenRevoked(registrationToken), is(false));
+    OAuth2AccessTokenEntity registrationToken = accessTokenRepo
+      .findByTokenValue(tokenUtils.sha256(registerResponse.getRegistrationAccessToken()))
+      .orElseThrow();
+    assertFalse(accessTokenRepo.findAccessTokens(client.getId())
+      .stream()
+      .filter(at -> at.getScope().contains("registration_token"))
+      .findAny()
+      .isPresent());
+    assertTrue(accessTokenRepo.findRegistrationToken(client.getId()).isPresent());
+    assertEquals(registerResponse.getRegistrationAccessToken(),
+        accessTokenRepo.findRegistrationToken(client.getId()).get().getValue());
+    assertFalse(revokeService.isAccessTokenRevoked(registrationToken));
     revokeService.revokeAccessTokens(client);
+    assertTrue(revokeService.isAccessTokenRevoked(accessToken));
     revokeService.revokeRefreshTokens(client);
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).isPresent(), is(true));
-    assertThat(accessTokenRepo.findRegistrationToken(client.getId()).get().getValue(), is(registerResponse.getRegistrationAccessToken()));
-    assertThat(accessTokenRepo.findAccessTokens(client.getId()).size(), is(0));
-    assertThat(revokeService.isAccessTokenRevoked(registrationToken), is(false));
+    assertTrue(accessTokenRepo.findRegistrationToken(client.getId()).isPresent());
+    assertEquals(registerResponse.getRegistrationAccessToken(),
+        accessTokenRepo.findRegistrationToken(client.getId()).get().getValue());
+    assertEquals(0, accessTokenRepo.findAccessTokens(client.getId()).size());
+    assertFalse(revokeService.isAccessTokenRevoked(registrationToken));
     clientService.deleteClient(client);
-    assertThat(accessTokenRepo.findByTokenValue(registrationToken.getTokenValueHash()).isPresent(), is(false));
-
+    assertFalse(
+        accessTokenRepo.findByTokenValue(registrationToken.getTokenValueHash()).isPresent());
   }
 }

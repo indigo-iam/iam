@@ -36,8 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.ParseException;
 
 import javax.servlet.http.HttpSession;
 
@@ -68,6 +70,10 @@ import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 
 @ExtendWith(MockitoExtension.class)
 class RequestServiceTests extends RCAuthTestSupport {
+
+  public RequestServiceTests() throws IOException, ParseException {
+    super();
+  }
 
   @Mock
   IamProperties iamProps;
@@ -100,7 +106,7 @@ class RequestServiceTests extends RCAuthTestSupport {
   DefaultRcAuthRequestService service;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
     lenient().when(props.getKeySize()).thenReturn(512);
     lenient().when(props.getClientId()).thenReturn(CLIENT_ID);
@@ -110,7 +116,7 @@ class RequestServiceTests extends RCAuthTestSupport {
     lenient().when(iamProps.getBaseUrl()).thenReturn(IAM_BASE_URL);
     lenient().when(tokenRequestor.getAccessToken(Mockito.anyString())).thenReturn(tokenResponse);
     lenient().when(certRequestor.getCertificate(Mockito.any(), Mockito.any()))
-      .thenReturn(TEST_0_CERT);
+      .thenReturn(getTest0Cert());
   }
 
   @Test

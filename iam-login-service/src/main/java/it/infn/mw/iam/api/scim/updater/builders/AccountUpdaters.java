@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
+import java.time.Clock;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -28,23 +30,25 @@ public class AccountUpdaters {
 
   private AccountUpdaters() {}
 
-  public static Adders adders(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
+  public static Adders adders(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
+      IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
-    return new Adders(repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
-        usernameValidator);
+    return new Adders(clock, repo, accountService, encoder, account, accessTokenRepo,
+        refreshTokenRepo, usernameValidator);
   }
 
-  public static Removers removers(IamAccountRepository repo, IamAccountService accountService,
-      IamAccount account) {
-    return new Removers(repo, accountService, account);
+  public static Removers removers(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, IamAccount account) {
+    return new Removers(clock, repo, accountService, account);
   }
 
-  public static Replacers replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
+  public static Replacers replacers(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
+      IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
-    return new Replacers(repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
-        usernameValidator);
+    return new Replacers(clock, repo, accountService, encoder, account, accessTokenRepo,
+        refreshTokenRepo, usernameValidator);
   }
 
 }

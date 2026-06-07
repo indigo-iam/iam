@@ -32,14 +32,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.time.Clock;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
@@ -60,6 +58,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
@@ -75,12 +74,13 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+@Transactional
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
   CernAccountLifecycleTests.TestConfig.class})
 @TestPropertySource(properties = {
 // @formatter:off
@@ -90,16 +90,12 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 // @formatter:on
 })
 @ActiveProfiles(value = {"h2-test", "cern"})
-class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+class CernAccountLifecycleTests implements LifecycleTestSupport {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @TestConfiguration
   public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-
     @Bean
     @Primary
     CernHrDBApiService hrDb() {
@@ -123,7 +119,10 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   CernHrDBApiService hrDb;
 
   @Autowired
-  Clock clock;
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   IamAccount cernUser;
 
@@ -134,7 +133,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
     cernUser.setUsername(CERN_USER);
     cernUser.setUuid(CERN_USER_UUID);
     cernUser.setActive(true);
-    cernUser.setEndTime(Date.from(NOW.plus(365, ChronoUnit.DAYS)));
+    cernUser.setEndTime(Date.from(clock.daysAfter(365)));
     cernUser.getUserInfo().setEmail(CERN_USER + "@example");
     cernUser.getUserInfo().setGivenName("cern");
     cernUser.getUserInfo().setFamilyName("user");
@@ -160,7 +159,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
     assertThat(testAccount.isActive(), is(true));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(expiredVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(expiredVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -211,7 +210,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
     assertThat(testAccount.isActive(), is(true));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(removedVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(removedVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -240,7 +239,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   @Test
   void testLifecycleWorksForValidAccounts() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
@@ -278,7 +277,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testLifecycleWorksForAccountsWithOneValidParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getLimitedParticipation("test"), getExpiredParticipation("test", 20)));
+        Sets.newHashSet(getLimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     Comparator<ParticipationDTO> comparator = Comparator.comparing(ParticipationDTO::getEndDate);
 
@@ -320,7 +319,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testLifecycleWorksForAccountsWithOneUnlimitedParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getUnlimitedParticipation("test"), getExpiredParticipation("test", 20)));
+        Sets.newHashSet(getUnlimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
@@ -358,7 +357,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   @Test
   void testLifecycleWhenVOPersonEndDateIsNull() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, null);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID, null);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
@@ -395,7 +394,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testRestoreLifecycleWorks() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(voPerson(clock, CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
 
@@ -564,7 +563,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testNoEmailVoPersonIsReturned() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
-      .thenReturn(Optional.of(noEmailVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(noEmailVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -578,7 +577,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testLifecycleNotRestoreAccountsSuspendedByAdmins() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(voPerson(clock, CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
@@ -633,7 +632,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   void testPaginationWorks() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
-      .thenReturn(Optional.of(voPerson(String.valueOf(new Random().nextLong() % 100L))));
+      .thenReturn(Optional.of(voPerson(clock, String.valueOf(new Random().nextLong() % 100L))));
 
     Pageable pageRequest = PageRequest.of(0, 10, Direction.ASC, "username");
     Page<IamAccount> accountPage = repo.findAll(pageRequest);
@@ -664,7 +663,7 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
   @Test
   void testEmailNotSynchronizedIfSkipEmailSyncIsPresent() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
@@ -687,4 +686,12 @@ class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupp
     assertThat(testAccount.getUserInfo().getEmail(), is(preSyncEmail));
   }
 
+  @Test
+  void isValidShouldReturnTrueWhenEndTimeIsNull() {
+
+    Date now = Date.from(clock.instant());
+    IamAccount account = IamAccount.newAccount();
+    account.setEndTime(null);
+    assertTrue(account.isValid(now));
+  }
 }

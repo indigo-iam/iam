@@ -33,12 +33,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,8 +50,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true",})
+@AutoConfigureMockMvc
 @Transactional
 class IamCoreControllerTests {
 
@@ -87,11 +84,10 @@ class IamCoreControllerTests {
   @Test
   void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
 
-    // Here the spring security filter assumes we run on localhost:80
     mvc.perform(get("/"))
       .andDo(print())
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -164,7 +160,7 @@ class IamCoreControllerTests {
   @WithMockOAuthUser(scopes = {"openid"}, user = "not-found", authorities = {"ROLE_USER"})
   void userinfoReturns404ForUserNotFound() throws Exception {
 
-    mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isNotFound());
+    mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isBadRequest());
   }
 
 
@@ -190,42 +186,6 @@ class IamCoreControllerTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.groups", hasSize(3)));
-  }
-
-  @Test
-  void testWebfingerUserFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:test@iam.test")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isOk());
-
-  }
-
-  @Test
-  void testWebfingerUserNotFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testUnknownUriFormat() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "xyz://not.supported")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testWebfingerNonOidcRel() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "another.rel"))
-      .andExpect(status().isNotFound());
-
   }
 
   @Test

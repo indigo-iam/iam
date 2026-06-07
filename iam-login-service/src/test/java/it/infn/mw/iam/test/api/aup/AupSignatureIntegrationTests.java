@@ -27,24 +27,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Instant;
-import java.util.Calendar;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import org.apache.commons.lang.time.DateUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.model.AupSignatureDTO;
 import it.infn.mw.iam.api.aup.model.AupSignaturePatchRequestDTO;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -54,74 +55,53 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
-import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithAnonymousUser
 class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private IamAupSignatureRepository aupSignatureRepo;
+  IamAupSignatureRepository aupSignatureRepo;
 
   @Autowired
-  private IamAccountService accountService;
+  IamAccountService accountService;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
   @Autowired
-  private MockTimeProvider mockTimeProvider;
+  MutableClock clock;
 
-  private IamAup aup;
-
-  private Date getCurrentDate() {
-    return Date.from(Instant.ofEpochMilli(mockTimeProvider.currentTimeMillis()));
-  }
-
-  private void initCurrentDate() {
-    mockTimeProvider.setTime((new Date()).getTime());
-  }
-
-  private void addToCurrentDate(int milliSecs) {
-    mockTimeProvider.setTime(DateUtils.addMilliseconds(getCurrentDate(), milliSecs).getTime());
-  }
-
-  private Date getCurrentDateAdd(int field, int amount) {
-    Calendar calendar = Calendar.getInstance();
-    calendar.add(field, amount);
-    return calendar.getTime();
-  }
+  IamAup aup;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-    initCurrentDate();
-    aup = buildDefaultAup();
+    context.cleanupSecurityContext();
+    aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
-  }
-
-  @AfterEach
-  void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
-    aupRepo.delete(aup);
   }
 
   @Test
@@ -168,10 +148,10 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .getContentAsString();
 
     AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
-    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(getCurrentDate()));
+    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(clock.now()));
 
-    addToCurrentDate(1000);
-    Date expectedDate = getCurrentDate();
+    clock.advance(Duration.ofMillis(1000L));
+    Date expectedDate = clock.now();
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     sigString = mvc.perform(get("/iam/aup/signature"))
@@ -192,7 +172,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void signatureOnBehalfWithoutRequestBodyWorksWhenUserHasNoSignature()
-    throws Exception, NoSuchElementException {
+      throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -219,13 +199,13 @@ class AupSignatureIntegrationTests extends AupTestSupport {
           .getResponse()
           .getContentAsString(), AupSignatureDTO.class);
 
-    assertThat(responseDTO.getSignatureTime(), equalTo(getCurrentDate()));
+    assertThat(responseDTO.getSignatureTime(), equalTo(clock.now()));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void signatureOnBehalfWithRequestBodyWorksWhenUserHasNoSignature()
-    throws Exception, NoSuchElementException {
+      throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -233,7 +213,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
         aupSignatureRepo.findSignatureForAccount(aup, testAccount);
     assertThat(signature.isPresent(), equalTo(false));
 
-    Date updatedSignature = getCurrentDateAdd(Calendar.HOUR, 2);
+    Date updatedSignature = Date.from(clock.instant().plus(2L, ChronoUnit.HOURS));
     AupSignaturePatchRequestDTO dto = new AupSignaturePatchRequestDTO();
     dto.setSignatureTime(updatedSignature);
 
@@ -262,8 +242,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockOAuthUser(scopes = "iam:admin.write", clientId = "client-cred")
-  void signatureOnBehalfWithClientCredentialsWorks()
-    throws Exception, NoSuchElementException {
+  void signatureOnBehalfWithClientCredentialsWorks() throws Exception, NoSuchElementException {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
@@ -280,7 +259,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     aupSignatureRepo.deleteById(signature.get().getId());
 
     AupSignaturePatchRequestDTO dto = new AupSignaturePatchRequestDTO();
-    dto.setSignatureTime(getCurrentDate());
+    dto.setSignatureTime(clock.now());
 
     mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
       .content(mapper.writeValueAsString(dto))
@@ -316,9 +295,10 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    Optional<IamAupSignature> signature = aupSignatureRepo.findSignatureForAccount(aup, testAccount);
+    Optional<IamAupSignature> signature =
+        aupSignatureRepo.findSignatureForAccount(aup, testAccount);
     assertThat(signature.isPresent(), equalTo(false));
-    aupSignatureRepo.createSignatureForAccount(aup, testAccount, getCurrentDate());
+    aupSignatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
     mvc.perform(delete("/iam/aup/signature/" + testAccount.getUuid()))
       .andExpect(status().isNoContent());
@@ -362,7 +342,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     mvc.perform(get("/iam/aup/signature")).andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID)).andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/" + TEST_UUID)).andExpect(status().isOk());
     mvc.perform(get("/iam/aup/signature/" + TEST_100_USER_UUID)).andExpect(status().isForbidden());
   }
 
@@ -373,13 +353,13 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(status().isCreated());
     mvc.perform(get("/iam/aup/signature").with(user("test").roles("USER")))
       .andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test").roles("USER")))
+    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("test").roles("USER")))
       .andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test_100").roles("READER")))
+    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("test_100").roles("READER")))
       .andExpect(status().isOk());
     mvc
       .perform(
-          get("/iam/aup/signature/" + TEST_USER_UUID).with(user("admin").roles("USER", "ADMIN")))
+          get("/iam/aup/signature/" + TEST_UUID).with(user("admin").roles("USER", "ADMIN")))
       .andExpect(status().isOk());
   }
 
@@ -389,11 +369,11 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     IamAupSignature signature =
-        aupSignatureRepo.createSignatureForAccount(aup, testAccount, getCurrentDate());
+        aupSignatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
     // patch with no body => set signature to current Date
     AupSignatureDTO signatureResponse =
-        mapper.readValue(mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+        mapper.readValue(mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID))
           .andExpect(CREATED)
           .andReturn()
           .getResponse()
@@ -402,12 +382,10 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     assertThat(signatureResponse.getSignatureTime().compareTo(signature.getSignatureTime()), is(0));
 
     AupSignatureDTO dto = new AupSignatureDTO();
-    Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.HOUR, 2);
-    dto.setSignatureTime(calendar.getTime());
+    dto.setSignatureTime(Date.from(clock.instant().plus(Duration.ofHours(2))));
 
     AupSignatureDTO updatedSignature = mapper.readValue(mvc
-      .perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID)
+      .perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)
         .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(CREATED)
@@ -422,13 +400,13 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
   void signAupOnBehalfOfUserThatHasNoSignature() throws Exception {
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID)).andExpect(CREATED);
+    mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)).andExpect(CREATED);
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aup").exists())
       .andExpect(jsonPath("$.account.uuid").exists())
@@ -436,20 +414,19 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(jsonPath("$.account.name", equalTo("Test User")))
       .andExpect(jsonPath("$.signatureTime").exists());
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID)).andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID)).andExpect(status().isOk());
 
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void testSignAupThrowExceptionForServiceAccount() throws Exception {
-       
+
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
 
-    mvc.perform(post("/iam/aup/sign"))
-    .andExpect(status().isMethodNotAllowed());
+    mvc.perform(post("/iam/aup/sign")).andExpect(status().isMethodNotAllowed());
   }
 
 }

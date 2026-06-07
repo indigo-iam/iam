@@ -24,6 +24,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,10 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
+
+  public RCAuthCertificateRequestorTests() throws IOException, ParseException {
+    super();
+  }
 
   @TestConfiguration
   public static class TestConfig {
@@ -104,12 +109,12 @@ class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
     verifyMockServerCalls();
   }
 
-  public void prepareCertificateResponse() {
+  public void prepareCertificateResponse() throws IOException {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
-      .andRespond(MockRestResponseCreators.withSuccess(TEST_0_CERT_STRING, MediaType.TEXT_PLAIN));
+      .andRespond(MockRestResponseCreators.withSuccess(getTest0CertString(), MediaType.TEXT_PLAIN));
   }
 
   public void prepareErrorResponse() {

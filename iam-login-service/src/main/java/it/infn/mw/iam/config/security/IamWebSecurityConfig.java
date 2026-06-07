@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
@@ -147,6 +148,9 @@ public class IamWebSecurityConfig {
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
+    private Clock clock;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
@@ -166,7 +170,7 @@ public class IamWebSecurityConfig {
     }
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
-      return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
+      return new IamX509PreauthenticationProcessingFilter(clock, x509CredentialExtractor,
           iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()),
           certRepo, iamProperties);
     }
@@ -190,11 +194,10 @@ public class IamWebSecurityConfig {
           .enableSessionUrlRewriting(false)
         .and()
           .authorizeRequests()
-            .antMatchers("/login**", "/webjars/**").permitAll()
+            .antMatchers("/", "/login**", "/webjars/**").permitAll()
             .antMatchers("/authorize**").permitAll()
             .antMatchers("/reset-session").permitAll()
             .antMatchers("/device/**").authenticated()
-            .antMatchers("/").authenticated()
         .and()
           .formLogin()
             .loginPage("/login")
@@ -228,7 +231,7 @@ public class IamWebSecurityConfig {
 
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
-      return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
+      return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
     }
 

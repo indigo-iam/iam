@@ -17,10 +17,10 @@ package it.infn.mw.iam.test.util.oidc;
 
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,21 +32,22 @@ import it.infn.mw.iam.authn.oidc.OidcClientError;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 
 public class MockOIDCProvider implements OidcTokenRequestor {
 
-  private JWKSetKeyStore keyStore;
   private JWSAlgorithm signingAlgo = JWSAlgorithm.RS256;
 
+  private final Clock clock;
+  private final JwkKeyStore keyStore;
   private final ObjectMapper mapper;
 
   private String lastTokenResponse;
-
   private OidcClientError clientError;
 
-
-  public MockOIDCProvider(ObjectMapper mapper, JWKSetKeyStore keyStore) {
+  public MockOIDCProvider(Clock clock, ObjectMapper mapper, JwkKeyStore keyStore) {
+    this.clock = clock;
     this.keyStore = keyStore;
     this.mapper = mapper;
   }
@@ -58,7 +59,7 @@ public class MockOIDCProvider implements OidcTokenRequestor {
 
   public String buildIdToken(String issuer, String clientId, String sub, String nonce, Map<String, String> customStringClaims)
       throws JOSEException {
-    IdTokenBuilder builder = new IdTokenBuilder(keyStore, signingAlgo).issuer(issuer)
+    IdTokenBuilder builder = new IdTokenBuilder(clock, keyStore, signingAlgo).issuer(issuer)
       .sub(sub)
       .audience(clientId)
       .nonce(nonce);

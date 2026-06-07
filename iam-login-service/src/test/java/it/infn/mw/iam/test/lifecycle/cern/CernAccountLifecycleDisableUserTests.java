@@ -30,10 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
@@ -47,8 +44,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-
-import com.mercateo.test.clock.TestClock;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
@@ -61,30 +57,26 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  CernAccountLifecycleDisableUserTests.TestConfig.class})
+    ClockConfig.class, CernAccountLifecycleDisableUserTests.TestConfig.class})
 @TestPropertySource(properties = {
-  // @formatter:off
+// @formatter:off
   "cern.task.pageSize=5",
   // @formatter:on
 })
+@Transactional
 @ActiveProfiles(value = {"h2-test", "cern"})
-class CernAccountLifecycleDisableUserTests extends TestSupport
-  implements LifecycleTestSupport {
+class CernAccountLifecycleDisableUserTests implements LifecycleTestSupport {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @TestConfiguration
   public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return TestClock.fixed(NOW, ZoneId.systemDefault());
-    }
-
     @Bean
     @Primary
     CernHrDBApiService hrDb() {
@@ -108,30 +100,35 @@ class CernAccountLifecycleDisableUserTests extends TestSupport
   CernHrDBApiService hrDb;
 
   @Autowired
-  Clock clock;
+  SecurityContextUtils context;
+
+  @Autowired
+  MutableClock clock;
 
   IamAccount cernUser;
 
+  private IamAccount getCernUser() {
+    IamAccount a = IamAccount.newAccount();
+    a.setUsername(CERN_USER);
+    a.setUuid(CERN_USER_UUID);
+    a.setActive(true);
+    a.setEndTime(Date.from(clock.daysAfter(165)));
+    a.getUserInfo().setEmail(CERN_USER + "@example");
+    a.getUserInfo().setGivenName("cern");
+    a.getUserInfo().setFamilyName("user");
+    a.getUserInfo().setEmailVerified(true);
+    return a;
+  }
+
   @BeforeEach
   void init() {
-
-    cernUser = IamAccount.newAccount();
-    cernUser.setUsername(CERN_USER);
-    cernUser.setUuid(CERN_USER_UUID);
-    cernUser.setActive(true);
-    cernUser.setEndTime(Date.from(NOW.plus(165, ChronoUnit.DAYS)));
-    cernUser.getUserInfo().setEmail(CERN_USER + "@example");
-    cernUser.getUserInfo().setGivenName("cern");
-    cernUser.getUserInfo().setFamilyName("user");
-    cernUser.getUserInfo().setEmailVerified(true);
-    service.createAccount(cernUser);
+    cernUser = service.createAccount(getCernUser());
     service.addLabel(cernUser, cernPersonIdLabel(CERN_PERSON_ID));
   }
 
   @AfterEach
   void teardown() {
     reset(hrDb);
-    service.deleteAccount(cernUser);
   }
 
   private IamAccount loadAccount(String username) {
@@ -146,17 +143,17 @@ class CernAccountLifecycleDisableUserTests extends TestSupport
 
     cernHrLifecycleHandler.run();
 
-    IamAccount testAccount = loadAccount(CERN_USER_UUID);
+    cernUser = loadAccount(CERN_USER_UUID);
 
-    assertThat(testAccount.isActive(), is(true));
-    assertThat(testAccount.getEndTime().compareTo(currentEndTime) < 0, is(true));
+    assertThat(cernUser.isActive(), is(true));
+    assertThat(cernUser.getEndTime().compareTo(currentEndTime) < 0, is(true));
 
     Optional<IamLabel> statusLabel =
-        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+        cernUser.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     Optional<IamLabel> timestampLabel =
-        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
+        cernUser.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
     Optional<IamLabel> messageLabel =
-        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
+        cernUser.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
@@ -166,19 +163,20 @@ class CernAccountLifecycleDisableUserTests extends TestSupport
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PERSON_FOUND_MESSAGE, CERN_PERSON_ID)));
 
-    ((TestClock) clock).fastForward(Duration.ofHours(36));
+    clock.advance(Duration.ofHours(36));
 
     expiredAccountsHandler.run();
- 
-    testAccount = loadAccount(CERN_USER_UUID);
 
-    assertThat(testAccount.isActive(), is(true));
+    cernUser = loadAccount(CERN_USER_UUID);
+
+    assertThat(cernUser.isActive(), is(true));
 
     Optional<IamLabel> lifecycleStatusLabel =
-        testAccount.getLabelByName(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL);
+        cernUser.getLabelByName(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL);
 
     assertThat(lifecycleStatusLabel.isPresent(), is(true));
-    assertThat(lifecycleStatusLabel.get().getValue(), is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
+    assertThat(lifecycleStatusLabel.get().getValue(),
+        is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
   }
 
   @Test
@@ -204,18 +202,17 @@ class CernAccountLifecycleDisableUserTests extends TestSupport
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(),
-        is(CernStatus.EXPIRED.name()));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PARTICIPATION_MESSAGE, "test")));
 
-    ((TestClock) clock).fastForward(Duration.ofHours(36));
+    clock.advance(Duration.ofHours(36));
 
     expiredAccountsHandler.run();
- 
+
     testAccount = loadAccount(CERN_USER_UUID);
 
     assertThat(testAccount.isActive(), is(true));
@@ -224,14 +221,15 @@ class CernAccountLifecycleDisableUserTests extends TestSupport
         testAccount.getLabelByName(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL);
 
     assertThat(lifecycleStatusLabel.isPresent(), is(true));
-    assertThat(lifecycleStatusLabel.get().getValue(), is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
+    assertThat(lifecycleStatusLabel.get().getValue(),
+        is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
 
   }
 
   @Test
   void testEndTimeIsNotSynchronizedIfSkipLabelIsPresent() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));

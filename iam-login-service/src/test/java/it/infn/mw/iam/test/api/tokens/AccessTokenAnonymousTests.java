@@ -21,38 +21,38 @@ import static org.springframework.security.test.web.servlet.response.SecurityMoc
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-class AccessTokenAnonymousTests extends TestTokensUtils {
+@AutoConfigureMockMvc
+@Transactional
+class AccessTokenAnonymousTests extends TokenGetterUtils {
 
   private static final int FAKE_TOKEN_ID = 12345;
 
-  @BeforeEach
-  void setup() {
-    clearAllTokens();
-  }
-
   @Test
   void authenticationRequiredOnGettingListTest() throws Exception {
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE)
-        .with(authentication(anonymousAuthenticationToken()))).andExpect(unauthenticated());
+    mvc
+      .perform(get(ACCESS_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .with(authentication(anonymousAuthenticationToken())))
+      .andExpect(unauthenticated());
   }
 
   @Test
   void authenticationRequiredOnRevokingTest() throws Exception {
 
     String path = String.format("%s/%d", ACCESS_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
-    mvc.perform(
-        delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE).with(authentication(anonymousAuthenticationToken())))
-        .andExpect(unauthenticated());
+    mvc
+      .perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .with(authentication(anonymousAuthenticationToken())))
+      .andExpect(unauthenticated());
 
   }
 }

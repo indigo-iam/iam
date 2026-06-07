@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.revocation;
 
-import java.text.ParseException;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
@@ -25,9 +23,11 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface TokenRevocationService {
 
-  public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token) throws ParseException;
+  public boolean isAccessTokenRevoked(String token);
 
-  public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) throws ParseException;
+  public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token);
+
+  public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token);
 
   public void revokeAccessToken(OAuth2AccessTokenEntity token);
 
@@ -36,6 +36,8 @@ public interface TokenRevocationService {
   public void revokeAccessTokens(ClientDetailsEntity client);
 
   public void revokeRegistrationToken(ClientDetailsEntity client);
+
+  public void revokeRegistrationToken(OAuth2AccessTokenEntity token);
 
   public void revokeRefreshTokens(ClientDetailsEntity client);
 

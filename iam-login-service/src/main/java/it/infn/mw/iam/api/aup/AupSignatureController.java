@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.aup;
 
 import static java.lang.String.format;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -50,7 +51,6 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.audit.events.aup.AupSignatureDeletedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedOnBehalfEvent;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
@@ -72,18 +72,18 @@ public class AupSignatureController {
   private final AccountUtils accountUtils;
   private final IamAupSignatureRepository signatureRepo;
   private final IamAupRepository aupRepo;
-  private final TimeProvider timeProvider;
+  private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public AupSignatureController(AupSignatureConverter conv, AccountUtils utils,
-      IamAupSignatureRepository signatureRepo, IamAupRepository aupRepo, TimeProvider timeProvider,
+      IamAupSignatureRepository signatureRepo, IamAupRepository aupRepo, Clock clock,
       ApplicationEventPublisher publisher, NotificationFactory notificationFactory) {
     this.signatureConverter = conv;
     this.accountUtils = utils;
     this.signatureRepo = signatureRepo;
     this.aupRepo = aupRepo;
-    this.timeProvider = timeProvider;
+    this.clock = clock;
     this.eventPublisher = publisher;
     this.notificationFactory = notificationFactory;
   }
@@ -109,7 +109,7 @@ public class AupSignatureController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
 
-    Date now = new Date(timeProvider.currentTimeMillis());
+    Date now = Date.from(clock.instant());
     IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
     eventPublisher.publishEvent(new AupSignedEvent(this, signature));
   }
@@ -156,7 +156,7 @@ public class AupSignatureController {
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
 
     Date signatureTime =
-        dto == null ? new Date(timeProvider.currentTimeMillis()) : dto.getSignatureTime();
+        dto == null ? Date.from(clock.instant()) : dto.getSignatureTime();
     IamAupSignature signature =
         signatureRepo.createSignatureForAccount(aup, account, signatureTime);
 

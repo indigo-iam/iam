@@ -16,5 +16,9 @@
 
 mfa:
   multi-factor-settings-btn-enabled: ${IAM_TOTP_MFA_ENABLE_MFA_SETTINGS_BUTTON:true}
+  # Please store this KEY securly & safetly
   password-to-encrypt-and-decrypt: ${IAM_TOTP_MFA_PASSWORD_TO_ENCRYPT_AND_DECRYPT:define_me_please}
+  # ONLY provide the previous KEY if you are rotating to a new KEY above.
+  # Leave this blank if no KEY rotation is happening.
+  old-password-to-decrypt: ${IAM_TOTP_MFA_OLD_PASSWORD_TO_DECRYPT:}
   multi-factor-mandatory:  ${IAM_MULTI_FACTOR_MANDATORY:false}

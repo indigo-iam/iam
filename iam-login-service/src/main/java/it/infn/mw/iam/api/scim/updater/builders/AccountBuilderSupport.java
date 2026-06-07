@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
+import java.time.Clock;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -26,6 +28,7 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public abstract class AccountBuilderSupport {
 
+  protected final Clock clock;
   protected final IamAccountRepository repo;
   protected final IamAccountService accountService;
   protected final PasswordEncoder encoder;
@@ -34,10 +37,11 @@ public abstract class AccountBuilderSupport {
   protected final IamAccount account;
   protected final UsernameValidator usernameValidator;
 
-  public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
+  protected AccountBuilderSupport(Clock clock, IamAccountRepository repo, IamAccountService accountService,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, PasswordEncoder encoder,
       UsernameValidator usernameValidator, IamAccount account) {
+    this.clock = clock;
     this.repo = repo;
     this.encoder = encoder;
     this.accountService = accountService;
@@ -47,9 +51,9 @@ public abstract class AccountBuilderSupport {
     this.account = account;
   }
 
-  public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
+  protected AccountBuilderSupport(Clock clock, IamAccountRepository repo, IamAccountService accountService,
       IamAccount account) {
-    this(repo, accountService, null, null, null, new UsernameValidator(), account);
+    this(clock, repo, accountService, null, null, null, new UsernameValidator(), account);
   }
 
 }
