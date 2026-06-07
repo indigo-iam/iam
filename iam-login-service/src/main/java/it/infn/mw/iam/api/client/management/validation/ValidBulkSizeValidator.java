@@ -39,10 +39,6 @@ public class ValidBulkSizeValidator
   @Override
   public boolean isValid(List<ScimBulkOperationSingle> operations,
       ConstraintValidatorContext context) {
-    if (operations == null) {
-      return true;
-    }
-
     if (operations.size() > max) {
       throw new ScimBulkPayloadSizeExceeded("Maximum number of operations exceeded (" + max + ")");
     }
