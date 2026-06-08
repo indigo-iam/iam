@@ -44,7 +44,6 @@ import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
-import it.infn.mw.iam.api.client.registration.validation.RedirectURI;
 import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
@@ -101,12 +100,9 @@ public class RegisteredClientDTO {
       ClientViews.DynamicRegistration.class})
   private String clientDescription;
 
-  @Valid
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.DynamicRegistration.class})
-  private Set<@RedirectURI(message = "not a valid URL",
-      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-          OnClientCreation.class, OnClientUpdate.class}) String> redirectUris;
+    ClientViews.DynamicRegistration.class})
+  private Set<String> redirectUris;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
