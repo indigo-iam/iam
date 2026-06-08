@@ -81,7 +81,7 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${iam.cleanup.expired.registration.expiry-days:7}")
   private long expiryDays;
   
-  @Value("${iam.cleanup.expired.registration.enabled:true}")
+  @Value("${iam.cleanup.expired.registration.enabled:false}")
   private boolean cleanupExpiredRegistrationCronScheduleEnabled;
 
   @Value("${iam.cleanup.expired.registration.cron:0 0 7 * * *}")
