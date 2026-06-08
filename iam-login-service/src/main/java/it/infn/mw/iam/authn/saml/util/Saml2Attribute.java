@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.authn.saml.util;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -90,7 +90,7 @@ public enum Saml2Attribute {
   }
 
   public static Map<Saml2Attribute, String> resolveValues(SAMLCredential credential) {
-    Map<Saml2Attribute, String> attributes = new HashMap<>();
+    Map<Saml2Attribute, String> attributes = new EnumMap<>(Saml2Attribute.class);
     for (Attribute a : credential.getAttributes()) {
       try {
         attributes.put(Saml2Attribute.from(a.getName()),

@@ -110,13 +110,12 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
 
     when(samlCredential.getRemoteEntityID()).thenReturn(issuer);
 
-    when(samlCredential.getAttributes()).thenAnswer(inv -> {
-      return attributes.keySet().stream().map(name -> {
+    when(samlCredential.getAttributes())
+      .thenAnswer(inv -> attributes.keySet().stream().map(name -> {
         Attribute a = Mockito.mock(Attribute.class);
         when(a.getName()).thenReturn(name);
         return a;
-      }).toList();
-    });
+      }).toList());
 
     when(samlCredential.getAttributeAsString(subjectAttribute)).thenReturn(subject);
 
