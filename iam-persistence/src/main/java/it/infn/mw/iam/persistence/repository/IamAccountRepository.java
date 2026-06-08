@@ -211,8 +211,4 @@ public interface IamAccountRepository
     @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
     List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
 
-    @Modifying
-    @Query("DELETE FROM IamAccount a WHERE a.id IN :ids")
-    int deleteAccountsByIds(@Param("ids") List<Long> ids);
-
 }

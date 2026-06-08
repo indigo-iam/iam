@@ -30,9 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -48,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,6 +59,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
+import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
@@ -960,4 +964,46 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
         ciccioAccount.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
   }
+
+  @Test
+  void testDeleteAccountsAndPublishEvents() {
+
+    List<Long> ids = List.of(1L, 2L);
+
+    IamAccount acc1 = new IamAccount();
+    IamAccount acc2 = new IamAccount();
+
+    when(accountRepo.findAllById(ids))
+        .thenReturn(List.of(acc1, acc2));
+
+    int result = accountService.deleteAccountsForExpiredRegistrations(ids);
+
+    assertEquals(2, result);
+
+    verify(accountRepo).findAllById(ids);
+
+    verify(accountRepo, times(2)).delete(any(IamAccount.class));
+
+    verify(eventPublisher, times(2)).publishEvent(any(AccountRemovedEvent.class));
+    verify(eventPublisher, times(2)).publishEvent(any(AccountRemovedEvent.class));
+  }
+
+  @Test
+  void testDeleteBeforePublishingEvent() {
+
+    List<Long> ids = List.of(1L);
+
+    IamAccount account = new IamAccount();
+
+    when(accountRepo.findAllById(ids))
+        .thenReturn(List.of(account));
+
+    accountService.deleteAccountsForExpiredRegistrations(ids);
+
+    InOrder inOrder = inOrder(accountRepo, eventPublisher);
+
+    inOrder.verify(accountRepo).delete(account);
+    inOrder.verify(eventPublisher).publishEvent(any(AccountRemovedEvent.class));
+  }
+
 }
