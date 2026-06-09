@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-import java.lang.StackWalker.Option;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,13 +29,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.OPAProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
 @Component
@@ -67,14 +62,13 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
     if (response.isPresent()) {
       // estrarre da opaResponse i filtered_scopes e restituirli
       OpaResponse opaResponse = response.get();
-      return opaResponse.filteredScopes(); // parametro della classe record
+      return opaResponse.filtered_scopes();
     } else {
       return super.apply(requestedScopes, account);
     }
   }
 
-  public Optional<OpaResponse> evaluatePolicy(@RequestBody OpaRequest payload)
-      throws JsonMappingException, JsonProcessingException {
+  public Optional<OpaResponse> evaluatePolicy(@RequestBody OpaRequest payload) {
     try {
       String opaHost = opaProperties.getHost();
       ResponseEntity<OpaResponse> response = restTemplate.postForEntity(opaHost, payload, OpaResponse.class);
