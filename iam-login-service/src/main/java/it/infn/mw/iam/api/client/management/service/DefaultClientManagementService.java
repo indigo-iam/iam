@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -74,6 +75,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientService clientService;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
+  private final AccountUtils accountUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
   private final OIDCTokenService oidcTokenService;
@@ -82,14 +84,15 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
-      ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory) {
+      ClientConverter converter, ClientUtils clientUtils, AccountUtils accountUtils,
+      UserConverter userConverter, IamAccountRepository accountRepo,
+      OIDCTokenService oidcTokenService, IamTokenService tokenService,
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
+    this.accountUtils = accountUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
     this.oidcTokenService = oidcTokenService;
@@ -128,6 +131,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
+    entity.setStatusChangedOn(Date.from(clock.instant()));
+    accountUtils.getAuthenticatedUserAccount().ifPresent(a -> {
+      entity.setStatusChangedBy(a.getUsername());
+    });
 
     if (hasRelyingParty(client)) {
       ClientRelyingPartyEntity clientRelyingParty =
@@ -137,9 +144,9 @@ public class DefaultClientManagementService implements ClientManagementService {
     }
 
     clientUtils.setupClientDefaults(entity);
-    entity = clientService.saveNewClient(entity);
+    ClientDetailsEntity created = clientService.saveNewClient(entity);
 
-    return converter.registeredClientDtoFromEntity(entity);
+    return converter.registeredClientDtoFromEntity(created);
   }
 
   private boolean hasRelyingParty(RegisteredClientDTO request) {
@@ -190,11 +197,12 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
-    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
+        && Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(clientUtils.generateClientSecret());
-    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
+      .contains(newClient.getTokenEndpointAuthMethod())
+        && !Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(null);
     } else {
       newClient.setClientSecret(oldClient.getClientSecret());
