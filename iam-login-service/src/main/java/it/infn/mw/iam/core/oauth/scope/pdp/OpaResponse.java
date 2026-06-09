@@ -15,6 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-public record OpaResponse() { // parametri denied_scopes e filtered_scopes
+import java.util.Set;
 
-}
+public record OpaResponse(Set<String> denied_scopes, Set<String> filtered_scopes) {}
