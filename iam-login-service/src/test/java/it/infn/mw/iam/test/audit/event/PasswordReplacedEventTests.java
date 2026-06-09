@@ -16,11 +16,9 @@
 package it.infn.mw.iam.test.audit.event;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,17 +32,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.audit.IamAuditEventLogger;
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.account.PasswordReplacedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@SpringBootTest(webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
+@Transactional
 class PasswordReplacedEventTests {
 
   @Autowired
@@ -71,8 +72,8 @@ class PasswordReplacedEventTests {
       .content(objectMapper.writeValueAsString(payload))).andExpect(status().isNoContent());
 
     IamAuditApplicationEvent event = logger.getLastEvent();
-    assertThat(event, instanceOf(PasswordReplacedEvent.class));
-    assertThat(event.getMessage(), not(containsString("LEAKME-PaTcHv1-99887")));
+    assertTrue(event instanceof PasswordReplacedEvent);
+    assertFalse(event.getMessage().contains("LEAKME-PaTcHv1-99887"));
     assertEquals("Replaced password for user test", event.getMessage());
   }
 }
