@@ -40,7 +40,7 @@ import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
 @Component
-@ConditionalOnProperty("iam.opa.enable=true")
+@ConditionalOnProperty(name = "iam.opa.enable", havingValue = "true")
 public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(OpaScopePolicyEngine.class);
 

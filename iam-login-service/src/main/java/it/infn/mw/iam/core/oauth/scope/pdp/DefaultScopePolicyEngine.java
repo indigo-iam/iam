@@ -34,7 +34,7 @@ import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
 @Component
-@ConditionalOnProperty("iam.opa.enable=false")
+@ConditionalOnProperty(name = "iam.opa.enable", havingValue = "false")
 public class DefaultScopePolicyEngine implements ScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopePolicyEngine.class);
   private Cache<String, ScopeMatcher> matchersCache = CacheBuilder.newBuilder().maximumSize(30).build();
