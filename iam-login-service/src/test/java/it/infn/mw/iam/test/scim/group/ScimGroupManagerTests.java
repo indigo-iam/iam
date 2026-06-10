@@ -130,6 +130,16 @@ class ScimGroupManagerTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "READER")
+  void roleReaderCanSeeGroupMembersCount() throws Exception {
+    mvc.perform(get(GROUP_URI + "/{uuid}/members?count=0", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.Resources").isArray());
+  }
+
+  @Test
   @WithMockUser(username = "test", roles = {"USER", "GM:" + TEST_001_GROUP_ID})
   void groupManagerCanDeleteGroup() throws Exception {
 
