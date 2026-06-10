@@ -728,6 +728,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
+  public long countGroupMembers(IamGroup group) {
+    return accountRepo.countGroupMembers(group.getUuid());
+  }
+
+  @Override
   public IamAccount addSshKey(IamAccount account, IamSshKey key) {
     if (account.getSshKeys().contains(key)) {
       return account;
