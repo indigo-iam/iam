@@ -87,7 +87,6 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
@@ -663,9 +662,9 @@ public class IamConfig {
 
   @Bean
   ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
-      RestTemplateFactory restTemplateFactory, OpaProperties opaProperties) {
-    if (opaProperties.isEnabled()) {
-      return new OpaScopePolicyEngine(policyRepo, restTemplateFactory, opaProperties);
+      RestTemplateFactory restTemplateFactory, IamProperties iamProperties) {
+    if (iamProperties.getOpa().isEnabled()) {
+      return new OpaScopePolicyEngine(policyRepo, restTemplateFactory, iamProperties.getOpa());
     }
 
     return new DefaultScopePolicyEngine(policyRepo);

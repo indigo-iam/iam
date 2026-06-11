@@ -20,8 +20,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -33,7 +31,6 @@ import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
-@Component
 public class DefaultScopePolicyEngine implements ScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopePolicyEngine.class);
   private Cache<String, ScopeMatcher> matchersCache = CacheBuilder.newBuilder().maximumSize(30).build();

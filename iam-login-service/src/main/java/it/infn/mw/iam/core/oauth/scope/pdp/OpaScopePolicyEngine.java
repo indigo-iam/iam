@@ -21,10 +21,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -34,7 +32,6 @@ import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
-@Component
 public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(OpaScopePolicyEngine.class);
 
