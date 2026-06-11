@@ -98,8 +98,8 @@ iam:
   showSql: ${IAM_DATABASE_SHOW_SQL:false}
 
   opa:
-    enable: false
-    host: localhost
+    enabled: ${IAM_OPA_ENABLED:false}
+    url: ${IAM_OPA_URL:http://localhost:8181/}
 
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:}

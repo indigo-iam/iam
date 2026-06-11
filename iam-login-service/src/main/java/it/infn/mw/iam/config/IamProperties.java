@@ -707,6 +707,27 @@ public class IamProperties {
     }
   }
 
+  public static class OpaProperties {
+    private boolean enabled;
+    private String url;
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+      return this.enabled;
+    }
+
+    public void setUrl(String url) {
+      this.url = url;
+    }
+
+    public String getUrl() {
+      return this.url;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -718,6 +739,8 @@ public class IamProperties {
   private boolean enableScopeAuthz = true;
 
   private boolean showSql = false;
+
+  private OpaProperties opa = new OpaProperties();
 
   private LocalResources localResources = new LocalResources();
 
@@ -837,6 +860,14 @@ public class IamProperties {
 
   public void setShowSql(boolean showSql) {
     this.showSql = showSql;
+  }
+
+  public OpaProperties getOpa() {
+    return opa;
+  }
+
+  public void setOpa(OpaProperties opa) {
+    this.opa = opa;
   }
 
   public LoginButtonProperties getLoginButton() {
