@@ -87,6 +87,7 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
@@ -144,7 +145,10 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidato
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
+import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopePolicyEngine;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyEngine;
 import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.core.oidc.LoginHintService;
@@ -167,6 +171,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -654,5 +659,15 @@ public class IamConfig {
   IamJWKSetCacheService defaultCacheService(RestTemplateFactory rtf) {
 
     return new IamJWKSetCacheService(rtf, 100, 1, TimeUnit.HOURS);
+  }
+
+  @Bean
+  ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
+      RestTemplateFactory restTemplateFactory, OpaProperties opaProperties) {
+    if (opaProperties.isEnabled()) {
+      return new OpaScopePolicyEngine(policyRepo, restTemplateFactory, opaProperties);
+    }
+
+    return new DefaultScopePolicyEngine(policyRepo);
   }
 }

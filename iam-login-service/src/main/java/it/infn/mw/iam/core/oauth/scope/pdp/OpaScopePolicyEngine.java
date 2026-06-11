@@ -30,20 +30,19 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.config.OPAProperties;
+import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
 @Component
-@ConditionalOnProperty(name = "iam.opa.enable", havingValue = "true")
 public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(OpaScopePolicyEngine.class);
 
   private RestTemplate restTemplate;
-  private OPAProperties opaProperties;
+  private OpaProperties opaProperties;
 
   public OpaScopePolicyEngine(IamScopePolicyRepository policyRepo, RestTemplateFactory restTemplateFactory,
-      OPAProperties opaProperties) {
+      OpaProperties opaProperties) {
     super(policyRepo);
     this.restTemplate = restTemplateFactory.newRestTemplate();
     this.opaProperties = opaProperties;
@@ -70,8 +69,8 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
 
   public Optional<OpaResponse> evaluatePolicy(@RequestBody OpaRequest payload) {
     try {
-      String opaHost = opaProperties.getHost();
-      ResponseEntity<OpaResponse> response = restTemplate.postForEntity(opaHost, payload, OpaResponse.class);
+      String opaUrl = opaProperties.getUrl();
+      ResponseEntity<OpaResponse> response = restTemplate.postForEntity(opaUrl, payload, OpaResponse.class);
       System.out.println(response);
 
       if (response.getStatusCode() == HttpStatus.OK) {
