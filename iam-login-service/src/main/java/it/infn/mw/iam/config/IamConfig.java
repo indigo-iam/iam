@@ -94,7 +94,6 @@ import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
-import it.infn.mw.iam.core.oauth.granters.JwtAssertionTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -491,18 +490,18 @@ public class IamConfig {
         new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory,
             iamProperties, tokenUtils, accountUtils, signatureCheckService, tokenExchangePdp);
 
-    return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
-        new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
-            clientDetailsService, requestFactory),
-        new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        refreshTokenGranter,
-        new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        resourceOwnerPasswordCredentialGranter,
-        new JwtAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory,
-            assertionFactory, assertionValidator),
-        new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices,
-            clientDetailsService, requestFactory, deviceCodeService)));
+    return new CompositeTokenGranter(
+        Arrays.<TokenGranter>asList(
+            new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+                clientDetailsService, requestFactory),
+            new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            refreshTokenGranter,
+            new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService,
+                requestFactory),
+            resourceOwnerPasswordCredentialGranter,
+            new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices,
+                clientDetailsService, requestFactory, deviceCodeService)));
   }
 
   @Bean
