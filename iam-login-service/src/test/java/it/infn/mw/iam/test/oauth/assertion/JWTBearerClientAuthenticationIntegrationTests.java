@@ -15,32 +15,30 @@
  */
 package it.infn.mw.iam.test.oauth.assertion;
 
-import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class JWTBearerClientAuthenticationIntegrationTests
-  extends JWTBearerClientAuthenticationIntegrationTestSupport {
+    extends JWTBearerClientAuthenticationIntegrationTestSupport {
+
+  @Autowired
+  IamProperties iamProperties;
 
   @Test
   void testSymmetricJwtAuth() throws Exception {
@@ -60,19 +58,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   @Test
   void testAsymmetricJwtAuth() throws Exception {
 
-    JWTSigningAndValidationService signer = loadSignerService();
-    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(CLIENT_ID_PRIVATE_KEY_JWT)
-      .issuer(CLIENT_ID_PRIVATE_KEY_JWT)
-      .expirationTime(Date.from(Instant.now().plusSeconds(600)))
-      .audience(singletonList(TOKEN_ENDPOINT_AUDIENCE))
-      .jwtID(UUID.randomUUID().toString())
-      .build();
-
-    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("rsa1").build();
-
-    SignedJWT jwt = new SignedJWT(header, claimsSet);
-    signer.signJwt(jwt);
-    String serializedToken = jwt.serialize();
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_PRIVATE_KEY_JWT);
 
     mvc
       .perform(post(TOKEN_ENDPOINT).param("client_id", CLIENT_ID_PRIVATE_KEY_JWT)
@@ -82,7 +68,88 @@ class JWTBearerClientAuthenticationIntegrationTests
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists());
 
+  }
 
+  @Test
+  void testAsymmetricJwtTokenEndpointWithLeadingSlash() throws Exception {
+
+    iamProperties.setIssuer(TOKEN_ENDPOINT_AUDIENCE + "/");
+
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_PRIVATE_KEY_JWT);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("client_id", CLIENT_ID_PRIVATE_KEY_JWT)
+        .param("client_assertion_type", JWT_BEARER_ASSERTION_TYPE)
+        .param("client_assertion", serializedToken)
+        .param("grant_type", "client_credentials"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token").exists());
+
+  }
+
+  @Test
+  void testAsymmetricJwtUnknownClientID() throws Exception {
+
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_PRIVATE_KEY_JWT);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("client_id", "unknown")
+        .param("client_assertion_type", JWT_BEARER_ASSERTION_TYPE)
+        .param("client_assertion", serializedToken)
+        .param("grant_type", "client_credentials"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", is("invalid_client")))
+      .andExpect(jsonPath("$.error_description",
+          is("Given client ID does not match authenticated client")));
+  }
+
+  @Test
+  void testAsymmetricUnknownJwt() throws Exception {
+
+    String CLIENT_ID_UNKNOWN = "unknown-client";
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("client_id", CLIENT_ID_PRIVATE_KEY_JWT)
+        .param("client_assertion_type", JWT_BEARER_ASSERTION_TYPE)
+        .param("client_assertion", serializedToken)
+        .param("grant_type", "client_credentials"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", is("invalid_client")))
+      .andExpect(jsonPath("$.error_description", is("Bad client credentials")));
+  }
+
+  @Test
+  void testAsymmetricUnknownJwtUnknownClient() throws Exception {
+
+    String CLIENT_ID_UNKNOWN = "unknown-client";
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("client_id", CLIENT_ID_UNKNOWN)
+        .param("client_assertion_type", JWT_BEARER_ASSERTION_TYPE)
+        .param("client_assertion", serializedToken)
+        .param("grant_type", "client_credentials"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", is("invalid_client")))
+      .andExpect(
+          jsonPath("$.error_description", is("Client with id unknown-client was not found")));
+  }
+  
+  @Test
+  void testInvalidAssertionType() throws Exception {
+
+    String CLIENT_ID_UNKNOWN = "unknown-client";
+    String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("client_id", CLIENT_ID_UNKNOWN)
+        .param("client_assertion_type", "invalid-assertion-type")
+        .param("client_assertion", serializedToken)
+        .param("grant_type", "client_credentials"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", is("invalid_client")))
+      .andExpect(jsonPath("$.error_description", is("Bad client credentials")));
   }
 
 }

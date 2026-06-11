@@ -21,13 +21,16 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import com.beust.jcommander.internal.Lists;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -131,10 +135,12 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
     lenient().when(authentication.getCredentials()).thenReturn(macSignJwt(JUST_SUB_JWT));
 
-    lenient().when(client.getTokenEndpointAuthMethod())
-      .thenReturn(null, AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
+    List<AuthMethod> authMethod =
+        Lists.newArrayList(null, AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
 
-    for (int i = 0; i < 4; i++) {
+    for (AuthMethod am : authMethod) {
+      lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(am);
+
       try {
         provider.authenticate(authentication);
       } catch (AuthenticationServiceException e) {
@@ -142,6 +148,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
             containsString("Client does not support JWT-based client autentication"));
       }
     }
+
   }
 
   @Test
@@ -176,6 +183,53 @@ class TokenEndpointJwtClientAuthenticationProviderTests
         assertThat(e.getMessage(), containsString("Invalid signature algorithm: " + a.getName()));
       }
     });
+
+  }
+
+  @Test
+  void testInvalidAlgo() {
+
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthSigningAlg()).thenReturn(JWSAlgorithm.RS256);
+
+    SignedJWT jws = new SignedJWT(new JWSHeader(JWSAlgorithm.RS384), JUST_SUB_JWT);
+    lenient().when(authentication.getCredentials()).thenReturn(jws);
+
+    try {
+      provider.authenticate(authentication);
+    } catch (AuthenticationServiceException e) {
+      assertThat(e.getMessage(), containsString("Invalid signature algorithm: RS384"));
+    }
+
+    jws = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), JUST_SUB_JWT);
+    lenient().when(authentication.getCredentials()).thenReturn(jws);
+
+    try {
+      provider.authenticate(authentication);
+    } catch (AuthenticationServiceException e) {
+      assertThat(e.getMessage(), containsString("Invalid signature algorithm: HS256"));
+    }
+
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthSigningAlg()).thenReturn(JWSAlgorithm.HS256);
+
+    jws = new SignedJWT(new JWSHeader(JWSAlgorithm.HS384), JUST_SUB_JWT);
+    lenient().when(authentication.getCredentials()).thenReturn(jws);
+
+    try {
+      provider.authenticate(authentication);
+    } catch (AuthenticationServiceException e) {
+      assertThat(e.getMessage(), containsString("Invalid signature algorithm: HS384"));
+    }
+
+    jws = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), JUST_SUB_JWT);
+    lenient().when(authentication.getCredentials()).thenReturn(jws);
+
+    try {
+      provider.authenticate(authentication);
+    } catch (AuthenticationServiceException e) {
+      assertThat(e.getMessage(), containsString("Invalid signature algorithm: RS256"));
+    }
 
   }
 
@@ -443,7 +497,6 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-
       JwtAssertionAuthenticationToken authToken =
           (JwtAssertionAuthenticationToken) provider.authenticate(authentication);
       assertThat(authToken.isAuthenticated(), is(true));
@@ -451,6 +504,49 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       assertThat(authToken.getAuthorities(), hasItem(ROLE_CLIENT_AUTHORITY));
       assertThat(authToken.getAuthorities(), hasSize(1));
     });
+  }
+
+  @Test
+  void testEqualAssertions() {
+
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+
+    Date date = Date.from(clock.instant().plusSeconds(1800));
+    String uuid = UUID.randomUUID().toString();
+
+    JwtAssertionAuthenticationToken authTokenEq1 =
+        buildJwtAssertionAsymmetricAuthenticationToken(date, uuid);
+    JwtAssertionAuthenticationToken authTokenEq2 =
+        buildJwtAssertionAsymmetricAuthenticationToken(date, uuid);
+    JwtAssertionAuthenticationToken authTokenNotEq =
+        buildJwtAssertionAsymmetricAuthenticationToken(date, UUID.randomUUID().toString());
+
+    assertTrue(authTokenEq1.equals(authTokenEq1));
+    assertTrue(authTokenEq1.equals(authTokenEq2));
+    assertFalse(authTokenEq1.equals(authTokenNotEq));
+    assertFalse(authTokenEq1.equals("JWT"));
+    assertThat(authTokenEq1.hashCode(), is(authTokenEq2.hashCode()));
+
+  }
+
+  private JwtAssertionAuthenticationToken buildJwtAssertionAsymmetricAuthenticationToken(Date date,
+      String uuid) {
+
+    JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
+      .subject(JWT_AUTH_NAME)
+      .expirationTime(date)
+      .audience(singletonList(ISSUER_TOKEN_ENDPOINT))
+      .jwtID(uuid)
+      .build();
+
+    JWSAlgorithm a = JWSAlgorithm.RS256;
+    JWSHeader header = new JWSHeader(a);
+
+    SignedJWT jws = new SignedJWT(header, claimSet);
+    lenient().when(authentication.getCredentials()).thenReturn(jws);
+    return (JwtAssertionAuthenticationToken) provider.authenticate(authentication);
   }
 
 }

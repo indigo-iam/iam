@@ -73,14 +73,30 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
     return signedJWT;
   }
 
+  public String createAsymmetricJwt(String clientId) throws NoSuchAlgorithmException, InvalidKeySpecException {
+
+    JWTSigningAndValidationService signer = loadSignerService();
+    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(clientId)
+      .issuer(clientId)
+      .expirationTime(Date.from(Instant.now().plusSeconds(600)))
+      .audience(singletonList(TOKEN_ENDPOINT_AUDIENCE))
+      .jwtID(UUID.randomUUID().toString())
+      .build();
+
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("rsa1").build();
+
+    SignedJWT jwt = new SignedJWT(header, claimsSet);
+    signer.signJwt(jwt);
+    return jwt.serialize();
+  }
+
   public JWTSigningAndValidationService loadSignerService()
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JwkKeyStoreLoader keystoreLoader = new JwkKeyStoreLoader(loader);
 
-    JWTSigningAndValidationService svc =
-        new IamJWTSigningService(keystoreLoader.load(TEST_KEYSTORE_LOCATION),
-            "rsa1", JWSAlgorithm.RS256.getName());
+    JWTSigningAndValidationService svc = new IamJWTSigningService(
+        keystoreLoader.load(TEST_KEYSTORE_LOCATION), "rsa1", JWSAlgorithm.RS256.getName());
 
     return svc;
   }
