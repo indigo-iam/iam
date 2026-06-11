@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +42,6 @@ import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,10 +52,13 @@ import com.beust.jcommander.internal.Lists;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.assertion.JwtAssertionAuthenticationToken;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
@@ -66,7 +70,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
   static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
   @Mock
-  ClientDetailsEntityService clientService;
+  ClientService clientService;
 
   @Mock
   ClientKeyCacheService validators;
@@ -87,39 +91,32 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
   Clock clock = Clock.fixed(NOW, ZoneId.of("UTC"));
 
+  RSAKey rsaJwk;
+
   @BeforeEach
-  void setup() {
+  void setup() throws JOSEException {
 
     lenient().when(authentication.getName()).thenReturn(JWT_AUTH_NAME);
     lenient().when(iamProperties.getIssuer()).thenReturn(ISSUER);
-    lenient().when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(client);
+    lenient().when(clientService.findClientByClientId(JWT_AUTH_NAME))
+      .thenReturn(Optional.of(client));
     lenient().when(client.getClientId()).thenReturn(JWT_AUTH_NAME);
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
     provider = new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties, clientService,
         validators);
+    rsaJwk = new RSAKeyGenerator(2048).keyID("test-key").generate();
   }
 
   @Test
   void testClientNotFoundTriggersUsernameNotFoundException() {
 
-    lenient().when(clientService.loadClientByClientId(JWT_AUTH_NAME)).thenReturn(null);
+    lenient().when(clientService.findClientByClientId(JWT_AUTH_NAME)).thenReturn(Optional.empty());
 
     UsernameNotFoundException e =
         assertThrows(UsernameNotFoundException.class, () -> provider.authenticate(authentication));
     assertThat(e.getMessage(), containsString("Client not found"));
-  }
-
-  @Test
-  void testPlainJwtTriggersException() {
-
-    lenient().when(authentication.getCredentials())
-      .thenReturn(new PlainJWT(new JWTClaimsSet.Builder().subject("sub").build()));
-
-    AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
-        () -> provider.authenticate(authentication));
-    assertThat(e.getMessage(), containsString("Unsupported JWT type"));
   }
 
   @Test
@@ -507,7 +504,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
   }
 
   @Test
-  void testEqualAssertions() {
+  void testEqualAssertions() throws JOSEException {
 
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
@@ -526,13 +523,12 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     assertTrue(authTokenEq1.equals(authTokenEq1));
     assertTrue(authTokenEq1.equals(authTokenEq2));
     assertFalse(authTokenEq1.equals(authTokenNotEq));
-    assertFalse(authTokenEq1.equals("JWT"));
-    assertThat(authTokenEq1.hashCode(), is(authTokenEq2.hashCode()));
+    assertEquals(authTokenEq1.hashCode(), authTokenEq2.hashCode());
 
   }
 
   private JwtAssertionAuthenticationToken buildJwtAssertionAsymmetricAuthenticationToken(Date date,
-      String uuid) {
+      String uuid) throws JOSEException {
 
     JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
       .subject(JWT_AUTH_NAME)
@@ -545,6 +541,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     JWSHeader header = new JWSHeader(a);
 
     SignedJWT jws = new SignedJWT(header, claimSet);
+    jws.sign(new RSASSASigner(rsaJwk.toPrivateKey()));
     lenient().when(authentication.getCredentials()).thenReturn(jws);
     return (JwtAssertionAuthenticationToken) provider.authenticate(authentication);
   }

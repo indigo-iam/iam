@@ -19,12 +19,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
@@ -40,7 +40,7 @@ public class ChainedTokenGranter extends AbstractTokenGranter {
   private final OAuth2TokenEntityService tokenServices;
 
   public ChainedTokenGranter(OAuth2TokenEntityService tokenServices,
-      ClientDetailsEntityService clientDetailsService, OAuth2RequestFactory requestFactory) {
+      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
     super(tokenServices, clientDetailsService, requestFactory, GRANT_TYPE);
     this.tokenServices = tokenServices;
   }

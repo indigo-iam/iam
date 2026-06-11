@@ -30,7 +30,6 @@ import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -42,10 +41,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
 
 public class TokenEndpointJwtClientAuthenticationProvider implements AuthenticationProvider {
@@ -60,13 +59,13 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
   private static final String INVALID_SIGNATURE_ALGO = "Invalid signature algorithm: %s";
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientService;
+  private final ClientService clientService;
   private final ClientKeyCacheService validators;
 
   private final String tokenEndpoint;
 
   public TokenEndpointJwtClientAuthenticationProvider(Clock clock, IamProperties iamProperties,
-      ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
+      ClientService clientService, ClientKeyCacheService validators) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -183,34 +182,24 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    JwtAssertionAuthenticationToken jwtAuth =
-        (JwtAssertionAuthenticationToken) authentication;
+    JwtAssertionAuthenticationToken jwtAuth = (JwtAssertionAuthenticationToken) authentication;
 
-    ClientDetailsEntity client = clientService.loadClientByClientId(jwtAuth.getName());
-
-    if (isNull(client)) {
-      throw new UsernameNotFoundException("Client not found");
-    }
+    ClientDetailsEntity client = clientService.findClientByClientId(jwtAuth.getName())
+      .orElseThrow(() -> new UsernameNotFoundException("Client not found"));
 
     try {
 
-      final JWT jwt = (JWT) jwtAuth.getCredentials();
+      final SignedJWT jwt = jwtAuth.getCredentials();
 
       if (isNull(jwt)) {
         invalidBearerAssertion("Null JWT in authentication token");
       }
 
-      if (!(jwt instanceof SignedJWT)) {
-        invalidBearerAssertion("Unsupported JWT type: " + jwt.getClass().getName());
-      }
+      clientAuthMethodChecks(client, jwt);
 
-      SignedJWT jws = (SignedJWT) jwt;
+      signatureChecks(client, jwt);
 
-      clientAuthMethodChecks(client, jws);
-
-      signatureChecks(client, jws);
-
-      assertionChecks(client, jws);
+      assertionChecks(client, jwt);
 
       Set<GrantedAuthority> authorities = new HashSet<>(client.getAuthorities());
       authorities.add(ROLE_CLIENT);

@@ -37,6 +37,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import com.google.common.base.Strings;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.oauth.assertion.JwtAssertionAuthenticationToken;
 
@@ -86,13 +87,13 @@ public class TokenEndpointJwtClientAuthFilter extends AbstractAuthenticationProc
     try {
 
       JWT jwt = JWTParser.parse(assertion);
-      Authentication authRequest = new JwtAssertionAuthenticationToken(jwt);
-      return this.getAuthenticationManager().authenticate(authRequest);
-
+      if (jwt instanceof SignedJWT sjwt) {
+        Authentication authRequest = new JwtAssertionAuthenticationToken(sjwt);
+        return this.getAuthenticationManager().authenticate(authRequest);
+      }
     } catch (ParseException e) {
-
-      throw new BadCredentialsException("Invalid JWT credential: " + assertion);
     }
+    throw new BadCredentialsException("Invalid JWT credential: " + assertion);
   }
 
   @Override

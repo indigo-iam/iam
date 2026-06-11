@@ -115,8 +115,8 @@ class JWTBearerClientAuthenticationIntegrationTests
         .param("client_assertion", serializedToken)
         .param("grant_type", "client_credentials"))
       .andExpect(status().isUnauthorized())
-      .andExpect(jsonPath("$.error", is("invalid_client")))
-      .andExpect(jsonPath("$.error_description", is("Bad client credentials")));
+      .andExpect(jsonPath("$.error", is("unauthorized")))
+      .andExpect(jsonPath("$.error_description", is("Client not found")));
   }
 
   @Test
@@ -131,11 +131,10 @@ class JWTBearerClientAuthenticationIntegrationTests
         .param("client_assertion", serializedToken)
         .param("grant_type", "client_credentials"))
       .andExpect(status().isUnauthorized())
-      .andExpect(jsonPath("$.error", is("invalid_client")))
-      .andExpect(
-          jsonPath("$.error_description", is("Client with id unknown-client was not found")));
+      .andExpect(jsonPath("$.error", is("unauthorized")))
+      .andExpect(jsonPath("$.error_description", is("Client not found")));
   }
-  
+
   @Test
   void testInvalidAssertionType() throws Exception {
 

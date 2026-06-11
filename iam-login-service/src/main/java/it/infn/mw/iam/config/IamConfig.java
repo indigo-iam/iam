@@ -34,7 +34,6 @@ import org.mitre.jwt.assertion.AssertionValidator;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.assertion.AssertionOAuth2RequestFactory;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
@@ -60,6 +59,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenGranter;
@@ -467,7 +467,7 @@ public class IamConfig {
   TokenGranter tokenGranter(AuthenticationManager authenticationManager, Clock clock,
       IamProperties iamProperties, OAuth2TokenEntityService tokenServices,
       OAuth2RequestFactory requestFactory,
-      @Qualifier("iamClientDetailsEntityService") ClientDetailsEntityService clientDetailsService,
+      @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService,
       AssertionOAuth2RequestFactory assertionFactory,
       @Qualifier("jwtAssertionValidator") AssertionValidator assertionValidator,
       AUPSignatureCheckService signatureCheckService,
@@ -527,14 +527,15 @@ public class IamConfig {
   @Bean
   TokenEndpointJwtClientAuthFilter jwtClientAuthFilter(
       @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
-      Clock clock, IamProperties iamProperties, ClientKeyCacheService validators) {
+      Clock clock, IamProperties iamProperties, ClientKeyCacheService validators,
+      ClientService clientService) {
 
     TokenEndpointJwtClientAuthFilter filter =
         new TokenEndpointJwtClientAuthFilter(new AntPathRequestMatcher("/token"));
 
     TokenEndpointJwtClientAuthenticationProvider authProvider =
-        new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties,
-            userDetailsService.getClientDetailsService(), validators);
+        new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties, clientService,
+            validators);
 
     filter.setAuthenticationManager(new ProviderManager(singletonList(authProvider)));
 

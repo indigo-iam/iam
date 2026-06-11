@@ -22,22 +22,22 @@ import java.util.Objects;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
-import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.SignedJWT;
 
 public class JwtAssertionAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 1L;
   private String subject;
-  private JWT jwt;
+  private SignedJWT jwt;
 
-  public JwtAssertionAuthenticationToken(JWT jwt) throws ParseException {
+  public JwtAssertionAuthenticationToken(SignedJWT jwt) throws ParseException {
     super(null);
     this.jwt = jwt;
     this.subject = jwt.getJWTClaimsSet().getSubject();
     setAuthenticated(false);
   }
 
-  public JwtAssertionAuthenticationToken(JWT jwt,
+  public JwtAssertionAuthenticationToken(SignedJWT jwt,
       Collection<? extends GrantedAuthority> authorities) throws ParseException {
     super(authorities);
     this.jwt = jwt;
@@ -46,7 +46,7 @@ public class JwtAssertionAuthenticationToken extends AbstractAuthenticationToken
   }
 
   @Override
-  public Object getCredentials() {
+  public SignedJWT getCredentials() {
     return jwt;
   }
 
@@ -63,18 +63,13 @@ public class JwtAssertionAuthenticationToken extends AbstractAuthenticationToken
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + Objects.hash(jwt, subject);
-    return result;
+    return jwt.serialize().hashCode();
   }
 
   @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;
-    if (!super.equals(obj))
-      return false;
     if (getClass() != obj.getClass())
       return false;
     JwtAssertionAuthenticationToken other = (JwtAssertionAuthenticationToken) obj;
