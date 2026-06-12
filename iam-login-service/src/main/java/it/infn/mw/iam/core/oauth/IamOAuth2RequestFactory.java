@@ -82,10 +82,7 @@ import com.google.common.base.Joiner;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.JWEObject.State;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -131,7 +128,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     this.audienceRequestValidator = new AudienceRequestValidator();
 
     RequestObjectProcessor requestObjectProcessor =
-        new RequestObjectProcessor(clientDetailsService, validators, encryptionService);
+        new RequestObjectProcessor(clientDetailsService, validators);
 
     this.authorizationRequestBuilder =
         new AuthorizationRequestBuilder(clientDetailsService, scopeFilter, requestObjectProcessor);
@@ -474,14 +471,12 @@ class RequestObjectProcessor {
 
   private final ClientDetailsService clientDetailsService;
   private final ClientKeyCacheService validators;
-  private final JWTEncryptionAndDecryptionService encryptionService;
   private final JsonParser parser = new JsonParser();
 
   RequestObjectProcessor(ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators, JWTEncryptionAndDecryptionService encryptionService) {
+      ClientKeyCacheService validators) {
     this.clientDetailsService = clientDetailsService;
     this.validators = validators;
-    this.encryptionService = encryptionService;
   }
 
   void processRequestObject(String jwtString, AuthorizationRequest request) {
@@ -500,13 +495,13 @@ class RequestObjectProcessor {
 
     if (jwt instanceof SignedJWT signedJwt) {
       processSignedJwt(signedJwt, request);
-    } else if (jwt instanceof PlainJWT plainJwt) {
-      processPlainJwt(plainJwt, request);
-    } else if (jwt instanceof EncryptedJWT encryptedJwt) {
-      processEncryptedJwt(encryptedJwt, request);
+      return signedJwt;
     }
-
-    return jwt;
+    if (jwt instanceof PlainJWT plainJwt) {
+      processPlainJwt(plainJwt, request);
+      return plainJwt;
+    }
+    throw new InvalidRequestException("Invalid Request Object JWT");
   }
 
   private void processSignedJwt(SignedJWT signedJwt, AuthorizationRequest request)
@@ -524,18 +519,6 @@ class RequestObjectProcessor {
 
     ClientDetailsEntity client = loadClientFromJwtIfNeeded(plainJwt, request);
     validateUnsignedRequestObjectAllowed(client);
-  }
-
-  private void processEncryptedJwt(EncryptedJWT encryptedJwt, AuthorizationRequest request)
-      throws ParseException {
-
-    encryptionService.decryptJwt(encryptedJwt);
-
-    if (!encryptedJwt.getState().equals(State.DECRYPTED)) {
-      throw new InvalidClientException("Unable to decrypt the request object");
-    }
-
-    loadClientFromJwtIfNeeded(encryptedJwt, request);
   }
 
   private ClientDetailsEntity loadClientFromJwtIfNeeded(JWT jwt, AuthorizationRequest request)
@@ -581,12 +564,7 @@ class RequestObjectProcessor {
   }
 
   private void validateUnsignedRequestObjectAllowed(ClientDetailsEntity client) {
-    if (client.getRequestObjectSigningAlg() == null) {
-      throw new InvalidClientException(
-          "Client is not registered for unsigned request objects (no request_object_signing_alg registered)");
-    }
-
-    if (!client.getRequestObjectSigningAlg().equals(Algorithm.NONE)) {
+    if (client.getRequestObjectSigningAlg() != null) {
       throw new InvalidClientException(
           "Client is not registered for unsigned request objects (request_object_signing_alg is "
               + client.getRequestObjectSigningAlg() + ")");
