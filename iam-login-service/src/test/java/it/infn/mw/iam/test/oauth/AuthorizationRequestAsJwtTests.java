@@ -106,12 +106,6 @@ public class AuthorizationRequestAsJwtTests {
     return client;
   }
 
-  // private static KeyPair generateRsaKeyPair() throws Exception {
-  // KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-  // generator.initialize(2048);
-  // return generator.generateKeyPair();
-  // }
-
   private static JWKSet buildJwkSet(KeyPair keyPair, String kid) {
     RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
       .privateKey((RSAPrivateKey) keyPair.getPrivate())
