@@ -49,7 +49,6 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
@@ -118,7 +117,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   public IamOAuth2RequestFactory(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
       JWTProfileResolver profileResolver, DeviceCodeService deviceCodeService,
       AuthorizationCodeRepository authzCodeRepository, OAuth2TokenEntityService tokenServices,
-      ClientKeyCacheService validators, JWTEncryptionAndDecryptionService encryptionService) {
+      ClientKeyCacheService validators) {
     super(clientDetailsService);
     this.profileResolver = profileResolver;
     this.clientDetailsService = clientDetailsService;

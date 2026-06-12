@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.mitre.jwt.assertion.AssertionValidator;
 import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
@@ -163,9 +162,9 @@ public class MitreServicesConfig {
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
       OAuth2TokenEntityService tokenServices, ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators, JWTEncryptionAndDecryptionService encryptionService) {
+      ClientKeyCacheService validators) {
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository, tokenServices, validators, encryptionService);
+        deviceCodeService, authzCodeRepository, tokenServices, validators);
   }
 
   @Bean
