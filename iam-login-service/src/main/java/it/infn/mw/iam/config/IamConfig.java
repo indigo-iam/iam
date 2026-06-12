@@ -87,7 +87,6 @@ import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
-import it.infn.mw.iam.core.oauth.granters.ChainedTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
@@ -499,7 +498,6 @@ public class IamConfig {
             new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService,
                 requestFactory),
             resourceOwnerPasswordCredentialGranter,
-            new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
             tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices,
                 clientDetailsService, requestFactory, deviceCodeService)));
   }
