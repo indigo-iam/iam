@@ -92,6 +92,7 @@ public class TokenEndpointJwtClientAuthFilter extends AbstractAuthenticationProc
         return this.getAuthenticationManager().authenticate(authRequest);
       }
     } catch (ParseException e) {
+      // throw BadCredentialsException later
     }
     throw new BadCredentialsException("Invalid JWT credential: " + assertion);
   }

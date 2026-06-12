@@ -22,9 +22,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 
 import java.time.Clock;
@@ -520,9 +519,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     JwtAssertionAuthenticationToken authTokenNotEq =
         buildJwtAssertionAsymmetricAuthenticationToken(date, UUID.randomUUID().toString());
 
-    assertTrue(authTokenEq1.equals(authTokenEq1));
-    assertTrue(authTokenEq1.equals(authTokenEq2));
-    assertFalse(authTokenEq1.equals(authTokenNotEq));
+    assertEquals(authTokenEq1, authTokenEq1);
+    assertEquals(authTokenEq1, authTokenEq2);
+    assertNotEquals(authTokenEq1, authTokenNotEq);
     assertEquals(authTokenEq1.hashCode(), authTokenEq2.hashCode());
 
   }

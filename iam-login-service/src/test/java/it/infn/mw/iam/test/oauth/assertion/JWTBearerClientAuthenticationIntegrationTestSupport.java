@@ -36,6 +36,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.util.JwkKeyStoreLoader;
 
@@ -73,7 +74,8 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
     return signedJWT;
   }
 
-  public String createAsymmetricJwt(String clientId) throws NoSuchAlgorithmException, InvalidKeySpecException {
+  public String createAsymmetricJwt(String clientId)
+      throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JWTSigningAndValidationService signer = loadSignerService();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(clientId)
@@ -94,11 +96,8 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JwkKeyStoreLoader keystoreLoader = new JwkKeyStoreLoader(loader);
-
-    JWTSigningAndValidationService svc = new IamJWTSigningService(
-        keystoreLoader.load(TEST_KEYSTORE_LOCATION), "rsa1", JWSAlgorithm.RS256.getName());
-
-    return svc;
+    JwkKeyStore keyStore = keystoreLoader.load(TEST_KEYSTORE_LOCATION);
+    return new IamJWTSigningService(keyStore, "rsa1", JWSAlgorithm.RS256.getName());
   }
 
 

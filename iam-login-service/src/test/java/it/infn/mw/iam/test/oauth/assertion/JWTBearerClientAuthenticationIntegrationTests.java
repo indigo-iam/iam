@@ -106,7 +106,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   @Test
   void testAsymmetricUnknownJwt() throws Exception {
 
-    String CLIENT_ID_UNKNOWN = "unknown-client";
+    final String CLIENT_ID_UNKNOWN = "unknown-client";
     String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
 
     mvc
@@ -122,7 +122,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   @Test
   void testAsymmetricUnknownJwtUnknownClient() throws Exception {
 
-    String CLIENT_ID_UNKNOWN = "unknown-client";
+    final String CLIENT_ID_UNKNOWN = "unknown-client";
     String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
 
     mvc
@@ -138,7 +138,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   @Test
   void testInvalidAssertionType() throws Exception {
 
-    String CLIENT_ID_UNKNOWN = "unknown-client";
+    final String CLIENT_ID_UNKNOWN = "unknown-client";
     String serializedToken = createAsymmetricJwt(CLIENT_ID_UNKNOWN);
 
     mvc

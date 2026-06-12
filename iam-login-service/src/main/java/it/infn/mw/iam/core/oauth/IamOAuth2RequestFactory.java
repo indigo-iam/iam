@@ -256,10 +256,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     try {
       JWT jwt = JWTParser.parse(jwtString);
 
-      if (jwt instanceof SignedJWT) {
-        // it's a signed JWT, check the signature
-
-        SignedJWT signedJwt = (SignedJWT) jwt;
+      if (jwt instanceof SignedJWT signedJwt) {
 
         // need to check clientId first so that we can load the client to check other fields
         if (request.getClientId() == null) {
@@ -295,8 +292,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
               "Signature did not validate for presented JWT request object.");
         }
 
-      } else if (jwt instanceof PlainJWT) {
-        PlainJWT plainJwt = (PlainJWT) jwt;
+      } else if (jwt instanceof PlainJWT plainJwt) {
 
         // need to check clientId first so that we can load the client to check other fields
         if (request.getClientId() == null) {
@@ -321,11 +317,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
         // if we got here, we're OK, keep processing
 
-      } else if (jwt instanceof EncryptedJWT) {
-
-        EncryptedJWT encryptedJWT = (EncryptedJWT) jwt;
-
-        // decrypt the jwt if we can
+      } else if (jwt instanceof EncryptedJWT encryptedJWT) {
 
         encryptionService.decryptJwt(encryptedJWT);
 
