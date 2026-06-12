@@ -289,10 +289,6 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     }
   }
 
-  public static void validateUrl(String url) {
-    AudienceRequestValidator.validateUrl(url);
-  }
-
   public static List<String> splitBySpace(String str) {
     return AudienceRequestValidator.splitBySpace(str);
   }
