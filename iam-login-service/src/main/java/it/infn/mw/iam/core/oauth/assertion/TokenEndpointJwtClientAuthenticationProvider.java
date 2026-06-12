@@ -98,16 +98,16 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
 
     if (client.getTokenEndpointAuthSigningAlg() != null
         && !client.getTokenEndpointAuthSigningAlg().equals(alg)) {
-      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+      throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
 
     if (client.getTokenEndpointAuthMethod().equals(AuthMethod.PRIVATE_KEY)) {
       if (!JWSAlgorithm.Family.SIGNATURE.contains(alg)) {
-        invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+        throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
     } else if (client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_JWT)
         && !JWSAlgorithm.Family.HMAC_SHA.contains(alg)) {
-      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+      throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
   }
 
@@ -121,12 +121,12 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
                   client.getClientId(), alg.getName())));
 
     if (!validator.validateSignature(jws)) {
-      invalidBearerAssertion("invalid signature");
+      throw invalidBearerAssertion("invalid signature");
     }
   }
 
-  private void invalidBearerAssertion(String msg) {
-    throw new AuthenticationServiceException(
+  private AuthenticationServiceException invalidBearerAssertion(String msg) {
+    return new AuthenticationServiceException(
         String.format("invalid jwt bearer assertion: %s", msg));
   }
 
@@ -135,46 +135,46 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     JWTClaimsSet jwtClaims = jws.getJWTClaimsSet();
 
     if (isNull(jwtClaims.getIssuer())) {
-      invalidBearerAssertion("issuer is null");
+      throw invalidBearerAssertion("issuer is null");
     } else if (!jwtClaims.getIssuer().equals(client.getClientId())) {
-      invalidBearerAssertion("issuer does not match client id");
+      throw invalidBearerAssertion("issuer does not match client id");
     }
 
     if (isNull(jwtClaims.getExpirationTime())) {
-      invalidBearerAssertion("expiration time not set");
+      throw invalidBearerAssertion("expiration time not set");
     }
 
     Instant nowSkewed = clock.instant().minusSeconds(CLOCK_SKEW_IN_SECONDS);
 
     if (Date.from(nowSkewed).after(jwtClaims.getExpirationTime())) {
-      invalidBearerAssertion("expired assertion token");
+      throw invalidBearerAssertion("expired assertion token");
     }
 
     if (!isNull(jwtClaims.getNotBeforeTime())) {
 
       nowSkewed = clock.instant().plusSeconds(CLOCK_SKEW_IN_SECONDS);
       if (Date.from(nowSkewed).before(jwtClaims.getNotBeforeTime())) {
-        invalidBearerAssertion("assertion is not yet valid");
+        throw invalidBearerAssertion("assertion is not yet valid");
       }
     }
 
     if (!isNull(jwtClaims.getIssueTime())) {
       nowSkewed = clock.instant().plusSeconds(CLOCK_SKEW_IN_SECONDS);
       if (Date.from(nowSkewed).before(jwtClaims.getIssueTime())) {
-        invalidBearerAssertion("assertion was issued in the future");
+        throw invalidBearerAssertion("assertion was issued in the future");
       }
     }
 
     if (isNull(jwtClaims.getAudience())) {
-      invalidBearerAssertion("assertion audience is null");
+      throw invalidBearerAssertion("assertion audience is null");
     } else {
       if (!jwtClaims.getAudience().contains(tokenEndpoint)) {
-        invalidBearerAssertion("invalid audience");
+        throw invalidBearerAssertion("invalid audience");
       }
     }
 
     if (isNull(jwtClaims.getJWTID())) {
-      invalidBearerAssertion("jti is null");
+      throw invalidBearerAssertion("jti is null");
       // no further jti validation is implemented currently
     }
   }
@@ -192,7 +192,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
       final SignedJWT jwt = jwtAuth.getCredentials();
 
       if (isNull(jwt)) {
-        invalidBearerAssertion("Null JWT in authentication token");
+        throw invalidBearerAssertion("Null JWT in authentication token");
       }
 
       clientAuthMethodChecks(client, jwt);

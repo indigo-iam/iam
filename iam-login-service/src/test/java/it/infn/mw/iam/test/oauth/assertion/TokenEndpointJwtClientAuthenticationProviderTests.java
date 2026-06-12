@@ -17,18 +17,17 @@ package it.infn.mw.iam.test.oauth.assertion;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.beust.jcommander.internal.Lists;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -131,20 +129,17 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
     lenient().when(authentication.getCredentials()).thenReturn(macSignJwt(JUST_SUB_JWT));
 
-    List<AuthMethod> authMethod =
-        Lists.newArrayList(null, AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST);
+    List<AuthMethod> authMethod = new ArrayList<>();
+    authMethod.add(null);
+    authMethod.addAll(List.of(AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST));
 
     for (AuthMethod am : authMethod) {
       lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(am);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(),
-            containsString("Client does not support JWT-based client autentication"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("Client does not support JWT-based client autentication"));
     }
-
   }
 
   @Test
@@ -156,11 +151,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("Invalid signature algorithm: " + a.getName()));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("Invalid signature algorithm: " + a.getName()));
     });
   }
 
@@ -173,11 +166,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("Invalid signature algorithm: " + a.getName()));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("Invalid signature algorithm: " + a.getName()));
     });
 
   }
@@ -191,20 +182,16 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     SignedJWT jws = new SignedJWT(new JWSHeader(JWSAlgorithm.RS384), JUST_SUB_JWT);
     lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Invalid signature algorithm: RS384"));
-    }
+    AuthenticationServiceException e1 = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertTrue(e1.getMessage().contains("Invalid signature algorithm: RS384"));
 
     jws = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), JUST_SUB_JWT);
     lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Invalid signature algorithm: HS256"));
-    }
+    AuthenticationServiceException e2 = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertTrue(e2.getMessage().contains("Invalid signature algorithm: HS256"));
 
     lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
     lenient().when(client.getTokenEndpointAuthSigningAlg()).thenReturn(JWSAlgorithm.HS256);
@@ -212,21 +199,16 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     jws = new SignedJWT(new JWSHeader(JWSAlgorithm.HS384), JUST_SUB_JWT);
     lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Invalid signature algorithm: HS384"));
-    }
+    AuthenticationServiceException e3 = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertTrue(e3.getMessage().contains("Invalid signature algorithm: HS384"));
 
     jws = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), JUST_SUB_JWT);
     lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-    try {
-      provider.authenticate(authentication);
-    } catch (AuthenticationServiceException e) {
-      assertThat(e.getMessage(), containsString("Invalid signature algorithm: RS256"));
-    }
-
+    AuthenticationServiceException e4 = assertThrows(AuthenticationServiceException.class,
+        () -> provider.authenticate(authentication));
+    assertTrue(e4.getMessage().contains("Invalid signature algorithm: RS256"));
   }
 
   @Test
@@ -238,13 +220,11 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("Unable to resolve validator"));
-        assertThat(e.getMessage(), containsString(JWT_AUTH_NAME));
-        assertThat(e.getMessage(), containsString(a.getName()));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("Unable to resolve validator"));
+      assertTrue(e.getMessage().contains(JWT_AUTH_NAME));
+      assertTrue(e.getMessage().contains(a.getName()));
     });
   }
 
@@ -260,11 +240,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("invalid signature"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("invalid signature"));
     });
 
     lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
@@ -273,11 +251,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("invalid signature"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("invalid signature"));
     });
   }
 
@@ -293,11 +269,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("issuer is null"));
-      }
+      AuthenticationServiceException e1 = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e1.getMessage().contains("issuer is null"));
 
       JWTClaimsSet claimSet =
           new JWTClaimsSet.Builder().issuer("invalid-issuer").subject(JWT_AUTH_NAME).build();
@@ -305,11 +279,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("issuer does not match client id"));
-      }
+      AuthenticationServiceException e2 = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e2.getMessage().contains("issuer does not match client id"));
     });
   }
 
@@ -326,11 +298,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("expiration time not set"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("expiration time not set"));
     });
   }
 
@@ -349,11 +319,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("expired assertion token"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("expired assertion token"));
     });
   }
 
@@ -373,11 +341,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("assertion is not yet valid"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("assertion is not yet valid"));
     });
   }
 
@@ -397,11 +363,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("assertion was issued in the future"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("assertion was issued in the future"));
     });
   }
 
@@ -420,11 +384,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("invalid audience"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("invalid audience"));
     });
   }
 
@@ -444,11 +406,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("invalid audience"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("invalid audience"));
     });
   }
 
@@ -468,11 +428,9 @@ class TokenEndpointJwtClientAuthenticationProviderTests
       SignedJWT jws = new SignedJWT(header, claimSet);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
-      try {
-        provider.authenticate(authentication);
-      } catch (AuthenticationServiceException e) {
-        assertThat(e.getMessage(), containsString("jti is null"));
-      }
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("jti is null"));
     });
   }
 
@@ -495,10 +453,10 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
       JwtAssertionAuthenticationToken authToken =
           (JwtAssertionAuthenticationToken) provider.authenticate(authentication);
-      assertThat(authToken.isAuthenticated(), is(true));
-      assertThat(authToken.getName(), is(JWT_AUTH_NAME));
-      assertThat(authToken.getAuthorities(), hasItem(ROLE_CLIENT_AUTHORITY));
-      assertThat(authToken.getAuthorities(), hasSize(1));
+      assertTrue(authToken.isAuthenticated());
+      assertEquals(JWT_AUTH_NAME, authToken.getName());
+      assertTrue(authToken.getAuthorities().contains(ROLE_CLIENT_AUTHORITY));
+      assertEquals(1, authToken.getAuthorities().size());
     });
   }
 
