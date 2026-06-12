@@ -15,17 +15,22 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.AUD;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CLAIMS;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.CLIENT_ID;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE_METHOD;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.DISPLAY;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.LOGIN_HINT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.NONCE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.REDIRECT_URI;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.REQUEST;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.RESPONSE_TYPE;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.SCOPE;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
 
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -260,11 +265,11 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
         // need to check clientId first so that we can load the client to check other fields
         if (request.getClientId() == null) {
-          request.setClientId(signedJwt.getJWTClaimsSet().getStringClaim("client_id"));
+          request.setClientId(signedJwt.getJWTClaimsSet().getStringClaim(CLIENT_ID));
         }
 
-        ClientDetailsEntity client = (ClientDetailsEntity)
-            clientDetailsService.loadClientByClientId(request.getClientId());
+        ClientDetailsEntity client =
+            (ClientDetailsEntity) clientDetailsService.loadClientByClientId(request.getClientId());
 
         if (client == null) {
           throw new InvalidClientException("Client not found: " + request.getClientId());
@@ -296,11 +301,11 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
         // need to check clientId first so that we can load the client to check other fields
         if (request.getClientId() == null) {
-          request.setClientId(plainJwt.getJWTClaimsSet().getStringClaim("client_id"));
+          request.setClientId(plainJwt.getJWTClaimsSet().getStringClaim(CLIENT_ID));
         }
 
-        ClientDetailsEntity client = (ClientDetailsEntity)
-            clientDetailsService.loadClientByClientId(request.getClientId());
+        ClientDetailsEntity client =
+            (ClientDetailsEntity) clientDetailsService.loadClientByClientId(request.getClientId());
 
         if (client == null) {
           throw new InvalidClientException("Client not found: " + request.getClientId());
@@ -329,11 +334,11 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
         // need to check clientId first so that we can load the client to check other fields
         if (request.getClientId() == null) {
-          request.setClientId(encryptedJWT.getJWTClaimsSet().getStringClaim("client_id"));
+          request.setClientId(encryptedJWT.getJWTClaimsSet().getStringClaim(CLIENT_ID));
         }
 
-        ClientDetailsEntity client = (ClientDetailsEntity)
-            clientDetailsService.loadClientByClientId(request.getClientId());
+        ClientDetailsEntity client =
+            (ClientDetailsEntity) clientDetailsService.loadClientByClientId(request.getClientId());
 
         if (client == null) {
           throw new InvalidClientException("Client not found: " + request.getClientId());
@@ -351,7 +356,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
       JWTClaimsSet claims = jwt.getJWTClaimsSet();
 
       Set<String> responseTypes =
-          OAuth2Utils.parseParameterList(claims.getStringClaim("response_type"));
+          OAuth2Utils.parseParameterList(claims.getStringClaim(RESPONSE_TYPE));
       if (!responseTypes.isEmpty()) {
         if (!responseTypes.equals(request.getResponseTypes())) {
           LOG.info(
@@ -360,7 +365,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
         request.setResponseTypes(responseTypes);
       }
 
-      String redirectUri = claims.getStringClaim("redirect_uri");
+      String redirectUri = claims.getStringClaim(REDIRECT_URI);
       if (redirectUri != null) {
         if (!redirectUri.equals(request.getRedirectUri())) {
           LOG.info(
@@ -369,7 +374,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
         request.setRedirectUri(redirectUri);
       }
 
-      String state = claims.getStringClaim("state");
+      String state = claims.getStringClaim(STATE);
       if (state != null) {
         if (!state.equals(request.getState())) {
           LOG.info(
@@ -387,13 +392,13 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
         request.getExtensions().put(NONCE, nonce);
       }
 
-      String display = claims.getStringClaim("display");
+      String display = claims.getStringClaim(DISPLAY);
       if (display != null) {
-        if (!display.equals(request.getExtensions().get("display"))) {
+        if (!display.equals(request.getExtensions().get(DISPLAY))) {
           LOG.info(
               "Mismatch between request object and regular parameter for display, using request object");
         }
-        request.getExtensions().put("display", display);
+        request.getExtensions().put(DISPLAY, display);
       }
 
       String prompt = claims.getStringClaim(PROMPT);
@@ -405,7 +410,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
         request.getExtensions().put(PROMPT, prompt);
       }
 
-      Set<String> scope = OAuth2Utils.parseParameterList(claims.getStringClaim("scope"));
+      Set<String> scope = OAuth2Utils.parseParameterList(claims.getStringClaim(SCOPE));
       if (!scope.isEmpty()) {
         if (!scope.equals(request.getScope())) {
           LOG.info(
@@ -590,7 +595,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   private String getFirstNotEmptyAudience(Map<String, String> params) {
     return AUD_KEYS.stream()
       .map(params::get)
-      .filter(aud -> !isNullOrEmpty(aud))
+      .filter(aud -> aud != null && !aud.isEmpty())
       .findFirst()
       .orElse(null);
   }
