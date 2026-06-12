@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.common.exceptions.BadClientCredentialsException;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -35,8 +34,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.google.common.base.Strings;
-import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.oauth.assertion.JwtAssertionAuthenticationToken;
@@ -59,10 +56,6 @@ public class TokenEndpointJwtClientAuthFilter extends AbstractAuthenticationProc
       @Override
       public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
           AuthenticationException exception) throws IOException, ServletException {
-        if (exception instanceof BadCredentialsException) {
-          exception = new BadCredentialsException(exception.getMessage(),
-              new BadClientCredentialsException());
-        }
         authenticationEntryPoint.commence(request, response, exception);
       }
     });
@@ -86,15 +79,12 @@ public class TokenEndpointJwtClientAuthFilter extends AbstractAuthenticationProc
 
     try {
 
-      JWT jwt = JWTParser.parse(assertion);
-      if (jwt instanceof SignedJWT sjwt) {
-        Authentication authRequest = new JwtAssertionAuthenticationToken(sjwt);
-        return this.getAuthenticationManager().authenticate(authRequest);
-      }
+      SignedJWT jwt = SignedJWT.parse(assertion);
+      Authentication authRequest = new JwtAssertionAuthenticationToken(jwt);
+      return this.getAuthenticationManager().authenticate(authRequest);
     } catch (ParseException e) {
-      // throw BadCredentialsException later
+      throw new BadCredentialsException("Invalid JWT credential: " + assertion);
     }
-    throw new BadCredentialsException("Invalid JWT credential: " + assertion);
   }
 
   @Override
