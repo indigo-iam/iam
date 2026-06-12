@@ -66,7 +66,7 @@ import it.infn.mw.iam.api.client.service.ClientService;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
-public class AuthorizationRequestAsJwtTests {
+class AuthorizationRequestAsJwtTests {
 
   @Autowired
   ClientService clientService;
@@ -87,7 +87,7 @@ public class AuthorizationRequestAsJwtTests {
 
     rsaKeyPair = generateRsaKeyPair();
 
-    JWKSet clientJwkSet = buildJwkSet(rsaKeyPair, "request-object-test-key");
+    JWKSet clientJwkSet = buildJwkSet(rsaKeyPair);
 
     ClientDetailsEntity client = prepareClient(CLIENT_ID);
     client.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
@@ -106,7 +106,7 @@ public class AuthorizationRequestAsJwtTests {
     return client;
   }
 
-  private static JWKSet buildJwkSet(KeyPair keyPair, String kid) {
+  private static JWKSet buildJwkSet(KeyPair keyPair) {
     RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
       .privateKey((RSAPrivateKey) keyPair.getPrivate())
       .keyID("rsa1")
