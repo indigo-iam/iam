@@ -200,6 +200,44 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
+  void testAuthzCodeMissingClientId() throws IOException, ParseException {
+
+    RestAssured.given()
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("resource", "http://example1.org http://example2.org")
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.UNAUTHORIZED.value());
+  }
+  
+  @Test
+  void testAuthzCodeSupportsClaimsRequestParameter() throws IOException, ParseException {
+
+    RestAssured.given()
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("claims", "email")
+      .queryParam("resource", "http://example1.org http://example2.org")
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
+  }
+  
+  @Test
   void testAuthzCodeAudienceSupport() throws Exception {
 
     String[] audienceKeys = {"aud", "audience"};
