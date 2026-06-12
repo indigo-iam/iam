@@ -15,14 +15,14 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_DEVICE_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.DEVICE_APPROVED_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REQUEST_USER_CODE_STRING;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
@@ -251,8 +251,8 @@ public class IamDeviceEndpointController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @PostMapping(value = "/" + USER_CODE_URL + "/approve")
   public String confirmAccess(@RequestParam("user_code") String userCode,
-      @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
-      ModelMap model, Authentication auth, HttpSession session) {
+      @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve, ModelMap model,
+      Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
         (AuthorizationRequest) session.getAttribute("authorizationRequest");
@@ -313,8 +313,8 @@ public class IamDeviceEndpointController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
 
-    if (dc.getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE)));
+    if (dc.getRequestParameters().containsKey(RESOURCE_KEY)) {
+      model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE_KEY)));
     }
 
     // just for tests validation

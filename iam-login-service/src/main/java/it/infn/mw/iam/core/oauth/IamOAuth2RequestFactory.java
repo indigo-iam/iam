@@ -39,7 +39,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -106,18 +105,10 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
-  public static final String RESOURCE = "resource";
-  protected static final List<String> AUD_KEYS = Arrays.asList(RESOURCE, "aud", "audience");
-  public static final String AUD_KEY = "aud";
-
   public static final String PASSWORD_GRANT = "password";
   public static final String AUTHZ_CODE_GRANT = "authorization_code";
   public static final String DEVICE_CODE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   public static final String REFRESH_TOKEN_GRANT = "refresh_token";
-
-  public static final String AUTHZ_CODE_KEY = "code";
-  public static final String DEVICE_CODE_KEY = "device_code";
-  public static final String REFRESH_TOKEN_KEY = "refresh_token";
 
   private final JWTProfileResolver profileResolver;
   private final ClientDetailsService clientDetailsService;
@@ -252,20 +243,22 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     switch (grantType) {
       case AUTHZ_CODE_GRANT:
         return Optional
-          .ofNullable(authzCodeRepository.getByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY)))
+          .ofNullable(authzCodeRepository
+            .getByCode(tokenRequestParameters.get(IamOAuthRequestParameters.AUTHZ_CODE_KEY)))
           .map(AuthorizationCodeEntity::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 
       case DEVICE_CODE_GRANT:
         return Optional
-          .ofNullable(
-              deviceCodeService.findDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client))
+          .ofNullable(deviceCodeService.findDeviceCode(
+              tokenRequestParameters.get(IamOAuthRequestParameters.DEVICE_CODE_KEY), client))
           .map(DeviceCode::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 
       case REFRESH_TOKEN_GRANT:
         return Optional
-          .ofNullable(tokenServices.getRefreshToken(tokenRequestParameters.get(REFRESH_TOKEN_KEY)))
+          .ofNullable(tokenServices.getRefreshToken(
+              tokenRequestParameters.get(IamOAuthRequestParameters.REFRESH_TOKEN_KEY)))
           .map(token -> token.getAuthenticationHolder())
           .map(holder -> holder.getRequestParameters());
 
@@ -277,21 +270,26 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   private void updateTokenAudience(Map<String, String> tokenRequestParameters,
       Map<String, String> authzRequestParams) {
 
-    boolean hasTokenAudKey = tokenRequestParameters.containsKey(AUD_KEY);
-    boolean hasAuthzResourceParam = authzRequestParams.containsKey(RESOURCE);
-    boolean hasTokenResourceParam = tokenRequestParameters.containsKey(RESOURCE);
+    boolean hasTokenAudKey = tokenRequestParameters.containsKey(IamOAuthRequestParameters.AUD_KEY);
+    boolean hasAuthzResourceParam =
+        authzRequestParams.containsKey(IamOAuthRequestParameters.RESOURCE_KEY);
+    boolean hasTokenResourceParam =
+        tokenRequestParameters.containsKey(IamOAuthRequestParameters.RESOURCE_KEY);
 
     if (hasTokenAudKey && (hasAuthzResourceParam || hasTokenResourceParam)) {
-      List<String> tokenResourceParams = splitBySpace(tokenRequestParameters.get(AUD_KEY));
-      tokenRequestParameters.put(AUD_KEY,
+      List<String> tokenResourceParams =
+          splitBySpace(tokenRequestParameters.get(IamOAuthRequestParameters.AUD_KEY));
+      tokenRequestParameters.put(IamOAuthRequestParameters.AUD_KEY,
           audienceRequestValidator.getAllowedResource(tokenResourceParams, authzRequestParams));
       return;
     }
 
     if (!hasTokenAudKey && hasAuthzResourceParam) {
-      tokenRequestParameters.put(AUD_KEY, authzRequestParams.get(RESOURCE));
+      tokenRequestParameters.put(IamOAuthRequestParameters.AUD_KEY,
+          authzRequestParams.get(IamOAuthRequestParameters.RESOURCE_KEY));
       // Required by RT flow after device
-      tokenRequestParameters.put(RESOURCE, authzRequestParams.get(RESOURCE));
+      tokenRequestParameters.put(IamOAuthRequestParameters.RESOURCE_KEY,
+          authzRequestParams.get(IamOAuthRequestParameters.RESOURCE_KEY));
     }
   }
 
@@ -303,6 +301,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     return AudienceRequestValidator.splitBySpace(str);
   }
 }
+
 
 @SuppressWarnings("deprecation")
 class AuthorizationRequestBuilder {
@@ -360,8 +359,8 @@ class AuthorizationRequestBuilder {
     }
 
     try {
-      ClientDetailsEntity client =
-          (ClientDetailsEntity) clientDetailsService.loadClientByClientId(authzRequest.getClientId());
+      ClientDetailsEntity client = (ClientDetailsEntity) clientDetailsService
+        .loadClientByClientId(authzRequest.getClientId());
 
       applyDefaultScopes(authzRequest, client);
       applyDefaultMaxAge(authzRequest, client);
@@ -401,14 +400,16 @@ class AuthorizationRequestBuilder {
     }
   }
 
-  private void addPkceExtensions(Map<String, String> inputParams, AuthorizationRequest authzRequest) {
+  private void addPkceExtensions(Map<String, String> inputParams,
+      AuthorizationRequest authzRequest) {
     if (!inputParams.containsKey(CODE_CHALLENGE)) {
       return;
     }
 
     authzRequest.getExtensions().put(CODE_CHALLENGE, inputParams.get(CODE_CHALLENGE));
-    authzRequest.getExtensions().put(CODE_CHALLENGE_METHOD,
-        inputParams.getOrDefault(CODE_CHALLENGE_METHOD, PKCEAlgorithm.plain.getName()));
+    authzRequest.getExtensions()
+      .put(CODE_CHALLENGE_METHOD,
+          inputParams.getOrDefault(CODE_CHALLENGE_METHOD, PKCEAlgorithm.plain.getName()));
   }
 
   private void addRequestObjectExtension(Map<String, String> inputParams,
@@ -465,6 +466,7 @@ class AuthorizationRequestBuilder {
   }
 }
 
+
 @SuppressWarnings("deprecation")
 class RequestObjectProcessor {
 
@@ -475,8 +477,8 @@ class RequestObjectProcessor {
   private final JWTEncryptionAndDecryptionService encryptionService;
   private final JsonParser parser = new JsonParser();
 
-  RequestObjectProcessor(ClientDetailsService clientDetailsService, ClientKeyCacheService validators,
-      JWTEncryptionAndDecryptionService encryptionService) {
+  RequestObjectProcessor(ClientDetailsService clientDetailsService,
+      ClientKeyCacheService validators, JWTEncryptionAndDecryptionService encryptionService) {
     this.clientDetailsService = clientDetailsService;
     this.validators = validators;
     this.encryptionService = encryptionService;
@@ -608,7 +610,8 @@ class RequestObjectProcessor {
   private void applyResponseTypes(JWTClaimsSet claims, AuthorizationRequest request)
       throws ParseException {
 
-    Set<String> responseTypes = OAuth2Utils.parseParameterList(claims.getStringClaim(RESPONSE_TYPE));
+    Set<String> responseTypes =
+        OAuth2Utils.parseParameterList(claims.getStringClaim(RESPONSE_TYPE));
 
     if (responseTypes.isEmpty()) {
       return;
@@ -657,13 +660,12 @@ class RequestObjectProcessor {
   private void applyStringExtensionClaim(JWTClaimsSet claims, AuthorizationRequest request,
       String claimName) throws ParseException {
 
-    applyStringClaim(claims, claimName,
-        () -> (String) request.getExtensions().get(claimName),
+    applyStringClaim(claims, claimName, () -> (String) request.getExtensions().get(claimName),
         value -> request.getExtensions().put(claimName, value));
   }
 
-  private void applyStringClaim(JWTClaimsSet claims, String claimName, Supplier<String> currentValue,
-      Consumer<String> updater) throws ParseException {
+  private void applyStringClaim(JWTClaimsSet claims, String claimName,
+      Supplier<String> currentValue, Consumer<String> updater) throws ParseException {
 
     String claimValue = claims.getStringClaim(claimName);
 
@@ -697,24 +699,26 @@ class RequestObjectProcessor {
   }
 }
 
+
 class AudienceRequestValidator {
 
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
 
-    if (params.containsKey(IamOAuth2RequestFactory.RESOURCE)) {
-      List<String> resourceParams = splitBySpace(params.get(IamOAuth2RequestFactory.RESOURCE));
+    if (params.containsKey(IamOAuthRequestParameters.RESOURCE_KEY)) {
+      List<String> resourceParams =
+          splitBySpace(params.get(IamOAuthRequestParameters.RESOURCE_KEY));
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
     }
 
     Optional<String> audience = Optional.ofNullable(getFirstNotEmptyAudience(params));
-    audience.ifPresent(aud -> params.put(IamOAuth2RequestFactory.AUD_KEY, aud));
+    audience.ifPresent(aud -> params.put(IamOAuthRequestParameters.AUD_KEY, aud));
   }
 
   String getAllowedResource(List<String> tokenResourceParams,
       Map<String, String> authzRequestParams) {
 
     List<String> authzResourceParams =
-        splitBySpace(authzRequestParams.get(IamOAuth2RequestFactory.RESOURCE));
+        splitBySpace(authzRequestParams.get(IamOAuthRequestParameters.RESOURCE_KEY));
     tokenResourceParams.retainAll(authzResourceParams);
 
     String allowedResource = String.join(" ", tokenResourceParams);
@@ -726,7 +730,7 @@ class AudienceRequestValidator {
   }
 
   private String getFirstNotEmptyAudience(Map<String, String> params) {
-    return IamOAuth2RequestFactory.AUD_KEYS.stream()
+    return IamOAuthRequestParameters.AUD_KEYS.stream()
       .map(params::get)
       .filter(aud -> aud != null && !aud.isEmpty())
       .findFirst()
