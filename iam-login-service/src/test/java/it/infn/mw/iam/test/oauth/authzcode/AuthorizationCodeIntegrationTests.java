@@ -200,7 +200,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  void testAuthzCodeMissingClientId() throws IOException, ParseException {
+  void testAuthzCodeMissingClientId() {
 
     RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -218,7 +218,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   }
   
   @Test
-  void testAuthzCodeSupportsClaimsRequestParameter() throws IOException, ParseException {
+  void testAuthzCodeSupportsClaimsRequestParameter() {
 
     RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
