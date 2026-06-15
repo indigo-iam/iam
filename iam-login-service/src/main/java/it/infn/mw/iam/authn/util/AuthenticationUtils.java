@@ -62,7 +62,4 @@ public class AuthenticationUtils {
     return new User(account.getUsername(), account.getPassword(),
         convertIamAccountAuthorities(account));
   }
-
-
-
 }
