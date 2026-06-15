@@ -84,6 +84,8 @@ jobs:
       uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
       with:
         images: indigoiam/iam-login-service
+        flavor: |
+          latest=false
         tags: |
           type=sha
           type=ref,event=tag
@@ -94,6 +96,8 @@ jobs:
       uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
       with:
         images: indigoiam/iam-test-client
+        flavor: |
+          latest=false
         tags: |
           type=sha
           type=ref,event=tag
@@ -104,6 +108,8 @@ jobs:
       uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
       with:
         images: indigoiam/iam-voms-aa
+        flavor: |
+          latest=false
         tags: |
           type=sha
           type=ref,event=tag
