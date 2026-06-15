@@ -25,7 +25,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -36,7 +35,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
@@ -78,7 +76,7 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
         String clientId = authentication.getName();
         ClientDetailsEntity client = null;
         try {
-          client = (ClientDetailsEntity) userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
+          client = userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
         } catch (InvalidClientException e) {
           throw new BadCredentialsException(e.getMessage());
         }
