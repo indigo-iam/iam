@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.saml;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoBuilder.SAML_TYPE;
 import static it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoBuilder.TYPE_ATTR;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.EPPN;
@@ -27,7 +26,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.opensaml.saml2.core.Attribute;
@@ -72,26 +70,27 @@ public class SamlExternalAuthenticationToken
     ExternalAuthenticationRegistrationInfo ri =
         new ExternalAuthenticationRegistrationInfo(ExternalAuthenticationType.SAML);
 
-    SAMLCredential cred = (SAMLCredential) getExternalAuthentication().getCredentials();
-
     ri.setIssuer(samlId.getIdpId());
     ri.setSubject(samlId.getUserId());
     ri.setSubjectAttribute(samlId.getAttributeId());
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(GIVEN_NAME.getAttributeName()))) {
-      ri.setGivenName(cred.getAttributeAsString(GIVEN_NAME.getAttributeName()));
+    SAMLCredential cred = (SAMLCredential) getExternalAuthentication().getCredentials();
+    Map<Saml2Attribute, String> samlAttributes = Saml2Attribute.resolveValues(cred);
+
+    if (samlAttributes.containsKey(GIVEN_NAME)) {
+      ri.setGivenName(samlAttributes.get(GIVEN_NAME));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(SN.getAttributeName()))) {
-      ri.setFamilyName(cred.getAttributeAsString(SN.getAttributeName()));
+    if (samlAttributes.containsKey(SN)) {
+      ri.setFamilyName(samlAttributes.get(SN));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(MAIL.getAttributeName()))) {
-      ri.setEmail(cred.getAttributeAsString(MAIL.getAttributeName()));
+    if (samlAttributes.containsKey(MAIL)) {
+      ri.setEmail(samlAttributes.get(MAIL));
     }
 
-    if (!isNullOrEmpty(cred.getAttributeAsString(EPPN.getAttributeName()))) {
-      ri.setSuggestedUsername(cred.getAttributeAsString(EPPN.getAttributeName()));
+    if (samlAttributes.containsKey(EPPN)) {
+      ri.setSuggestedUsername(samlAttributes.get(EPPN));
     }
 
     Map<String, String> additionalAttrs = Maps.newHashMap();
@@ -120,7 +119,7 @@ public class SamlExternalAuthenticationToken
 
     for (Attribute attr : cred.getAttributes()) {
 
-      Optional<Saml2Attribute> maybeKnownAttr = Saml2Attribute.byName(attr.getName());
+      Optional<Saml2Attribute> maybeKnownAttr = Saml2Attribute.resolve(attr.getName());
 
       String attrName = attr.getName();
 
@@ -130,7 +129,7 @@ public class SamlExternalAuthenticationToken
 
       String attrVal = cred.getAttributeAsString(attr.getName());
 
-      if (!Objects.isNull(attrVal)) {
+      if (attrVal != null) {
         authnInfo.put(attrName, attrVal);
       }
     }

@@ -17,6 +17,7 @@
 --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <t:page title="Verify registration request">
   <h1 class="text-center">Verify registration request</h1>
   <div id="verify-registration-form">
@@ -25,7 +26,7 @@
       <form name="confirmationForm"
           action="${pageContext.request.contextPath.endsWith('/') ? pageContext.request.contextPath : pageContext.request.contextPath.concat('/') }registration/verify"
           method="post">
-        <input type="hidden" name="token" value="${token}" />
+        <input type="hidden" name="token" value="${fn:escapeXml(token)}" />
         <input class="btn btn-primary" type="submit" name="confirm_registration_request" value="Confirm Request" />
       </form>
     </div>

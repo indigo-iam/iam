@@ -30,3 +30,6 @@ travis/travis-mitre-build.out
 *.iml
 .idea
 .DS_Store
+
+iam-login-service/target_test-classes
+iam-voms-aa/IAM_LOG_PATH:=

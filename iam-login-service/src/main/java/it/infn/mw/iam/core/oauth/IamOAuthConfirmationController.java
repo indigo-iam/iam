@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_AUTHZ_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.AUTHZ_CODE_URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.STATE_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_AUTHZ_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUTHZ_CODE_URL;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.STATE_PARAMETER_KEY;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 
@@ -70,8 +70,9 @@ public class IamOAuthConfirmationController {
 
   private IamUserApprovalUtils userApprovalUtils;
 
-  public IamOAuthConfirmationController(IamClientRepository clientRepository, SystemScopeService scopeService,
-      RedirectResolver redirectResolver, IamUserApprovalUtils userApprovalUtils) {
+  public IamOAuthConfirmationController(IamClientRepository clientRepository,
+      SystemScopeService scopeService, RedirectResolver redirectResolver,
+      IamUserApprovalUtils userApprovalUtils) {
 
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
@@ -153,10 +154,9 @@ public class IamOAuthConfirmationController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
 
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
-    
-    if (authRequest.getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources",
-          splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
+
+    if (authRequest.getRequestParameters().containsKey(RESOURCE_KEY)) {
+      model.put("resources", splitBySpace(authRequest.getRequestParameters().get(RESOURCE_KEY)));
     }
 
   }
