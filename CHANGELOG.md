@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.5 (2026-06-15)
+
+### What's Changed
+
+* Sanitize registration key in error page
+* Sanitize PasswordReplacedEvent log message
+* Strengthen redirect URI validation
+
 ## 1.13.4 (2025-01-26)
 
 ## What's Changed
