@@ -63,15 +63,20 @@ class SearchClientControllerTests {
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
   void searchForPublicClientByName() throws Exception {
 
-    ListResponseDTO<RegisteredClientDTO> response = mapper.readValue(
-        mvc.perform(get(ENDPOINT).param("search", "Public client").param("searchType", "name"))
-          .andExpect(status().isOk())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(),
-        new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
+    ListResponseDTO<RegisteredClientDTO> response =
+        mapper
+          .readValue(
+              mvc
+                .perform(
+                    get(ENDPOINT).param("search", "Protected Resource").param("searchType", "name"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(),
+              new TypeReference<ListResponseDTO<RegisteredClientDTO>>() {});
     assertEquals(1, response.getTotalResults());
-    assertEquals("Public client", response.getResources().get(0).getClientName());
+    assertEquals("Protected Resource allowed only to introspect",
+        response.getResources().get(0).getClientName());
   }
 
   @Test

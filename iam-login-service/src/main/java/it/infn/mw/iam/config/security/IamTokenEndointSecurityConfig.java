@@ -15,34 +15,34 @@
  */
 package it.infn.mw.iam.config.security;
 
-import static java.util.Collections.singletonList;
 import static org.springframework.http.HttpMethod.OPTIONS;
 
-import java.time.Clock;
-
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
-import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
+import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -59,73 +59,75 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   private ClientUserDetailsService userDetailsService;
 
   @Autowired
-  private Clock clock;
+  private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
 
   @Autowired
-  private ClientKeyCacheService validators;
-
-  @Autowired
-  private IamProperties iamProperties;
+  private ClientCredentialsTokenEndpointFilter ccFilter;
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
-    auth.userDetailsService(userDetailsService)
-      .passwordEncoder(NoOpPasswordEncoder.getInstance());
-  }
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider() {
 
-  @Bean
-  public ClientCredentialsTokenEndpointFilter ccFilter() throws Exception {
-    ClientCredentialsTokenEndpointFilter filter =
-        new ClientCredentialsTokenEndpointFilter(TOKEN_ENDPOINT);
-    filter.setAllowOnlyPost(true);
-    filter.setAuthenticationManager(authenticationManager());
-    return filter;
-  }
+      @Override
+      public Authentication authenticate(Authentication authentication)
+          throws AuthenticationException {
 
-  @Bean
-  public JWTBearerClientAssertionTokenEndpointFilter jwtBearerFilter() {
+        String clientId = authentication.getName();
+        ClientDetailsEntity client = null;
+        try {
+          client = userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
+        } catch (InvalidClientException e) {
+          throw new BadCredentialsException(e.getMessage());
+        }
 
-    JWTBearerClientAssertionTokenEndpointFilter filter =
-        new JWTBearerClientAssertionTokenEndpointFilter(new AntPathRequestMatcher(TOKEN_ENDPOINT));
+        if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
+            && client.getClientSecret() != null) {
+          throw new AuthenticationServiceException("Public client requires no secret");
+        }
+        if (!supportsBasic(client)) {
+          throw new BadCredentialsException("Client does not support basic authentication");
+        }
 
-    IAMJWTBearerAuthenticationProvider authProvider = new IAMJWTBearerAuthenticationProvider(clock,
-        iamProperties, userDetailsService.getClientDetailsService(), validators);
+        return super.authenticate(authentication);
+      }
 
-    filter.setAuthenticationManager(new ProviderManager(singletonList(authProvider)));
+      private boolean supportsBasic(ClientDetailsEntity c) {
+        return AuthMethod.SECRET_BASIC.equals(c.getTokenEndpointAuthMethod())
+            || AuthMethod.NONE.equals(c.getTokenEndpointAuthMethod());
+      }
+    };
 
-    return filter;
+    provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    provider.setUserDetailsService(userDetailsService);
+
+    auth.authenticationProvider(provider);
   }
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
 
-    // @formatter:off
-    http
-        .requestMatchers()
-            .antMatchers(TOKEN_ENDPOINT)
-            .and()
-        .httpBasic()
-            .authenticationEntryPoint(authenticationEntryPoint)
-            .and()
-        .authorizeRequests()
-            .antMatchers(OPTIONS, TOKEN_ENDPOINT).permitAll()
-            .antMatchers(TOKEN_ENDPOINT).authenticated()
-            .and()
-            .addFilterBefore(jwtBearerFilter(), AbstractPreAuthenticatedProcessingFilter.class)
-            .addFilterAfter(ccFilter(), BasicAuthenticationFilter.class)
-        .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint)
-            .accessDeniedHandler(new OAuth2AccessDeniedHandler())
-            .and()
-        .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        .and()
-          .cors()
-        .and()
-          .csrf()
-            .disable();
-    // @formatter:on
+    http.antMatcher(TOKEN_ENDPOINT)
+
+      .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint(authenticationEntryPoint))
+
+      .authorizeRequests(auth -> auth.antMatchers(OPTIONS, TOKEN_ENDPOINT)
+        .permitAll()
+        .antMatchers(TOKEN_ENDPOINT)
+        .authenticated())
+
+      .addFilterBefore(jwtClientAuthFilter, AbstractPreAuthenticatedProcessingFilter.class)
+
+      .addFilterAfter(ccFilter, BasicAuthenticationFilter.class)
+
+      .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)
+        .accessDeniedHandler(new OAuth2AccessDeniedHandler()))
+
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+      .cors(Customizer.withDefaults())
+
+      .csrf(csrf -> csrf.disable());
 
   }
 }

@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -129,6 +130,48 @@ class TokenEndpointClientAuthenticationTests implements StructuredScopeTestSuppo
   @Test
   void testTokenEndpointOptionsMethodAllowed() throws Exception {
     mvc.perform(options(TOKEN_ENDPOINT)).andExpect(status().isOk());
+  }
+
+  @Test
+  void testTokenEndpointFormClientAuthenticationNotAllowed() throws Exception {
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", JWT_AUTH_CLIENT_ID)
+        .param("client_secret", JWT_AUTH_CLIENT_SECRET)
+        .param("scope", IamSystemScopeService.OPENID_SCOPE))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
+  }
+
+  @Test
+  void testTokenEndpointBasicClientAuthenticationNotAllowed() throws Exception {
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(JWT_AUTH_CLIENT_ID, JWT_AUTH_CLIENT_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("scope", IamSystemScopeService.OPENID_SCOPE))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
+  }
+
+  @Test
+  void testTokenEndpointPublicClientAuthenticationNotAllowed() throws Exception {
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", JWT_AUTH_CLIENT_ID))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
   }
 
   @Test

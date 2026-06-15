@@ -30,8 +30,6 @@ import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -43,16 +41,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
 
-public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvider {
+public class TokenEndpointJwtClientAuthenticationProvider implements AuthenticationProvider {
 
   public static final Logger LOG =
-      LoggerFactory.getLogger(IAMJWTBearerAuthenticationProvider.class);
+      LoggerFactory.getLogger(TokenEndpointJwtClientAuthenticationProvider.class);
 
   private static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
 
@@ -61,13 +59,13 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   private static final String INVALID_SIGNATURE_ALGO = "Invalid signature algorithm: %s";
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientService;
+  private final ClientService clientService;
   private final ClientKeyCacheService validators;
 
   private final String tokenEndpoint;
 
-  public IAMJWTBearerAuthenticationProvider(Clock clock, IamProperties iamProperties,
-      ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
+  public TokenEndpointJwtClientAuthenticationProvider(Clock clock, IamProperties iamProperties,
+      ClientService clientService, ClientKeyCacheService validators) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -100,16 +98,16 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
     if (client.getTokenEndpointAuthSigningAlg() != null
         && !client.getTokenEndpointAuthSigningAlg().equals(alg)) {
-      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+      throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
 
     if (client.getTokenEndpointAuthMethod().equals(AuthMethod.PRIVATE_KEY)) {
       if (!JWSAlgorithm.Family.SIGNATURE.contains(alg)) {
-        invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+        throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
     } else if (client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_JWT)
         && !JWSAlgorithm.Family.HMAC_SHA.contains(alg)) {
-      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+      throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
   }
 
@@ -123,12 +121,12 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
                   client.getClientId(), alg.getName())));
 
     if (!validator.validateSignature(jws)) {
-      invalidBearerAssertion("invalid signature");
+      throw invalidBearerAssertion("invalid signature");
     }
   }
 
-  private void invalidBearerAssertion(String msg) {
-    throw new AuthenticationServiceException(
+  private AuthenticationServiceException invalidBearerAssertion(String msg) {
+    return new AuthenticationServiceException(
         String.format("invalid jwt bearer assertion: %s", msg));
   }
 
@@ -137,46 +135,46 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     JWTClaimsSet jwtClaims = jws.getJWTClaimsSet();
 
     if (isNull(jwtClaims.getIssuer())) {
-      invalidBearerAssertion("issuer is null");
+      throw invalidBearerAssertion("issuer is null");
     } else if (!jwtClaims.getIssuer().equals(client.getClientId())) {
-      invalidBearerAssertion("issuer does not match client id");
+      throw invalidBearerAssertion("issuer does not match client id");
     }
 
     if (isNull(jwtClaims.getExpirationTime())) {
-      invalidBearerAssertion("expiration time not set");
+      throw invalidBearerAssertion("expiration time not set");
     }
 
     Instant nowSkewed = clock.instant().minusSeconds(CLOCK_SKEW_IN_SECONDS);
 
     if (Date.from(nowSkewed).after(jwtClaims.getExpirationTime())) {
-      invalidBearerAssertion("expired assertion token");
+      throw invalidBearerAssertion("expired assertion token");
     }
 
     if (!isNull(jwtClaims.getNotBeforeTime())) {
 
       nowSkewed = clock.instant().plusSeconds(CLOCK_SKEW_IN_SECONDS);
       if (Date.from(nowSkewed).before(jwtClaims.getNotBeforeTime())) {
-        invalidBearerAssertion("assertion is not yet valid");
+        throw invalidBearerAssertion("assertion is not yet valid");
       }
     }
 
     if (!isNull(jwtClaims.getIssueTime())) {
       nowSkewed = clock.instant().plusSeconds(CLOCK_SKEW_IN_SECONDS);
       if (Date.from(nowSkewed).before(jwtClaims.getIssueTime())) {
-        invalidBearerAssertion("assertion was issued in the future");
+        throw invalidBearerAssertion("assertion was issued in the future");
       }
     }
 
     if (isNull(jwtClaims.getAudience())) {
-      invalidBearerAssertion("assertion audience is null");
+      throw invalidBearerAssertion("assertion audience is null");
     } else {
       if (!jwtClaims.getAudience().contains(tokenEndpoint)) {
-        invalidBearerAssertion("invalid audience");
+        throw invalidBearerAssertion("invalid audience");
       }
     }
 
     if (isNull(jwtClaims.getJWTID())) {
-      invalidBearerAssertion("jti is null");
+      throw invalidBearerAssertion("jti is null");
       // no further jti validation is implemented currently
     }
   }
@@ -184,40 +182,29 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    JWTBearerAssertionAuthenticationToken jwtAuth =
-        (JWTBearerAssertionAuthenticationToken) authentication;
+    JwtAssertionAuthenticationToken jwtAuth = (JwtAssertionAuthenticationToken) authentication;
 
-    ClientDetailsEntity client = clientService.loadClientByClientId(jwtAuth.getName());
-
-    if (isNull(client)) {
-      throw new UsernameNotFoundException("Unknown client: " + jwtAuth.getName());
-    }
+    ClientDetailsEntity client = clientService.findClientByClientId(jwtAuth.getName())
+      .orElseThrow(() -> new UsernameNotFoundException("Client not found"));
 
     try {
 
-
-      final JWT jwt = jwtAuth.getJwt();
+      final SignedJWT jwt = jwtAuth.getCredentials();
 
       if (isNull(jwt)) {
-        invalidBearerAssertion("Null JWT in authentication token");
+        throw invalidBearerAssertion("Null JWT in authentication token");
       }
 
-      if (!(jwt instanceof SignedJWT)) {
-        invalidBearerAssertion("Unsupported JWT type: " + jwt.getClass().getName());
-      }
+      clientAuthMethodChecks(client, jwt);
 
-      SignedJWT jws = (SignedJWT) jwt;
+      signatureChecks(client, jwt);
 
-      clientAuthMethodChecks(client, jws);
-
-      signatureChecks(client, jws);
-
-      assertionChecks(client, jws);
+      assertionChecks(client, jwt);
 
       Set<GrantedAuthority> authorities = new HashSet<>(client.getAuthorities());
       authorities.add(ROLE_CLIENT);
 
-      return new JWTBearerAssertionAuthenticationToken(jwt, authorities);
+      return new JwtAssertionAuthenticationToken(jwt, authorities);
 
     } catch (ParseException e) {
       throw new AuthenticationServiceException("JWT parse error:" + e.getMessage(), e);
@@ -227,7 +214,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return JWTBearerAssertionAuthenticationToken.class.isAssignableFrom(authentication);
+    return JwtAssertionAuthenticationToken.class.isAssignableFrom(authentication);
   }
 
 }
