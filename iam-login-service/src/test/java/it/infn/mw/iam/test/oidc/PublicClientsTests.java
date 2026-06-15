@@ -49,11 +49,19 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
   @Test
   void clientCredentialsSuccessWithNoSecret() throws Exception {
 
-    JsonNode json = assert200AndParse(
-        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, ""));
+    JsonNode json = assert200AndParse(postForm(TOKEN_ENDPOINT,
+        Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_ID), null, null));
 
     assertTrue(json.has("access_token"));
     assertEquals("Bearer", json.get("token_type").asText());
+
+    assertEquals(200, postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials",
+        "client_id", PUBLIC_CLIENT_ID, "client_secret", ""), null, null).getResponse().getStatus());
+
+    assertEquals(200,
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, "")
+          .getResponse()
+          .getStatus());
   }
 
   @Test
@@ -61,6 +69,25 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
 
     assertEquals(401, postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
         PUBLIC_CLIENT_ID, "random-secret").getResponse().getStatus());
+    assertEquals(401,
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "client_id",
+            PUBLIC_CLIENT_ID, "client_secret", "random-secret"), null, null).getResponse()
+              .getStatus());
+  }
+
+  @Test
+  void clientCredentialsFailsWhenPublicSecretHasASecret() throws Exception {
+
+    assertEquals(401,
+        postForm(TOKEN_ENDPOINT,
+            Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_WITH_SECRET_ID),
+            null, null).getResponse().getStatus());
+    assertEquals(401,
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "client_id",
+            PUBLIC_CLIENT_WITH_SECRET_ID, "client_secret", "secret"), null, null).getResponse()
+              .getStatus());
+    assertEquals(401, postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"),
+        PUBLIC_CLIENT_WITH_SECRET_ID, "secret").getResponse().getStatus());
   }
 
   @Test
@@ -109,8 +136,8 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
         registrationResponse.getClientId(), "").getResponse().getStatus());
 
     updatedClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
-    clientRegistrationService.updateClient(registrationResponse.getClientId(),
-        updatedClient, userAuth);
+    clientRegistrationService.updateClient(registrationResponse.getClientId(), updatedClient,
+        userAuth);
 
     JsonNode json = assert200AndParse(postForm(TOKEN_ENDPOINT,
         Map.of("grant_type", "client_credentials"), registrationResponse.getClientId(), ""));

@@ -60,6 +60,7 @@ public interface StructuredScopeTestSupportConstants {
   static final String REGISTRATION_CLIENT_SECRET = "secret";
 
   static final String PUBLIC_CLIENT_ID = "public-client";
+  static final String PUBLIC_CLIENT_WITH_SECRET_ID = "public-client-with-secret";
 
   static final String AUTHORIZE_ENDPOINT = "/authorize";
   static final String DEVICE_CODE_ENDPOINT = "/devicecode";

@@ -29,7 +29,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
   (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
   (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true),
-  (22, 'whitelist-client', 'secret', 'Client which is not requiring confirmation access', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
+  (22, 'whitelist-client', 'secret', 'Client which is not requiring confirmation access', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true),
+  (23, 'public-client-with-secret', 'secret', 'Public client with secret', false, 3600, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), true);
 
 UPDATE client_details SET client_description = 'implicit-flow-client description'
 WHERE id = 13 AND client_id = 'implicit-flow-client';
@@ -181,7 +182,9 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (21, 'address'),
   (21, 'phone'),
   (22, 'openid'),
-  (22, 'profile');
+  (22, 'profile'),
+  (23, 'openid'),
+  (23, 'profile');
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
@@ -248,7 +251,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (20, 'password'),
   (20, 'refresh_token'),
   (20, 'urn:ietf:params:oauth:grant-type:device_code'),
-  (22, 'authorization_code');
+  (22, 'authorization_code'),
+  (23, 'client_credentials');
 
 
 INSERT INTO client_contact (owner_id, contact) VALUES

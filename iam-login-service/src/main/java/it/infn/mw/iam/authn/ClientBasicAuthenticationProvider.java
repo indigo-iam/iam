@@ -58,15 +58,24 @@ public class ClientBasicAuthenticationProvider implements AuthenticationProvider
     AuthMethod tokenAuthnMethod = client.get().getTokenEndpointAuthMethod();
 
     if (tokenAuthnMethod == AuthMethod.NONE) {
-      return new UsernamePasswordAuthenticationToken(client.get().getClientId(), null,
-          client.get().getAuthorities());
+      if (client.get().getClientSecret() != null) {
+
+        LOG.debug("Public client with id {} has a not-null secret", client.get().getClientId());
+        throw new AuthenticationServiceException("Public client requires no secret");
+      }
+      if (authentication.getCredentials() == null
+          || "".equals(String.valueOf(authentication.getCredentials()))) {
+        return new UsernamePasswordAuthenticationToken(client.get().getClientId(), null,
+            client.get().getAuthorities());
+      }
+      throw new AuthenticationServiceException("Public client requires no secret");
     }
 
     if (!(tokenAuthnMethod == AuthMethod.SECRET_BASIC
         || tokenAuthnMethod == AuthMethod.SECRET_POST)) {
+
       LOG.debug("Client with id {} does not support basic authentication",
           client.get().getClientId());
-
       throw new AuthenticationServiceException("Client does not support basic authentication");
     }
 

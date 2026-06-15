@@ -23,7 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -74,13 +76,17 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
           throws AuthenticationException {
 
         String clientId = authentication.getName();
-        ClientDetails client = null;
+        ClientDetailsEntity client = null;
         try {
-          client = userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
+          client = (ClientDetailsEntity) userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
         } catch (InvalidClientException e) {
           throw new BadCredentialsException(e.getMessage());
         }
 
+        if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
+            && client.getClientSecret() != null) {
+          throw new AuthenticationServiceException("Public client requires no secret");
+        }
         if (!supportsBasic(client)) {
           throw new BadCredentialsException("Client does not support basic authentication");
         }
@@ -88,12 +94,9 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
         return super.authenticate(authentication);
       }
 
-      private boolean supportsBasic(ClientDetails client) {
-        if (client instanceof ClientDetailsEntity e) {
-          return AuthMethod.SECRET_BASIC.equals(e.getTokenEndpointAuthMethod())
-              || AuthMethod.NONE.equals(e.getTokenEndpointAuthMethod());
-        }
-        return false;
+      private boolean supportsBasic(ClientDetailsEntity c) {
+        return AuthMethod.SECRET_BASIC.equals(c.getTokenEndpointAuthMethod())
+            || AuthMethod.NONE.equals(c.getTokenEndpointAuthMethod());
       }
     };
 
