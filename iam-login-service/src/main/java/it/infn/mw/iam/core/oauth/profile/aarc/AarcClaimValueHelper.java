@@ -85,7 +85,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
     final String SCOPED_FORMAT = "%s@%s";
 
     Optional<SavedUserAuthentication> userAuth =
-        AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
+        (auth != null && auth.getUserAuthentication() != null)
+            ? AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication())
+            : Optional.empty();
 
     if (account.isPresent()) {
       switch (claimName) {
