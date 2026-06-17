@@ -24,11 +24,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@JsonIgnoreProperties(value = {"voPersonId", "name", "email", "organizationName",
+@JsonIgnoreProperties(value = {"voPersonId", "displayName", "name", "email", "organizationName",
     "schacHomeOrganization", "voPersonExternalAffiliation", "assurance"}, allowGetters = true)
 public class ScimAarcUser {
 
   private final String voPersonId;
+  private final String displayName;
   private final ScimAarcName name;
   private final String email;
   private final String organizationName;
@@ -39,7 +40,8 @@ public class ScimAarcUser {
 
   @JsonCreator
   private ScimAarcUser(@JsonProperty("voPersonId") String voPersonId,
-      @JsonProperty("name") ScimAarcName name, @JsonProperty("email") String email,
+      @JsonProperty("displayName") String displayName, @JsonProperty("name") ScimAarcName name,
+      @JsonProperty("email") String email,
       @JsonProperty("organizationName") String organizationName,
       @JsonProperty("schacHomeOrganization") String schacHomeOrganization,
       @JsonProperty("voPersonExternalAffiliations") List<ScimAffiliation> voPersonExternalAffiliations,
@@ -47,6 +49,7 @@ public class ScimAarcUser {
       @JsonProperty("entitlements") List<ScimEntitlement> entitlements) {
 
     this.voPersonId = voPersonId;
+    this.displayName = displayName;
     this.name = name;
     this.email = email;
     this.organizationName = organizationName;
@@ -58,6 +61,7 @@ public class ScimAarcUser {
 
   private ScimAarcUser(Builder b) {
     this.voPersonId = b.voPersonId;
+    this.displayName = b.displayName;
     this.name = b.name;
     this.email = b.email;
     this.organizationName = b.organizationName;
@@ -69,6 +73,10 @@ public class ScimAarcUser {
 
   public String getVoPersonId() {
     return voPersonId;
+  }
+
+  public String getDisplayName() {
+    return displayName;
   }
 
   public String getOrganizationName() {
@@ -106,6 +114,7 @@ public class ScimAarcUser {
   public static class Builder {
 
     private String voPersonId;
+    private String displayName;
     private ScimAarcName name;
     private String email;
     private String organizationName;
@@ -116,6 +125,11 @@ public class ScimAarcUser {
 
     public Builder voPersonId(String voPersonId) {
       this.voPersonId = voPersonId;
+      return this;
+    }
+
+    public Builder displayName(String displayName) {
+      this.displayName = displayName;
       return this;
     }
 

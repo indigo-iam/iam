@@ -63,7 +63,7 @@ class ScimAarcSchemaTests {
       .andExpect(jsonPath("$.Resources[0]['" + ScimConstants.AARC_USER_SCHEMA + "'].voPersonId",
           equalTo(ACCOUNT_UUID + "@indigo-dc")))
       .andExpect(
-          jsonPath("$.Resources[0]['" + ScimConstants.AARC_USER_SCHEMA + "'].name.displayName",
+          jsonPath("$.Resources[0]['" + ScimConstants.AARC_USER_SCHEMA + "'].displayName",
               equalTo(account.getUserInfo().getName())))
       .andExpect(
           jsonPath("$.Resources[0]['" + ScimConstants.AARC_USER_SCHEMA + "'].name.familyName",
