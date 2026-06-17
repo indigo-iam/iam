@@ -26,6 +26,7 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -53,8 +54,8 @@ import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
-import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
@@ -65,6 +66,7 @@ import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -93,7 +95,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ClientService clientService;
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
-  private final ClientDefaultsService defaultsService;
+  private final ClientUtils clientUtils;
   private final OIDCTokenService clientTokenService;
   private final IamTokenService tokenService;
   private final SystemScopeService systemScopeService;
@@ -102,7 +104,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
-      AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
+      AccountUtils accountUtils, ClientConverter converter, ClientUtils clientUtils,
       OIDCTokenService clientTokenService, IamTokenService tokenService,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
       ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
@@ -111,7 +113,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     this.clientService = clientService;
     this.accountUtils = accountUtils;
     this.converter = converter;
-    this.defaultsService = defaultsService;
+    this.clientUtils = clientUtils;
     this.clientTokenService = clientTokenService;
     this.tokenService = tokenService;
     this.systemScopeService = scopeService;
@@ -183,7 +185,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void cleanupRequestedScopesOnUpdate(RegisteredClientDTO request,
       Authentication authentication, ClientDetailsEntity oldClient) {
 
-    systemScopeService.getReserved().forEach(s -> request.getScope().remove(s.getValue()));
+    IamSystemScopeService.RESERVED_VALUES.forEach(request.getScope()::remove);
 
     if (!accountUtils.isAdmin(authentication)) {
       Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
@@ -235,7 +237,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (entity.getScope().isEmpty()) {
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
-      systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
+      IamSystemScopeService.RESERVED_VALUES.forEach(entity.getScope()::remove);
       if (registrationProperties.isAdminOnlyCustomScopes()
           && !accountUtils.isAdmin(authentication)) {
         removeCustomScopes(entity);
@@ -360,7 +362,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     authzChecks(authentication);
 
     ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
-    defaultsService.setupClientDefaults(client);
+    clientUtils.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
     client.setActive(true);
     // only allow to disable upscoping for admins
@@ -445,7 +447,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
-    newClient.setClientSecret(oldClient.getClientSecret());
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(clientUtils.generateClientSecret());
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
+        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(null);
+    } else {
+      newClient.setClientSecret(oldClient.getClientSecret());
+    }
     newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
     newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
     newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
@@ -456,8 +466,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
-    // Direct updates are disabled. Changes must be made via secret reset process
-    newClient.setClientSecret(oldClient.getClientSecret());
 
     // If user isn't admin upscoping doesn't change
     if (!accountUtils.isAdmin(authentication)) {

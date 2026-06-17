@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.registration;
 
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
@@ -35,7 +36,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +124,6 @@ public class DefaultRegistrationRequestService
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
-  @Autowired
   public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
       IamProperties iamProperties) {
     this.labelConverter = labelConverter;
@@ -266,8 +265,7 @@ public class DefaultRegistrationRequestService
   public RegistrationRequestDto confirmRequest(String confirmationKey) {
 
     IamRegistrationRequest request = requestRepository.findByAccountConfirmationKey(confirmationKey)
-      .orElseThrow(() -> new ScimResourceNotFoundException(String
-        .format("No registration request found for registration_key [%s]", confirmationKey)));
+      .orElseThrow(() -> new ScimResourceNotFoundException("No registration request found"));
 
     return handleConfirm(request);
   }

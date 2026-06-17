@@ -62,6 +62,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
@@ -72,17 +73,18 @@ import org.springframework.security.web.authentication.Http403ForbiddenEntryPoin
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -159,15 +161,20 @@ public class MitreServicesConfig {
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
-      OAuth2TokenEntityService tokenServices) {
-    return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository, tokenServices);
+      OAuth2TokenEntityService tokenServices, ClientDetailsService clientDetailsService,
+      ClientKeyCacheService validators) {
+    return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
+        deviceCodeService, authzCodeRepository, tokenServices, validators);
   }
 
   @Bean
-  @Qualifier("iamClientDetailsEntityService")
   ClientDetailsEntityService clientDetailsEntityService() {
     return new DefaultOAuth2ClientDetailsEntityService();
+  }
+
+  @Bean(name = "iamClientDetailsEntityService")
+  ClientDetailsService clientDetailsService(IamClientRepository clientRepo) {
+    return new IamClientDetailsService(clientRepo);
   }
 
   @Bean(name = "mitreUserInfoInterceptor")
@@ -302,11 +309,6 @@ public class MitreServicesConfig {
   BlacklistedSiteService defaultBlacklistedSiteService() {
 
     return new DefaultBlacklistedSiteService();
-  }
-
-  @Bean
-  SystemScopeService defaultSystemScopeService(ScopeMatcherRegistry registry) {
-    return new IamSystemScopeService(registry);
   }
 
   @Bean

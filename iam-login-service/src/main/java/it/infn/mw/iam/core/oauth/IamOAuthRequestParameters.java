@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-public abstract class IamOauthRequestParameters {
+import java.util.List;
+
+public abstract class IamOAuthRequestParameters {
 
   public static final String AUTHZ_CODE_URL = "/oauth/confirm_access";
-  public static final String DEVICE_CODE_URL = "devicecode";
-  public static final String USER_CODE_URL = "device";
 
   public static final String REQUEST_USER_CODE_STRING = "requestUserCode";
 
@@ -34,6 +34,16 @@ public abstract class IamOauthRequestParameters {
 
   public static final String APPROVAL_ATTRIBUTE_KEY = "approved";
 
-  private IamOauthRequestParameters() {}
+  public static final String RESOURCE_KEY = "resource";
+  public static final String AUD_KEY = "aud";
+  public static final String AUDIENCE_KEY = "audience";
+
+  public static final String AUTHZ_CODE_KEY = "code";
+  public static final String DEVICE_CODE_KEY = "device_code";
+  public static final String REFRESH_TOKEN_KEY = "refresh_token";
+
+  public static final List<String> AUD_KEYS = List.of(RESOURCE_KEY, AUD_KEY, AUDIENCE_KEY);
+
+  private IamOAuthRequestParameters() {}
 
 }

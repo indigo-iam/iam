@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 
 import static org.hamcrest.Matchers.notNullValue;
@@ -117,7 +117,7 @@ class X509PreauthenticationProcessingFilterTests {
 
         mockMvc.perform(get("/").param("x509ClientAuth", "true"))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("**/login**"))
+            .andExpect(redirectedUrl("/login"))
             .andExpect(request()
                 .attribute(IamX509PreauthenticationProcessingFilter.X509_ALMOST_EXPIRED, true))
             .andExpect(request().sessionAttribute(

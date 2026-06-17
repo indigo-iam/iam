@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +33,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidRequestExcep
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
@@ -61,7 +61,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   private static final String OFFLINE_ACCESS_SCOPE = "offline_access";
 
   private final OAuth2TokenEntityService tokenService;
-  private final ClientDetailsEntityService clientDetailsService;
+  private final ClientDetailsService clientDetailsService;
   private final IamProperties iamProperties;
   private final AccountUtils accountUtils;
   private final AUPSignatureCheckService signatureCheckService;
@@ -69,7 +69,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   private final TokenUtils tokenUtils;
 
   public TokenExchangeTokenGranter(OAuth2TokenEntityService tokenService,
-      ClientDetailsEntityService clientDetailsService, OAuth2RequestFactory requestFactory,
+      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory,
       IamProperties iamProperties, TokenUtils tokenUtils, AccountUtils accountUtils,
       AUPSignatureCheckService signatureCheckService, TokenExchangePdp exchangePdp) {
 
@@ -216,7 +216,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   private void validateWithPdp(ClientDetailsEntity actor, TokenRequest request,
       String subjectClientId) {
 
-    ClientDetailsEntity subject = clientDetailsService.loadClientByClientId(subjectClientId);
+    ClientDetailsEntity subject = (ClientDetailsEntity) clientDetailsService.loadClientByClientId(subjectClientId);
 
     TokenExchangePdpResult result = exchangePdp.validateTokenExchange(request, subject, actor);
 
