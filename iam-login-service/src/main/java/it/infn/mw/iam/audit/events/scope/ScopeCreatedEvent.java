@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.client.service;
+package it.infn.mw.iam.audit.events.scope;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.SystemScope;
 
-public interface ClientDefaultsService {
+public class ScopeCreatedEvent extends ScopeEvent {
 
-  ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client);
-  String generateClientSecret();
+  private static final long serialVersionUID = 8991030562775896932L;
+
+  public ScopeCreatedEvent(Object source, SystemScope scope, String message) {
+    super(source, scope, message);
+  }
+
 }

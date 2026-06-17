@@ -196,7 +196,7 @@ class ResourceOwnerPasswordCredentialsTests {
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("unauthorized")))
-      .andExpect(jsonPath("$.error_description", equalTo("Bad credentials")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client with id unknown was not found")))
       ;
     // @formatter:on
   }

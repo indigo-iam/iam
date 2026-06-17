@@ -84,11 +84,10 @@ class IamCoreControllerTests {
   @Test
   void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
 
-    // Here the spring security filter assumes we run on localhost:80
     mvc.perform(get("/"))
       .andDo(print())
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -187,42 +186,6 @@ class IamCoreControllerTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.groups", hasSize(3)));
-  }
-
-  @Test
-  void testWebfingerUserFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:test@iam.test")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isOk());
-
-  }
-
-  @Test
-  void testWebfingerUserNotFound() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testUnknownUriFormat() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "xyz://not.supported")
-        .param("rel", "http://openid.net/specs/connect/1.0/issuer"))
-      .andExpect(status().isNotFound());
-
-  }
-
-  @Test
-  void testWebfingerNonOidcRel() throws Exception {
-    mvc
-      .perform(get("/.well-known/webfinger").param("resource", "acct:not-found@example.org")
-        .param("rel", "another.rel"))
-      .andExpect(status().isNotFound());
-
   }
 
   @Test

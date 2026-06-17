@@ -1,10 +1,21 @@
 # Changelog
 
+## 1.14.1 (2026-06-10)
+
+### What's Changed
+
+* Allow access to / without authentication and redirect to login
+* Add/unset client secret when updating client authn method
+* Fix API error by importing Scope API, Service, Controller and Repository from Mitre
+* Remove web-finger discovery endpoint
+* Search for the SAML attribute by alias during registration/login
+* Enforce client AuthN method validation at token endpoint
+* Minor fix on AarcClaimValueHelper affiliation retrieval
+* Add explicit modifying annotation to avoid entity manager errors
+
 ## 1.14.0 (2026-05-04)
 
-## Features
-
-## What's Changed
+### What's Changed
 
 * Added support for AARC-G061 IDP hinting guideline
 * Added a paginated Group Requests API
@@ -49,9 +60,17 @@
 
 * The error returned on asking for a Token Exchange with an expired or malformed subject token has been changed from `invalid_token` to `invalid_grant`, according to the [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html). The response HTTP status code changed also from 401 to a proper 400.
 
+## 1.13.5 (2026-06-15)
+
+### What's Changed
+
+* Sanitize registration key in error page
+* Sanitize PasswordReplacedEvent log message
+* Strengthen redirect URI validation
+
 ## 1.13.4 (2025-01-26)
 
-## What's Changed
+### What's Changed
 
 * Fix SCIM filtering query parameter name
 * Fix invalid lower case introspection token_type_hint parameter
@@ -61,7 +80,7 @@
 
 ## 1.13.3 (2025-12-09)
 
-## What's Changed
+### What's Changed
 
 * Don't fallback on default JWT profile when the requested scopes clarifies the desired one
 * Evaluate all SAML identifiers resolved on login to avoid errors after a change in strategy
@@ -70,7 +89,7 @@
 
 ## 1.13.2 (2025-11-25)
 
-## What's Changed
+### What's Changed
 
 * Restore local login link for hidden case
 * Fix group membership requests acceptance and refusal propagation properly
@@ -79,7 +98,7 @@
 
 ## 1.13.1 (2025-11-20)
 
-## What's Changed
+### What's Changed
 
 * Fix expired client query to avoid suspension of all clients when using openid-federation profile
 * Fix duplicated sub claim in UserInfo response
@@ -89,7 +108,7 @@
 
 ## 1.13.0 (2025-11-03)
 
-## What's Changed
+### What's Changed
 
 * Search users by Subject DN
 * Store user affiliation into user info table

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.repository.client;
 
-import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.repository.client.ClientSpecs.hasClientIdLike;
 import static it.infn.mw.iam.persistence.repository.client.ClientSpecs.hasClientNameLike;
 import static it.infn.mw.iam.persistence.repository.client.ClientSpecs.hasContactLike;
@@ -31,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 
@@ -46,10 +46,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.common.collect.Sets;
-
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.client.service.ClientDefaultsService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
@@ -90,7 +88,7 @@ class ClientRepositoryTests extends TokenGetterUtils {
   MutableClock clock;
 
   @Autowired
-  ClientDefaultsService defaultsService;
+  ClientUtils clientUtils;
 
   @Autowired
   EntityManager em;
@@ -283,29 +281,29 @@ class ClientRepositoryTests extends TokenGetterUtils {
   @Test
   void testClientSearchWorkAsExpected() {
     ClientDetailsEntity client0 = new ClientDetailsEntity();
-    client0.setContacts(Sets.newHashSet("first@example.net"));
-    client0.setGrantTypes(Sets.newHashSet("client_credentials"));
+    client0.setContacts(Set.of("first@example.net"));
+    client0.setGrantTypes(Set.of("client_credentials"));
     client0.setClientName("first");
 
-    defaultsService.setupClientDefaults(client0);
+    clientUtils.setupClientDefaults(client0);
 
     ClientDetailsEntity client1 = new ClientDetailsEntity();
-    client1.setContacts(Sets.newHashSet("second@example.net"));
-    client1.setGrantTypes(Sets.newHashSet("client_credentials"));
+    client1.setContacts(Set.of("second@example.net"));
+    client1.setGrantTypes(Set.of("client_credentials"));
     client1.setClientName("second");
     client1.setClientId("second");
 
-    defaultsService.setupClientDefaults(client1);
+    clientUtils.setupClientDefaults(client1);
 
     ClientDetailsEntity client2 = new ClientDetailsEntity();
-    client2.setContacts(Sets.newHashSet("test@infn.it"));
-    client2.setGrantTypes(Sets.newHashSet("client_credentials", "authorization_code"));
-    client2.setRedirectUris(newHashSet("https://example.org/cb"));
+    client2.setContacts(Set.of("test@infn.it"));
+    client2.setGrantTypes(Set.of("client_credentials", "authorization_code"));
+    client2.setRedirectUris(Set.of("https://example.org/cb"));
     client2.setClientName("third");
     client2.setClientId("third");
-    client2.setScope(newHashSet("third_scope"));
+    client2.setScope(Set.of("third_scope"));
 
-    defaultsService.setupClientDefaults(client2);
+    clientUtils.setupClientDefaults(client2);
 
     client0 = clientRepo.save(client0);
     client1 = clientRepo.save(client1);

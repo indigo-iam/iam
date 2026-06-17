@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static java.lang.String.valueOf;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;

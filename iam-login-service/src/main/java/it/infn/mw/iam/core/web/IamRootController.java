@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -32,9 +33,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class IamRootController {
 
-  @RequestMapping(method = RequestMethod.GET, path = {"", "home", "index"})
+  @RequestMapping(method = RequestMethod.GET, path = { "", "home", "index" })
   public String home(Authentication authentication) {
-
+    if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+      return "redirect:/login";
+    }
     if (authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH)) {
       return "forward:/start-registration";
     }

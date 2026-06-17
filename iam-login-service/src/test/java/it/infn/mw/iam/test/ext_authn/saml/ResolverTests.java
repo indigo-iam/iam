@@ -30,12 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.NameIDType;
@@ -77,7 +77,7 @@ class ResolverTests {
 
   @Test
   void emptyNameIdResolverTest() {
-    Mockito.when(cred.getNameID()).thenReturn(null);
+    when(cred.getNameID()).thenReturn(null);
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
     Optional<IamSamlId> resolvedId =
@@ -88,12 +88,12 @@ class ResolverTests {
 
   @Test
   void nameIdResolverTest() {
-    NameID nameId = Mockito.mock(NameID.class);
-    Mockito.when(nameId.getValue()).thenReturn("nameid");
-    Mockito.when(nameId.getFormat()).thenReturn("format");
+    NameID nameId = mock(NameID.class);
+    when(nameId.getValue()).thenReturn("nameid");
+    when(nameId.getFormat()).thenReturn("format");
 
-    Mockito.when(cred.getNameID()).thenReturn(nameId);
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getNameID()).thenReturn(nameId);
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new NameIdUserIdentifierResolver();
     IamSamlId resolvedId = resolver.resolveSamlUserIdentifier(cred)
@@ -109,12 +109,12 @@ class ResolverTests {
 
   @Test
   void persistentNameIdResolverTest() {
-    NameID nameId = Mockito.mock(NameID.class);
-    Mockito.when(nameId.getValue()).thenReturn("nameid");
-    Mockito.when(nameId.getFormat()).thenReturn("format");
+    NameID nameId = mock(NameID.class);
+    when(nameId.getValue()).thenReturn("nameid");
+    when(nameId.getFormat()).thenReturn("format");
 
-    Mockito.when(cred.getNameID()).thenReturn(nameId);
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getNameID()).thenReturn(nameId);
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
@@ -127,7 +127,7 @@ class ResolverTests {
 
   @Test
   void persistentNameIdResolverTestNoNameId() {
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
@@ -140,12 +140,12 @@ class ResolverTests {
 
   @Test
   void persistentNameIdResolverTestResolutionSuccess() {
-    NameID nameId = Mockito.mock(NameID.class);
-    Mockito.when(nameId.getValue()).thenReturn("nameid");
-    Mockito.when(nameId.getFormat()).thenReturn(NameIDType.PERSISTENT);
+    NameID nameId = mock(NameID.class);
+    when(nameId.getValue()).thenReturn("nameid");
+    when(nameId.getFormat()).thenReturn(NameIDType.PERSISTENT);
 
-    Mockito.when(cred.getNameID()).thenReturn(nameId);
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getNameID()).thenReturn(nameId);
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolver resolver = new PersistentNameIdUserIdentifierResolver();
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
@@ -162,9 +162,12 @@ class ResolverTests {
 
     assertThat(resolver, is(not(nullValue())));
 
-    Mockito.when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+    when(attribute.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(attribute));
+    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     IamSamlId resolvedId = resolver.resolveSamlUserIdentifier(cred)
       .getResolvedIds()
@@ -184,9 +187,12 @@ class ResolverTests {
 
     assertThat(resolver, is(not(nullValue())));
 
-    Mockito.when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
+    when(attribute.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(attribute));
+    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
-    Mockito.when(cred.getRemoteEntityID()).thenReturn("entityId");
+    when(cred.getRemoteEntityID()).thenReturn("entityId");
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
 
@@ -205,6 +211,9 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
+    when(attribute.getName()).thenReturn(Saml2Attribute.MAIL.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(attribute));
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName()))
       .thenReturn("test@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -234,6 +243,9 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
+    when(attribute.getName()).thenReturn(Saml2Attribute.EPUID.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(attribute));
     when(cred.getAttributeAsString(Saml2Attribute.EPUID.getAttributeName()))
       .thenReturn("123456789@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
@@ -254,6 +266,13 @@ class ResolverTests {
     SamlUserIdentifierResolver persistentNameIdResolver =
         new PersistentNameIdUserIdentifierResolver();
 
+    Attribute epuid = mock(Attribute.class);
+    when(epuid.getName()).thenReturn(Saml2Attribute.EPUID.getAttributeName());
+
+    Attribute subjectId = mock(Attribute.class);
+    when(subjectId.getName()).thenReturn(Saml2Attribute.SUBJECT_ID.getAttributeName());
+
+    when(cred.getAttributes()).thenReturn(List.of(subjectId, epuid));
     when(cred.getAttributeAsString(Saml2Attribute.EPUID.getAttributeName()))
       .thenReturn("123456789@test.org");
     when(cred.getAttributeAsString(Saml2Attribute.SUBJECT_ID.getAttributeName()))
