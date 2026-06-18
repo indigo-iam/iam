@@ -102,7 +102,7 @@
     <code.coverage.overall.data.folder>${basedir}/target/</code.coverage.overall.data.folder>
 
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
+    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.language>java</sonar.language>
     <sonar.coverage.exclusions>
       iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
@@ -536,7 +536,7 @@
           </execution>
           <execution>
             <id>jacoco-report</id>
-            <phase>test</phase>
+            <phase>verify</phase>
             <goals>
               <goal>report</goal>
             </goals>
