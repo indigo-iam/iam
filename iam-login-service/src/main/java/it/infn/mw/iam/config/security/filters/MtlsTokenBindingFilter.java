@@ -45,11 +45,11 @@ public class MtlsTokenBindingFilter extends OncePerRequestFilter {
       FilterChain chain) throws ServletException, IOException {
 
     try {
-      /* check if access token contains certificate hash */
       String auth = request.getHeader(AUTH_HEADER);
 
       if (auth == null || !auth.startsWith("Bearer ")) {
-        throw new InsufficientAuthenticationException("Missing or invalid Authorization header");
+        chain.doFilter(request, response);
+        return;
       }
 
       String tokenValue = auth.substring("Bearer ".length()).trim();
@@ -62,11 +62,18 @@ public class MtlsTokenBindingFilter extends OncePerRequestFilter {
 
         if (cnf == null || !cnf.containsKey(CERT_HASH_FIELD_NAME)) {
           chain.doFilter(request, response);
+          return;
         }
 
-        String expectedThumbprint = cnf.get(CERT_HASH_FIELD_NAME).toString();
+        Object expected = cnf.get(CERT_HASH_FIELD_NAME);
 
-        /* check if certificate hashes match */
+        if (expected == null) {
+          throw new InsufficientAuthenticationException(
+              "Missing mTLS certificate thumbprint claim");
+        }
+
+        String expectedThumbprint = expected.toString();
+
         String presentedCert = request.getHeader(CLIENT_CERT_HEADER);
 
         if (presentedCert == null || presentedCert.isBlank()) {
@@ -83,11 +90,12 @@ public class MtlsTokenBindingFilter extends OncePerRequestFilter {
           throw new InsufficientAuthenticationException("mTLS certificate thumbprint mismatch");
         }
 
+        chain.doFilter(request, response);
+
       } catch (ParseException e) {
         throw new InsufficientAuthenticationException("Invalid access token format");
       }
 
-      chain.doFilter(request, response);
     } catch (InsufficientAuthenticationException e) {
       response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
     }
