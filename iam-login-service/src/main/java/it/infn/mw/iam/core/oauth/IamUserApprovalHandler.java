@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static java.lang.String.valueOf;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
@@ -24,7 +24,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_S
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.time.Clock;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,6 +39,7 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
+import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
@@ -68,13 +68,14 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private final SystemScopeService systemScopeService;
   private final AccountUtils accountUtils;
   private final ClientService clientService;
+  private final StatsService statsService;
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   public IamUserApprovalHandler(Clock clock, ClientDetailsEntityService clientDetailsService,
       ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
       SystemScopeService systemScopeService, AccountUtils accountUtils,
-      ClientService clientService) {
+      ClientService clientService, StatsService statsService) {
     this.clock = clock;
     this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
@@ -82,6 +83,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     this.systemScopeService = systemScopeService;
     this.accountUtils = accountUtils;
     this.clientService = clientService;
+    this.statsService = statsService;
   }
 
   @Override
@@ -120,6 +122,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
         ap.setAccessDate(Date.from(clock.instant()));
         approvedSiteService.save(ap);
+        statsService.resetCache();
 
         authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
@@ -176,13 +179,12 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       Date timeout = null;
       if (remember.equals("one-hour")) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 1);
-        timeout = cal.getTime();
+        timeout = Date.from(clock.instant().plusSeconds(3600));
       }
 
       ApprovedSite newSite =
           approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
+      statsService.resetCache();
       String newSiteId = newSite.getId().toString();
       authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
     }

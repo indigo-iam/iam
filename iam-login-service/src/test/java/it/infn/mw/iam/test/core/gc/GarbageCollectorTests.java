@@ -114,11 +114,10 @@ class GarbageCollectorTests {
   void testClearExpiredDeviceCodes() {
 
     DeviceCode dc = mock(DeviceCode.class);
-    Page<DeviceCode> response = new PageImpl<>(List.of(dc), PageRequest.of(0, 1), 1);
     when(clock.instant()).thenReturn(Instant.now());
-    when(deviceCodeRepo.getExpiredCodes(any(), any())).thenReturn(response);
+    when(deviceCodeRepo.findExpired(any())).thenReturn(List.of(dc));
     gc.clearExpiredDeviceCodes(10);
-    verify(deviceCodeRepo).deleteAll(response);
+    verify(deviceCodeRepo).deleteAll(List.of(dc));
   }
 
   @Test

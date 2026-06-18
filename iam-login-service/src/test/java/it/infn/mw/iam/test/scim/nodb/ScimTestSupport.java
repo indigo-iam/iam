@@ -84,19 +84,50 @@ public class ScimTestSupport extends OidcMockMvcTestSupport {
     return mapper.readTree(result.getResponse().getContentAsString());
   }
 
+  protected String getLegacyOperationsTemplate() {
+    return """
+        {
+        "operations": [{
+          "op": "add",
+          "path": "members",
+          "value": [{
+            "value": "%s"
+          }]
+        }]
+      }
+      """;
+  }
+
+  protected String getOperationsTemplate() {
+    return """
+        {
+        "Operations": [{
+          "op": "add",
+          "path": "members",
+          "value": [{
+            "value": "%s"
+          }]
+        }]
+      }
+      """;
+  }
+
   protected void addUserToGroup(String token, String groupId, String userId) throws Exception {
 
-    String patch = """
-        {
-          "Operations": [{
-            "op": "add",
-            "path": "members",
-            "value": [{
-              "value": "%s"
-            }]
-          }]
-        }
-        """.formatted(userId);
+    String patch = getOperationsTemplate().formatted(userId);
+
+    var result = mockMvc
+      .perform(patch(SCIM_GROUPS + "/" + groupId).header("Authorization", "Bearer " + token)
+        .contentType("application/scim+json")
+        .content(patch))
+      .andReturn();
+
+    assertEquals(204, result.getResponse().getStatus());
+  }
+
+  protected void addUserToGroupLegacy(String token, String groupId, String userId) throws Exception {
+
+    String patch = getLegacyOperationsTemplate().formatted(userId);
 
     var result = mockMvc
       .perform(patch(SCIM_GROUPS + "/" + groupId).header("Authorization", "Bearer " + token)

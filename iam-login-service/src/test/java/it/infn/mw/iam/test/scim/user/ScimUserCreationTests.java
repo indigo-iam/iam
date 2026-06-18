@@ -35,14 +35,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Calendar;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.hamcrest.collection.IsIterableContainingInAnyOrder;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +70,7 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(
@@ -79,34 +80,35 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private PasswordEncoder encoder;
+  PasswordEncoder encoder;
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
-  private AupService aupService;
+  AupService aupService;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @Autowired
+  Clock clock;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    context.cleanupSecurityContext();
   }
 
   @Test
@@ -464,10 +466,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithEndTimeAndBasicAuthorities() throws Exception {
 
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(new Date());
-    cal.add(Calendar.HOUR_OF_DAY, 1);
-    Date expTime = cal.getTime();
+    Date expTime = Date.from(clock.instant().plus(Duration.ofHours(1)));
 
     ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
       .endTime(expTime)
@@ -494,10 +493,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
     AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate, "30,15,1");
     aupService.saveAup(aup);
 
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(currentDate);
-    cal.add(Calendar.HOUR_OF_DAY, 1);
-    Date signatureTime = cal.getTime();
+    Date signatureTime = Date.from(clock.instant().plus(Duration.ofHours(2)));
 
     ScimUser user =
         buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")

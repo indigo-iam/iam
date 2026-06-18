@@ -181,21 +181,24 @@
 					&nbsp;
 
 					<legend style="margin-bottom: 0;">
-						<spring:message code="approve.remember.title" />
-						:
+						<spring:message code="approve.remember.title"/>:
 					</legend>
-					<label for="remember-forever" class="radio"> <input
-						type="radio" name="remember" id="remember-forever"
-						value="until-revoked" ${ !consent ? 'checked="checked"' : '' }>
-						<spring:message code="approve.remember.until_revoke" />
-					</label> <label for="remember-hour" class="radio"> <input
-						type="radio" name="remember" id="remember-hour" value="one-hour">
-						<spring:message code="approve.remember.one_hour" />
-					</label> <label for="remember-not" class="radio"> <input
-						type="radio" name="remember" id="remember-not" value="none"
-						${ consent ? 'checked="checked"' : '' }> <spring:message
-							code="approve.remember.next_time" />
+
+					<label class="radio">
+						<input type="radio" name="remember" value="until-revoked">
+						<spring:message code="approve.remember.until_revoke"/>
 					</label>
+
+					<label class="radio">
+						<input type="radio" name="remember" value="one-hour">
+						<spring:message code="approve.remember.one_hour"/>
+					</label>
+
+					<label class="radio">
+						<input type="radio" name="remember" value="none" checked>
+						<spring:message code="approve.remember.next_time"/>
+					</label>
+
 					<hr>
 					<div style="font-size: 12px; text-align: center;">
 						<c:choose>

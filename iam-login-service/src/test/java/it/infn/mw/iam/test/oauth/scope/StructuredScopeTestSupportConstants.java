@@ -34,6 +34,7 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
+  static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
 
   static final String EXCHANGE_CLIENT_ID = "token-exchange-actor";
   static final String EXCHANGE_CLIENT_SECRET = "secret";
@@ -51,6 +52,15 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String POST_CLIENT_ID = "post-client";
   static final String POST_CLIENT_SECRET = "secret";
+
+  static final String ADMIN_CLIENT_ID = "admin-client-rw";
+  static final String ADMIN_CLIENT_SECRET = "secret";
+
+  static final String REGISTRATION_CLIENT_ID = "registration-client";
+  static final String REGISTRATION_CLIENT_SECRET = "secret";
+
+  static final String PUBLIC_CLIENT_ID = "public-client";
+  static final String PUBLIC_CLIENT_WITH_SECRET_ID = "public-client-with-secret";
 
   static final String AUTHORIZE_ENDPOINT = "/authorize";
   static final String DEVICE_CODE_ENDPOINT = "/devicecode";
@@ -113,8 +123,13 @@ public interface StructuredScopeTestSupportConstants {
   static final String TEST_100_USER = "test_100";
   static final String TEST_100_USER_UUID = "f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a";
 
+  static final String PRODUCTION_GROUP_UUID = "c617d586-54e6-411d-8e38-64967798fa8a";
+
   static final String CERN_USER = "cern-user";
   static final String CERN_USER_UUID = "e7de071b-578f-46ec-a2f1-6f9844a50aa5";
+
+  static final String JWT_AUTH_CLIENT_ID = "jwt-auth-private_key_jwt";
+  static final String JWT_AUTH_CLIENT_SECRET = "secret";
 
   public static final ResultMatcher OK = status().isOk();
   public static final ResultMatcher NO_CONTENT = status().isNoContent();

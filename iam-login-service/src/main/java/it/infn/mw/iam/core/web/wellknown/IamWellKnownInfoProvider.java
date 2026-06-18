@@ -26,7 +26,6 @@ import java.util.Set;
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.web.UserInfoEndpoint;
@@ -40,6 +39,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.IamDeviceEndpointController;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @Service
@@ -133,7 +133,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     clientRegistrationEndpoint = buildEndpointUrl(ClientRegistrationApiController.ENDPOINT);
     introspectionEndpoint = buildEndpointUrl(IntrospectionEndpoint.URL);
     revocationEndpoint = buildEndpointUrl(RevocationEndpoint.URL);
-    deviceAuthorizationEndpoint = buildEndpointUrl(DeviceEndpoint.URL);
+    deviceAuthorizationEndpoint = buildEndpointUrl(IamDeviceEndpointController.DEVICE_CODE_URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
     logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);

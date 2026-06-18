@@ -32,6 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -158,7 +159,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(testAccount.isActive(), is(true));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(expiredVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(expiredVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -209,7 +210,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(testAccount.isActive(), is(true));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(removedVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(removedVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -238,7 +239,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   @Test
   void testLifecycleWorksForValidAccounts() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
@@ -276,7 +277,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testLifecycleWorksForAccountsWithOneValidParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getLimitedParticipation("test"), getExpiredParticipation("test", 20)));
+        Sets.newHashSet(getLimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     Comparator<ParticipationDTO> comparator = Comparator.comparing(ParticipationDTO::getEndDate);
 
@@ -318,7 +319,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testLifecycleWorksForAccountsWithOneUnlimitedParticipationAndOneExpired() {
 
     VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getUnlimitedParticipation("test"), getExpiredParticipation("test", 20)));
+        Sets.newHashSet(getUnlimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
@@ -356,7 +357,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   @Test
   void testLifecycleWhenVOPersonEndDateIsNull() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, null);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID, null);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
@@ -393,7 +394,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testRestoreLifecycleWorks() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(voPerson(clock, CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
 
@@ -562,7 +563,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testNoEmailVoPersonIsReturned() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
-      .thenReturn(Optional.of(noEmailVoPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(noEmailVoPerson(clock, CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -576,7 +577,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testLifecycleNotRestoreAccountsSuspendedByAdmins() {
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
-      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+      .thenReturn(Optional.of(voPerson(clock, CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
@@ -631,7 +632,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   void testPaginationWorks() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
-      .thenReturn(Optional.of(voPerson(String.valueOf(new Random().nextLong() % 100L))));
+      .thenReturn(Optional.of(voPerson(clock, String.valueOf(new Random().nextLong() % 100L))));
 
     Pageable pageRequest = PageRequest.of(0, 10, Direction.ASC, "username");
     Page<IamAccount> accountPage = repo.findAll(pageRequest);
@@ -662,7 +663,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   @Test
   void testEmailNotSynchronizedIfSkipEmailSyncIsPresent() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID);
+    VOPersonDTO voPerson = voPerson(clock, CERN_PERSON_ID);
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
@@ -685,4 +686,12 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(testAccount.getUserInfo().getEmail(), is(preSyncEmail));
   }
 
+  @Test
+  void isValidShouldReturnTrueWhenEndTimeIsNull() {
+
+    Date now = Date.from(clock.instant());
+    IamAccount account = IamAccount.newAccount();
+    account.setEndTime(null);
+    assertTrue(account.isValid(now));
+  }
 }

@@ -40,7 +40,6 @@ import org.opensaml.samlext.saml2mdui.UIInfo;
 import org.opensaml.xml.XMLObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.saml.metadata.MetadataManager;
 import org.springframework.stereotype.Component;
@@ -62,7 +61,6 @@ public class DefaultMetadataLookupService
 
   MetadataManager metadataManager;
 
-  @Autowired
   public DefaultMetadataLookupService(MetadataManager manager) {
     this.metadataManager = manager;
     manager.getObservers().add(this);

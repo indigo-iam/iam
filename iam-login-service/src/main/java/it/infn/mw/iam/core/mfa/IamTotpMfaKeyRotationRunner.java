@@ -22,11 +22,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * Runs at application startup (when the "mfa" profile is active) and ensures the configured MFA
- * admin key is recorded; if the key changed, it re-encrypts all stored TOTP secrets using the old
- * key -> And, encrypts it using new key.
- */
 @Component
 @Profile("mfa")
 public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
@@ -44,7 +39,7 @@ public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
   public void run(ApplicationArguments args) {
 
     if (!iamTotpSecretRotationService.shouldRotateSecrets()) {
-      LOG.info("TOTP MFA: No changes detected on totp encryption key");
+      LOG.debug("TOTP MFA: No changes detected on totp encryption key");
       return;
     }
     LOG.info("TOTP MFA: Admin key changed. Starting TOTP secret re-encryption.");

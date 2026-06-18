@@ -17,11 +17,12 @@ package it.infn.mw.iam.core.oauth;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -58,7 +59,7 @@ public class IamUserApprovalUtils {
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
 
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
+    Set<SystemScope> sortedScopes = new TreeSet<>(Comparator.comparing(SystemScope::getValue));
     Set<SystemScope> systemScopes = scopeService.getAll();
 
     systemScopes.forEach(s -> {

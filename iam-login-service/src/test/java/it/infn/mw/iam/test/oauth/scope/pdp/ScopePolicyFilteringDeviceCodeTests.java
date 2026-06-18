@@ -49,7 +49,7 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
+@ActiveProfiles({"h2-test", "wlcg-scopes"})
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
@@ -135,7 +135,7 @@ class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
     mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
-      .andExpect(model().attribute("scope", "openid email"));
+      .andExpect(model().attribute("scope", "email openid"));
 
   }
 

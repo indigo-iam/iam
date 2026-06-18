@@ -30,7 +30,6 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -45,6 +44,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 
 @ExtendWith(MockitoExtension.class)
 class JWTSigningServiceTests implements JWKTestSupport {
@@ -53,7 +53,7 @@ class JWTSigningServiceTests implements JWKTestSupport {
   JWKProperties properties;
 
   @Mock
-  JWKSetKeyStore mockKeystore;
+  JwkKeyStore mockKeystore;
 
   IamJWTSigningService service;
 
@@ -69,8 +69,8 @@ class JWTSigningServiceTests implements JWKTestSupport {
   void emptyKeystoreIsNotAccepted() {
 
     lenient().when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
-    IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class, () -> service = new IamJWTSigningService(mockKeystore));
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> service = new IamJWTSigningService(mockKeystore));
     assertThat(e.getMessage(), is("Please provide a non-empty keystore"));
   }
 
@@ -78,8 +78,8 @@ class JWTSigningServiceTests implements JWKTestSupport {
   void emptyKeystoreIsNotAcceptedWhenProvidingProperties() {
 
     lenient().when(mockKeystore.getKeys()).thenReturn(Collections.emptyList());
-    IllegalArgumentException e =
-        assertThrows(IllegalArgumentException.class, () -> service = new IamJWTSigningService(properties, mockKeystore));
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> service = new IamJWTSigningService(mockKeystore, properties));
     assertThat(e.getMessage(), is("empty keystore"));
   }
 
@@ -117,7 +117,7 @@ class JWTSigningServiceTests implements JWKTestSupport {
   @Test
   void signerReportsUnknownKey() throws ParseException, IOException {
 
-    JWKSetKeyStore ks = loadKeystore(KS1_LOCATION);
+    JwkKeyStore ks = loadKeystore(KS1_LOCATION);
     service = new IamJWTSigningService(ks);
 
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("unknown").build();
@@ -132,7 +132,7 @@ class JWTSigningServiceTests implements JWKTestSupport {
   @Test
   void verifyFailsForUnknownKey() throws ParseException, IOException {
 
-    JWKSetKeyStore ks = loadKeystore(KS1_LOCATION);
+    JwkKeyStore ks = loadKeystore(KS1_LOCATION);
     service = new IamJWTSigningService(ks);
 
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("unknown").build();
@@ -196,8 +196,8 @@ class JWTSigningServiceTests implements JWKTestSupport {
     lenient().when(properties.getDefaultJwsAlgorithm()).thenReturn(JWSAlgorithm.RS384.getName());
     lenient().when(properties.getDefaultKeyId()).thenReturn("iam2");
 
-    JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
-    service = new IamJWTSigningService(properties, ks);
+    JwkKeyStore ks = JwkKeyStore.from(loadJWKSet(KS1_LOCATION));
+    service = new IamJWTSigningService(ks, properties);
 
     assertThat(service.getDefaultSignerKeyId(), is("iam2"));
     assertThat(service.getDefaultSigningAlgorithm(), is(JWSAlgorithm.RS384));
@@ -207,7 +207,7 @@ class JWTSigningServiceTests implements JWKTestSupport {
   @Test
   void signWithAlgoWorksAsExpected() throws IOException, ParseException {
 
-    JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
+    JwkKeyStore ks = JwkKeyStore.from(loadJWKSet(KS1_LOCATION));
     service = new IamJWTSigningService(ks);
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("iam1").build();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject("sub").build();
@@ -223,7 +223,7 @@ class JWTSigningServiceTests implements JWKTestSupport {
   @Test
   void getAllAlgosWorkAsExpected() throws IOException, ParseException {
 
-    JWKSetKeyStore ks = new JWKSetKeyStore(loadJWKSet(KS1_LOCATION));
+    JwkKeyStore ks = JwkKeyStore.from(loadJWKSet(KS1_LOCATION));
     service = new IamJWTSigningService(ks);
 
     assertThat(service.getAllSigningAlgsSupported().containsAll(JWSAlgorithm.Family.RSA), is(true));

@@ -29,3 +29,6 @@ travis/travis-mitre-build.out
 
 *.iml
 .idea
+
+iam-login-service/target_test-classes
+iam-voms-aa/IAM_LOG_PATH:=

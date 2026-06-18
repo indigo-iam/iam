@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.test.ext_authn.oidc;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.io.IOException;
+import java.text.ParseException;
+import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
@@ -40,12 +40,15 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
+import it.infn.mw.iam.util.JwkSetLoader;
 
 @Configuration
 public class OidcMultiProviderTestConfig {
@@ -64,27 +67,27 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public UserInfoFetcher userInfoFetcher() {
+  UserInfoFetcher userInfoFetcher() {
     UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
     return fetcher;
   }
 
   @Bean
   @Primary
-  public RestTemplateFactory restTemplateFactory() {
+  RestTemplateFactory restTemplateFactory() {
     return new MockRestTemplateFactory();
   }
 
   @Bean
   @Primary
-  public IssuerService oidcIssuerService() {
+  IssuerService oidcIssuerService() {
     return new IamThirdPartyIssuerService();
   }
 
 
   @Bean
   @Primary
-  public ServerConfigurationService mockServerConfigurationService() {
+  ServerConfigurationService mockServerConfigurationService() {
 
     ServerConfiguration sc01 = new ServerConfiguration();
     sc01.setIssuer(TEST_OIDC_01_ISSUER);
@@ -110,7 +113,7 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public ClientConfigurationService staticClientConfiguration() {
+  ClientConfigurationService staticClientConfiguration() {
 
     RegisteredClient rc = new RegisteredClient();
     rc.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
@@ -129,8 +132,8 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
-      throws NoSuchAlgorithmException, InvalidKeySpecException {
+  JWKSetCacheService mockjwkSetCacheService()
+      throws IOException, ParseException {
 
     JWTSigningAndValidationService signatureValidator =
         new IamJWTSigningService(mockOidcProviderKeyStore());
@@ -146,14 +149,15 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  public JWKSetKeyStore mockOidcProviderKeyStore() {
-    JWKSetKeyStore ks = new JWKSetKeyStore();
-    ks.setLocation(new ClassPathResource("/oidc/mock_op_keys.jks"));
-    return ks;
+  JwkKeyStore mockOidcProviderKeyStore() throws IOException, ParseException {
+    ClassPathResource resource = new ClassPathResource("/oidc/mock_op_keys.jks");
+    JWKSet jwkSet = JwkSetLoader.load(resource);
+    return JwkKeyStore.from(jwkSet);
   }
 
   @Bean
-  public MockOIDCProvider mockOidcProvider(ObjectMapper mapper) {
-    return new MockOIDCProvider(mapper, mockOidcProviderKeyStore());
+  MockOIDCProvider mockOidcProvider(Clock clock, ObjectMapper mapper)
+      throws IOException, ParseException {
+    return new MockOIDCProvider(clock, mapper, mockOidcProviderKeyStore());
   }
 }

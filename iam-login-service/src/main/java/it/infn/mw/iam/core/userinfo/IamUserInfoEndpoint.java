@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
@@ -50,17 +49,15 @@ public class IamUserInfoEndpoint {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
 
-  private final IamProperties iamProperties;
   private final JWTProfileResolver profileResolver;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
   private final IamAccountRepository accountRepo;
   private final IamClientRepository clientRepo;
   private final TokenUtils tokenUtils;
 
-  public IamUserInfoEndpoint(IamProperties iamProperties, JWTProfileResolver profileResolver,
+  public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
       OAuth2AuthenticationScopeResolver scopeResolver, IamAccountRepository accountRepo,
       IamClientRepository clientRepo, TokenUtils tokenUtils) {
-    this.iamProperties = iamProperties;
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
     this.accountRepo = accountRepo;
@@ -73,9 +70,11 @@ public class IamUserInfoEndpoint {
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
     String username = auth.getName();
-    IamAccount account = accountRepo.findByUsername(username).orElseThrow(() -> new AuthException("Account id not found"));
+    IamAccount account = accountRepo.findByUsername(username)
+      .orElseThrow(() -> new AuthException("Account id not found"));
     String clientId = auth.getOAuth2Request().getClientId();
-    ClientDetailsEntity client = clientRepo.findByClientId(clientId).orElseThrow(() -> new AuthException("Client id not found"));
+    ClientDetailsEntity client = clientRepo.findByClientId(clientId)
+      .orElseThrow(() -> new AuthException("Client id not found"));
     LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
         username);
 
@@ -91,8 +90,7 @@ public class IamUserInfoEndpoint {
 
   private void addExternalAuthN(OAuth2Authentication auth, Map<String, Object> claims) {
 
-    if (!iamProperties.getAccessToken().isStoreOnDatabase()
-        && auth.getDetails() instanceof OAuth2AuthenticationDetails details
+    if (auth.getDetails() instanceof OAuth2AuthenticationDetails details
         && details.getTokenValue() != null) {
       ParsedAccessToken parsedToken = tokenUtils.parseAccessToken(details.getTokenValue());
       if (parsedToken.external() != null) {

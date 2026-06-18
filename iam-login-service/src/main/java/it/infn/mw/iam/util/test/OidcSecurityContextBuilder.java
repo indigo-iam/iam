@@ -18,7 +18,8 @@ package it.infn.mw.iam.util.test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Calendar;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 
@@ -37,16 +38,16 @@ import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 
 public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
 
+  private Clock clock;
   private UserInfo userInfo = null;
   private Map<String, String> stringClaims = Maps.newHashMap();
 
-  public OidcSecurityContextBuilder() {
+  public OidcSecurityContextBuilder(Clock clock) {
+
+    this.clock = clock;
     issuer = "test-oidc-issuer";
-
     subject = "test-oidc-subject";
-
     username = "test-oidc-subject";
-
     userInfo = mock(UserInfo.class);
   }
 
@@ -69,32 +70,25 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
     when(authToken.getPrincipal()).thenReturn(subject + "@" + issuer);
     when(authToken.getName()).thenReturn(username);
     when(authToken.getIdToken()).thenReturn(idToken);
-    
-    
+
+
     if (expirationTime == null) {
-      Calendar cal = Calendar.getInstance();
-      cal.add(Calendar.HOUR, 2);
-      expirationTime = cal.getTime();
+      expirationTime = Date.from(clock.instant().plus(Duration.ofHours(2)));
     }
 
     OidcExternalAuthenticationToken token = new OidcExternalAuthenticationToken(authToken,
         expirationTime, authToken.getPrincipal(), "", authorities);
-    
-    
+
     when(ui.getGivenName()).thenReturn(stringClaims.get("given_name"));
     when(ui.getFamilyName()).thenReturn(stringClaims.get("family_name"));
     when(ui.getName()).thenReturn(stringClaims.get("name"));
     when(ui.getEmail()).thenReturn(stringClaims.get("email"));
     when(ui.getPreferredUsername()).thenReturn(username);
-    
-    
-
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(token);
     return context;
   }
-
 
   public SecurityContextBuilderSupport name(String givenName, String familyName) {
 
@@ -117,7 +111,6 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
       when(userInfo.getEmail()).thenReturn(email);
     }
     return this;
-
   }
 
   @Override

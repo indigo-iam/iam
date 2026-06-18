@@ -25,7 +25,6 @@ import java.util.Optional;
 
 import javax.servlet.RequestDispatcher;
 
-import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +79,7 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -174,7 +174,7 @@ public class IamWebSecurityConfig {
     }
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
-      return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
+      return new IamX509PreauthenticationProcessingFilter(clock, x509CredentialExtractor,
           iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()),
           certRepo, iamProperties);
     }
@@ -197,11 +197,10 @@ public class IamWebSecurityConfig {
           .enableSessionUrlRewriting(false)
         .and()
           .authorizeRequests()
-            .antMatchers("/login**", "/webjars/**").permitAll()
+            .antMatchers("/", "/login**", "/webjars/**").permitAll()
             .antMatchers("/authorize**").permitAll()
             .antMatchers("/reset-session").permitAll()
             .antMatchers("/device/**").authenticated()
-            .antMatchers("/").authenticated()
         .and()
           .formLogin()
             .loginPage("/login")
@@ -492,16 +491,16 @@ public class IamWebSecurityConfig {
 
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
     private UserDetailsService userDetailsService;
-    private JWTBearerClientAssertionTokenEndpointFilter bearerFilter;
+    private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
 
     public IntrospectEndpointAuthorizationConfig(
         OAuth2AuthenticationEntryPoint authenticationEntryPoint,
         @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
-        JWTBearerClientAssertionTokenEndpointFilter bearerFilter) {
+        TokenEndpointJwtClientAuthFilter jwtClientAuthFilter) {
 
       this.authenticationEntryPoint = authenticationEntryPoint;
       this.userDetailsService = userDetailsService;
-      this.bearerFilter = bearerFilter;
+      this.jwtClientAuthFilter = jwtClientAuthFilter;
     }
 
     @Override
@@ -521,7 +520,7 @@ public class IamWebSecurityConfig {
         .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
         .cors().and()
         .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
-        .addFilterBefore(bearerFilter, BasicAuthenticationFilter.class)
+        .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
         .authorizeRequests().anyRequest().fullyAuthenticated();
       // @formatter:on
     }

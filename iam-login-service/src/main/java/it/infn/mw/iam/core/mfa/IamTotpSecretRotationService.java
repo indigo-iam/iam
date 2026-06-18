@@ -103,7 +103,7 @@ public class IamTotpSecretRotationService {
         encryptSecret(rawSecret, mfaProperties.getPasswordToEncryptAndDecrypt());
     totp.setSecret(encrypted);
     totpRepository.save(totp);
-    LOG.info("TOTP MFA: Re-encrypted secret for id={}", totp.getId());
+    LOG.debug("TOTP MFA: Re-encrypted secret for user {}", totp.getAccount().getUsername());
   }
 
   private IamTotpAdminKey getCurrentKey() {

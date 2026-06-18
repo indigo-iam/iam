@@ -16,17 +16,23 @@
 package it.infn.mw.iam.persistence.repository;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.DeviceCode;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface IamDeviceCodeRepository extends JpaRepository<DeviceCode, Long> {
 
+  Optional<DeviceCode> findById(String id);
+
+  Optional<DeviceCode> findByDeviceCode(String deviceCode);
+
+  Optional<DeviceCode> findByUserCode(String userCode);
+
   @Query("select dc from DeviceCode dc where dc.expiration <= :timestamp")
-  Page<DeviceCode> getExpiredCodes(@Param("timestamp") Date timestamp, Pageable op);
+  List<DeviceCode> findExpired(@Param("timestamp") Date timestamp);
 
 }

@@ -42,7 +42,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -82,6 +81,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -204,6 +204,9 @@ public class IamTokenService implements OAuth2TokenEntityService {
       tokenUtils.validate(accessTokenOnDb.get());
       return accessTokenOnDb.get().getAuthenticationHolder().getAuthentication();
     }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
     ParsedAccessToken token = parseAndValidate(accessTokenValue);
     return tokenUtils.getAuthentication(token);
   }
@@ -223,6 +226,9 @@ public class IamTokenService implements OAuth2TokenEntityService {
     if (accessTokenOnDb.isPresent()) {
       return accessTokenOnDb.get();
     }
+    if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
+      throw new InvalidTokenException("The access token has been revoked");
+    }
     return buildAccessToken(parseAndValidate(accessTokenValue));
   }
 
@@ -238,15 +244,11 @@ public class IamTokenService implements OAuth2TokenEntityService {
       entity.setRefreshToken(refreshToken);
     }
     entity.setTokenValueHash(tokenUtils.sha256(accessToken.jwt().serialize()));
-    if (revocationService.isAccessTokenRevoked(entity)) {
-      throw new InvalidTokenException("The access token has been revoked");
-    }
     entity.setClient(loadClient(accessToken.clientId()));
     entity.getAdditionalInformation().clear();
     List<String> notAllowed = List.of("scope", "exp");
     entity.getAdditionalInformation().putAll(accessToken.payload().toJSONObject());
     entity.getAdditionalInformation().keySet().removeIf(notAllowed::contains);
-
     return entity;
   }
 
@@ -373,10 +375,10 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
   private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
 
-    Set<String> filteredScopes = scopeFilter.filterScopes(request.getScope(), authentication);
-    Set<SystemScope> scopes = scopeService.fromStrings(filteredScopes);
-    scopes = scopeService.removeReservedScopes(scopes);
-    return scopeService.toStrings(scopes);
+    Set<String> filteredScopes = new HashSet<>();
+    filteredScopes.addAll(request.getScope());
+    filteredScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
+    return scopeFilter.filterScopes(filteredScopes, authentication);
   }
 
   private void handleCodeChallenge(OAuth2Request request) {
@@ -557,18 +559,16 @@ public class IamTokenService implements OAuth2TokenEntityService {
   private Set<String> computeRefreshedScopes(TokenRequest authRequest,
       AuthenticationHolderEntity authHolder, Optional<IamAccount> account) {
 
-    /* load reserved scopes from database */
-    Set<String> reservedScopes = scopeService.toStrings(scopeService.getReserved());
     /* retrieve authorized scopes from refresh token */
     Set<String> authorizedScopes =
         Sets.newHashSet(authHolder.getAuthentication().getOAuth2Request().getScope());
-    authorizedScopes.removeAll(reservedScopes);
+    authorizedScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
     /* get current requested scopes, if present */
     Set<String> requestedScopes = new HashSet<>();
     if (authRequest.getScope() != null) {
       requestedScopes.addAll(authRequest.getScope());
     }
-    requestedScopes.removeAll(reservedScopes);
+    requestedScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
 
     /* compute scopes to be filtered */
     Set<String> scopesToFilter = new HashSet<>();
