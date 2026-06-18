@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -31,12 +30,15 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.Audience;
+import com.nimbusds.oauth2.sdk.id.Issuer;
+import com.nimbusds.openid.connect.sdk.SubjectType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
 import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import net.minidev.json.JSONObject;
@@ -45,10 +47,10 @@ public class TrustChainTestFactory {
 
   private static final Map<String, RSAKey> KEYS = new HashMap<>();
 
-  private static RSAKey keyFor(String entity) {
+  public static RSAKey keyFor(String entity) {
     return KEYS.computeIfAbsent(entity, id -> {
       try {
-        return new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
+        return new RSAKeyGenerator(2048).keyID("test-kid").generate();
       } catch (JOSEException e) {
         throw new RuntimeException(e);
       }
@@ -67,6 +69,33 @@ public class TrustChainTestFactory {
 
     if (metadata != null) {
       claims.setRPMetadata(metadata);
+    }
+    JSONObject federationMetadata = new JSONObject();
+    federationMetadata.put("organization_name", "Org");
+    if (fetchEndpoint != null) {
+      federationMetadata.put("federation_fetch_endpoint", fetchEndpoint);
+    }
+    claims.setMetadata(FederationMetadataType.FEDERATION_ENTITY, federationMetadata);
+    if (authorityHints != null && !authorityHints.isEmpty()) {
+      claims.setAuthorityHints(authorityHints);
+    }
+    if (audience != null) {
+      claims.setAudience(Audience.create(List.of(audience)));
+    }
+    return EntityStatement.sign(claims, key);
+  }
+
+  public static EntityStatement selfECForOp(String entity, Date iat, Date exp,
+      List<EntityID> authorityHints, String fetchEndpoint, OIDCProviderMetadata metadata,
+      String audience) throws JOSEException {
+    RSAKey key = keyFor(entity);
+    EntityID eid = new EntityID(entity);
+
+    EntityStatementClaimsSet claims =
+        new EntityStatementClaimsSet(eid, eid, iat, exp, new JWKSet(key.toPublicJWK()));
+
+    if (metadata != null) {
+      claims.setOPMetadata(metadata);
     }
     JSONObject federationMetadata = new JSONObject();
     federationMetadata.put("organization_name", "Org");
@@ -125,8 +154,29 @@ public class TrustChainTestFactory {
     return new TrustChain(rpEC, List.of(taToRp));
   }
 
+  /** Minimum Trust Chain: OP → TA */
+  public static TrustChain createOpToTaChain(String op, String aud, URI jwksUri, String ta)
+      throws JOSEException {
+    Date now = new Date();
+    Date exp = new Date(now.getTime() + 600000);
+
+    // OP self EC with authority_hint = TA
+    OIDCProviderMetadata clientMetadata =
+        new OIDCProviderMetadata(Issuer.parse(op), List.of(SubjectType.PUBLIC), jwksUri);
+    clientMetadata.setFederationRegistrationEndpointURI(URI.create(op + "/fedreg"));
+    EntityStatement rpEC =
+        selfECForOp(op, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
+
+    // TA → OP ES
+    EntityStatement taToRp = superiorES(ta, op, now, exp);
+
+    // Build the TrustChain
+    return new TrustChain(rpEC, List.of(taToRp));
+  }
+
   /** Trust Chain: RP → Intermediate → TA */
-  public static TrustChain createRpToIntermediateToTaChain(String ta, Clock clock) throws JOSEException {
+  public static TrustChain createRpToIntermediateToTaChain(String ta, Clock clock)
+      throws JOSEException {
 
     final Date iat = Date.from(clock.instant());
     final Date exp = Date.from(clock.instant().plusMillis(600000));

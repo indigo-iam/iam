@@ -1598,26 +1598,37 @@ INSERT INTO iam_account_group(account_id, group_id) VALUES
 (347,2);
 
 -- Owned clients
-insert into iam_account_client(id, account_id, client_id, creation_time) VALUES 
+INSERT INTO iam_account_client(id, account_id, client_id, creation_time) VALUES 
 (1, 200, 1, CURRENT_TIMESTAMP()),
 (2, 200, 2, CURRENT_TIMESTAMP()),
 (3, 199, 1, CURRENT_TIMESTAMP()),
 (4, 199, 2, CURRENT_TIMESTAMP());
 
 -- TOTP multi-factor secrets
-insert into iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
+INSERT INTO iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
 (true, '4S6Jqrvrv4eJDE9va5RkxaVjdjn5FCC958Gysekk1T7eel0pahEbp5iFLENeWZ4VKE1Dzit7AGowmOwD5i5Ma9VjnkdNMnU5WSK58w==', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 1000);
 
 -- Client last used dates
-insert into client_last_used(client_details_id, last_used) VALUES
+INSERT INTO client_last_used(client_details_id, last_used) VALUES
 (1, '1994-03-21'),
 (2, '1994-03-20'),
 (3, '1994-03-19'),
 (4, '1994-03-23');
 
-insert into whitelisted_site(id, creator_user_id, client_id) values
+INSERT INTO whitelisted_site(id, creator_user_id, client_id) VALUES
 (1, 'admin', 'whitelist-client');
 
-insert into whitelisted_site_scope(owner_id, scope) values
+INSERT INTO whitelisted_site_scope(owner_id, scope) VALUES
 (1, 'openid'),
 (1, 'profile');
+
+INSERT INTO iam_federated_client(id, client_id, client_secret, client_name, token_endpoint_auth_method, jwks_uri, jwks, created_at, active, expiration, entity_id) VALUES
+(1, 'federated-client', 'secret', 'Remote RP', 'SECRET_BASIC', 'https://op.example.com/jwk', null, CURRENT_TIMESTAMP(), true, CURRENT_TIMESTAMP(), 'https://op.example.com');
+
+INSERT INTO iam_federated_client_redirect_uri(owner_id, redirect_uri) VALUES (1, 'http://localhost:8080/openid_connect_login');
+
+INSERT INTO iam_federated_client_grant_type(owner_id, grant_type) VALUES (1, 'code');
+
+INSERT INTO iam_federated_client_response_type(owner_id, response_type) VALUES (1, 'code');
+
+INSERT INTO iam_federated_client_scope(owner_id, scope) VALUES (1, 'openid');

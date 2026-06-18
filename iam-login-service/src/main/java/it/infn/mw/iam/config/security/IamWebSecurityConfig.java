@@ -351,7 +351,6 @@ public class IamWebSecurityConfig {
     private OidcClientFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
 
-    @Autowired
     public ExternalOidcLogin(
         @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
         UserLoginConfig userLoginConfig) {
