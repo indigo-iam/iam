@@ -39,13 +39,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_VIANELLO }}
-      run: mvn -B -U verify sonar:sonar
-            -Dsonar.projectKey=indigo-iam_iam 
-            -Dsonar.organization=indigo-iam 
-            -Dsonar.login=$SONAR_TOKEN
-            -Dsonar.pullrequest.key=${{ github.event.number }}
-            -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
-            -Dsonar.pullrequest.base=${{ github.BASE_REF }}
-            -Dsonar.pullrequest.github.repository=${{ github.repository }}
-            -Dsonar.scm.provider=git
-            -Dsonar.host.url=https://sonarcloud.io
+      run: |
+        mvn -B -U verify sonar:sonar
+          -Dsonar.projectKey=indigo-iam_iam
+          -Dsonar.organization=indigo-iam
+          -Dsonar.login=$SONAR_TOKEN
+          -Dsonar.coverage.jacoco.xmlReportPaths=iam-login-service/target/site/jacoco-aggregate/jacoco.xml \
+          -Dsonar.scm.provider=git
+          -Dsonar.host.url=https://sonarcloud.io
