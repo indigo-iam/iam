@@ -17,12 +17,12 @@ package it.infn.mw.iam.persistence.repository;
 
 import java.util.Optional;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
 
 import it.infn.mw.iam.persistence.model.IamSamlId;
 
-public interface IamSamlIdRepository extends CrudRepository<IamSamlId, Long> {
+public interface IamSamlIdRepository extends JpaRepository<IamSamlId, Long> {
 
   Optional<IamSamlId> findByIdpIdAndUserId(@Param("idpId") String idpId, @Param("userId") String userId);
 
