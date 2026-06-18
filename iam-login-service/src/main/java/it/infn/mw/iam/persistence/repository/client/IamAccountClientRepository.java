@@ -20,10 +20,10 @@ import java.util.Optional;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 
 public interface IamAccountClientRepository
-    extends CrudRepository<IamAccountClient, Long>, JpaSpecificationExecutor<IamAccountClient> {
+    extends JpaRepository<IamAccountClient, Long>, JpaSpecificationExecutor<IamAccountClient> {
 
   @Query("select ac.client from IamAccountClient ac where ac.client.clientId = :clientId")
   Page<ClientDetailsEntity> findClientByClientClientId(String clientId, Pageable pageable);

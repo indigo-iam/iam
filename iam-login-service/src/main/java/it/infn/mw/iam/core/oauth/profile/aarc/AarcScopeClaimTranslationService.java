@@ -40,6 +40,7 @@ public class AarcScopeClaimTranslationService extends BaseScopeClaimTranslationS
             AarcExtraClaimNames.ENTITLEMENTS,
             AarcExtraClaimNames.ORGANIZATION_NAME,
             AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION,
+            AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION,
             StandardClaimNames.NAME,
             StandardClaimNames.GIVEN_NAME,
             StandardClaimNames.FAMILY_NAME,
@@ -65,6 +66,10 @@ public class AarcScopeClaimTranslationService extends BaseScopeClaimTranslationS
         return Sets.newHashSet(
             AarcExtraClaimNames.EDUPERSON_ENTITLEMENT,
             AarcExtraClaimNames.ENTITLEMENTS);
+      case AarcOidcScopes.SCHAC_HOME_ORGANIZATION:
+        return Sets.newHashSet(
+            AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION
+            );
       case OidcScopes.PROFILE:
         return merge(scope, Sets.newHashSet(
             AarcExtraClaimNames.AARC_VER,

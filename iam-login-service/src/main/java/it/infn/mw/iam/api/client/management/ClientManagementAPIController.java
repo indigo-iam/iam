@@ -122,7 +122,6 @@ public class ClientManagementAPIController {
 
   @GetMapping("/{clientId}/owners")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @JsonView({ClientViews.NoSecretManagementRegistration.class})
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
