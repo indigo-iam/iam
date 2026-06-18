@@ -67,7 +67,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 // @formatter:off
   "iam.host=example.org",
   "iam.jwt-profile.default-profile=aarc",
-  "iam.access-token.include-authn-info=true"
+  "iam.access_token.include_authn_info=true"
 // @formatter:on
 })
 @SuppressWarnings("deprecation")
