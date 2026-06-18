@@ -101,8 +101,11 @@
     <code.coverage.project.folder>${basedir}/../</code.coverage.project.folder>
     <code.coverage.overall.data.folder>${basedir}/target/</code.coverage.overall.data.folder>
 
+    <sonar.coverage.jacoco.xmlReportPaths>
+      ${maven.multiModuleProjectDirectory}/iam-login-service/target/site/jacoco-aggregate/jacoco.xml
+    </sonar.coverage.jacoco.xmlReportPaths>
+
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.language>java</sonar.language>
     <sonar.coverage.exclusions>
       iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
@@ -532,13 +535,6 @@
             <id>jacoco-initialize</id>
             <goals>
               <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>jacoco-report</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>report</goal>
             </goals>
           </execution>
         </executions>
