@@ -23,10 +23,12 @@ import static it.infn.mw.iam.registration.validation.RegistrationRequestValidati
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
+import java.time.Clock;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,7 @@ import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.cern.CernProperties;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
@@ -48,12 +51,17 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrDbRequestValidatorService.class);
 
+  final Clock clock;
   final CernHrDBApiService hrDbApi;
   final CernProperties cernProperties;
 
-  public CernHrDbRequestValidatorService(CernHrDBApiService hrDbApi, CernProperties properties) {
+  public CernHrDbRequestValidatorService(Clock clock, IamProperties properties,
+      ApplicationEventPublisher eventPublisher, CernHrDBApiService hrDbApi,
+      CernProperties cernProperties) {
+    super(properties, eventPublisher);
+    this.clock = clock;
     this.hrDbApi = hrDbApi;
-    this.cernProperties = properties;
+    this.cernProperties = cernProperties;
   }
 
   public void addPersonIdLabel(RegistrationRequestDto request, String personId) {
@@ -117,9 +125,10 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
       Optional<ParticipationDTO> ep = CernHrLifecycleUtils.getMostRecentMembership(
           voPersonDTO.get().getParticipations(), cernProperties.getExperimentName());
 
-      if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate())) {
+      if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(clock, ep.get().getEndDate())) {
         addPersonIdLabel(registrationRequest, cernPersonId);
         synchronizeInfo(registrationRequest, voPersonDTO.get());
+        registrationRequest.setAffiliation(ep.get().getInstitute().getName());
         return ok();
       }
     } catch (CernHrDbApiError e) {

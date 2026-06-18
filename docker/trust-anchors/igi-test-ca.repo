@@ -1,8 +1,0 @@
-[Test-CA]
-name=Test-CA
-baseurl=https://ci.cloud.cnaf.infn.it/job/repo_test_ca/lastSuccessfulBuild/artifact/yum/
-protect=1
-enabled=1
-priority=1
-gpgcheck=0
-sslverify=0

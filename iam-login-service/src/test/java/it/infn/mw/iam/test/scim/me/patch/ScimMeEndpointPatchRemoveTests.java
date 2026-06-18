@@ -25,14 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
@@ -44,26 +44,33 @@ import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
+        ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
-public class ScimMeEndpointPatchRemoveTests {
+@AutoConfigureMockMvc
+@Transactional
+class ScimMeEndpointPatchRemoveTests {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
-  @Autowired
-  private ScimUserProvisioning provider;
+  ScimRestUtilsMvc scimUtils;
 
-  @Before
-  public void init() throws Exception {
+  @Autowired
+  ScimUserProvisioning provider;
+
+  @Autowired
+  SecurityContextUtils context;
+
+  @BeforeEach
+  void init() throws Exception {
+
+    context.cleanupSecurityContext();
 
     String uuid = scimUtils.getMe().getId();
 
@@ -82,8 +89,8 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
-      scopes = {"scim:write", "scim:read"})
-  public void testPatchRemovePicture() throws Exception {
+    scopes = {"scim:write", "scim:read"})
+  void testPatchRemovePicture() throws Exception {
 
     ScimPhoto currentPhoto = scimUtils.getMe().getPhotos().get(0);
 
@@ -96,8 +103,8 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
-      scopes = {"scim:write", "scim:read"})
-  public void testPatchRemoveOidcId() throws Exception {
+    scopes = {"scim:write", "scim:read"})
+  void testPatchRemoveOidcId() throws Exception {
 
     ScimOidcId currentOidcId = scimUtils.getMe().getIndigoUser().getOidcIds().get(0);
 
@@ -110,8 +117,8 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
-      scopes = {"scim:write", "scim:read"})
-  public void testPatchRemoveSamlId() throws Exception {
+    scopes = {"scim:write", "scim:read"})
+  void testPatchRemoveSamlId() throws Exception {
 
     ScimSamlId currentSamlId = scimUtils.getMe().getIndigoUser().getSamlIds().get(0);
 
@@ -124,8 +131,8 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
-      scopes = {"scim:write", "scim:read"})
-  public void testPatchRemoveGroup() throws Exception {
+    scopes = {"scim:write", "scim:read"})
+  void testPatchRemoveGroup() throws Exception {
 
     assertThat(scimUtils.getMe().getGroups(), hasSize(equalTo(2)));
     assertThat(scimUtils.getMe().getGroups()).extracting(ScimGroupRef::getDisplay)
@@ -146,8 +153,8 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
-      scopes = {"scim:write", "scim:read"})
-  public void testPatchRemoveGroups() throws Exception {
+    scopes = {"scim:write", "scim:read"})
+  void testPatchRemoveGroups() throws Exception {
 
     Set<ScimGroupRef> groups = scimUtils.getMe().getGroups();
 
@@ -168,7 +175,7 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockUser(username = "test_104", roles = {"USER"})
-  public void testPatchRemovePictureNoToken() throws Exception {
+  void testPatchRemovePictureNoToken() throws Exception {
 
     ScimPhoto currentPhoto = scimUtils.getMe().getPhotos().get(0);
 
@@ -181,7 +188,7 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockUser(username = "test_104", roles = {"USER"})
-  public void testPatchRemoveOidcIdNoToken() throws Exception {
+  void testPatchRemoveOidcIdNoToken() throws Exception {
 
     ScimOidcId currentOidcId = scimUtils.getMe().getIndigoUser().getOidcIds().get(0);
 
@@ -194,7 +201,7 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockUser(username = "test_104", roles = {"USER"})
-  public void testPatchRemoveSamlIdNoToken() throws Exception {
+  void testPatchRemoveSamlIdNoToken() throws Exception {
 
     ScimSamlId currentSamlId = scimUtils.getMe().getIndigoUser().getSamlIds().get(0);
 
@@ -207,7 +214,7 @@ public class ScimMeEndpointPatchRemoveTests {
 
   @Test
   @WithMockUser(username = "test_104", roles = {"USER"})
-  public void testPatchRemoveGroupNoToken() throws Exception {
+  void testPatchRemoveGroupNoToken() throws Exception {
 
     ScimGroupRef group = scimUtils.getMe().getGroups().iterator().next();
 

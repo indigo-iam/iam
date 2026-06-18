@@ -17,9 +17,11 @@ package it.infn.mw.iam.core.oauth.granters;
 
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
@@ -83,4 +85,12 @@ public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordT
     this.accountUtils = accountUtils;
   }
 
+  @Override
+  protected void validateGrantType(String grantType, ClientDetails clientDetails) {
+    Collection<String> authorizedGrantTypes = clientDetails.getAuthorizedGrantTypes();
+    if (authorizedGrantTypes == null || authorizedGrantTypes.isEmpty()
+        || !authorizedGrantTypes.contains(grantType)) {
+      throw new InvalidClientException("Unauthorized grant type");
+    }
+  }
 }

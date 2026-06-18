@@ -21,7 +21,6 @@ import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,7 +43,6 @@ public class DefaultFindAccountService implements FindAccountService {
   private final IamGroupRepository groupRepo;
   private final UserConverter converter;
 
-  @Autowired
   public DefaultFindAccountService(IamAccountRepository repo, IamGroupRepository groupRepo,
       UserConverter converter) {
     this.repo = repo;
@@ -58,9 +56,7 @@ public class DefaultFindAccountService implements FindAccountService {
 
     Page<IamAccount> results = repo.findByLabelNameAndValue(labelName, labelValue, pageable);
     return responseFromPage(results, converter, pageable);
-
   }
-
 
   @Override
   public ScimListResponse<ScimUser> findAccountByEmail(String emailAddress) {

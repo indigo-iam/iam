@@ -5,7 +5,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.13.0</version>
+    <version>1.14.1</version>
   </parent>
 
   <groupId>it.infn.mw.iam-test-client</groupId>
@@ -44,6 +44,17 @@
     <dependency>
       <groupId>org.italiangrid</groupId>
       <artifactId>voms-api-java</artifactId>
+    </dependency>
+
+    <!-- Bouncy Castle -->
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
     </dependency>
 
     <dependency>
@@ -112,15 +123,8 @@
           <image>
             <name>indigoiam/iam-test-client-bp:${iam.image.tag}</name>
           </image>
+          <skip>false</skip>
         </configuration>
-        
-        <executions>
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

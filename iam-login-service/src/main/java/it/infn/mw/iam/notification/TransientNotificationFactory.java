@@ -18,6 +18,7 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -33,7 +34,6 @@ import java.util.stream.Collectors;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -53,6 +53,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -71,14 +72,15 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Value("${iam.organisation.name}")
   private String organisationName;
 
+  private final Clock clock;
   private final NotificationProperties properties;
   private final AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
   private final GroupManagerNotificationDeliveryStrategy groupManagerDeliveryStrategy;
   private final Configuration freeMarkerConfiguration;
 
-  @Autowired
-  public TransientNotificationFactory(Configuration fm, NotificationProperties np,
+  public TransientNotificationFactory(Clock clock, Configuration fm, NotificationProperties np,
       AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+    this.clock = clock;
     this.freeMarkerConfiguration = fm;
     this.properties = np;
     this.adminNotificationDeliveryStrategy = ands;
@@ -113,8 +115,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     String recipient = request.getAccount().getUserInfo().getName();
     String resetPasswordUrl = String.format("%s%s/%s", baseUrl,
         PasswordResetController.BASE_TOKEN_URL, request.getAccount().getResetKey());
-
-
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -303,7 +303,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     LocalDate signatureTime = account.getAupSignature()
       .getSignatureTime()
       .toInstant()
-      .atZone(ZoneId.systemDefault())
+      .atZone(ZoneId.of("UTC"))
       .toLocalDate();
     LocalDate signatureValidTime = signatureTime.plusDays(signatureValidityInDays);
     long missingDays = ChronoUnit.DAYS.between(now, signatureValidTime);
@@ -436,7 +436,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     String subject = "Account's service account status revoked";
 
     IamEmailNotification notification = createMessage("accountRevokeServiceAccount.ftl", model,
-        IamNotificationType.REVOKE_SERVICE_ACCOUNT, subject, asList(account.getUserInfo().getEmail()));
+        IamNotificationType.REVOKE_SERVICE_ACCOUNT, subject,
+        asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created service account revoke message for the account {}", account.getUuid());
 
@@ -454,11 +455,11 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Multi-factor authentication (MFA) enabled";
 
-    IamEmailNotification notification =
-        createMessage("mfaEnable.ftl", model, IamNotificationType.MFA_ENABLE,
-            subject, asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("mfaEnable.ftl", model,
+        IamNotificationType.MFA_ENABLE, subject, asList(account.getUserInfo().getEmail()));
 
-    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}", account.getUuid());
+    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}",
+        account.getUuid());
 
     return notification;
   }
@@ -473,13 +474,26 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Multi-factor authentication (MFA) disabled";
 
-    IamEmailNotification notification =
-        createMessage("mfaDisable.ftl", model, IamNotificationType.MFA_DISABLE,
-            subject, asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("mfaDisable.ftl", model,
+        IamNotificationType.MFA_DISABLE, subject, asList(account.getUserInfo().getEmail()));
 
-    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}", account.getUuid());
+    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}",
+        account.getUuid());
 
     return notification;
+  }
+
+  private Map<String, Object> generateCertificateModel(String name, String username, String email,
+      String organisationName, String subjectDn, String issuerDn) {
+    Map<String, Object> model = new HashMap<>();
+    model.put("name", name);
+    model.put(USERNAME_FIELD, username);
+    model.put("email", email);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("subjectDn", subjectDn);
+    model.put("issuerDn", issuerDn);
+
+    return model;
   }
 
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
@@ -496,7 +510,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       message.setType(messageType);
       message.setSubject(formattedSubject);
       message.setBody(body);
-      message.setCreationTime(new Date());
+      message.setCreationTime(Date.from(clock.instant()));
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
       message.setReceivers(receiverAddress.stream()
         .map(a -> IamNotificationReceiver.forAddress(message, a))
@@ -507,5 +521,43 @@ public class TransientNotificationFactory implements NotificationFactory {
       LOG.error("Exception encountered when attempting to create message: {}", e.toString());
       return null;
     }
+  }
+
+  @Override
+  public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Credential) {
+
+    String subject = "New X.509 certificate linked";
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
+
+    IamEmailNotification notification =
+        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
+            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Credential) {
+
+    String subject = "Unlinked X.509 certificate";
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  private Map<String, Object> getObjectForCertificateMessage(IamAccount a, IamX509Certificate c) {
+
+    return generateCertificateModel(a.getUserInfo().getName(), a.getUsername(),
+        a.getUserInfo().getEmail(), organisationName, c.getSubjectDn(), c.getIssuerDn());
   }
 }

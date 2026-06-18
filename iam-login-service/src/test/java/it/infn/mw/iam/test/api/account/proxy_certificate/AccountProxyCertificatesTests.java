@@ -25,30 +25,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.emi.security.authn.x509.proxy.ProxyCertificate;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.proxy.ProxyCertificateDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithAnonymousUser
 public class AccountProxyCertificatesTests extends X509TestSupport {
 
@@ -78,13 +86,16 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
   @Autowired
   private ObjectMapper mapper;
 
-  @Before
-  public void setup() {
+  @Autowired
+  private MutableClock clock;
+
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanupOAuthUser() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -92,10 +103,9 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     return () -> new AssertionError(message);
   }
 
-
   @Test
   @WithAnonymousUser
-  public void addingProxyRequiresAuthenticatedUser() throws Exception {
+  void addingProxyRequiresAuthenticatedUser() throws Exception {
 
     mvc.perform(put(ACCOUNT_PROXY_CERT_ENDPOINT)).andExpect(UNAUTHORIZED);
 
@@ -103,7 +113,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyRequiresProxyCert() throws Exception {
+  void addingProxyRequiresProxyCert() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
 
@@ -117,9 +127,9 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyRequiresOwnedCertificate() throws Exception {
+  void addingProxyRequiresOwnedCertificate() throws Exception {
 
-    ProxyCertificate pc = proxyHelper.generateProxy(TEST_0_PEM_CREDENTIAL, 300);
+    ProxyCertificate pc = proxyHelper.generateProxy(getTest0PemCredential(), 300);
     String pcPem = proxyHelper.proxyCertificateToPemString(pc);
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
@@ -134,10 +144,10 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyDoesNotWorkForPlainX509Certificate() throws Exception {
+  void addingProxyDoesNotWorkForPlainX509Certificate() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
-    dto.setCertificateChain(TEST_0_CERT_STRING);
+    dto.setCertificateChain(getTest0CertString());
 
     mvc
       .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
@@ -148,7 +158,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingJunkFailsNicely() throws Exception {
+  void addingJunkFailsNicely() throws Exception {
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
     dto.setCertificateChain("JunkJunk");
@@ -162,16 +172,16 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
 
   @Test
   @WithMockUser("test")
-  public void addingProxyWorks() throws Exception {
+  void addingProxyWorks() throws Exception {
 
     IamAccount account =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    linkTest0CertificateToAccount(account);
+    linkTest0CertificateToAccount(account, clock.instant());
 
     repo.save(account);
 
-    ProxyCertificate pc = proxyHelper.generateProxy(TEST_0_PEM_CREDENTIAL, 300);
+    ProxyCertificate pc = proxyHelper.generateProxy(getTest0PemCredential(), 300);
     String pcPem = proxyHelper.proxyCertificateToPemString(pc);
 
     ProxyCertificateDTO dto = new ProxyCertificateDTO();

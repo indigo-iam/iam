@@ -15,34 +15,49 @@
  */
 package it.infn.mw.iam.test.scim.converter;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import java.io.IOException;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
+
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
-import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimX509CertificateConverterTests extends X509TestSupport {
 
-public class ScimX509CertificateConverterTests extends X509TestSupport {
+  @Autowired
+  MutableClock clock;
 
-  X509CertificateConverter converter =
-      new X509CertificateConverter(new X509CertificateChainParserImpl());
+  @Autowired
+  X509CertificateConverter converter;
 
   @Test
-  public void testScimToEntityConversion() {
+  void testScimToEntityConversion() throws IOException {
 
     ScimX509Certificate scimCert = ScimX509Certificate.builder()
       .display("A label")
       .primary(true)
       .subjectDn(TEST_0_SUBJECT)
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .build();
 
     IamX509Certificate iamCert = converter.entityFromDto(scimCert);
@@ -50,16 +65,16 @@ public class ScimX509CertificateConverterTests extends X509TestSupport {
     assertThat(iamCert.getLabel(), equalTo("A label"));
     assertTrue(iamCert.isPrimary());
     assertThat(iamCert.getSubjectDn(), equalTo(TEST_0_SUBJECT));
-    assertThat(iamCert.getCertificate(), equalTo(TEST_0_CERT_STRING));
+    assertThat(iamCert.getCertificate(), equalTo(getTest0CertString()));
     assertThat(iamCert.getAccount(), nullValue());
   }
 
   @Test
-  public void testEntityToScimConversion() {
+  void testEntityToScimConversion() throws IOException {
 
     IamX509Certificate cert = new IamX509Certificate();
     cert.setSubjectDn(TEST_0_SUBJECT);
-    cert.setCertificate(TEST_0_CERT_STRING);
+    cert.setCertificate(getTest0CertString());
     cert.setLabel("A label");
     cert.setPrimary(false);
 
@@ -68,7 +83,7 @@ public class ScimX509CertificateConverterTests extends X509TestSupport {
     assertThat(scimCert.getDisplay(), equalTo("A label"));
     assertFalse(scimCert.getPrimary());
     assertThat(scimCert.getSubjectDn(), equalTo(TEST_0_SUBJECT));
-    assertThat(scimCert.getPemEncodedCertificate(), equalTo(TEST_0_CERT_STRING));
+    assertThat(scimCert.getPemEncodedCertificate(), equalTo(getTest0CertString()));
 
   }
 }

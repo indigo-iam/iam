@@ -25,66 +25,90 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
-import org.junit.jupiter.api.AfterEach;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 class ClientRegistrationAPIControllerTests {
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  IamClientRepository clientRepository;
 
   @Autowired
-  private IamClientRepository clientRepository;
+  IamAccountRepository accountRepo;
 
-  @Autowired
-  private ClientService clientService;
+  static final String IAM_CLIENT_REGISTRATION_API_URL = "/iam/api/client-registration/";
+  static final String IAM_CLIENTS_MANAGMENT_API_URL = "/iam/api/clients/";
 
-  public static final String IAM_CLIENT_REGISTRATION_API_URL = "/iam/api/client-registration/";
+  static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
+  static final ResultMatcher BAD_REQUEST = status().isBadRequest();
+  static final ResultMatcher CREATED = status().isCreated();
+  static final ResultMatcher OK = status().isOk();
 
-  public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
-  public static final ResultMatcher BAD_REQUEST = status().isBadRequest();
-  public static final ResultMatcher CREATED = status().isCreated();
+  private ClientDetailsEntity clientUpscopingOff;
+
 
   @BeforeEach
-  void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
+  void setup() throws Exception {
 
-  @AfterEach
-  void cleanup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-    clientService.findClientByClientId("test-client-creation")
-      .ifPresent(c -> clientService.deleteClient(c));;
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-upscoping");
+    client.setScope(Set.of("test"));
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(user("test").roles("USER"))
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, clientUpscopingOff.isUpScopingEnabled());
+
+    client.setUpScopingEnabled(false);
+
+    mvc.perform(put(IAM_CLIENTS_MANAGMENT_API_URL + response.getClientId())
+      .with(user("admin").roles("ADMIN"))
+      .contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(client))).andExpect(OK);
+
+    String assingOwner = IAM_CLIENTS_MANAGMENT_API_URL + response.getClientId() + "/owners/"
+        + accountRepo.findByUsername("admin").get().getUuid();
+
+    mvc.perform(post(assingOwner).with(user("admin").roles("ADMIN"))).andExpect(CREATED);
+
+    clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(false, clientUpscopingOff.isUpScopingEnabled());
   }
 
   @Test
@@ -94,8 +118,8 @@ class ClientRegistrationAPIControllerTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
     client.setAccessTokenValiditySeconds(null);
     client.setRefreshTokenValiditySeconds(null);
     client.setTokenEndpointAuthMethod(null);
@@ -131,8 +155,8 @@ class ClientRegistrationAPIControllerTests {
 
     client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setAccessTokenValiditySeconds(null);
     client.setRefreshTokenValiditySeconds(null);
     client.setTokenEndpointAuthMethod(null);
@@ -144,6 +168,241 @@ class ClientRegistrationAPIControllerTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userRegisterClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userRegisterClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
+    client.setUpScopingEnabled(false);
+
+    assertEquals(false, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminRegisterClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminRegisterClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
+    client.setUpScopingEnabled(false);
+
+    assertEquals(false, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(false, createdClient.isUpScopingEnabled());
+  }
+
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userUpdateClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientId(clientUpscopingOff.getClientId());
+    client.setScope(clientUpscopingOff.getScope());
+    client.setUpScopingEnabled(true);
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(
+          put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
+            .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity updatedClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(false, updatedClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userUpdateClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+
+    client.setUpScopingEnabled(false);
+
+    response = mapper.readValue(mvc
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    createdClient = clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminUpdateClientUpscopingOn() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientId(clientUpscopingOff.getClientId());
+    client.setScope(clientUpscopingOff.getScope());
+    client.setUpScopingEnabled(true);
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(
+          put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
+            .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity updatedClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, updatedClient.isUpScopingEnabled());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminUpdateClientUpscopingOff() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
+
+    assertEquals(true, client.isUpScopingEnabled());
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(true, createdClient.isUpScopingEnabled());
+
+    client.setUpScopingEnabled(false);
+
+    response = mapper.readValue(mvc
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    createdClient = clientRepository.findByClientId(response.getClientId()).get();
+
+    assertEquals(false, createdClient.isUpScopingEnabled());
+  }
+
+  @Test
   @WithAnonymousUser
   void registerClientRaiseParseException() throws JsonProcessingException, Exception {
 
@@ -151,8 +410,8 @@ class ClientRegistrationAPIControllerTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
     client.setJwk(NOT_A_JSON_STRING);
 
@@ -160,21 +419,20 @@ class ClientRegistrationAPIControllerTests {
       .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
-      .andExpect(jsonPath("$.error", startsWith("Invalid JSON:")));
+      .andExpect(jsonPath("$.error", startsWith("Invalid JSON object")));
 
   }
 
   @Test
   @WithAnonymousUser
-  void registerClientRaiseJwkUriValidationException()
-      throws JsonProcessingException, Exception {
+  void registerClientRaiseJwkUriValidationException() throws JsonProcessingException, Exception {
 
     final String NOT_A_URI_STRING = "This is not a URI";
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
     client.setJwksUri(NOT_A_URI_STRING);
 
@@ -190,16 +448,15 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  void registerClientPrivateJwtValidationException()
-      throws JsonProcessingException, Exception {
+  void registerClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
 
     final String URI_STRING = "http://localhost:8080/jwk";
     final String NOT_A_JSON_STRING = "This is not a JSON string";
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
 
     String expectedMessage =
@@ -225,8 +482,8 @@ class ClientRegistrationAPIControllerTests {
 
     client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
 
     expectedMessage = "registerClient.request: private_key_jwt requires a jwks uri or a jwk value";
@@ -252,13 +509,12 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  void updateClientPrivateJwtValidationException()
-      throws JsonProcessingException, Exception {
+  void updateClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE));
+    client.setScope(Set.of("test"));
 
     mvc
       .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
@@ -276,8 +532,5 @@ class ClientRegistrationAPIControllerTests {
             .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
-
   }
-
-
 }

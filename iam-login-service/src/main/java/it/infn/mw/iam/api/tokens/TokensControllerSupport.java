@@ -15,22 +15,24 @@
  */
 package it.infn.mw.iam.api.tokens;
 
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.http.converter.json.MappingJacksonValue;
+
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.tokens.service.TokenService;
 import it.infn.mw.iam.api.tokens.service.paging.DefaultTokensPageRequest;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
-
-import org.springframework.http.converter.json.MappingJacksonValue;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class TokensControllerSupport {
 
@@ -70,8 +72,8 @@ public class TokensControllerSupport {
     }
 
     return new DefaultTokensPageRequest.Builder().count(validCount)
-        .startIndex(validStartIndex - 1)
-        .build();
+      .startIndex(validStartIndex - 1)
+      .build();
   }
 
   protected Set<String> parseAttributes(final String attributesParameter) {
@@ -79,16 +81,15 @@ public class TokensControllerSupport {
     Set<String> result = new HashSet<>();
     if (!Strings.isNullOrEmpty(attributesParameter)) {
       result = Sets.newHashSet(Splitter.on(CharMatcher.anyOf(".,"))
-          .trimResults()
-          .omitEmptyStrings()
-          .split(attributesParameter));
+        .trimResults()
+        .omitEmptyStrings()
+        .split(attributesParameter));
     }
     result.add("id");
     return result;
   }
 
-  protected <T> MappingJacksonValue filterAttributes(ListResponseDTO<T> result,
-      String attributes) {
+  protected <T> MappingJacksonValue filterAttributes(ListResponseDTO<T> result, String attributes) {
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
 
@@ -103,4 +104,23 @@ public class TokensControllerSupport {
 
     return wrapper;
   }
+
+  protected <T> ListResponseDTO<T> getFilteredList(TokensPageRequest pageRequest, String userId,
+      String clientId, TokenService<T> tokenService) {
+
+    Optional<String> user = Optional.ofNullable(userId);
+    Optional<String> client = Optional.ofNullable(clientId);
+
+    if (user.isPresent() && client.isPresent()) {
+      return tokenService.getTokensForClientAndUser(user.get(), client.get(), pageRequest);
+    }
+    if (user.isPresent()) {
+      return tokenService.getTokensForUser(user.get(), pageRequest);
+    }
+    if (client.isPresent()) {
+      return tokenService.getTokensForClient(client.get(), pageRequest);
+    }
+    return tokenService.getAllTokens(pageRequest);
+  }
+
 }

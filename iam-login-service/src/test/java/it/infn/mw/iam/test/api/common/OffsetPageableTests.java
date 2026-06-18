@@ -15,20 +15,18 @@
  */
 package it.infn.mw.iam.test.api.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
 import it.infn.mw.iam.api.common.OffsetPageable;
 
-public class OffsetPageableTests {
-
-  public OffsetPageableTests() {
-
-  }
+class OffsetPageableTests {
 
   @Test
-  public void IllegalOffsetOnCreation() {
+  void IllegalOffsetOnCreation() {
 
     try {
       new OffsetPageable(-1, 1);
@@ -38,7 +36,7 @@ public class OffsetPageableTests {
   }
 
   @Test
-  public void IllegalCountOnCreation() {
+  void IllegalCountOnCreation() {
 
     try {
       new OffsetPageable(1, 0);
@@ -48,7 +46,7 @@ public class OffsetPageableTests {
   }
 
   @Test
-  public void checkPreviuosRounded() {
+  void checkPreviuosRounded() {
 
     OffsetPageable op = new OffsetPageable(5, 10);
     assertThat(op.hasPrevious(), is(true));
@@ -58,7 +56,7 @@ public class OffsetPageableTests {
   }
 
   @Test
-  public void checkNavigation() {
+  void checkNavigation() {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     assertThat(op.hasPrevious(), is(false));
@@ -77,7 +75,7 @@ public class OffsetPageableTests {
   }
 
   @Test
-  public void checkToString() {
+  void checkToString() {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     String expectedToString =

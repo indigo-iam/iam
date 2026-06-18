@@ -15,20 +15,27 @@
  */
 package it.infn.mw.iam.test.audit.event;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import java.io.IOException;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -57,14 +64,20 @@ import it.infn.mw.iam.audit.events.account.x509.X509CertificateRemovedEvent;
 import it.infn.mw.iam.authn.saml.util.SamlAttributeNames;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-public class EventTests extends X509TestSupport {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+class EventTests extends X509TestSupport {
 
   private static final String USERNAME = "event_user";
   private static final String GIVENNAME = "Event";
@@ -99,17 +112,20 @@ public class EventTests extends X509TestSupport {
   @Autowired
   private ScimResourceLocationProvider scimResourceLocationProvider;
 
+  @Autowired
+  private IamEmailNotificationRepository emailRepo;
+
   private IamAccount account;
   private ScimGroup group;
   private ScimMemberRef accountRef;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() throws IOException {
 
     group = groupProvisioning.create(ScimGroup.builder(GROUPNAME).build());
 
     ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
       .build();
 
@@ -139,14 +155,14 @@ public class EventTests extends X509TestSupport {
     groupProvisioning.update(group.getId(), req.getOperations());
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     userProvisioning.delete(account.getUuid());
     groupProvisioning.delete(group.getId());
   }
 
   @Test
-  public void testAddSamlAccountEvent() {
+  void testAddSamlAccountEvent() {
 
     ScimUser update = ScimUser.builder()
       .addSamlId(ScimSamlId.builder().attributeId("foo").idpId("bar").userId("test").build())
@@ -166,7 +182,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testRemoveSamlAccountEvent() {
+  void testRemoveSamlAccountEvent() {
 
     ScimUser update = ScimUser.builder()
       .addSamlId(ScimSamlId.builder().idpId(SAML_IDP).userId(SAML_USER_ID).build())
@@ -187,7 +203,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testAddOidcAccountEvent() {
+  void testAddOidcAccountEvent() {
 
     ScimUser update = ScimUser.builder()
       .addOidcId(ScimOidcId.builder().issuer("foo").subject("bar").build())
@@ -206,7 +222,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testRemoveOidcAccountEvent() {
+  void testRemoveOidcAccountEvent() {
 
     ScimUser update = ScimUser.builder()
       .addOidcId(ScimOidcId.builder().issuer(OIDC_ISSUER).subject(OIDC_SUBJECT).build())
@@ -225,7 +241,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testAddSshKeyEvent() {
+  void testAddSshKeyEvent() {
 
     ScimUser update = ScimUser.builder()
       .addSshKey(ScimSshKey.builder()
@@ -250,7 +266,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testRemoveSshKeyEvent() {
+  void testRemoveSshKeyEvent() {
 
     ScimUser update = ScimUser.builder()
       .addSshKey(ScimSshKey.builder()
@@ -274,11 +290,13 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testAddX509CertificateEvent() {
+  void testAddX509CertificateEvent() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .pemEncodedCertificate(getTest0CertString())
       .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -294,15 +312,19 @@ public class EventTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest0CertString()));
+
+    assertThat(emailRepo.countAllMessages(), equalTo(0));
   }
 
   @Test
-  public void testRemoveX509CertificateEvent() {
+  void testRemoveX509CertificateEvent() throws IOException {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
-      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .pemEncodedCertificate(getTest1CertString())
       .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -318,11 +340,13 @@ public class EventTests extends X509TestSupport {
     assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
     assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
     assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    assertThat(event.getMessage(), containsString("certificate=" + getTest1CertString()));
+
+    assertThat(emailRepo.countAllMessages(), equalTo(0));
   }
 
   @Test
-  public void testAddGroupMembershipEvent() {
+  void testAddGroupMembershipEvent() {
 
     ScimGroup secondGroup = groupProvisioning.create(ScimGroup.builder("second_group").build());
 
@@ -339,7 +363,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testRemoveGroupMembershipEvent() {
+  void testRemoveGroupMembershipEvent() {
 
     ScimGroupPatchRequest req =
         ScimGroupPatchRequest.builder().remove(Lists.newArrayList(accountRef)).build();
@@ -353,5 +377,4 @@ public class EventTests extends X509TestSupport {
         containsString("User 'event_user' was removed from group 'event_group'"));
 
   }
-
 }

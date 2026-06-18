@@ -97,6 +97,7 @@ public class ClientConverter {
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
+    client.setUpScopingEnabled(dto.isUpScopingEnabled());
 
     return client;
   }
@@ -130,6 +131,10 @@ public class ClientConverter {
     if (entity.getClientLastUsed() != null) {
       clientDTO.setLastUsed(entity.getClientLastUsed().getLastUsed());
     }
+    if (entity.getClientRelyingParty() != null) {
+      clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
+      clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
+    }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
     clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());
@@ -138,7 +143,6 @@ public class ClientConverter {
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
     clientDTO.setDynamicallyRegistered(entity.isDynamicallyRegistered());
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
-    clientDTO.setJwksUri(entity.getJwksUri());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
     clientDTO.setPolicyUri(entity.getPolicyUri());
@@ -166,8 +170,15 @@ public class ClientConverter {
     }
 
     clientDTO.setActive(entity.isActive());
+    clientDTO.setUpScopingEnabled(entity.isUpScopingEnabled());
     clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
     clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
+
+    if (entity.getClientRelyingParty() != null) {
+      clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
+      clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
+      clientDTO.setRequestObjectSigningAlgorithm(entity.getRequestObjectSigningAlg());
+    }
 
     return clientDTO;
   }
@@ -191,19 +202,18 @@ public class ClientConverter {
     }
 
     client.setPolicyUri(dto.getPolicyUri());
-    
+
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
     client.setScope(cloneSet(dto.getScope()));
-    
-    client.setGrantTypes(new HashSet<>());   
+
+    client.setGrantTypes(new HashSet<>());
+
+    client.setUpScopingEnabled(dto.isUpScopingEnabled());
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(
-          dto.getGrantTypes()
-          .stream()
-          .map(AuthorizationGrantType::getGrantType)
-          .collect(toSet()));
+          dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
     if (dto.getScope().contains("offline_access")) {
@@ -228,10 +238,14 @@ public class ClientConverter {
     }
 
     // bypasses MitreID default setting to zero inside client's entity
-    client.setAccessTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-    client.setRefreshTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
-    client.setIdTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
-    client.setDeviceCodeValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
+    client.setAccessTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    client.setRefreshTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+    client.setIdTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+    client.setDeviceCodeValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
 
     return client;
   }

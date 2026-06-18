@@ -16,19 +16,19 @@
 package it.infn.mw.iam.api.scim.updater.builders;
 
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_ACTIVE;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_AFFILIATION;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWORD;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
-import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_AFFILIATION;
 
+import java.time.Clock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
@@ -39,17 +39,19 @@ import it.infn.mw.iam.api.scim.updater.util.AccountFinder;
 import it.infn.mw.iam.api.scim.updater.util.IdNotBoundChecker;
 import it.infn.mw.iam.audit.events.account.ActiveReplacedEvent;
 import it.infn.mw.iam.audit.events.account.AffiliationReplacedEvent;
-import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.PasswordReplacedEvent;
 import it.infn.mw.iam.audit.events.account.PictureReplacedEvent;
+import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.audit.events.account.UsernameReplacedEvent;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Replacers extends AccountBuilderSupport {
@@ -63,11 +65,12 @@ public class Replacers extends AccountBuilderSupport {
   final AccountFinder<String> findByEmail;
   final AccountFinder<String> findByUsername;
 
-  public Replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
-      UsernameValidator usernameValidator) {
+  public Replacers(Clock clock, IamAccountRepository repo, IamAccountService accountService,
+      PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
 
-    super(repo, accountService, tokenService, encoder, usernameValidator, account);
+    super(clock, repo, accountService, accessTokenRepo, refreshTokenRepo, encoder,
+        usernameValidator, account);
     findByEmail = repo::findByEmail;
     findByUsername = repo::findByUsername;
     encodedPasswordSetter = t -> account.setPassword(encoder.encode(t));
@@ -78,10 +81,9 @@ public class Replacers extends AccountBuilderSupport {
   }
 
   private Predicate<String> buildEmailAddChecks() {
-    Predicate<String> emailNotBound =
-        new IdNotBoundChecker<>(findByEmail, account, (e, a) -> {
-          throw new ScimResourceExistsException("Email " + e + " already bound to another user");
-        });
+    Predicate<String> emailNotBound = new IdNotBoundChecker<>(findByEmail, account, (e, a) -> {
+      throw new ScimResourceExistsException("Email " + e + " already bound to another user");
+    });
 
     Predicate<String> emailNotOwned = e -> !account.getUserInfo().getEmail().equals(e);
 
@@ -104,14 +106,14 @@ public class Replacers extends AccountBuilderSupport {
   public AccountUpdater givenName(String givenName) {
 
     IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, GivenNameReplacedEvent>(account,
+    return new DefaultAccountUpdater<String, GivenNameReplacedEvent>(clock, account,
         ACCOUNT_REPLACE_GIVEN_NAME, ui::getGivenName, ui::setGivenName, givenName,
         GivenNameReplacedEvent::new);
   }
 
   public AccountUpdater familyName(String familyName) {
     final IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, FamilyNameReplacedEvent>(account,
+    return new DefaultAccountUpdater<String, FamilyNameReplacedEvent>(clock, account,
         ACCOUNT_REPLACE_FAMILY_NAME, ui::getFamilyName, ui::setFamilyName, familyName,
         FamilyNameReplacedEvent::new);
   }
@@ -119,46 +121,51 @@ public class Replacers extends AccountBuilderSupport {
   public AccountUpdater picture(String newPicture) {
 
     final IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, PictureReplacedEvent>(account, ACCOUNT_REPLACE_PICTURE,
-        ui::getPicture, ui::setPicture, newPicture, PictureReplacedEvent::new);
+    return new DefaultAccountUpdater<String, PictureReplacedEvent>(clock, account,
+        ACCOUNT_REPLACE_PICTURE, ui::getPicture, ui::setPicture, newPicture,
+        PictureReplacedEvent::new);
 
   }
 
   public AccountUpdater email(String email) {
     final IamUserInfo ui = account.getUserInfo();
 
-    return new DefaultAccountUpdater<String, EmailReplacedEvent>(account, ACCOUNT_REPLACE_EMAIL,
-        ui::setEmail, email, emailAddChecks, EmailReplacedEvent::new);
+    return new DefaultAccountUpdater<String, EmailReplacedEvent>(clock, account,
+        ACCOUNT_REPLACE_EMAIL, ui::setEmail, email, emailAddChecks, EmailReplacedEvent::new);
   }
 
   public AccountUpdater password(String newPassword) {
 
-    return new DefaultAccountUpdater<String, PasswordReplacedEvent>(account,
+    return new DefaultAccountUpdater<String, PasswordReplacedEvent>(clock, account,
         ACCOUNT_REPLACE_PASSWORD, encodedPasswordSetter, newPassword, encodedPasswordChecker,
         PasswordReplacedEvent::new);
   }
 
   public AccountUpdater username(String newUsername) {
 
-    return new UsernameUpdater(account, ACCOUNT_REPLACE_USERNAME, account::setUsername, newUsername,
-        usernameAddChecks, UsernameReplacedEvent::new, tokenService);
+    return new UsernameUpdater(clock, account, ACCOUNT_REPLACE_USERNAME, account::setUsername,
+        newUsername, usernameAddChecks, UsernameReplacedEvent::new, accessTokenRepo,
+        refreshTokenRepo);
   }
 
   public AccountUpdater active(boolean isActive) {
 
-    return new DefaultAccountUpdater<Boolean, ActiveReplacedEvent>(account, ACCOUNT_REPLACE_ACTIVE,
-        account::isActive, account::setActive, isActive, ActiveReplacedEvent::new);
+    return new DefaultAccountUpdater<Boolean, ActiveReplacedEvent>(clock, account,
+        ACCOUNT_REPLACE_ACTIVE, account::isActive, account::setActive, isActive,
+        ActiveReplacedEvent::new);
   }
 
   public AccountUpdater serviceAccount(boolean isServiceAccount) {
-    return new DefaultAccountUpdater<Boolean, ServiceAccountReplacedEvent>(account, ACCOUNT_REPLACE_SERVICE_ACCOUNT,
-        account::isServiceAccount, account::setServiceAccount, isServiceAccount, ServiceAccountReplacedEvent::new);
+    return new DefaultAccountUpdater<Boolean, ServiceAccountReplacedEvent>(clock, account,
+        ACCOUNT_REPLACE_SERVICE_ACCOUNT, account::isServiceAccount, account::setServiceAccount,
+        isServiceAccount, ServiceAccountReplacedEvent::new);
   }
 
   public AccountUpdater affiliation(String affiliation) {
     final IamUserInfo ui = account.getUserInfo();
-    return new DefaultAccountUpdater<String, AffiliationReplacedEvent>(account, ACCOUNT_REPLACE_AFFILIATION,
-        ui::getAffiliation, ui::setAffiliation, affiliation, AffiliationReplacedEvent::new);
+    return new DefaultAccountUpdater<String, AffiliationReplacedEvent>(clock, account,
+        ACCOUNT_REPLACE_AFFILIATION, ui::getAffiliation, ui::setAffiliation, affiliation,
+        AffiliationReplacedEvent::new);
   }
 
 }

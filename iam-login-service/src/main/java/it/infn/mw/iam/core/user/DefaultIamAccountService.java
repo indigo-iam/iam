@@ -18,23 +18,29 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.AFFILIATION;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -43,12 +49,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
+import it.infn.mw.iam.audit.events.account.EmailVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.attribute.AccountAttributeRemovedEvent;
@@ -57,9 +66,14 @@ import it.infn.mw.iam.audit.events.account.group.GroupMembershipAddedEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
+import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
@@ -68,6 +82,8 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
+import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -76,9 +92,13 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.registration.TokenGenerator;
 
 @Service
 @Transactional
@@ -90,18 +110,22 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAuthoritiesRepository authoritiesRepo;
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
-  private final OAuth2TokenEntityService tokenService;
+  private final TokenRevocationService tokenRevocationService;
   private final IamAccountClientRepository accountClientRepo;
   private final NotificationFactory notificationFactory;
   private final IamProperties iamProperties;
   private final DefaultIamGroupService iamGroupService;
+  private final TokenGenerator tokenGenerator;
+  private final IamAupSignatureRepository iamAupSignatureRepo;
+  private final IamTotpMfaRepository iamTotpMfaRepository;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      TokenRevocationService tokenRevocationService, IamAccountClientRepository accountClientRepo,
       NotificationFactory notificationFactory, IamProperties iamProperties,
-      DefaultIamGroupService iamGroupService) {
+      DefaultIamGroupService iamGroupService, TokenGenerator tokenGenerator,
+      IamAupSignatureRepository iamAupSignatureRepo, IamTotpMfaRepository iamTotpMfaRepository) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -109,11 +133,14 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.authoritiesRepo = authoritiesRepo;
     this.passwordEncoder = passwordEncoder;
     this.eventPublisher = eventPublisher;
-    this.tokenService = tokenService;
+    this.tokenRevocationService = tokenRevocationService;
     this.accountClientRepo = accountClientRepo;
     this.notificationFactory = notificationFactory;
     this.iamProperties = iamProperties;
     this.iamGroupService = iamGroupService;
+    this.tokenGenerator = tokenGenerator;
+    this.iamAupSignatureRepo = iamAupSignatureRepo;
+    this.iamTotpMfaRepository = iamTotpMfaRepository;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -140,6 +167,97 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     eventPublisher.publishEvent(new AccountAttributeRemovedEvent(this, account, attribute));
   }
 
+  private void handle(RegistrationField field,
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, String defaultAttributeName,
+      Supplier<String> externalGetter, Supplier<String> defaultGetter, Consumer<String> setter) {
+
+    if (extAuthnInfo.isPresent() && isReadOnlyField(RegistrationField.NAME)) {
+      Map<String, String> attributes = extAuthnInfo.get().getAdditionalAttributes();
+      Optional<String> externalAuthAttribute = getExternalAuthAttribute(field);
+      if (externalAuthAttribute.isPresent() && attributes.containsKey(externalAuthAttribute.get())
+          && !defaultAttributeName.equals(externalAuthAttribute.get().toLowerCase())) {
+        setter.accept(attributes.get(externalAuthAttribute.get()));
+      } else {
+        setter.accept(externalGetter.get());
+      }
+    } else {
+      setter.accept(defaultGetter.get());
+    }
+  }
+
+  @Override
+  public IamAccount createAccount(RegistrationRequestDto dto,
+      Optional<ExternalAuthenticationRegistrationInfo> info) {
+
+    IamAccount account = IamAccount.newAccount();
+
+    if (info.isPresent()) {
+      handle(NAME, info, "given_name", info.get()::getGivenName, dto::getGivenname,
+          account.getUserInfo()::setGivenName);
+      handle(SURNAME, info, "family_name", info.get()::getFamilyName, dto::getFamilyname,
+          account.getUserInfo()::setFamilyName);
+      handle(EMAIL, info, "email", info.get()::getEmail, dto::getEmail,
+          account.getUserInfo()::setEmail);
+      handle(USERNAME, info, "suggested_username", info.get()::getSuggestedUsername,
+          dto::getUsername, account::setUsername);
+      handle(AFFILIATION, info, "", dto::getAffiliation, dto::getAffiliation,
+          account.getUserInfo()::setAffiliation);
+    } else {
+      account.getUserInfo().setGivenName(dto.getGivenname());
+      account.getUserInfo().setFamilyName(dto.getFamilyname());
+      account.getUserInfo().setEmail(dto.getEmail());
+      account.setUsername(dto.getUsername());
+      account.getUserInfo().setAffiliation(dto.getAffiliation());
+    }
+
+    account.getUserInfo().setEmailVerified(false);
+    account.setActive(false);
+    account.setPassword(UUID.randomUUID().toString());
+
+    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
+      account.setAttributes(Set.of(IamAttribute.newInstance("nickname", account.getUsername())));
+    }
+
+    info.ifPresent(i -> addExternalAuthnInfo(account, i));
+
+    account.setConfirmationKey(tokenGenerator.generateToken());
+
+    return createAccount(account);
+  }
+
+  private IamAccount addExternalAuthnInfo(IamAccount account,
+      ExternalAuthenticationRegistrationInfo i) {
+
+    if (ExternalAuthenticationType.OIDC.equals(i.getType())) {
+      IamOidcId oidcId = new IamOidcId();
+      oidcId.setAccount(account);
+      oidcId.setIssuer(i.getIssuer());
+      oidcId.setSubject(i.getSubject());
+      account.getOidcIds().add(oidcId);
+    } else {
+      IamSamlId samlId = new IamSamlId();
+      samlId.setAccount(account);
+      samlId.setIdpId(i.getIssuer());
+      samlId.setUserId(i.getSubject());
+      samlId.setAttributeId(i.getSubjectAttribute());
+      account.getSamlIds().add(samlId);
+    }
+    return account;
+  }
+
+  private boolean isReadOnlyField(RegistrationField field) {
+    return iamProperties.getRegistration().getFields().containsKey(field)
+        && iamProperties.getRegistration().getFields().get(field).isReadOnly();
+  }
+
+  private Optional<String> getExternalAuthAttribute(RegistrationField field) {
+    if (iamProperties.getRegistration().getFields().containsKey(field)) {
+      return Optional.ofNullable(
+          iamProperties.getRegistration().getFields().get(field).getExternalAuthAttribute());
+    }
+    return Optional.empty();
+  }
+
   @Override
   public IamAccount createAccount(IamAccount account) {
     checkNotNull(account, "Cannot create a null account");
@@ -158,8 +276,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     account.setLastUpdateTime(now);
-
-    account.getUserInfo().setEmailVerified(true);
 
     if (account.getPassword() == null) {
       account.setPassword(UUID.randomUUID().toString());
@@ -201,6 +317,19 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     return account;
   }
 
+  @Override
+  public IamAccount verifyAccount(IamAccount account) {
+
+    account.getUserInfo().setEmailVerified(true);
+    account.setConfirmationKey(null);
+    accountRepo.save(account);
+
+    eventPublisher.publishEvent(
+        new EmailVerifiedEvent(this, account, "Email verified for user " + account.getUsername()));
+
+    return account;
+  }
+
   private void addToDefaultGroups(IamAccount account) {
     List<DefaultGroup> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
     if (Objects.nonNull(defaultGroups)) {
@@ -216,25 +345,17 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   protected void removeClientLinks(IamAccount account) {
 
     accountClientRepo.deleteByAccount(account);
-
   }
 
 
   protected void deleteTokensForAccount(IamAccount account) {
 
-    Set<OAuth2AccessTokenEntity> accessTokens =
-        tokenService.getAllAccessTokensForUser(account.getUsername());
+    tokenRevocationService.revokeAccessTokens(account);
+    tokenRevocationService.revokeRefreshTokens(account);
+  }
 
-    Set<OAuth2RefreshTokenEntity> refreshTokens =
-        tokenService.getAllRefreshTokensForUser(account.getUsername());
-
-    for (OAuth2AccessTokenEntity t : accessTokens) {
-      tokenService.revokeAccessToken(t);
-    }
-
-    for (OAuth2RefreshTokenEntity t : refreshTokens) {
-      tokenService.revokeRefreshToken(t);
-    }
+  private void deleteTotpMfa(IamAccount account) {
+    iamTotpMfaRepository.findByAccount(account).ifPresent(iamTotpMfaRepository::delete);
   }
 
   @Override
@@ -242,6 +363,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "cannot delete a null account");
     deleteTokensForAccount(account);
     removeClientLinks(account);
+    deleteTotpMfa(account);
     accountRepo.delete(account);
 
     eventPublisher.publishEvent(new AccountRemovedEvent(this, account,
@@ -367,20 +489,13 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp) {
-    checkNotNull(timestamp, "null timestamp");
-
-    List<IamAccount> accounts =
-        accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(timestamp);
-
-    accounts.forEach(this::deleteAccount);
-
-    return accounts;
+  public Optional<IamAccount> findByUuid(String uuid) {
+    return accountRepo.findByUuid(uuid);
   }
 
   @Override
-  public Optional<IamAccount> findByUuid(String uuid) {
-    return accountRepo.findByUuid(uuid);
+  public Optional<IamAccount> findByUsername(String username) {
+    return accountRepo.findByUsername(username);
   }
 
   @Override
@@ -392,7 +507,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.getLabels().remove(label);
     account.getLabels().add(label);
 
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     labelSetEvent(account, label);
 
@@ -405,7 +520,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     boolean labelRemoved = account.getLabels().remove(label);
 
     if (labelRemoved) {
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       labelRemovedEvent(account, label);
     }
@@ -418,7 +533,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "Cannot set givenName on a null account");
     if (ObjectUtils.notEqual(account.getUserInfo().getGivenName(), givenName)) {
       account.getUserInfo().setGivenName(givenName);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new GivenNameReplacedEvent(this, account, givenName));
     }
@@ -430,7 +545,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "Cannot set familyName on a null account");
     if (ObjectUtils.notEqual(account.getUserInfo().getFamilyName(), familyName)) {
       account.getUserInfo().setFamilyName(familyName);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new FamilyNameReplacedEvent(this, account, familyName));
     }
@@ -448,7 +563,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         throw new EmailAlreadyBoundException(email, account.getUsername(), o.get().getUsername());
       }
       account.getUserInfo().setEmail(email);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new EmailReplacedEvent(this, account, email));
     }
@@ -463,7 +578,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     if (ObjectUtils.notEqual(previousEndTime, endTime)) {
       deleteLabel(account, IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).build());
       account.setEndTime(endTime);
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       eventPublisher.publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime,
           format("Account endTime set to '%s' for user '%s'", endTime, account.getUsername())));
@@ -474,7 +589,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount disableAccount(IamAccount account) {
     account.setActive(false);
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));
     notificationFactory.createAccountSuspendedMessage(account);
@@ -484,7 +599,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount restoreAccount(IamAccount account) {
     account.setActive(true);
-    account.touch();
+    account.touch(clock.instant());
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
     notificationFactory.createAccountRestoredMessage(account);
@@ -495,7 +610,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public IamAccount setAttribute(IamAccount account, IamAttribute attribute) {
     account.getAttributes().remove(attribute);
     account.getAttributes().add(attribute);
-    account.touch();
+    account.touch(clock.instant());
 
     accountRepo.save(account);
     attributeSetEvent(account, attribute);
@@ -507,7 +622,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     boolean attributeRemoved = account.getAttributes().remove(attribute);
 
     if (attributeRemoved) {
-      account.touch();
+      account.touch(clock.instant());
       accountRepo.save(account);
       attributeRemovedEvent(account, attribute);
     }
@@ -526,7 +641,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         .add(IamAccountGroupMembership.forAccountAndGroup(clock.instant(), account, group));
 
       group.touch(clock);
-      account.touch(clock);
+      account.touch(clock.instant());
 
       groupRepo.save(group);
       accountRepo.save(account);
@@ -562,7 +677,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       for (IamGroup dg : toBeDeleted) {
         account.getGroups()
           .remove(IamAccountGroupMembership.forAccountAndGroup(clock.instant(), account, dg));
-        account.touch(clock);
+        account.touch(clock.instant());
         dg.touch(clock);
         accountRepo.save(account);
         groupRepo.save(dg);
@@ -571,6 +686,34 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     return account;
+  }
+
+  @Override
+  public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
+    List<RegisteredGroupDTO> groupDTOs = account.getGroups()
+      .stream()
+      .sorted(Comparator.comparing(m -> m.getGroup().getName()))
+      .map(membership -> {
+        IamGroup group = membership.getGroup();
+        return new RegisteredGroupDTO.Builder().id(group.getId())
+          .uuid(group.getUuid())
+          .name(group.getName())
+          .description(group.getDescription())
+          .parentGroup(group.getParentGroup())
+          .childrenGroups(group.getChildrenGroups())
+          .labels(group.getLabels())
+          .joiningDate(membership.getCreationTime())
+          .scopePoliciesDescription(group.getScopePolicies())
+          .build();
+      })
+      .toList();
+
+    long total = groupDTOs.size();
+    int start = Math.max(0, (int) pageable.getOffset() - 1);
+    int end = Math.min((start + pageable.getPageSize()), groupDTOs.size());
+    List<RegisteredGroupDTO> pagedGroups = start <= end ? groupDTOs.subList(start, end) : List.of();
+
+    return new ListResponseDTO<>(total, pageable.getPageSize(), start, pagedGroups);
   }
 
   @Override
@@ -644,4 +787,17 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
     eventPublisher = applicationEventPublisher;
   }
+
+  @Override
+  public IamAccount signAup(IamAccount account, IamAup aup) {
+
+    if (aup == null) {
+      return account;
+    }
+    IamAupSignature signature =
+        iamAupSignatureRepo.createSignatureForAccount(aup, account, Date.from(clock.instant()));
+    eventPublisher.publishEvent(new AupSignedEvent(this, signature));
+    return account;
+  }
+
 }

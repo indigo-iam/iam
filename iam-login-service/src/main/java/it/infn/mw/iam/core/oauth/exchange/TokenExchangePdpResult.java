@@ -26,14 +26,11 @@ import it.infn.mw.iam.persistence.model.PolicyRule;
 
 
 public class TokenExchangePdpResult {
-  
+
   public static final String NOT_APPLICABLE_MSG = "No policy found authorizing this exchange";
 
   public enum Decision {
-    PERMIT,
-    DENY,
-    NOT_APPLICABLE,
-    INVALID_SCOPE
+    PERMIT, DENY, NOT_APPLICABLE, INVALID_SCOPE
   }
 
   private final Decision decision;
@@ -81,6 +78,10 @@ public class TokenExchangePdpResult {
 
   public static TokenExchangePdpResult notApplicable() {
     return new TokenExchangePdpResult(Decision.NOT_APPLICABLE, null, null, NOT_APPLICABLE_MSG);
+  }
+
+  public static TokenExchangePdpResult deny(String reason) {
+    return new TokenExchangePdpResult(Decision.DENY, null, null, reason);
   }
 
   public static TokenExchangePdpResult invalidScope(TokenExchangePolicy policy, String invalidScope,

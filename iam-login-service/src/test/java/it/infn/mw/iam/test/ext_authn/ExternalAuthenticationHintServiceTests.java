@@ -15,17 +15,18 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.iam.authn.DefaultExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.error.InvalidExternalAuthenticationHintError;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ExternalAuthenticationHintServiceTests {
 
   public static final String BASE_URL = "http://localhost:8080";
@@ -33,35 +34,35 @@ public class ExternalAuthenticationHintServiceTests {
   DefaultExternalAuthenticationHintService service =
       new DefaultExternalAuthenticationHintService(BASE_URL);
 
-  @Test(expected = InvalidExternalAuthenticationHintError.class)
-  public void testNullExternalAuthnHint() {
-    service.resolve(null);
-  }
-
-  @Test(expected = InvalidExternalAuthenticationHintError.class)
-  public void testEmptyExternalAuthnHint() {
-    service.resolve("");
-  }
-
-  @Test(expected = InvalidExternalAuthenticationHintError.class)
-  public void testSpacesExternalAuthnHint() {
-    service.resolve("   ");
-  }
-
-
-  @Test(expected = InvalidExternalAuthenticationHintError.class)
-  public void testInvalidSchemeHint() {
-    service.resolve("whatever:sdsdad");
+  @Test
+  void testNullExternalAuthnHint() {
+    assertThrows(InvalidExternalAuthenticationHintError.class, () -> service.resolve(null));
   }
 
   @Test
-  public void testSamlWorks() {
+  void testEmptyExternalAuthnHint() {
+    assertThrows(InvalidExternalAuthenticationHintError.class, () -> service.resolve(""));
+  }
+
+  @Test
+  void testSpacesExternalAuthnHint() {
+    assertThrows(InvalidExternalAuthenticationHintError.class, () -> service.resolve("   "));
+  }
+
+  @Test
+  void testInvalidSchemeHint() {
+    assertThrows(InvalidExternalAuthenticationHintError.class,
+        () -> service.resolve("whatever:sdsdad"));
+  }
+
+  @Test
+  void testSamlWorks() {
     String url = service.resolve("saml:example");
     assertThat(url, is(String.format("%s/saml/login?idp=example", BASE_URL)));
   }
-  
+
   @Test
-  public void testSamlDiscoveryWorks() {
+  void testSamlDiscoveryWorks() {
     String url = service.resolve("saml:");
     assertThat(url, is(String.format("%s/saml/login", BASE_URL)));
   }

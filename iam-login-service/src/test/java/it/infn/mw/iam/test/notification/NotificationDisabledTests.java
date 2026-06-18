@@ -15,24 +15,20 @@
  */
 package it.infn.mw.iam.test.notification;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.UnsupportedEncodingException;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,51 +42,49 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"notification.disable=true"})
-public class NotificationDisabledTests {
+class NotificationDisabledTests {
 
-  public static final String REGISTRATION_CREATE_ENDPOINT = "/registration/create";
+  static final String REGISTRATION_CREATE_ENDPOINT = "/registration/create";
 
   @Autowired
-  private MockNotificationDelivery notificationDelivery;
+  MockNotificationDelivery notificationDelivery;
 
   @Value("${spring.mail.host}")
-  private String mailHost;
+  String mailHost;
 
   @Value("${spring.mail.port}")
-  private Integer mailPort;
+  Integer mailPort;
 
   @Autowired
   ObjectMapper mapper;
 
   @Autowired
-  private IamAccountRepository accountRepository;
-  
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  IamAccountRepository accountRepository;
 
   @Autowired
-  private MockMvc mvc;
+  MockOAuth2Filter mockOAuth2Filter;
 
-  @Before
-  public void setUp() throws InterruptedException {
+  @Autowired
+  MockMvc mvc;
+
+  @BeforeEach
+  void setUp() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
 
-  @After
-  public void tearDown() throws InterruptedException {
+  @AfterEach
+  void tearDown() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
-
 
   @Test
-  public void testDisableNotificationOption() throws UnsupportedEncodingException, Exception {
+  void testDisableNotificationOption() throws Exception {
     RegistrationRequestDto req = new RegistrationRequestDto();
 
     req.setGivenname("testDisableNotificationOption");
@@ -114,12 +108,11 @@ public class NotificationDisabledTests {
     notificationDelivery.sendPendingNotifications();
 
     assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(0));
-    
+
     IamAccount account = accountRepository.findByUuid(savedRequest.getAccountId())
       .orElseThrow(() -> new AssertionError("Expected account not found!"));
-    
-    accountRepository.delete(account);
 
+    accountRepository.delete(account);
   }
 
 }

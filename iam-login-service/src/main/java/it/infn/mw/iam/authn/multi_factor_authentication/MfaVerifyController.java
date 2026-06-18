@@ -34,13 +34,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 /**
  * Presents the step-up authentication page for verifying identity after successful username +
@@ -51,13 +50,13 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
+  public static final String MFA_ACTIVATE_URL = "/iam/mfa/activate";
   final IamAccountRepository accountRepository;
-  final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaService iamTotpMfaService;
 
-  public MfaVerifyController(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository) {
+  public MfaVerifyController(IamAccountRepository accountRepository, IamTotpMfaService iamTotpMfaService) {
     this.accountRepository = accountRepository;
-    this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaService = iamTotpMfaService;
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
@@ -65,16 +64,12 @@ public class MfaVerifyController {
   public String getVerifyMfaView(Authentication authentication, ModelMap model) {
     IamAccount account = accountRepository.findByUsername(authentication.getName())
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
-    model.addAttribute("isAuthenticatorAppActive", isAuthenticatorAppActive(account));
+    model.addAttribute("isAuthenticatorAppActive", iamTotpMfaService.isAuthenticatorAppActive(account));
 
     if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
       setAuthentication(preAuthenticatedAuthenticationToken);
     }
     return "iam/verify-mfa";
-  }
-
-  private boolean isAuthenticatorAppActive(IamAccount account) {
-    return totpMfaRepository.findByAccount(account).map(IamTotpMfa::isActive).orElse(false);
   }
 
   private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
@@ -89,6 +84,12 @@ public class MfaVerifyController {
       token.setPreAuthenticated(true);
       SecurityContextHolder.getContext().setAuthentication(token);
     }
+  }
+
+  @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
+  @GetMapping(value = MFA_ACTIVATE_URL)
+  public String getActivateMfaView() {
+    return "iam/activateMfa";
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)

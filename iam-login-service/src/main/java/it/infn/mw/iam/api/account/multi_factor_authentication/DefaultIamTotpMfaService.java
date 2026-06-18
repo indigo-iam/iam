@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication;
 
+import static dev.samstevens.totp.util.Utils.getDataUriForImage;
+
+import java.time.Clock;
 import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,10 +25,15 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.code.HashingAlgorithm;
+import dev.samstevens.totp.exceptions.QrGenerationException;
+import dev.samstevens.totp.qr.QrData;
+import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.TotpVerifiedEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
@@ -41,25 +49,34 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
 
   public static final int RECOVERY_CODE_QUANTITY = 6;
-  private static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
+  private static final String MFA_SECRET_NOT_FOUND_MESSAGE =
+      "No multi-factor secret is attached to this account";
 
+  private final Clock clock;
   private final IamAccountService iamAccountService;
   private final IamTotpMfaRepository totpMfaRepository;
   private final SecretGenerator secretGenerator;
   private final CodeVerifier codeVerifier;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
+  private final QrGenerator qrGenerator;
+  private final IamProperties iamProperties;
 
-  public DefaultIamTotpMfaService(IamAccountService iamAccountService,
+  public DefaultIamTotpMfaService(Clock clock, IamAccountService iamAccountService,
       IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
       CodeVerifier codeVerifier, ApplicationEventPublisher eventPublisher,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaProperties iamTotpMfaProperties, QrGenerator qrGenerator,
+      IamProperties iamProperties) {
+
+    this.clock = clock;
     this.iamAccountService = iamAccountService;
     this.totpMfaRepository = totpMfaRepository;
     this.secretGenerator = secretGenerator;
     this.codeVerifier = codeVerifier;
     this.eventPublisher = eventPublisher;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.qrGenerator = qrGenerator;
+    this.iamProperties = iamProperties;
   }
 
   private void authenticatorAppEnabledEvent(IamAccount account, IamTotpMfa totpMfa) {
@@ -80,9 +97,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
   /**
-   * Generates and attaches a TOTP MFA secret to a user account
-   * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
-   * server-side TOTP verification during the user's enabling of MFA on their account
+   * Generates and attaches a TOTP MFA secret to a user account This is pre-emptive to actually
+   * enabling TOTP MFA on the account - the secret is written for server-side TOTP verification
+   * during the user's enabling of MFA on their account
    * 
    * @param account the account to add the secret to
    * @return the new TOTP secret
@@ -100,10 +117,10 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     // Generate secret
-    IamTotpMfa totpMfa = new IamTotpMfa(account);
+    IamTotpMfa totpMfa = new IamTotpMfa(clock.instant(), account);
 
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
-        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     totpMfa.setAccount(account);
 
     totpMfaRepository.save(totpMfa);
@@ -131,7 +148,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     totpMfa.setActive(true);
-    totpMfa.touch();
+    totpMfa.touch(clock.instant());
     totpMfaRepository.save(totpMfa);
     iamAccountService.saveAccount(account);
     authenticatorAppEnabledEvent(account, totpMfa);
@@ -177,7 +194,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptAndDecrypt());
 
     // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
@@ -186,6 +203,35 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     return false;
+  }
+
+  /**
+   * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
+   * details about the issuer, length of TOTP and period of expiry from application properties
+   * 
+   * @param secret the TOTP secret
+   * @param username the logged-in user (attaches a username to the secret in the authenticator app)
+   * @return the data URI to be used with an <img> tag
+   * @throws QrGenerationException
+   */
+  public String generateQRCodeFromSecret(String secret, String username)
+      throws QrGenerationException {
+
+    QrData data = new QrData.Builder().label(username)
+      .secret(secret)
+      .issuer("INDIGO IAM" + " - " + iamProperties.getOrganisation().getName())
+      .algorithm(HashingAlgorithm.SHA1)
+      .digits(6)
+      .period(30)
+      .build();
+
+    byte[] imageData = qrGenerator.generate(data);
+    String mimeType = qrGenerator.getImageMimeType();
+    return getDataUriForImage(imageData, mimeType);
+  }
+
+  public boolean isAuthenticatorAppActive(IamAccount account) {
+    return totpMfaRepository.findByAccount(account).map(IamTotpMfa::isActive).orElse(false);
   }
 
 }

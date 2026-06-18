@@ -22,85 +22,78 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
-import it.infn.mw.iam.test.util.MockTimeProvider;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@IamMockMvcIntegrationTest
-public class ScimMeAupTests extends AupTestSupport {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimMeAupTests extends AupTestSupport {
 
-  private final static String ME_ENDPOINT = "/scim/Me";
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-  
-  @Autowired
-  private AupConverter aupConverter;
-  
-  @Autowired
-  private MockTimeProvider mockTimeProvider;
-  
-  @Autowired
-  private ObjectMapper mapper;
+  static final String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
-  private MockMvc mvc;
+  AupConverter aupConverter;
 
+  @Autowired
+  ObjectMapper mapper;
 
+  @Autowired
+  MockMvc mvc;
 
-  @Before
-  public void setup() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  SecurityContextUtils context;
 
-  @After
-  public void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @Autowired
+  MutableClock clock;
+
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void meEndpointAupSignatureTests() throws Exception {
+  void meEndpointAupSignatureTests() throws Exception {
 
     mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(
           jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).doesNotExist());
 
-    AupDTO aup = aupConverter.dtoFromEntity(buildDefaultAup());
-    
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
+    AupDTO aup = aupConverter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     mvc
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isCreated());
-    
+
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
-    .andExpect(status().isOk())
-    .andExpect(
-        jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).exists());
-    
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).exists());
+
   }
 
 }

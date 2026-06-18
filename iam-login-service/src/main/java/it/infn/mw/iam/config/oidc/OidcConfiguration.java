@@ -37,6 +37,7 @@ import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationSer
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,12 +66,15 @@ import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
+@EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
 public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
@@ -88,7 +92,7 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock, OidcTokenRequestor tokenRequestor,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
@@ -97,7 +101,7 @@ public class OidcConfiguration {
       AuthRequestUrlBuilder authRequestUrlBuilder,
       AuthRequestOptionsService authRequestOptionsService, JWKSetCacheService validationServices) {
 
-    OidcClientFilter filter = new OidcClientFilter();
+    OidcClientFilter filter = new OidcClientFilter(clock, tokenRequestor, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
     filter.setIssuerService(issuerService);
     filter.setServerConfigurationService(serverConfigurationService);
@@ -107,7 +111,6 @@ public class OidcConfiguration {
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
     filter.setValidationServices(validationServices);
-    filter.setTokenRequestor(tokenRequestor);
 
     return filter;
   }
@@ -148,12 +151,15 @@ public class OidcConfiguration {
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
       UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
-      SessionTimeoutHelper timeoutHelper, IamAccountRepository accountRepo,
+      SessionTimeoutHelper timeoutHelper,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
+      IamOidcJITAccountProvisioningProperties jitProperties,
+      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
 
-    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(validator, timeoutHelper,
-        accountRepo, inactiveAccountHandler, totpMfaRepository);
+    OidcAuthenticationProvider provider =
+        new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
+            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService, iamTotpMfaProperties);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 

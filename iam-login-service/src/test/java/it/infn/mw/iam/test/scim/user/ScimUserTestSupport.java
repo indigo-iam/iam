@@ -49,7 +49,17 @@ public class ScimUserTestSupport {
   protected ScimX509Certificate X509CERT_TEST = ScimX509Certificate.builder()
     .display("Personal Certificate")
     .pemEncodedCertificate(X509Utils.x509Certs.get(0).certificate)
+    .subjectDn(X509Utils.x509Certs.get(0).subjectDn)
+    .issuerDn(X509Utils.x509Certs.get(0).issuerDn)
     .primary(true)
+    .build();
+
+  protected ScimX509Certificate X509CERT_TEST2 = ScimX509Certificate.builder()
+    .display("Personal Certificate 2")
+    .pemEncodedCertificate(X509Utils.x509Certs.get(1).certificate)
+    .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+    .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
+    .primary(false)
     .build();
 
   protected String SSHKEY_TEST_FINGERPRINT = SshKeyUtils.sshKeys.get(0).fingerprintSHA256;
@@ -85,6 +95,8 @@ public class ScimUserTestSupport {
         .display(X509Utils.x509Certs.get(1).display)
         .pemEncodedCertificate(X509Utils.x509Certs.get(1).certificate)
         .primary(true)
+        .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+        .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
         .build())
       .build();
 
@@ -112,6 +124,8 @@ public class ScimUserTestSupport {
       .addX509Certificate(ScimX509Certificate.builder()
         .display(X509Utils.x509Certs.get(0).display)
         .pemEncodedCertificate(X509Utils.x509Certs.get(0).certificate)
+        .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+        .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
         .primary(true)
         .build())
       .build();
@@ -142,6 +156,8 @@ public class ScimUserTestSupport {
       .addX509Certificate(ScimX509Certificate.builder()
         .display(X509Utils.x509Certs.get(0).display)
         .pemEncodedCertificate(X509Utils.x509Certs.get(0).certificate)
+        .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+        .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
         .primary(true)
         .build())
       .build();
@@ -167,6 +183,8 @@ public class ScimUserTestSupport {
       .addX509Certificate(ScimX509Certificate.builder()
         .display(X509Utils.x509Certs.get(1).display)
         .pemEncodedCertificate(X509Utils.x509Certs.get(1).certificate)
+        .subjectDn(X509Utils.x509Certs.get(1).subjectDn)
+        .issuerDn(X509Utils.x509Certs.get(1).issuerDn)
         .primary(true)
         .build())
       .build();

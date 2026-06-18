@@ -36,8 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +45,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import it.infn.mw.iam.IamLoginService;
@@ -57,11 +55,9 @@ import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class},
-    webEnvironment = WebEnvironment.MOCK)
-public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
 
   private static final String TEST_100_USER = "test_100";
 
@@ -70,7 +66,7 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void samlAccountLinkingWorks() throws Throwable {
+  void samlAccountLinkingWorks() throws Throwable {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
@@ -122,9 +118,8 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
           request().sessionAttribute(ACCOUNT_LINKING_SESSION_SAVED_AUTHENTICATION, nullValue()))
       .andExpect(request().sessionAttribute(ACCOUNT_LINKING_SESSION_KEY, nullValue()));
 
-    IamSamlId samlId  = new IamSamlId(DEFAULT_IDP_ID, EPUID.getAttributeName(),
-        T1_EPUID);
-    
+    IamSamlId samlId = new IamSamlId(DEFAULT_IDP_ID, EPUID.getAttributeName(), T1_EPUID);
+
     IamAccount account = iamAccountRepo.findBySamlId(samlId)
       .orElseThrow(() -> new AssertionError("User not found linked to expected SAML id"));
 
@@ -139,7 +134,7 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void samlAccountLinkingFailsSinceSamlAccountAlreadyLinkedToAnotherUser() throws Throwable {
+  void samlAccountLinkingFailsSinceSamlAccountAlreadyLinkedToAnotherUser() throws Throwable {
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
       .andExpect(status().isFound())
@@ -180,10 +175,9 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
       .getRequest()
       .getSession();
 
-    String expectedErrorMessage = String
-      .format("SAML account '[%s] (%s = %s)' is already linked to another user", DEFAULT_IDP_ID, 
-          EPUID.getAttributeName(),
-          T2_EPUID);
+    String expectedErrorMessage =
+        String.format("SAML account '[%s] (%s = %s)' is already linked to another user",
+            DEFAULT_IDP_ID, EPUID.getAttributeName(), T2_EPUID);
 
     mvc.perform(get("/iam/account-linking/SAML/done").session(session))
       .andExpect(status().isFound())
@@ -195,14 +189,12 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
       .andExpect(request().sessionAttribute(ACCOUNT_LINKING_SESSION_KEY, nullValue()))
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY, equalTo(expectedErrorMessage)));
-
-
   }
 
   @Test
   @WithMockUser(username = "test")
-  public void samlAccountLinkingFailsSinceSamlAccountIsAlreadyBoundToAuthenticatedUser()
-      throws Throwable {
+  void samlAccountLinkingFailsSinceSamlAccountIsAlreadyBoundToAuthenticatedUser()
+    throws Throwable {
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
       .andExpect(status().isFound())
@@ -244,10 +236,9 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
       .getSession();
 
 
-    String expectedErrorMessage = String
-      .format("SAML account '[%s] (%s = %s)' is already linked to user 'test'", DEFAULT_IDP_ID, 
-          EPUID.getAttributeName(),
-          T2_EPUID);
+    String expectedErrorMessage =
+        String.format("SAML account '[%s] (%s = %s)' is already linked to user 'test'",
+            DEFAULT_IDP_ID, EPUID.getAttributeName(), T2_EPUID);
 
     mvc.perform(get("/iam/account-linking/SAML/done").session(session))
       .andExpect(status().isFound())
@@ -264,7 +255,7 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void samlAccountLinkingExternalAuthnErrorRedirectsToDashboard() throws Throwable {
+  void samlAccountLinkingExternalAuthnErrorRedirectsToDashboard() throws Throwable {
     MockHttpSession session = (MockHttpSession) mvc
       .perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
       .andExpect(status().isFound())
@@ -313,7 +304,7 @@ public class SamlAccountLinkingTests extends SamlAuthenticationTestSupport {
 
   @Test
   @WithMockUser(username = TEST_100_USER)
-  public void samlAccountLinkingUnderstandsIdParam() throws Exception {
+  void samlAccountLinkingUnderstandsIdParam() throws Exception {
     mvc
       .perform(
           post("/iam/account-linking/SAML").param("id", "https://test.idp").with(csrf().asHeader()))

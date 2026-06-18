@@ -15,24 +15,26 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,24 +42,28 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.WithAnonymousUser;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-public class MfaVerifyControllerTests extends MultiFactorTestSupport {
-
-  private MockMvc mvc;
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class MfaVerifyControllerTests extends MultiFactorTestSupport {
 
   @Autowired
-  private WebApplicationContext context;
+  private MockMvc mvc;
 
   @MockBean
   private IamAccountRepository accountRepository;
@@ -65,74 +71,96 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
   @MockBean
   private IamTotpMfaRepository totpMfaRepository;
 
-  @Before
-  public void setup() {
-    when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
-    when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
+  Clock clock;
+  IamAccount testAccount;
+  IamAccount mfaAccount;
+  IamTotpMfa totp;
 
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
+  @BeforeEach
+  void setup() {
+
+    clock = Clock.systemUTC();
+
+    testAccount = getTestAccount(clock.instant());
+    mfaAccount = getTotpMfaAccount(clock.instant());
+    totp = getTotpMfaFor(mfaAccount, clock.instant());
+    Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
+
+    Mockito.when(accountRepository.findByUsername(testAccount.getUsername())).thenReturn(Optional.of(testAccount));
+    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
   }
 
   @Test
   @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
-  public void testGetVerifyMfaView() throws Exception {
+  void testGetVerifyMfaView() throws Exception {
+
     mvc.perform(get(MFA_VERIFY_URL))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
-    verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
+    Mockito.verify(totpMfaRepository, times(1)).findByAccount(mfaAccount);
   }
 
   @Test
   @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
-  public void testGetVerifyMfaViewWhenTotpAlreadyPresent() throws Exception {
-    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    mvc.perform(get(MFA_VERIFY_URL))
-      .andExpect(status().isOk())
-      .andExpect(model().attributeExists("isAuthenticatorAppActive"));
+  void testGetVerifyMfaViewThrowsNoSuchAccountError() throws Exception {
 
-    verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
-  }
-
-  @Test
-  @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
-  public void testGetVerifyMfaViewThrowsNoSuchAccountError() throws Exception {
-    when(accountRepository.findByUsername(TOTP_USERNAME))
-      .thenThrow(new NoSuchAccountError(String.format("Account not found for username '%s'", TOTP_USERNAME)));
+    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenThrow(new NoSuchAccountError(
+        String.format("Account not found for username '%s'", mfaAccount.getUsername())));
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isBadRequest());
 
-    verify(totpMfaRepository, times(0)).findByAccount(TOTP_MFA_ACCOUNT);
+    Mockito.verify(totpMfaRepository, times(0)).findByAccount(mfaAccount);
   }
 
   @Test
-  public void testGetMfaVerifyViewNoAuthenticationIsUnauthorized() throws Exception {
+  void testGetMfaVerifyViewNoAuthenticationIsUnauthorized() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser
-  public void testGetMfaVerifyViewWithFullAuthenticationIsForbidden() throws Exception {
+  void testGetMfaVerifyViewWithFullAuthenticationIsForbidden() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isForbidden());
   }
 
   @Test
-  @WithMockUser(username = "test-mfa-user", authorities = { "ROLE_USER" })
-  public void testForPreAuthenticatedAuthenticationTokenAuthenticatedSetToFalse() throws Exception {
-    List<GrantedAuthority> currentAuthorities = Collections
-        .singletonList(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
+  @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_USER"})
+  void testForPreAuthenticatedAuthenticationTokenAuthenticatedSetToFalse() throws Exception {
+    List<GrantedAuthority> currentAuthorities =
+        Collections.singletonList(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
     User testUser = new User("test-mfa-user", "SECRET", currentAuthorities);
 
-    PreAuthenticatedAuthenticationToken token = new PreAuthenticatedAuthenticationToken(testUser,
-        "test-credentials", currentAuthorities);
+    PreAuthenticatedAuthenticationToken token =
+        new PreAuthenticatedAuthenticationToken(testUser, "test-credentials", currentAuthorities);
     SecurityContextHolder.getContext().setAuthentication(token);
 
-    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
     mvc.perform(get(MFA_VERIFY_URL))
-        .andExpect(status().isOk())
-        .andExpect(model().attributeExists("isAuthenticatorAppActive"));
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
-    mvc.perform(get("/dashboard"))
-        .andExpect(status().isForbidden());   
+    mvc.perform(get("/dashboard")).andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = "PRE_AUTHENTICATED")
+  void getActivateMfaViewAuthorizedReturnsView() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isOk())
+        .andExpect(view().name("iam/activateMfa"));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void getActivateMfaViewWrongRoleForbidden() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithAnonymousUser
+  void getActivateMfaViewAnonymousUnauthorized() throws Exception {
+    mvc.perform(get(MFA_ACTIVATE_URL))
+        .andExpect(status().isUnauthorized());
   }
 }

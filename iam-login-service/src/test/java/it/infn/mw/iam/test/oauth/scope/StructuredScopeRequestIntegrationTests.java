@@ -32,32 +32,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@ActiveProfiles({"h2", "wlcg-scopes"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@ActiveProfiles({"h2-test", "wlcg-scopes", "registration"})
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 
@@ -76,7 +74,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     // @formatter:off
     mvc.perform(post("/token")
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
-        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("grant_type", GrantType.CLIENT_CREDENTIALS.getValue())
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("storage.read:/a-path")))
@@ -84,14 +82,13 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     // @formatter:on
   }
 
-
   @Test
   void testIntrospectionResponse() throws Exception {
     // @formatter:off
     String tokenResponse = 
         mvc.perform(post("/token")
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
-        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("grant_type", GrantType.CLIENT_CREDENTIALS.getValue())
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("storage.read:/a-path")))
@@ -106,6 +103,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     String accessToken = tokenResponseObject.getValue();
     mvc
       .perform(post("/introspect")
+        .contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -147,7 +145,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("authorization_pending")))
@@ -204,11 +202,10 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getRequest()
       .getSession();
 
-
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
@@ -235,6 +232,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -244,13 +242,14 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   @Test
   void testRefreshTokenStructuredScopeRequest() throws Exception {
 
-    DefaultOAuth2AccessToken tokenResponse = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
-      .clientId(PASSWORD_CLIENT_ID)
-      .clientSecret(PASSWORD_CLIENT_SECRET)
-      .username(TEST_USERNAME)
-      .password(TEST_PASSWORD)
-      .scope("openid storage.read:/ offline_access")
-      .getTokenResponseObject();
+    DefaultOAuth2AccessToken tokenResponse =
+        new AccessTokenGetter().grantType(GrantType.PASSWORD.getValue())
+          .clientId(PASSWORD_CLIENT_ID)
+          .clientSecret(PASSWORD_CLIENT_SECRET)
+          .username(TEST_USERNAME)
+          .password(TEST_PASSWORD)
+          .scope("openid storage.read:/ offline_access")
+          .getTokenResponseObject();
 
     assertThat(tokenResponse.getScope(), hasItem("storage.read:/"));
 

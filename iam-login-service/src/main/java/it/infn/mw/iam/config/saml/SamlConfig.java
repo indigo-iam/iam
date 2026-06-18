@@ -67,8 +67,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -101,7 +99,6 @@ import org.springframework.security.saml.processor.HTTPSOAP11Binding;
 import org.springframework.security.saml.processor.SAMLBinding;
 import org.springframework.security.saml.processor.SAMLProcessor;
 import org.springframework.security.saml.processor.SAMLProcessorImpl;
-import org.springframework.security.saml.trust.httpclient.TLSProtocolConfigurer;
 import org.springframework.security.saml.trust.httpclient.TLSProtocolSocketFactory;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 import org.springframework.security.saml.util.VelocityFactory;
@@ -133,7 +130,6 @@ import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
-import it.infn.mw.iam.authn.saml.CleanInactiveProvisionedAccounts;
 import it.infn.mw.iam.authn.saml.DefaultMappingPropertiesResolver;
 import it.infn.mw.iam.authn.saml.DefaultSAMLUserDetailsService;
 import it.infn.mw.iam.authn.saml.IamCachingMetadataManager;
@@ -146,7 +142,7 @@ import it.infn.mw.iam.authn.saml.profile.DefaultSSOProfileOptionsResolver;
 import it.infn.mw.iam.authn.saml.profile.IamSSOProfile;
 import it.infn.mw.iam.authn.saml.profile.IamSSOProfileOptions;
 import it.infn.mw.iam.authn.saml.profile.SSOProfileOptionsResolver;
-import it.infn.mw.iam.authn.saml.util.FirstApplicableChainedSamlIdResolver;
+import it.infn.mw.iam.authn.saml.util.ChainedCollectingSamlIdResolver;
 import it.infn.mw.iam.authn.saml.util.IamSamlBootstrap;
 import it.infn.mw.iam.authn.saml.util.IamSamlEntryPoint;
 import it.infn.mw.iam.authn.saml.util.SamlIdResolvers;
@@ -156,8 +152,8 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
-import it.infn.mw.iam.core.time.SystemTimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -168,7 +164,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 @EnableConfigurationProperties({IamSamlProperties.class,
     IamSamlJITAccountProvisioningProperties.class, ServerProperties.class})
 public class SamlConfig extends WebSecurityConfigurerAdapter
-    implements SchedulingConfigurer, InitializingBean, DisposableBean {
+    implements InitializingBean, DisposableBean {
 
   public static final Logger LOG = LoggerFactory.getLogger(SamlConfig.class);
 
@@ -222,6 +218,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private HttpFirewall firewall;
+
+  @Autowired
+  private IamTotpMfaProperties iamTotpMfaProperties;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -296,13 +295,13 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
         throw new IllegalStateException("Could not configure SAML id resolvers");
       }
 
-      return new FirstApplicableChainedSamlIdResolver(resolvers);
+      return new ChainedCollectingSamlIdResolver(resolvers);
     }
 
     @Bean
     @Profile("saml")
     WebSSOProfile webSSOprofile() {
-      return new IamSSOProfile();
+      return new IamSSOProfile(samlProperties.getAuthnContext());
     }
 
 
@@ -350,8 +349,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Bean
   SAMLUserDetailsService samlUserDetailsService(SamlUserIdentifierResolver resolver,
-      IamAccountRepository accountRepo, InactiveAccountAuthenticationHander handler,
-      MappingPropertiesResolver mpResolver) {
+      IamAccountRepository accountRepo, IamAccountService accountService,
+      InactiveAccountAuthenticationHander handler, MappingPropertiesResolver mpResolver,
+      IamSamlJITAccountProvisioningProperties jitProperties) {
 
     if (jitProperties.getEnabled()) {
 
@@ -406,16 +406,17 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Bean
   SAMLAuthenticationProvider samlAuthenticationProvider(SamlUserIdentifierResolver resolver,
-      IamAccountRepository accountRepo, InactiveAccountAuthenticationHander handler,
-      MappingPropertiesResolver mpResolver,
+      IamAccountRepository accountRepo, IamAccountService accountService,
+      InactiveAccountAuthenticationHander handler, MappingPropertiesResolver mpResolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
-      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository) {
+      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository,
+      IamSamlJITAccountProvisioningProperties jitProperties) {
 
     IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
-        resolver, validator, helper, accountRepo, totpMfaRepository);
+        resolver, validator, helper, accountRepo, totpMfaRepository, iamTotpMfaProperties);
 
-    samlAuthenticationProvider
-      .setUserDetails(samlUserDetailsService(resolver, accountRepo, handler, mpResolver));
+    samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo,
+        accountService, handler, mpResolver, jitProperties));
     samlAuthenticationProvider.setForcePrincipalAsString(false);
     return samlAuthenticationProvider;
   }
@@ -488,14 +489,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     return new JKSKeyManager(storeFile, samlProperties.getKeystorePassword(), passwords,
         samlProperties.getKeyId());
-  }
-
-  //
-  // Setup TLS Socket Factory
-  @Bean
-  TLSProtocolConfigurer tlsProtocolConfigurer() {
-
-    return new TLSProtocolConfigurer();
   }
 
   @Bean
@@ -881,9 +874,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     http.antMatcher(pattern);
 
-    http.csrf().ignoringAntMatchers(pattern);
+    http.csrf(csrf -> csrf.ignoringAntMatchers(pattern));
 
-    http.authorizeRequests().antMatchers(pattern).permitAll();
+    http.authorizeHttpRequests().antMatchers(pattern).permitAll();
 
     http.addFilterBefore(metadataGeneratorFilter(), ChannelProcessingFilter.class)
       .addFilterAfter(samlFilter(), BasicAuthenticationFilter.class);
@@ -892,37 +885,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
     auth.authenticationProvider(
-        samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler, mappingResolver,
-            validator, sessionTimeoutHelper, totpMfaRepository));
-  }
-
-  private void scheduleProvisionedAccountsCleanup(final ScheduledTaskRegistrar taskRegistrar) {
-
-    if (!jitProperties.getEnabled()) {
-      LOG.info("Just-in-time account provisioning for SAML is DISABLED.");
-      return;
-    }
-
-    if (!jitProperties.getCleanupTaskEnabled()) {
-      LOG.info("Cleanup for SAML JIT account provisioning is DISABLED.");
-      return;
-    }
-
-    LOG.info(
-        "Scheduling Just-in-time provisioned account cleanup task to run every {} seconds. Accounts inactive for {} "
-            + "days will be deleted",
-        jitProperties.getCleanupTaskPeriodSec(), jitProperties.getInactiveAccountLifetimeDays());
-
-    taskRegistrar.addFixedRateTask(
-        new CleanInactiveProvisionedAccounts(new SystemTimeProvider(), accountService,
-            jitProperties.getInactiveAccountLifetimeDays()),
-        TimeUnit.SECONDS.toMillis(jitProperties.getCleanupTaskPeriodSec()));
-
-  }
-
-  @Override
-  public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-    scheduleProvisionedAccountsCleanup(taskRegistrar);
+        samlAuthenticationProvider(resolver, accountRepo, accountService, inactiveAccountHandler,
+            mappingResolver, validator, sessionTimeoutHelper, totpMfaRepository, jitProperties));
   }
 
   @Override
@@ -936,5 +900,4 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   public void afterPropertiesSet() throws Exception {
     connectionManager = multiThreadedHttpConnectionManager();
   }
-
 }

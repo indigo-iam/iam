@@ -16,7 +16,7 @@
 
 -->
 <div class="box box-solid no-padding no-shadow no-border" ngcloak>
-    <div class="box-header with-border" ng-show="$ctrl.requests.length > 0">
+    <div class="box-header with-border" ng-show="$ctrl.requests.length > 0 || $ctrl.filter">
         <div class="input-group">
             <input placeholder="Filter group requests..." ng-model="$ctrl.filter" class="form-control" />
             <div class="input-group-btn">
@@ -70,7 +70,7 @@
                                 {{r.notes}}
                             </blockquote>
                         </p>
-                        <div class="btn-group">
+                        <div class="btn-group" ng-show="$ctrl.groupManagerForGroup(r) || $ctrl.voAdmin">
                             <button class="btn btn-success btn-sm" ng-click="$ctrl.approve(r)" ng-disabled="$ctrl.busy">
                                 <i class="fa fa-check"></i> Approve
                             </button>

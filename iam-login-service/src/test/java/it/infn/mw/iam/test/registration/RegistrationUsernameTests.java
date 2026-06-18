@@ -16,53 +16,52 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-public class RegistrationUsernameTests extends TestSupport {
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  private MockOAuth2Filter oauth2Filter;
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class RegistrationUsernameTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
-  private MockMvc mvc;
+  ObjectMapper objectMapper;
 
   @Autowired
-  private IamAccountRepository iamAccountRepo;
+  MockMvc mvc;
 
-  @Before
-  public void setup() {
-    oauth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  IamAccountRepository iamAccountRepo;
 
-  @After
-  public void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+  @Autowired
+  SecurityContextUtils context;
+
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   private RegistrationRequestDto createRegistrationRequest(String username) {
@@ -74,14 +73,13 @@ public class RegistrationUsernameTests extends TestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
 
     return request;
   }
 
   @Test
-  public void validUsernames() throws Exception {
-    final String[] validUsernames = {"bob","test$", "root", "test1234", "test_", "_test",
+  void validUsernames() throws Exception {
+    final String[] validUsernames = {"bob", "test$", "root", "test1234", "test_", "_test",
         "username1@example.com", "username2@domain"};
 
     for (String u : validUsernames) {
@@ -101,8 +99,8 @@ public class RegistrationUsernameTests extends TestSupport {
   }
 
   @Test
-  public void invalidUsernames() throws Exception {
-    final String[] invalidUsernames = {"a","£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
+  void invalidUsernames() throws Exception {
+    final String[] invalidUsernames = {"a", "£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
 
     for (String u : invalidUsernames) {

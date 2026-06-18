@@ -19,7 +19,9 @@ import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.Clock;
 import java.util.Date;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -72,10 +74,15 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   public static final Logger LOG = LoggerFactory.getLogger(OidcClientFilter.class);
 
-  OidcTokenRequestor tokenRequestor;
+  private Clock clock;
+  private OidcTokenRequestor tokenRequestor;
+  private int timeSkewAllowance;
 
-  // Allow for time sync issues by having a window of X seconds.
-  private int timeSkewAllowance = 300;
+  public OidcClientFilter(Clock clock, OidcTokenRequestor tokenRequestor, int timeSkewAllowance) {
+    this.clock = clock;
+    this.tokenRequestor = tokenRequestor;
+    this.timeSkewAllowance = timeSkewAllowance;
+  }
 
   private void validateState(HttpServletRequest request, HttpServletResponse response) {
 
@@ -292,65 +299,63 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
   protected void validateClaims(HttpSession session, JWT idToken, JWTClaimsSet idClaims,
       OidcProviderConfiguration config) {
 
-    // check the issuer
-    if (idClaims.getIssuer() == null) {
-
+    // check issuer
+    String tokenIssuer = idClaims.getIssuer();
+    if (tokenIssuer == null) {
       throw new AuthenticationServiceException("Id Token Issuer is null");
-
-    } else if (!idClaims.getIssuer().equals(config.serverConfig.getIssuer())) {
-      throw new AuthenticationServiceException("Issuers do not match, expected "
-          + config.serverConfig.getIssuer() + " got " + idClaims.getIssuer());
+    }
+    String expectedIssuer = config.serverConfig.getIssuer();
+    if (!tokenIssuer.equals(expectedIssuer)) {
+      throw new AuthenticationServiceException(
+          String.format("Issuers do not match, expected %s got %s", expectedIssuer, tokenIssuer));
     }
 
     // check expiration
-    if (idClaims.getExpirationTime() == null) {
-
+    Date expiration = idClaims.getExpirationTime();
+    if (expiration == null) {
       throw new AuthenticationServiceException("Id Token does not have required expiration claim");
+    }
 
-    } else {
+    Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
+    Date skewedMax = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
 
-      Date now = new Date(System.currentTimeMillis() - (timeSkewAllowance * 1000));
-
-      if (now.after(idClaims.getExpirationTime())) {
-        throw new AuthenticationServiceException(
-            "Id Token is expired: " + idClaims.getExpirationTime());
-      }
+    if (skewedMin.after(expiration)) {
+      throw new AuthenticationServiceException(
+          String.format("Id Token is expired: %s", expiration));
     }
 
     // check not before
-    if (idClaims.getNotBeforeTime() != null) {
+    Date notBefore = idClaims.getNotBeforeTime();
+    if (notBefore != null) {
 
-      Date now = new Date(System.currentTimeMillis() + (timeSkewAllowance * 1000));
+      Date skewedNbf = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
 
-      if (now.before(idClaims.getNotBeforeTime())) {
+      if (skewedNbf.before(notBefore)) {
         throw new AuthenticationServiceException(
-            "Id Token not valid until: " + idClaims.getNotBeforeTime());
+            String.format("Id Token not valid until: %s", notBefore));
       }
     }
 
     // check issued at
-    if (idClaims.getIssueTime() == null) {
+    Date issuedAt = idClaims.getIssueTime();
+    if (issuedAt == null) {
       throw new AuthenticationServiceException("Id Token does not have required issued-at claim");
-    } else {
-      // since it's not null, see if it was issued in the future
-      Date now = new Date(System.currentTimeMillis() + (timeSkewAllowance * 1000));
-
-      if (now.before(idClaims.getIssueTime())) {
-        throw new AuthenticationServiceException(
-            "Id Token was issued in the future: " + idClaims.getIssueTime());
-      }
-
+    }
+    // since it's not null, see if it was issued in the future
+    if (skewedMax.before(issuedAt)) {
+      throw new AuthenticationServiceException(
+          String.format("Id Token was issued in the future: %s", issuedAt));
     }
 
     // check audience
-    if (idClaims.getAudience() == null) {
-
+    List<String> aud = idClaims.getAudience();
+    if (aud == null) {
       throw new AuthenticationServiceException("Id token audience is null");
-
-    } else if (!idClaims.getAudience().contains(config.clientConfig.getClientId())) {
-
+    }
+    String oidcClientId = config.clientConfig.getClientId();
+    if (!aud.contains(oidcClientId)) {
       throw new AuthenticationServiceException("Audience does not match, expected "
-          + config.clientConfig.getClientId() + " got " + idClaims.getAudience());
+          + oidcClientId + " got " + aud);
     }
 
     // compare the nonce to our stored claim
@@ -363,9 +368,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
 
     if (Strings.isNullOrEmpty(nonce)) {
-
       logger.error("ID token did not contain a nonce claim.");
-
       throw new AuthenticationServiceException("ID token did not contain a nonce claim.");
     }
 

@@ -20,14 +20,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
@@ -39,12 +39,11 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(
-    properties = {"scim.include_labels[0].name=test", "scim.include_labels[0].prefix=iam"})
-public class ScimAccountLabelConverterTests {
+  properties = {"scim.include_labels[0].name=test", "scim.include_labels[0].prefix=iam"})
+class ScimAccountLabelConverterTests {
 
   private static final String IAM = "iam";
   private static final String TEST = "test";
@@ -69,24 +68,23 @@ public class ScimAccountLabelConverterTests {
   @Autowired
   private MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testLabelsReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
-    
+  void testLabelsReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
+
     IamAccount testAccount = accountRepo.findByUsername(TEST)
-        .orElseThrow(() -> new AssertionError("Expected test account not found"));
-  
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
     mvc.perform(get(ScimUtils.getUserLocation(testAccount.getUuid())))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS).doesNotExist());
@@ -98,8 +96,9 @@ public class ScimAccountLabelConverterTests {
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS).exists())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS).isArray())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS, hasSize(1)))
-      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS+"[0].name").value(TEST))
-      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS+"[0].prefix").value(IAM))
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS + "[0].name").value(TEST))
+      .andExpect(
+          jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS + "[0].prefix").value(IAM))
       .andExpect(
           jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS + "[0].prefix").value(IAM));
 

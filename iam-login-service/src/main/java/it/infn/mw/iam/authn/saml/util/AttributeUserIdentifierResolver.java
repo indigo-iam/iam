@@ -17,6 +17,9 @@ package it.infn.mw.iam.authn.saml.util;
 
 import static java.lang.String.format;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -34,20 +37,19 @@ public class AttributeUserIdentifierResolver extends AbstractSamlUserIdentifierR
   public SamlUserIdentifierResolutionResult resolveSamlUserIdentifier(
       SAMLCredential samlCredential) {
 
-    String attributeValue = samlCredential.getAttributeAsString(attribute.getAttributeName());
+    Map<Saml2Attribute, String> samlAttributes = Saml2Attribute.resolveValues(samlCredential);
 
-    if (attributeValue == null) {
+    if (!samlAttributes.containsKey(attribute)) {
       return SamlUserIdentifierResolutionResult
-        .resolutionFailure(format("Attribute '%s:%s' not found in assertion", attribute.getAlias(),
-            attribute.getAttributeName()));
+        .failure(List.of(format("Attribute '%s:%s' not found in assertion", attribute.getAlias(),
+            attribute.getAttributeName())));
     }
 
     IamSamlId samlId = new IamSamlId();
     samlId.setIdpId(samlCredential.getRemoteEntityID());
     samlId.setAttributeId(attribute.getAttributeName());
-    samlId.setUserId(attributeValue);
+    samlId.setUserId(samlAttributes.get(attribute));
 
-    return SamlUserIdentifierResolutionResult.resolutionSuccess(samlId);
-
+    return SamlUserIdentifierResolutionResult.success(List.of(samlId));
   }
 }

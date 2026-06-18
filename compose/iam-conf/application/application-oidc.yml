@@ -1,0 +1,23 @@
+oidc:
+  providers:
+    - name: google
+      issuer: https://accounts.google.com
+      client:
+        clientId: ${IAM_GOOGLE_CLIENT_ID:define_me_please}
+        clientSecret: ${IAM_GOOGLE_CLIENT_SECRET:define_me_please}
+        redirectUris: ${IAM_GOOGLE_CLIENT_REDIRECT_URIS:${iam.baseUrl}/openid_connect_login}
+        scope: openid,profile,email,address,phone
+      loginButton:
+        order: 0
+        text: Sign in with Google
+        style: google
+    - name: iam-test
+      issuer: https://iam-dev.cloud.cnaf.infn.it/
+      client:
+        clientId: ${IAM_IAM_TEST_CLIENT_ID:define_me_please}
+        clientSecret: ${IAM_IAM_TEST_CLIENT_SECRET:define_me_please}
+        redirectUris: ${iam.baseUrl}/openid_connect_login
+        scope: openid,profile,email
+      loginButton:
+        order: 1
+        text: Sign in with IAM Test

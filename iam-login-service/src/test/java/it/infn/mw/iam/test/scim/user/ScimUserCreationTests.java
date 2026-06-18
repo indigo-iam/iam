@@ -28,30 +28,28 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Calendar;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.hamcrest.collection.IsIterableContainingInAnyOrder;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,49 +70,50 @@ import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"scim.include_authorities=true"})
-public class ScimUserCreationTests extends ScimUserTestSupport {
+class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private PasswordEncoder encoder;
+  PasswordEncoder encoder;
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
-  private AupService aupService;
+  AupService aupService;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  SecurityContextUtils context;
 
-  @After
-  public void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @Autowired
+  Clock clock;
+
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationAccessDeletion() throws Exception {
+  void testUserCreationAccessDeletion() throws Exception {
 
     ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
     ScimUser createdUser = scimUtils.postUser(user);
@@ -127,7 +126,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithPassword() throws Exception {
+  void testUserCreationWithPassword() throws Exception {
 
     ScimUser user =
         buildUserWithPassword("john_lennon", "password", "lennon@email.test", "John", "Lennon")
@@ -139,7 +138,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
     Optional<IamAccount> createdAccount = accountRepo.findByUuid(createdUser.getId());
     if (!createdAccount.isPresent()) {
-      Assert.fail("Account not created");
+      fail("Account not created");
     }
 
     assertThat(createdAccount.get().getPassword(), notNullValue());
@@ -148,7 +147,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithOidcAccount() throws Exception {
+  void testUserCreationWithOidcAccount() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_oidc")
       .buildEmail("test_user@test.org")
@@ -174,7 +173,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithStolenOidcAccountFailure() throws Exception {
+  void testUserCreationWithStolenOidcAccountFailure() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_oidc")
       .buildEmail("test_user@test.org")
@@ -208,7 +207,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithSshKey() throws Exception {
+  void testUserCreationWithSshKey() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
       .buildEmail("test_user@test.org")
@@ -238,7 +237,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithSshKeyValueOnly() throws Exception {
+  void testUserCreationWithSshKeyValueOnly() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
       .buildEmail("test_user@test.org")
@@ -270,7 +269,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithStolenSshKeyFailure() throws Exception {
+  void testUserCreationWithStolenSshKeyFailure() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
       .buildEmail("test_user@test.org")
@@ -305,7 +304,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithSamlId() throws Exception {
+  void testUserCreationWithSamlId() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_samlId")
       .buildEmail("test_user@test.org")
@@ -333,7 +332,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithX509Certificate() throws Exception {
+  void testUserCreationWithX509Certificate() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display("Personal1")
@@ -369,7 +368,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithMultipleX509Certificate() throws Exception {
+  void testUserCreationWithMultipleX509Certificate() throws Exception {
 
     ScimX509Certificate cert1 = ScimX509Certificate.builder()
       .display("Personal1")
@@ -417,7 +416,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithMultipleX509CertificateAndNoPrimary() throws Exception {
+  void testUserCreationWithMultipleX509CertificateAndNoPrimary() throws Exception {
 
     ScimX509Certificate cert1 = ScimX509Certificate.builder()
       .display("Personal1")
@@ -465,12 +464,9 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithEndTimeAndBasicAuthorities() throws Exception {
+  void testUserCreationWithEndTimeAndBasicAuthorities() throws Exception {
 
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(new Date());
-    cal.add(Calendar.HOUR_OF_DAY, 1);
-    Date expTime = cal.getTime();
+    Date expTime = Date.from(clock.instant().plus(Duration.ofHours(1)));
 
     ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
       .endTime(expTime)
@@ -488,7 +484,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithAupSignatureIsIgnored() throws Exception {
+  void testUserCreationWithAupSignatureIsIgnored() throws Exception {
 
     final String AUP_URL = "https://valid.test.url.com/";
     final String AUP_DESCRIPTION = "Test AUP";
@@ -497,10 +493,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate, "30,15,1");
     aupService.saveAup(aup);
 
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(currentDate);
-    cal.add(Calendar.HOUR_OF_DAY, 1);
-    Date signatureTime = cal.getTime();
+    Date signatureTime = Date.from(clock.instant().plus(Duration.ofHours(2)));
 
     ScimUser user =
         buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")

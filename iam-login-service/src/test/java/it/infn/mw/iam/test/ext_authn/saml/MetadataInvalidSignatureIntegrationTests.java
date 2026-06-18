@@ -19,26 +19,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.idp-metadata[0].require-valid-signature=true",
-    "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.xml"})
-public class MetadataInvalidSignatureIntegrationTests {
+  "saml.idp-metadata[0].metadata-url=classpath:/saml/idp-metadata.xml"})
+class MetadataInvalidSignatureIntegrationTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void idpEndpointReturnsEmptyListAsSignatureValidationFailed() throws Exception {
+  void idpEndpointReturnsEmptyListAsSignatureValidationFailed() throws Exception {
 
     mvc.perform(get("/saml/idps"))
       .andExpect(status().isOk())

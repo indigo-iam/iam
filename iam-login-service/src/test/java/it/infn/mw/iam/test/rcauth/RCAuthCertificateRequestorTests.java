@@ -17,17 +17,18 @@ package it.infn.mw.iam.test.rcauth;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -37,7 +38,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 
 import it.infn.mw.iam.IamLoginService;
@@ -49,46 +49,44 @@ import it.infn.mw.iam.rcauth.x509.CertificateRequestUtil;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, RCAuthTestConfig.class,
-        RCAuthCertificateRequestorTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, RCAuthTestConfig.class,
+    RCAuthCertificateRequestorTests.TestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
     properties = {"rcauth.enabled=true", "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
-public class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
+class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
 
+  public RCAuthCertificateRequestorTests() throws IOException, ParseException {
+    super();
+  }
 
   @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary
-    public RestTemplateFactory mockRestTemplateFactory() {
+    RestTemplateFactory mockRestTemplateFactory() {
       return new MockRestTemplateFactory();
     }
   }
 
   @Autowired
-  private RCAuthCertificateRequestor requestor;
+  RCAuthCertificateRequestor requestor;
 
   @Autowired
-  private RestTemplateFactory rtf;
+  RestTemplateFactory rtf;
 
-  private MockRestTemplateFactory mockRtf;
+  MockRestTemplateFactory mockRtf;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
 
   @Test
-  public void testGetCertificateSuccess() throws OperatorCreationException, IOException {
-
+  void testGetCertificateSuccess() throws OperatorCreationException, IOException {
 
     prepareCertificateResponse();
     CertificateRequestHolder rh = CertificateRequestUtil.buildCertificateRequest(DN, 512);
@@ -99,28 +97,24 @@ public class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
     }
   }
 
-  @Test(expected=RCAuthError.class)
-  public void testGetCertificateError() throws OperatorCreationException, IOException {
-    
+  @Test
+  void testGetCertificateError() throws OperatorCreationException, IOException {
+
     prepareErrorResponse();
     CertificateRequestHolder rh = CertificateRequestUtil.buildCertificateRequest(DN, 512);
-    
-    try {
-      requestor.getCertificate(RANDOM_ACCESS_TOKEN, rh);
-    } catch (RCAuthError e) {
-      assertThat(e.getMessage(), containsString("500"));
-      throw e;
-    } finally {
-      verifyMockServerCalls();
-    }
+
+    RCAuthError e =
+        assertThrows(RCAuthError.class, () -> requestor.getCertificate(RANDOM_ACCESS_TOKEN, rh));
+    assertThat(e.getMessage(), containsString("500"));
+    verifyMockServerCalls();
   }
 
-  public void prepareCertificateResponse() {
+  public void prepareCertificateResponse() throws IOException {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
-      .andRespond(MockRestResponseCreators.withSuccess(TEST_0_CERT_STRING, MediaType.TEXT_PLAIN));
+      .andRespond(MockRestResponseCreators.withSuccess(getTest0CertString(), MediaType.TEXT_PLAIN));
   }
 
   public void prepareErrorResponse() {
@@ -130,7 +124,6 @@ public class RCAuthCertificateRequestorTests extends RCAuthTestSupport {
       .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
       .andRespond(withServerError());
   }
-
 
   void verifyMockServerCalls() {
     mockRtf.getMockServer().verify();

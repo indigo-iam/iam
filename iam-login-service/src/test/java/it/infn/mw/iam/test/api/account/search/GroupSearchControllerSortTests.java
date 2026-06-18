@@ -26,13 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class GroupSearchControllerSortTests {
 
@@ -64,27 +64,27 @@ public class GroupSearchControllerSortTests {
   @Autowired
   private IamGroupRepository groupRepository;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void testSearchGroupsWithInvalidSortDirectionWithToken() throws Exception {
+  void testSearchGroupsWithInvalidSortDirectionWithToken() throws Exception {
 
     testSearchGroupsWithInvalidSortDirection();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testSearchGroupsWithInvalidSortDirectionWithUser() throws Exception {
+  void testSearchGroupsWithInvalidSortDirectionWithUser() throws Exception {
 
     testSearchGroupsWithInvalidSortDirection();
   }
@@ -108,14 +108,14 @@ public class GroupSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void testSearchGroupsSortByNameAscWithToken() throws Exception {
+  void testSearchGroupsSortByNameAscWithToken() throws Exception {
 
     testSearchGroupsSortByNameAsc();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testSearchGroupsSortByNameAscWithUser() throws Exception {
+  void testSearchGroupsSortByNameAscWithUser() throws Exception {
 
     testSearchGroupsSortByNameAsc();
   }
@@ -140,14 +140,14 @@ public class GroupSearchControllerSortTests {
 
   @Test
   @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void testSearchGroupsSortByNameDescWithToken() throws Exception {
+  void testSearchGroupsSortByNameDescWithToken() throws Exception {
 
     testSearchGroupsSortByNameDesc();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testSearchGroupsSortByNameDescWithUser() throws Exception {
+  void testSearchGroupsSortByNameDescWithUser() throws Exception {
 
     testSearchGroupsSortByNameDesc();
   }

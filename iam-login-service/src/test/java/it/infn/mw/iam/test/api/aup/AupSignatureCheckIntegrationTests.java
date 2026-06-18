@@ -15,29 +15,35 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -46,55 +52,58 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
-import it.infn.mw.iam.test.util.MockTimeProvider;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.ClockedHttpSession;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithAnonymousUser
-public class AupSignatureCheckIntegrationTests extends AupTestSupport {
+@TestPropertySource(properties = {"logging.level.root=DEBUG",
+        "logging.level.it.infn.mw.iam.core.web.aup.EnforceAupFilter=DEBUG"
+})
+class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamAupSignatureRepository signatureRepo;
+  IamAupSignatureRepository signatureRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private AupConverter converter;
+  AupConverter converter;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  DefaultAupSignatureCheckService service;
 
   @Autowired
-  private MockTimeProvider mockTimeProvider;
+  SecurityContextUtils context;
 
   @Autowired
-  private DefaultAupSignatureCheckService service;
+  MockMvc mvc;
 
   @Autowired
-  private MockMvc mvc;
+  MutableClock clock;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @After
-  public void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   @Test
-  public void noAupDefinedMeansSignatureNotRequired() {
+  void noAupDefinedMeansSignatureNotRequired() {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
@@ -103,28 +112,24 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
-    IamAup defaultAup = buildDefaultAup();
+  void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
+
+    IamAup defaultAup = buildDefaultAup(clock.now());
     aupRepo.save(defaultAup);
     AupDTO aup = converter.dtoFromEntity(defaultAup);
 
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
-
-    IamAccount testAccount = accountRepo.findByUsername("test")
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
+    clock.advance(Duration.ofMillis(5L));
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
-    signatureRepo.createSignatureForAccount(defaultAup, testAccount,
-        new Date(mockTimeProvider.currentTimeMillis()));
+    signatureRepo.createSignatureForAccount(defaultAup, testAccount, clock.now());
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
+    clock.advance(Duration.ofMillis(10L));
 
     aup.setUrl("http://updated-aup-text.org/");
     aup.setDescription("Updated AUP desc");
@@ -140,14 +145,13 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(20));
+    clock.advance(Duration.ofMillis(20L));
 
-    signatureRepo.createSignatureForAccount(defaultAup, testAccount,
-        new Date(mockTimeProvider.currentTimeMillis()));
+    signatureRepo.createSignatureForAccount(defaultAup, testAccount, clock.now());
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.DAYS.toMillis(366));
+    clock.advance(Duration.ofDays(366L));
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
@@ -155,14 +159,11 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCanAlwaysBeFetchedTest() throws JsonProcessingException, Exception {
+  void aupCanAlwaysBeFetchedTest() throws JsonProcessingException, Exception {
 
     mvc.perform(get("/iam/aup")).andExpect(status().isNotFound());
 
-    AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
-
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
+    AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     mvc
       .perform(
@@ -170,5 +171,47 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
       .andExpect(status().isCreated());
 
     mvc.perform(get("/iam/aup")).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testWhenNoDefaultAupNoRedirection() throws Exception {
+
+    mvc.perform(get("/dashboard"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testWhenSessionNeedsAupThenRedirection() throws Exception {
+
+    IamAup defaultAup = buildDefaultAup(clock.now());
+    aupRepo.save(defaultAup);
+
+    MockHttpSession session = new MockHttpSession();
+    session.setAttribute(REQUESTING_SIGNATURE, Boolean.TRUE);
+
+    mvc.perform(get("/dashboard")
+        .session(session))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/iam/aup/sign"))
+        .andExpect(header().doesNotExist("Set-Cookie"));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void testNeedsSignatureAndSessionOlderThanAupCreationThenRedirection() throws Exception {
+
+    IamAup defaultAup = buildDefaultAup(clock.now());
+    aupRepo.save(defaultAup);
+
+    ClockedHttpSession session =
+        new ClockedHttpSession(clock.instant().plusMillis(100).toEpochMilli());
+
+    mvc.perform(get("/dashboard")
+        .session(session))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/iam/aup/sign"))
+        .andExpect(header().doesNotExist("Set-Cookie"));
   }
 }

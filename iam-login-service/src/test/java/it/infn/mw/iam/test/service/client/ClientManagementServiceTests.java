@@ -15,28 +15,24 @@
  */
 package it.infn.mw.iam.test.service.client;
 
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CLIENT_CREDENTIALS;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CODE;
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.DEVICE_CODE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.IMPLICIT;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REDELEGATE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REFRESH_TOKEN;
 import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_basic;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
-import java.time.Clock;
-import java.util.Date;
+import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
@@ -52,7 +48,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -62,33 +58,39 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamNoMvcTest
-@SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.NONE)
+@Transactional
 class ClientManagementServiceTests {
 
   @Autowired
-  private ClientManagementService managementService;
+  ClientManagementService managementService;
 
   @Autowired
-  private ClientService clientService;
+  ClientService clientService;
 
   @Autowired
-  private ClientRegistrationService registrationService;
+  ClientRegistrationService registrationService;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private Clock clock;
+  IamClientRepository clientRepo;
 
-  private Authentication userAuth;
+  @Autowired
+  MutableClock clock;
+
+  Authentication userAuth;
 
   @Test
   void testPagedClientLookup() {
@@ -98,10 +100,10 @@ class ClientManagementServiceTests {
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(20L));
-    assertThat(clients.getItemsPerPage(), is(10));
-    assertThat(clients.getStartIndex(), is(1));
-    assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));
+    assertEquals(clientRepo.count(), clients.getTotalResults());
+    assertEquals(10, clients.getItemsPerPage());
+    assertEquals(1, clients.getStartIndex());
+    assertEquals("admin-client-ro", clients.getResources().get(0).getClientId());
 
   }
 
@@ -113,9 +115,9 @@ class ClientManagementServiceTests {
     ListResponseDTO<RegisteredClientDTO> clients =
         managementService.retrieveAllDynamicallyRegisteredClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(0L));
-    assertThat(clients.getItemsPerPage(), is(0));
-    assertThat(clients.getStartIndex(), is(1));
+    assertEquals(0L, clients.getTotalResults());
+    assertEquals(0, clients.getItemsPerPage());
+    assertEquals(1, clients.getStartIndex());
 
   }
 
@@ -130,12 +132,14 @@ class ClientManagementServiceTests {
   void testClientRetrieve() {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
-    assertThat(client.getClientId(), is("client"));
-    assertThat(client.getClientSecret(), is("secret"));
-    assertThat(client.getGrantTypes(), hasItems(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN));
-    assertThat(client.getScope(), hasItems("openid", "offline_access", "profile", "email",
-        "address", "phone", "read-tasks", "write-tasks", "read:/", "write:/"));
-    assertThat(client.getTokenEndpointAuthMethod(), is(client_secret_basic));
+    assertEquals("client", client.getClientId());
+    assertEquals("secret", client.getClientSecret());
+    assertTrue(
+        client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN)));
+    assertTrue(client.getScope()
+      .containsAll(Set.of("openid", "offline_access", "profile", "email", "address", "phone",
+          "read-tasks", "write-tasks", "read:/", "write:/")));
+    assertEquals(client_secret_basic, client.getTokenEndpointAuthMethod());
   }
 
   @Test
@@ -143,12 +147,12 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-    assertThat(savedClient.getClientId(), is(client.getClientId()));
-    assertThat(savedClient.getClientSecret(), notNullValue());
+    assertEquals(client.getClientId(), savedClient.getClientId());
+    assertNotNull(savedClient.getClientSecret());
   }
 
   @Test
@@ -160,21 +164,21 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwk(NOT_A_JSON_STRING);
 
     ParseException e = assertThrows(ParseException.class, () -> {
       managementService.saveNewClient(client);
     });
 
-    assertTrue(e.getMessage().contains("Invalid JSON:"));
+    assertTrue(e.getMessage().contains("Invalid JSON object"));
 
     client.setJwk(VALID_JSON_VALUE);
     try {
       RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-      assertThat(savedClient.getClientId(), is(client.getClientId()));
-      assertThat(savedClient.getJwk(), is(VALID_JSON_VALUE));
+      assertEquals(client.getClientId(), savedClient.getClientId());
+      assertEquals(VALID_JSON_VALUE, savedClient.getJwk());
     } finally {
       managementService.deleteClientByClientId(client.getClientId());
     }
@@ -189,8 +193,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
     client.setJwksUri(NOT_A_VALID_URI);
 
     ConstraintViolationException e = assertThrows(ConstraintViolationException.class, () -> {
@@ -205,8 +209,8 @@ class ClientManagementServiceTests {
     client.setJwksUri(VALID_URI);
     try {
       RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-      assertThat(savedClient.getClientId(), is(client.getClientId()));
-      assertThat(savedClient.getJwksUri(), is(VALID_URI));
+      assertEquals(client.getClientId(), savedClient.getClientId());
+      assertEquals(VALID_URI, savedClient.getJwksUri());
     } finally {
       managementService.deleteClientByClientId(client.getClientId());
     }
@@ -221,17 +225,17 @@ class ClientManagementServiceTests {
           managementService.saveNewClient(client);
         });
 
-    assertThat(exception.getMessage(), containsString("should not be blank"));
+    assertTrue(exception.getMessage().contains("should not be blank"));
 
     client.setClientName("client");
     client.setClientId("client");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
 
     exception = assertThrows(ConstraintViolationException.class, () -> {
       managementService.saveNewClient(client);
     });
 
-    assertThat(exception.getMessage(), containsString("Client id not available"));
+    assertTrue(exception.getMessage().contains("Client id not available"));
   }
 
   @Test
@@ -239,28 +243,74 @@ class ClientManagementServiceTests {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
-    when(userAuth.getAuthorities()).thenAnswer(x -> Sets.newHashSet(Authorities.ROLE_USER));
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
     RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
 
 
     String clientId = response.getClientId();
     ClientDetailsEntity entity = clientService.findClientByClientId(clientId).orElseThrow();
-    assertThat(entity.isDynamicallyRegistered(), is(true));
+    assertTrue(entity.isDynamicallyRegistered());
 
     RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
 
-    client.getGrantTypes().add(AuthorizationGrantType.DEVICE_CODE);
+    client.getGrantTypes().add(DEVICE_CODE);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertThat(updatedClient.isDynamicallyRegistered(), is(true));
-    assertThat(updatedClient.getRegistrationClientUri(), notNullValue());
-    assertThat(updatedClient.getGrantTypes(),
-        hasItems(AuthorizationGrantType.CLIENT_CREDENTIALS, AuthorizationGrantType.DEVICE_CODE));
+    assertTrue(updatedClient.isDynamicallyRegistered());
+    assertNotNull(updatedClient.getRegistrationClientUri());
+    assertTrue(updatedClient.getGrantTypes().containsAll(Set.of(CLIENT_CREDENTIALS, DEVICE_CODE)));
+  }
 
+  @Test
+  void testSwitchingFromBasicAuthnToPublicClientUnsetSecret() throws ParseException {
+
+    userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
+    when(userAuth.getName()).thenReturn("test");
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
+
+    String clientId = response.getClientId();
+    RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
+    assertNotNull(client.getClientSecret());
+
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
+
+    assertEquals(TokenEndpointAuthenticationMethod.none, updatedClient.getTokenEndpointAuthMethod());
+    assertNull(updatedClient.getClientSecret());
+  }
+
+  @Test
+  void testSwitchingFromPublicClientToBasicAuthnRotatesSecret() throws ParseException {
+
+    userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
+    when(userAuth.getName()).thenReturn("test");
+    when(userAuth.getAuthorities()).thenAnswer(x -> Set.of(Authorities.ROLE_USER));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    request.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
+
+    String clientId = response.getClientId();
+    RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
+    assertNull(client.getClientSecret());
+    assertEquals(TokenEndpointAuthenticationMethod.none, client.getTokenEndpointAuthMethod());
+
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
+
+    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic, updatedClient.getTokenEndpointAuthMethod());
+    assertNotNull(updatedClient.getClientSecret());
   }
 
   @Test
@@ -269,19 +319,19 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-    assertThat(savedClient.getClientId(), is(client.getClientId()));
-    assertThat(savedClient.getClientSecret(), notNullValue());
+    assertEquals(client.getClientId(), savedClient.getClientId());
+    assertNotNull(savedClient.getClientSecret());
 
 
     managementService.generateNewClientSecret(client.getClientId());
     RegisteredClientDTO updatedClient =
         managementService.retrieveClientByClientId(client.getClientId()).orElseThrow();
 
-    assertThat(updatedClient.getClientSecret(), not(equalTo(savedClient.getClientSecret())));
+    assertNotEquals(savedClient.getClientSecret(), updatedClient.getClientSecret());
   }
 
   @Test
@@ -289,21 +339,21 @@ class ClientManagementServiceTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-rat-rotation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-    assertThat(savedClient.getClientId(), notNullValue());
-    assertThat(savedClient.getRegistrationAccessToken(), nullValue());
+    assertNotNull(savedClient.getClientId());
+    assertNull(savedClient.getRegistrationAccessToken());
 
     RegisteredClientDTO updatedClient =
         managementService.rotateRegistrationAccessToken(savedClient.getClientId());
 
-    assertThat(updatedClient.getRegistrationAccessToken(), notNullValue());
+    assertNotNull(updatedClient.getRegistrationAccessToken());
 
     RegisteredClientDTO retrievedClient =
         managementService.retrieveClientByClientId(savedClient.getClientId()).orElseThrow();
-    assertThat(retrievedClient.getRegistrationAccessToken(), nullValue());
+    assertNull(retrievedClient.getRegistrationAccessToken());
   }
 
   @Test
@@ -311,17 +361,17 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    client.setScope(Sets.newHashSet("test"));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
 
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
-    assertThat(savedClient.getClientId(), is(client.getClientId()));
-    assertThat(savedClient.getClientSecret(), notNullValue());
+    assertEquals(client.getClientId(), savedClient.getClientId());
+    assertNotNull(savedClient.getClientSecret());
 
     ListResponseDTO<ScimUser> owners = managementService.getClientOwners(savedClient.getClientId(),
         PagingUtils.buildUnpagedPageRequest());
 
-    assertThat(owners.getTotalResults(), is(0L));
+    assertEquals(0L, owners.getTotalResults());
 
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     IamAccount otherAccount = accountRepo.findByUsername("test_100").orElseThrow();
@@ -331,9 +381,9 @@ class ClientManagementServiceTests {
     owners = managementService.getClientOwners(savedClient.getClientId(),
         PagingUtils.buildUnpagedPageRequest());
 
-    assertThat(owners.getTotalResults(), is(2L));
-    assertThat(owners.getResources().get(0).getId(), is(testAccount.getUuid()));
-    assertThat(owners.getResources().get(1).getId(), is(otherAccount.getUuid()));
+    assertEquals(2L, owners.getTotalResults());
+    assertEquals(testAccount.getUuid(), owners.getResources().get(0).getId());
+    assertEquals(otherAccount.getUuid(), owners.getResources().get(1).getId());
 
     managementService.removeClientOwner(savedClient.getClientId(), testAccount.getUuid());
     // Calling removal multiple times for the same account shouldn't harm
@@ -342,14 +392,14 @@ class ClientManagementServiceTests {
     owners = managementService.getClientOwners(savedClient.getClientId(),
         PagingUtils.buildUnpagedPageRequest());
 
-    assertThat(owners.getTotalResults(), is(1L));
-    assertThat(owners.getResources().get(0).getId(), is(otherAccount.getUuid()));
+    assertEquals(1L, owners.getTotalResults());
+    assertEquals(otherAccount.getUuid(), owners.getResources().get(0).getId());
     managementService.removeClientOwner(savedClient.getClientId(), otherAccount.getUuid());
 
     owners = managementService.getClientOwners(savedClient.getClientId(),
         PagingUtils.buildUnpagedPageRequest());
 
-    assertThat(owners.getTotalResults(), is(0L));
+    assertEquals(0L, owners.getTotalResults());
   }
 
 
@@ -362,26 +412,26 @@ class ClientManagementServiceTests {
       RegisteredClientDTO client = new RegisteredClientDTO();
       client.setClientName("test-client-creation");
       client.setClientId("test-client-creation");
-      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-      client.setScope(Sets.newHashSet("test"));
+      client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+      client.setScope(Set.of("test"));
       client.setCodeChallengeMethod(value);
       ConstraintViolationException exception =
           assertThrows(ConstraintViolationException.class, () -> {
             managementService.saveNewClient(client);
           });
-      assertThat(exception.getMessage(), containsString("S256"));
+      assertTrue(exception.getMessage().contains("S256"));
     }
 
     String[] validCodeChallengeValues = {"", "none", "plain", "S256"};
     for (String value : validCodeChallengeValues) {
       RegisteredClientDTO client = new RegisteredClientDTO();
       client.setClientName("test-client-creation");
-      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-      client.setScope(Sets.newHashSet("test"));
+      client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+      client.setScope(Set.of("test"));
       client.setCodeChallengeMethod(value);
       Assertions.assertDoesNotThrow(() -> {
         RegisteredClientDTO response = managementService.saveNewClient(client);
-        assertThat(response.getCodeChallengeMethod(), is(value));
+        assertEquals(value, response.getCodeChallengeMethod());
       });
     }
   }
@@ -392,17 +442,18 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertTrue(client.getStatusChangedOn().equals(clock.now()));
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 
   @Test
   void testClientStatusChangeWithContacts() {
     managementService.updateClientStatus("device-code-client", false, "userUUID");
-    RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
+    RegisteredClientDTO client =
+        managementService.retrieveClientByClientId("device-code-client").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals(clock.now(), client.getStatusChangedOn());
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 
@@ -412,7 +463,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client-cred").get();
 
     assertFalse(client.isActive());
-    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals(clock.now(), client.getStatusChangedOn());
     assertEquals("userUUID", client.getStatusChangedBy());
   }
 }

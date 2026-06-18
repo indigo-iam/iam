@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    function GroupMembersController($rootScope, $filter, scimFactory, $uibModal, ModalService, toaster, GroupService) {
+    function GroupMembersController($rootScope, $filter, Utils, scimFactory, $uibModal, ModalService, toaster, GroupService) {
 
         var self = this;
         self.members = [];
@@ -30,9 +30,11 @@
         self.loadMembers = loadMembers;
 
         self.loadMembers(self.currentPage);
+        self.isGroupManagerForGroup = false;
 
         self.$onInit = function () {
             console.log('GroupMembersController onInit');
+            self.isGroupManagerForGroup = Utils.isGroupManagerForGroup(self.group.id);
         };
 
         function handleSuccess(data) {
@@ -109,7 +111,7 @@
         templateUrl: '/resources/iam/apps/dashboard-app/components/group/members/group.members.component.html',
         bindings: { group: '<', loadGroup: '&' },
         controller: [
-            '$rootScope', '$filter', 'scimFactory', '$uibModal', 'ModalService', 'toaster', 'GroupService', GroupMembersController
+            '$rootScope', '$filter', 'Utils', 'scimFactory', '$uibModal', 'ModalService', 'toaster', 'GroupService', GroupMembersController
         ]
     });
 })();

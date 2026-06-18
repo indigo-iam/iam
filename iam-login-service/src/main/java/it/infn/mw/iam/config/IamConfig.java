@@ -15,87 +15,131 @@
  */
 package it.infn.mw.iam.config;
 
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.AARC_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.IAM_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.KC_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.WLCG_PROFILE_ID;
+import static java.util.Collections.singletonList;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.sql.DataSource;
+
 import org.h2.server.web.WebServlet;
+import org.mitre.jwt.assertion.AssertionValidator;
+import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
+import org.mitre.oauth2.assertion.AssertionOAuth2RequestFactory;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.mitre.openid.connect.service.UserInfoService;
+import org.mitre.oauth2.service.DeviceCodeService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
+import org.springframework.security.oauth2.provider.CompositeTokenGranter;
+import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
-import org.springframework.security.oauth2.provider.token.TokenEnhancer;
+import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
+import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.web.http.DefaultCookieSerializer;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import com.google.common.collect.Maps;
+import com.zaxxer.hikari.HikariDataSource;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
-import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
+import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
-import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
-import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
-import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
-import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
+import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
-import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileIdTokenCustomizer;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileTokenIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileUserinfoHelper;
-import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.iam.IamIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileTokenIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileUserinfoHelper;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserinfoHelper;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGGroupHelper;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIdTokenCustomizer;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIntrospectionHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgUserinfoHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
+import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
+import it.infn.mw.iam.core.oidc.LoginHintService;
+import it.infn.mw.iam.core.oidc.MaxAgeService;
+import it.infn.mw.iam.core.oidc.PromptService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
+import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
+import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -105,7 +149,6 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminAddressStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -154,147 +197,143 @@ public class IamConfig {
   }
 
   @Bean(name = "aarcJwtProfile")
-  JWTProfile aarcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, AarcClaimValueHelper claimHelper,
-      UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
+  JWTProfile aarcJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
-    AarcJWTProfileAccessTokenBuilder atBuilder = new AarcJWTProfileAccessTokenBuilder(props,
-        totpMfaRepository, accountUtils, scopeFilter, converter, claimHelper);
+    AarcScopeClaimTranslationService claimService = new AarcScopeClaimTranslationService();
 
-    AarcJWTProfileUserinfoHelper uiHelper =
-        new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
+    AarcClaimValueHelper claimValueHelper =
+        new AarcClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    AarcJWTProfileIdTokenCustomizer idHelper =
-        new AarcJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
+    AarcAccessTokenBuilder accessTokenBuilder = new AarcAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
-    BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(props,
-        new DefaultIntrospectionResultAssembler(), registry, claimHelper);
+    AarcIdTokenCustomizer idTokenCustomizer =
+        new AarcIdTokenCustomizer(properties, claimValueHelper, claimService);
 
-    return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+    AarcUserinfoHelper userInfoHelper =
+        new AarcUserinfoHelper(properties, claimValueHelper, claimService);
+
+    AarcIntrospectionHelper introspectionHelper =
+        new AarcIntrospectionHelper(claimValueHelper, accountService, claimService);
+
+    return new AarcJWTProfile(claimService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
   }
 
   @Bean(name = "kcJwtProfile")
-  JWTProfile kcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, UserInfoService userInfoService,
-      ScopeMatcherRegistry registry, IamClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
+  JWTProfile kcJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
-    KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
+    KeycloakScopeClaimTranslationService claimService = new KeycloakScopeClaimTranslationService();
 
-    KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
-            scopeFilter);
+    KeycloakClaimValueHelper claimValueHelper =
+        new KeycloakClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
+    KeycloakAccessTokenBuilder accessTokenBuilder = new KeycloakAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
-    KeycloakIdTokenCustomizer idHelper =
-        new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
+    KeycloakIdTokenCustomizer idTokenCustomizer =
+        new KeycloakIdTokenCustomizer(properties, claimValueHelper, claimService);
 
-    BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
-        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+    KeycloakUserinfoHelper userInfoHelper =
+        new KeycloakUserinfoHelper(properties, claimValueHelper, claimService);
 
-    return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+    KeycloakIntrospectionHelper introspectionHelper =
+        new KeycloakIntrospectionHelper(accountService);
+
+    return new KeycloakJWTProfile(claimService, claimValueHelper, accessTokenBuilder,
+        idTokenCustomizer, userInfoHelper, introspectionHelper);
   }
 
   @Bean(name = "iamJwtProfile")
-  JWTProfile iamJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, IamClaimValueHelper claimHelper,
-      UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
-      ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
+  JWTProfile iamJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
-    IamJWTProfileAccessTokenBuilder atBuilder = new IamJWTProfileAccessTokenBuilder(props,
-        totpMfaRepository, accountUtils, converter, claimHelper, scopeFilter);
+    IamScopeClaimTranslationService scopeClaimService = new IamScopeClaimTranslationService();
 
-    IamJWTProfileUserinfoHelper uiHelper =
-        new IamJWTProfileUserinfoHelper(props, userInfoService, proc);
+    IamClaimValueHelper claimValueHelper =
+        new IamClaimValueHelper(properties, sshConverter, attrHelper, scopeClaimService);
 
-    IamJWTProfileIdTokenCustomizer idHelper =
-        new IamJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
+    IamAccessTokenBuilder accessTokenBuilder = new IamAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, scopeClaimService);
 
-    BaseIntrospectionHelper intrHelper = new IamJWTProfileTokenIntrospectionHelper(props,
-        new DefaultIntrospectionResultAssembler(), registry);
+    IamIdTokenCustomizer idTokenCustomizer =
+        new IamIdTokenCustomizer(properties, claimValueHelper, scopeClaimService);
 
-    return new IamJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+    IamUserinfoHelper userInfoHelper =
+        new IamUserinfoHelper(properties, claimValueHelper, scopeClaimService);
+
+    IamIntrospectionHelper introspectionHelper = new IamIntrospectionHelper(accountService);
+
+    return new IamJWTProfile(scopeClaimService, claimValueHelper, accessTokenBuilder,
+        idTokenCustomizer, userInfoHelper, introspectionHelper);
   }
 
   @Bean(name = "wlcgJwtProfile")
-  JWTProfile wlcgJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
-      UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
-      ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
-      IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
+  JWTProfile wlcgJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
-    JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
+    WlcgScopeClaimTranslationService claimService = new WlcgScopeClaimTranslationService();
 
-    IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
-        claimTranslationService, claimValueHelper, groupHelper, props);
+    WlcgClaimValueHelper claimValueHelper =
+        new WlcgClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    UserInfoHelper userInfoHelper = new WLCGUserinfoHelper(props, userInfoService);
-    IntrospectionResultHelper introspectionHelper = new WLCGIntrospectionHelper(props,
-        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+    WlcgAccessTokenBuilder accessTokenBuilder = new WlcgAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
-    return new WLCGJWTProfile(accessTokenBuilder, idTokenCustomizer, userInfoHelper,
-        introspectionHelper, groupHelper);
+    WlcgIdTokenCustomizer idTokenCustomizer =
+        new WlcgIdTokenCustomizer(properties, claimValueHelper, claimService);
+
+    WlcgUserinfoHelper userInfoHelper =
+        new WlcgUserinfoHelper(properties, claimValueHelper, claimService);
+
+    WlcgIntrospectionHelper introspectionHelper = new WlcgIntrospectionHelper(accountService);
+
+    return new WlcgJWTProfile(claimService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
   }
 
   @Bean
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
       @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
-      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties,
-      ClientDetailsService clientDetailsService) {
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties) {
 
     JWTProfile defaultProfile = iamProfile;
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.WLCG
+    if (IamProperties.JWTProfile.Profile.WLCG
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = wlcgProfile;
     }
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.AARC
+    if (IamProperties.JWTProfile.Profile.AARC
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = aarcProfile;
     }
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.KC
+    if (IamProperties.JWTProfile.Profile.KC
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = kcProfile;
     }
 
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
-    profileMap.put(IAM_PROFILE_ID, iamProfile);
-    profileMap.put(WLCG_PROFILE_ID, wlcgProfile);
-    profileMap.put(AARC_PROFILE_ID, aarcProfile);
-    profileMap.put(KC_PROFILE_ID, kcProfile);
+    profileMap.put(iamProfile.id(), iamProfile);
+    profileMap.put(wlcgProfile.id(), wlcgProfile);
+    profileMap.put(aarcProfile.id(), aarcProfile);
+    profileMap.put(kcProfile.id(), kcProfile);
 
     LOG.info("Default JWT profile: {}", defaultProfile.name());
-    return new ScopeAwareProfileResolver(defaultProfile, profileMap, clientDetailsService);
+    return new ScopeAwareProfileResolver(defaultProfile, profileMap);
   }
 
   @Bean
   Clock defaultClock() {
-    return Clock.systemDefaultZone();
-  }
-
-  @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
-  }
-
-  @Bean
-  @Primary
-  TokenEnhancer iamTokenEnhancer() {
-    return new IamTokenEnhancer();
-  }
-
-  @Bean
-  IntrospectionResultAssembler defaultIntrospectionResultAssembler(
-      JWTProfileResolver profileResolver) {
-    return new IamIntrospectionResultAssembler(profileResolver);
+    return Clock.systemUTC();
   }
 
   @Bean
@@ -307,6 +346,16 @@ public class IamConfig {
       AccountUtils utils, IamAupRepository repo) {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
     FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
+    frb.setOrder(Ordered.LOWEST_PRECEDENCE);
+    return frb;
+  }
+
+  @Bean
+  FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils,
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter =
+        new EnforceMfaFilter(utils, iamTotpMfaService, iamTotpMfaProperties);
+    FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
@@ -341,5 +390,153 @@ public class IamConfig {
     DefaultCookieSerializer cs = new DefaultCookieSerializer();
     cs.setSameSite(null);
     return cs;
+  }
+
+  @Bean
+  AuthorizationRequestFilter authorizationRequestFilter(AuthorizationClientResolver clientResolver,
+      LoginHintService loginHintService, PromptService promptService, MaxAgeService maxAgeService) {
+    return new AuthorizationRequestFilter(clientResolver, loginHintService, promptService,
+        maxAgeService);
+  }
+
+  @Bean
+  SecureRandom defaultSecureRandom() {
+    return new SecureRandom();
+  }
+
+  @Bean
+  LocaleResolver localeResolver() {
+
+    SessionLocaleResolver slr = new SessionLocaleResolver();
+    slr.setDefaultLocale(Locale.US);
+    return slr;
+  }
+
+  @Bean
+  MessageSource messageSource() {
+
+    DefaultResourceLoader loader = new DefaultResourceLoader();
+
+    PoliteJsonMessageSource messageSource = new PoliteJsonMessageSource();
+    messageSource.setBaseDirectory(loader.getResource("classpath:/i18n/"));
+    messageSource.setUseCodeAsDefaultMessage(true);
+
+    return messageSource;
+  }
+
+  @Bean
+  CommandLineRunner logDs(DataSource ds) {
+    Logger log = LoggerFactory.getLogger("DataSourceLogger");
+    return args -> {
+      if (ds instanceof HikariDataSource hikari) {
+        log.debug("JDBC URL: {}", hikari.getJdbcUrl());
+        log.debug("Properties: {}", hikari.getDataSourceProperties());
+      }
+    };
+  }
+
+  @Bean
+  WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
+
+    return new DefaultWebResponseExceptionTranslator();
+  }
+
+  @Bean(name = "iamAuthenticationEventPublisher")
+  AuthenticationEventPublisher iamAuthenticationEventPublisher() {
+    return new IamAuthenticationEventPublisher();
+  }
+
+  @Bean(name = "authenticationManager")
+  AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
+      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService) {
+
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setUserDetailsService(iamUserDetailsService);
+    provider.setPasswordEncoder(passwordEncoder);
+
+    ProviderManager pm =
+        new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+
+    pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
+    return pm;
+
+  }
+
+  @Bean
+  TokenGranter tokenGranter(AuthenticationManager authenticationManager, Clock clock,
+      IamProperties iamProperties, OAuth2TokenEntityService tokenServices,
+      OAuth2RequestFactory requestFactory,
+      @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService,
+      AssertionOAuth2RequestFactory assertionFactory,
+      @Qualifier("jwtAssertionValidator") AssertionValidator assertionValidator,
+      AUPSignatureCheckService signatureCheckService,
+      AuthorizationCodeServices authorizationCodeServices, TokenExchangePdp tokenExchangePdp,
+      DeviceCodeService deviceCodeService, TokenUtils tokenUtils, AccountUtils accountUtils) {
+
+    IamResourceOwnerPasswordTokenGranter resourceOwnerPasswordCredentialGranter =
+        new IamResourceOwnerPasswordTokenGranter(authenticationManager, tokenServices,
+            clientDetailsService, requestFactory);
+
+    resourceOwnerPasswordCredentialGranter.setAccountUtils(accountUtils);
+    resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
+
+    IamRefreshTokenGranter refreshTokenGranter =
+        new IamRefreshTokenGranter(tokenServices, clientDetailsService, requestFactory);
+    refreshTokenGranter.setAccountUtils(accountUtils);
+    refreshTokenGranter.setSignatureCheckService(signatureCheckService);
+
+    TokenExchangeTokenGranter tokenExchangeGranter =
+        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory,
+            iamProperties, tokenUtils, accountUtils, signatureCheckService, tokenExchangePdp);
+
+    return new CompositeTokenGranter(
+        Arrays.<TokenGranter>asList(
+            new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+                clientDetailsService, requestFactory),
+            new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+            refreshTokenGranter,
+            new IamClientCredentialsTokenGranter(tokenServices, clientDetailsService,
+                requestFactory),
+            resourceOwnerPasswordCredentialGranter,
+            tokenExchangeGranter, new IamDeviceCodeTokenGranter(clock, tokenServices,
+                clientDetailsService, requestFactory, deviceCodeService)));
+  }
+
+  @Bean
+  ClientCredentialsTokenEndpointFilter ccFilter(
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
+      ClientService clientService) {
+
+    ClientCredentialsTokenEndpointFilter filter =
+        new ClientCredentialsTokenEndpointFilter("/token");
+    filter.setAllowOnlyPost(true);
+
+    DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
+    dao.setUserDetailsService(userDetailsService);
+    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+
+    ClientBasicAuthenticationProvider authProvider =
+        new ClientBasicAuthenticationProvider(dao, clientService);
+    filter.setAuthenticationManager(new ProviderManager(List.of(authProvider)));
+
+    return filter;
+  }
+
+  @Bean
+  TokenEndpointJwtClientAuthFilter jwtClientAuthFilter(
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
+      Clock clock, IamProperties iamProperties, ClientKeyCacheService validators,
+      ClientService clientService) {
+
+    TokenEndpointJwtClientAuthFilter filter =
+        new TokenEndpointJwtClientAuthFilter(new AntPathRequestMatcher("/token"));
+
+    TokenEndpointJwtClientAuthenticationProvider authProvider =
+        new TokenEndpointJwtClientAuthenticationProvider(clock, iamProperties, clientService,
+            validators);
+
+    filter.setAuthenticationManager(new ProviderManager(singletonList(authProvider)));
+
+    return filter;
   }
 }

@@ -33,20 +33,24 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWO
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
+import static java.lang.Boolean.TRUE;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
@@ -59,6 +63,7 @@ import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimFilter;
+import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -74,52 +79,64 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @Service
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
-      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
-      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
-      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
-      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
-      ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
+          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
+          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
+          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
+          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
+          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
 
-
+  private final Clock clock;
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
+  private final Set<UpdaterType> enabledUpdaters;
+  private final AccountUtils accountUtils;
+  private final X509CertificateConverter x509Converter;
 
   private ApplicationEventPublisher eventPublisher;
 
-  public ScimUserProvisioning(IamAccountService accountService,
-      OAuth2TokenEntityService tokenService, IamAccountRepository accountRepository,
+  public ScimUserProvisioning(Clock clock, IamAccountService accountService,
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, IamAccountRepository accountRepository,
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
-      NotificationFactory notificationFactory, IamGroupRepository groupRepository) {
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties,
+      IamGroupRepository groupRepository, Set<UpdaterType> enabledUpdaters,
+      AccountUtils accountUtils, X509CertificateConverter x509Converter) {
 
+    this.clock = clock;
+    this.notificationProperties = notificationProperties;
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.notificationFactory = notificationFactory;
-    this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
-        accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator, groupRepository);
+    this.updatersFactory = new DefaultAccountUpdaterFactory(clock, passwordEncoder, accountRepository,
+        accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
+        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
+    this.enabledUpdaters = enabledUpdaters;
+    this.accountUtils = accountUtils;
+    this.x509Converter = x509Converter;
   }
 
-
-
   private ScimFilter parseFilters(final String filtersParameter) {
-
 
     StringBuilder regex = new StringBuilder();
 
@@ -380,6 +397,11 @@ public class ScimUserProvisioning
   public ScimUser create(final ScimUser user) {
 
     IamAccount newAccount = userConverter.entityFromDto(user);
+    /*
+     * It sets the new created user as a verified user TODO fix this work-around
+     */
+    newAccount.getUserInfo().setEmailVerified(true);
+    newAccount.setConfirmationKey(null);
 
     try {
       IamAccount account = accountService.createAccount(newAccount);
@@ -477,7 +499,7 @@ public class ScimUserProvisioning
       updatedAccount.setActive(existingAccount.isActive());
     }
 
-    updatedAccount.touch();
+    updatedAccount.touch(clock.instant());
 
     accountRepository.save(updatedAccount);
 
@@ -511,17 +533,18 @@ public class ScimUserProvisioning
 
     if (oneUpdaterChangedAccount) {
 
-      account.touch();
+      account.touch(clock.instant());
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
+        handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
         u.publishUpdateEvent(this, eventPublisher);
-        handleSpecificUpdateType(account, u);
       }
-
     }
   }
 
-  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u) {
+  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u,
+      ScimIndigoUser indigoUser) {
+
     if (ACCOUNT_REPLACE_ACTIVE.equals(u.getType())) {
       if (account.isActive()) {
         notificationFactory.createAccountRestoredMessage(account);
@@ -536,14 +559,57 @@ public class ScimUserProvisioning
         notificationFactory.createRevokeServiceAccountMessage(account);
       }
     }
+    if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())
+        && TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      indigoUser.getCertificates()
+        .stream()
+        .map(x509Converter::entityFromDto)
+        .forEach(c -> notificationFactory.createLinkedCertificateMessage(account, c));
+    }
+    if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())
+        && TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      indigoUser.getCertificates()
+        .stream()
+        .map(x509Converter::entityFromDto)
+        .forEach(c -> notificationFactory.createUnlinkedCertificateMessage(account, c));
+    }
   }
 
   @Override
   public void update(final String id, final List<ScimPatchOperation<ScimUser>> operations) {
 
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
+    Optional<IamAccount> currentUserAccount = accountUtils.getAuthenticatedUserAccount();
 
-    operations.forEach(op -> executePatchOperation(account, op));
+    if (shouldExecuteAsUser(currentUserAccount)) {
+      operations.forEach(op -> executePatchOperationByUser(account, op));
+    } else {
+      operations.forEach(op -> executePatchOperation(account, op));
+    }
   }
 
+  private boolean shouldExecuteAsUser(Optional<IamAccount> currentUserAccount) {
+    return currentUserAccount.isPresent() && !accountUtils.isAdmin(currentUserAccount.get());
+  }
+
+  private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
+
+    List<AccountUpdater> updaters = updatersFactory.getUpdatersForPatchOperation(account, op);
+
+    for (AccountUpdater updater : updaters) {
+      if (!enabledUpdaters.contains(updater.getType())) {
+        throw new ScimPatchOperationNotSupported(
+            updater.getType().getDescription() + " not supported");
+      }
+    }
+
+    List<AccountUpdater> updatesToPublish =
+        updaters.stream().filter(AccountUpdater::update).toList();
+
+    if (!updatesToPublish.isEmpty()) {
+      account.touch(clock.instant());
+      accountRepository.save(account);
+      updatesToPublish.forEach(u -> u.publishUpdateEvent(this, eventPublisher));
+    }
+  }
 }

@@ -68,7 +68,7 @@
             test="${
                 (
                   loginPageConfiguration.localAuthenticationVisible
-                  or (param.sll != null and loginPageConfiguration.showLinkToLocalAuthenticationPage)
+                  or (param.sll != null)
                 ) and loginPageConfiguration.defaultLoginPageLayout
             }"
         >
@@ -130,12 +130,14 @@
                     <c:when test="${externalAuthnMethodName == 'OIDC'}">
                         <c:if test="${loginPageConfiguration.oidcEnabled}">
                             <c:forEach items="${loginPageConfiguration.oidcProviders}" var="provider">
-                                <t:loginButton
-                                    cssClass="ext-authn-login-button"
-                                    href="/openid_connect_login?iss=${provider.issuer}"
-                                    btn="${provider.loginButton}"
-                                    id="oidc-login-${provider.name}"
-                                 />
+                                <c:if test="${provider.loginButton.visible}">
+                                    <t:loginButton
+                                        cssClass="ext-authn-login-button"
+                                        href="/openid_connect_login?iss=${provider.issuer}"
+                                        btn="${provider.loginButton}"
+                                        id="oidc-login-${provider.name}"
+                                    />
+                                </c:if>
                             </c:forEach>
                         </c:if>
                     </c:when>
@@ -191,14 +193,14 @@
                 <div class="registration-preamble text-muted">
                    Not a member?
                 </div>
-                <a class="btn btn-success btn-block" href="/start-registration">Apply for an account</a>
-                <c:if test="${
-                    loginPageConfiguration.samlEnabled
-                    && iamSamlProperties.wayfLoginButton.visible
-                    && iamSamlProperties.wayfLoginButton.image.url.contains('edugain-logo.gif')
-                }">
-                  <!-- WAYF login button -->
-                  <a class="btn btn-success btn-block" href="/saml/login">Register an account with eduGAIN</a>
+                    <a class="btn btn-success btn-block" href="/start-registration">${loginPageConfiguration.registrationButtonText}</a>
+                        <c:if test="${
+                            loginPageConfiguration.samlEnabled
+                            && iamSamlProperties.wayfLoginButton.visible
+                            && iamSamlProperties.wayfLoginButton.image.url.contains('edugain-logo.gif')
+                        }">
+                    <!-- WAYF login button -->
+                    <a class="btn btn-success btn-block" href="/saml/login">Register an account with eduGAIN</a>
                 </c:if>
             </div>
         </c:if>

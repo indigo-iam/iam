@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.scim.updater;
 
-
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -23,27 +22,33 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
+import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
 import it.infn.mw.iam.api.scim.updater.builders.Adders;
@@ -59,13 +64,18 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-
-@RunWith(SpringRunner.class)
-@IamNoMvcTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
 public class AccountUpdatersTests extends X509TestSupport {
 
   public static final String OLD = "old";
@@ -105,7 +115,10 @@ public class AccountUpdatersTests extends X509TestSupport {
   private IamAccountService accountService;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
+  private IamOAuthAccessTokenRepository accessTokenRepository;
+
+  @Autowired
+  private IamOAuthRefreshTokenRepository refreshTokenRepository;
 
   @Autowired
   private PasswordEncoder encoder;
@@ -115,6 +128,12 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   @Mock
   private ApplicationEventPublisher publisher;
+
+  @Autowired
+  private X509CertificateConverter x509Converter;
+
+  @Autowired
+  MutableClock clock;
 
   private IamAccount account;
   private IamAccount other;
@@ -133,34 +152,34 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Adders accountAdders() {
-    return AccountUpdaters.adders(accountRepo, accountService, encoder, account, tokenService,
-        usernameValidator);
+    return AccountUpdaters.adders(clock, accountRepo, accountService, encoder, account,
+        accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   private Removers accountRemovers() {
-    return AccountUpdaters.removers(accountRepo, accountService, account);
+    return AccountUpdaters.removers(clock, accountRepo, accountService, account);
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account, tokenService,
-        usernameValidator);
+    return AccountUpdaters.replacers(clock, accountRepo, accountService, encoder, account,
+        accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
-  @Before
-  public void before() {
+  @BeforeEach
+  void before() {
     account = newAccount("account");
     other = newAccount("other");
   }
 
   @Test
-  public void testCollectionHelperNotNullOrEmpty() {
+  void testCollectionHelperNotNullOrEmpty() {
 
     assertThat(CollectionHelpers.notNullOrEmpty(Lists.newArrayList()), equalTo(false));
     assertThat(CollectionHelpers.notNullOrEmpty(null), equalTo(false));
   }
 
   @Test
-  public void testPasswordAdderWorks() {
+  void testPasswordAdderWorks() {
 
     account.setPassword(encoder.encode(OLD));
     accountRepo.save(account);
@@ -169,11 +188,10 @@ public class AccountUpdatersTests extends X509TestSupport {
 
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
-
   }
 
   @Test
-  public void testGivenNameAdderWorks() {
+  void testGivenNameAdderWorks() {
 
     account.setUserInfo(new IamUserInfo());
     account.getUserInfo().setGivenName(OLD);
@@ -185,7 +203,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testFamilyNameAdderWorks() {
+  void testFamilyNameAdderWorks() {
 
     account.getUserInfo().setFamilyName(OLD);
 
@@ -195,19 +213,19 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(false));
   }
 
-  @Test(expected = ScimResourceExistsException.class)
-  public void testEmailAdderFailsWhenEmailIsBoundToAnotherUser() {
+  @Test
+  void testEmailAdderFailsWhenEmailIsBoundToAnotherUser() {
 
     account.getUserInfo().setEmail(OLD);
 
     other.getUserInfo().setEmail(NEW);
     accountRepo.save(other);
 
-    accountAdders().email(NEW).update();
+    assertThrows(ScimResourceExistsException.class, () -> accountAdders().email(NEW).update());
   }
 
   @Test
-  public void testEmailAdderWorks() {
+  void testEmailAdderWorks() {
 
     account.getUserInfo().setEmail(OLD);
 
@@ -216,11 +234,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountAdders().email(NEW);
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
-
   }
 
   @Test
-  public void testPictureAdderWorks() {
+  void testPictureAdderWorks() {
     account.getUserInfo().setPicture(OLD);
 
     Updater u = accountAdders().picture(NEW);
@@ -230,7 +247,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testPictureAdderWorksForNullValue() {
+  void testPictureAdderWorksForNullValue() {
     account.getUserInfo().setPicture(OLD);
     accountRepo.save(account);
 
@@ -241,7 +258,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testOidcIdAdderWorks() {
+  void testOidcIdAdderWorks() {
 
     Updater u = accountAdders().oidcId(Lists.newArrayList(NEW_OIDC_ID));
 
@@ -250,11 +267,10 @@ public class AccountUpdatersTests extends X509TestSupport {
 
     assertThat(account.getOidcIds(), hasSize(1));
     assertThat(account.getOidcIds(), hasItems(NEW_OIDC_ID));
-
   }
 
   @Test
-  public void testOidcIdAdderWorksWithNoUpdate() {
+  void testOidcIdAdderWorksWithNoUpdate() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
 
@@ -263,12 +279,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountAdders().oidcId(Lists.newArrayList(NEW_OIDC_ID));
 
     assertThat(u.update(), is(false));
-
   }
 
-
-  @Test(expected = ScimResourceExistsException.class)
-  public void testOidcIdAdderFailsWhenOidcIdIsLinkedToAnotherAccount() {
+  @Test
+  void testOidcIdAdderFailsWhenOidcIdIsLinkedToAnotherAccount() {
 
     other.linkOidcIds(singletonList(NEW_OIDC_ID));
 
@@ -277,13 +291,12 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(accountRepo.findByOidcId(NEW, NEW)
       .orElseThrow(() -> new AssertionError("Expected account not found!")), is(other));
 
-    accountAdders().oidcId(newArrayList(NEW_OIDC_ID)).update();
-
+    assertThrows(ScimResourceExistsException.class,
+        () -> accountAdders().oidcId(newArrayList(NEW_OIDC_ID)).update());
   }
 
-
   @Test
-  public void testOidcIdAdderWorksWithUpdate() {
+  void testOidcIdAdderWorksWithUpdate() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
 
@@ -302,11 +315,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(false));
     assertThat(account.getOidcIds(), hasSize(2));
     assertThat(account.getOidcIds(), hasItems(NEW_OIDC_ID, OLD_OIDC_ID));
-
   }
 
   @Test
-  public void testOidcIdAdderWorksWithListContainingNull() {
+  void testOidcIdAdderWorksWithListContainingNull() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
 
@@ -317,11 +329,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(false));
     assertThat(account.getOidcIds(), hasSize(1));
     assertThat(account.getOidcIds(), hasItems(NEW_OIDC_ID));
-
   }
 
   @Test
-  public void testOidcIdAdderWorksWithListContainingDuplicates() {
+  void testOidcIdAdderWorksWithListContainingDuplicates() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
 
@@ -332,11 +343,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(true));
     assertThat(account.getOidcIds(), hasSize(2));
     assertThat(account.getOidcIds(), hasItems(NEW_OIDC_ID, OLD_OIDC_ID));
-
   }
 
   @Test
-  public void testOidcIdRemoverWorks() {
+  void testOidcIdRemoverWorks() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
     accountRepo.save(account);
@@ -347,7 +357,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testOidcIdRemoverWorksWithNoUpdate() {
+  void testOidcIdRemoverWorksWithNoUpdate() {
 
     account.linkOidcIds(singletonList(NEW_OIDC_ID));
     accountRepo.save(account);
@@ -359,24 +369,23 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testOidcIdRemoverNoUpdateWithEmptyList() {
+  void testOidcIdRemoverNoUpdateWithEmptyList() {
 
     Updater u = accountRemovers().oidcId(newArrayList(OLD_OIDC_ID));
     assertThat(u.update(), is(false));
     assertThat(account.getOidcIds(), hasSize(0));
-
   }
 
   @Test
-  public void testOidcIdRemoverNoUpdateWithEmptyList2() {
+  void testOidcIdRemoverNoUpdateWithEmptyList2() {
+
     Updater u = accountRemovers().oidcId(newArrayList());
     assertThat(u.update(), is(false));
     assertThat(account.getOidcIds(), hasSize(0));
-
   }
 
   @Test
-  public void testOidcIdRemoverWorksWithMultipleValues() {
+  void testOidcIdRemoverWorksWithMultipleValues() {
 
     account.linkOidcIds(newArrayList(NEW_OIDC_ID, OLD_OIDC_ID));
     accountRepo.save(account);
@@ -384,15 +393,13 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountRemovers().oidcId(newArrayList(NEW_OIDC_ID, OLD_OIDC_ID));
     assertThat(u.update(), is(true));
     assertThat(account.getOidcIds(), hasSize(0));
-
   }
 
   @Test
-  public void testOidcIdRemoverWorksWithNullAndDuplicatesValues() {
+  void testOidcIdRemoverWorksWithNullAndDuplicatesValues() {
 
     account.linkOidcIds(newArrayList(NEW_OIDC_ID));
     accountRepo.save(account);
-
 
     Updater u = accountRemovers().oidcId(newArrayList(NEW_OIDC_ID, OLD_OIDC_ID, null, OLD_OIDC_ID));
     assertThat(u.update(), is(true));
@@ -400,7 +407,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSamlIdAdderWorks() {
+  void testSamlIdAdderWorks() {
 
     Updater u = accountAdders().samlId(newArrayList(NEW_SAML_ID));
 
@@ -411,10 +418,8 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(account.getSamlIds(), hasItems(NEW_SAML_ID));
   }
 
-
-
   @Test
-  public void testSamlIdAdderWorksWithNoUpdate() {
+  void testSamlIdAdderWorksWithNoUpdate() {
 
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
@@ -425,21 +430,20 @@ public class AccountUpdatersTests extends X509TestSupport {
 
     assertThat(account.getSamlIds(), hasSize(1));
     assertThat(account.getSamlIds(), hasItems(NEW_SAML_ID));
-
   }
 
 
-  @Test(expected = ScimResourceExistsException.class)
-  public void testSamlIdAdderFailsWhenSamlIdLinkedToAnotherAccount() {
+  @Test
+  void testSamlIdAdderFailsWhenSamlIdLinkedToAnotherAccount() {
     other.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(other);
 
-    accountAdders().samlId(newArrayList(NEW_SAML_ID)).update();
-
+    assertThrows(ScimResourceExistsException.class,
+        () -> accountAdders().samlId(newArrayList(NEW_SAML_ID)).update());
   }
 
   @Test
-  public void testSamlIdAdderFailsWhenSamlIdLinkedToTheSameAccount() {
+  void testSamlIdAdderFailsWhenSamlIdLinkedToTheSameAccount() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -452,7 +456,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSamlAdderWorksWithListContainingNull() {
+  void testSamlAdderWorksWithListContainingNull() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -466,7 +470,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
 
   @Test
-  public void testSamlAdderWorksWithListContainingDuplicates() {
+  void testSamlAdderWorksWithListContainingDuplicates() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -480,7 +484,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSamlRemoverWorks() {
+  void testSamlRemoverWorks() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -491,7 +495,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
 
   @Test
-  public void testSamlRemoverWorksWithNoUpdate() {
+  void testSamlRemoverWorksWithNoUpdate() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -503,7 +507,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
 
   @Test
-  public void testSamlRemoverNoUpdateWithEmptyList() {
+  void testSamlRemoverNoUpdateWithEmptyList() {
 
     Updater u = accountRemovers().samlId(newArrayList(OLD_SAML_ID));
     assertThat(u.update(), is(false));
@@ -512,9 +516,8 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
 
-
   @Test
-  public void testSamlRemoverNoUpdateWithEmptyList2() {
+  void testSamlRemoverNoUpdateWithEmptyList2() {
 
     Updater u = accountRemovers().samlId(newArrayList());
     assertThat(u.update(), is(false));
@@ -523,7 +526,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSamlRemoverWorksWithMultipleValues() {
+  void testSamlRemoverWorksWithMultipleValues() {
 
     account.linkSamlIds(newArrayList(NEW_SAML_ID, OLD_SAML_ID));
     accountRepo.save(account);
@@ -535,7 +538,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSamlRemoverWorksWithNullAndDuplicatesValues() {
+  void testSamlRemoverWorksWithNullAndDuplicatesValues() {
     account.linkSamlIds(singletonList(NEW_SAML_ID));
     accountRepo.save(account);
 
@@ -547,7 +550,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
 
   @Test
-  public void testSshKeyAdderWorks() {
+  void testSshKeyAdderWorks() {
 
     Updater u = accountAdders().sshKey(Lists.newArrayList(NEW_SSHKEY));
 
@@ -560,7 +563,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSshKeyAdderWorksWithNoUpdate() {
+  void testSshKeyAdderWorksWithNoUpdate() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -571,19 +574,17 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   }
 
-
-
-  @Test(expected = ScimResourceExistsException.class)
-  public void testSshKeyAdderFailsWhenSshKeyIsLinkedToAnotherAccount() {
+  @Test
+  void testSshKeyAdderFailsWhenSshKeyIsLinkedToAnotherAccount() {
     other.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(other);
 
-    accountAdders().sshKey(Lists.newArrayList(NEW_SSHKEY)).update();
+    assertThrows(ScimResourceExistsException.class,
+        () -> accountAdders().sshKey(Lists.newArrayList(NEW_SSHKEY)).update());
   }
 
-
   @Test
-  public void testSshKeyAdderWorksWithUpdate() {
+  void testSshKeyAdderWorksWithUpdate() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -600,11 +601,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(false));
     assertThat(account.getSshKeys(), hasSize(2));
     assertThat(account.getSshKeys(), hasItems(NEW_SSHKEY, OLD_SSHKEY));
-
   }
 
   @Test
-  public void testSshKeyAdderWorksWithListContainingNull() {
+  void testSshKeyAdderWorksWithListContainingNull() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -614,11 +614,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(false));
     assertThat(account.getSshKeys(), hasSize(1));
     assertThat(account.getSshKeys(), hasItems(NEW_SSHKEY));
-
   }
 
   @Test
-  public void testSshKeyAdderWorksWithListContainingDuplicates() {
+  void testSshKeyAdderWorksWithListContainingDuplicates() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -628,11 +627,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(true));
     assertThat(account.getSshKeys(), hasSize(2));
     assertThat(account.getSshKeys(), hasItems(NEW_SSHKEY, OLD_SSHKEY));
-
   }
 
   @Test
-  public void testSshKeyRemoverWorks() {
+  void testSshKeyRemoverWorks() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -643,7 +641,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testSshKeyRemoverWorksWithNoUpdate() {
+  void testSshKeyRemoverWorksWithNoUpdate() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -656,25 +654,23 @@ public class AccountUpdatersTests extends X509TestSupport {
 
 
   @Test
-  public void testSshKeyRemoverNoUpdateWithEmptyList() {
+  void testSshKeyRemoverNoUpdateWithEmptyList() {
 
     Updater u = accountRemovers().sshKey(newArrayList(OLD_SSHKEY));
     assertThat(u.update(), is(false));
     assertThat(account.getSshKeys(), hasSize(0));
-
   }
 
   @Test
-  public void testSshKeyRemoverNoUpdateWithEmptyList2() {
+  void testSshKeyRemoverNoUpdateWithEmptyList2() {
 
     Updater u = accountRemovers().sshKey(newArrayList());
     assertThat(u.update(), is(false));
     assertThat(account.getSshKeys(), hasSize(0));
-
   }
 
   @Test
-  public void testSshKeyRemoverWorksWithMultipleValues() {
+  void testSshKeyRemoverWorksWithMultipleValues() {
 
     account.linkSshKeys(newArrayList(NEW_SSHKEY, OLD_SSHKEY));
     accountRepo.save(account);
@@ -682,13 +678,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountRemovers().sshKey(newArrayList(NEW_SSHKEY, OLD_SSHKEY));
     assertThat(u.update(), is(true));
     assertThat(account.getSshKeys(), hasSize(0));
-
   }
 
-
-
   @Test
-  public void testSshKeyRemoverWorksWithNullAndDuplicatesValues() {
+  void testSshKeyRemoverWorksWithNullAndDuplicatesValues() {
 
     account.linkSshKeys(singletonList(NEW_SSHKEY));
     accountRepo.save(account);
@@ -696,165 +689,171 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountRemovers().sshKey(newArrayList(NEW_SSHKEY, OLD_SSHKEY, null, OLD_SSHKEY));
     assertThat(u.update(), is(true));
     assertThat(account.getSshKeys(), hasSize(0));
-
   }
 
   @Test
-  public void testX509CertificateAdderWorks() {
+  void testX509CertificateAdderWorks() throws IOException {
 
-    Updater u = accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
 
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
-
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
-
 
   @Test
-  public void testX509CertificateAdderWorksWithNoUpdate() {
+  void testX509CertificateParsingWorks() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
-    accountRepo.save(account);
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(getTest0CertString())
+      .display("test")
+      .build();
 
-    Updater u = accountAdders().x509Certificate(Lists.newArrayList(TEST_0_IAM_X509_CERT));
-
-    assertThat(u.update(), is(false));
-
+    assertDoesNotThrow(() -> x509Converter.entityFromDto(cert));
   }
 
-  @Test(expected = ScimResourceExistsException.class)
-  public void testX509CertificateAdderFailsWhenX509CertificateIsLinkedToAnotherAccount() {
+  @Test
+  void testX509CertificateAdderWorksWithNoUpdate() throws IOException {
 
-    other.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
+    accountRepo.save(account);
+
+    Updater u = accountAdders().x509Certificate(Lists.newArrayList(getTest0Cert(clock.instant())));
+
+    assertThat(u.update(), is(false));
+  }
+
+  @Test
+  void testX509CertificateAdderFailsWhenX509CertificateIsLinkedToAnotherAccount()
+      throws IOException {
+
+    other.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(other);
-    accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT)).update();
-
+    assertThrows(ScimResourceExistsException.class,
+        () -> accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant())))
+          .update());
   }
 
   @Test
-  public void testX509CertificateAdderWorksWithUpdate() {
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+  void testX509CertificateAdderWorksWithUpdate() throws IOException {
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u =
-        accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountAdders()
+      .x509Certificate(newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
-    account.linkX509Certificates(singletonList(TEST_1_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest1Cert(clock.instant())));
     accountRepo.save(account);
 
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
-
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
   }
 
   @Test
-  public void testX509CertificateAdderWorksWithListContainingNull() {
+  void testX509CertificateAdderWorksWithListContainingNull() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountAdders().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, null));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant()), null));
 
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
-
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
 
   @Test
-  public void testX509CertificateAdderWorksWithListContainingDuplicates() {
+  void testX509CertificateAdderWorksWithListContainingDuplicates() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountAdders().x509Certificate(
-        newArrayList(TEST_0_IAM_X509_CERT, TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountAdders().x509Certificate(newArrayList(getTest0Cert(clock.instant()),
+        getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
 
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(2));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
-
+    assertThat(account.getX509Certificates(),
+        hasItems(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
   }
 
   @Test
-  public void testX509CertificateRemoverWorks() {
+  void testX509CertificateRemoverWorks() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest0Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
   }
 
   @Test
-  public void testX509CertificateRemoverWorksWithNoUpdate() {
+  void testX509CertificateRemoverWorksWithNoUpdate() throws IOException {
 
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest1Cert(clock.instant())));
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(1));
-    assertThat(account.getX509Certificates(), hasItems(TEST_0_IAM_X509_CERT));
+    assertThat(account.getX509Certificates(), hasItems(getTest0Cert(clock.instant())));
   }
 
   @Test
-  public void testX509CertificateRemoverNoUpdateWithEmptyList() {
+  void testX509CertificateRemoverNoUpdateWithEmptyList() throws IOException {
 
-    Updater u = accountRemovers().x509Certificate(newArrayList(TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest1Cert(clock.instant())));
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(0));
-
   }
 
   @Test
-  public void testX509CertificateRemoverNoUpdateWithEmptyList2() {
+  void testX509CertificateRemoverNoUpdateWithEmptyList2() {
 
     Updater u = accountRemovers().x509Certificate(newArrayList());
     assertThat(u.update(), is(false));
     assertThat(account.getX509Certificates(), hasSize(0));
-
   }
 
   @Test
-  public void testX509CertificateRemoverWorksWithMultipleValues() {
+  void testX509CertificateRemoverWorksWithMultipleValues() throws IOException {
 
-    account.linkX509Certificates(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    account.linkX509Certificates(
+        newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
     accountRepo.save(account);
 
-    Updater u =
-        accountRemovers().x509Certificate(newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers()
+      .x509Certificate(newArrayList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
-
   }
 
   @Test
-  public void testX509CertificateRemoverWorksWithNullAndDuplicatesValues() {
-    account.linkX509Certificates(singletonList(TEST_0_IAM_X509_CERT));
+  void testX509CertificateRemoverWorksWithNullAndDuplicatesValues() throws IOException {
+    account.linkX509Certificates(singletonList(getTest0Cert(clock.instant())));
     accountRepo.save(account);
 
 
-    Updater u = accountRemovers().x509Certificate(
-        newArrayList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT, null, TEST_1_IAM_X509_CERT));
+    Updater u = accountRemovers().x509Certificate(newArrayList(getTest0Cert(clock.instant()),
+        getTest1Cert(clock.instant()), null, getTest1Cert(clock.instant())));
     assertThat(u.update(), is(true));
     assertThat(account.getX509Certificates(), hasSize(0));
-
   }
 
   @Test
-  public void testUsernameReplacerWorks() {
+  void testUsernameReplacerWorks() {
 
     account.setUsername(OLD);
     accountRepo.save(account);
@@ -865,7 +864,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testActiveReplacerWorks() {
+  void testActiveReplacerWorks() {
 
     account.setActive(false);
     accountRepo.save(account);
@@ -873,12 +872,10 @@ public class AccountUpdatersTests extends X509TestSupport {
     Updater u = accountReplacers().active(true);
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
-
   }
 
-
   @Test
-  public void testPictureRemoverWorks() {
+  void testPictureRemoverWorks() {
     account.getUserInfo().setPicture(OLD);
     accountRepo.save(account);
 
@@ -889,7 +886,7 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testServiceAccountReplacerWorks() {
+  void testServiceAccountReplacerWorks() {
 
     account.setServiceAccount(false);
     accountRepo.save(account);
@@ -900,14 +897,14 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Test
-  public void testPublishEventIsCalledWithServiceAccountReplacedEvent() {
+  void testPublishEventIsCalledWithServiceAccountReplacedEvent() {
 
     account.setServiceAccount(false);
     accountRepo.save(account);
 
     Updater u = accountReplacers().serviceAccount(true);
     assertThat(u.update(), is(true));
-    
+
     u.publishUpdateEvent(this, publisher);
     verify(publisher, times(1)).publishEvent(any(ServiceAccountReplacedEvent.class));
   }

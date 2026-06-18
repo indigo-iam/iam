@@ -17,14 +17,14 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -33,7 +33,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @IamRandomPortIntegrationTest
 public class IamTotpAuthenticationTests {
 
@@ -58,14 +58,13 @@ public class IamTotpAuthenticationTests {
   private String authorizeUrl;
   private String verifyUrl;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
-
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
@@ -73,7 +72,7 @@ public class IamTotpAuthenticationTests {
   }
 
   @Test
-  public void testRedirectToVerifyPageAfterLogin() {
+  void testRedirectToVerifyPageAfterLogin() {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -107,7 +106,7 @@ public class IamTotpAuthenticationTests {
   }
 
   @Test
-  public void testRedirectToAuthorizeUrlWhenTotpIsInactive() {
+  void testRedirectToAuthorizeUrlWhenTotpIsInactive() {
 
     IamTotpMfa totp = totpMfaRepo.findByAccountId(Long.valueOf(1000)).orElseThrow();
     totp.setActive(false);

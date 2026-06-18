@@ -15,38 +15,46 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.util.Base64;
 import java.util.Optional;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.qr.QrData;
+import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
@@ -58,13 +66,11 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
-
-  private IamTotpMfaService service;
+@ExtendWith(MockitoExtension.class)
+class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Mock
-  private IamTotpMfaRepository repository;
+  private IamTotpMfaRepository totpRepository;
 
   @Mock
   private SecretGenerator secretGenerator;
@@ -80,94 +86,102 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Mock
   private IamTotpMfaProperties iamTotpMfaProperties;
+  
+  @Mock
+  private QrGenerator qrGenerator;
+
+  @Mock
+  private IamProperties iamProperties;
+
+  @Mock
+  private IamProperties.Organisation organisation;
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
-  @Before
-  public void setup() {
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+  Clock clock;
+  IamTotpMfaService service;
 
-    when(secretGenerator.generate()).thenReturn("test_secret");
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
-    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
+  @BeforeEach
+  void setup() {
 
-    service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        codeVerifier, eventPublisher, iamTotpMfaProperties);
-  }
+    clock = Clock.systemUTC();
 
-  @After
-  public void tearDown() {
-    reset(secretGenerator, repository, iamAccountService, codeVerifier);
+    lenient().when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt())
+      .thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+
+    lenient().when(secretGenerator.generate()).thenReturn("test_secret");
+    lenient().when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
+
+    service = new DefaultIamTotpMfaService(clock, iamAccountService, totpRepository, secretGenerator,
+        codeVerifier, eventPublisher, iamTotpMfaProperties, qrGenerator, iamProperties);
   }
 
   @Test
-  public void testAssignsTotpMfaToAccount() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  void testAssignsTotpMfaToAccount() {
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamAccount account = getAccount(clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.empty());
+
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    verify(repository, times(1)).save(totpMfa);
-    verify(secretGenerator, times(1)).generate();
+    Mockito.verify(totpRepository, times(1)).save(totpMfa);
+    Mockito.verify(secretGenerator, times(1)).generate();
 
     assertNotNull(totpMfa.getSecret());
     assertFalse(totpMfa.isActive());
     assertThat(totpMfa.getAccount(), equalTo(account));
   }
 
-  @Test(expected = MfaSecretAlreadyBoundException.class)
-  public void testAddMfaSecretWhenMfaSecretAssignedFails() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+  @Test
+  void testAddMfaSecretWhenMfaSecretAssignedFails() {
 
-    try {
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
+
+    MfaSecretAlreadyBoundException e =
+        assertThrows(MfaSecretAlreadyBoundException.class, () -> service.addTotpMfaSecret(account));
+    assertThat(e.getMessage(),
+        equalTo("A multi-factor secret is already assigned to this account"));
+  }
+
+  @Test
+  void testAddMfaSecretWhenTotpIsNotActive() {
+
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    totp.setActive(false);
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
+    assertFalse(service.addTotpMfaSecret(account).isActive());
+  }
+
+  @Test
+  void testAddTotpMfaSecretWhenPasswordIsEmpty() {
+
+    IamAccount account = getAccount(clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.empty());
+    Mockito.when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
+    IamTotpMfaInvalidArgumentError e = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
       service.addTotpMfaSecret(account);
-    } catch (MfaSecretAlreadyBoundException e) {
-      assertThat(e.getMessage(),
-          equalTo("A multi-factor secret is already assigned to this account"));
-      throw e;
-    }
+    });
+    assertTrue(e.getMessage().startsWith("Please ensure that you provide"));
   }
 
   @Test
-  public void testAddMfaSecretWhenTotpIsNotActive() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-    TOTP_MFA.setActive(false);
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    assertFalse(totpMfa.isActive());
-  }
+  void testEnablesTotpMfa() throws Exception {
 
-  @Test
-  public void testAddTotpMfaSecretWhenPasswordIsEmpty() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    totp.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret("secret",
+        iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
+    totp.setActive(false);
 
-    IamTotpMfaInvalidArgumentError thrownException =
-        assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-          // Decrypt the cipherText with empty key
-          service.addTotpMfaSecret(account);
-        });
-
-    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
-  }
-
-  @Test
-  public void testEnablesTotpMfa() throws Exception {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
-    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret("secret",
-        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
-    totpMfa.setActive(false);
-    totpMfa.setAccount(account);
-
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
     service.enableTotpMfa(account);
-    verify(repository, times(1)).save(totpMfa);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    Mockito.verify(totpRepository, times(1)).save(totp);
+    Mockito.verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(AuthenticatorAppEnabledEvent.class));
@@ -177,41 +191,41 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     assertThat(e.getTotpMfa().getAccount(), equalTo(account));
   }
 
-  @Test(expected = TotpMfaAlreadyEnabledException.class)
-  public void testEnableTotpMfaWhenTotpMfaEnabledFails() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+  @Test
+  void testEnableTotpMfaWhenTotpMfaEnabledFails() {
 
-    try {
-      service.enableTotpMfa(account);
-    } catch (TotpMfaAlreadyEnabledException e) {
-      assertThat(e.getMessage(), equalTo("TOTP MFA is already enabled on this account"));
-      throw e;
-    }
-  }
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testEnablesTotpMfaWhenNoMfaSecretAssignedFails() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    try {
-      service.enableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
+    TotpMfaAlreadyEnabledException e =
+        assertThrows(TotpMfaAlreadyEnabledException.class, () -> service.enableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("TOTP MFA is already enabled on this account"));
   }
 
   @Test
-  public void testDisablesTotpMfa() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+  void testEnablesTotpMfaWhenNoMfaSecretAssignedFails() {
+
+    IamAccount account = getAccount(clock.instant());
+
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.empty());
+
+    MfaSecretNotFoundException e =
+        assertThrows(MfaSecretNotFoundException.class, () -> service.enableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
+  }
+
+  @Test
+  void testDisablesTotpMfa() {
+
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
     service.disableTotpMfa(account);
-    verify(repository, times(1)).delete(totpMfa);
-    verify(iamAccountService, times(1)).saveAccount(account);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    Mockito.verify(totpRepository, times(1)).delete(totp);
+    Mockito.verify(iamAccountService, times(1)).saveAccount(account);
+    Mockito.verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(AuthenticatorAppDisabledEvent.class));
@@ -220,25 +234,22 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     assertThat(e.getTotpMfa().getAccount(), equalTo(account));
   }
 
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testDisablesTotpMfaWhenNoMfaSecretAssignedFails() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  @Test
+  void testDisablesTotpMfaWhenNoMfaSecretAssignedFails() {
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamAccount account = getAccount(clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.empty());
 
-    try {
-      service.disableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
+    MfaSecretNotFoundException e =
+        assertThrows(MfaSecretNotFoundException.class, () -> service.disableTotpMfa(account));
+    assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
   }
 
   @Test
-  public void testVerifyTotpWithNoMultiFactorSecretAttached() {
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+  void testVerifyTotpWithNoMultiFactorSecretAttached() {
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamAccount account = getAccount(clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.empty());
 
     MfaSecretNotFoundException thrownException =
         assertThrows(MfaSecretNotFoundException.class, () -> {
@@ -249,24 +260,23 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotp() {
-    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+  void testVerifyTotp() {
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
     assertTrue(service.verifyTotp(account, TOTP_CODE));
   }
 
   @Test
-  public void testVerifyTotpWithEmptyPasswordForDecryption() {
-    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+  void testVerifyTotpWithEmptyPasswordForDecryption() {
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    Mockito.when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
 
     IamTotpMfaInvalidArgumentError thrownException =
         assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
@@ -277,15 +287,49 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotpWithCodeNotValid() {
-    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+  void testVerifyTotpWithCodeNotValid() {
 
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
+    IamAccount account = getAccount(clock.instant());
+    IamTotpMfa totp = getTotpMfaForAccount(account, clock.instant());
+    Mockito.when(totpRepository.findByAccount(account)).thenReturn(Optional.of(totp));
 
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    Mockito.when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
 
     assertFalse(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  void generateQRCodeFromSecretSuccess() throws Exception {
+    
+    String secret = "JBSWY3DPEHPK3PXP";
+    String username = "alice@example.com";
+    byte[] pngBytes = "PNG_IMAGE_BYTES".getBytes(StandardCharsets.UTF_8);
+    when(qrGenerator.generate(any(QrData.class))).thenReturn(pngBytes);
+    when(qrGenerator.getImageMimeType()).thenReturn("image/png");
+    when(iamProperties.getOrganisation()).thenReturn(organisation);
+    when(organisation.getName()).thenReturn("Test Corp");
+
+    
+    String dataUri = service.generateQRCodeFromSecret(secret, username);
+
+    ArgumentCaptor<QrData> dataCaptor = ArgumentCaptor.forClass(QrData.class);
+    verify(qrGenerator).generate(dataCaptor.capture());
+    QrData built = dataCaptor.getValue();
+
+    
+    assertThat(built.getLabel()).isEqualTo(username);
+    assertThat(built.getSecret()).isEqualTo(secret);
+    assertThat(built.getIssuer()).isEqualTo("INDIGO IAM" + " - " + "Test Corp");
+    assertThat(built.getAlgorithm()).isEqualTo("SHA1");
+    assertThat(built.getDigits()).isEqualTo(6);
+    assertThat(built.getPeriod()).isEqualTo(30);
+
+    assertThat(dataUri).startsWith("data:image/png;base64,");
+    String base64Part = dataUri.substring("data:image/png;base64,".length());
+    assertThat(Base64.getDecoder().decode(base64Part)).isEqualTo(pngBytes);
+
+    verify(qrGenerator, times(1)).generate(any(QrData.class));
+    verify(qrGenerator, times(1)).getImageMimeType();
   }
 
 }

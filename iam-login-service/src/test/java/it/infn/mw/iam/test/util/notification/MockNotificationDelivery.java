@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.test.util.notification;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
-import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.LoggingNotificationDelivery;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -31,13 +31,13 @@ public class MockNotificationDelivery extends LoggingNotificationDelivery {
   List<IamEmailNotification> deliveredNotifications = new LinkedList<>();
 
   public MockNotificationDelivery(IamEmailNotificationRepository repo,
-      NotificationProperties properties, TimeProvider provider) {
-    super(repo, properties, provider);
+      NotificationProperties properties, Clock clock) {
+    super(repo, properties, clock);
   }
 
   protected void deliverPendingNotification(IamEmailNotification e) {
     e.setDeliveryStatus(IamDeliveryStatus.DELIVERED);
-    e.setLastUpdate(new Date(timeProvider.currentTimeMillis()));
+    e.setLastUpdate(Date.from(clock.instant()));
     repo.save(e);
     deliveredNotifications.add(e);
   }

@@ -15,12 +15,10 @@
  */
 package it.infn.mw.iam.persistence.model;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.Boolean.logicalOr;
 import static java.util.Objects.isNull;
 
 import java.io.Serializable;
-import java.time.Clock;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -50,10 +48,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
-import org.joda.time.DateTimeComparator;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Preconditions;
 
 @Entity
 @Table(name = "iam_account")
@@ -265,7 +260,6 @@ public class IamAccount implements Serializable {
 
   public void setSamlIds(Set<IamSamlId> samlIds) {
 
-    Preconditions.checkNotNull(samlIds);
     this.samlIds = samlIds;
   }
 
@@ -276,7 +270,6 @@ public class IamAccount implements Serializable {
 
   public void setOidcIds(Set<IamOidcId> oidcIds) {
 
-    Preconditions.checkNotNull(oidcIds);
     this.oidcIds = oidcIds;
   }
 
@@ -287,7 +280,6 @@ public class IamAccount implements Serializable {
 
   public void setSshKeys(Set<IamSshKey> sshKeys) {
 
-    Preconditions.checkNotNull(sshKeys);
     this.sshKeys = sshKeys;
   }
 
@@ -298,7 +290,6 @@ public class IamAccount implements Serializable {
 
   public void setX509Certificates(Set<IamX509Certificate> x509Certificates) {
 
-    Preconditions.checkNotNull(x509Certificates);
     this.x509Certificates = x509Certificates;
   }
 
@@ -329,7 +320,6 @@ public class IamAccount implements Serializable {
 
   public void linkOidcIds(Collection<IamOidcId> ids) {
 
-    checkNotNull(ids);
     for (IamOidcId oidcId : ids) {
       link(oidcIds, oidcId, this);
     }
@@ -337,7 +327,6 @@ public class IamAccount implements Serializable {
 
   public void unlinkOidcIds(Collection<IamOidcId> ids) {
 
-    checkNotNull(ids);
     for (IamOidcId oidcId : ids) {
       unlink(oidcIds.iterator(), oidcId);
     }
@@ -345,7 +334,6 @@ public class IamAccount implements Serializable {
 
   public void linkSamlIds(Collection<IamSamlId> ids) {
 
-    checkNotNull(ids);
     for (IamSamlId samlId : ids) {
       link(samlIds, samlId, this);
     }
@@ -353,7 +341,6 @@ public class IamAccount implements Serializable {
 
   public void unlinkSamlIds(Collection<IamSamlId> ids) {
 
-    checkNotNull(ids);
     for (IamSamlId samlId : ids) {
       unlink(samlIds.iterator(), samlId);
     }
@@ -361,42 +348,53 @@ public class IamAccount implements Serializable {
 
   public void linkSshKeys(Collection<IamSshKey> keys) {
 
-    checkNotNull(keys);
     for (IamSshKey key : keys) {
       link(sshKeys, key, this);
     }
+    sanitizePrimarySshKey();
   }
 
   public void unlinkSshKeys(Collection<IamSshKey> keys) {
 
-    checkNotNull(keys);
     for (IamSshKey key : keys) {
       unlink(sshKeys.iterator(), key);
+    }
+    sanitizePrimarySshKey();
+  }
+
+  private void sanitizePrimarySshKey() {
+
+    if (!sshKeys.isEmpty()
+        && sshKeys.stream().filter(IamSshKey::isPrimary).findAny().isEmpty()) {
+      sshKeys.iterator().next().setPrimary(true);
+    }
+  }
+
+  private void sanitizePrimaryX509Certificate() {
+
+    if (!x509Certificates.isEmpty()
+        && x509Certificates.stream().filter(IamX509Certificate::isPrimary).findAny().isEmpty()) {
+      x509Certificates.iterator().next().setPrimary(true);
     }
   }
 
   public void linkX509Certificates(Collection<IamX509Certificate> certs) {
 
-    checkNotNull(certs);
-
     for (IamX509Certificate c : certs) {
-      if (!getX509Certificates().contains(c)) {
-        Date addedTimestamp = new Date();
+      if (!x509Certificates.contains(c)) {
         c.setAccount(this);
-        c.setCreationTime(addedTimestamp);
-        c.setLastUpdateTime(addedTimestamp);
-
-        getX509Certificates().add(c);
+        x509Certificates.add(c);
       }
     }
+    sanitizePrimaryX509Certificate();
   }
 
   public void unlinkX509Certificates(Collection<IamX509Certificate> certs) {
 
-    checkNotNull(certs);
     for (IamX509Certificate c : certs) {
       unlink(x509Certificates.iterator(), c);
     }
+    sanitizePrimaryX509Certificate();
   }
 
   private <T extends IamAccountRef> void unlink(Iterator<T> it, T id) {
@@ -461,13 +459,8 @@ public class IamAccount implements Serializable {
     this.aupSignature = aupSignature;
   }
 
-  public void touch() {
-
-    setLastUpdateTime(new Date());
-  }
-
-  public void touch(Clock clock) {
-    setLastUpdateTime(Date.from(clock.instant()));
+  public void touch(Instant instant) {
+    setLastUpdateTime(Date.from(instant));
   }
 
   @Override
@@ -627,8 +620,11 @@ public class IamAccount implements Serializable {
     this.endTime = endTime;
   }
 
-  public boolean isValid() {
-    return logicalOr(isNull(endTime), DateTimeComparator.getInstance().compare(endTime, new Date()) > 0);
+  public boolean isValid(Date now) {
+    if (isNull(endTime)) {
+      return true;
+    }
+    return endTime.after(now);
   }
 
   public boolean isServiceAccount() {

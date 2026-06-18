@@ -17,18 +17,21 @@ package it.infn.mw.iam.test.scim.core.provisioning.user;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
+import it.infn.mw.iam.api.scim.converter.DefaultScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
@@ -47,26 +50,29 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@IamNoMvcTest
-public class ScimUserServiceTests {
-
-  @Autowired
-  private ScimUserProvisioning userService;
-
-  @Autowired
-  private IamAccountRepository accountRepo;
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.NONE)
+@Transactional
+class ScimUserServiceTests {
 
   @Autowired
-  private PasswordEncoder passwordEncoder;
+  ScimUserProvisioning userService;
 
   @Autowired
-  private AccountGroupManagerService groupManager;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private ScimResourceLocationProvider resourceLocationProvider;
+  PasswordEncoder passwordEncoder;
+
+  @Autowired
+  AccountGroupManagerService groupManager;
+
+  @Autowired
+  ScimResourceLocationProvider resourceLocationProvider = new DefaultScimResourceLocationProvider();
 
   final String TESTUSER_ATTRIBUTE_NAME = "attribute-name";
   final String TESTUSER_ATTRIBUTE_VALUE = "attribute-value";
@@ -95,8 +101,8 @@ public class ScimUserServiceTests {
 
   private ScimGroupRef TESTUSER_GROUP_REF;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     TESTUSER_GROUP_REF = ScimGroupRef.builder()
       .value(PRODUCTION_GROUP_UUID)
       .display("Production")
@@ -115,7 +121,7 @@ public class ScimUserServiceTests {
   }
 
   @Test
-  public void createUserTest() {
+  void createUserTest() {
 
     ScimUser scimUser = ScimUser.builder()
       .active(true)
@@ -183,7 +189,7 @@ public class ScimUserServiceTests {
   }
 
   @Test
-  public void createAndReplaceUserCheckingNotWritableFieldsAreIgnoredTest() {
+  void createAndReplaceUserCheckingNotWritableFieldsAreIgnoredTest() {
 
     ScimUser scimUser = ScimUser.builder()
       .userName(TESTUSER_USERNAME) // mandatory

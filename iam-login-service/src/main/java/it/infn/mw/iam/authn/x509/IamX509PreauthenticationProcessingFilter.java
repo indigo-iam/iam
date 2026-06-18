@@ -15,7 +15,15 @@
  */
 package it.infn.mw.iam.authn.x509;
 
+import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.HIDDEN;
+
 import java.io.IOException;
+import java.security.cert.X509Certificate;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.servlet.ServletException;
@@ -30,6 +38,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -44,8 +55,13 @@ public class IamX509PreauthenticationProcessingFilter
   public static final String X509_ERROR_KEY = "IAM_X509_AUTHN_ERROR";
   public static final String X509_CAN_LOGIN_KEY = "IAM_X509_CAN_LOGIN";
   public static final String X509_SUSPENDED_ACCOUNT_KEY = "IAM_X509_SUSPENDED_ACCOUNT";
+  public static final String X509_ALMOST_EXPIRED = "IAM_X509_ALMOST_EXPIRED";
+  public static final String X509_EXPIRATION_DATE = "IAM_X509_EXPIRATION_DATE";
+  public static final String X509_REQUIRED = "IAM_X509_REQUIRED";
 
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
+
+  private final Clock clock;
 
   private final X509AuthenticationCredentialExtractor credentialExtractor;
 
@@ -53,14 +69,19 @@ public class IamX509PreauthenticationProcessingFilter
 
   private final IamX509CertificateRepository certificateRepo;
 
-  public IamX509PreauthenticationProcessingFilter(X509AuthenticationCredentialExtractor extractor,
+  private final IamProperties iamProperties;
+
+  public IamX509PreauthenticationProcessingFilter(Clock clock, X509AuthenticationCredentialExtractor extractor,
       AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler,
-      IamX509CertificateRepository certificateRepo) {
+      IamX509CertificateRepository certificateRepo, IamProperties iamProperties) {
+
+    this.clock = clock;
     setCheckForPrincipalChanges(false);
     setAuthenticationManager(authenticationManager);
     this.credentialExtractor = extractor;
     this.successHandler = successHandler;
     this.certificateRepo = certificateRepo;
+    this.iamProperties = iamProperties;
   }
 
   protected boolean x509AuthenticationRequested(HttpServletRequest request) {
@@ -70,9 +91,9 @@ public class IamX509PreauthenticationProcessingFilter
   protected void storeCredentialInSession(HttpServletRequest request,
       IamX509AuthenticationCredential cred) {
 
-    HttpSession session = request.getSession(false);
+    HttpSession session = request.getSession();
 
-    if (session != null && !cred.failedVerification()) {
+    if (!cred.failedVerification()) {
       LOG.debug("Storing X.509 {} credential in session ", cred);
       session.setAttribute(X509_CREDENTIAL_SESSION_KEY, cred);
     }
@@ -109,8 +130,50 @@ public class IamX509PreauthenticationProcessingFilter
 
     Optional<IamX509AuthenticationCredential> credential = extractCredential(request);
 
+    HttpSession session = request.getSession();
+
+    ExternalAuthAttributeSectionBehaviour ceritificateVisability =
+        Optional.ofNullable(iamProperties.getRegistration())
+          .map(IamProperties.RegistrationProperties::getFields)
+          .map(f -> f.get(RegistrationField.CERTIFICATE))
+          .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+          .orElse(ExternalAuthAttributeSectionBehaviour.HIDDEN);
+
+    // If there is a session, also place the information there, otherwise only in the request
+    session.setAttribute(X509_REQUIRED, ceritificateVisability);
+
+    // Always present in the request
+    request.setAttribute(X509_REQUIRED, ceritificateVisability);
+
     if (!credential.isPresent()) {
       return null;
+    }
+
+    // Cannot assume the position of the user certificate within the certificate chain
+    Optional<X509Certificate> userCertificate =
+        credential.map(IamX509AuthenticationCredential::getCertificateChain)
+          .flatMap(chain -> Arrays.stream(Optional.ofNullable(chain).orElse(new X509Certificate[0]))
+            .filter(Objects::nonNull)
+            .filter(cert -> cert.getBasicConstraints() == -1)
+            .findFirst());
+
+    Optional<Date> expirationDate = userCertificate.map(X509Certificate::getNotAfter);
+    Date minTimeBeforeExpiration = Date.from(clock.instant().plus(Duration.ofDays(30)));
+
+    // Verifying the expiration date is present within the certificate
+    if (ceritificateVisability != HIDDEN) {
+      if (expirationDate.isPresent() && expirationDate.get().before(minTimeBeforeExpiration)) {
+
+        session.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
+        session.setAttribute(X509_EXPIRATION_DATE, expirationDate.get());
+
+        request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
+        request.setAttribute(X509_EXPIRATION_DATE, expirationDate.get());
+
+        // If not present, then log a warning.
+      } else {
+        LOG.warn("X509 chain present but no end-entity certificate found");
+      }
     }
 
     Optional<IamX509Certificate> cert = certificateRepo
@@ -123,6 +186,9 @@ public class IamX509PreauthenticationProcessingFilter
     IamAccount account = cert.get().getAccount();
 
     if (!account.isActive()) {
+
+      session.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
+
       request.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
     }
 
@@ -139,6 +205,10 @@ public class IamX509PreauthenticationProcessingFilter
   @Override
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) {
+
+    HttpSession session = request.getSession();
+
+    session.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
 
     request.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
 

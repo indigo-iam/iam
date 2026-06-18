@@ -87,9 +87,9 @@ public class RestUtils {
     return mvc.perform(get(location).params(params)).andExpect(status().is(expectedStatus.value()));
   }
 
-  public ResultActions doDelete(String location, HttpStatus expectedStatus) throws Exception {
+  public ResultActions doDelete(String location) throws Exception {
 
-    return mvc.perform(delete(location)).andExpect(status().is(expectedStatus.value()));
+    return mvc.perform(delete(location));
   }
 
   public <B> ResultActions doPut(String location, B contentObj, String expectedContentType,
@@ -105,10 +105,15 @@ public class RestUtils {
   public <T> ResultActions doPatch(String location, T contentObj, String expectedContentType,
       HttpStatus expectedStatus) throws Exception {
 
-    String contentJson = mapper.writeValueAsString(contentObj);
-
-    return mvc.perform(patch(location).contentType(expectedContentType).content(contentJson))
+    return doPatch(location, contentObj, expectedContentType)
       .andExpect(status().is(expectedStatus.value()));
+  }
+
+  public <T> ResultActions doPatch(String location, T contentObj, String expectedContentType)
+      throws Exception {
+
+    String contentJson = mapper.writeValueAsString(contentObj);
+    return mvc.perform(patch(location).contentType(expectedContentType).content(contentJson));
   }
 
 }

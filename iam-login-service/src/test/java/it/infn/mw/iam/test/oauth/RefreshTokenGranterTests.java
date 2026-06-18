@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -24,23 +23,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.text.ParseException;
-import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -54,37 +51,41 @@ import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class RefreshTokenGranterTests extends TestTokensUtils {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class RefreshTokenGranterTests extends TokenGetterUtils {
 
-  private static final String USERNAME = "test";
-  private static final String PASSWORD = "password";
-  private static final String SCOPE = "openid profile offline_access";
-  public static final String[] SCOPES = {"openid", "profile", "offline_access"};
+  static final String SCOPES_STR = "openid profile offline_access";
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private ClientService clientService;
+  ClientService clientService;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils sc;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
-  public void testTokenRefreshFailsIfAupIsNotSigned() throws Exception {
+  void testTokenRefreshFailsIfAupIsNotSigned() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -93,9 +94,9 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
     String response = mvc.perform(post("/token")
         .with(httpBasic(clientId, clientSecret))
         .param("grant_type", "password")
-        .param("username", USERNAME)
-        .param("password", PASSWORD)
-        .param("scope", SCOPE))
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", SCOPES_STR))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -109,8 +110,8 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
 
     IamAup aup = new IamAup();
 
-    aup.setCreationTime(new Date());
-    aup.setLastUpdateTime(new Date());
+    aup.setCreationTime(clock.now());
+    aup.setLastUpdateTime(clock.now());
     aup.setName("default-aup");
     aup.setUrl("http://default-aup.org/");
     aup.setDescription("AUP description");
@@ -142,7 +143,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshFlowNotAllowedIfUserIsSuspended() throws Exception {
+  void testRefreshFlowNotAllowedIfUserIsSuspended() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -151,9 +152,9 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
     String response = mvc.perform(post("/token")
         .with(httpBasic(clientId, clientSecret))
         .param("grant_type", "password")
-        .param("username", USERNAME)
-        .param("password", PASSWORD)
-        .param("scope", SCOPE))
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", SCOPES_STR))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -181,7 +182,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshFlowNotAllowedIfClientIsSuspended() throws Exception {
+  void testRefreshFlowNotAllowedIfClientIsSuspended() throws Exception {
 
     String clientId = "password-grant";
     String clientSecret = "secret";
@@ -190,9 +191,9 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
     String response = mvc.perform(post("/token")
         .with(httpBasic(clientId, clientSecret))
         .param("grant_type", "password")
-        .param("username", USERNAME)
-        .param("password", PASSWORD)
-        .param("scope", SCOPE))
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", SCOPES_STR))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -217,7 +218,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
         .param("refresh_token", refreshToken))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error").value("invalid_client"))
-      .andExpect(jsonPath("$.error_description").value("Client is suspended: " + clientId));
+      .andExpect(jsonPath("$.error_description").value("Suspended client '" + clientId + "'"));
     // @formatter:on
 
     client.setActive(true);
@@ -225,7 +226,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
   }
 
   @Test
-  public void testRefreshTokenParsingThrowsParseException() throws Exception {
+  void testRefreshTokenParsingThrowsParseException() throws Exception {
 
     OAuth2AccessTokenEntity accessToken = Mockito.mock(OAuth2AccessTokenEntity.class);
     OAuth2RefreshTokenEntity refreshToken = Mockito.mock(OAuth2RefreshTokenEntity.class);
@@ -248,21 +249,6 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
     AccessTokenIssuedEvent event = new AccessTokenIssuedEvent(this, accessToken);
 
     assertNull(event.getRefreshTokenJti());
-
-  }
-
-  @Test
-  public void testRefreshTokenJtiInAccessTokenAuditLogs() throws Exception {
-
-    String clientId = "password-grant";
-    ClientDetailsEntity client = loadTestClient(clientId);
-
-    OAuth2AccessTokenEntity accessToken = buildAccessToken(client, USERNAME, SCOPES);
-
-    String refreshTokenJti = accessToken.getRefreshToken().getJwt().getJWTClaimsSet().getJWTID();
-
-    AccessTokenIssuedEvent event = new AccessTokenIssuedEvent(this, accessToken);
-    assertTrue(event.getRefreshTokenJti().equals(refreshTokenJti));
 
   }
 

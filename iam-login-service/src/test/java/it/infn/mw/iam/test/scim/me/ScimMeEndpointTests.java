@@ -26,40 +26,38 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimMeEndpointTests extends TokenGetterUtils {
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@IamMockMvcIntegrationTest
-public class ScimMeEndpointTests {
-
-  private final static String ME_ENDPOINT = "/scim/Me";
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
-  @Before
-  public void setup() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @After
-  public void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   private void getScimMeAsUserIsOk() throws Exception {
@@ -85,21 +83,21 @@ public class ScimMeEndpointTests {
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"scim:read"},
       authorities = {"ROLE_USER"})
-  public void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
+  void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
 
     getScimMeAsUserIsOk();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void meEndpointUserInfoNoToken() throws Exception {
+  void meEndpointUserInfoNoToken() throws Exception {
 
     getScimMeAsUserIsOk();
   }
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"scim:read"})
-  public void meEndpointFailsWithClientCredentials() throws Exception {
+  void meEndpointFailsWithClientCredentials() throws Exception {
 
     getScimMeAsUserIsError(400, "No user linked to the current OAuth token");
   }
@@ -107,7 +105,7 @@ public class ScimMeEndpointTests {
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"opeind", "profile"},
       authorities = {"ROLE_USER"})
-  public void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
+  void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
 
     getScimMeAsUserIsOk();
   }

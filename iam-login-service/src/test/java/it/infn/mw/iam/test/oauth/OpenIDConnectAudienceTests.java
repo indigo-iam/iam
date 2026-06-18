@@ -16,11 +16,11 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.core.authority.AuthorityUtils.commaSeparatedStringToAuthorityList;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,17 +30,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -50,44 +49,29 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+public class OpenIDConnectAudienceTests extends TokenGetterUtils {
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class OpenIDConnectAudienceTests {
-
-  public static final String TEST_CLIENT_ID = "client";
-  public static final String TEST_CLIENT_SECRET = "secret";
-  public static final String TEST_CLIENT_REDIRECT_URI =
-      "https://iam.local.io/iam-test-client/openid_connect_login";
-
-  public static final String LOGIN_URL = "http://localhost/login";
-  public static final String AUTHORIZE_URL = "http://localhost/authorize";
-
-  public static final String RESPONSE_TYPE_CODE = "code";
-  public static final String AUTHORIZATION_ENDPOINT = "/authorize";
   public static final String SCOPE = "openid profile";
-
-  public static final String TEST_USER_ID = "test";
-  public static final String TEST_USER_PASSWORD = "password";
 
   @Autowired
   ObjectMapper objectMapper;
 
-  @Autowired
-  MockMvc mvc;
-  
   @Test
-  public void testOidcAuthorizationRequestWithAudience() throws Exception {
+  void testOidcAuthorizationRequestWithAudience() throws Exception {
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZATION_ENDPOINT).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_ENDPOINT).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -119,15 +103,18 @@ public class OpenIDConnectAudienceTests {
     UriComponents redirectUri = UriComponentsBuilder.fromUri(new URI(redirectUrl)).build();
     String code = redirectUri.getQueryParams().getFirst("code");
 
-    String tokenResponse = mvc
-      .perform(post("/token").param("grant_type", "authorization_code")
-        .param("code", code)
-        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .with(SecurityMockMvcRequestPostProcessors.httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String tokenResponse =
+        mvc
+          .perform(
+              post("/token").param("grant_type", "authorization_code")
+                .param("code", code)
+                .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+                .with(SecurityMockMvcRequestPostProcessors.httpBasic(TEST_CLIENT_ID,
+                    TEST_CLIENT_SECRET)))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
 
     TokenResponse response = objectMapper.readValue(tokenResponse, TokenResponse.class);
 
@@ -148,15 +135,15 @@ public class OpenIDConnectAudienceTests {
     assertThat(idTokenClaims.getAudience(), contains(TEST_CLIENT_ID));
 
   }
-  
-  @Test
-  public void testOidcAuthorizationRequestWithMultipleAudiences() throws Exception {
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+  @Test
+  void testOidcAuthorizationRequestWithMultipleAudiences() throws Exception {
+
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZATION_ENDPOINT).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_ENDPOINT).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -188,15 +175,18 @@ public class OpenIDConnectAudienceTests {
     UriComponents redirectUri = UriComponentsBuilder.fromUri(new URI(redirectUrl)).build();
     String code = redirectUri.getQueryParams().getFirst("code");
 
-    String tokenResponse = mvc
-      .perform(post("/token").param("grant_type", "authorization_code")
-        .param("code", code)
-        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .with(SecurityMockMvcRequestPostProcessors.httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String tokenResponse =
+        mvc
+          .perform(
+              post("/token").param("grant_type", "authorization_code")
+                .param("code", code)
+                .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+                .with(SecurityMockMvcRequestPostProcessors.httpBasic(TEST_CLIENT_ID,
+                    TEST_CLIENT_SECRET)))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
 
     TokenResponse response = objectMapper.readValue(tokenResponse, TokenResponse.class);
 
@@ -207,7 +197,7 @@ public class OpenIDConnectAudienceTests {
 
     assertNotNull(claims.getAudience());
     assertThat(claims.getAudience().size(), equalTo(3));
-    
+
     assertThat(claims.getAudience(), hasItem("aud1"));
     assertThat(claims.getAudience(), hasItem("aud2"));
     assertThat(claims.getAudience(), hasItem("aud3"));

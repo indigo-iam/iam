@@ -26,25 +26,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.search.ClientSearchForm;
 import it.infn.mw.iam.api.client.search.service.ClientSearchService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@IamNoMvcTest
-@SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE)
-public class ClientSearchServiceTests {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
+@Transactional
+class ClientSearchServiceTests {
 
   @Autowired
-  private ClientSearchService service;
+  ClientSearchService service;
 
   @Test
-  public void testParamValidation() {
-    
+  void testParamValidation() {
+
     assertThrows(ConstraintViolationException.class, () -> {
       ClientSearchForm form = new ClientSearchForm();
       form.setSearch(null);
@@ -63,21 +62,16 @@ public class ClientSearchServiceTests {
       form.setSearch("term");
       service.searchClients(form);
     });
-
   }
 
   @Test
-  public void testSimpleSearch() {
+  void testSimpleSearch() {
 
     ClientSearchForm form = new ClientSearchForm();
     form.setSearch("scim");
 
-    ListResponseDTO<RegisteredClientDTO> result =
-        service.searchClients(form);
+    ListResponseDTO<RegisteredClientDTO> result = service.searchClients(form);
 
     assertThat(result.getTotalResults(), is(2L));
-
-
   }
-
 }

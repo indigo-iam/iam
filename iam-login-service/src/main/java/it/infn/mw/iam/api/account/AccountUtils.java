@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.account;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -65,6 +66,11 @@ public class AccountUtils {
     return account.getAuthorities().contains(ROLE_ADMIN);
   }
 
+  public boolean isPreAuthenticated() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return isPreAuthenticated(auth);
+  }
+
   public boolean isPreAuthenticated(Authentication auth) {
     if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
@@ -112,5 +118,14 @@ public class AccountUtils {
 
   public Optional<IamAccount> getByAccountId(String accountId) {
     return accountRepo.findByUuid(accountId);
+  }
+  
+  public boolean hasAnyOfAuthorities(String... iamAuthorities) {
+    return getAuthenticatedUserAccount()
+        .map(IamAccount::getAuthorities)
+        .map(authorities -> Arrays.stream(iamAuthorities)
+            .map(IamAuthority::new)
+            .anyMatch(authorities::contains))
+        .orElse(false);
   }
 }

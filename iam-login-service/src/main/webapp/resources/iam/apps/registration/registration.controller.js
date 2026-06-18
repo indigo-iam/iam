@@ -20,17 +20,33 @@ angular.module('registrationApp')
 
 RegistrationController.$inject = [
 	'$scope', '$q', '$window', '$cookies', 'RegistrationRequestService',
-	'AuthnInfo', 'Aup', 'PrivacyPolicy'
+	'AuthnInfo', 'Aup', 'PrivacyPolicy', '$uibModal', 'toaster', '$state'
 ];
 
 function RegistrationController(
 	$scope, $q, $window, $cookies, RegistrationRequestService, AuthnInfo, Aup,
-	PrivacyPolicy) {
+	PrivacyPolicy, $uibModal, toaster, $state) {
+
 	var vm = this;
 	var EXT_AUTHN_ROLE = 'ROLE_EXT_AUTH_UNREGISTERED';
 
 	$scope.organisationName = getOrganisationName();
 	$scope.request = {};
+
+	const cred = window.IAM_X509_CRED;
+
+	$scope.iamX509Required = window.IAM_X509_REQUIRED;
+
+	if (cred) {
+		$scope.iamX509Cred = window.IAM_X509_CRED;
+		$scope.iamX509Subject = window.IAM_X509_CRED_SUBJECT;
+		$scope.iamX509Issuer = window.IAM_X509_CRED_ISSUER;
+		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
+		$scope.iamX509SuspendedAccount = !!window.IAM_X509_SUSPENDED_ACCOUNT;
+		$scope.iamX509AlmostExpired = !!window.IAM_X509_ALMOST_EXPIRED;
+		$scope.iamX509ExpirationDate = window.IAM_X509_EXPIRATION_DATE;
+	}
+
 
 	$scope.textAlert = undefined;
 	$scope.operationResult = undefined;
@@ -112,12 +128,17 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
+		certificate: {
+			type: "certificate",
+			required: false,
+			showField: true,
+		}
+
 	};
 
 	vm.createRequest = createRequest;
 	vm.populateRequest = populateRequest;
 	vm.resetRequest = resetRequest;
-
 	vm.activate = activate;
 	vm.submit = submit;
 	vm.reset = reset;
@@ -127,38 +148,84 @@ function RegistrationController(
 	vm.clearSessionCookies = clearSessionCookies;
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
+	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
+	vm.certificate = true;
 
 	vm.activate();
+	vm.openExpiringCertificateDialog();
+
+	function ExpiringCertificateController(
+		$uibModalInstance, cert, expirationDate) {
+		var self = this;
+		self.enabled = true;
+		self.cert = cert;
+		self.expirationDate = expirationDate;
+
+		self.cancel = function () {
+			$uibModalInstance.dismiss('Dismissed');
+		};
+	}
+
+
+	function openExpiringCertificateDialog() {
+
+		if ($scope.iamX509AlmostExpired) {
+
+			var modalInstance = $uibModal.open({
+				templateUrl: '/resources/iam/apps/registration/certificate-expiration.html',
+				controller: ExpiringCertificateController,
+				controllerAs: '$ctrl',
+				backdrop: 'static',
+				resolve: {
+					cert: {
+						subjectDn: $scope.iamX509Subject,
+						issuerDn: $scope.iamX509Issuer
+					},
+					expirationDate: {
+						date: $scope.iamX509ExpirationDate
+					}
+				}
+			});
+
+			modalInstance.result.then(self.handleSuccess)
+				.catch(function (reason) {
+					if (reason === 'Dismissed') {
+						return;
+					}
+					console.error('Modal dismissed with error:', reason);
+				});
+		}
+	};
 
 	function activate() {
 		RegistrationRequestService.getConfig()
-			.then(function(res) {
+			.then(function (res) {
 				$scope.config = res.data;
 				vm.resetRequest();
 				vm.populateFieldsWithAdminPreference();
 				vm.populateRequest();
 			})
-			.catch(function(err) {
+			.catch(function (res) {
 				console.error(
 					'Error fetching registration config: ' + res.status + ' ' +
 					res.statusText);
 			});
 
 		Aup.getAup()
-			.then(function(res) {
+			.then(function (res) {
 				if (res != null) {
 					$scope.aup = res.data;
 				}
 			})
-			.catch(function(res) {
+			.catch(function (res) {
 				console.error(
 					'Error getting AUP : ' + res.status + ' ' + res.statusText);
 			});
 		PrivacyPolicy.getPrivacyPolicy()
-			.then(function(res) {
+			.then(function (res) {
 				$scope.privacyPolicy = res;
 			})
-			.catch(function(res) {
+			.catch(function (res) {
 				console.error(
 					'Error fetching privacy policy: ' + res.status + ' ' +
 					res.statusText);
@@ -180,13 +247,17 @@ function RegistrationController(
 	}
 
 	function populateValue(info, name) {
-		if (typeof $scope.config.fields != 'undefined' && typeof $scope.config.fields[name] != 'undefined' && typeof $scope.config.fields[name].externalAuthAttribute != 'undefined') {
-			return lookupAuthInfo(info, $scope.config.fields[name].externalAuthAttribute);
+		const fieldName = name.toUpperCase();
+		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined'
+			&& typeof $scope.config.fields[fieldName] != 'undefined'
+			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
+		if (hasExternalAttributeDefined) {
+			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
 		}
 	}
 
 	function populateRequest() {
-		var success = function(res) {
+		var success = function (res) {
 			var info = res.data;
 			$scope.extAuthInfo = info;
 			$scope.request = {
@@ -194,7 +265,9 @@ function RegistrationController(
 				familyname: populateValue(info, 'surname'),
 				username: populateValue(info, 'username'),
 				email: populateValue(info, 'email'),
+				affiliation: populateValue(info, 'affiliation'),
 				notes: '',
+				certificate: true,
 			};
 
 			if (info.type === 'OIDC') {
@@ -203,12 +276,12 @@ function RegistrationController(
 				$scope.extAuthProviderName = 'a SAML identity provider';
 			}
 
-			angular.forEach($scope.registrationForm.$error.required, function(field) {
+			angular.forEach($scope.registrationForm.$error.required, function (field) {
 				field.$setDirty();
 			});
 		};
 
-		var error = function(err) {
+		var error = function (err) {
 			$scope.operationResult = 'err';
 			$scope.textAlert = err.data.error_description || err.data.detail;
 			$scope.busy = false;
@@ -223,11 +296,11 @@ function RegistrationController(
 	}
 
 	function createRequest() {
-		var success = function(res) {
+		var success = function (res) {
 			$window.location.href = '/registration/submitted';
 		};
 
-		var error = function(err) {
+		var error = function (err) {
 			$scope.operationResult = 'err';
 			$scope.textAlert = err.data.error;
 			$scope.busy = false;
@@ -249,6 +322,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
+			certificate: true,
 			affiliation: '',
 		};
 	}
@@ -264,17 +338,17 @@ function RegistrationController(
 	}
 
 	function fieldValid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$valid;
 	}
 
 	function fieldInvalid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$invalid;
 	}
 
 	function fieldReadonly(name) {
-		return $scope.config?.fields?.[name]?.readOnly === true;
+		return $scope.config?.fields?.[name?.toUpperCase()]?.readOnly === true;
 	}
 
 	function populateFieldsWithAdminPreference() {
@@ -283,16 +357,16 @@ function RegistrationController(
 				if (
 					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() == "mandatory"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = true;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = true;
 				} else if (
 					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() === "optional"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = false;
 				} else {
-					$scope.fields[field].showField = false;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = false;
+					$scope.fields[field.toLowerCase()].required = false;
 				}
 			}
 		}
@@ -302,7 +376,7 @@ function RegistrationController(
 		let field = $scope.registrationForm[fieldName];
 		let fieldInfo = $scope.fields[fieldName];
 
-		if (!fieldInfo) {
+		if (!fieldInfo || !field) {
 			return null;
 		}
 

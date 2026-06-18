@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.test.core;
 
-import java.time.Instant;
-
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,30 +22,35 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 
-import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.MockOAuthSecurityContextService;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
 @TestConfiguration
 public class CoreControllerTestSupport {
-  public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
 
   @Primary
   @Bean(name = "resourceServerFilter")
   MockOAuth2Filter mockOAuth2Filter(OAuth2AuthenticationEntryPoint entryPoint) {
-
     return new MockOAuth2Filter();
   }
-  
+
   @Bean
-  @Primary
-  MockTimeProvider mockTimeProvider() {
-    return new MockTimeProvider();
+  MockOAuthSecurityContextService mockOAuthSecurityContextService(MockOAuth2Filter filter) {
+    return new MockOAuthSecurityContextService(filter);
   }
-  
+
   @Bean
   @Primary
   ApplicationEventPublisher mockApplicationEventPublisher() {
     return Mockito.mock(ApplicationEventPublisher.class);
+  }
+
+  @Bean
+  SecurityContextUtils securityContextUtils(MockOAuth2Filter authFilter,
+      MockOAuthSecurityContextService securityService) {
+
+    return new SecurityContextUtils(authFilter, securityService);
   }
 }

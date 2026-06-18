@@ -15,11 +15,14 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -34,25 +37,29 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+
 @Component
 public class IamUserApprovalUtils {
 
+  private final Clock clock;
   private final SystemScopeService scopeService;
   private final StatsService statsService;
-  private final ScopeClaimTranslationService scopeClaimTranslationService;
   private final UserInfoService userInfoService;
+  private final JWTProfileResolver profileResolver;
 
-  public IamUserApprovalUtils(SystemScopeService scopeService, StatsService statsService,
-      ScopeClaimTranslationService scopeClaimTranslationService, UserInfoService userInfoService) {
+  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService, StatsService statsService,
+      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
+    this.clock = clock;
     this.scopeService = scopeService;
     this.statsService = statsService;
-    this.scopeClaimTranslationService = scopeClaimTranslationService;
     this.userInfoService = userInfoService;
+    this.profileResolver = profileResolver;
   }
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
 
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
+    Set<SystemScope> sortedScopes = new TreeSet<>(Comparator.comparing(SystemScope::getValue));
     Set<SystemScope> systemScopes = scopeService.getAll();
 
     systemScopes.forEach(s -> {
@@ -68,7 +75,12 @@ public class IamUserApprovalUtils {
 
   public Map<String, Map<String, String>> claimsForScopes(Authentication authUser,
       Set<SystemScope> scopes) {
+
     UserInfo user = userInfoService.getByUsername(authUser.getName());
+    ScopeClaimTranslationService scopeClaimTranslationService =
+        profileResolver.resolveProfile(scopeService.toStrings(scopes))
+          .getScopeClaimTranslationService();
+
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
     if (user != null) {
       JsonObject userJson = user.toJson();
@@ -96,7 +108,7 @@ public class IamUserApprovalUtils {
 
   public Boolean isSafeClient(Integer count, Date clientCreatedAt) {
 
-    Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
+    Date lastWeek = Date.from(clock.instant().minus(Duration.ofDays(7)));
     return count > 1 && clientCreatedAt != null && clientCreatedAt.before(lastWeek);
   }
 

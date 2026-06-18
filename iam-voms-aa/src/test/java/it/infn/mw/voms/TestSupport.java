@@ -38,8 +38,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.google.common.collect.Lists;
-
 import it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
@@ -50,7 +48,6 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.voms.properties.VomsProperties;
-
 
 public class TestSupport {
 
@@ -87,8 +84,8 @@ public class TestSupport {
   static class TestConf {
     @Bean
     @Primary
-    public Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
+    Clock mockClock() {
+      return Clock.fixed(NOW, ZoneId.of("UTC"));
     }
   }
 
@@ -167,9 +164,9 @@ public class TestSupport {
     return VOMSACUtils.deserializeVOMSAttributes(attributeCertificate);
   }
 
-
-
   protected IamAccount setupTestUser() {
+
+    Date now = Date.from(clock.instant());
     IamAccount testAccount =
         accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -177,8 +174,10 @@ public class TestSupport {
     cert.setLabel("label");
     cert.setSubjectDn(TEST_0_SUBJECT);
     cert.setIssuerDn(TEST_0_ISSUER);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
 
-    List<IamX509Certificate> certs = Lists.newArrayList(cert);
+    List<IamX509Certificate> certs = List.of(cert);
     testAccount.linkX509Certificates(certs);
     accountRepo.save(testAccount);
 
@@ -186,6 +185,8 @@ public class TestSupport {
   }
 
   protected IamAccount setupTestUserWithDifferentCertIssuer() {
+
+    Date now = Date.from(clock.instant());
     IamAccount testAccount =
         accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -193,8 +194,10 @@ public class TestSupport {
     cert.setLabel("label");
     cert.setSubjectDn(TEST_0_SUBJECT);
     cert.setIssuerDn(TEST_1_ISSUER);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
 
-    List<IamX509Certificate> certs = Lists.newArrayList(cert);
+    List<IamX509Certificate> certs = List.of(cert);
     testAccount.linkX509Certificates(certs);
     accountRepo.save(testAccount);
 

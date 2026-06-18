@@ -29,8 +29,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -42,20 +42,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -65,14 +66,14 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import junit.framework.AssertionFailedError;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class X509AuthenticationIntegrationTests extends X509TestSupport {
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
@@ -83,22 +84,25 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   @Autowired
   private MockMvc mvc;
 
+  @Autowired
+  private MutableClock clock;
+
   @Test
-  public void testX509AuthenticationSuccessUserNotFound() throws Exception {
+  void testX509AuthenticationSuccessUserNotFound() throws Exception {
     mvc.perform(MockMvcRequestBuilders.get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
   }
 
   @Test
-  public void testX509AuthenticationSuccessButNotRequestedLeadsToLoginPage() throws Exception {
+  void testX509AuthenticationSuccessButNotRequestedLeadsToLoginPage() throws Exception {
 
     Instant now = Instant.now();
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
 
     iamAccountRepo.save(testAccount);
 
@@ -110,7 +114,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"))
+      .andExpect(redirectedUrl("/login"))
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_CAN_LOGIN_KEY, is(TRUE)));
 
@@ -131,25 +135,25 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testX509AuthenticationWhenAccountIsSuspended() throws Exception {
+  void testX509AuthenticationWhenAccountIsSuspended() throws Exception {
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
 
     testAccount.setActive(false);
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount = iamAccountRepo.findByCertificate(TEST_0_CERT_STRING)
-      .orElseThrow(
-          () -> new AssertionError("Expected test user linked to cert " + TEST_0_CERT_STRING));
+    String test0Cert = getTest0CertString();
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificate(test0Cert)
+      .orElseThrow(() -> new AssertionError("Expected test user linked to cert " + test0Cert));
 
     assertThat(resolvedAccount.getUsername(), equalTo("test"));
 
     mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"))
+      .andExpect(redirectedUrl("/login"))
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_SUSPENDED_ACCOUNT_KEY, is(TRUE)));
 
@@ -158,12 +162,12 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testX509AuthenticationVerifyFailedLeadsToLoginPage() throws Exception {
+  void testX509AuthenticationVerifyFailedLeadsToLoginPage() throws Exception {
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
 
     iamAccountRepo.save(testAccount);
 
@@ -177,12 +181,12 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .perform(MockMvcRequestBuilders.get("/")
         .headers(test0SSLHeadersVerificationFailed("verification failed")))
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/login"));
+      .andExpect(redirectedUrl("/login"));
   }
 
 
   @Test
-  public void testX509AccountLinkingRequiresAuthenticatedUser() throws Exception {
+  void testX509AccountLinkingRequiresAuthenticatedUser() throws Exception {
     mvc.perform(post("/iam/account-linking/X509").with(csrf().asHeader()))
       .andExpect(status().isUnauthorized());
   }
@@ -190,7 +194,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void testX509AccountLinkingWithoutCertFails() throws Exception {
+  void testX509AccountLinkingWithoutCertFails() throws Exception {
 
     String errorMessage = "No X.509 credential found in session for user 'test'";
     mvc.perform(post("/iam/account-linking/X509").with(csrf().asHeader()))
@@ -200,7 +204,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testx509AccountLinking() throws Exception {
+  void testx509AccountLinking() throws Exception {
 
     MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
     IamX509AuthenticationCredential credential =
@@ -233,6 +237,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     Date lastUpdateTime = linkedAccount.getLastUpdateTime();
     assertThat(linkedAccount.getUsername(), equalTo("test"));
 
+    clock.advance(Duration.ofHours(1));
     // This is to "update" the linked certificate
     mvc.perform(post("/iam/account-linking/X509").session(session).with(csrf().asHeader()))
       .andExpect(status().is3xxRedirection())
@@ -292,13 +297,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testUpdateCertWithSameIssuerAndSubjectButDifferentPem() throws Exception {
+  void testUpdateCertWithSameIssuerAndSubjectButDifferentPem() throws Exception {
 
     IamAccount account = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionFailedError("Account not found"));
-    account.linkX509Certificates(singletonList(OLD_TEST_0_IAM_X509_CERT));
+    account.linkX509Certificates(singletonList(getOldTest0Cert(clock.instant())));
 
-    String oldPemCert = OLD_TEST_0_IAM_X509_CERT.getCertificate();
+    String oldPemCert = getOldTest0Cert(clock.instant()).getCertificate();
 
     MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
     IamX509AuthenticationCredential credential =
@@ -328,7 +333,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testx509AccountLinkingWithDifferentSubjectAndIssuer() throws Exception {
+  void testx509AccountLinkingWithDifferentSubjectAndIssuer() throws Exception {
 
     MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
     IamX509AuthenticationCredential credential =
@@ -375,11 +380,11 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void x509AccountUnlinkWorks() throws Exception {
+  void x509AccountUnlinkWorks() throws Exception {
     IamAccount user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
 
-    linkTest0CertificateToAccount(user);
+    linkTest0CertificateToAccount(user, clock.instant());
 
     iamAccountRepo.save(user);
 
@@ -405,14 +410,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void x509AccountUnlinkCertificateWithSameSubjectAndDifferentIssuerWorks()
-      throws Exception {
+  void x509AccountUnlinkCertificateWithSameSubjectAndDifferentIssuerWorks() throws Exception {
 
     IamAccount user = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_0_ISSUER, "test0");
-    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_NEW_ISSUER, "test1");
+    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_0_ISSUER, "test0", clock.instant());
+    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_NEW_ISSUER, "test1", clock.instant());
 
     iamAccountRepo.save(user);
 
@@ -457,7 +461,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Test
   @WithMockUser(username = "test")
-  public void x509AccountUnlinkSuccedsSilentlyForUnlinkedAccount() throws Exception {
+  void x509AccountUnlinkSuccedsSilentlyForUnlinkedAccount() throws Exception {
     iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
 
@@ -479,7 +483,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void x509AccountUnlinkingFailsForUnauthenticatedUsers() throws Exception {
+  void x509AccountUnlinkingFailsForUnauthenticatedUsers() throws Exception {
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
         .with(csrf().asHeader()))
@@ -488,12 +492,12 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testx509AuthNFailsIfDisabledUser() throws Exception {
+  void testx509AuthNFailsIfDisabledUser() throws Exception {
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount, clock.instant());
 
     iamAccountRepo.save(testAccount);
 
@@ -522,22 +526,24 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testHashAndEqualsMethods() {
+  void testHashAndEqualsMethods() throws IOException {
 
-    HashSet<IamX509Certificate> set1 =
-        new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+    HashSet<IamX509Certificate> set1 = new HashSet<IamX509Certificate>(
+        Arrays.asList(getTest0Cert(clock.instant()), getTest1Cert(clock.instant())));
     assertThat(set1.size(), is(2));
-    assertNotEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_1_IAM_X509_CERT.hashCode());
+    assertNotEquals(getTest0Cert(clock.instant()).hashCode(),
+        getTest1Cert(clock.instant()).hashCode());
     assertEquals(set1.hashCode(),
-        TEST_0_IAM_X509_CERT.hashCode() + TEST_1_IAM_X509_CERT.hashCode());
-    assertNotEquals(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT);
+        getTest0Cert(clock.instant()).hashCode() + getTest1Cert(clock.instant()).hashCode());
+    assertNotEquals(getTest0Cert(clock.instant()), getTest1Cert(clock.instant()));
 
-    HashSet<IamX509Certificate> set2 =
-        new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT));
+    HashSet<IamX509Certificate> set2 = new HashSet<IamX509Certificate>(
+        Arrays.asList(getTest0Cert(clock.instant()), getTest2Cert(clock.instant())));
     assertThat(set2.size(), is(1));
-    assertEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_2_IAM_X509_CERT.hashCode());
-    assertEquals(set2.hashCode(), TEST_0_IAM_X509_CERT.hashCode());
-    assertEquals(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT);
+    assertEquals(getTest0Cert(clock.instant()).hashCode(),
+        getTest2Cert(clock.instant()).hashCode());
+    assertEquals(set2.hashCode(), getTest0Cert(clock.instant()).hashCode());
+    assertEquals(getTest0Cert(clock.instant()), getTest2Cert(clock.instant()));
 
   }
 

@@ -18,22 +18,26 @@ package it.infn.mw.iam.registration;
 import java.util.List;
 import java.util.Optional;
 
+import javax.servlet.http.HttpServletRequest;
+
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 
 public interface RegistrationRequestService {
 
   RegistrationRequestDto createRequest(RegistrationRequestDto request,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo);
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo,
+      HttpServletRequest httpRequest);
 
   List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
 
   List<RegistrationRequestDto> listPendingRequests();
 
   RegistrationRequestDto confirmRequest(String confirmationKey);
-  
-  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail);
-  
+
+  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation,
+      boolean doNotSendEmail);
+
   RegistrationRequestDto approveRequest(String requestUuid);
 
   Boolean usernameAvailable(String username);

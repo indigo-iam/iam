@@ -18,30 +18,21 @@ package it.infn.mw.iam.test.registration;
 import static java.util.Date.from;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -49,35 +40,21 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, OidcTestConfig.class, CoreControllerTestSupport.class,
-        RegistrationLifecycleTests.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {
-    // @formatter:off
-    "lifecycle.account.accountLifetimeDays=7"
-    // @formatter:on
-})
-public class RegistrationLifecycleTests extends EndpointsTestUtils {
-  static Instant NOW = Instant.parse("2020-01-01T00:00:00.00Z");
-  static Instant SEVEN_DAYS_FROM_NOW = NOW.plus(7, ChronoUnit.DAYS);
-
-  @Configuration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-  }
+        ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"lifecycle.account.accountLifetimeDays=7"})
+@AutoConfigureMockMvc
+@Transactional
+class RegistrationLifecycleTests extends EndpointsTestUtils {
 
   @Autowired
   ObjectMapper objectMapper;
@@ -88,14 +65,15 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
   @Autowired
   IamAccountRepository repo;
 
-  @Before
-  public void setup() {
-    oauth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  SecurityContextUtils sc;
 
-  @After
-  public void teardown() {
-    oauth2Filter.cleanupSecurityContext();
+  @Autowired
+  MutableClock clock;
+
+  @BeforeEach
+  void setup() {
+    sc.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -111,7 +89,6 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
     request.setAffiliation("Test-Affiliation");
 
     // @formatter:off
@@ -128,29 +105,27 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
   }
 
   @Test
-public void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
+  void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
     IamAccount account = approveRegistrationAndGetAccount("test_create");
 
-    assertThat(account.getEndTime(), is(from(SEVEN_DAYS_FROM_NOW)));
-}
+    assertThat(account.getEndTime(), is(from(clock.daysAfter(7))));
+  }
 
-@Test
-public void createRequestStoresAffiliation() throws Exception {
+  @Test
+  void createRequestStoresAffiliation() throws Exception {
     IamAccount account = approveRegistrationAndGetAccount("test_create");
 
     assertEquals("Test-Affiliation", account.getAffiliation());
-}
+  }
 
-private IamAccount approveRegistrationAndGetAccount(String username) throws Exception {
+  private IamAccount approveRegistrationAndGetAccount(String username) throws Exception {
     RegistrationRequestDto reg = createRegistrationRequest(username);
 
     mvc.perform(post("/registration/approve/{uuid}", reg.getUuid())
-            .with(user("admin").roles("ADMIN", "USER")))
-        .andExpect(status().isOk());
+      .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());
 
-    return repo.findByUsername(username)
-        .orElseThrow(assertionError("Expected account not found"));
-}
+    return repo.findByUsername(username).orElseThrow(assertionError("Expected account not found"));
+  }
 
 
 

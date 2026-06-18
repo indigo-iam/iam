@@ -18,19 +18,18 @@ spring:
   main:
     allow-bean-definition-overriding: true
     banner-mode: off
-    
+
   datasource:
-    
-    url: jdbc:mysql://${IAM_DB_HOST:dev.local.io}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=${IAM_DB_USE_SSL:false}&allowPublicKeyRetrieval=${IAM_DB_ALLOW_PUBLIC_KEY_RETRIEVAL:true}
+    url: jdbc:mysql://${IAM_DB_HOST:localhost}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}${IAM_DB_URL_PARAMS:?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${IAM_DB_USERNAME:iam}
     password: ${IAM_DB_PASSWORD:pwd}
-    
     hikari:
-      maximum-pool-size: 5
+      maximum-pool-size: 2
       minimum-idle: 1
       connection-test-query: SELECT 1
-     
+
   flyway:
+    enabled: true
     locations:
       - classpath:db/migration/mysql
       - classpath:db/migration/test

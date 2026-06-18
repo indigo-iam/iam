@@ -212,7 +212,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var data = {
 
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				path: "members",
 				value: [{
@@ -239,7 +239,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				path: "members",
 				value: [{
@@ -265,7 +265,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					groups: [{
@@ -290,7 +290,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				path: "members",
 				value: [{
@@ -318,7 +318,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var data = {
 
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -345,7 +345,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var data = {
 
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -367,7 +367,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -390,7 +390,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -411,7 +411,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -433,7 +433,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -460,7 +460,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -483,7 +483,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -508,7 +508,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "add",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -532,7 +532,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "remove",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {
@@ -561,7 +561,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "replace",
 				value: {
 					active: status
@@ -584,7 +584,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: ops
+			Operations: ops
 		};
 		var url = urlUsers + '/' + userId;
 
@@ -602,7 +602,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: ops
+			Operations: ops
 		};
 
 		return $http.patch(urlMe, data, config);
@@ -619,7 +619,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		};
 		var data = {
 			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
+			Operations: [{
 				op: "replace",
 				value: {
 					"urn:indigo-dc:scim:schemas:IndigoUser": {

@@ -45,8 +45,11 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -64,18 +67,25 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
   private final InactiveAccountAuthenticationHander inactiveAccountHandler;
   private final IamTotpMfaRepository totpMfaRepository;
   private final SessionTimeoutHelper sessionTimeoutHelper;
+  private final IamOidcJITAccountProvisioningProperties jitProperties;
+  private final OidcAccountProvisioningService oidcProvisioningService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public OidcAuthenticationProvider(
       AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
+      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
 
     this.tokenValidatorService = tokenValidatorService;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
     this.accountRepo = accountRepo;
     this.inactiveAccountHandler = inactiveAccountHandler;
     this.totpMfaRepository = totpMfaRepository;
+    this.jitProperties = jitProperties;
+    this.oidcProvisioningService = oidcProvisioningService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   @Override
@@ -91,7 +101,12 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
     Optional<IamAccount> account = accountRepo.findByOidcId(token.getIssuer(), token.getSub());
     if (account.isEmpty()) {
-      return unregisteredOidcAuthentication(token);
+      if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
+        IamAccount newAccount = oidcProvisioningService.provisionAccount(token);
+        return registeredOidcAuthentication(newAccount, token);
+      } else {
+        return unregisteredOidcAuthentication(token);
+      }
     }
     inactiveAccountHandler.handleInactiveAccount(account.get());
     return registeredOidcAuthentication(account.get(), token);
@@ -102,8 +117,13 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
     String acrValue = computeAcrValue(token);
     Optional<IamTotpMfa> mfaSettings = totpMfaRepository.findByAccount(account);
+    
+    boolean mfaMissing = mfaNotDone(acrValue);
+    boolean active = mfaSettings.map(IamTotpMfa::isActive).orElse(false);
+    boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
 
-    if (mfaSettings.isPresent() && mfaSettings.get().isActive() && mfaNotDone(acrValue)) {
+
+    if ((active && mfaMissing) || (!active && mandatory)) {
       return preAuthenticated(account, token);
     }
     return fullyAuthenticated(account, token, acrValue);

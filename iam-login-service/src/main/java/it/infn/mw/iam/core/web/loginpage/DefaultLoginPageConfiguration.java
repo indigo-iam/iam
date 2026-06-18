@@ -53,6 +53,10 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean showLinkToLocalAuthn;
   private boolean defaultLoginPageLayout;
   private boolean mfaSettingsBtnEnabled;
+  private boolean multiFactorMandatory;
+
+  @Value("${iam.registration.registration-button-text}")
+  private String registrationButtonText;
 
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
@@ -62,10 +66,8 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
@@ -86,6 +88,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
       .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
+    multiFactorMandatory = iamTotpMfaProperties.isMultiFactorMandatory();
   }
 
   @Override
@@ -173,6 +176,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   }
 
   @Override
+  public String getRegistrationButtonText() {
+    return registrationButtonText;
+  }
+
+  @Override
   public List<OidcProvider> getOidcProviders() {
     return providers.getValidatedProviders();
   }
@@ -200,6 +208,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   @Override
   public boolean isMfaSettingsBtnEnabled() {
     return mfaSettingsBtnEnabled;
+  }
+
+  @Override
+  public boolean isMultiFactorMandatory() {
+    return multiFactorMandatory;
   }
 
   @Override

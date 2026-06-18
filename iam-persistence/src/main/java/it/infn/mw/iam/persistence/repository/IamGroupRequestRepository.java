@@ -23,6 +23,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
+import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 public interface IamGroupRequestRepository
@@ -34,5 +35,5 @@ public interface IamGroupRequestRepository
   List<IamGroupRequest> findByUsernameAndGroup(@Param("username") String username,
       @Param("groupName") String groupName);
 
-  
+  Optional<IamGroupRequest> findByGroupIdAndAccountIdAndStatus(Long groupID, Long accountID, IamGroupRequestStatus status);
 }

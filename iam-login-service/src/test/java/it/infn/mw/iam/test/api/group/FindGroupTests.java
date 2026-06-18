@@ -27,36 +27,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class FindGroupTests extends TestSupport {
+class FindGroupTests implements StructuredScopeTestSupportConstants {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
+  static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
 
   @Autowired
   private MockMvc mvc;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
   private IamGroupRepository groupRepo;
@@ -70,14 +76,12 @@ public class FindGroupTests extends TestSupport {
   @Autowired
   private IamAccountService accountService;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  SecurityContextUtils context;
 
-  @After
-  public void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -86,31 +90,31 @@ public class FindGroupTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void findingRequiresAuthenticatedUser() throws Exception {
+  void findingRequiresAuthenticatedUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(UNAUTHORIZED);
 
     mvc.perform(get(FIND_BY_NAME_RESOURCE).param("name", "test")).andExpect(UNAUTHORIZED);
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID)).andExpect(UNAUTHORIZED);
 
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void findingRequiresAdminUser() throws Exception {
+  void findingRequiresAdminUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(FORBIDDEN);
 
     mvc.perform(get(FIND_BY_NAME_RESOURCE).param("name", "test")).andExpect(FORBIDDEN);
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID)).andExpect(FORBIDDEN);
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID)).andExpect(FORBIDDEN);
   }
 
   @Test
-  public void findByNameWorks() throws Exception {
+  void findByNameWorks() throws Exception {
 
 
     IamGroup group = groupRepo.findByUuid(TEST_001_GROUP_UUID)
@@ -131,11 +135,10 @@ public class FindGroupTests extends TestSupport {
 
 
   @Test
-  public void findUnsubscribedGroupsWorks() throws Exception {
+  void findUnsubscribedGroupsWorks() throws Exception {
 
-    IamAccount testAccount =
-        accountRepo.findByUsername(TEST_USER)
-          .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     // Cleanup all group memberships and groups
     accountRepo.deleteAllAccountGroupMemberships();
@@ -158,7 +161,7 @@ public class FindGroupTests extends TestSupport {
 
     sibling = groupService.createGroup(sibling);
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(3)))
       .andExpect(jsonPath("$.Resources[0].displayName", is("root")))
@@ -167,43 +170,42 @@ public class FindGroupTests extends TestSupport {
 
     accountService.addToGroup(testAccount, subgroup);
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(1)))
       .andExpect(jsonPath("$.Resources[0].displayName", is("sibling")));
 
     accountService.addToGroup(testAccount, sibling);
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(0)))
       .andExpect(jsonPath("$.Resources", emptyIterable()));
 
     accountRepo.deleteAllAccountGroupMemberships();
 
-    mvc
-      .perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID).param("filter", "sib"))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID).param("filter", "sib"))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(1)))
       .andExpect(jsonPath("$.Resources[0].displayName", is("sibling")));
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID).param("filter", ""))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID).param("filter", ""))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.status", is("400")))
       .andExpect(jsonPath("$.detail", containsString("Invalid find group request")));
 
-    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID).param("filter", "a"))
+    mvc.perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID).param("filter", "a"))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.status", is("400")))
       .andExpect(jsonPath("$.detail", containsString("Invalid find group request")));
 
     mvc
-      .perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_USER_UUID).param("filter",
+      .perform(get(FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, TEST_UUID).param("filter",
           randomAlphabetic(65)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.status", is("400")))
       .andExpect(jsonPath("$.detail", containsString("Invalid find group request")));
-      
+
   }
 
 }

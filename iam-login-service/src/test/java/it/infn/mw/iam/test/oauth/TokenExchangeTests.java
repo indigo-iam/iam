@@ -25,7 +25,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,13 +39,11 @@ import java.util.Map;
 import java.util.Random;
 
 import org.json.JSONObject;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -52,17 +51,15 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TokenExchangeTests extends EndpointsTestUtils {
+class TokenExchangeTests extends EndpointsTestUtils {
 
   private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
   private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
@@ -79,7 +76,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   private IamAupRepository aupRepo;
 
   @Test
-  public void testImpersonationFlowWithAudience() throws Exception {
+  void testImpersonationFlowWithAudience() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -137,18 +134,20 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     // Introspect token
     mvc.perform(post("/introspect")
         .with(httpBasic(actorClientId, actorClientSecret))
-        .param("token", actorAccessToken))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", actorAccessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud", equalTo("tasks-app")))
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo("test")))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
   }
 
   @Test
-  public void testImpersonationFlowFailsIfAUPNotSigned() throws Exception {
+  void testImpersonationFlowFailsIfAUPNotSigned() throws Exception {
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
 
@@ -192,11 +191,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("User test needs to sign AUP for this organization in order to proceed.")));
+          equalTo("User with uuid " + TEST_UUID + " needs to sign AUP for this organization in order to proceed.")));
   }
 
   @Test
-  public void testImpersonationFlowWithoutAudience() throws Exception {
+  void testImpersonationFlowWithoutAudience() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -247,28 +246,28 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     // Introspect token
     // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(actorClientId, actorClientSecret))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", actorAccessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud").doesNotExist())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", allOf(containsString("openid"), containsString("profile"))))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo(TEST_USERNAME)))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
 
-
- // @formatter:off
+    // @formatter:off
     mvc.perform(get("/userinfo")
         .header("Authorization", "Bearer " + actorAccessToken))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")));
+      .andExpect(jsonPath("$.sub", equalTo(TEST_UUID)));
     // @formatter:on
   }
 
   @Test
-  public void testUnauthorizedClient() throws Exception {
+  void testUnauthorizedClient() throws Exception {
 
     String clientId = "client-cred";
     String clientSecret = "secret";
@@ -298,7 +297,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testTokenExchangeWithRefreshToken() throws Exception {
+  void testTokenExchangeWithRefreshToken() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -377,14 +376,16 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
-        .param("token", refreshedToken.getValue()))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", refreshedToken.getValue())
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
   }
 
   @Test
-  public void testDelegationFlow() throws Exception {
+  void testDelegationFlow() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -428,7 +429,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testWithInvalidSubjectToken() throws Exception {
+  void testWithInvalidSubjectToken() throws Exception {
 
     String actorClientId = "token-exchange-actor";
     String actorClientSecret = "secret";
@@ -442,13 +443,13 @@ public class TokenExchangeTests extends EndpointsTestUtils {
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)
         .param("scope", "read-tasks"))
-      .andExpect(status().isUnauthorized())
-      .andExpect(jsonPath("$.error", equalTo("invalid_token")));
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_grant")));
     // @formatter:on
   }
 
   @Test
-  public void testTokenExchangeForClientCredentialsClient() throws Exception {
+  void testTokenExchangeForClientCredentialsClient() throws Exception {
 
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId("client-cred")
@@ -494,7 +495,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
 
   @Test
-  public void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
+  void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
 
 
     String clientId = "token-exchange-actor";
@@ -532,7 +533,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testActClaimSetting() throws Exception {
+  void testActClaimSetting() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -611,7 +612,9 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
-        .param("token", refreshedToken.getValue()))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", refreshedToken.getValue())
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     
@@ -651,7 +654,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testImpersonationFlowWithLongRequestParamWorks() throws Exception {
+  void testImpersonationFlowWithLongRequestParamWorks() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";

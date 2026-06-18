@@ -28,8 +28,6 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @Component
 public class AttributeMapHelper {
 
-  public static final String ATTR_SCOPE = "attr";
-
   public Map<String, String> getAttributeMapFromUserInfo(IamUserInfo info) {
 
     Map<String, String> result = Maps.newHashMap();

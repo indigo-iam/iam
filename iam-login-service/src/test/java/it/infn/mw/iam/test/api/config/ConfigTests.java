@@ -17,36 +17,40 @@ package it.infn.mw.iam.test.api.config;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@WithAnonymousUser
-//@formatter:off
-@TestPropertySource(properties = {
-  "lifecycle.account.read-only-end-time=true"
-})
-//@formatter:on}
-public class ConfigTests extends TestSupport {
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"lifecycle.account.read-only-end-time=true"})
+@AutoConfigureMockMvc
+@Transactional
+class ConfigTests {
 
-  private static final String ENDPOINT = "/iam/config/lifecycle/account/read-only-end-time";
+  static final String ENDPOINT = "/iam/config/lifecycle/account/read-only-end-time";
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void testGetReadOnlyEndTime() throws Exception { 
-    mvc.perform(get((ENDPOINT))).andExpect(OK).andExpect(jsonPath("$").value(true));
+  @WithAnonymousUser
+  void testGetReadOnlyEndTime() throws Exception {
+    mvc.perform(get(("/iam/config/lifecycle/account/read-only-end-time")))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$").value(true));
   }
 
 }

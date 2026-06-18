@@ -33,17 +33,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -63,57 +61,57 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
-@TestPropertySource(properties = {"notification.disable=false", "notification.subject-prefix=INDIGO IAM"})
-public class RegistrationFlowNotificationTests {
+@TestPropertySource(
+    properties = {"notification.disable=false", "notification.subject-prefix=INDIGO IAM"})
+class RegistrationFlowNotificationTests {
 
   @Autowired
-  private NotificationProperties properties;
+  NotificationProperties properties;
 
   @Value("${spring.mail.host}")
-  private String mailHost;
+  String mailHost;
 
   @Value("${spring.mail.port}")
-  private Integer mailPort;
+  Integer mailPort;
 
   @Value("${iam.organisation.name}")
-  private String organisationName;
+  String organisationName;
 
   @Value("${iam.baseUrl}")
-  private String baseUrl;
+  String baseUrl;
 
   @Autowired
-  private PersistentUUIDTokenGenerator generator;
+  PersistentUUIDTokenGenerator generator;
 
   @Autowired
-  private MockNotificationDelivery notificationDelivery;
+  MockNotificationDelivery notificationDelivery;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
-  private WebApplicationContext context;
+  WebApplicationContext context;
 
   @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @Autowired
-  private IamRegistrationRequestRepository requestRepository;
+  IamRegistrationRequestRepository requestRepository;
 
-  private MockMvc mvc;
+  MockMvc mvc;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
@@ -123,14 +121,14 @@ public class RegistrationFlowNotificationTests {
   }
 
   @Test
-  public void testSendWithEmptyQueue() {
+  void testSendWithEmptyQueue() {
 
     notificationDelivery.sendPendingNotifications();
     assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(0));
   }
 
   @Test
-  public void testApproveFlowNotifications() throws Exception {
+  void testApproveFlowNotifications() throws Exception {
 
     String username = "approve_flow";
 
@@ -215,7 +213,7 @@ public class RegistrationFlowNotificationTests {
   }
 
   @Test
-  public void testRejectFlowNoMotivationNotifications() throws Exception {
+  void testRejectFlowNoMotivationNotifications() throws Exception {
 
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
@@ -236,7 +234,7 @@ public class RegistrationFlowNotificationTests {
   }
 
   @Test
-  public void testRejectFlowNoNotificationSent() throws Exception {
+  void testRejectFlowNoNotificationSent() throws Exception {
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
     mvc.perform(post("/registration/reject/{uuid}", request.getUuid())
@@ -252,7 +250,7 @@ public class RegistrationFlowNotificationTests {
   }
 
   @Test
-  public void testRejectFlowMotivationNotifications() throws Exception {
+  void testRejectFlowMotivationNotifications() throws Exception {
 
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 

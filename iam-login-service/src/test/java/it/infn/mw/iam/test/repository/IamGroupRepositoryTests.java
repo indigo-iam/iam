@@ -22,54 +22,43 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.internal.util.collections.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
+@Transactional
+class IamGroupRepositoryTests {
 
-@RunWith(SpringRunner.class)
-@IamNoMvcTest
-public class IamGroupRepositoryTests {
+  static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
 
   @Autowired
-  private IamGroupRepository groupRepository;
+  IamGroupRepository groupRepository;
 
-  private IamGroup parent;
-  private IamGroup child;
-  
-  private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
-
-  @After
-  public void tearDown() {
-    if (child != null) {
-      deleteGroup(child);
-    }
-    if (parent != null) {
-      deleteGroup(parent);
-    }
-  }
+  IamGroup parent;
+  IamGroup child;
 
   @Test
-  public void createParentGroup() {
+  void createParentGroup() {
 
     parent = createGroup(null);
 
@@ -80,7 +69,7 @@ public class IamGroupRepositoryTests {
   }
 
   @Test
-  public void createNestedGroup() {
+  void createNestedGroup() {
 
     parent = createGroup(null);
     child = createGroup(parent);
@@ -95,7 +84,7 @@ public class IamGroupRepositoryTests {
   }
 
   @Test
-  public void deleteNestedGroup() {
+  void deleteNestedGroup() {
 
     parent = createGroup(null);
     child = createGroup(parent);
@@ -111,7 +100,7 @@ public class IamGroupRepositoryTests {
   }
 
   @Test
-  public void deleteNotEmptyParentGroup() {
+  void deleteNotEmptyParentGroup() {
     parent = createGroup(null);
     child = createGroup(parent);
 
@@ -123,7 +112,7 @@ public class IamGroupRepositoryTests {
   }
 
   @Test
-  public void listAllRootGroups() {
+  void listAllRootGroups() {
     List<IamGroup> rootGroups = groupRepository.findRootGroups();
     int count = rootGroups.size();
 
@@ -132,7 +121,7 @@ public class IamGroupRepositoryTests {
   }
 
   @Test
-  public void listSubgroups() {
+  void listSubgroups() {
     parent = createGroup(null);
 
     Page<IamGroup> subgroups = groupRepository.findSubgroups(parent, null);
@@ -142,24 +131,24 @@ public class IamGroupRepositoryTests {
     subgroups = groupRepository.findSubgroups(parent, null);
     assertThat(subgroups.getNumberOfElements(), is(1));
   }
-  
+
   @Test
-  public void lookupGroupsByName() {
-    List<IamGroup> groups =groupRepository.findByNameIgnoreCaseContaining("00");
+  void lookupGroupsByName() {
+    List<IamGroup> groups = groupRepository.findByNameIgnoreCaseContaining("00");
     assertThat(groups.isEmpty(), is(false));
     assertThat(groups.size(), is(9));
-    
-    groups =groupRepository.findByNameIgnoreCaseContaining("reuwyuhisajd");
+
+    groups = groupRepository.findByNameIgnoreCaseContaining("reuwyuhisajd");
     assertThat(groups.isEmpty(), is(true));
-    
+
   }
 
   @Test
-  public void lookupGroupsByUuidNotInUuidSet() {
-    List<IamGroup> allGroups  = Lists.newArrayList(groupRepository.findAll());
+  void lookupGroupsByUuidNotInUuidSet() {
+    List<IamGroup> allGroups = Lists.newArrayList(groupRepository.findAll());
     List<IamGroup> groups = groupRepository.findByUuidNotIn(Sets.newSet(TEST_001_GROUP_ID));
     assertThat(groups.isEmpty(), is(false));
-    assertThat(groups.size(), equalTo(allGroups.size() -1 ));
+    assertThat(groups.size(), equalTo(allGroups.size() - 1));
   }
 
   private IamGroup createGroup(IamGroup parentGroup) {
@@ -178,15 +167,6 @@ public class IamGroupRepositoryTests {
     }
 
     return group;
-  }
-
-  private void deleteGroup(IamGroup group) {
-    IamGroup parent = group.getParentGroup();
-    if (parent != null) {
-      parent.getChildrenGroups().remove(group);
-      groupRepository.save(parent);
-    }
-    groupRepository.delete(group);
   }
 
 }

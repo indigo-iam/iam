@@ -15,20 +15,19 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_CODE_URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_DEVICE_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.DEVICE_APPROVED_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REQUEST_USER_CODE_STRING;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +39,6 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.SystemScope;
@@ -78,8 +76,12 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Controller
 public class IamDeviceEndpointController {
 
+  public static final String DEVICE_CODE_URL = "devicecode";
+  public static final String USER_CODE_URL = "device";
+
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
+  private final Clock clock;
   private final IamClientRepository clientRepository;
   private final SystemScopeService scopeService;
   private final ConfigurationPropertiesBean config;
@@ -90,11 +92,12 @@ public class IamDeviceEndpointController {
   private final DeviceCodeRepository deviceCodeRepository;
   private final ScopeFilter scopeFilter;
 
-  public IamDeviceEndpointController(IamClientRepository clientRepository,
+  public IamDeviceEndpointController(Clock clock, IamClientRepository clientRepository,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
       DeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
+    this.clock = clock;
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
     this.config = config;
@@ -200,7 +203,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
+    if (dc.getExpiration() != null && dc.getExpiration().before(Date.from(clock.instant()))) {
       model.addAttribute(ERROR_STRING, "expiredUserCode");
       return REQUEST_USER_CODE_STRING;
     }
@@ -231,7 +234,7 @@ public class IamDeviceEndpointController {
       OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
       OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
 
-      approveDevice(dc, o2Auth);
+      deviceCodeService.approveDeviceCode(dc, o2Auth);
 
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
       return DEVICE_APPROVED_PAGE;
@@ -248,9 +251,8 @@ public class IamDeviceEndpointController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @PostMapping(value = "/" + USER_CODE_URL + "/approve")
   public String confirmAccess(@RequestParam("user_code") String userCode,
-      @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
-      @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
-      ModelMap model, Authentication auth, HttpSession session) {
+      @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve, ModelMap model,
+      Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
         (AuthorizationRequest) session.getAttribute("authorizationRequest");
@@ -261,7 +263,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
+    if (dc.getExpiration() != null && dc.getExpiration().before(Date.from(clock.instant()))) {
       model.addAttribute(ERROR_STRING, "expiredUserCode");
       return REQUEST_USER_CODE_STRING;
     }
@@ -278,9 +280,9 @@ public class IamDeviceEndpointController {
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
 
-    approveDevice(dc, o2Auth);
+    deviceCodeService.approveDeviceCode(dc, o2Auth);
 
-    setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
+    setAuthzRequestAfterApproval(authorizationRequest, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, auth);
 
     model.put(APPROVAL_ATTRIBUTE_KEY, true);
@@ -311,29 +313,20 @@ public class IamDeviceEndpointController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
 
-    if (dc.getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE)));
+    if (dc.getRequestParameters().containsKey(RESOURCE_KEY)) {
+      model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE_KEY)));
     }
 
     // just for tests validation
     model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));
   }
 
-  private void approveDevice(DeviceCode dc, OAuth2Authentication o2Auth) {
-
-    dc.setApproved(true);
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(o2Auth);
-    dc.setAuthenticationHolder(authHolder);
-    deviceCodeRepository.save(dc);
-  }
-
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
-      String remember, Boolean approve) {
+      Boolean approve) {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
-    approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
+    approvalParameters.put(REMEMBER_PARAMETER_KEY, "none");
     approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
 
     Set<String> scopes = authorizationRequest.getScope();

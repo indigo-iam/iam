@@ -26,7 +26,6 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 public class UserInfoAdapter implements UserInfo {
 
-
   private static final long serialVersionUID = 1L;
 
   final IamUserInfo userinfo;
@@ -106,8 +105,6 @@ public class UserInfoAdapter implements UserInfo {
   public String getZoneinfo() {
     return userinfo.getZoneinfo();
   }
-
- 
 
   public void setBirthdate(String birthdate) {
     userinfo.setBirthdate(birthdate);
@@ -201,7 +198,6 @@ public class UserInfoAdapter implements UserInfo {
   public Address getAddress() {
 
     return AddressAdapter.forIamAddress(userinfo.getAddress());
-
   }
 
   @Override
@@ -209,13 +205,10 @@ public class UserInfoAdapter implements UserInfo {
     // no op
   }
 
-
-
   @Override
   public String getUpdatedTime() {
     return format("%d", userinfo.getUpdatedTime());
   }
-
 
   public static UserInfoAdapter forIamUserInfo(IamUserInfo info) {
     return new UserInfoAdapter(info);
@@ -223,6 +216,6 @@ public class UserInfoAdapter implements UserInfo {
 
   public IamUserInfo getUserinfo() {
     return userinfo;
-  }  
+  }
 
 }

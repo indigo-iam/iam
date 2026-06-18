@@ -17,14 +17,13 @@ package it.infn.mw.iam.test.util.oidc;
 
 import static com.google.common.collect.Maps.newHashMap;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import org.mitre.jose.keystore.JWKSetKeyStore;
 
 import com.google.common.base.Strings;
 import com.nimbusds.jose.JOSEException;
@@ -36,6 +35,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
+import it.infn.mw.iam.core.jwk.JwkKeyStore;
 
 public class IdTokenBuilder {
 
@@ -50,17 +51,16 @@ public class IdTokenBuilder {
   String jwtId;
   String nonce;
 
-  final JWKSetKeyStore keyStore;
+  final JwkKeyStore keyStore;
   final JWSAlgorithm signingAlgo;
   JWSSigner signer;
   
   Map<String, String> customClaims = newHashMap();
 
-  public IdTokenBuilder(JWKSetKeyStore keyStore, JWSAlgorithm algo) {
-    Calendar cal = Calendar.getInstance();
-    issueTime = cal.getTime();
-    cal.add(Calendar.HOUR, 1);
-    expirationTime = cal.getTime();
+  public IdTokenBuilder(Clock clock, JwkKeyStore keyStore, JWSAlgorithm algo) {
+
+    issueTime = Date.from(clock.instant());
+    expirationTime = Date.from(clock.instant().plus(Duration.ofHours(1)));
     jwtId = UUID.randomUUID().toString();
     this.keyStore = keyStore;
     this.signingAlgo = algo;
@@ -75,7 +75,6 @@ public class IdTokenBuilder {
       }
     }
   }
-
 
   public IdTokenBuilder issuer(String issuer) {
     this.issuer = issuer;

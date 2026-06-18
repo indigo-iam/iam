@@ -45,7 +45,8 @@
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
             username: username,
-            isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled
+            isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled,
+            isMfaMandatory: isMfaMandatory
         };
 
         return service;
@@ -149,6 +150,10 @@
 
         function isMfaSettingsBtnEnabled() {
             return getMfaSettingsBtnEnabled();
+        }
+
+        function isMfaMandatory() {
+            return getMfaMandatory();
         }
 
         function buildErrorResult(errorString) {

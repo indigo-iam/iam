@@ -18,13 +18,15 @@ package it.infn.mw.iam.authn.saml;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties.UsernameMappingPolicy.attributeValuePolicy;
 import static it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties.UsernameMappingPolicy.samlIdPolicy;
-import static java.util.Objects.isNull;
 
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
@@ -42,13 +44,11 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetailsServiceSupport
     implements SAMLUserDetailsService {
 
-
   private final IamAccountRepository repo;
   private final IamAccountService accountService;
   private final Optional<Set<String>> trustedIdpEntityIds;
 
   private final MappingPropertiesResolver mappingResolver;
-
 
   public JustInTimeProvisioningSAMLUserDetailsService(SamlUserIdentifierResolver resolver,
       IamAccountService accountService, InactiveAccountAuthenticationHander inactiveAccountHandler,
@@ -65,24 +65,23 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
   protected void samlCredentialEntityIdChecks(SAMLCredential credential) {
     trustedIdpEntityIds.ifPresent(l -> {
       if (!l.contains(credential.getRemoteEntityID())) {
-        throw new UsernameNotFoundException(
+        throw new AuthenticationServiceException(
             String.format("Error provisioning user! SAML credential issuer '%s' is not trusted"
                 + " for just-in-time account provisioning.", credential.getRemoteEntityID()));
       }
     });
   }
 
-  protected void samlCredentialAttributesChecks(SAMLCredential credential,
-      EnumSet<Saml2Attribute> requiredAttributes) {
-    for (Saml2Attribute a : requiredAttributes) {
-      if (credential.getAttributeAsString(a.getAttributeName()) == null) {
-        throw new UsernameNotFoundException(String.format(
-            "Error provisioning user! SAML credential is missing required attribute: %s (%s)",
-            a.getAlias(), a.getAttributeName()));
-      }
+  protected void samlCredentialAttributesChecks(Map<Saml2Attribute, String> samlAttributes,
+      Set<Saml2Attribute> requiredAttributes) {
+    if (!samlAttributes.keySet().containsAll(requiredAttributes)) {
+      requiredAttributes.removeAll(samlAttributes.keySet());
+      Saml2Attribute missing = requiredAttributes.iterator().next();
+      throw new AuthenticationServiceException(String.format(
+          "Error provisioning user! SAML credential is missing required attribute: %s (%s)",
+          missing.getAlias(), missing.getAttributeName()));
     }
   }
-
 
   private void safeSetUsername(IamAccount account, String username, String defaultUsername) {
     if (username.length() < 128) {
@@ -92,52 +91,41 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
     }
   }
 
-  private EnumSet<Saml2Attribute> buildRequiredAttributes(
+  private Set<Saml2Attribute> buildRequiredAttributes(
       AttributeMappingProperties mappingProperties) {
     EnumSet<Saml2Attribute> requiredAttrs = EnumSet.noneOf(Saml2Attribute.class);
 
-    requiredAttrs.add(Saml2Attribute.byAlias(mappingProperties.getFirstNameAttribute()));
-    requiredAttrs.add(Saml2Attribute.byAlias(mappingProperties.getFamilyNameAttribute()));
-    requiredAttrs.add(Saml2Attribute.byAlias(mappingProperties.getEmailAttribute()));
+    requiredAttrs.add(Saml2Attribute.from(mappingProperties.getFirstNameAttribute()));
+    requiredAttrs.add(Saml2Attribute.from(mappingProperties.getFamilyNameAttribute()));
+    requiredAttrs.add(Saml2Attribute.from(mappingProperties.getEmailAttribute()));
 
     if (attributeValuePolicy.equals(mappingProperties.getUsernameMappingPolicy())) {
-      requiredAttrs.add(Saml2Attribute.byAlias(mappingProperties.getUsernameAttribute()));
+      requiredAttrs.add(Saml2Attribute.from(mappingProperties.getUsernameAttribute()));
     }
 
     return requiredAttrs;
   }
 
-  private void mapAttributes(SAMLCredential credential, IamSamlId samlId, IamAccount newAccount,
-      AttributeMappingProperties mappingProperties) {
+  private void mapAttributes(Map<Saml2Attribute, String> samlAttributes, IamSamlId samlId,
+      IamAccount newAccount, AttributeMappingProperties mappingProperties) {
 
-    Saml2Attribute givenName = Saml2Attribute.byAlias(mappingProperties.getFirstNameAttribute());
-    Saml2Attribute familyName = Saml2Attribute.byAlias(mappingProperties.getFamilyNameAttribute());
-    Saml2Attribute email = Saml2Attribute.byAlias(mappingProperties.getEmailAttribute());
+    Saml2Attribute givenName = Saml2Attribute.from(mappingProperties.getFirstNameAttribute());
+    Saml2Attribute familyName = Saml2Attribute.from(mappingProperties.getFamilyNameAttribute());
+    Saml2Attribute email = Saml2Attribute.from(mappingProperties.getEmailAttribute());
 
-    newAccount.getUserInfo().setGivenName(getAttributeAsString(credential, givenName));
-
-    newAccount.getUserInfo().setFamilyName(getAttributeAsString(credential, familyName));
-
-    newAccount.getUserInfo().setEmail(getAttributeAsString(credential, email));
+    newAccount.getUserInfo().setGivenName(samlAttributes.get(givenName));
+    newAccount.getUserInfo().setFamilyName(samlAttributes.get(familyName));
+    newAccount.getUserInfo().setEmail(samlAttributes.get(email));
 
     final UsernameMappingPolicy mp = mappingProperties.getUsernameMappingPolicy();
 
     if (attributeValuePolicy.equals(mp)) {
-      if (!isNull(mappingProperties.getUsernameAttribute())) {
-        Saml2Attribute username = Saml2Attribute.byAlias(mappingProperties.getUsernameAttribute());
-        safeSetUsername(newAccount, getAttributeAsString(credential, username),
-            newAccount.getUsername());
-      }
+      Saml2Attribute username = Saml2Attribute.from(mappingProperties.getUsernameAttribute());
+      safeSetUsername(newAccount, samlAttributes.get(username), newAccount.getUsername());
     } else if (samlIdPolicy.equals(mp)) {
       safeSetUsername(newAccount, samlId.getUserId(), newAccount.getUsername());
     }
   }
-
-
-  private String getAttributeAsString(SAMLCredential credential, Saml2Attribute attribute) {
-    return credential.getAttributeAsString(attribute.getAttributeName());
-  }
-
 
   private IamAccount provisionAccount(SAMLCredential credential, IamSamlId samlId) {
 
@@ -146,7 +134,11 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
     AttributeMappingProperties mappingProperties =
         mappingResolver.resolveMappingProperties(credential.getRemoteEntityID());
 
-    samlCredentialAttributesChecks(credential, buildRequiredAttributes(mappingProperties));
+    Map<Saml2Attribute, String> samlAttributes = Saml2Attribute.resolveValues(credential);
+
+    Set<Saml2Attribute> requiredAttributes = buildRequiredAttributes(mappingProperties);
+
+    samlCredentialAttributesChecks(samlAttributes, requiredAttributes);
 
     IamAccount newAccount = IamAccount.newAccount();
 
@@ -156,7 +148,7 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
     samlId.setAccount(newAccount);
 
     newAccount.setActive(true);
-    mapAttributes(credential, samlId, newAccount, mappingProperties);
+    mapAttributes(samlAttributes, samlId, newAccount, mappingProperties);
 
     accountService.createAccount(newAccount);
     return newAccount;
@@ -166,15 +158,22 @@ public class JustInTimeProvisioningSAMLUserDetailsService extends SAMLUserDetail
   public Object loadUserBySAML(SAMLCredential credential) {
     checkNotNull(credential, "null saml credential");
 
-    IamSamlId samlId = resolveSamlId(credential);
+    List<IamSamlId> samlIds = resolveSamlIds(credential);
 
-    Optional<IamAccount> account = repo.findBySamlId(samlId);
+    Optional<IamAccount> account = samlIds.stream()
+      .map(repo::findBySamlId)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .findFirst();
 
     if (account.isPresent()) {
       return buildUserFromIamAccount(account.get());
-    } else {
-      return buildUserFromIamAccount(provisionAccount(credential, samlId));
     }
-  }
 
+    return buildUserFromIamAccount(provisionAccount(credential,
+        samlIds.stream()
+          .findFirst()
+          .orElseThrow(() -> new UsernameNotFoundException(
+              "Could not extract a user identifier from the SAML assertion"))));
+  }
 }

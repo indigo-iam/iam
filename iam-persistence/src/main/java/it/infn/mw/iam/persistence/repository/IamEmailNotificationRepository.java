@@ -48,7 +48,7 @@ public interface IamEmailNotificationRepository
   List<IamEmailNotification> findByNotificationType(IamNotificationType notificationType);
 
   @Query("select count(n) from IamEmailNotification n join n.receivers r where n.notificationType = it.infn.mw.iam.core.IamNotificationType.AUP_REMINDER"
-      + " and CURRENT_DATE <= n.lastUpdate and n.lastUpdate < :tomorrow"
+      + " and CURRENT_DATE <= n.creationTime and n.creationTime < :tomorrow"
       + " and n.deliveryStatus <> it.infn.mw.iam.core.IamDeliveryStatus.DELIVERY_ERROR"
       + " and r.emailAddress = :email_address")
   Integer countAupRemindersPerAccount(@Param("email_address") String emailAddress,

@@ -15,22 +15,23 @@
  */
 package it.infn.mw.iam.test.repository;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringRunner.class)
-@IamNoMvcTest
-public class IamTotpMfaRepositoryTests {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.NONE)
+@Transactional
+class IamTotpMfaRepositoryTests {
 
   @Autowired
   private IamTotpMfaRepository totpMfaRepo;
@@ -39,7 +40,7 @@ public class IamTotpMfaRepositoryTests {
   private IamAccountRepository accountRepo;
 
   @Test
-  public void testAccountIdResolutionWorksAsExpected() {
+  void testAccountIdResolutionWorksAsExpected() {
 
     IamAccount testAccount = accountRepo.findByUsername("test-with-mfa")
       .orElseThrow(() -> new AssertionError("Expected 'test-with-mfa' user not found"));

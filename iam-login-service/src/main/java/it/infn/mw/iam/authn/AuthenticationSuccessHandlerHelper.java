@@ -15,7 +15,11 @@
  */
 package it.infn.mw.iam.authn;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Collection;
 
 import javax.servlet.ServletException;
@@ -28,31 +32,43 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.WebAttributes;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 public class AuthenticationSuccessHandlerHelper {
 
   private static final Logger logger =
       LoggerFactory.getLogger(AuthenticationSuccessHandlerHelper.class);
 
+  private final Clock clock;
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
+  private final IamTotpMfaService iamTotpMfaService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public AuthenticationSuccessHandlerHelper(AccountUtils accountUtils, String iamBaseUrl,
-      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo) {
+  public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
+      String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
+      IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
+      IamTotpMfaProperties iamTotpMfaProperties) {
+
+    this.clock = clock;
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
+    this.iamTotpMfaService = iamTotpMfaService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -61,11 +77,21 @@ public class AuthenticationSuccessHandlerHelper {
 
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
+    } else if (iamTotpMfaProperties.isMultiFactorMandatory() && !isMfaActive(authentication)) {
+      response.sendRedirect(MFA_ACTIVATE_URL);
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }
+  }
+
+  private boolean isMfaActive(Authentication authentication) {
+    final String username = authentication.getName();
+    IamAccount account = accountRepo.findByUsername(username)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+
+    return iamTotpMfaService.isAuthenticatorAppActive(account);
   }
 
   /**
@@ -102,8 +128,8 @@ public class AuthenticationSuccessHandlerHelper {
     AuthenticationSuccessHandler delegate =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
-    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(delegate,
-        aupSignatureCheckService, accountUtils, accountRepo);
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
+        delegate, aupSignatureCheckService, accountUtils, accountRepo);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 

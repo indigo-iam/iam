@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import static java.lang.String.format;
 
 import java.security.Principal;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
@@ -37,6 +38,8 @@ import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.error.AccountAlreadyLinkedError;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
+import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -49,16 +52,24 @@ import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 public class DefaultAccountLinkingService
     implements AccountLinkingService, ApplicationEventPublisherAware {
 
+  final Clock clock;
   final IamAccountRepository iamAccountRepository;
   final IamX509CertificateRepository certificateRepository;
   final ExternalAccountLinker externalAccountLinker;
   private ApplicationEventPublisher eventPublisher;
+  private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
 
-  public DefaultAccountLinkingService(IamAccountRepository repo,
-      IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker) {
+  public DefaultAccountLinkingService(Clock clock, IamAccountRepository repo,
+      IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker,
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
+
+    this.clock = clock;
     this.iamAccountRepository = repo;
     this.certificateRepository = certificateRepository;
     this.externalAccountLinker = linker;
+    this.notificationFactory = notificationFactory;
+    this.notificationProperties = notificationProperties;
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -127,7 +138,7 @@ public class DefaultAccountLinkingService
     }
 
     if (modified) {
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
 
       eventPublisher.publishEvent(new AccountUnlinkedEvent(this, userAccount, type, iss, sub,
@@ -135,6 +146,7 @@ public class DefaultAccountLinkingService
               type.toString())));
     }
   }
+
 
   @Override
   public void linkX509Certificate(Principal authenticatedUser,
@@ -158,11 +170,11 @@ public class DefaultAccountLinkingService
     if (linkedCertificate.isPresent()) {
 
       linkedCertificate.get().setCertificate(x509Credential.getCertificateChainPemString());
-      linkedCertificate.get().setLastUpdateTime(new Date());
+      linkedCertificate.get().setLastUpdateTime(Date.from(clock.instant()));
       certificateRepository.save(linkedCertificate.get());
       userAccount.getX509Certificates().remove(linkedCertificate.get());
       userAccount.getX509Certificates().add(linkedCertificate.get());
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
 
       eventPublisher.publishEvent(new X509CertificateUpdatedEvent(this, userAccount,
@@ -171,7 +183,7 @@ public class DefaultAccountLinkingService
           x509Credential));
     } else {
 
-      Date now = new Date();
+      Date now = Date.from(clock.instant());
       IamX509Certificate newCert = x509Credential.asIamX509Certificate();
       newCert.setLabel(String.format("cert-%d", userAccount.getX509Certificates().size()));
       newCert.setCreationTime(now);
@@ -180,32 +192,59 @@ public class DefaultAccountLinkingService
       newCert.setAccount(userAccount);
       certificateRepository.save(newCert);
       userAccount.getX509Certificates().add(newCert);
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
       eventPublisher.publishEvent(new X509CertificateLinkedEvent(this, userAccount,
           String.format("User '%s' linked certificate with subject '%s' to his/her membership",
               userAccount.getUsername(), x509Credential.getSubject()),
           x509Credential));
     }
+
+    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      notificationFactory.createLinkedCertificateMessage(userAccount,
+          x509Credential.asIamX509Certificate());
+    }
   }
+
+
 
   @Override
   public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject,
       String certificateIssuer) {
     IamAccount userAccount = findAccount(authenticatedUser);
 
-    boolean removed = userAccount.getX509Certificates()
-      .removeIf(c -> c.getSubjectDn().equals(certificateSubject)
-          && c.getIssuerDn().equals(certificateIssuer));
+    boolean removed = false;
+
+    Optional<IamX509Certificate> certificate = userAccount.getX509Certificates()
+      .stream()
+      .filter(cert -> cert.getSubjectDn().equals(certificateSubject)
+          && cert.getIssuerDn().equals(certificateIssuer))
+      .findFirst();
+
+    if (certificate.isPresent()) {
+      removed = userAccount.getX509Certificates().remove(certificate.get());
+    }
 
     if (removed) {
-      userAccount.touch();
+      userAccount.touch(clock.instant());
       iamAccountRepository.save(userAccount);
+
 
       eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount, String.format(
           "User '%s' unlinked certificate with subject '%s' and issuer '%s' from his/her membership",
           userAccount.getUsername(), certificateSubject, certificateIssuer), certificateSubject,
           certificateIssuer));
+
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+
+        IamX509AuthenticationCredential iamX509AuthenticationCredential =
+            new IamX509AuthenticationCredential.Builder().issuer(certificate.get().getIssuerDn())
+              .subject(certificate.get().getSubjectDn())
+              .build();
+
+        notificationFactory.createUnlinkedCertificateMessage(userAccount,
+            iamX509AuthenticationCredential.asIamX509Certificate());
+      }
     }
   }
 
@@ -231,9 +270,7 @@ public class DefaultAccountLinkingService
     proxy.setExpirationTime(proxyCertificateExpirationTime);
     cert.setProxy(proxy);
 
-    userAccount.touch();
+    userAccount.touch(clock.instant());
     iamAccountRepository.save(userAccount);
-
   }
-
 }

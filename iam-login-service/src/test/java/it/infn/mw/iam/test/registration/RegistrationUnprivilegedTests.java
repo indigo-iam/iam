@@ -18,10 +18,10 @@ package it.infn.mw.iam.test.registration;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -34,13 +34,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -48,15 +48,16 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -67,44 +68,51 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class RegistrationUnprivilegedTests extends AupTestSupport {
-
-  @Autowired
-  private WebApplicationContext context;
-
-  @Autowired
-  private PersistentUUIDTokenGenerator generator;
+@SpringBootTest(
+    classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class RegistrationUnprivilegedTests extends AupTestSupport {
 
   @Autowired
-  private IamAupRepository aupRepo;
+  WebApplicationContext context;
 
   @Autowired
-  private IamAupSignatureRepository aupSignatureRepo;
+  PersistentUUIDTokenGenerator generator;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private ObjectMapper objectMapper;
+  IamAupSignatureRepository aupSignatureRepo;
+
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @Autowired
+  ObjectMapper objectMapper;
 
   @MockBean
-  private RegistrationProperties registrationProperties;
+  RegistrationProperties registrationProperties;
 
-  private MockMvc mvc;
+  @Autowired
+  MockMvc mvc;
 
-  @Before
-  public void setup() {
+  @Autowired
+  MutableClock clock;
+
+  @BeforeEach
+  void setup() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
   @Test
-  public void testCreateRequest() throws Exception {
+  void testCreateRequest() throws Exception {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_create");
 
@@ -117,9 +125,9 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
+  void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
 
-    IamAup aup = buildDefaultAup();
+    IamAup aup = buildDefaultAup(clock.now());
     aupRepo.save(aup);
 
     RegistrationRequestDto reg = createRegistrationRequest("test_create");
@@ -139,7 +147,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
 
   @Test
-  public void testConfirmRequest() throws Exception {
+  void testConfirmRequest() throws Exception {
 
     createRegistrationRequest("test_confirm");
     String token = generator.getLastToken();
@@ -148,14 +156,14 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testListRequestsUnauthorized() throws Exception {
+  void testListRequestsUnauthorized() throws Exception {
 
     mvc.perform(get("/registration/list").with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isUnauthorized());
   }
 
   @Test
-  public void testConfirmRequestFailureWithWrongToken() throws Exception {
+  void testConfirmRequestFailureWithWrongToken() throws Exception {
 
     createRegistrationRequest("test_confirm_fail");
     String badToken = "abcdefghilmnopqrstuvz";
@@ -167,7 +175,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testApproveRequestUnauthorized() throws Exception {
+  void testApproveRequestUnauthorized() throws Exception {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_unauth");
     assertNotNull(reg);
@@ -184,7 +192,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testUsernameAvailable() throws Exception {
+  void testUsernameAvailable() throws Exception {
     String username = "tester";
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
@@ -192,7 +200,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testUsernameAlreadyTaken() throws Exception {
+  void testUsernameAlreadyTaken() throws Exception {
     String username = "admin";
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
@@ -200,7 +208,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testEmailAvailableEndpoint() throws Exception {
+  void testEmailAvailableEndpoint() throws Exception {
     mvc.perform(get("/registration/email-available/email@example.org"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$").value(true));
@@ -211,7 +219,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testVerifySucess() throws Exception {
+  void testVerifySucess() throws Exception {
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_unauth");
     assertNotNull(reg);
 
@@ -225,7 +233,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testInsufficientAuth() throws Exception {
+  void testInsufficientAuth() throws Exception {
     // @formatter:off
     mvc.perform(get("/registration/insufficient-aut"))
       .andExpect(status().isUnauthorized())
@@ -234,13 +242,14 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testRegistrationConfig() throws Exception {
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+  void testRegistrationConfig() throws Exception {
+    Map<RegistrationField, RegistrationFieldProperties> fieldAttribute =
+        new EnumMap<>(RegistrationField.class);
     RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
     notesProperties.setReadOnly(true);
     notesProperties.setExternalAuthAttribute("notes");
     notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put("notes", notesProperties);
+    fieldAttribute.put(RegistrationField.NOTES, notesProperties);
 
     when(registrationProperties.getFields()).thenReturn(fieldAttribute);
 
@@ -251,7 +260,8 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     // @formatter:on
   }
 
-  private Authentication anonymousAuthenticationToken() {
+  @Override
+  public Authentication anonymousAuthenticationToken() {
     return new AnonymousAuthenticationToken("key", "anonymous",
         AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
   }
@@ -265,7 +275,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
 
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
@@ -286,7 +295,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testRegistrationFieldReadOnlyGetterAndSetter() {
+  void testRegistrationFieldReadOnlyGetterAndSetter() {
     RegistrationFieldProperties properties = new RegistrationFieldProperties();
 
     assertFalse(properties.isReadOnly());
@@ -296,7 +305,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testRegistrationFieldExternalAuthAttributeGetterAndSetter() {
+  void testRegistrationFieldExternalAuthAttributeGetterAndSetter() {
     RegistrationFieldProperties properties = new RegistrationFieldProperties();
 
     assertNull(properties.getExternalAuthAttribute());

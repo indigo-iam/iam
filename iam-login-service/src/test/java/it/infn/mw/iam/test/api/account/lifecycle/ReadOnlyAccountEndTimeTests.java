@@ -21,52 +21,57 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.lifecycle.AccountLifecycleDTO;
-import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"lifecycle.account.read-only-end-time=true"})
-public class ReadOnlyAccountEndTimeTests extends TestSupport {
-  public static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"lifecycle.account.read-only-end-time=true"})
+@AutoConfigureMockMvc
+@Transactional
+class ReadOnlyAccountEndTimeTests implements StructuredScopeTestSupportConstants {
+
+  static final String END_TIME_RESOURCE = "/iam/account/{id}/endTime";
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  MockMvc mvc;
 
   @Autowired
-  private MockMvc mvc;
+  SecurityContextUtils context;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
+  @Autowired
+  MutableClock clock;
 
-  @After
-  public void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void managingEndTimeRequiresAdminUser() throws Exception {
-    Date newEndTime = new Date();
+  void managingEndTimeRequiresAdminUser() throws Exception {
+    Date newEndTime = clock.now();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     dto.setEndTime(newEndTime);
 

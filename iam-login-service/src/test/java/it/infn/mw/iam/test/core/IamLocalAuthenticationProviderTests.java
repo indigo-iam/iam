@@ -16,7 +16,7 @@
 
 package it.infn.mw.iam.test.core;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -24,77 +24,82 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamLocalAuthenticationProviderTests {
+@ExtendWith(MockitoExtension.class)
+class IamLocalAuthenticationProviderTests {
 
-    @Mock
-    IamProperties properties;
-    @Mock
-    UserDetailsService uds;
-    @Mock
-    PasswordEncoder passwordEncoder;
-    @Mock
-    IamAccountRepository accountRepo;
-    @Mock
-    IamTotpMfaRepository totpMfaRepository;
-    @Mock
-    LocalAuthenticationProperties localAuthn;
+  @Mock
+  IamTotpMfaService iamTotpMfaService;
+  @Mock
+  IamTotpMfaProperties iamTotpMfaProperties;
+  @Mock
+  IamProperties properties;
+  @Mock
+  UserDetailsService uds;
+  @Mock
+  PasswordEncoder passwordEncoder;
+  @Mock
+  IamAccountRepository accountRepo;
+  @Mock
+  LocalAuthenticationProperties localAuthn;
 
-    IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
+  Clock clock;
+  IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
 
-    @Before
-    public void setup() {
-        when(properties.getLocalAuthn()).thenReturn(localAuthn);
-        iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds, passwordEncoder,
-                accountRepo, totpMfaRepository));
-    }
+  @BeforeEach
+  void setup() {
 
-    private IamAccount newAccount(String username) {
-        IamAccount result = new IamAccount();
-        result.setUserInfo(new IamUserInfo());
-        result.setPassword("secret");
-        result.setUsername(username);
-        result.setUuid(UUID.randomUUID().toString());
-        return result;
-    }
+    when(properties.getLocalAuthn()).thenReturn(localAuthn);
+    iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds,
+        passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
+    clock = Clock.systemUTC();
+  }
 
-    @Test
-    public void testWhenPreAuthenticatedThenAuthenticateSetFalseToAuthenticated() {
-        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("test-principal", "test-credentials");
-        token.setPreAuthenticated(true);
-        IamAccount account = newAccount("test-user");
-        when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
+  private IamAccount newAccount(String username) {
+    IamAccount result = new IamAccount();
+    result.setUserInfo(new IamUserInfo());
+    result.setPassword("secret");
+    result.setUsername(username);
+    result.setUuid(UUID.randomUUID().toString());
+    return result;
+  }
 
-        IamTotpMfa iamTotpMfa = new IamTotpMfa();
-        iamTotpMfa.setActive(true);
-        when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+  @Test
+  void testWhenPreAuthenticatedThenAuthenticateSetFalseToAuthenticated() {
 
-        ExtendedAuthenticationToken newToken = (ExtendedAuthenticationToken) iamLocalAuthenticationProvider
-                .authenticate(token);
+    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("test-principal", "test-credentials");
+    token.setPreAuthenticated(true);
+    IamAccount account = newAccount("test-user");
+    when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
+    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
 
-        assertFalse(newToken.isAuthenticated());
-        // Verify that super.authenticate was not called
-        verify(iamLocalAuthenticationProvider, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
-    }
+    ExtendedAuthenticationToken newToken =
+        (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
+
+    assertFalse(newToken.isAuthenticated());
+    // Verify that super.authenticate was not called
+    verify(iamLocalAuthenticationProvider, never())
+      .authenticate(any(UsernamePasswordAuthenticationToken.class));
+  }
 }

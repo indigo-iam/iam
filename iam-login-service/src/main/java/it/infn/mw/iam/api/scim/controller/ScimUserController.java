@@ -20,14 +20,20 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,6 +65,7 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 @Transactional
 public class ScimUserController extends ScimControllerSupport {
 
+  public static final Logger LOG = LoggerFactory.getLogger(ScimUserController.class);
 
   @Autowired
   ScimUserProvisioning userProvisioningService;
@@ -85,13 +92,12 @@ public class ScimUserController extends ScimControllerSupport {
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes,
-      @RequestParam(required = false) final String filters) {
+      @RequestParam(required = false) final String filter) {
 
 
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
 
-    ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filters);
-
+    ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filter);
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
@@ -99,11 +105,12 @@ public class ScimUserController extends ScimControllerSupport {
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
-      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
+      filterProvider.addFilter("attributeFilter",
+          SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
     } else {
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.serializeAll());
     }
-    
+
     filterProvider.addFilter("pemEncodedCertificateFilter",
         SimpleBeanPropertyFilter.serializeAllExcept("pemEncodedCertificate"));
 
@@ -111,7 +118,7 @@ public class ScimUserController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
   @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
 
@@ -143,10 +150,9 @@ public class ScimUserController extends ScimControllerSupport {
     handleValidationError("Invalid Scim User", validationResult);
 
     return userProvisioningService.replace(id, user);
-
   }
 
-  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.isUser(#id) or #iam.hasDashboardRole('ROLE_ADMIN')")
   @PatchMapping(value = "/{id}", consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateUser(@PathVariable final String id,
@@ -156,7 +162,6 @@ public class ScimUserController extends ScimControllerSupport {
     handleValidationError("Invalid Scim Patch Request", validationResult);
 
     userProvisioningService.update(id, patchRequest.getOperations());
-
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -165,6 +170,12 @@ public class ScimUserController extends ScimControllerSupport {
   public void deleteUser(@PathVariable final String id) {
 
     userProvisioningService.delete(id);
+  }
+
+  @ResponseStatus(value=HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public String httpMessageNotReadableExceptionHander(HttpServletRequest req, Exception ex) {
+    return ex.getMessage();
   }
 
 }

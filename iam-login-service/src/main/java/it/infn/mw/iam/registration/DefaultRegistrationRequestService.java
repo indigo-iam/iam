@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.registration;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
@@ -28,11 +27,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,34 +49,30 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 
 import it.infn.mw.iam.api.common.LabelDTOConverter;
-import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
-import it.infn.mw.iam.api.scim.model.ScimOidcId;
-import it.infn.mw.iam.api.scim.model.ScimSamlId;
-import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationApproveEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationConfirmEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
-import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAttribute;
-import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationService;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
@@ -91,9 +90,6 @@ public class DefaultRegistrationRequestService
   private IamAccountService accountService;
 
   @Autowired
-  private UserConverter userConverter;
-
-  @Autowired
   private NotificationFactory notificationFactory;
 
   @Autowired
@@ -109,9 +105,8 @@ public class DefaultRegistrationRequestService
   private IamAupRepository iamAupRepo;
 
   @Autowired
-  private IamAupSignatureRepository iamAupSignatureRepo;
+  private IamX509CertificateRepository iamX509CertificateRepository;
 
-  @Autowired
   private LabelDTOConverter labelConverter;
 
   @Autowired(required = false)
@@ -123,12 +118,17 @@ public class DefaultRegistrationRequestService
   @Autowired
   private Clock clock;
 
-  @Autowired
   private IamProperties iamProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
+
+  public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
+      IamProperties iamProperties) {
+    this.labelConverter = labelConverter;
+    this.iamProperties = iamProperties;
+  }
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
@@ -147,41 +147,13 @@ public class DefaultRegistrationRequestService
         .put(REJECTED, CONFIRMED, true)
         .build();
 
-
-  private void addExternalAuthnInfo(ScimUser.Builder user,
-      ExternalAuthenticationRegistrationInfo extAuthnInfo) {
-
-    checkNotNull(extAuthnInfo.getType());
-    checkNotNull(extAuthnInfo.getSubject());
-    checkNotNull(extAuthnInfo.getIssuer());
-
-    if (OIDC.equals(extAuthnInfo.getType())) {
-      ScimOidcId oidcId = new ScimOidcId.Builder().issuer(extAuthnInfo.getIssuer())
-        .subject(extAuthnInfo.getSubject())
-        .build();
-      user.addOidcId(oidcId);
-    } else if (ExternalAuthenticationType.SAML.equals(extAuthnInfo.getType())) {
-      ScimSamlId samlId = new ScimSamlId.Builder().idpId(extAuthnInfo.getIssuer())
-        .userId(extAuthnInfo.getSubject())
-        .attributeId(extAuthnInfo.getSubjectAttribute())
-        .build();
-      user.addSamlId(samlId);
-    }
-  }
-
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
-    Optional<IamAup> aup = iamAupRepo.findDefaultAup();
-    if (aup.isPresent()) {
-      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account,
-          Date.from(clock.instant()));
-      eventPublisher.publishEvent(new AupSignedEvent(this, signature));
-    }
+    iamAupRepo.findDefaultAup().ifPresent(aup -> accountService.signAup(account, aup));
   }
-
 
   @Override
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, HttpServletRequest request) {
 
     if (!isNull(validationService)) {
       RegistrationRequestValidationResult result =
@@ -193,26 +165,30 @@ public class DefaultRegistrationRequestService
       }
     }
 
-    ScimUser.Builder userBuilder = ScimUser.builder()
-      .buildName(dto.getGivenname(), dto.getFamilyname())
-      .buildEmail(dto.getEmail())
-      .userName(dto.getUsername())
-      .password(dto.getPassword())
-      .affiliation(dto.getAffiliation());
+    IamAccount account;
 
-    extAuthnInfo.ifPresent(i -> addExternalAuthnInfo(userBuilder, i));
+    ExternalAuthAttributeSectionBehaviour ceritificateVisability =
+        Optional.ofNullable(iamProperties.getRegistration())
+          .map(IamProperties.RegistrationProperties::getFields)
+          .map(f -> f.get(RegistrationField.CERTIFICATE))
+          .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
+          .orElse(ExternalAuthAttributeSectionBehaviour.HIDDEN);
 
-    IamAccount accountEntity =
-        accountService.createAccount(userConverter.entityFromDto(userBuilder.build()));
-    accountEntity.setConfirmationKey(tokenGenerator.generateToken());
-    accountEntity.setActive(false);
+    if (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
+        || (ceritificateVisability.equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
+            && dto.getCertificate().equals("true"))) {
 
-    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
-      accountEntity.getAttributes()
-        .add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
+      certificateSanityCheck(request);
+
+      account = accountService.createAccount(dto, extAuthnInfo);
+
+      linkRequestCertificateToAccount(account, request);
+    } else {
+      account = accountService.createAccount(dto, extAuthnInfo);
     }
 
-    createAupSignatureForAccountIfNeeded(accountEntity);
+    // sign the default AUP if present
+    createAupSignatureForAccountIfNeeded(account);
 
     IamRegistrationRequest requestEntity = new IamRegistrationRequest();
     requestEntity.setUuid(UUID.randomUUID().toString());
@@ -221,8 +197,8 @@ public class DefaultRegistrationRequestService
     requestEntity.setStatus(NEW);
     requestEntity.setNotes(dto.getNotes());
 
-    requestEntity.setAccount(accountEntity);
-    accountEntity.setRegistrationRequest(requestEntity);
+    requestEntity.setAccount(account);
+    account.setRegistrationRequest(requestEntity);
 
     if (!isNull(dto.getLabels())) {
       Set<IamLabel> labels =
@@ -234,7 +210,7 @@ public class DefaultRegistrationRequestService
     requestRepository.save(requestEntity);
 
     eventPublisher.publishEvent(new RegistrationRequestEvent(this, requestEntity,
-        "New registration request from user " + accountEntity.getUsername()));
+        "New registration request from user " + account.getUsername()));
 
     notificationFactory.createConfirmationMessage(requestEntity);
 
@@ -289,8 +265,7 @@ public class DefaultRegistrationRequestService
   public RegistrationRequestDto confirmRequest(String confirmationKey) {
 
     IamRegistrationRequest request = requestRepository.findByAccountConfirmationKey(confirmationKey)
-      .orElseThrow(() -> new ScimResourceNotFoundException(String
-        .format("No registration request found for registration_key [%s]", confirmationKey)));
+      .orElseThrow(() -> new ScimResourceNotFoundException("No registration request found"));
 
     return handleConfirm(request);
   }
@@ -321,6 +296,7 @@ public class DefaultRegistrationRequestService
     account.setResetKey(tokenGenerator.generateToken());
     account.setLastUpdateTime(Date.from(clock.instant()));
     account.setLabels(request.getLabels());
+    account.getUserInfo().setEmailVerified(true);
 
     if (!isNull(lifecycleProperties.getAccount().getAccountLifetimeDays())
         && lifecycleProperties.getAccount().getAccountLifetimeDays() > 0) {
@@ -329,11 +305,11 @@ public class DefaultRegistrationRequestService
       account.setEndTime(Date.from(endTime));
     }
 
-    notificationFactory.createAccountActivatedMessage(request);
-
     request.setStatus(APPROVED);
     request.setLastUpdateTime(Date.from(clock.instant()));
     requestRepository.save(request);
+
+    notificationFactory.createAccountActivatedMessage(request);
 
     eventPublisher.publishEvent(new RegistrationApproveEvent(this, request,
         "Approved registration request for user " + account.getUsername()));
@@ -342,10 +318,11 @@ public class DefaultRegistrationRequestService
   }
 
   private RegistrationRequestDto handleConfirm(IamRegistrationRequest request) {
+
+    accountService.verifyAccount(request.getAccount());
+
     request.setStatus(CONFIRMED);
     request.setLastUpdateTime(Date.from(clock.instant()));
-    request.getAccount().getUserInfo().setEmailVerified(true);
-    request.getAccount().setConfirmationKey(null);
     requestRepository.save(request);
 
     notificationFactory.createAdminHandleRequestMessage(request);
@@ -359,29 +336,72 @@ public class DefaultRegistrationRequestService
   private RegistrationRequestDto handleReject(IamRegistrationRequest request,
       Optional<String> motivation, boolean doNotSendEmail) {
     request.setStatus(REJECTED);
-    if(!doNotSendEmail){
+    if (!doNotSendEmail) {
       notificationFactory.createRequestRejectedMessage(request, motivation);
     }
-    
+
     RegistrationRequestDto retval = converter.fromEntity(request);
 
     accountService.deleteAccount(request.getAccount());
 
     eventPublisher.publishEvent(new RegistrationRejectEvent(this, request,
-        "Reject registration request for user " + request.getAccount().getUsername() +
-            (motivation.isPresent() ? " with motivation: " + motivation.get() : "")));
+        "Reject registration request for user " + request.getAccount().getUsername()
+            + (motivation.isPresent() ? " with motivation: " + motivation.get() : "")));
 
     return retval;
   }
 
 
+  private void certificateSanityCheck(HttpServletRequest request) {
+
+    HttpSession session = request.getSession(false);
+
+    IamX509AuthenticationCredential cred = Optional
+      .ofNullable(
+          (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
+      .orElseThrow(() -> new IllegalArgumentException("No X.509 credential found in session "));
+
+    IamX509Certificate cert = cred.asIamX509Certificate();
+
+    iamAccountRepo.findByCertificateSubject(cert.getSubjectDn()).ifPresent(c -> {
+      throw new CredentialAlreadyBoundException(
+          String.format("X509 certificate with subject '%s' is already bound to another user",
+              cert.getSubjectDn()));
+    });
+  }
+
+  private void linkRequestCertificateToAccount(IamAccount account, HttpServletRequest request) {
+
+    HttpSession session = request.getSession(false);
+
+    IamX509AuthenticationCredential cred =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    IamX509Certificate cert = cred.asIamX509Certificate();
+
+    final Date now = Date.from(clock.instant());
+    cert.setAccount(account);
+    cert.setLabel("cert-0");
+    cert.setPrimary(true);
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+
+    Set<IamX509Certificate> certificates = new HashSet<>(List.of(cert));
+
+    account.setX509Certificates(certificates);
+
+    iamX509CertificateRepository.save(cert);
+
+    accountService.saveAccount(account);
+  }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
   }
 
   @Override
-  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail) {
+  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation,
+      boolean doNotSendEmail) {
 
     IamRegistrationRequest request = findRequestById(requestUuid);
 

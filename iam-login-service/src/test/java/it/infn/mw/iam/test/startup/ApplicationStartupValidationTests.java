@@ -16,22 +16,24 @@
 package it.infn.mw.iam.test.startup;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 
 import it.infn.mw.iam.IamLoginService;
 
-public class ApplicationStartupValidationTests {
+class ApplicationStartupValidationTests {
 
-  @Test(expected = BeansException.class)
-  public void testFailureOnStatupDueToWrongEnum() {
+  @Test
+  void testFailureOnStatupDueToWrongEnum() {
 
-    IamLoginService.main(new String[] {"--iam.jwt-profile.default-profile=pippo"});
+    assertThrows(BeansException.class,
+        () -> IamLoginService.main(new String[] {"--iam.jwt-profile.default-profile=pippo"}));
   }
 
   @Test
-  public void testSuccessStatup() {
+  void testSuccessStatup() {
 
     assertDoesNotThrow(() -> IamLoginService.main(new String[] {}));
   }

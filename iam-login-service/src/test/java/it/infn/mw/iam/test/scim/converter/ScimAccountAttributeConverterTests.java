@@ -20,69 +20,67 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"scim.include_attributes[0].name=test0"})
+@AutoConfigureMockMvc
+@Transactional
+class ScimAccountAttributeConverterTests {
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"scim.include_attributes[0].name=test0"})
-public class ScimAccountAttributeConverterTests {
+  static final String TEST0 = "test0";
+  static final String VAL0 = "val0";
+  static final String TEST1 = "test1";
+  static final String VAL1 = "val1";
 
-  private static final String TEST0 = "test0";
-  private static final String VAL0 = "val0";
-  private static final String TEST1 = "test1";
-  private static final String VAL1 = "val1";
-
-  private static final IamAttribute IAM_TEST0_ATTRIBUTE = IamAttribute.newInstance(TEST0, VAL0);
-  private static final IamAttribute IAM_TEST1_ATTRIBUTE = IamAttribute.newInstance(TEST1, VAL1);
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final IamAttribute IAM_TEST0_ATTRIBUTE = IamAttribute.newInstance(TEST0, VAL0);
+  static final IamAttribute IAM_TEST1_ATTRIBUTE = IamAttribute.newInstance(TEST1, VAL1);
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  SecurityContextUtils context;
 
   @Autowired
-  private IamAccountService accountService;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private MockMvc mvc;
+  IamAccountService accountService;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @Autowired
+  MockMvc mvc;
+
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
-
-  @After
-  public void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testAttributesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
-    
+  void testAttributesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
+
     IamAccount testAccount = accountRepo.findByUsername("test")
-        .orElseThrow(() -> new AssertionError("Expected test account not found"));
-  
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
     mvc.perform(get(ScimUtils.getUserLocation(testAccount.getUuid())))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS).doesNotExist());
@@ -106,8 +104,10 @@ public class ScimAccountAttributeConverterTests {
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES).exists())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES).isArray())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES, hasSize(1)))
-      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES + "[0].name").value(TEST0))
-      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES + "[0].value").value(VAL0));
+      .andExpect(
+          jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES + "[0].name").value(TEST0))
+      .andExpect(
+          jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES + "[0].value").value(VAL0));
 
   }
 }

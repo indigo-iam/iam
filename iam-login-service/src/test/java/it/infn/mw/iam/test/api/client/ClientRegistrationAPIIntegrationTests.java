@@ -15,48 +15,74 @@
  */
 package it.infn.mw.iam.test.api.client;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
-@IamMockMvcIntegrationTest
-@WithMockUser(username = "test", roles = "USER")
-@SpringBootTest(classes = {IamLoginService.class})
-public class ClientRegistrationAPIIntegrationTests extends TestSupport {
-
-  @Autowired
-  private MockMvc mvc;
+@SpringBootTest(classes = {IamLoginService.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
-  private ObjectMapper mapper;
+  MockMvc mvc;
+
+  @Autowired
+  ObjectMapper mapper;
+
+  @Autowired
+  IamClientRepository clientRepository;
+
+  @Autowired
+  ClientManagementService clientService;
+
+  @BeforeEach
+  void setup() {
+    SecurityContextHolder.clearContext();
+  }
 
   @Test
-  @WithAnonymousUser
-  public void dynamicRegistrationWorksForAnonymousUser() throws Exception {
+  void dynamicRegistrationWorksForAnonymousUser() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
 
-    mvc
+    String responseJson = mvc
       .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
@@ -66,13 +92,19 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.grant_types").exists())
       .andExpect(jsonPath("$.scope").exists())
       .andExpect(jsonPath("$.dynamically_registered").value(true))
-      .andExpect(jsonPath("$.registration_access_token").exists());
+      .andExpect(jsonPath("$.registration_access_token").exists())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertNotNull(client.getClientSecret());
+
+    clientService.deleteClientByClientId(client.getClientId());
   }
 
   @Test
-  @WithAnonymousUser
-  public void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
+  void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
       throws Exception {
 
     String clientJson =
@@ -85,7 +117,8 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void clientDetailsVisibleWithAuthentication() throws Exception {
+  @WithMockUser(username = "test", roles = "USER")
+  void clientDetailsVisibleWithAuthentication() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -107,10 +140,12 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.client_id").value(client.getClientId()))
       .andExpect(jsonPath("$.client_name").value(client.getClientName()));
 
+    clientService.deleteClientByClientId(client.getClientId());
   }
 
   @Test
-  public void clientRemovalWorksWithAuthentication() throws Exception {
+  @WithMockUser(username = "test", roles = "USER")
+  void clientRemovalWorksWithAuthentication() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -135,8 +170,7 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
   }
 
   @Test
-  @WithAnonymousUser
-  public void clientRemovalWorksWithRatAuthentication() throws Exception {
+  void clientRemovalWorksWithRatAuthentication() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
@@ -154,17 +188,21 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
     final String url =
         String.format("%s/%s", ClientRegistrationApiController.ENDPOINT, client.getClientId());
 
-    mvc.perform(delete(url).header(org.apache.http.HttpHeaders.AUTHORIZATION,
-        "Bearer " + client.getRegistrationAccessToken()))
+    mvc
+      .perform(delete(url).header(HttpHeaders.AUTHORIZATION,
+          "Bearer " + client.getRegistrationAccessToken()))
       .andExpect(NO_CONTENT);
 
+    SecurityContextHolder.clearContext();
+
     mvc.perform(get(url))
-      .andExpect(NOT_FOUND)
-      .andExpect(jsonPath("$.error", containsString("Client not found")));
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("Invalid registration access token")));
   }
 
   @Test
-  public void tokenLifetimesAreNotEditable() throws Exception {
+  @WithMockUser(username = "test", roles = "USER")
+  void tokenLifetimesAreNotEditable() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -172,13 +210,120 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
       .refreshTokenValiditySeconds(10)
       .build();
 
-    mvc
+    String responseJson = mvc
       .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.access_token_validity_seconds").doesNotExist())
-      .andExpect(jsonPath("$.refresh_token_validity_seconds").doesNotExist());
+      .andExpect(jsonPath("$.refresh_token_validity_seconds").doesNotExist())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    clientService.deleteClientByClientId(client.getClientId());
+  }
+
+  @Test
+  void testReturnClientSecret() throws Exception {
+
+    String clientJsonRequest = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .grantTypes("authorization_code")
+      .accessTokenValiditySeconds(10)
+      .refreshTokenValiditySeconds(10)
+      .build();
+
+    String responseJson = mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJsonRequest))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    String clientSecret = client.getClientSecret();
+    assertNotNull(clientSecret);
+
+    client.setClientSecret("secret");
+
+    String RAT = format("Bearer %s", client.getRegistrationAccessToken());
+    responseJson = mvc
+      .perform(put(ClientRegistrationApiController.ENDPOINT + "/" + client.getClientId())
+        .header(HttpHeaders.AUTHORIZATION, RAT)
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO clientDto = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertNull(clientDto.getClientSecret());
+
+    clientRepository.findByClientId(client.getClientId()).ifPresentOrElse(c -> {
+      assertEquals(clientSecret, c.getClientSecret());
+    }, () -> {
+      throw new AssertionError("Client not found");
+    });
+
+    clientService.deleteClientByClientId(client.getClientId());
+  }
+
+  @Test
+  void testClientPublicWithoutSecret() throws Exception {
+
+    RegisteredClientDTO publicClient = new RegisteredClientDTO();
+    publicClient.setClientName("test-public-client");
+    publicClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    publicClient.setScope(Set.of("openid"));
+    publicClient.setRedirectUris(Set.of("https://test.example/cb"));
+    publicClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+
+    String clientJsonRequest = mapper.writeValueAsString(publicClient);
+
+    String responseJson = mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJsonRequest))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertNull(client.getClientSecret());
+
+    RegisteredClientDTO publicClient2 = new RegisteredClientDTO();
+    publicClient2.setClientName("test-public-client");
+    publicClient2.setClientId(client.getClientId());
+    publicClient2.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    publicClient2.setScope(Set.of("openid"));
+    publicClient2.setRedirectUris(Set.of("https://test.example/cb"));
+    publicClient2.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    publicClient2.setRegistrationAccessToken(null);
+
+    // Now try to update the public client by providing a client secret
+    publicClient2.setClientSecret("secret");
+
+    responseJson =
+        mvc
+          .perform(put(ClientRegistrationApiController.ENDPOINT + "/" + client.getClientId())
+            .header(HttpHeaders.AUTHORIZATION,
+                format("Bearer %s", client.getRegistrationAccessToken()))
+            .contentType(APPLICATION_JSON)
+            .content(mapper.writeValueAsString(publicClient2)))
+          .andExpect(OK)
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    RegisteredClientDTO clientDto = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertNull(clientDto.getClientSecret());
+    assertNull(clientDto.getRegistrationAccessToken());
+
+    clientService.deleteClientByClientId(client.getClientId());
   }
 
 }

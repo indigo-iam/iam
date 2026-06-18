@@ -15,23 +15,26 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Lists;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 
+import it.infn.mw.iam.api.client.management.validation.ValidDashboard;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.config.login.LoginButtonProperties;
 import it.infn.mw.iam.config.multi_factor_authentication.VerifyButtonProperties;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "iam")
 public class IamProperties {
 
@@ -39,13 +42,16 @@ public class IamProperties {
     NAME, SURNAME, EMAIL, PICTURE
   }
 
+  public enum RegistrationField {
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE
+  }
+
   public enum LocalAuthenticationAllowedUsers {
     ALL, VO_ADMINS, NONE
   }
 
   public enum LoginPageLayoutOptions {
-    LOGIN_FORM,
-    LOGIN_EXTERNAL_AUTHN
+    LOGIN_FORM, LOGIN_EXTERNAL_AUTHN
   }
 
   public enum LocalAuthenticationLoginPageMode {
@@ -53,9 +59,7 @@ public class IamProperties {
   }
 
   public enum ExternalAuthAttributeSectionBehaviour {
-    MANDATORY,
-    OPTIONAL,
-    HIDDEN
+    MANDATORY, OPTIONAL, HIDDEN
   }
 
   public static class AccountLinkingProperties {
@@ -196,9 +200,9 @@ public class IamProperties {
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationFieldProperties {
-    boolean readOnly = false;
+    boolean readOnly;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour = ExternalAuthAttributeSectionBehaviour.MANDATORY;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -228,11 +232,11 @@ public class IamProperties {
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationProperties {
 
-    boolean showRegistrationButtonInLoginPage = true;
+    boolean showRegistrationButtonInLoginPage;
 
-    boolean requireExternalAuthentication = false;
+    boolean requireExternalAuthentication;
 
-    boolean addNicknameAsAttribute = false;
+    boolean addNicknameAsAttribute;
 
     ExternalAuthenticationType authenticationType;
 
@@ -240,7 +244,10 @@ public class IamProperties {
 
     String samlEntityId;
 
-    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
+    String registrationButtonText;
+
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
 
     List<DefaultGroup> defaultGroups;
 
@@ -250,6 +257,14 @@ public class IamProperties {
 
     public void setShowRegistrationButtonInLoginPage(boolean showRegistrationButtonInLoginPage) {
       this.showRegistrationButtonInLoginPage = showRegistrationButtonInLoginPage;
+    }
+
+    public String getRegistrationButtonText() {
+      return registrationButtonText;
+    }
+
+    public void setRegistrationButtonText(String registrationButtonText) {
+      this.registrationButtonText = registrationButtonText;
     }
 
     public boolean isRequireExternalAuthentication() {
@@ -292,11 +307,11 @@ public class IamProperties {
       this.samlEntityId = samlEntityId;
     }
 
-    public Map<String, RegistrationFieldProperties> getFields() {
+    public Map<RegistrationField, RegistrationFieldProperties> getFields() {
       return fields;
     }
 
-    public void setFields(Map<String, RegistrationFieldProperties> fields) {
+    public void setFields(Map<RegistrationField, RegistrationFieldProperties> fields) {
       this.fields = fields;
     }
 
@@ -384,10 +399,7 @@ public class IamProperties {
   public static class JWTProfile {
 
     public enum Profile {
-      IAM,
-      WLCG,
-      AARC,
-      KC
+      IAM, WLCG, AARC, KC
     }
 
     Profile defaultProfile = Profile.IAM;
@@ -425,9 +437,7 @@ public class IamProperties {
   public static class LoginPageLayout {
 
     public enum ExternalAuthnOptions {
-      X509,
-      OIDC,
-      SAML
+      X509, OIDC, SAML
     }
 
     LoginPageLayoutOptions sectionToBeDisplayedFirst;
@@ -464,9 +474,11 @@ public class IamProperties {
 
   public static class AccessToken {
 
-    boolean includeAuthnInfo = false;
-    boolean includeScope = false;
-    boolean includeNbf = false;
+    boolean includeAuthnInfo;
+    boolean includeScope;
+    boolean includeNbf;
+    int nbfOffsetSeconds;
+    boolean storeOnDatabase;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -490,6 +502,26 @@ public class IamProperties {
 
     public void setIncludeNbf(boolean includeNbf) {
       this.includeNbf = includeNbf;
+    }
+
+    public int getNbfOffsetSeconds() {
+      return nbfOffsetSeconds;
+    }
+
+    public void setNbfOffsetSeconds(int nbfTime) {
+      if (nbfTime < 0) {
+        this.nbfOffsetSeconds = 0;
+      } else {
+        this.nbfOffsetSeconds = nbfTime;
+      }
+    }
+
+    public boolean isStoreOnDatabase() {
+      return storeOnDatabase;
+    }
+
+    public void setStoreOnDatabase(boolean storeOnDatabase) {
+      this.storeOnDatabase = storeOnDatabase;
     }
   }
 
@@ -579,6 +611,38 @@ public class IamProperties {
     }
   }
 
+  @ValidDashboard
+  public static class DashboardProperties {
+
+    private boolean enabled = false;
+    private String clientId;
+    private String clientSecret;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getClientId() {
+      return clientId;
+    }
+
+    public void setClientId(String clientId) {
+      this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+      return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+      this.clientSecret = clientSecret;
+    }
+  }
+
   public static class DefaultGroup {
     private String name;
     private String enrollment = "INSERT";
@@ -597,6 +661,49 @@ public class IamProperties {
 
     public void setEnrollment(String enrollment) {
       this.enrollment = enrollment;
+    }
+  }
+
+  public static class AarcProfile {
+
+    private String affiliationScope;
+
+    private String urnDelegatedNamespace;
+
+    private String urnNid;
+
+    private String urnSubnamespaces;
+
+    public String getAffiliationScope() {
+      return affiliationScope;
+    }
+
+    public void setAffiliationScope(String affiliationScope) {
+      this.affiliationScope = affiliationScope;
+    }
+
+    public String getUrnDelegatedNamespace() {
+      return urnDelegatedNamespace;
+    }
+
+    public void setUrnDelegatedNamespace(String urnDelegatedNamespace) {
+      this.urnDelegatedNamespace = urnDelegatedNamespace;
+    }
+
+    public String getUrnNid() {
+      return urnNid;
+    }
+
+    public void setUrnNid(String urnNid) {
+      this.urnNid = urnNid;
+    }
+
+    public String getUrnSubnamespaces() {
+      return urnSubnamespaces;
+    }
+
+    public void setUrnSubnamespaces(String urnSubnamespaces) {
+      this.urnSubnamespaces = urnSubnamespaces;
     }
   }
 
@@ -652,13 +759,19 @@ public class IamProperties {
 
   private CustomizationProperties customization = new CustomizationProperties();
 
-  private VersionedStaticResourcesProperties versionedStaticResources = new VersionedStaticResourcesProperties();
+  private VersionedStaticResourcesProperties versionedStaticResources =
+      new VersionedStaticResourcesProperties();
 
-  private ExternalConnectivityProbeProperties externalConnectivityProbe = new ExternalConnectivityProbeProperties();
+  private ExternalConnectivityProbeProperties externalConnectivityProbe =
+      new ExternalConnectivityProbeProperties();
 
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
 
   private ClientProperties client = new ClientProperties();
+
+  private AarcProfile aarcProfile = new AarcProfile();
+
+  private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -900,6 +1013,26 @@ public class IamProperties {
 
   public ClientProperties getClient() {
     return client;
+  }
+
+  public DashboardProperties getDashboard() {
+    return dashboard;
+  }
+
+  public void setDashboard(DashboardProperties dashboard) {
+    this.dashboard = dashboard;
+  }
+  
+  public Boolean isDashboardPropertiesEnable() {
+    return dashboard != null;
+  }
+
+  public AarcProfile getAarcProfile() {
+    return aarcProfile;
+  }
+
+  public void setAarcProfile(AarcProfile aarcProfile) {
+    this.aarcProfile = aarcProfile;
   }
 
 }

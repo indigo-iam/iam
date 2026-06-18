@@ -17,24 +17,22 @@ package it.infn.mw.iam.test.scim.group.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
 
@@ -43,25 +41,27 @@ import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.clock.MutableClock;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
-public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
+class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
-  private ScimGroup engineers;
-  private ScimUser lennon, lincoln, kennedy;
+  @Autowired
+  MutableClock clock;
+
+  ScimGroup engineers;
+  ScimUser lennon, lincoln, kennedy;
 
   List<ScimUser> members;
 
-  @Before
-  public void initTests() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void initTests() throws Exception {
+    context.cleanupSecurityContext();
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
@@ -75,17 +75,8 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
     addMembers(engineers, members);
   }
 
-  @After
-  public void teardownTests() throws Exception {
-    deleteScimResource(lennon);
-    deleteScimResource(lincoln);
-    deleteScimResource(kennedy);
-    deleteScimResource(engineers);
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
   @Test
-  public void testGroupPatchRemoveMember() throws Exception {
+  void testGroupPatchRemoveMember() throws Exception {
 
     ScimGroupPatchRequest patchRemoveRequest =
         getPatchRemoveUsersRequest(Lists.newArrayList(lennon));
@@ -102,6 +93,8 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
     } catch (InterruptedException e) {
     }
 
+    clock.advance(Duration.ofMillis(100));
+
     //@formatter:off
     mvc.perform(patch(engineers.getMeta().getLocation())
         .contentType(SCIM_CONTENT_TYPE)
@@ -110,7 +103,6 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
     //@formatter:on
 
     ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
-
 
     assertIsNotGroupMember(lennon, engineersAfterUpdate);
     assertIsGroupMember(lincoln, engineersAfterUpdate);
@@ -123,7 +115,7 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchRemoveMultipleMembers() throws Exception {
+  void testGroupPatchRemoveMultipleMembers() throws Exception {
 
     List<ScimUser> membersToRemove = new ArrayList<ScimUser>();
     membersToRemove.add(lennon);
@@ -146,7 +138,7 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchRemoveAllListOfMembers() throws Exception {
+  void testGroupPatchRemoveAllListOfMembers() throws Exception {
 
     List<ScimUser> membersToRemove = new ArrayList<ScimUser>();
     membersToRemove.add(lennon);
@@ -161,17 +153,16 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
         .content(objectMapper.writeValueAsString(patchReq)))
       .andExpect(status().isNoContent());
     //@formatter:on
-    
-    mvc
-      .perform(get(engineers.getMeta().getLocation() + "/members").contentType(SCIM_CONTENT_TYPE))
-        .andExpect(status().isOk())
+
+    mvc.perform(get(engineers.getMeta().getLocation() + "/members").contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", is(0)))
       .andExpect(jsonPath("$.Resources", empty()));
-  
+
   }
 
   @Test
-  public void testGroupPatchRemoveAllMembers() throws Exception {
+  void testGroupPatchRemoveAllMembers() throws Exception {
 
     List<ScimUser> emptyMembers = new ArrayList<ScimUser>();
     ScimGroupPatchRequest patchReq = getPatchRemoveUsersRequest(emptyMembers);
@@ -188,7 +179,7 @@ public class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
   }
 
   @Test
-  public void testGroupPatchRemogmveMemberTwice() throws Exception {
+  void testGroupPatchRemogmveMemberTwice() throws Exception {
 
     ScimGroupPatchRequest patchRemoveRequest =
         getPatchRemoveUsersRequest(Lists.newArrayList(lennon));

@@ -16,22 +16,22 @@
 package it.infn.mw.iam.test.scim.me.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
@@ -40,26 +40,25 @@ import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
-public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
-  @Autowired
-  private ScimUserProvisioning provider;
+  ScimRestUtilsMvc scimUtils;
 
-  @Before
-  public void init() throws Exception {
+  @Autowired
+  ScimUserProvisioning provider;
+
+  @BeforeEach
+  void init() throws Exception {
 
     String uuid = scimUtils.getMe().getId();
 
@@ -98,30 +97,30 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplacePasswordNotSupported() throws Exception {
+  void testPatchReplacePasswordNotSupported() throws Exception {
 
     final String NEW_PASSWORD = "newpassword";
 
     ScimUser updates = ScimUser.builder().password(NEW_PASSWORD).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST);
+    scimUtils.patchMe(replace, updates).andExpect(status().isBadRequest());
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplacePasswordNotSupportedNoToken() throws Exception {
+  void testPatchReplacePasswordNotSupportedNoToken() throws Exception {
 
     final String NEW_PASSWORD = "newpassword";
 
     ScimUser updates = ScimUser.builder().password(NEW_PASSWORD).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST);
+    scimUtils.patchMe(replace, updates).andExpect(status().isBadRequest());
   }
 
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceGivenAndFamilyName() throws Exception {
+  void testPatchReplaceGivenAndFamilyName() throws Exception {
 
     ScimUser updates = ScimUser.builder().name(TESTUSER_NEWNAME).build();
 
@@ -130,7 +129,7 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceGivenAndFamilyNameNoToken() throws Exception {
+  void testPatchReplaceGivenAndFamilyNameNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().name(TESTUSER_NEWNAME).build();
 
@@ -140,7 +139,7 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplacePicture() throws Exception {
+  void testPatchReplacePicture() throws Exception {
 
     ScimUser updates = ScimUser.builder().addPhoto(TESTUSER_NEWPHOTO).build();
 
@@ -149,7 +148,7 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplacePictureNoToken() throws Exception {
+  void testPatchReplacePictureNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addPhoto(TESTUSER_NEWPHOTO).build();
 
@@ -159,7 +158,7 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceEmail() throws Exception {
+  void testPatchReplaceEmail() throws Exception {
 
     ScimUser updates = ScimUser.builder().addEmail(TESTUSER_NEWEMAIL).build();
 
@@ -168,7 +167,7 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceEmailNoToken() throws Exception {
+  void testPatchReplaceEmailNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addEmail(TESTUSER_NEWEMAIL).build();
 
@@ -178,105 +177,115 @@ public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceAlreadyUsedEmail() throws Exception {
+  void testPatchReplaceAlreadyUsedEmail() throws Exception {
 
     ScimUser updates = ScimUser.builder().addEmail(ANOTHERUSER_EMAIL).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.CONFLICT)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail", containsString("already bound to another user")));
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceAlreadyUsedEmailNoTken() throws Exception {
+  void testPatchReplaceAlreadyUsedEmailNoTken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addEmail(ANOTHERUSER_EMAIL).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.CONFLICT)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail", containsString("already bound to another user")));
   }
 
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceOidcIdNotSupported() throws Exception {
+  void testPatchReplaceOidcIdNotSupported() throws Exception {
 
     ScimUser updates = ScimUser.builder().addOidcId(TESTUSER_OIDCID).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceOidcIdNotSupportedNoToken() throws Exception {
+  void testPatchReplaceOidcIdNotSupportedNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addOidcId(TESTUSER_OIDCID).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceSamlIdNotSupported() throws Exception {
+  void testPatchReplaceSamlIdNotSupported() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSamlId(TESTUSER_SAMLID).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceSamlIdNotSupportedNoToken() throws Exception {
+  void testPatchReplaceSamlIdNotSupportedNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSamlId(TESTUSER_SAMLID).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceX509CertificateNotSupported() throws Exception {
+  void testPatchReplaceX509CertificateNotSupported() throws Exception {
 
     ScimUser updates = ScimUser.builder().addX509Certificate(TESTUSER_X509CERT).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceX509CertificateNotSupportedNoToken() throws Exception {
+  void testPatchReplaceX509CertificateNotSupportedNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addX509Certificate(TESTUSER_X509CERT).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockOAuthUser(user = "test_105", authorities = {"ROLE_USER"},
       scopes = {"scim:read", "scim:write"})
-  public void testPatchReplaceSshKeyNotSupported() throws Exception {
+  void testPatchReplaceSshKeyNotSupported() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSshKey(TESTUSER_SSHKEY).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 
   @Test
   @WithMockUser(username = "test_105", roles = {"USER"})
-  public void testPatchReplaceSshKeyNotSupportedNoToken() throws Exception {
+  void testPatchReplaceSshKeyNotSupportedNoToken() throws Exception {
 
     ScimUser updates = ScimUser.builder().addSshKey(TESTUSER_SSHKEY).build();
 
-    scimUtils.patchMe(replace, updates, HttpStatus.BAD_REQUEST)
+    scimUtils.patchMe(replace, updates)
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("replace operation not supported")));
   }
 }

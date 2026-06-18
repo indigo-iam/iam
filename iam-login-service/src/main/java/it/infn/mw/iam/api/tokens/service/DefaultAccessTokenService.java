@@ -15,107 +15,102 @@
  */
 package it.infn.mw.iam.api.tokens.service;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.tokens.converter.TokensConverter;
-import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Service
 public class DefaultAccessTokenService extends AbstractTokenService<AccessToken> {
 
-  @Autowired
   private TokensConverter tokensConverter;
-
-  @Autowired
-  private DefaultOAuth2ProviderTokenService tokenService;
-
-  @Autowired
   private IamOAuthAccessTokenRepository tokenRepository;
 
-  @Override
-  public AccessToken getTokenById(Long id) {
+  public DefaultAccessTokenService(Clock clock, IamProperties properties, TokenRevocationService revokeService,
+      IamOAuthAccessTokenRepository tokenRepository,
+      TokensConverter tokensConverter) {
 
-    OAuth2AccessTokenEntity at =
-        getAccessTokenById(id).orElseThrow(() -> new TokenNotFoundException(id));
-    return tokensConverter.toAccessToken(at);
+    super(clock, properties, revokeService);
+    this.tokenRepository = tokenRepository;
+    this.tokensConverter = tokensConverter;
   }
 
   @Override
   public void revokeTokenById(Long id) {
 
-    OAuth2AccessTokenEntity at =
-        getAccessTokenById(id).orElseThrow(() -> new TokenNotFoundException(id));
-    tokenService.revokeAccessToken(at);
-  }
-
-  private Optional<OAuth2AccessTokenEntity> getAccessTokenById(Long accessTokenId) {
-
-    OAuth2AccessTokenEntity at = tokenService.getAccessTokenById(accessTokenId);
-    return Optional.ofNullable(at);
+    if (properties.getAccessToken().isStoreOnDatabase()) {
+      tokenRepository.findById(id).ifPresent(revokeService::revokeAccessToken);
+    } else {
+      throw new IllegalStateException("Access Tokens are not stored on database and cannot be retrieved via this API");
+    }
   }
 
   private Page<OAuth2AccessTokenEntity> getAllValidTokens(OffsetPageable op) {
 
-    return tokenRepository.findAllValidAccessTokens(new Date(), op);
+    return tokenRepository.findAllValidAccessTokens(now(), op);
   }
 
   private long countAllValidTokens() {
 
-    return tokenRepository.countValidAccessTokens(new Date());
+    return tokenRepository.countValidAccessTokens(now());
   }
 
   private Page<OAuth2AccessTokenEntity> getAllValidTokensForUser(String userId, OffsetPageable op) {
 
-    return tokenRepository.findValidAccessTokensForUser(userId, new Date(), op);
+    return tokenRepository.findValidAccessTokensForUser(userId, now(), op);
   }
 
   private long countAllValidTokensForUser(String userId) {
 
-    return tokenRepository.countValidAccessTokensForUser(userId, new Date());
+    return tokenRepository.countValidAccessTokensForUser(userId, now());
   }
 
   private Page<OAuth2AccessTokenEntity> getAllValidTokensForClient(String clientId,
       OffsetPageable op) {
 
-    return tokenRepository.findValidAccessTokensForClient(clientId, new Date(), op);
+    return tokenRepository.findValidAccessTokensForClient(clientId, now(), op);
   }
 
   private long countAllValidTokensForClient(String clientId) {
 
-    return tokenRepository.countValidAccessTokensForClient(clientId, new Date());
+    return tokenRepository.countValidAccessTokensForClient(clientId, now());
   }
 
   private Page<OAuth2AccessTokenEntity> getAllValidTokensForUserAndClient(String userId,
       String clientId, OffsetPageable op) {
 
-    return tokenRepository.findValidAccessTokensForUserAndClient(userId, clientId, new Date(), op);
+    return tokenRepository.findValidAccessTokensForUserAndClient(userId, clientId, now(), op);
   }
 
   private long countAllValidTokensForUserAndClient(String userId, String clientId) {
 
-    return tokenRepository.countValidAccessTokensForUserAndClient(userId, clientId, new Date());
+    return tokenRepository.countValidAccessTokensForUserAndClient(userId, clientId, now());
   }
 
   private ListResponseDTO<AccessToken> buildCountResponse(long countResponse) {
 
     return new ListResponseDTO.Builder<AccessToken>().totalResults(countResponse)
-        .resources(Collections.emptyList()).startIndex(1).itemsPerPage(0).build();
+      .resources(Collections.emptyList())
+      .startIndex(1)
+      .itemsPerPage(0)
+      .build();
   }
 
-  private ListResponseDTO<AccessToken> buildListResponse(Page<OAuth2AccessTokenEntity> entities, OffsetPageable op) {
+  private ListResponseDTO<AccessToken> buildListResponse(Page<OAuth2AccessTokenEntity> entities,
+      OffsetPageable op) {
 
     List<AccessToken> resources = new ArrayList<>();
     entities.getContent().forEach(a -> resources.add(tokensConverter.toAccessToken(a)));
@@ -180,11 +175,5 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     Page<OAuth2AccessTokenEntity> entities =
         getAllValidTokensForUserAndClient(userId, clientId, op);
     return buildListResponse(entities, op);
-  }
-
-  @Override
-  public void deleteAllTokens() {
-
-    tokenRepository.deleteAll();
   }
 }

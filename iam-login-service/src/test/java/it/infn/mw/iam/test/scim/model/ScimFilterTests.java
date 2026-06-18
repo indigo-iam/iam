@@ -15,28 +15,28 @@
  */
 package it.infn.mw.iam.test.scim.model;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 import it.infn.mw.iam.api.scim.model.ScimFilter;
 import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
 import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
 
-public class ScimFilterTests {
+class ScimFilterTests {
 
+  @Test
+  void scimFilterGetTest() {
 
-    @Test
-    public void scimFilterGetTest() {
+    ScimFilterAttributes attribute = ScimFilterAttributes.ACTIVE;
+    ScimFilterOperators operator = ScimFilterOperators.EQUALS;
+    String value = "true";
 
-        ScimFilterAttributes attribute = ScimFilterAttributes.ACTIVE;
-        ScimFilterOperators operator = ScimFilterOperators.EQUALS;
-        String value  = "true";
-
-        ScimFilter filter = new ScimFilter(attribute, operator, value);
-        Assert.assertEquals(true, filter.getAttribute().equals(attribute));
-        Assert.assertEquals(true, filter.getOperator().equals(operator));
-        Assert.assertEquals(true, filter.getValue().equals(value));
-        Assert.assertEquals(true, filter.getClass().equals(ScimFilter.class));
-    }
+    ScimFilter filter = new ScimFilter(attribute, operator, value);
+    assertEquals(true, filter.getAttribute().equals(attribute));
+    assertEquals(true, filter.getOperator().equals(operator));
+    assertEquals(true, filter.getValue().equals(value));
+    assertEquals(true, filter.getClass().equals(ScimFilter.class));
+  }
 
 }

@@ -16,26 +16,28 @@
 
 package it.infn.mw.iam.test.authn.x509;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -43,8 +45,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
-@RunWith(MockitoJUnitRunner.class)
-public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
+@ExtendWith(MockitoExtension.class)
+class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
 
   @Mock
   IamAccountRepository accountRepository;
@@ -52,14 +54,18 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
   IamTotpMfaRepository totpMfaRepository;
   @Mock
   InactiveAccountAuthenticationHander inactiveAccountHandler;
+  @Mock
+  IamTotpMfaProperties iamTotpMfaProperties;
 
+  Clock clock;
   IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
   PreAuthenticatedAuthenticationToken token;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
+    clock = Clock.systemUTC();
     iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
-        accountRepository, totpMfaRepository, inactiveAccountHandler);
+        accountRepository, totpMfaRepository, inactiveAccountHandler, iamTotpMfaProperties);
     token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
   }
 
@@ -73,12 +79,12 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
   }
 
   @Test
-  public void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
+  void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
 
     IamAccount account = newAccount("test-user");
     when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
 
-    IamTotpMfa iamTotpMfa = new IamTotpMfa();
+    IamTotpMfa iamTotpMfa = new IamTotpMfa(clock.instant());
     iamTotpMfa.setActive(true);
     when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
 
@@ -89,7 +95,25 @@ public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport
     assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
   }
 
+  @Test
+  void testIfMfaMandatoryThenRolePreAuthenticatedIsAdded() {
+
+    IamAccount account = newAccount("test-user");
+    when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
+
+    IamTotpMfa iamTotpMfa = new IamTotpMfa();
+    when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+    when(iamTotpMfaProperties.isMultiFactorMandatory()).thenReturn(true);
+
+    UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
+
+    assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
+    Map<?, ?> details = (Map<?, ?>) token.getDetails();
+    assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
+  }
+
   private boolean hasRole(UserDetails userDetails, String role) {
+
     Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
     return authorities.stream().map(GrantedAuthority::getAuthority).anyMatch(role::equals);
   }

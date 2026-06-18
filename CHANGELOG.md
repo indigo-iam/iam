@@ -1,5 +1,179 @@
 # Changelog
 
+## 1.14.1 (2026-06-10)
+
+### What's Changed
+
+* Allow access to / without authentication and redirect to login
+* Add/unset client secret when updating client authn method
+* Fix API error by importing Scope API, Service, Controller and Repository from Mitre
+* Remove web-finger discovery endpoint
+* Search for the SAML attribute by alias during registration/login
+* Enforce client AuthN method validation at token endpoint
+* Minor fix on AarcClaimValueHelper affiliation retrieval
+* Add explicit modifying annotation to avoid entity manager errors
+
+## 1.14.0 (2026-05-04)
+
+### What's Changed
+
+* Added support for AARC-G061 IDP hinting guideline
+* Added a paginated Group Requests API
+* Added support for signed RPMs
+* Aligned authorization between the SCIM `/me` endpoint and the corresponding `Users/{id}` endpoint
+* Ensured the client secret is returned only upon client creation and secret rotation
+* Prevented multiple AUP reminder emails from being sent
+* Added support for X.509 linking during registration
+* Fix unhandled errors in the IAM account clients endpoint
+* Added a client option to disable upscoping during token exchange
+* Added a Dockerfile for VOMS-AA and renamed the final image to `indigoiam/iam-voms-aa`
+* Stopped redirecting pre-authenticated users to the AUP page
+* Added a filter to enforce MFA for all users
+* Added a list of claims based on the requested scopes when introspecting AARC tokens
+* Fixed a TLS issue when downloading SAML metadata files
+* Fixed a duplicate key error for case-insensitive `info_key`
+* Added support for AARC-G052 Proxied Token Introspection implementation
+* Added support for OpenID Federation automatic client registration
+* Added support for a TOTP encryption key rotation mechanism during bootstrap
+* Added an option which allows to not store access tokens in the database
+* Follow RFC-4086 when creating the authorization code value
+* New dashboard client credentials configurable on bootstrap
+* Added storage.poll matcher in wlcg-scopes profile
+* Upgraded voms-api-java from 3.3.6 to 3.3.8 in order to upgrade to Bouncy Castle v1.84
+* Added alternative API endpoint for getting the approved site list with client details
+* Added SAML authn-context class-refs configurable list
+* Refactored VOMS-AA yaml configuration files
+* Enhanced/optimized IAM login service yaml profiles
+* Added support for AUDIT log in VOMS-AA service
+* Always prompt users to authorize scopes on device flow
+* Changed default remember decision to none during authorization code flow
+* Removed test keystore from the generated RPM
+* Support for XSString as SAML attribute value type
+
+### Notes for VOMS-AA
+
+* Docker image name has changed from `indigoiam/voms-aa-bp` to `indigoiam/iam-voms-aa`
+* The service no longer logs issued proxies at INFO logging level
+* New AUDIT events have been added: VomsProxyIssuedEvent, VomsProxyDeniedEvent
+
+### Notes for INDIGO IAM
+
+* The error returned on asking for a Token Exchange with an expired or malformed subject token has been changed from `invalid_token` to `invalid_grant`, according to the [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html). The response HTTP status code changed also from 401 to a proper 400.
+
+## 1.13.5 (2026-06-15)
+
+### What's Changed
+
+* Sanitize registration key in error page
+* Sanitize PasswordReplacedEvent log message
+* Strengthen redirect URI validation
+
+## 1.13.4 (2025-01-26)
+
+### What's Changed
+
+* Fix SCIM filtering query parameter name
+* Fix invalid lower case introspection token_type_hint parameter
+* Fix missing validation check for token
+* Fix multiple AUP reminder emails sent
+* Fix read-only registration fields
+
+## 1.13.3 (2025-12-09)
+
+### What's Changed
+
+* Don't fallback on default JWT profile when the requested scopes clarifies the desired one
+* Evaluate all SAML identifiers resolved on login to avoid errors after a change in strategy
+* Fix issue about missing pre-filled registration values
+* Convert the SCIM X.509 DTO before sending email to avoid wrong notification and an error on uploading PEM certificates
+
+## 1.13.2 (2025-11-25)
+
+### What's Changed
+
+* Restore local login link for hidden case
+* Fix group membership requests acceptance and refusal propagation properly
+* Fix registration's form fields configuration by making it case insensitive
+* Make it clear for admins how strong is the client reset operation
+
+## 1.13.1 (2025-11-20)
+
+### What's Changed
+
+* Fix expired client query to avoid suspension of all clients when using openid-federation profile
+* Fix duplicated sub claim in UserInfo response
+* Restore scope claim in UserInfo response
+* Ignore empty strings when computing claim values
+* Fix epoch timestamps unit from milliseconds to seconds for both Introspection and UserInfo responses
+
+## 1.13.0 (2025-11-03)
+
+### What's Changed
+
+* Search users by Subject DN
+* Store user affiliation into user info table
+* Return only FQANs with parent group equal to the VO name in the proxy
+* Add endpoint to retrieve clients owned by user
+* Option to limit custom scopes to admins only
+* Allow users to remove themselves from groups
+* SCIM API bulk operations
+* Configurable support button
+* Implement SCIM filtering
+* Enable command line execution for development
+* Configurable text in the registration button
+* Configurable 'nbf' duration for tokens
+* Restrict authZ on /iam/account/search endpoint
+* Add RPM build workflow on Continuous Integration
+* Ensure removal of configured MFA totp before account deletion
+* Add endpoint to retrieve the list of group memberships of a user
+* Synch affiliation with CERN HR DB
+* Notify VO Admins when a certificate is added
+* Revoke all refresh tokens for a client
+* Implement JIT account provisioning for OPs
+* Fix both H2 and MySQL devcontainers by
+* Scoped voPerson_id
+* Build and expose the OpenID Provider's OID Federation Entity Configuration
+* Implement OID Federation Trust Chain resolution and validation
+* Implement OID Federation Explicit Client Registration
+* Add openid_relying_party metadata
+* Token lifetime configurable in token request
+* Fix wrong information displayed when viewing other accounts with READER_ROLE
+* Update nimbus-jose-jwt dependency version to 9.37.4
+
+## 1.12.3 (2025-10-08)
+
+### What's Fixed
+
+* Fix for [Advisory-EGI-SVG-2025-18](https://advisories.egi.eu/Advisory-EGI-SVG-2025-18)
+* Fix for [Advisory-EGI-SVG-2025-19](https://advisories.egi.eu/Advisory-EGI-SVG-2025-19)
+
+## 1.12.2 (2025-08-05)
+
+### What's Changed
+
+* Upgrade CANL to 2.8.3 and Bouncy Castle to 1.81 by moving to latest VOMS API Java v3.3.6
+
+### Note
+
+This update fixes a problem we observed with VOMS API Java v3.3.5,
+firstly added to the release candidates of IAM v1.12.0 and later downgraded to v3.3.4 before
+the official release.
+
+## 1.12.1 (2025-08-04)
+
+### What's Fixed
+
+* Fix link/unlink x509 personal certificate issue due to runtime bouncy-castle conflict
+* Consider both subject DN and issuer DN when unlinking x509 personal certificate
+* Send acr_values only when mfa is included within the active profiles
+* Ensure access tokens are not issued before totp verification
+* Add validation when registration fields are read-only
+
+### Note
+
+The Multi-Factor Authentication feature is still considered as experimental.
+It will be enhanced and expanded in future releases, based also on users feedback.
+
 ## 1.12.0 (2025-05-29)
 
 ### What's Changed

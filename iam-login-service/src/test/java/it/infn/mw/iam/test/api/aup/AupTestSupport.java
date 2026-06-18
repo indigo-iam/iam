@@ -18,17 +18,15 @@ package it.infn.mw.iam.test.api.aup;
 import java.util.Date;
 
 import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-public class AupTestSupport extends TestSupport{
+public class AupTestSupport extends TokenGetterUtils {
   
   public static final String DEFAULT_AUP_NAME = "default-aup";
   public static final String DEFAULT_AUP_URL = "http://default.aup.url/";
   public static final String DEFAULT_AUP_DESC = "default-aup-desc";
 
-
-  public IamAup buildDefaultAup() {
-    Date now = new Date();
+  public IamAup buildDefaultAup(Date now) {
     IamAup aup = new IamAup();
     
     aup.setName(DEFAULT_AUP_NAME);

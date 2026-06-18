@@ -20,7 +20,6 @@ import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 
 import java.util.EnumSet;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -40,7 +39,6 @@ public class DefaultInactiveAccountAuthenticationHandler
   public final String waitingConfirmationMsg;
   public final String waitingApprovalMsg;
 
-  @Autowired
   public DefaultInactiveAccountAuthenticationHandler(
       @Value("${iam.organisation.name}") String organisationName) {
 

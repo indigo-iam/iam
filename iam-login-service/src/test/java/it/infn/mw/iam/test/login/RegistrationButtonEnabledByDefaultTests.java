@@ -17,34 +17,30 @@ package it.infn.mw.iam.test.login;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
-public class RegistrationButtonEnabledByDefaultTests {
+class RegistrationButtonEnabledByDefaultTests {
   @Value("${local.server.port}")
   private Integer serverPort;
 
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
   }
 
   @Test
-  public void registrationButtonIsShown() {
+  void registrationButtonIsShown() {
     RestAssured.given()
       .port(serverPort)
       .log()

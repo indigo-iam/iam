@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.authn.saml;
 
+import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
@@ -33,7 +33,6 @@ public class DefaultSAMLUserDetailsService extends SAMLUserDetailsServiceSupport
 
   final IamAccountRepository repo;
 
-  @Autowired
   public DefaultSAMLUserDetailsService(SamlUserIdentifierResolver resolver,
       IamAccountRepository repo, InactiveAccountAuthenticationHander handler) {
     super(handler, resolver);
@@ -43,15 +42,22 @@ public class DefaultSAMLUserDetailsService extends SAMLUserDetailsServiceSupport
   @Override
   public Object loadUserBySAML(SAMLCredential credential) throws UsernameNotFoundException {
 
-    IamSamlId samlId = resolveSamlId(credential);
+    List<IamSamlId> samlIds = resolveSamlIds(credential);
 
-    Optional<IamAccount> account = repo.findBySamlId(samlId);
+    Optional<IamAccount> account = samlIds.stream()
+      .map(repo::findBySamlId)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .findFirst();
 
     if (account.isPresent()) {
       return buildUserFromIamAccount(account.get());
     }
 
-    return buildUserFromSamlCredential(samlId, credential);
+    return buildUserFromSamlCredential(samlIds.stream()
+      .findFirst()
+      .orElseThrow(() -> new UsernameNotFoundException(
+          "Could not extract a user identifier from the SAML assertion")),
+        credential);
   }
-
 }

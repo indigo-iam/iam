@@ -25,14 +25,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -42,33 +40,31 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+  webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
-public class ScimUserProvisioningAttributeFilterTests {
+class ScimUserProvisioningAttributeFilterTests {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
-  
+
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
-  
-  @Before
-  public void setup() {
+
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void teardown() {
+  @AfterEach
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testReuturnOnlyUsernameRequest() throws Exception {
+  void testReuturnOnlyUsernameRequest() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(1).attributes("userName").build())
       .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
@@ -95,7 +91,7 @@ public class ScimUserProvisioningAttributeFilterTests {
   }
 
   @Test
-  public void testMultipleAttrsRequest() throws Exception {
+  void testMultipleAttrsRequest() throws Exception {
 
     scimUtils
       .getUsers(ParamsBuilder.builder()

@@ -16,13 +16,13 @@
 package it.infn.mw.iam.api.client.service;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
+import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -45,20 +45,16 @@ public class DefaultClientService implements ClientService {
   private final Clock clock;
 
   private final IamClientRepository clientRepo;
-
   private final IamAccountClientRepository accountClientRepo;
 
   private ApplicationEventPublisher eventPublisher;
 
-  private OAuth2TokenEntityService tokenService;
-
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher, OAuth2TokenEntityService tokenService) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
     this.eventPublisher = eventPublisher;
-    this.tokenService = tokenService;
   }
 
   @Override
@@ -83,7 +79,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-        .orElseGet(newAccountClient(owner, client));
+      .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -103,7 +99,8 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
+      String userId) {
     client.setActive(status);
     client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
@@ -124,7 +121,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-          .map(IamAccountClient::getClient);
+        .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -134,24 +131,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public void deleteClient(ClientDetailsEntity client) {
     accountClientRepo.deleteByClientId(client.getId());
-    deleteTokensByClient(client);
     clientRepo.delete(client);
-  }
-
-  private boolean isValidAccessToken(OAuth2AccessTokenEntity a) {
-    return !(a.getScope().contains("registration-token")
-        || a.getScope().contains("resource-token"));
-  }
-
-  private void deleteTokensByClient(ClientDetailsEntity client) {
-    // delete all valid access tokens (exclude registration and resource tokens)
-    tokenService.getAccessTokensForClient(client)
-        .stream()
-        .filter(this::isValidAccessToken)
-        .forEach(at -> tokenService.revokeAccessToken(at));
-    // delete all valid refresh tokens
-    tokenService.getRefreshTokensForClient(client)
-        .forEach(rt -> tokenService.revokeRefreshToken(rt));
   }
 
   @Override
@@ -171,6 +151,19 @@ public class DefaultClientService implements ClientService {
 
     return accountClientRepo.findByClientClientId(clientId, page);
 
+  }
+
+  @Override
+  public void useClient(ClientDetailsEntity client) {
+
+    LocalDate today = LocalDate.now(clock);
+    if (client.getClientLastUsed() == null) {
+      client.setClientLastUsed(new ClientLastUsedEntity(client, today));
+      return;
+    }
+    if (!today.equals(client.getClientLastUsed().getLastUsed())) {
+      client.getClientLastUsed().setLastUsed(today);
+    }
   }
 
 }

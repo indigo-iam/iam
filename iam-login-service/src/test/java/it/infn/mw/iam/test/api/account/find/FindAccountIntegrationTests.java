@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.account.find;
 
+import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_AUTHORITY_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_EMAIL_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_GROUP_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_LABEL_RESOURCE;
@@ -31,15 +32,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -47,43 +50,43 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_AUTHORITY_RESOURCE;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class FindAccountIntegrationTests extends TestSupport {
+class FindAccountIntegrationTests implements StructuredScopeTestSupportConstants {
+
+  static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamGroupRepository groupRepo;
+  IamGroupRepository groupRepo;
 
   @Autowired
-  private IamGroupService groupService;
+  IamGroupService groupService;
 
   @Autowired
-  private IamAccountService accountService;
+  IamAccountService accountService;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  SecurityContextUtils context;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @After
-  public void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -92,7 +95,7 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void findingRequiresAuthenticatedUser() throws Exception {
+  void findingRequiresAuthenticatedUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(UNAUTHORIZED);
@@ -100,7 +103,7 @@ public class FindAccountIntegrationTests extends TestSupport {
     mvc.perform(get(FIND_BY_USERNAME_RESOURCE).param("username", "test")).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_BY_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
-    mvc.perform(get(FIND_BY_UUID_RESOURCE, TEST_USER_UUID)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, TEST_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "admin"))
       .andExpect(UNAUTHORIZED);
 
@@ -108,7 +111,7 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void findingRequiresAdminUser() throws Exception {
+  void findingRequiresAdminUser() throws Exception {
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(FORBIDDEN);
@@ -122,9 +125,9 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByLabelWorks() throws Exception {
+  void findByLabelWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER)
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
@@ -156,9 +159,9 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByEmailWorks() throws Exception {
+  void findByEmailWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER)
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     String email = testAccount.getUserInfo().getEmail();
@@ -176,9 +179,9 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByUsernameWorks() throws Exception {
+  void findByUsernameWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER)
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_USERNAME_RESOURCE).param("username", testAccount.getUsername()))
@@ -194,9 +197,9 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByGroupWorks() throws Exception {
+  void findByGroupWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUsername(TEST_USER)
+    IamAccount testAccount = accountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     // Cleanup all group memberships and groups
@@ -254,8 +257,8 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findNotInGroupWorks() throws Exception {
-    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USER)
+  void findNotInGroupWorks() throws Exception {
+    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     // Cleanup all group memberships and groups
@@ -295,10 +298,10 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByUUIDWorks() throws Exception {
+  void findByUUIDWorks() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    IamAccount testAccount =
+        accountRepo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
       .andExpect(OK)
@@ -308,9 +311,9 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  public void findByAuthorityWorks() throws Exception {
+  void findByAuthorityWorks() throws Exception {
 
-    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USER)
+    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USERNAME)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     IamAccount gmAccount = accountRepo.findByUsername("manager")
@@ -379,26 +382,26 @@ public class FindAccountIntegrationTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(1)))
       .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
-    
+
     mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "not_existing_authority"))
-    .andExpect(OK)
-    .andExpect(jsonPath("$.totalResults", is(0)))
-    .andExpect(jsonPath("$.Resources", emptyIterable()));
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(0)))
+      .andExpect(jsonPath("$.Resources", emptyIterable()));
 
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void findByUUIDForbiddenForUsers() throws Exception {
+  void findByUUIDForbiddenForUsers() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    IamAccount testAccount =
+        accountRepo.findByUuid(TEST_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid())).andExpect(FORBIDDEN);
   }
 
   @Test
-  public void emptyResultForUnknownUUIDIfAdmin() throws Exception {
+  void emptyResultForUnknownUUIDIfAdmin() throws Exception {
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").doesNotExist())
@@ -407,7 +410,7 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void forbiddenForUnknownUUIDIfUser() throws Exception {
+  void forbiddenForUnknownUUIDIfUser() throws Exception {
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid")).andExpect(FORBIDDEN);
   }
 }

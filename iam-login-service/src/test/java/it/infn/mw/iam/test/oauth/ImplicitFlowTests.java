@@ -27,16 +27,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.exceptions.RedirectMismatchException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -44,28 +44,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-// @WithAnonymousUser
-public class ImplicitFlowTests {
-
-  public static final String IMPLICIT_CLIENT_ID = "implicit-flow-client";
-  public static final String IMPLICIT_CLIENT_REDIRECT_URL = "http://localhost:9876/implicit";
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+public class ImplicitFlowTests extends TokenGetterUtils {
 
   public static final String LOGIN_URL = "http://localhost/login";
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
 
-  public static final String RESPONSE_TYPE_TOKEN_ID_TOKEN = "token id_token";
-
   public static final String SCOPE = "openid profile";
-
-  public static final String TEST_USER_ID = "test";
-  public static final String TEST_USER_PASSWORD = "password";
 
   @Autowired
   ObjectMapper objectMapper;
@@ -77,10 +69,10 @@ public class ImplicitFlowTests {
   MockMvc mvc;
 
   @Test
-  public void testImplicitFlowRedirectsToLoginUrlForAnonymousUser() throws Exception {
+  void testImplicitFlowRedirectsToLoginUrlForAnonymousUser() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_TOKEN_ID_TOKEN)
+      .queryParam("response_type", "token id_token")
       .queryParam("client_id", IMPLICIT_CLIENT_ID)
       .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
       .queryParam("scope", SCOPE)
@@ -100,10 +92,10 @@ public class ImplicitFlowTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testImplicitFlowRedirectsCorrectlyChecksRedirectUrl() throws Exception {
+  void testImplicitFlowRedirectsCorrectlyChecksRedirectUrl() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_TOKEN_ID_TOKEN)
+      .queryParam("response_type", "token id_token")
       .queryParam("client_id", IMPLICIT_CLIENT_ID)
       .queryParam("redirect_uri", "http://localhost:1234/implicit") // this is wrong on purpose
       .queryParam("scope", SCOPE)
@@ -119,13 +111,13 @@ public class ImplicitFlowTests {
       .andExpect(model().attributeExists("error"))
       .andExpect(model().attribute("error", instanceOf(RedirectMismatchException.class)));
   }
-  
+
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void testImplicitFlowSucceeds() throws Exception {
+  void testImplicitFlowSucceeds() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_TOKEN_ID_TOKEN)
+      .queryParam("response_type", "token id_token")
       .queryParam("client_id", IMPLICIT_CLIENT_ID)
       .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
       .queryParam("scope", SCOPE)
@@ -135,27 +127,29 @@ public class ImplicitFlowTests {
 
     String authzEndpointUrl = uriComponents.toUriString();
 
-    MockHttpSession session =
-        (MockHttpSession) mvc.perform(get(authzEndpointUrl))
-          .andExpect(status().isOk())
-          .andExpect(view().name("forward:/oauth/confirm_access"))
-          .andReturn()
-          .getRequest()
-          .getSession();
-    
-   String redirectedUrl = mvc.perform(post("/authorize").with(csrf())
-       .param("user_oauth_approval", "true")
-       .param("scope_openid", "openid")
-       .param("scope_profile", "profile")
-       .param("authorize", "Authorize")
-       .param("remember", "until-revoked")
-       .session(session))
-     .andExpect(status().is3xxRedirection())
-     .andReturn().getResponse().getRedirectedUrl();
-     
-   assertThat(redirectedUrl, startsWith(IMPLICIT_CLIENT_REDIRECT_URL+"#"));
-   assertThat(redirectedUrl, containsString("access_token="));
-   assertThat(redirectedUrl, containsString("id_token="));
- 
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(authzEndpointUrl))
+      .andExpect(status().isOk())
+      .andExpect(view().name("forward:/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    String redirectedUrl = mvc
+      .perform(post("/authorize").with(csrf())
+        .param("user_oauth_approval", "true")
+        .param("scope_openid", "openid")
+        .param("scope_profile", "profile")
+        .param("authorize", "Authorize")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andReturn()
+      .getResponse()
+      .getRedirectedUrl();
+
+    assertThat(redirectedUrl, startsWith(IMPLICIT_CLIENT_REDIRECT_URL + "#"));
+    assertThat(redirectedUrl, containsString("access_token="));
+    assertThat(redirectedUrl, containsString("id_token="));
+
   }
 }

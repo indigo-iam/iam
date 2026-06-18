@@ -26,33 +26,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TokenEndpointClientAuthenticationTests {
+class TokenEndpointClientAuthenticationTests implements StructuredScopeTestSupportConstants {
 
-  private static final String TOKEN_ENDPOINT = "/token";
-  private static final String GRANT_TYPE = "client_credentials";
   private static final String SCOPE = "read-tasks";
   private static final String SCOPE_SUBSET = "openid";
-
-  private static final String TEST_USER_UUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
-  private static final String PRODUCTION_GROUP_UUID = "c617d586-54e6-411d-8e38-64967798fa8a";
 
   @Autowired
   private MockMvc mvc;
@@ -61,16 +54,13 @@ public class TokenEndpointClientAuthenticationTests {
   private ObjectMapper mapper;
 
   @Test
-  public void testTokenEndpointFormClientAuthentication() throws Exception {
-
-    String clientId = "post-client";
-    String clientSecret = "secret";
+  void testTokenEndpointFormClientAuthentication() throws Exception {
 
     // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
-        .param("grant_type", GRANT_TYPE)
-        .param("client_id", clientId)
-        .param("client_secret", clientSecret)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("scope", SCOPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo(SCOPE)));
@@ -78,16 +68,15 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointFormClientAuthenticationInvalidCredentials() throws Exception {
+  void testTokenEndpointFormClientAuthenticationInvalidCredentials() throws Exception {
 
-    String clientId = "post-client";
-    String clientSecret = "wrong-password";
+    final String wrongSecret = "wrong-secret";
 
     // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
-        .param("grant_type", GRANT_TYPE)
-        .param("client_id", clientId)
-        .param("client_secret", clientSecret)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", wrongSecret)
         .param("scope", SCOPE))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
@@ -96,16 +85,15 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointFormClientAuthenticationUnknownClient() throws Exception {
+  void testTokenEndpointFormClientAuthenticationUnknownClient() throws Exception {
 
-    String clientId = "unknown-client";
-    String clientSecret = "password";
+    final String unknownClientId = "unknown-client";
 
     // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
-        .param("grant_type", GRANT_TYPE)
-        .param("client_id", clientId)
-        .param("client_secret", clientSecret)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", unknownClientId)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("scope", SCOPE))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
@@ -114,15 +102,12 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointBasicClientAuthentication() throws Exception {
-
-    String clientId = "post-client";
-    String clientSecret = "secret";
+  void testTokenEndpointBasicClientAuthentication() throws Exception {
 
     // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
-        .with(httpBasic(clientId, clientSecret))
-        .param("grant_type", GRANT_TYPE)
+        .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", SCOPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo(SCOPE)));
@@ -130,14 +115,12 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointPublicClientAuthentication() throws Exception {
-
-    String clientId = "public-client";
+  void testTokenEndpointPublicClientAuthentication() throws Exception {
 
     // @formatter:off
     mvc.perform(post(TOKEN_ENDPOINT)
-        .param("grant_type", GRANT_TYPE)
-        .param("client_id", clientId))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", PUBLIC_CLIENT_ID))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("profile")))
       .andExpect(jsonPath("$.scope", containsString("email")));
@@ -145,20 +128,59 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
-  public void testTokenEndpointOptionsMethodAllowed() throws Exception {
+  void testTokenEndpointOptionsMethodAllowed() throws Exception {
     mvc.perform(options(TOKEN_ENDPOINT)).andExpect(status().isOk());
   }
 
   @Test
-  @WithAnonymousUser
-  public void testInsufficientScopedClientCredentialTokenForbidsAccess() throws Exception {
+  void testTokenEndpointFormClientAuthenticationNotAllowed() throws Exception {
 
-    String clientId = "scim-client-rw";
-    String clientSecret = "secret";
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", JWT_AUTH_CLIENT_ID)
+        .param("client_secret", JWT_AUTH_CLIENT_SECRET)
+        .param("scope", IamSystemScopeService.OPENID_SCOPE))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
+  }
+
+  @Test
+  void testTokenEndpointBasicClientAuthenticationNotAllowed() throws Exception {
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(JWT_AUTH_CLIENT_ID, JWT_AUTH_CLIENT_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("scope", IamSystemScopeService.OPENID_SCOPE))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
+  }
+
+  @Test
+  void testTokenEndpointPublicClientAuthenticationNotAllowed() throws Exception {
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+        .param("client_id", JWT_AUTH_CLIENT_ID))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+      .andExpect(jsonPath("$.error_description", equalTo("Client does not support basic authentication")));
+    // @formatter:on
+  }
+
+  @Test
+  @WithAnonymousUser
+  void testInsufficientScopedClientCredentialTokenForbidsAccess() throws Exception {
 
     String response = mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
-        .param("grant_type", GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(SCIM_CLIENT_RW_ID, SCIM_CLIENT_RW_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", SCOPE_SUBSET))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo(SCOPE_SUBSET)))
@@ -176,14 +198,10 @@ public class TokenEndpointClientAuthenticationTests {
     mvc.perform(get("/scim/Users").header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isForbidden());
 
-    mvc
-      .perform(
-          get("/scim/Users/" + TEST_USER_UUID).header("Authorization", scimAuthorizationHeader))
+    mvc.perform(get("/scim/Users/" + TEST_UUID).header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isForbidden());
 
-    mvc
-      .perform(
-          delete("/scim/Users/" + TEST_USER_UUID).header("Authorization", scimAuthorizationHeader))
+    mvc.perform(delete("/scim/Users/" + TEST_UUID).header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isForbidden());
 
     mvc.perform(get("/scim/Groups").header("Authorization", scimAuthorizationHeader))
@@ -202,14 +220,11 @@ public class TokenEndpointClientAuthenticationTests {
 
   @Test
   @WithAnonymousUser
-  public void testSCIMScopedClientCredentialTokenAllowsAccess() throws Exception {
-
-    String clientId = "scim-client-rw";
-    String clientSecret = "secret";
+  void testSCIMScopedClientCredentialTokenAllowsAccess() throws Exception {
 
     String response = mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
-        .param("grant_type", GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(SCIM_CLIENT_RW_ID, SCIM_CLIENT_RW_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", "scim:read scim:write"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("scim:read")))
@@ -227,15 +242,11 @@ public class TokenEndpointClientAuthenticationTests {
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
       .andExpect(jsonPath("$.Resources[1].userName", equalTo("test")));
 
-    mvc
-      .perform(
-          get("/scim/Users/" + TEST_USER_UUID).header("Authorization", scimAuthorizationHeader))
+    mvc.perform(get("/scim/Users/" + TEST_UUID).header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.userName", equalTo("test")));
 
-    mvc
-      .perform(
-          delete("/scim/Users/" + TEST_USER_UUID).header("Authorization", scimAuthorizationHeader))
+    mvc.perform(delete("/scim/Users/" + TEST_UUID).header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isNoContent());
 
     mvc.perform(get("/scim/Groups").header("Authorization", scimAuthorizationHeader))
@@ -258,14 +269,11 @@ public class TokenEndpointClientAuthenticationTests {
 
   @Test
   @WithAnonymousUser
-  public void testAdminScopedClientCredentialTokenAllowsAccess() throws Exception {
-
-    String clientId = "admin-client-rw";
-    String clientSecret = "secret";
+  void testAdminScopedClientCredentialTokenAllowsAccess() throws Exception {
 
     String response = mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
-        .param("grant_type", GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(ADMIN_CLIENT_ID, ADMIN_CLIENT_SECRET))
+        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", "iam:admin.read iam:admin.write"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("iam:admin.read")))
@@ -279,14 +287,14 @@ public class TokenEndpointClientAuthenticationTests {
     String adminAuthorizationHeader = String.format("Bearer %s", accessTokenAdmin);
 
     mvc
-      .perform(
-          get("/iam/api/clients/" + clientId).header("Authorization", adminAuthorizationHeader))
+      .perform(get("/iam/api/clients/" + ADMIN_CLIENT_ID).header("Authorization",
+          adminAuthorizationHeader))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.client_id", equalTo(clientId)));
+      .andExpect(jsonPath("$.client_id", equalTo(ADMIN_CLIENT_ID)));
 
     mvc
-      .perform(
-          delete("/iam/api/clients/" + clientId).header("Authorization", adminAuthorizationHeader))
+      .perform(delete("/iam/api/clients/" + ADMIN_CLIENT_ID).header("Authorization",
+          adminAuthorizationHeader))
       .andExpect(status().isNoContent());
 
   }

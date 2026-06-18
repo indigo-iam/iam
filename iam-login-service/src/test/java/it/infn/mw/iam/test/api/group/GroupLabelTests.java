@@ -30,59 +30,69 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-public class GroupLabelTests extends TestSupport {
+class GroupLabelTests implements StructuredScopeTestSupportConstants {
 
-  private static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
+  static final String RANDOM_UUID = UUID.randomUUID().toString();
+
+  static final String LABEL_PREFIX = "indigo-iam.github.io";
+  static final String LABEL_NAME = "example.label";
+  static final String LABEL_VALUE = "example-label-value";
+
+  static final LabelDTO TEST_LABEL =
+      LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(LABEL_VALUE).build();
+
+  static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
       jsonPath("$.error", containsString("Group not found"));
 
-  private static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
+  static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
 
   @Autowired
-  private IamGroupRepository repo;
+  IamGroupRepository repo;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  ObjectMapper mapper;
 
   @Autowired
-  private ObjectMapper mapper;
+  SecurityContextUtils context;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
-  @Before
-  public void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @After
-  public void cleanupOAuthUser() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  @BeforeEach
+  void setup() {
+    context.cleanupSecurityContext();
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -91,7 +101,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
+  void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
@@ -106,7 +116,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
+  void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
@@ -120,13 +130,13 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void gettingLabelsWorksForAdminUser() throws Exception {
+  void gettingLabelsWorksForAdminUser() throws Exception {
     gettingLabelsWorks();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void gettingLabelsWorksForReaderUser() throws Exception {
+  void gettingLabelsWorksForReaderUser() throws Exception {
     gettingLabelsWorks();
   }
 
@@ -141,7 +151,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void setLabelWorks() throws Exception {
+  void setLabelWorks() throws Exception {
 
     mvc
       .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
@@ -173,7 +183,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void deleteLabelWorks() throws Exception {
+  void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
 
@@ -223,7 +233,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void nonExistingResourceHandledCorrectly() throws Exception {
+  void nonExistingResourceHandledCorrectly() throws Exception {
     mvc.perform(get(RESOURCE, RANDOM_UUID))
       .andExpect(NOT_FOUND)
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
@@ -242,7 +252,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void multipleLabelsHandledCorrectly() throws Exception {
+  void multipleLabelsHandledCorrectly() throws Exception {
     List<LabelDTO> labels = Lists.newArrayList();
 
     for (int i = 0; i < 10; i++) {
@@ -296,7 +306,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  public void labelValidationTests() throws Exception {
+  void labelValidationTests() throws Exception {
 
     final String[] SOME_INVALID_PREFIXES = {"aword", "-starts-with-dash.com", "ends-with-dash-.com",
         "contains_underscore.org", "contains/slashes.org"};

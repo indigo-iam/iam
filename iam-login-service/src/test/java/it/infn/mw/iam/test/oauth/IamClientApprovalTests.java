@@ -17,22 +17,16 @@ package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.io.IOException;
-import java.text.ParseException;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.restassured.RestAssured;
@@ -41,51 +35,49 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 @Transactional
-public class IamClientApprovalTests {
+class IamClientApprovalTests {
+
+  static final String TEST_CLIENT_ID = "client";
+  static final String TEST_CLIENT_REDIRECT_URI =
+      "https://iam.local.io/iam-test-client/openid_connect_login";
+
+  static final String LOCALHOST_URL_TEMPLATE = "http://localhost:%d";
+
+  static final String RESPONSE_TYPE_CODE = "code";
+
+  static final String SCOPE = "openid profile email address phone offline_access";
+
+  static final String TEST_USER_ID = "test";
+  static final String TEST_USER_PASSWORD = "password";
 
   @Value("${local.server.port}")
-  private Integer iamPort;
+  Integer iamPort;
 
   @Autowired
   ObjectMapper mapper;
 
-  public static final String TEST_CLIENT_ID = "client";
-  public static final String TEST_CLIENT_REDIRECT_URI =
-      "https://iam.local.io/iam-test-client/openid_connect_login";
+  String loginUrl;
+  String authorizeUrl;
 
-  public static final String LOCALHOST_URL_TEMPLATE = "http://localhost:%d";
-
-  public static final String RESPONSE_TYPE_CODE = "code";
-
-  public static final String SCOPE = "openid profile email address phone offline_access";
-
-  public static final String TEST_USER_ID = "test";
-  public static final String TEST_USER_PASSWORD = "password";
-
-  private String loginUrl;
-  private String authorizeUrl;
-
-  @BeforeClass
-  public static void init() {
+  @BeforeAll
+  static void init() {
     TestUtils.initRestAssured();
-
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
   }
 
   @Test
-  public void testApprove() throws JsonProcessingException, IOException, ParseException {
+  void testApprove() {
 
- // @formatter:off
+    // @formatter:off
     ValidatableResponse resp1 = RestAssured.given()
       .formParam("username", "test")
       .formParam("password", "password")
@@ -114,6 +106,5 @@ public class IamClientApprovalTests {
       .statusCode(HttpStatus.OK.value())
       .body(containsString("IAM client consent page"));
     // @formatter:on
-
   }
 }

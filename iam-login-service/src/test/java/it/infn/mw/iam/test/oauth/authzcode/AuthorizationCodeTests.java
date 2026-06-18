@@ -33,37 +33,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-public class AuthorizationCodeTests {
-
-  public static final String TEST_CLIENT_ID = "client";
-  public static final String TEST_CLIENT_SECRET = "secret";
-  public static final String TEST_CLIENT_REDIRECT_URI =
-      "https://iam.local.io/iam-test-client/openid_connect_login";
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+public class AuthorizationCodeTests extends TokenGetterUtils {
 
   public static final String LOGIN_URL = "http://localhost/login";
 
@@ -71,21 +70,13 @@ public class AuthorizationCodeTests {
   public static final String SIGN_AUP_URL = "/iam/aup/sign";
   public static final String SIGN_AUP_URL_EXTENDED = "http://localhost/iam/aup/sign";
 
-  public static final String RESPONSE_TYPE_CODE = "code";
-
   public static final String SCOPE = "openid profile";
-
-  public static final String TEST_USER_ID = "test";
-  public static final String TEST_USER_PASSWORD = "password";
 
   @Autowired
   private IamAupRepository aupRepo;
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
-
-  @Autowired
-  private MockMvc mvc;
 
   @Autowired
   private ClientService clientService;
@@ -116,10 +107,10 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlowExternalHint() throws Exception {
+  void testOidcAuthorizationCodeFlowExternalHint() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("response_type", "code")
       .queryParam("client_id", TEST_CLIENT_ID)
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
       .queryParam("scope", SCOPE)
@@ -136,10 +127,10 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlow() throws Exception {
+  void testOidcAuthorizationCodeFlow() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("response_type", "code")
       .queryParam("client_id", TEST_CLIENT_ID)
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
       .queryParam("scope", SCOPE)
@@ -157,8 +148,8 @@ public class AuthorizationCodeTests {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USER_ID)
-        .param("password", TEST_USER_PASSWORD)
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
       .andExpect(status().isFound())
@@ -170,7 +161,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAuthorizationCodeFlowWithAUPSignature() throws Exception {
+  void testOidcAuthorizationCodeFlowWithAUPSignature() throws Exception {
 
     IamAup aup = new IamAup();
 
@@ -185,7 +176,7 @@ public class AuthorizationCodeTests {
     aupRepo.save(aup);
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("response_type", "code")
       .queryParam("client_id", TEST_CLIENT_ID)
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
       .queryParam("scope", SCOPE)
@@ -204,8 +195,8 @@ public class AuthorizationCodeTests {
 
     session = (MockHttpSession) mvc
       .perform(post(LOGIN_URL).session(session)
-        .param("username", TEST_USER_ID)
-        .param("password", TEST_USER_PASSWORD)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(SIGN_AUP_URL))
@@ -236,13 +227,13 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testNormalClientNotLinkedToUser() throws Exception {
+  void testNormalClientNotLinkedToUser() throws Exception {
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_URL).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -274,18 +265,18 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
+  void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
     clientRepo.save(entity);
     removeTestClientOwners();
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_URL).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -321,7 +312,7 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
+  void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
@@ -329,11 +320,11 @@ public class AuthorizationCodeTests {
 
     removeTestClientOwners();
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_URL).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)
@@ -372,17 +363,17 @@ public class AuthorizationCodeTests {
   }
 
   @Test
-  public void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
+  void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
     clientRepo.save(entity);
 
-    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
-        commaSeparatedStringToAuthorityList("ROLE_USER"));
+    User testUser =
+        new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+      .perform(get(AUTHORIZE_URL).param("response_type", "code")
         .param("client_id", TEST_CLIENT_ID)
         .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .param("scope", SCOPE)

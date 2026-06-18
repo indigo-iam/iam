@@ -15,35 +15,40 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
+import java.time.Clock;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class AccountUpdaters {
 
-  private AccountUpdaters() {
-  }
-  
-  public static Adders adders(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder,
-      IamAccount account, OAuth2TokenEntityService tokenService,
-      UsernameValidator usernameValidator) {
-    return new Adders(repo, accountService, encoder, account, tokenService, usernameValidator);
+  private AccountUpdaters() {}
+
+  public static Adders adders(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+    return new Adders(clock, repo, accountService, encoder, account, accessTokenRepo,
+        refreshTokenRepo, usernameValidator);
   }
 
-  public static Removers removers(IamAccountRepository repo, IamAccountService accountService,
-      IamAccount account) {
-    return new Removers(repo, accountService, account);
+  public static Removers removers(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, IamAccount account) {
+    return new Removers(clock, repo, accountService, account);
   }
 
-  public static Replacers replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
-      UsernameValidator usernameValidator) {
-    return new Replacers(repo, accountService, encoder, account, tokenService, usernameValidator);
+  public static Replacers replacers(Clock clock, IamAccountRepository repo,
+      IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+    return new Replacers(clock, repo, accountService, encoder, account, accessTokenRepo,
+        refreshTokenRepo, usernameValidator);
   }
 
 }

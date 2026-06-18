@@ -30,10 +30,6 @@ public interface TokenService<T> {
   ListResponseDTO<T> getTokensForClientAndUser(final String userId, final String clientId,
       final TokensPageRequest pageRequest);
 
-  T getTokenById(Long id);
-
   void revokeTokenById(Long id);
-  
-  void deleteAllTokens();
 
 }

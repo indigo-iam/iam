@@ -15,12 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.granters;
 
+import java.time.Clock;
+import java.util.Collection;
 import java.util.Date;
 
 import org.mitre.oauth2.exception.AuthorizationPendingException;
 import org.mitre.oauth2.exception.DeviceCodeExpiredException;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.service.DeviceCodeService;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
@@ -35,12 +38,14 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
 
   public static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
+  private final Clock clock;
   private final DeviceCodeService deviceCodeService;
 
-  public IamDeviceCodeTokenGranter(AuthorizationServerTokenServices tokenServices,
+  public IamDeviceCodeTokenGranter(Clock clock, AuthorizationServerTokenServices tokenServices,
       ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory,
       DeviceCodeService deviceCodeService) {
     super(tokenServices, clientDetailsService, requestFactory, GRANT_TYPE);
+    this.clock = clock;
     this.deviceCodeService = deviceCodeService;
   }
 
@@ -60,7 +65,7 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
       throw new InvalidGrantException("Invalid device code: " + deviceCode);
     }
 
-    final Date now = new Date();
+    final Date now = Date.from(clock.instant());
 
     // dc expiration checks
     if (dc.getExpiration() != null && dc.getExpiration().before(now)) {
@@ -82,5 +87,14 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
     deviceCodeService.clearDeviceCode(deviceCode, client);
 
     return auth;
+  }
+
+  @Override
+  protected void validateGrantType(String grantType, ClientDetails clientDetails) {
+    Collection<String> authorizedGrantTypes = clientDetails.getAuthorizedGrantTypes();
+    if (authorizedGrantTypes == null || authorizedGrantTypes.isEmpty()
+        || !authorizedGrantTypes.contains(grantType)) {
+      throw new InvalidClientException("Unauthorized grant type");
+    }
   }
 }

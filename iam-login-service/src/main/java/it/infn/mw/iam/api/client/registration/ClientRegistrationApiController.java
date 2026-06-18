@@ -15,15 +15,14 @@
  */
 package it.infn.mw.iam.api.client.registration;
 
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-
 import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -69,7 +68,7 @@ public class ClientRegistrationApiController {
 
   }
 
-  @JsonView({ClientViews.DynamicRegistration.class})
+  @JsonView({ClientViews.NoSecretDynamicRegistration.class})
   @GetMapping("/{clientId}")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId,
       Authentication authentication) {
@@ -78,7 +77,7 @@ public class ClientRegistrationApiController {
   }
 
   @PutMapping("/{clientId}")
-  @JsonView({ClientViews.DynamicRegistration.class})
+  @JsonView({ClientViews.NoSecretDynamicRegistration.class})
   public RegisteredClientDTO updateClient(@PathVariable String clientId,
       @RequestBody RegisteredClientDTO request, Authentication authentication)
       throws ParseException {
@@ -94,7 +93,7 @@ public class ClientRegistrationApiController {
 
 
   @PostMapping("/{clientId}/redeem")
-  @JsonView({ClientViews.DynamicRegistration.class})
+  @JsonView({ClientViews.NoSecretDynamicRegistration.class})
   public RegisteredClientDTO redeemClient(@PathVariable String clientId,
       @RequestBody String registrationAccessToken, Authentication authentication) {
     return service.redeemClient(clientId, registrationAccessToken, authentication);

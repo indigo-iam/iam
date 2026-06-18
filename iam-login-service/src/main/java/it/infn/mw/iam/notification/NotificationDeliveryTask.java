@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.notification;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationDeliveryTask implements Runnable {
 
   final NotificationDelivery delivery;
-  
-  @Autowired
+
   public NotificationDeliveryTask(NotificationDelivery nd) {
     this.delivery = nd;
   }

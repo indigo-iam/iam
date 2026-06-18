@@ -30,10 +30,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -48,6 +48,8 @@ import it.infn.mw.iam.core.error.StartupError;
 
 public class IamJWTSigningService implements JWTSigningAndValidationService {
 
+  public static final String SIGNATURE_VALIDATION_CACHE = "jwtSignatureValidation";
+
   private static final Logger LOG = LoggerFactory.getLogger(IamJWTSigningService.class);
 
   private static final String SIGNER_NOT_FOUND_FOR_KEY_MSG = "Signer not found for key %s";
@@ -57,7 +59,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   private static final String VERIFIER_NOT_FOUND_MSG = "JWS verifier not found for key {}";
   private static final String KEY_INIT_ERROR_MSG = "Error initializing keys";
 
-  private final JWKSetKeyStore keystore;
+  private final JwkKeyStore keystore;
 
   private final Set<JWSAlgorithm> allAlgorithms = newHashSet();
   private Map<String, JWSSigner> signers = newHashMap();
@@ -67,12 +69,11 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   private final JWSAlgorithm defaultAlgorithm;
   private final String defaultSignerKeyId;
 
-  public IamJWTSigningService(JWKProperties properties, JWKSetKeyStore keystore) {
+  public IamJWTSigningService(JwkKeyStore keystore, JWKProperties properties) {
     checkNotNull(keystore, "null keystore");
     checkNotNull(properties, "null properties");
 
-    checkArgument(!keystore.getKeys().isEmpty(),
-        "empty keystore");
+    checkArgument(!keystore.getKeys().isEmpty(), "empty keystore");
     this.keystore = keystore;
 
     this.defaultAlgorithm = JWSAlgorithm.parse(properties.getDefaultJwsAlgorithm());
@@ -80,12 +81,11 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     initializeSignersAndVerifiers();
   }
 
-  public IamJWTSigningService(JWKSetKeyStore keystore) {
+  public IamJWTSigningService(JwkKeyStore keystore) {
     this(keystore, null, null);
   }
 
-  public IamJWTSigningService(JWKSetKeyStore keystore, String defaultKeyId,
-      String defaultAlgorithm) {
+  public IamJWTSigningService(JwkKeyStore keystore, String defaultKeyId, String defaultAlgorithm) {
     checkNotNull(keystore, "null keystore");
     checkArgument(!keystore.getKeys().isEmpty(), "Please provide a non-empty keystore");
     this.keystore = keystore;
@@ -134,6 +134,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   }
 
   @Override
+  @Cacheable(value = SIGNATURE_VALIDATION_CACHE)
   public boolean validateSignature(SignedJWT signedJwt) {
 
     Optional<JWSVerifier> verifier =
@@ -163,9 +164,8 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   private JWSSigner resolveSigner(SignedJWT jwt) {
 
     final String key = ofNullable(jwt.getHeader().getKeyID()).orElse(defaultSignerKeyId);
-    return ofNullable(signers.get(key))
-      .orElseThrow(() -> new IllegalArgumentException(
-          format(SIGNER_NOT_FOUND_FOR_KEY_MSG, jwt.getHeader().getKeyID())));
+    return ofNullable(signers.get(key)).orElseThrow(() -> new IllegalArgumentException(
+        format(SIGNER_NOT_FOUND_FOR_KEY_MSG, jwt.getHeader().getKeyID())));
   }
 
   @Override

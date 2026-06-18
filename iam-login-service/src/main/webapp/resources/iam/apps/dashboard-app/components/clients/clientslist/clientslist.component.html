@@ -80,6 +80,7 @@
                             <th ng-if="$ctrl.clientTrackLastUsed">Last Used <i class="fa fa-question-circle"
                                 uib-tooltip="Timestamp of the last time this client was used to obtain or renew access tokens."></i>
                             </th>
+                            <th>Expiration</th>
                             <th>Information</th>
                             <th><span class="pull-right">Actions</span></th>
                         </tr>
@@ -118,6 +119,15 @@
                                     {{c.last_used | date }}
                                 </div>
                                 <div ng-if="!c.last_used" class="text-muted">
+                                    N/A
+                                </div>
+                            </td>
+                            <td class="col-xs-1">
+                                <!-- Expiration -->
+                                <div ng-if="c.expiration">
+                                    {{c.expiration | date }}
+                                </div>
+                                <div ng-if="!c.expiration" class="text-muted">
                                     N/A
                                 </div>
                             </td>

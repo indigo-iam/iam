@@ -17,6 +17,50 @@
     'use strict';
 
 
+    function ClientSecretViewController($uibModal, $uibModalInstance, toaster, ClientsService, data) {
+        var $ctrl = this;
+        $ctrl.data = data;
+        $ctrl.isNewClient = data.isNewClient;
+        $ctrl.newClient = data.client;
+        $ctrl.secret = $ctrl.newClient.client_secret;
+        $ctrl.clientId = $ctrl.newClient.client_id;
+        $ctrl.showSecret = false;
+        $ctrl.confirmation = true;
+
+        self.clipboardSuccess = clipboardSuccess;
+        self.clipboardError = clipboardError;
+
+        $ctrl.ok = function () {
+            $uibModalInstance.close($ctrl.selected);
+        };
+
+        $ctrl.closeModal = function () {
+            $uibModalInstance.dismiss('cancel');
+        };
+
+        $ctrl.toggleSecretVisibility = function () {
+            $ctrl.showSecret = !$ctrl.showSecret;
+        };
+
+        function clipboardError(event) {
+            toaster.pop({
+                type: 'error',
+                body: 'Could not copy secret to clipboard!'
+            });
+        }
+
+        function clipboardSuccess(event, source) {
+            toaster.pop({
+                type: 'success',
+                body: 'Secret copied to clipboard!'
+            });
+            event.clearSelection();
+            if (source === 'secret') {
+                $ctrl.toggleSecretVisibility();
+            }
+        }
+    };
+
     function ClientController(ClientsService, FindService, toaster, $uibModal, $location) {
         var self = this;
 
@@ -24,6 +68,8 @@
         self.saveClient = saveClient;
         self.loadClient = loadClient;
         self.deleteClient = deleteClient;
+        self.resetClient = resetClient;
+        self.revokeTokens = revokeTokens;
         self.cancel = cancel;
         self.getClientStatusMessage = getClientStatusMessage;
 
@@ -61,7 +107,6 @@
 
         function saveClient() {
 
-
             function handleSuccess(res) {
                 self.client = res;
                 self.clientVal = angular.copy(self.client);
@@ -93,13 +138,39 @@
                         type: 'success',
                         body: 'Client saved!'
                     });
-                    $location.path('/clients');
+                    const isNewClientPublic = self.clientVal.token_endpoint_auth_method === 'none';
+
+                    if (isNewClientPublic) {
+                        $location.path('/clients');
+                        return;
+                    }
+
+                    const modalSecret = $uibModal.open({
+                        templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/newclientsecretshow/newclientsecretshow.component.html',
+                        controller: ClientSecretViewController,
+                        controllerAs: '$ctrl',
+                        resolve: {
+                            data: {
+                                client: res,
+                                title: "New client credential details",
+                                message: "Save this client credential on safe before press Confirm button",
+                                isNewClient: true,
+                            }
+                        }
+                    });
+
+                    modalSecret.result
+                        .then(function() { $location.path('/clients'); })
+                        .catch(function() {
+                            toaster.pop({
+                                type: 'error',
+                                body: errorMsg
+                            });
+                        });
                 }).catch(handleError);
             } else {
-
                 return ClientsService.saveClient(self.clientVal.client_id, self.clientVal).then(handleSuccess)
                     .catch(handleError);
-
             }
         }
 
@@ -122,7 +193,6 @@
                     type: 'success',
                     body: 'Client deleted!'
                 });
-                $location.path('/clients');
             }, function (res) {
                 if (res !== 'cancel') {
                     toaster.pop({
@@ -133,11 +203,69 @@
             });
         }
 
+        function revokeTokens() {
+            var modalInstance = $uibModal.open({
+                component: 'selecttokenstorevoke',
+                resolve: {
+                    client: function () {
+                        return self.clientVal;
+                    }
+                }
+            });
+
+
+            modalInstance.result.then(function (res) {
+                toaster.pop({
+                    type: 'success',
+                    body: 'Client tokens removed!'
+                });
+                $location.path('/clients');
+            }, function (res) {
+                if (res == 'no-option') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Please select at least one option'
+                    });
+                }
+                else if (res !== 'cancel') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Error removing client tokens'
+                    });
+                }
+            });
+        }
+
+        function resetClient() {
+            var modalInstance = $uibModal.open({
+                component: 'confirmresetclient',
+                resolve: {
+                    client: function () {
+                        return self.clientVal;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function (res) {
+                toaster.pop({
+                    type: 'success',
+                    body: 'Client reset! Here is the new client secret: ' + res
+                });
+            }, function (res) {
+                if (res !== 'cancel') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Error reseting client'
+                    });
+                }
+            });
+        }
+
         function getClientStatusMessage() {
             self.clientStatusMessage = "Suspended by a VO admin on " + getFormatedDate(self.clientVal.status_changed_on);
         }
 
-        function getFormatedDate(dateToFormat){
+        function getFormatedDate(dateToFormat) {
             var dateISOString = new Date(dateToFormat).toISOString();
             var ymd = dateISOString.split('T')[0];
             //Remove milliseconds

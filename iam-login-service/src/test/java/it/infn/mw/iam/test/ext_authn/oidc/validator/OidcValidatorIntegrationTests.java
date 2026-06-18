@@ -20,13 +20,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +34,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -54,11 +52,10 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-    OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
-public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
+  OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
+class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
 
   @Configuration
   public static class Config {
@@ -69,15 +66,15 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
     }
   }
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     MockRestTemplateFactory tf = (MockRestTemplateFactory) restTemplateFactory;
     tf.resetTemplate();
   }
 
   @Test
-  public void testValidatorError() throws JOSEException, JsonProcessingException,
-      RestClientException {
+  void testValidatorError()
+    throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -90,7 +87,8 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 

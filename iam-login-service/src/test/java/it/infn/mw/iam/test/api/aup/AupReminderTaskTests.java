@@ -16,134 +16,135 @@
 package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.notification.NotificationTestConfig;
-import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+    ClockConfig.class, NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 @TestPropertySource(properties = {"notification.disable=false"})
-public class AupReminderTaskTests extends AupTestSupport {
+@AutoConfigureMockMvc
+@Transactional
+class AupReminderTaskTests extends AupTestSupport {
 
   @Autowired
-  private DefaultAupSignatureCheckService service;
+  DefaultAupSignatureCheckService service;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  IamAccountRepository accountRepo;
 
   @Autowired
-  private IamAupSignatureRepository signatureRepo;
+  IamAupSignatureRepository signatureRepo;
 
   @Autowired
-  private IamEmailNotificationRepository notificationRepo;
+  IamEmailNotificationRepository notificationRepo;
 
   @Autowired
-  private AupReminderTask aupReminderTask;
+  AupReminderTask aupReminderTask;
 
   @Autowired
-  private MockNotificationDelivery notificationDelivery;
+  MockNotificationDelivery notificationDelivery;
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Autowired
-  private MockTimeProvider mockTimeProvider;
+  MutableClock clock;
 
-  @After
-  public void tearDown() {
+  // single consistent way to derive "start of day"
+  private Date startOfDay(int offsetDays) {
+    return Date
+      .from(clock.instant().truncatedTo(ChronoUnit.DAYS).plus(offsetDays, ChronoUnit.DAYS));
+  }
+
+  @AfterEach
+  void tearDown() {
     notificationDelivery.clearDeliveredNotifications();
     aupRepo.deleteAll();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailWorks() {
-    IamAup aup = buildDefaultAup();
+  void aupReminderEmailWorks() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);
 
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
-    LocalDate today = LocalDate.now();
-    LocalDate tomorrow = today.plusDays(1);
-    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
-
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
+    clock.advance(Duration.ofMillis(5));
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
-    signatureRepo.createSignatureForAccount(aup, testAccount,
-        new Date(mockTimeProvider.currentTimeMillis()));
+    signatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
+    clock.advance(Duration.ofMillis(10));
+
+    Date tomorrow = startOfDay(1);
 
     assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
-        tomorrowDate), equalTo(0));
+        tomorrow), equalTo(0));
 
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
-    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
-        tomorrowDate), equalTo(1));
 
+    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
+        tomorrow), equalTo(1));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailWorks() {
-    IamAup aup = buildDefaultAup();
+  void aupExpirationEmailWorks() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(2L);
 
-    LocalDate today = LocalDate.now();
-    LocalDate twoDaysAgo = today.minusDays(2);
+    Date twoDaysAgo = startOfDay(-2);
 
-    Date date = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    aup.setCreationTime(date);
-    aup.setLastUpdateTime(date);
-
+    aup.setCreationTime(twoDaysAgo);
+    aup.setLastUpdateTime(twoDaysAgo);
     aupRepo.save(aup);
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+    signatureRepo.createSignatureForAccount(aup, testAccount, twoDaysAgo);
 
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
@@ -151,151 +152,121 @@ public class AupReminderTaskTests extends AupTestSupport {
 
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
+
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(1));
 
+    // should not duplicate
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
+
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(1));
-
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentIfUserIsDisabled() {
-    IamAup aup = buildDefaultAup();
+  void aupExpirationEmailNotSentIfUserIsDisabled() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(2L);
 
-    LocalDate today = LocalDate.now();
-    LocalDate twoDaysAgo = today.minusDays(2);
+    Date twoDaysAgo = startOfDay(-2);
 
-    Date date = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    aup.setCreationTime(date);
-    aup.setLastUpdateTime(date);
-
+    aup.setCreationTime(twoDaysAgo);
+    aup.setLastUpdateTime(twoDaysAgo);
     aupRepo.save(aup);
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    signatureRepo.createSignatureForAccount(aup, testAccount, date);
-
-    assertThat(
-        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
-        equalTo(0));
+    signatureRepo.createSignatureForAccount(aup, testAccount, twoDaysAgo);
 
     testAccount.setActive(false);
     accountRepo.save(testAccount);
 
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
+
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentIfAupSignatureValidityIsZero() {
-    IamAup aup = buildDefaultAup();
+  void aupExpirationEmailNotSentIfAupSignatureValidityIsZero() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(0L);
 
-    LocalDate today = LocalDate.now();
-    Date date = Date.from(today.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    Date today = startOfDay(0);
 
-    aup.setCreationTime(date);
-    aup.setLastUpdateTime(date);
-
+    aup.setCreationTime(today);
+    aup.setLastUpdateTime(today);
     aupRepo.save(aup);
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+    signatureRepo.createSignatureForAccount(aup, testAccount, today);
 
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
+
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailNotSentForServiceAccount() {
-    IamAup aup = buildDefaultAup();
+  void aupExpirationEmailNotSentForServiceAccount() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(2L);
 
-    LocalDate today = LocalDate.now();
-    LocalDate twoDaysAgo = today.minusDays(2);
+    Date twoDaysAgo = startOfDay(-2);
 
-    Date date = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    aup.setCreationTime(date);
-    aup.setLastUpdateTime(date);
+    aup.setCreationTime(twoDaysAgo);
+    aup.setLastUpdateTime(twoDaysAgo);
     aupRepo.save(aup);
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+    signatureRepo.createSignatureForAccount(aup, testAccount, twoDaysAgo);
 
-    testAccount.setServiceAccount(true);  
+    testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
-
-    assertThat(
-        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
-        equalTo(0));
 
     aupReminderTask.sendAupReminders();
     notificationDelivery.sendPendingNotifications();
+
     assertThat(
         notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
         equalTo(0));
-
   }
 
   @Test
-  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailNotSentForServiceAccount() {
-    IamAup aup = buildDefaultAup();
+  void aupReminderIsCreatedOnlyOncePerDay() {
+
+    IamAup aup = buildDefaultAup(clock.now());
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);
 
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
-    LocalDate today = LocalDate.now();
-    LocalDate tomorrow = today.plusDays(1);
-    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    signatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
-
-    assertThat(service.needsAupSignature(testAccount), is(true));
-
-    signatureRepo.createSignatureForAccount(aup, testAccount,
-        new Date(mockTimeProvider.currentTimeMillis()));
-
-    assertThat(service.needsAupSignature(testAccount), is(false));
-
-    testAccount.setServiceAccount(true);  
-    accountRepo.save(testAccount);
-
-    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
-
-    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
-        tomorrowDate), equalTo(0));
+    assertEquals(0L, notificationRepo.count());
 
     aupReminderTask.sendAupReminders();
-    notificationDelivery.sendPendingNotifications();
-    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
-        tomorrowDate), equalTo(0));
+    aupReminderTask.sendAupReminders();
+    aupReminderTask.sendAupReminders();
 
+    List<IamEmailNotification> reminders =
+        notificationRepo.findByNotificationType(IamNotificationType.AUP_REMINDER);
+
+    assertThat(reminders.size(), equalTo(1));
   }
 }

@@ -16,192 +16,419 @@
 
 package it.infn.mw.iam.test.registration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.HIDDEN;
+import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.MANDATORY;
+import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.OPTIONAL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NOTES;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.CERTIFICATE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.validation.RegistrationFieldsValidationService;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
-import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest()
-public class RegistrationFieldsValidationServiceTests {
+@ExtendWith(SpringExtension.class)
+class RegistrationFieldsValidationServiceTests {
 
-  @Mock
-  private IamProperties iamProperties;
+    private final String TEST_USERNAME = "unregistereduser";
+    private final String TEST_EMAIL = TEST_USERNAME + "@example.com";
+    private final String TEST_GIVEN_NAME = "unregistered";
+    private final String TEST_FAMILY_NAME = "unregistered";
+    private final String TEST_NOTES = "This is a note";
+    private final String TEST_CERT = """
+                      -----BEGIN CERTIFICATE-----
+            MIIDkDCCAnigAwIBAgIUIRiHqEUe9NMkryEsI23CTkMamdgwDQYJKoZIhvcNAQEL
+            BQAwLDELMAkGA1UEBhMCSVQxDDAKBgNVBAoMA0lHSTEPMA0GA1UEAwwGdGVzdDAx
+            MB4XDTI1MDcwMTEzMjgwMFoXDTM1MDYyOTEzMjgwMFowLDELMAkGA1UEBhMCSVQx
+            DDAKBgNVBAoMA0lHSTEPMA0GA1UEAwwGdGVzdDAxMIIBIjANBgkqhkiG9w0BAQEF
+            AAOCAQ8AMIIBCgKCAQEA2RuUgUXeAFM9/wOiAMrhttRp2zImtZVRkYFNwawPVxve
+            5SCENZjEivQ3f1PtmFGxG0YboZGu0dR2n9MV3GGNFJkrhAet7fAwoZr8BvoQaEjr
+            yC9I5z3fpwwwabfpsFPe04CeWfXHmSMQoHLXYQqxLi8etzcJZ1tsBT1yAUwbkqNx
+            95bgl4FBaU7iv+jqdxf4aoa5n8QUeM0+CtM/RSQQLQtlKItQRyib8MxYDeRcc3pB
+            VaysLLj1I0bsVZgFM7Qg/2oftsQAMiRqRM0byz2VNBvuaSgZ3gZpOyB/+0P/SGPK
+            WHnxLZMV/Wy5RDckoG4zHVIxIiEeYDD0txnhLsNIxwIDAQABo4GpMIGmMAwGA1Ud
+            EwQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMB0GA1UdDgQWBBTMwWkWHGWur+WQk7BR
+            VNguNPY5MDBnBgNVHSMEYDBegBTMwWkWHGWur+WQk7BRVNguNPY5MKEwpC4wLDEL
+            MAkGA1UEBhMCSVQxDDAKBgNVBAoMA0lHSTEPMA0GA1UEAwwGdGVzdDAxghQhGIeo
+            RR700ySvISwjbcJOQxqZ2DANBgkqhkiG9w0BAQsFAAOCAQEApWB8P+CQCeJCsOKA
+            65DBE6jCoXS1He+iG5eFfw/GuKZhRe7zLZsObAH+DKqbjkCLsHsRoEUo8EPErmvY
+            GDE58Zrv8fsqakcNseRBcLHgBmPiZgDEIk3yd9S/3mAFaY4D7KLb/2uOHSBc72Ax
+            C3zYT8VA6C7wEiSW+Fg9gbXwMb34Xj6xGIm2+74iogwrQd9l2geyfSLirpUvZe24
+            otjNLk3d7XQ1mSjiUx+6+blzwdIkaoVjbS0WsYOdtaPo+wuPGQieyzWvnIdOl8sd
+            9ovNoFyB1LkUaWImlLucqRKdhuAy/e+9lurYpQ1uft86ep1p6pimEmb7bOQYcKEo
+            jARH0w==
+            -----END CERTIFICATE-----
+                      """;
 
-  @Mock
-  private IamProperties.RegistrationProperties registrationProperties;
+    @Mock
+    private IamProperties iamProperties;
 
-  @Mock
-  private RegistrationFieldProperties notesFieldProperties;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
-  @InjectMocks
-  private RegistrationFieldsValidationService service;
+    @Mock
+    private IamProperties.RegistrationProperties registrationProperties;
 
-  @Before
-  public void setup() {
-    MockitoAnnotations.openMocks(this);
+    @Mock
+    private RegistrationFieldProperties notesFieldProperties;
 
-    // Mock the registration properties and fields map
-    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
-  }
+    private RegistrationFieldsValidationService service;
 
-  @Test
-  public void testValidateRegistrationRequest_MandatoryCase_notesNotNull() {
-    String username = "user_with_notes";
-    String email = username + "@example.org";
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setNotes("This is a note");
-    request.setPassword("password");
+        // Mock the registration properties and fields map
+        when(iamProperties.getRegistration()).thenReturn(registrationProperties);
+        service = new RegistrationFieldsValidationService(iamProperties, eventPublisher);
+    }
 
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
-    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
-    notesProperties.setReadOnly(true);
-    notesProperties.setExternalAuthAttribute("notes");
-    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put("notes", notesProperties);
+    private RegistrationFieldProperties buildFieldProperties(boolean isReadOnly,
+            ExternalAuthAttributeSectionBehaviour behaviour, String externalAuthAttribute) {
+        RegistrationFieldProperties fieldProperties = new RegistrationFieldProperties();
+        fieldProperties.setReadOnly(isReadOnly);
+        fieldProperties.setFieldBehaviour(behaviour);
+        fieldProperties.setExternalAuthAttribute(externalAuthAttribute);
+        return fieldProperties;
+    }
 
-    when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
+    private RegistrationRequestDto getDefaultFullRegistrationRequest() {
+        RegistrationRequestDto request = new RegistrationRequestDto();
+        request.setGivenname(TEST_GIVEN_NAME);
+        request.setFamilyname(TEST_FAMILY_NAME);
+        request.setEmail(TEST_EMAIL);
+        request.setUsername(TEST_USERNAME);
+        request.setNotes(TEST_NOTES);
+        request.setCertificate(TEST_CERT);
+        return request;
+    }
 
-    RegistrationRequestValidationResult result =
-        service.validateRegistrationRequest(request, Optional.empty());
+    @Test
+    void testAllMandatoryFieldsAreProvided() {
 
-    assertTrue(result.isOk());
-  }
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
 
-  @Test
-  public void testValidateRegistrationRequest_MandatoryCase_notesNull() {
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
 
-    String username = "user_withy_notes_not_defined";
-    String email = username + "@example.org";
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+    }
 
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
-    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
-    notesProperties.setReadOnly(true);
-    notesProperties.setExternalAuthAttribute("notes");
-    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put("notes", notesProperties);
+    @Test
+    void testGivenNameWithDifferentBehaviours() {
 
-    when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
 
-    RegistrationRequestValidationResult result =
-        service.validateRegistrationRequest(request, Optional.empty());
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setGivenname(null);
 
-    assertEquals("Notes field cannot be null", result.getErrorMessage());
-  }
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, HIDDEN, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
-  @Test
-  public void testValidateRegistrationRequest_MandatoryCase_notesEmpty() {
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
+        fields.get(NAME).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-    request.setNotes("    ");
+        // Mandatory: expected error
+        fields.get(NAME).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory name field cannot be null or an empty string",
+                result.getErrorMessage());
 
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
-    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
-    notesProperties.setReadOnly(true);
-    notesProperties.setExternalAuthAttribute("notes");
-    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put("notes", notesProperties);
+        request.setGivenname("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory name field cannot be null or an empty string",
+                result.getErrorMessage());
 
-    when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
+        request.setGivenname("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory name field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
 
-    RegistrationRequestValidationResult result =
-        service.validateRegistrationRequest(request, Optional.empty());
+    @Test
+    void testFamilyNameWithDifferentBehaviours() {
 
-    assertEquals("Notes field cannot be the empty string", result.getErrorMessage());
-  }
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
 
-  @Test
-  public void testValidateRegistrationRequest_OptionalCase() {
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setFamilyname(null);
 
-    String username = "user_with_notes_field_optional";
-    String email = username + "@example.org";
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, HIDDEN, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
-    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
-    notesProperties.setReadOnly(true);
-    notesProperties.setExternalAuthAttribute("notes");
-    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.OPTIONAL);
-    fieldAttribute.put("notes", notesProperties);
+        fields.get(SURNAME).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
+        // Mandatory: expected error
+        fields.get(SURNAME).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory surname field cannot be null or an empty string",
+                result.getErrorMessage());
 
-    RegistrationRequestValidationResult result =
-        service.validateRegistrationRequest(request, Optional.empty());
+        request.setFamilyname("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory surname field cannot be null or an empty string",
+                result.getErrorMessage());
 
-    assertTrue(result.isOk());
-  }
+        request.setFamilyname("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory surname field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
 
-  @Test
-  public void testValidateRegistrationRequest_HiddenCase() {
+    @Test
+    void testEmailWithDifferentBehaviours() {
 
-    String username = "user_with_notes_field_hidden";
-    String email = username + "@example.org";
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setEmail(null);
 
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
-    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
-    notesProperties.setReadOnly(true);
-    notesProperties.setExternalAuthAttribute("notes");
-    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.HIDDEN);
-    fieldAttribute.put("notes", notesProperties);
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, HIDDEN, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
-    when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    RegistrationRequestValidationResult result =
-        service.validateRegistrationRequest(request, Optional.empty());
+        fields.get(EMAIL).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
 
-    assertTrue(result.isOk());
-  }
+        // Mandatory: expected error
+        fields.get(EMAIL).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory email field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setEmail("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory email field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setEmail("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory email field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
+
+    @Test
+    void testUsernameWithDifferentBehaviours() {
+
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
+
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setUsername(null);
+
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, HIDDEN, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
+
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        fields.get(USERNAME).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        // Mandatory: expected error
+        fields.get(USERNAME).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory username field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setUsername("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory username field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setUsername("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory username field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
+
+    @Test
+    void testNotesWithDifferentBehaviours() {
+
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
+
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setNotes(null);
+
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, HIDDEN, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, MANDATORY, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
+
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        fields.get(NOTES).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        // Mandatory: expected error
+        fields.get(NOTES).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory notes field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setNotes("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory notes field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setNotes("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory notes field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
+
+    @Test
+    void testCertificateWithDifferentBehaviours() {
+
+        RegistrationRequestDto request;
+        RegistrationRequestValidationResult result;
+
+        // Hidden or Optional: null is ignored
+        request = getDefaultFullRegistrationRequest();
+        request.setCertificate(null);
+
+        Map<RegistrationField, RegistrationFieldProperties> fields =
+                new EnumMap<>(RegistrationField.class);
+        fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+        fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+        fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
+        fields.put(CERTIFICATE, buildFieldProperties(false, HIDDEN, null));
+        when(iamProperties.getRegistration().getFields()).thenReturn(fields);
+
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        fields.get(CERTIFICATE).setFieldBehaviour(OPTIONAL);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertTrue(result.isOk());
+
+        // Mandatory: expected error
+        fields.get(CERTIFICATE).setFieldBehaviour(MANDATORY);
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory certificate field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setCertificate("");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory certificate field cannot be null or an empty string",
+                result.getErrorMessage());
+
+        request.setCertificate("   ");
+        result = service.validateRegistrationRequest(request, Optional.empty());
+        assertFalse(result.isOk());
+        assertEquals("Mandatory certificate field cannot be null or an empty string",
+                result.getErrorMessage());
+    }
+
 }

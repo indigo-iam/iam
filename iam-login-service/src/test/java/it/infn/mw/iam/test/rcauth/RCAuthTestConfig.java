@@ -18,8 +18,8 @@ package it.infn.mw.iam.test.rcauth;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.io.IOException;
+import java.text.ParseException;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
@@ -33,9 +33,13 @@ import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 @Configuration
 public class RCAuthTestConfig extends RCAuthTestSupport {
 
+  public RCAuthTestConfig() throws IOException, ParseException {
+    super();
+  }
+
   @Bean
   @Primary
-  public ServerConfigurationService serverConfigService() {
+  ServerConfigurationService serverConfigService() {
 
     ServerConfigurationService scs = mock(ServerConfigurationService.class);
     ServerConfiguration sc = mock(ServerConfiguration.class);
@@ -49,8 +53,8 @@ public class RCAuthTestConfig extends RCAuthTestSupport {
 
   @Bean
   @Primary
-  public JWKSetCacheService mockjwkSetCacheService()
-      throws NoSuchAlgorithmException, InvalidKeySpecException {
+  JWKSetCacheService mockjwkSetCacheService()
+      throws IOException, ParseException {
 
     IamJWTSigningService signatureValidator = new IamJWTSigningService(rcAuthKeyStore());
 

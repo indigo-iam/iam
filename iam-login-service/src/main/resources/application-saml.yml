@@ -25,6 +25,8 @@ saml:
   id-resolvers: ${IAM_SAML_ID_RESOLVERS:eduPersonUniqueId,eduPersonTargetedId,eduPersonPrincipalName}
   metadata-refresh-period-sec: ${IAM_SAML_METADATA_REFRESH_PERIOD_SEC:43200}
   nameid-policy: ${IAM_SAML_NAMEID_POLICY:transient}
+  http-client-connection-timeout-secs: ${IAM_SAML_CLIENT_CONNECTION_TIMEOUT_SECS:5}
+  http-client-socket-timeout-secs: ${IAM_SAML_CLIENT_SOCKET_TIMEOUT_SECS:5}
   
   wayf-login-button:
     text: ${IAM_SAML_LOGIN_BUTTON_TEXT:Your institutional account}
@@ -34,9 +36,6 @@ saml:
   jit-account-provisioning:
     enabled: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_ENABLED:false}
     trusted-idps: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_TRUSTED_IDPS:all}
-    cleanup-task-enabled: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_ENABLED:false}
-    cleanup-task-period-sec: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_PERIOD_SEC:86400}
-    inactive-account-lifetime-days:  ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_INACTIVE_ACCOUNT_LIFETIME_DAYS:15}
   
   idp-metadata: 
     - 
@@ -44,3 +43,14 @@ saml:
       require-valid-signature: ${IAM_SAML_METADATA_REQUIRE_VALID_SIGNATURE:false}
       require-sirtfi: ${IAM_SAML_METADATA_REQUIRE_SIRTFI:false}
       require-rs: ${IAM_SAML_METADATA_REQUIRE_RS:false}
+
+  authn-context:
+    # Edit class-refs to customise the AuthnContextClassRef values sent in SAML requests.
+    # Set to an empty list to send no AuthnContext at all (IdP decides):
+    # class-refs: []
+    # (or)
+    class-refs:
+      - https://refeds.org/profile/mfa
+      - https://refeds.org/profile/sfa
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+      - urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified

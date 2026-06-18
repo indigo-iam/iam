@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.client.search.service;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -52,7 +51,6 @@ public class DefaultClientSearchService implements ClientSearchService {
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
 
-  @Autowired
   public DefaultClientSearchService(IamClientRepository clientRepo,
       IamAccountClientRepository accountClientRepo, AccountUtils accountUtils,
       ClientConverter converter) {
@@ -98,18 +96,12 @@ public class DefaultClientSearchService implements ClientSearchService {
       .build();
   }
 
-  @Override
-  public ListResponseDTO<RegisteredClientDTO> findOwnedClients(
+  private ListResponseDTO<RegisteredClientDTO> findClientsByAccount(IamAccount account,
       PaginatedRequestForm form) {
+    Pageable pageable =
+        PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(), MAX_PAGE_SIZE);
 
-    IamAccount account =
-        accountUtils.getAuthenticatedUserAccount().orElseThrow(NoAuthenticatedUserError::new);
-
-    Pageable pageable = PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(),
-        MAX_PAGE_SIZE);
-
-    Page<IamAccountClient> pagedResults = 
-        accountClientRepo.findByAccount(account, pageable);
+    Page<IamAccountClient> pagedResults = accountClientRepo.findByAccount(account, pageable);
 
     ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
 
@@ -124,27 +116,23 @@ public class DefaultClientSearchService implements ClientSearchService {
   }
 
   @Override
-  public ListResponseDTO<RegisteredClientDTO> findClientsOwnedByAccount(String accountId, 
+  public ListResponseDTO<RegisteredClientDTO> findOwnedClients(PaginatedRequestForm form) {
+
+    IamAccount account = accountUtils //
+      .getAuthenticatedUserAccount()
+      .orElseThrow(NoAuthenticatedUserError::new);
+
+    return findClientsByAccount(account, form);
+  }
+
+  @Override
+  public ListResponseDTO<RegisteredClientDTO> findClientsOwnedByAccount(String accountId,
       PaginatedRequestForm form) {
 
-    IamAccount account =
-        accountUtils.getByAccountId(accountId).orElseThrow(NoAuthenticatedUserError::new);
+    IamAccount account = accountUtils //
+      .getByAccountId(accountId)
+      .orElseThrow(NoAuthenticatedUserError::new);
 
-    Pageable pageable = PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(),
-        MAX_PAGE_SIZE);
-
-    Page<IamAccountClient> pagedResults = 
-        accountClientRepo.findByAccount(account, pageable);
-
-    ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
-
-    return resultBuilder
-      .resources(pagedResults.getContent()
-        .stream()
-        .map(IamAccountClient::getClient)
-        .map(converter::registeredClientDtoFromEntity)
-        .toList())
-      .fromPage(pagedResults, pageable)
-      .build();
+    return findClientsByAccount(account, form);
   }
 }

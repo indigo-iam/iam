@@ -16,10 +16,10 @@
 package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -32,20 +32,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.net.URI;
 
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -60,17 +57,15 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning.JitTestConfig.CountAccountCreatedEventsListener;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, JitTestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"saml.jit-account-provisioning.enabled=true",
-    "saml.jit-account-provisioning.trusted-idps=" + SamlAuthenticationTestSupport.DEFAULT_IDP_ID})
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"saml.jit-account-provisioning.enabled=true",
+        "saml.jit-account-provisioning.trusted-idps="
+            + SamlAuthenticationTestSupport.DEFAULT_IDP_ID})
+@AutoConfigureMockMvc
 @Transactional
 public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSupport {
 
@@ -100,17 +95,17 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
   CountAccountCreatedEventsListener accountCreatedEventListener;
 
   @Test
-  public void testLoadedConfiguration() {
-    Assert.assertTrue(props.getEnabled());
+  void testLoadedConfiguration() {
+    assertTrue(props.getEnabled());
   }
 
-  @Before
-  public void before() {
+  @BeforeEach
+  void before() {
     accountCreatedEventListener.resetCount();
   }
 
   @Test
-  public void testJITAccountProvisionAccountOnlyOnce() throws Throwable {
+  void testJITAccountProvisionAccountOnlyOnce() throws Throwable {
 
     MockHttpSession session =
         (MockHttpSession) mvc.perform(MockMvcRequestBuilders.get(samlDefaultIdpLoginUrl()))
@@ -184,11 +179,10 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
 
     assertThat(newProvisionedAccount.getUuid(), equalTo(provisionedAccount.getUuid()));
     assertThat(accountCreatedEventListener.getCount(), equalTo(1L));
-
   }
 
   @Test
-  public void testAuthzCodeFlowWorksForJitProvisionedAccount() throws Throwable {
+  void testAuthzCodeFlowWorksForJitProvisionedAccount() throws Throwable {
 
     UriComponents authorizationEndpointUri = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -283,9 +277,8 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
       .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
   }
 
-
   @Test
-  public void testAuthzCodeFlowWithExtAuthnHintWorksForJitProvisionedAccount() throws Throwable {
+  void testAuthzCodeFlowWithExtAuthnHintWorksForJitProvisionedAccount() throws Throwable {
 
     UriComponents authorizationEndpointUri = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -380,5 +373,4 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
       .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))))
       .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
   }
-
 }

@@ -15,10 +15,13 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.CLIENT_ID;
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.SCOPE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.NONCE;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -32,8 +35,6 @@ import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -64,8 +65,10 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Service
 @Primary
@@ -78,27 +81,26 @@ public class IamOIDCTokenService implements OIDCTokenService {
   private final JWTProfileResolver profileResolver;
   private final IamAccountRepository accountRepository;
   private final JWTSigningAndValidationService jwtService;
-  private final AuthenticationHolderRepository authenticationHolderRepository;
+  private final IamOAuthAccessTokenRepository accessTokenRepo;
+  private final TokenRevocationService revocationService;
   private final ConfigurationPropertiesBean configBean;
   private final ClientKeyCacheService encrypters;
   private final SymmetricKeyJWTValidatorCacheService symmetricCacheService;
-  private final OAuth2TokenEntityService tokenService;
 
   public IamOIDCTokenService(Clock clock, JWTProfileResolver profileResolver,
       IamAccountRepository accountRepository, JWTSigningAndValidationService jwtService,
-      AuthenticationHolderRepository authenticationHolderRepository,
+      IamOAuthAccessTokenRepository accessTokenRepo, TokenRevocationService revocationService,
       ConfigurationPropertiesBean configBean, ClientKeyCacheService encrypters,
-      SymmetricKeyJWTValidatorCacheService symmetricCacheService,
-      OAuth2TokenEntityService tokenService) {
+      SymmetricKeyJWTValidatorCacheService symmetricCacheService) {
     this.clock = clock;
     this.profileResolver = profileResolver;
     this.accountRepository = accountRepository;
     this.jwtService = jwtService;
-    this.authenticationHolderRepository = authenticationHolderRepository;
+    this.accessTokenRepo = accessTokenRepo;
+    this.revocationService = revocationService;
     this.configBean = configBean;
     this.encrypters = encrypters;
     this.symmetricCacheService = symmetricCacheService;
-    this.tokenService = tokenService;
   }
 
 
@@ -108,7 +110,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     IamAccount account =
         accountRepository.findByUuid(sub).orElseThrow(() -> NoSuchAccountError.forUuid(sub));
 
-    JWTProfile profile = profileResolver.resolveProfile(client.getClientId());
+    JWTProfile profile = profileResolver.resolveProfile(client.getScope(), accessToken.getScope());
 
     profile.getIDTokenCustomizer()
       .customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
@@ -156,8 +158,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     handleAuthTimestamp(client, request, idClaims);
 
     if (client.getIdTokenValiditySeconds() != null) {
-      Date expiration =
-          new Date(System.currentTimeMillis() + (client.getIdTokenValiditySeconds() * 1000L));
+      Date expiration = Date.from(clock.instant().plus(Duration.ofSeconds(client.getIdTokenValiditySeconds())));
       idClaims.expirationTime(expiration);
     }
 
@@ -214,14 +215,11 @@ public class IamOIDCTokenService implements OIDCTokenService {
         && (!Strings.isNullOrEmpty(client.getJwksUri()) || client.getJwks() != null);
   }
 
-
   @Override
   public OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client) {
     return buildRegistrationAccessToken(client,
         Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
   }
-
-
 
   @Override
   public OAuth2AccessTokenEntity createResourceAccessToken(ClientDetailsEntity client) {
@@ -229,27 +227,27 @@ public class IamOIDCTokenService implements OIDCTokenService {
         Sets.newHashSet(SystemScopeService.RESOURCE_TOKEN_SCOPE));
   }
 
-
-
   @Override
   public OAuth2AccessTokenEntity rotateRegistrationAccessTokenForClient(
       ClientDetailsEntity client) {
 
-    OAuth2AccessTokenEntity oldToken = tokenService.getRegistrationAccessTokenForClient(client);
-    if (oldToken != null) {
-      Set<String> scope = oldToken.getScope();
-      tokenService.revokeAccessToken(oldToken);
-      return buildRegistrationAccessToken(client, scope);
-    } else {
+    Optional<OAuth2AccessTokenEntity> oldToken =
+        accessTokenRepo.findRegistrationToken(client.getId());
+    if (oldToken.isEmpty()) {
       return null;
     }
+    Set<String> scope = oldToken.get().getScope();
+    revocationService.revokeRegistrationToken(oldToken.get());
+    return buildRegistrationAccessToken(client, scope);
   }
 
   private OAuth2AccessTokenEntity buildRegistrationAccessToken(ClientDetailsEntity client,
       Set<String> scope) {
-    OAuth2AccessTokenEntity oldToken = tokenService.getRegistrationAccessTokenForClient(client);
-    if (oldToken != null) {
-      tokenService.revokeAccessToken(oldToken);
+
+    Optional<OAuth2AccessTokenEntity> oldToken =
+        accessTokenRepo.findRegistrationToken(client.getId());
+    if (oldToken.isPresent()) {
+      revocationService.revokeRegistrationToken(oldToken.get());
     }
 
     Map<String, String> authorizationParameters = Maps.newHashMap();
@@ -264,7 +262,6 @@ public class IamOIDCTokenService implements OIDCTokenService {
 
     AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
     authHolder.setAuthentication(authentication);
-    authHolder = authenticationHolderRepository.save(authHolder);
     token.setAuthenticationHolder(authHolder);
 
     JWTClaimsSet claims =
@@ -272,6 +269,8 @@ public class IamOIDCTokenService implements OIDCTokenService {
           .issuer(configBean.getIssuer())
           .issueTime(Date.from(clock.instant()))
           .jwtID(UUID.randomUUID().toString())
+          .claim(CLIENT_ID, client.getClientId())
+          .claim(SCOPE, SystemScopeService.REGISTRATION_TOKEN_SCOPE)
           .build();
 
     JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();

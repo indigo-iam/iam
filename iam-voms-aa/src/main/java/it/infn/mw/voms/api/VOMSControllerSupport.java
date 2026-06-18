@@ -15,29 +15,23 @@
  */
 package it.infn.mw.voms.api;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Collections.emptyList;
-
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-
-import com.google.common.base.Splitter;
 
 public class VOMSControllerSupport {
 
-  private final Splitter commaSplitter = Splitter.on(',').omitEmptyStrings().trimResults();
-
   protected List<VOMSFqan> parseRequestedFqansString(String fqans) {
-    if (isNullOrEmpty(fqans)) {
-      return emptyList();
-    } else {
-      return commaSplitter.splitToList(fqans)
-        .stream()
-        .map(VOMSFqan::fromString)
-        .collect(Collectors.toList());
+
+    if (fqans == null || fqans.isEmpty()) {
+      return List.of();
     }
+
+    return Arrays.stream(fqans.split(","))
+      .map(String::trim)
+      .filter(s -> !s.isEmpty())
+      .map(VOMSFqan::fromString)
+      .toList();
   }
 
   protected long getRequestedLifetime(Long lifetime) {
@@ -50,10 +44,14 @@ public class VOMSControllerSupport {
   }
 
   protected List<String> parseRequestedTargetsString(String targets) {
-    if (isNullOrEmpty(targets)) {
-      return Collections.emptyList();
+    if (targets == null || targets.isEmpty()) {
+      return List.of();
     }
-    return commaSplitter.splitToList(targets);
+
+    return Arrays.stream(targets.split(","))
+      .map(String::trim)
+      .filter(s -> !s.isEmpty())
+      .toList();
   }
 
 }

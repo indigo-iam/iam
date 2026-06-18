@@ -18,28 +18,28 @@ package it.infn.mw.voms;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.infn.mw.voms.aa.impl.LegacyFQANEncoding;
 import it.infn.mw.voms.aa.impl.NullFQANEncoding;
 
-@RunWith(MockitoJUnitRunner.class)
-public class FqanEncodingTests {
+@ExtendWith(MockitoExtension.class)
+class FqanEncodingTests {
 
-  private final NullFQANEncoding nullEncoding = new NullFQANEncoding();
+  static final String GROUP_FQAN = "/test";
+  static final String ROLE_FQAN = "/test/Role=test";
 
-  private final LegacyFQANEncoding legacyEncoding = new LegacyFQANEncoding();
+  static final String GROUP_FQAN_LEGACY = "/test/Role=NULL/Capability=NULL";
+  static final String ROLE_FQAN_LEGACY = "/test/Role=test/Capability=NULL";
 
-  private static final String GROUP_FQAN = "/test";
-  private static final String ROLE_FQAN = "/test/Role=test";
-
-  private static final String GROUP_FQAN_LEGACY = "/test/Role=NULL/Capability=NULL";
-  private static final String ROLE_FQAN_LEGACY = "/test/Role=test/Capability=NULL";
+  final NullFQANEncoding nullEncoding = new NullFQANEncoding();
+  final LegacyFQANEncoding legacyEncoding = new LegacyFQANEncoding();
 
   @Test
-  public void testNullEncoding() {
+  void testNullEncoding() {
+
     assertThat(nullEncoding.encodeFQAN(GROUP_FQAN), is(GROUP_FQAN));
     assertThat(nullEncoding.decodeFQAN(GROUP_FQAN), is(GROUP_FQAN));
     assertThat(nullEncoding.encodeFQAN(ROLE_FQAN), is(ROLE_FQAN));
@@ -47,7 +47,8 @@ public class FqanEncodingTests {
   }
 
   @Test
-  public void testLegacyEncoding() {
+  void testLegacyEncoding() {
+
     assertThat(legacyEncoding.encodeFQAN(GROUP_FQAN), is(GROUP_FQAN_LEGACY));
     assertThat(legacyEncoding.decodeFQAN(GROUP_FQAN_LEGACY), is(GROUP_FQAN));
     assertThat(legacyEncoding.decodeFQAN(GROUP_FQAN), is(GROUP_FQAN));

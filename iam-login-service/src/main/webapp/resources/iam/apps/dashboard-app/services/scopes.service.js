@@ -34,11 +34,21 @@
         return service;
 
         function doGet() {
-            return $http.get(urlScopes);
+            return $http.get(urlScopes).then(function(result){
+                return result;
+            }).catch(function(error){
+                console.error("Error loading scopes: ", error);
+                return $q.reject(error);
+            });
         }
 
         function doPut(scope) {
-            return $http.put(urlScopes + '/' + scope.id, scope);
+            return $http.put(urlScopes + '/' + scope.id, scope).then(function(result){
+                return result;
+            }).catch(function(error){
+                console.error("Error loading scopes: ", error);
+                return $q.reject(error);
+            });
         }
 
         function doDelete(scope) {

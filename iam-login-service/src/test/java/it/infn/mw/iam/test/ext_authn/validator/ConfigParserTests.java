@@ -18,14 +18,15 @@ package it.infn.mw.iam.test.ext_authn.validator;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.saml.SAMLCredential;
 
 import com.google.common.collect.ImmutableMap;
@@ -40,74 +41,62 @@ import it.infn.mw.iam.authn.common.config.ValidatorConfigParser;
 import it.infn.mw.iam.authn.common.config.ValidatorProperties;
 import it.infn.mw.iam.authn.saml.validator.check.SamlHasAttributeCheck;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConfigParserTests {
+@ExtendWith(MockitoExtension.class)
+class ConfigParserTests {
 
   @Spy
   ValidatorProperties properties = new ValidatorProperties();
 
   ValidatorConfigParser configParser = new DefaultValidatorConfigParser();
 
-  @Test(expected = ValidatorConfigError.class)
-  public void kindIsRequired() {
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("kind must be non-null"));
-      throw e;
-    }
-  }
+  @Test
+  void kindIsRequired() {
 
-  @Test(expected = ValidatorConfigError.class)
-  public void kindNonEmpty() {
-    when(properties.getKind()).thenReturn("");
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("kind must be non-null"));
-      throw e;
-    }
-  }
-
-  @Test(expected = ValidatorConfigError.class)
-  public void kindMustBeKnown() {
-    when(properties.getKind()).thenReturn("unknown");
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("Unsupported validator kind"));
-      throw e;
-    }
-  }
-
-  @Test(expected = ValidatorConfigError.class)
-  public void hasAttributeRequiresAttributeName() {
-    properties.setKind("hasAttr");
-
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("attributeName param required"));
-      throw e;
-    }
-  }
-
-  @Test(expected = ValidatorConfigError.class)
-  public void hasAttributeRequiresNonEmptyAttributeName() {
-    properties.setParams(ImmutableMap.of("attributeName", ""));
-    properties.setKind("hasAttr");
-
-
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("attributeName param required"));
-      throw e;
-    }
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("kind must be non-null"));
   }
 
   @Test
-  public void hasAttribute() {
+  void kindNonEmpty() {
+
+    when(properties.getKind()).thenReturn("");
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("kind must be non-null"));
+  }
+
+  @Test
+  void kindMustBeKnown() {
+
+    when(properties.getKind()).thenReturn("unknown");
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("Unsupported validator kind"));
+  }
+
+  @Test
+  void hasAttributeRequiresAttributeName() {
+
+    properties.setKind("hasAttr");
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("attributeName param required"));
+  }
+
+  @Test
+  void hasAttributeRequiresNonEmptyAttributeName() {
+
+    properties.setParams(ImmutableMap.of("attributeName", ""));
+    properties.setKind("hasAttr");
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("attributeName param required"));
+  }
+
+  @Test
+  void hasAttribute() {
+
     properties.setParams(ImmutableMap.of("attributeName", "1.2.3.4"));
     properties.setKind("hasAttr");
 
@@ -116,20 +105,18 @@ public class ConfigParserTests {
     assertThat(hasAttr, instanceOf(SamlHasAttributeCheck.class));
   }
 
-  @Test(expected = ValidatorConfigError.class)
-  public void disjunctionRequiresChildren() {
+  @Test
+  void disjunctionRequiresChildren() {
+
     properties.setKind("or");
-    try {
-      configParser.parseValidatorProperties(properties);
-    } catch (ValidatorConfigError e) {
-      assertThat(e.getMessage(), containsString("children validators required"));
-      throw e;
-    }
+    ValidatorConfigError e = assertThrows(ValidatorConfigError.class,
+        () -> configParser.parseValidatorProperties(properties));
+    assertThat(e.getMessage(), containsString("children validators required"));
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
-  public void disjunctionRecognized() {
+  void disjunctionRecognized() {
 
     ValidatorProperties child1 = new ValidatorProperties();
     child1.setKind("hasAttr");
@@ -153,7 +140,7 @@ public class ConfigParserTests {
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
-  public void nestedStructureRecognized() {
+  void nestedStructureRecognized() {
 
     ValidatorProperties child0 = new ValidatorProperties();
     child0.setKind("hasAttr");

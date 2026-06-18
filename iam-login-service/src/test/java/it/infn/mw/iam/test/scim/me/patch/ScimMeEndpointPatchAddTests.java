@@ -20,16 +20,15 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -40,26 +39,24 @@ import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.X509Utils;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
-public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
   final static String TEST_USERNAME = "test_103";
 
   @Autowired
-  private IamAccountRepository accountRepository;
+  IamAccountRepository accountRepository;
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  ScimRestUtilsMvc scimUtils;
 
   private void patchNameWorks() throws Exception {
 
@@ -111,7 +108,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().password("newpassword").build();
 
-    scimUtils.patchMe(add, updates, BAD_REQUEST);
+    scimUtils.patchMe(add, updates).andExpect(status().isBadRequest());
 
     String newPassword = accountRepository.findByUsername(TEST_USERNAME)
       .orElseThrow(IllegalStateException::new)
@@ -130,7 +127,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     ScimOidcId NEW_OIDCID = ScimOidcId.builder().issuer("ISSUER").subject("SUBJECT").build();
 
     ScimUser updates = ScimUser.builder().addOidcId(NEW_OIDCID).build();
-    scimUtils.patchMe(add, updates, BAD_REQUEST);
+    scimUtils.patchMe(add, updates).andExpect(status().isBadRequest());
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
       .orElseThrow(IllegalStateException::new)
@@ -149,7 +146,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().addSamlId(NEW_SAMLID).build();
 
-    scimUtils.patchMe(add, updates, BAD_REQUEST);
+    scimUtils.patchMe(add, updates).andExpect(status().isBadRequest());
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
       .orElseThrow(IllegalStateException::new)
@@ -171,7 +168,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().addX509Certificate(NEW_X509_CERT).build();
 
-    scimUtils.patchMe(add, updates, BAD_REQUEST);
+    scimUtils.patchMe(add, updates).andExpect(status().isBadRequest());
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
       .orElseThrow(IllegalStateException::new)
@@ -191,12 +188,12 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().addSshKey(NEW_SSH_KEY).build();
 
-    scimUtils.patchMe(add, updates, NO_CONTENT);
+    scimUtils.patchMe(add, updates).andExpect(status().isNoContent());
 
     ScimUser userAfter = scimUtils.getMe();
     assertThat(userAfter.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
 
-    scimUtils.patchMe(remove, updates, NO_CONTENT);
+    scimUtils.patchMe(remove, updates).andExpect(status().isNoContent());
 
     userAfter = scimUtils.getMe();
     assertThat(userAfter.getIndigoUser().getSshKeys().isEmpty(), equalTo(true));
@@ -204,35 +201,35 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchGivenAndFamilyName() throws Exception {
+  void testPatchGivenAndFamilyName() throws Exception {
 
     patchNameWorks();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchGivenAndFamilyNameNoToken() throws Exception {
+  void testPatchGivenAndFamilyNameNoToken() throws Exception {
 
     patchNameWorks();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchPicture() throws Exception {
+  void testPatchPicture() throws Exception {
 
     patchPictureWorks();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchPictureNoToken() throws Exception {
+  void testPatchPictureNoToken() throws Exception {
 
     patchPictureWorks();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchEmail() throws Exception {
+  void testPatchEmail() throws Exception {
 
 
     patchEmailWorks();
@@ -240,92 +237,91 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchEmailNoEmail() throws Exception {
+  void testPatchEmailNoEmail() throws Exception {
 
     patchEmailWorks();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchMultiple() throws Exception {
+  void testPatchMultiple() throws Exception {
 
     patchMultipleWorks();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchMultipleNoToken() throws Exception {
+  void testPatchMultipleNoToken() throws Exception {
 
     patchMultipleWorks();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchPasswordNotSupportedWithToken() throws Exception {
+  void testPatchPasswordNotSupportedWithToken() throws Exception {
 
     patchPasswordNotSupported();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchPasswordNotSupportedAsUser() throws Exception {
+  void testPatchPasswordNotSupportedAsUser() throws Exception {
 
     patchPasswordNotSupported();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchAddOidcIdNotSupported() throws Exception {
+  void testPatchAddOidcIdNotSupported() throws Exception {
 
     patchAddOidcIdNotSupported();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchAddOidcIdNotSupportedNoToken() throws Exception {
+  void testPatchAddOidcIdNotSupportedNoToken() throws Exception {
 
     patchAddOidcIdNotSupported();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchAddSamlIdNotSupported() throws Exception {
+  void testPatchAddSamlIdNotSupported() throws Exception {
 
     patchAddSamlIdNotSupported();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchAddSamlIdNotSupportedNoToken() throws Exception {
+  void testPatchAddSamlIdNotSupportedNoToken() throws Exception {
 
     patchAddSamlIdNotSupported();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchAddAndRemoveSsHKeyIsSupported() throws Exception {
+  void testPatchAddAndRemoveSsHKeyIsSupported() throws Exception {
 
     patchAddSshKeyIsSupported();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-  public void testPatchAddAndRemoveSsHKeyIsSupportedNoToken() throws Exception {
+  void testPatchAddAndRemoveSsHKeyIsSupportedNoToken() throws Exception {
 
     patchAddSshKeyIsSupported();
   }
 
   @Test
   @WithMockOAuthUser(user = TEST_USERNAME, scopes = {"scim:read", "scim:write"})
-  public void testPatchAddX509CertificateNotSupported() throws Exception {
+  void testPatchAddX509CertificateNotSupported() throws Exception {
 
     patchAddX509CertificateNotSupported();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
-
-  public void testPatchAddX509CertificateNotSupportedNoToken() throws Exception {
+  void testPatchAddX509CertificateNotSupportedNoToken() throws Exception {
 
     patchAddX509CertificateNotSupported();
 

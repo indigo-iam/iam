@@ -18,30 +18,26 @@ package it.infn.mw.iam.test.resources;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class LocalResourcesDisabledByDefaultTests {
+class LocalResourcesDisabledByDefaultTests {
 
   @Autowired
   private MockMvc mvc;
-  
+
   @Test
   @WithAnonymousUser
-  public void getLocalResources() throws Exception {
+  void getLocalResources() throws Exception {
     mvc.perform(get("/local-resources/index.html")).andExpect(status().isNotFound());
   }
 }

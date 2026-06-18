@@ -15,21 +15,17 @@
  */
 package it.infn.mw.iam.util.test.saml;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_FIRST_NAME;
-import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_PERSON_ID;
-import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.GIVEN_NAME;
-import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.MAIL;
-import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.SN;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.mockito.Mockito;
+import org.opensaml.saml2.core.Attribute;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 import org.springframework.security.saml.SAMLCredential;
-
-import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
@@ -40,78 +36,86 @@ import it.infn.mw.iam.util.test.SecurityContextBuilderSupport;
 public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
 
   public static final String DEFAULT_IDP_ID = "https://idptestbed/idp/shibboleth";
-  SAMLCredential samlCredential;
+
+  private final SAMLCredential samlCredential;
+
+  private final Map<String, String> attributes = new HashMap<>();
 
   String subjectAttribute = SamlAttributeNames.eduPersonUniqueId;
 
   public SamlSecurityContextBuilder() {
-    samlCredential = Mockito.mock(SAMLCredential.class);
-    issuer = DEFAULT_IDP_ID;
-    subject = "test-saml-user";
+    this.samlCredential = Mockito.mock(SAMLCredential.class);
+    this.issuer = DEFAULT_IDP_ID;
+    this.subject = "test-saml-user";
   }
 
-  public SamlSecurityContextBuilder notNullOrEmptySamlAttribute(Saml2Attribute attribute,
-      String attributeValue) {
-    if (!isNullOrEmpty(attributeValue)) {
-      samlAttribute(attribute, attributeValue);
+  public SamlSecurityContextBuilder samlAttribute(Saml2Attribute attr, String value) {
+    if (value != null) {
+      return samlAttributeByName(attr.getAttributeName(), value);
     }
     return this;
   }
 
-  public SamlSecurityContextBuilder samlAttribute(Saml2Attribute attribute, String attributeValue) {
-    when(samlCredential.getAttributeAsString(attribute.getAttributeName()))
-      .thenReturn(attributeValue);
-    return this;
-  }
-
-  public SamlSecurityContextBuilder subjectAttribute(String subjectAttr) {
-    this.subjectAttribute = subjectAttr;
+  public SamlSecurityContextBuilder samlAttributeByName(String name, String value) {
+    if (value != null) {
+      attributes.put(name, value);
+      when(samlCredential.getAttributeAsString(name)).thenReturn(value);
+    }
     return this;
   }
 
   @Override
   public SecurityContextBuilderSupport email(String email) {
-    when(samlCredential.getAttributeAsString(MAIL.getAttributeName())).thenReturn(email);
+    samlAttribute(Saml2Attribute.MAIL, email);
     return this;
   }
 
   @Override
   public SecurityContextBuilderSupport name(String givenName, String familyName) {
+    samlAttribute(Saml2Attribute.GIVEN_NAME, givenName);
+    samlAttribute(Saml2Attribute.SN, familyName);
+    return this;
+  }
 
-    if (!Strings.isNullOrEmpty(givenName) && Strings.isNullOrEmpty(familyName)) {
-      when(samlCredential.getAttributeAsString(GIVEN_NAME.getAttributeName()))
-        .thenReturn(givenName);
-      when(samlCredential.getAttributeAsString(SN.getAttributeName())).thenReturn(familyName);
-    }
-
+  @Override
+  public SecurityContextBuilderSupport username(String username) {
+    samlAttribute(Saml2Attribute.EPPN, username);
     return this;
   }
 
   public SamlSecurityContextBuilder cernPersonId(String cernPersonId) {
-    return notNullOrEmptySamlAttribute(CERN_PERSON_ID, cernPersonId);
+    return samlAttribute(Saml2Attribute.CERN_PERSON_ID, cernPersonId);
   }
 
   public SamlSecurityContextBuilder cernFirstName(String name) {
-    return notNullOrEmptySamlAttribute(CERN_FIRST_NAME, name);
+    return samlAttribute(Saml2Attribute.CERN_FIRST_NAME, name);
   }
 
   public SamlSecurityContextBuilder cernLastName(String lastName) {
-    return notNullOrEmptySamlAttribute(Saml2Attribute.CERN_LAST_NAME, lastName);
+    return samlAttribute(Saml2Attribute.CERN_LAST_NAME, lastName);
   }
 
   public SamlSecurityContextBuilder cernEmail(String email) {
-    return notNullOrEmptySamlAttribute(Saml2Attribute.CERN_EMAIL, email);
+    return samlAttribute(Saml2Attribute.CERN_EMAIL, email);
   }
 
   public SamlSecurityContextBuilder cernHomeInstitute(String institute) {
-    return notNullOrEmptySamlAttribute(Saml2Attribute.CERN_HOME_INSTITUTE, institute);
+    return samlAttribute(Saml2Attribute.CERN_HOME_INSTITUTE, institute);
   }
 
   @Override
   public SecurityContext buildSecurityContext() {
+
     SecurityContext context = SecurityContextHolder.createEmptyContext();
 
     when(samlCredential.getRemoteEntityID()).thenReturn(issuer);
+
+    when(samlCredential.getAttributes())
+      .thenAnswer(inv -> attributes.keySet().stream().map(name -> {
+        Attribute a = Mockito.mock(Attribute.class);
+        when(a.getName()).thenReturn(name);
+        return a;
+      }).toList());
 
     when(samlCredential.getAttributeAsString(subjectAttribute)).thenReturn(subject);
 
@@ -124,9 +128,6 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
         samlToken.getTokenExpiration(), subject, samlToken.getCredentials(), authorities);
 
     context.setAuthentication(token);
-
     return context;
-
   }
-
 }

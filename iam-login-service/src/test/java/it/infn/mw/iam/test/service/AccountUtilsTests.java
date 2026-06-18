@@ -23,13 +23,13 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -43,8 +43,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
-public class AccountUtilsTests {
+@ExtendWith(MockitoExtension.class)
+class AccountUtilsTests {
 
   @Mock
   IamAccountRepository repo;
@@ -58,54 +58,56 @@ public class AccountUtilsTests {
   @InjectMocks
   AccountUtils utils;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     SecurityContextHolder.clearContext();
   }
 
-
   @Test
-  public void isAuthenticatedReturnsFalseForAnonymousAuthenticationToken() {
+  void isAuthenticatedReturnsFalseForAnonymousAuthenticationToken() {
+
     AnonymousAuthenticationToken anonymousToken = Mockito.mock(AnonymousAuthenticationToken.class);
     when(securityContext.getAuthentication()).thenReturn(anonymousToken);
     SecurityContextHolder.setContext(securityContext);
-
     assertThat(utils.isAuthenticated(), is(false));
   }
 
   @Test
-  public void isAuthenticatedReturnsFalseForNullAuthentication() {
+  void isAuthenticatedReturnsFalseForNullAuthentication() {
+
     SecurityContextHolder.createEmptyContext();
     assertThat(utils.isAuthenticated(), is(false));
   }
 
   @Test
-  public void isAuthenticatedReturnsTrueForUsernamePasswordAuthenticationToken() {
+  void isAuthenticatedReturnsTrueForUsernamePasswordAuthenticationToken() {
+
     UsernamePasswordAuthenticationToken token =
         Mockito.mock(UsernamePasswordAuthenticationToken.class);
-
     when(securityContext.getAuthentication()).thenReturn(token);
     SecurityContextHolder.setContext(securityContext);
     assertThat(utils.isAuthenticated(), is(true));
   }
 
   @Test
-  public void isAuthenticatedReturnsFalseForExtendedAuthenticationToken() {
-    ExtendedAuthenticationToken token = Mockito.mock(ExtendedAuthenticationToken.class);
+  void isAuthenticatedReturnsFalseForExtendedAuthenticationToken() {
 
+    ExtendedAuthenticationToken token = Mockito.mock(ExtendedAuthenticationToken.class);
     when(securityContext.getAuthentication()).thenReturn(token);
     SecurityContextHolder.setContext(securityContext);
     assertThat(utils.isAuthenticated(), is(false));
   }
 
   @Test
-  public void isPreAuthenticatedReturnsFalseForNullAuthentication() {
+  void isPreAuthenticatedReturnsFalseForNullAuthentication() {
+
     SecurityContextHolder.createEmptyContext();
     assertThat(utils.isPreAuthenticated(null), is(false));
   }
 
   @Test
-  public void isPreAuthenticatedReturnsFalseForEmptyAuthorities() {
+  void isPreAuthenticatedReturnsFalseForEmptyAuthorities() {
+
     UsernamePasswordAuthenticationToken token =
         Mockito.mock(UsernamePasswordAuthenticationToken.class);
 
@@ -113,7 +115,8 @@ public class AccountUtilsTests {
   }
 
   @Test
-  public void isPreAuthenticatedReturnsTrueForProperAuthority() {
+  void isPreAuthenticatedReturnsTrueForProperAuthority() {
+
     UsernamePasswordAuthenticationToken token =
         Mockito.mock(UsernamePasswordAuthenticationToken.class);
 
@@ -123,12 +126,14 @@ public class AccountUtilsTests {
   }
 
   @Test
-  public void getAuthenticatedUserAccountReturnsEmptyOptionalForNullSecurityContext() {
+  void getAuthenticatedUserAccountReturnsEmptyOptionalForNullSecurityContext() {
+
     assertThat(utils.getAuthenticatedUserAccount().isPresent(), is(false));
   }
 
   @Test
-  public void getAuthenticatedUserAccountReturnsEmptyOptionalForAnonymousSecurityContext() {
+  void getAuthenticatedUserAccountReturnsEmptyOptionalForAnonymousSecurityContext() {
+
     AnonymousAuthenticationToken anonymousToken = Mockito.mock(AnonymousAuthenticationToken.class);
     when(securityContext.getAuthentication()).thenReturn(anonymousToken);
     SecurityContextHolder.setContext(securityContext);
@@ -136,7 +141,8 @@ public class AccountUtilsTests {
   }
 
   @Test
-  public void getAuthenticatedUserAccountWorksForUsernamePasswordAuthenticationToken() {
+  void getAuthenticatedUserAccountWorksForUsernamePasswordAuthenticationToken() {
+
     when(account.getUsername()).thenReturn("test");
     when(repo.findByUsername("test")).thenReturn(Optional.of(account));
 
@@ -149,11 +155,11 @@ public class AccountUtilsTests {
     Optional<IamAccount> authUserAccount = utils.getAuthenticatedUserAccount();
     assertThat(authUserAccount.isPresent(), is(true));
     assertThat(authUserAccount.get().getUsername(), equalTo("test"));
-
   }
 
   @Test
-  public void getAuthenticatedUserAccountWorksForOauthToken() {
+  void getAuthenticatedUserAccountWorksForOauthToken() {
+
     when(account.getUsername()).thenReturn("test");
     when(repo.findByUsername("test")).thenReturn(Optional.of(account));
 
@@ -171,17 +177,16 @@ public class AccountUtilsTests {
     Optional<IamAccount> authUserAccount = utils.getAuthenticatedUserAccount();
     assertThat(authUserAccount.isPresent(), is(true));
     assertThat(authUserAccount.get().getUsername(), equalTo("test"));
-
   }
 
   @Test
-  public void getAuthenticatedUserAccountReturnsEmptyOptionalForClientOAuthToken() {
+  void getAuthenticatedUserAccountReturnsEmptyOptionalForClientOAuthToken() {
+
     OAuth2Authentication oauth = Mockito.mock(OAuth2Authentication.class);
 
     when(oauth.getUserAuthentication()).thenReturn(null);
     when(securityContext.getAuthentication()).thenReturn(oauth);
     SecurityContextHolder.setContext(securityContext);
-
     assertThat(utils.getAuthenticatedUserAccount().isPresent(), is(false));
   }
 }

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -36,14 +35,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
@@ -51,7 +50,8 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   private final LocalAuthenticationAllowedUsers allowedUsers;
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaService iamTotpMfaService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
@@ -59,12 +59,13 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
-    this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaService = iamTotpMfaService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   /**
@@ -105,11 +106,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     refs.add(pwd);
 
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-
     // Checking to see if we can find an active MFA secret attached to the user's account. If so,
     // MFA is enabled on the account
-    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+    if (iamTotpMfaService.isAuthenticatorAppActive(account) || iamTotpMfaProperties.isMultiFactorMandatory()) {
       List<GrantedAuthority> currentAuthorities = new ArrayList<>();
       // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
       currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);

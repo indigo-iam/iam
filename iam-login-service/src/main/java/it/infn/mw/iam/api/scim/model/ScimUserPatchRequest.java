@@ -21,33 +21,27 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.Valid;
-
 import javax.validation.constraints.NotEmpty;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUserPatchRequest {
 
   public static final String PATCHOP_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:PatchOp";
 
-  private final Set<String> schemas;
+  private Set<String> schemas;
 
   @NotEmpty
   @Valid
-  private final List<ScimPatchOperation<ScimUser>> operations;
+  @JsonProperty("Operations")
+  @JsonAlias("operations")
+  private List<ScimPatchOperation<ScimUser>> operations;
 
-  @JsonCreator
-  private ScimUserPatchRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") List<ScimPatchOperation<ScimUser>> operations) {
-
-	Preconditions.checkNotNull(operations, "Operation list is null");
-    this.schemas = schemas;
-    this.operations = operations;
+  public ScimUserPatchRequest() {
   }
 
   private ScimUserPatchRequest(Builder b) {

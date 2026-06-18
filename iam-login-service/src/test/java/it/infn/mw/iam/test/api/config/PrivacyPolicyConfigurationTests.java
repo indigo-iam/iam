@@ -19,36 +19,34 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
-@RunWith(SpringRunner.class)
+//@formatter:on
+@ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @WithAnonymousUser
 //@formatter:off
 @TestPropertySource(properties = {
-    "iam.privacy-policy.url=https://policy.example",
-    "iam.privacy-policy.text=Privacy Statement"
+  "iam.privacy-policy.url=https://policy.example",
+  "iam.privacy-policy.text=Privacy Statement"
 })
-//@formatter:on
-public class PrivacyPolicyConfigurationTests {
+class PrivacyPolicyConfigurationTests {
 
   private static final String ENDPOINT = "/iam/config/privacy-policy";
-
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  public void testPrivacyPolicy() throws Exception {
+  void testPrivacyPolicy() throws Exception {
 
     mvc.perform(get((ENDPOINT)))
       .andExpect(status().isOk())

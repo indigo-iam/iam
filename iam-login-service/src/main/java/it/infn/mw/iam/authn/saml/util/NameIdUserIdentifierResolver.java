@@ -16,8 +16,10 @@
 package it.infn.mw.iam.authn.saml.util;
 
 import static com.google.common.base.Verify.verifyNotNull;
-import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.resolutionFailure;
-import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.resolutionSuccess;
+import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.failure;
+import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.success;
+
+import java.util.List;
 
 import org.opensaml.saml2.core.NameID;
 import org.springframework.security.saml.SAMLCredential;
@@ -46,11 +48,11 @@ public class NameIdUserIdentifierResolver extends AbstractSamlUserIdentifierReso
       samlId.setUserId(nameId.getValue());
       samlId.setIdpId(samlCredential.getRemoteEntityID());
 
-      return resolutionSuccess(samlId);
+      return success(List.of(samlId));
 
     }
     
-    return resolutionFailure("NameID resolution failure");
+    return failure(List.of("NameID resolution failure"));
   }
 
 }
