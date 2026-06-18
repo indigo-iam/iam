@@ -17,7 +17,7 @@ package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACT;

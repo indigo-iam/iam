@@ -60,6 +60,7 @@ public interface StructuredScopeTestSupportConstants {
   static final String REGISTRATION_CLIENT_SECRET = "secret";
 
   static final String PUBLIC_CLIENT_ID = "public-client";
+  static final String PUBLIC_CLIENT_WITH_SECRET_ID = "public-client-with-secret";
 
   static final String AUTHORIZE_ENDPOINT = "/authorize";
   static final String DEVICE_CODE_ENDPOINT = "/devicecode";
@@ -126,6 +127,9 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String CERN_USER = "cern-user";
   static final String CERN_USER_UUID = "e7de071b-578f-46ec-a2f1-6f9844a50aa5";
+
+  static final String JWT_AUTH_CLIENT_ID = "jwt-auth-private_key_jwt";
+  static final String JWT_AUTH_CLIENT_SECRET = "secret";
 
   public static final ResultMatcher OK = status().isOk();
   public static final ResultMatcher NO_CONTENT = status().isNoContent();

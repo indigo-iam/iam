@@ -611,6 +611,16 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder aarcDisplayName(String displayName) {
+      aarcUserBuilder.displayName(displayName);
+      return this;
+    }
+
+    public Builder aarcName(ScimAarcName name) {
+      aarcUserBuilder.name(name);
+      return this;
+    }
+
     public Builder organizationName(String organizationName) {
       aarcUserBuilder.organizationName(organizationName);
       return this;
@@ -618,11 +628,6 @@ public class ScimUser extends ScimResource {
 
     public Builder addVoPersonExternalAffiliation(ScimAffiliation value) {
       aarcUserBuilder.addVoPersonExternalAffiliation(value);
-      return this;
-    }
-
-    public Builder addAarcName(ScimAarcName name) {
-      aarcUserBuilder.name(name);
       return this;
     }
 

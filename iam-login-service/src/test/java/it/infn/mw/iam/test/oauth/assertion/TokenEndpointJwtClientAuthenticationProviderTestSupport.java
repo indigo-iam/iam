@@ -31,7 +31,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-public interface IAMJWTBearerAuthenticationProviderTestSupport {
+public interface TokenEndpointJwtClientAuthenticationProviderTestSupport {
 
   String JWT_AUTH_NAME = "jwt-bearer-client";
   String ISSUER = "http://localhost:8080/";

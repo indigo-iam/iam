@@ -16,18 +16,12 @@
 package it.infn.mw.iam.api.scim.model;
 
 public class ScimAarcName {
-  private final String displayName;
   private final String givenName;
   private final String familyName;
 
   public ScimAarcName(ScimName name) {
-    this.displayName = name.getFormatted();
     this.givenName = name.getGivenName();
     this.familyName = name.getFamilyName();
-  }
-
-  public String getDisplayName() {
-    return displayName;
   }
 
   public String getGivenName() {

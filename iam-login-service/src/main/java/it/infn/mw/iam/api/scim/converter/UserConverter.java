@@ -292,7 +292,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     if (scimProperties.isEnableAarc()) {
       builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
       builder.organizationName(iamProperties.getOrganisation().getName());
-      builder.addAarcName(new ScimAarcName(getScimName(entity)));
+      builder.aarcDisplayName(entity.getUserInfo().getName());
+      builder.aarcName(new ScimAarcName(getScimName(entity)));
       builder.addAarcEmail(entity.getUserInfo().getEmail());
 
       if (entity.hasAffiliation()) {

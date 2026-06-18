@@ -35,4 +35,6 @@ public interface AarcOidcScopes extends IamOidcScopes {
 
   String VOPERSON_EXTERNAL_AFFILIATION = AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION;
 
+  String SCHAC_HOME_ORGANIZATION = AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION;
+
 }

@@ -135,7 +135,7 @@ class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
     mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
-      .andExpect(model().attribute("scope", "openid email"));
+      .andExpect(model().attribute("scope", "email openid"));
 
   }
 

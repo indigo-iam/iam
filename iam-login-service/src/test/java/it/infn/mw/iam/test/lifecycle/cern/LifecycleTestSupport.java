@@ -24,8 +24,8 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -48,7 +48,6 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
   default IamLabel cernIgnoreLabel() {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
   }
-
 
   default IamLabel skipEmailSyncLabel() {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_EMAIL_SYNCH).build();
@@ -79,22 +78,25 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
   }
 
   default Instant getUtcStartOfDayForDaysAgo(Clock clock, int daysAgo) {
-    ZoneId zone = clock.getZone();
-    return LocalDate.now(clock).minusDays(daysAgo).atStartOfDay(zone).toInstant();
+    return Instant.now()
+      .atZone(ZoneOffset.UTC)
+      .minusDays(daysAgo)
+      .toLocalDate()
+      .atStartOfDay(ZoneOffset.UTC)
+      .toInstant();
   }
 
   default Instant getUtcStartOfDayForDaysAfter(Clock clock, int daysAfter) {
-    ZoneId zone = clock.getZone();
-    return LocalDate.now(clock).plusDays(daysAfter).atStartOfDay(zone).toInstant();
+    return Instant.now()
+      .atZone(ZoneOffset.UTC)
+      .plusDays(daysAfter)
+      .toLocalDate()
+      .atStartOfDay(ZoneOffset.UTC)
+      .toInstant();
   }
 
   default Instant getUtcStartOfDayForDaysAgoFromBase(Instant base, ZoneId zone, int daysAgo) {
-    return base
-            .atZone(zone)
-            .toLocalDate()
-            .minusDays(daysAgo)
-            .atStartOfDay(zone)
-            .toInstant();
+    return base.atZone(zone).minusDays(daysAgo).toLocalDate().atStartOfDay(zone).toInstant();
   }
 
   default VOPersonDTO voPerson(Clock clock, String personId, Date endDate) {
@@ -148,7 +150,7 @@ public interface LifecycleTestSupport extends StructuredScopeTestSupportConstant
   }
 
   default ParticipationDTO getLimitedParticipation(Clock clock, String experiment) {
-    Date startDate = Date.from(getUtcStartOfDayForDaysAgo(clock, 365));
+    Date startDate = Date.from(getUtcStartOfDayForDaysAgo(clock, 10));
     Date endDate = Date.from(startDate.toInstant().plus(Duration.ofDays(365)));
     return getParticipation(experiment, startDate, endDate);
   }
