@@ -78,7 +78,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
     if (isNull(g.getUuid())) {
       g.setUuid(UUID.randomUUID().toString());
     }
-    
+
     g.setCreationTime(creationTime);
     g.setLastUpdateTime(creationTime);
 
@@ -178,19 +178,19 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
         new GroupRemovedEvent(this, g, String.format("Group %s has been removed", g.getName())));
   }
 
-  private void groupReplacedEvent(IamGroup oldGroup, IamGroup newGroup) {
-    eventPublisher.publishEvent(new GroupReplacedEvent(this, newGroup, oldGroup, String
-      .format("Replaced group %s with new group %s", oldGroup.getName(), newGroup.getName())));
+  private void groupReplacedEvent(String oldGroupName, IamGroup newGroup) {
+    eventPublisher.publishEvent(new GroupReplacedEvent(this, newGroup,
+        String.format("Replaced group %s with new group %s", oldGroupName, newGroup.getName())));
   }
 
   private void labelSetEvent(IamGroup group, IamLabel label) {
     eventPublisher.publishEvent(new GroupLabelSetEvent(this, group, label));
   }
-  
+
   private void labelRemovedEvent(IamGroup group, IamLabel label) {
     eventPublisher.publishEvent(new GroupLabelRemovedEvent(this, group, label));
   }
-  
+
   private Supplier<NoSuchGroupError> noSuchGroupException(String message) {
     return () -> new NoSuchGroupError(message);
   }
@@ -202,11 +202,11 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   }
 
   @Override
-  public IamGroup updateGroup(IamGroup oldGroup, IamGroup newGroup) {
+  public IamGroup updateGroup(String oldGroupName, IamGroup newGroup) {
 
     newGroup.touch(clock);
 
-    groupReplacedEvent(oldGroup, newGroup);
+    groupReplacedEvent(oldGroupName, newGroup);
     groupRepo.save(newGroup);
 
     return newGroup;
@@ -246,14 +246,14 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
 
   @Override
   public IamGroup addLabel(IamGroup g, IamLabel l) {
-    
+
     g.getLabels().remove(l);
     g.getLabels().add(l);
-    
+
     touchGroup(g);
 
     groupRepo.save(g);
-    
+
     labelSetEvent(g, l);
     return g;
   }
@@ -261,7 +261,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   @Override
   public IamGroup deleteLabel(IamGroup g, IamLabel l) {
     g.getLabels().remove(l);
-    
+
     labelRemovedEvent(g, l);
     touchGroup(g);
     groupRepo.save(g);

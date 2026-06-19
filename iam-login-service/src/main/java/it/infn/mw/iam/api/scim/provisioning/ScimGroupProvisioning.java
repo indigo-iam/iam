@@ -257,31 +257,32 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new ScimResourceExistsException(displayName + " is already mapped to another group");
     }
 
-    IamGroup oldGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
-    IamGroup updatedGroup = oldGroup;
+    IamGroup groupToUpdate = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
+    String oldGroupName = groupToUpdate.getName();
 
-    if (oldGroup.getParentGroup() != null) {
-      String parentGroupUuid = oldGroup.getParentGroup().getUuid();
+    if (groupToUpdate.getParentGroup() != null) {
+      String parentGroupUuid = groupToUpdate.getParentGroup().getUuid();
 
       groupService.findByUuid(parentGroupUuid)
         .orElseThrow(() -> new ScimResourceNotFoundException(
             String.format("Parent group '%s' not found", parentGroupUuid)));
 
-      String fullName = String.format("%s/%s", oldGroup.getParentGroup().getName(), displayName);
+      String fullName =
+          String.format("%s/%s", groupToUpdate.getParentGroup().getName(), displayName);
       fullNameSanityChecks(fullName);
 
-      updatedGroup.setName(fullName);
+      groupToUpdate.setName(fullName);
     } else {
-      updatedGroup.setName(displayName);
+      groupToUpdate.setName(displayName);
     }
 
-    if (!oldGroup.getChildrenGroups().isEmpty()) {
+    if (!groupToUpdate.getChildrenGroups().isEmpty()) {
       throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
-    groupService.updateGroup(oldGroup, updatedGroup);
+    groupService.updateGroup(oldGroupName, groupToUpdate);
 
-    return converter.dtoFromEntity(updatedGroup);
+    return converter.dtoFromEntity(groupToUpdate);
   }
 
   @Override
