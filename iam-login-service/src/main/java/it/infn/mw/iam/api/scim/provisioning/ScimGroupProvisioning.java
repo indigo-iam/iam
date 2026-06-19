@@ -74,17 +74,18 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final ScimResourceLocationProvider locationProvider;
 
-  public ScimGroupProvisioning(Clock clock, IamGroupService groupService, IamAccountService accountService,
-      GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
+  public ScimGroupProvisioning(Clock clock, IamGroupService groupService,
+      IamAccountService accountService, GroupRequestsService groupRequestsService,
+      GroupConverter converter, ScimResourceLocationProvider locationProvider,
+      IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory =
-        new DefaultGroupMembershipUpdaterFactory(clock, accountService, locationProvider, accountRepo);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(clock, accountService,
+        locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -249,8 +250,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   @Override
   public ScimGroup replace(String id, ScimGroup scimItemToBeReplaced) {
 
-    IamGroup oldGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
-
     String displayName = scimItemToBeReplaced.getDisplayName();
     displayNameSanityChecks(displayName);
 
@@ -258,26 +257,31 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new ScimResourceExistsException(displayName + " is already mapped to another group");
     }
 
-    IamGroup newGroup = converter.entityFromDto(scimItemToBeReplaced);
+    IamGroup oldGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
+    IamGroup updatedGroup = oldGroup;
 
-    String fullName;
     if (oldGroup.getParentGroup() != null) {
-      fullName = String.format("%s/%s", oldGroup.getParentGroup().getName(), displayName);
+      String parentGroupUuid = oldGroup.getParentGroup().getUuid();
 
+      groupService.findByUuid(parentGroupUuid)
+        .orElseThrow(() -> new ScimResourceNotFoundException(
+            String.format("Parent group '%s' not found", parentGroupUuid)));
+
+      String fullName = String.format("%s/%s", oldGroup.getParentGroup().getName(), displayName);
       fullNameSanityChecks(fullName);
-      newGroup.setName(fullName);
+
+      updatedGroup.setName(fullName);
     } else {
-      fullName = displayName;
+      updatedGroup.setName(displayName);
     }
 
     if (!oldGroup.getChildrenGroups().isEmpty()) {
-      oldGroup.getChildrenGroups()
-        .forEach(child -> updateGroupAndDescendants(child, oldGroup.getName(), fullName));
+      throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
-    groupService.updateGroup(oldGroup, newGroup);
+    groupService.updateGroup(oldGroup, updatedGroup);
 
-    return converter.dtoFromEntity(newGroup);
+    return converter.dtoFromEntity(updatedGroup);
   }
 
   @Override

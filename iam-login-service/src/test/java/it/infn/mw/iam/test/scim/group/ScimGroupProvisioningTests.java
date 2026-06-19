@@ -266,7 +266,7 @@ class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateDisplayNameOfAGroupWithChildrenSuccessResponse() throws Exception {
+  public void testUpdateDisplayNameOfAGroupWithChildrenFails() throws Exception {
 
     ScimGroup parentGroup = ScimGroup.builder("A").build();
 
@@ -291,16 +291,14 @@ class ScimGroupProvisioningTests {
     mvc
       .perform(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(parentGroup)))
-      .andExpect(jsonPath("$.displayName", equalTo("AA")))
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.detail", containsString("The current group contains child group(s)")));
 
     mvc.perform(get(subgroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(jsonPath("$.displayName", equalTo("AA/B")));
+      .andExpect(jsonPath("$.displayName", equalTo("A/B")));
 
     mvc.perform(get(subsubgroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(jsonPath("$.displayName", equalTo("AA/B/C")));
+      .andExpect(jsonPath("$.displayName", equalTo("A/B/C")));
 
     mvc.perform(delete(subsubgroup.getMeta().getLocation())).andExpect(status().isNoContent());
     mvc.perform(delete(subgroup.getMeta().getLocation())).andExpect(status().isNoContent());

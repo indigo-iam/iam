@@ -204,14 +204,6 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   @Override
   public IamGroup updateGroup(IamGroup oldGroup, IamGroup newGroup) {
 
-    newGroup.setId(oldGroup.getId());
-    newGroup.setUuid(oldGroup.getUuid());
-    newGroup.setCreationTime(oldGroup.getCreationTime());
-
-    newGroup.setDescription(oldGroup.getDescription());
-    newGroup.setParentGroup(oldGroup.getParentGroup());
-    newGroup.setChildrenGroups(oldGroup.getChildrenGroups());
-
     newGroup.touch(clock);
 
     groupReplacedEvent(oldGroup, newGroup);
