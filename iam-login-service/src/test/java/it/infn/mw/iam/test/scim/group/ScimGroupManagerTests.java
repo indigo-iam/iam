@@ -60,6 +60,7 @@ class ScimGroupManagerTests {
 
   static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
   static final String TEST_002_GROUP_ID = "c617d586-54e6-411d-8e38-649677980002";
+  static final String PRODUCTION_GROUP_ID = "c617d586-54e6-411d-8e38-64967798fa8a";
 
   @Autowired
   SecurityContextUtils context;
@@ -126,6 +127,26 @@ class ScimGroupManagerTests {
     mvc.perform(get(GROUP_URI + "/{uuid}/members", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.Resources").isArray());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  void roleReaderCanSeeGroupMembersCount() throws Exception {
+    mvc.perform(get(GROUP_URI + "/{uuid}/members?count=0", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.totalResults", equalTo(0)))
+      .andExpect(jsonPath("$.Resources").isArray());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "ADMIN")
+  void roleAdminCanSeeGroupMembersCountForNonemptyGroup() throws Exception {
+    mvc.perform(get(GROUP_URI + "/{uuid}/members?count=0", PRODUCTION_GROUP_ID).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.totalResults", equalTo(250)))
       .andExpect(jsonPath("$.Resources").isArray());
   }
 

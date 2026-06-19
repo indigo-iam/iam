@@ -20,6 +20,7 @@ import static java.lang.String.format;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -281,18 +282,27 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     ScimListResponseBuilder<ScimMemberRef> results = new ScimListResponseBuilder<>();
 
-    OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
+    int count = pageRequest.getCount();
+
+    if (count == 0) {
+      long numberOfMembersInGroup = accountService.countGroupMembers(iamGroup);
+
+      results.totalResults(numberOfMembersInGroup)
+          .resources(Collections.emptyList());
+
+      return results.build();
+    }
+
+    OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), count);
     Page<IamAccount> accounts = accountService.findGroupMembers(iamGroup, pr);
 
-    List<ScimMemberRef> resources = newArrayList();
-
-    for (IamAccount a : accounts.getContent()) {
-      resources.add(ScimMemberRef.builder()
-        .value(a.getUuid())
-        .display(a.getUserInfo().getName())
-        .ref(locationProvider.userLocation(a.getUuid()))
-        .build());
-    }
+    List<ScimMemberRef> resources = accounts.getContent().stream()
+        .map(a -> ScimMemberRef.builder()
+            .value(a.getUuid())
+            .display(a.getUserInfo().getName())
+            .ref(locationProvider.userLocation(a.getUuid()))
+            .build())
+        .toList();
 
     results.fromPage(accounts, pr);
     results.resources(resources);

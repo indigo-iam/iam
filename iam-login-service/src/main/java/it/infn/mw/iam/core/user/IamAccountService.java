@@ -220,6 +220,14 @@ public interface IamAccountService {
    */
   Page<IamAccount> findGroupMembers(IamGroup group, Pageable page);
 
+  /**
+   * Returns the total number of {@link IamAccount} entities that are members
+   * of the given {@link IamGroup}.
+   *
+   * @param group the group whose members should be counted
+   * @return the total number of accounts associated with the given group
+   */
+  long countGroupMembers(IamGroup group);
 
   /**
    * Links an ssh key to an account
