@@ -115,9 +115,7 @@ public class RegisteredClientDTO {
   @Valid
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private Set<@RedirectURI(message = "not a valid URL",
-      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-          OnClientCreation.class, OnClientUpdate.class}) String> postLogoutRedirectUris;
+  private Set<String> postLogoutRedirectUris;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
