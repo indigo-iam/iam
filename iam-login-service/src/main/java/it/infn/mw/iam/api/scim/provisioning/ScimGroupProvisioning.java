@@ -280,6 +280,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
+    if (scimItemToBeReplaced.getIndigoGroup().getDescription() != null) {
+      groupToUpdate.setDescription(scimItemToBeReplaced.getIndigoGroup().getDescription());
+    }
+
     groupService.updateGroup(oldGroupName, groupToUpdate);
 
     return converter.dtoFromEntity(groupToUpdate);
@@ -340,19 +344,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     results.resources(resources);
     return results.build();
 
-  }
-
-  private void updateGroupAndDescendants(IamGroup group, String oldGroupName, String newGroupName) {
-    if (group.getName().startsWith(oldGroupName + "/")) {
-      String relativeName = group.getName().substring(oldGroupName.length());
-      String updatedName = newGroupName + relativeName;
-      group.setName(updatedName);
-    }
-
-    if (group.getChildrenGroups() != null) {
-      group.getChildrenGroups()
-        .forEach(child -> updateGroupAndDescendants(child, oldGroupName, newGroupName));
-    }
   }
 
 }
