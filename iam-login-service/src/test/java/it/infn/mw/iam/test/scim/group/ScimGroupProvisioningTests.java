@@ -40,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -68,6 +69,7 @@ import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
+import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.provisioning.ScimGroupProvisioning;
 import it.infn.mw.iam.api.scim.provisioning.paging.DefaultScimPageRequest;
@@ -250,7 +252,7 @@ class ScimGroupProvisioningTests {
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
 
-    ScimGroup subgroup = createGroup("B", createdGroup);
+    ScimGroup subgroup = createSubGroup("B", createdGroup);
     String location = subgroup.getMeta().getLocation();
     assertNotNull(subgroup);
 
@@ -280,10 +282,10 @@ class ScimGroupProvisioningTests {
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
 
-    ScimGroup subgroup = createGroup("B", createdGroup);
+    ScimGroup subgroup = createSubGroup("B", createdGroup);
     assertNotNull(subgroup);
 
-    ScimGroup subsubgroup = createGroup("C", subgroup);
+    ScimGroup subsubgroup = createSubGroup("C", subgroup);
     assertNotNull(subsubgroup);
 
     parentGroup = ScimGroup.builder("AA").build();
@@ -394,6 +396,36 @@ class ScimGroupProvisioningTests {
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
   }
 
+
+  @Test
+  void testUpdateGroupDescriptionSuccessResponse() throws Exception {
+
+    final String groupId = UUID.randomUUID().toString();
+    final String groupName = "group-with-description";
+    final String groupDesc = "A group description";
+    IamGroup group = new IamGroup();
+    group.setUuid(groupId);
+    group.setName(groupName);
+    group.setDescription(groupDesc);
+    group.setCreationTime(new Date());
+    group.setLastUpdateTime(new Date());
+
+    repo.save(group);
+
+    group.setDescription("Updated group description");
+    ScimGroup requestedGroup =
+        buildGroupObject("group-with-description", null, "Updated group description", null);
+
+    mvc
+      .perform(put("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(requestedGroup)))
+      .andExpect(jsonPath(
+          "$.urn:indigo-dc:scim:schemas:IndigoGroup.description",
+          equalTo("Updated group description")));
+
+    mvc.perform(delete("/scim/Groups/{id}", groupId)).andExpect(status().isNoContent());
+  }
+
   @Test
   void groupListFilterReference() {
 
@@ -435,8 +467,8 @@ class ScimGroupProvisioningTests {
     logger.detachAppender(mockAppender);
   }
 
-  private ScimGroup createGroup(String name, ScimGroup parent) throws Exception {
-    ScimGroup group = buildGroupObject(name, parent);
+  private ScimGroup createSubGroup(String name, ScimGroup parent) throws Exception {
+    ScimGroup group = buildGroupObject(name, parent, null, null);
 
     String response = mvc
       .perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
@@ -449,7 +481,8 @@ class ScimGroupProvisioningTests {
     return objectMapper.readValue(response, ScimGroup.class);
   }
 
-  private ScimGroup buildGroupObject(String name, ScimGroup parent) {
+  private ScimGroup buildGroupObject(String name, ScimGroup parent, String description,
+      Set<ScimLabel> labels) {
     ScimGroup group = ScimGroup.builder(name).build();
     if (parent != null) {
       ScimGroupRef parentGroupRef = ScimGroupRef.builder()
@@ -458,8 +491,11 @@ class ScimGroupProvisioningTests {
         .ref(scimResourceLocationProvider.groupLocation(parent.getId()))
         .build();
 
-      ScimIndigoGroup parentIndigoGroup =
-          ScimIndigoGroup.getBuilder().parentGroup(parentGroupRef).build();
+      ScimIndigoGroup parentIndigoGroup = ScimIndigoGroup.getBuilder()
+        .parentGroup(parentGroupRef)
+        .description(description)
+        .labels(labels)
+        .build();
 
       group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
     }
