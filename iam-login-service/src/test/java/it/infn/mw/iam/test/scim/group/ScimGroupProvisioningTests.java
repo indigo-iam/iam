@@ -417,7 +417,7 @@ class ScimGroupProvisioningTests {
 
     group.setDescription("Updated group description");
     ScimGroup requestedGroup =
-        buildGroupObject("group-with-description", null, "Updated group description", null);
+        buildGroupObjectWithDescription("group-with-description", "Updated group description");
 
     mvc
       .perform(put("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE)
@@ -472,7 +472,7 @@ class ScimGroupProvisioningTests {
 
     repo.save(group);
 
-    ScimGroup requestedGroup = buildGroupObject("group-with-label", null, null,
+    ScimGroup requestedGroup = buildGroupObjectWithLabels("group-with-label",
         Set.of(ScimLabel.builder().withName("voms.role").build()));
 
     mvc
@@ -527,7 +527,7 @@ class ScimGroupProvisioningTests {
   }
 
   private ScimGroup createSubGroup(String name, ScimGroup parent) throws Exception {
-    ScimGroup group = buildGroupObject(name, parent, null, null);
+    ScimGroup group = buildGroupObjectWithParent(name, parent);
 
     String response = mvc
       .perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
@@ -542,7 +542,7 @@ class ScimGroupProvisioningTests {
 
   private ScimGroup buildGroupObject(String name, ScimGroup parent, String description,
       Set<ScimLabel> labels) {
-    ScimGroup group = ScimGroup.builder(name).build();
+
     ScimGroupRef parentGroupRef = null;
 
     if (parent != null) {
@@ -559,8 +559,19 @@ class ScimGroupProvisioningTests {
       .labels(labels)
       .build();
 
-    group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
-
-    return group;
+    return ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
   }
+
+  private ScimGroup buildGroupObjectWithParent(String name, ScimGroup parent) {
+    return buildGroupObject(name, parent, null, null);
+  }
+
+  private ScimGroup buildGroupObjectWithDescription(String name, String description) {
+    return buildGroupObject(name, null, description, null);
+  }
+
+  private ScimGroup buildGroupObjectWithLabels(String name, Set<ScimLabel> labels) {
+    return buildGroupObject(name, null, null, labels);
+  }
+
 }
