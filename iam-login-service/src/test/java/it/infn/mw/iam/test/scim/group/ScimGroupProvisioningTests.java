@@ -236,7 +236,7 @@ class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateSubgroupDisplaynameSuccessResponse() throws Exception {
+  void testUpdateSubgroupDisplaynameSuccessResponse() throws Exception {
 
     ScimGroup parentGroup = ScimGroup.builder("A").build();
 
@@ -266,7 +266,7 @@ class ScimGroupProvisioningTests {
   }
 
   @Test
-  public void testUpdateDisplayNameOfAGroupWithChildrenFails() throws Exception {
+  void testUpdateDisplayNameOfAGroupWithChildrenFails() throws Exception {
 
     ScimGroup parentGroup = ScimGroup.builder("A").build();
 
