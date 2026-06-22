@@ -16,9 +16,12 @@
 package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.http.client.HttpClient;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
@@ -33,7 +36,6 @@ import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.client.service.impl.DynamicServerConfigurationService;
 import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +55,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
+import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -65,12 +69,15 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.service.CompositeClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.service.SafeStaticClientConfigurationService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
@@ -92,7 +99,8 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock, OidcTokenRequestor tokenRequestor,
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock,
+      OidcTokenRequestor tokenRequestor,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
@@ -155,11 +163,12 @@ public class OidcConfiguration {
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
       IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
+      OidcAccountProvisioningService oidcProvisioningService,
+      IamTotpMfaProperties iamTotpMfaProperties) {
 
-    OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
-            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService, iamTotpMfaProperties);
+    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(validator, timeoutHelper,
+        accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
+        oidcProvisioningService, iamTotpMfaProperties);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 
@@ -192,7 +201,11 @@ public class OidcConfiguration {
   }
 
   @Bean
-  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
+  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers,
+      IamFederatedClientRepository clientRepo,
+      Optional<FederatedOpRegistrationService> federationRegistrationService, Clock clock) {
+
+    List<ClientConfigurationService> services = new ArrayList<>();
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -206,15 +219,18 @@ public class OidcConfiguration {
       clients.put(provider.getIssuer(), rc);
     });
 
-    if (clients.isEmpty()) {
+    if (!clients.isEmpty()) {
+      services.add(new SafeStaticClientConfigurationService(clients));
+    }
+
+    federationRegistrationService.ifPresent(service -> services
+      .add(new FederationClientConfigurationService(clientRepo, service, clock)));
+
+    if (services.isEmpty()) {
       return new NullClientConfigurationService();
     }
 
-
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
+    return new CompositeClientConfigurationService(services);
   }
 
   @Bean
