@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,6 +46,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -76,6 +78,7 @@ import it.infn.mw.iam.api.scim.provisioning.paging.DefaultScimPageRequest;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.scim.ScimUtils;
@@ -376,7 +379,7 @@ class ScimGroupProvisioningTests {
   }
 
   @Test
-  void groupDescriptionIsRendered() throws Exception {
+  void testGroupDescriptionIsRendered() throws Exception {
     final String groupId = UUID.randomUUID().toString();
     final String groupName = "group-with-description";
     final String groupDesc = "A group description";
@@ -419,9 +422,65 @@ class ScimGroupProvisioningTests {
     mvc
       .perform(put("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(requestedGroup)))
-      .andExpect(jsonPath(
-          "$.urn:indigo-dc:scim:schemas:IndigoGroup.description",
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description",
           equalTo("Updated group description")));
+
+    mvc.perform(delete("/scim/Groups/{id}", groupId)).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void testGroupLabelsAreRendered() throws Exception {
+
+    final String groupId = UUID.randomUUID().toString();
+    final String groupName = "group-with-label";
+    IamGroup group = new IamGroup();
+    group.setUuid(groupId);
+    group.setName(groupName);
+    group.setCreationTime(new Date());
+    group.setLastUpdateTime(new Date());
+    IamLabel label1 = IamLabel.builder().prefix("env").name("type").value("prod").build();
+    IamLabel label2 = IamLabel.builder().prefix("team").name("owner").value("platform").build();
+    group.setLabels(Set.of(label1, label2));
+
+    repo.save(group);
+
+    mvc.perform(get("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels").exists())
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels", hasSize(2)))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels[*].prefix",
+          hasItems("env", "team")))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels[*].name",
+          hasItems("type", "owner")))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels[*].value",
+          hasItems("prod", "platform")));
+  }
+
+  @Disabled("To be implemented")
+  @Test
+  void testUpdateGroupLabelsSuccessResponse() throws Exception {
+
+    final String groupId = UUID.randomUUID().toString();
+    final String groupName = "group-with-label";
+    IamGroup group = new IamGroup();
+    group.setUuid(groupId);
+    group.setName(groupName);
+    group.setCreationTime(new Date());
+    group.setLastUpdateTime(new Date());
+    IamLabel label = IamLabel.builder().name("wlcg.optional-group").build();
+    group.setLabels(Set.of(label));
+
+    repo.save(group);
+
+    ScimGroup requestedGroup = buildGroupObject("group-with-label", null, null,
+        Set.of(ScimLabel.builder().withName("voms.role").build()));
+
+    mvc
+      .perform(put("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(requestedGroup)))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels", hasSize(1)))
+      .andExpect(
+          jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.labels[0].name", is("voms.role")));
 
     mvc.perform(delete("/scim/Groups/{id}", groupId)).andExpect(status().isNoContent());
   }
@@ -484,21 +543,24 @@ class ScimGroupProvisioningTests {
   private ScimGroup buildGroupObject(String name, ScimGroup parent, String description,
       Set<ScimLabel> labels) {
     ScimGroup group = ScimGroup.builder(name).build();
+    ScimGroupRef parentGroupRef = null;
+
     if (parent != null) {
-      ScimGroupRef parentGroupRef = ScimGroupRef.builder()
+      parentGroupRef = ScimGroupRef.builder()
         .display(parent.getDisplayName())
         .value(parent.getId())
         .ref(scimResourceLocationProvider.groupLocation(parent.getId()))
         .build();
-
-      ScimIndigoGroup parentIndigoGroup = ScimIndigoGroup.getBuilder()
-        .parentGroup(parentGroupRef)
-        .description(description)
-        .labels(labels)
-        .build();
-
-      group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
     }
+
+    ScimIndigoGroup parentIndigoGroup = ScimIndigoGroup.getBuilder()
+      .parentGroup(parentGroupRef)
+      .description(description)
+      .labels(labels)
+      .build();
+
+    group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
+
     return group;
   }
 }
