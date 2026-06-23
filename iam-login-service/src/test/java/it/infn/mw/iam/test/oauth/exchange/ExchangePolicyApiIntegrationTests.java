@@ -40,6 +40,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,7 +60,6 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-import it.infn.mw.iam.core.IamTokenService;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
@@ -67,10 +67,11 @@ import it.infn.mw.iam.core.IamTokenService;
 class ExchangePolicyApiIntegrationTests {
 
   @Configuration
+  @SuppressWarnings("deprecation")
   public static class TestBeans {
 
     @Autowired
-    private IamTokenService tokenService;
+    private ResourceServerTokenServices tokenService;
 
     @Bean
     @Primary

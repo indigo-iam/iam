@@ -16,12 +16,11 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
-import static it.infn.mw.iam.api.tokens.TokensControllerSupport.TOKENS_MAX_PAGE_SIZE;
+import static it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest.TOKENS_MAX_PAGE_SIZE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -158,11 +157,12 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
 
     RefreshToken remoteRt = atl.getResources().get(0);
 
-    assertNull(remoteRt.getClient());
-    assertNotNull(remoteRt.getExpiration());
-    assertNotNull(remoteRt.getUser());
-    assertEquals(TEST_USERNAME, remoteRt.getUser().getUserName());
-    assertEquals(scimResourceLocationProvider.userLocation(TEST_UUID), remoteRt.getUser().getRef());
+    assertNotNull(remoteRt.client());
+    assertEquals(PASSWORD_CLIENT_ID, remoteRt.client().clientId());
+    assertNotNull(remoteRt.expiration());
+    assertNotNull(remoteRt.user());
+    assertEquals(TEST_USERNAME, remoteRt.user().username());
+    assertEquals(scimResourceLocationProvider.userLocation(TEST_UUID), remoteRt.user().ref());
   }
 
   @Test
@@ -191,8 +191,7 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     assertThat(atl.getItemsPerPage(), equalTo(2));
     assertThat(atl.getResources().size(), equalTo(2));
 
-    atl.getResources()
-      .forEach(rt -> assertThat(rt.getClient().getClientId(), equalTo(PASSWORD_CLIENT_ID)));
+    atl.getResources().forEach(rt -> assertThat(rt.clientId(), equalTo(PASSWORD_CLIENT_ID)));
   }
 
   @Test
@@ -219,9 +218,8 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     assertThat(atl.getResources().size(), equalTo(2));
 
     atl.getResources().forEach(at -> {
-      assertThat(at.getUser().getUserName(), equalTo(TEST_USERNAME));
-      assertThat(at.getUser().getRef(),
-          equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+      assertThat(at.user().username(), equalTo(TEST_USERNAME));
+      assertThat(at.user().ref(), equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
     });
   }
 
@@ -263,10 +261,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     assertThat(atl.getResources().size(), equalTo(2));
 
     atl.getResources().forEach(at -> {
-      assertThat(at.getClient().getClientId(), equalTo(PASSWORD_CLIENT_ID));
-      assertThat(at.getUser().getUserName(), equalTo(TEST_USERNAME));
-      assertThat(at.getUser().getRef(),
-          equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+      assertThat(at.clientId(), equalTo(PASSWORD_CLIENT_ID));
+      assertThat(at.user().username(), equalTo(TEST_USERNAME));
+      assertThat(at.user().ref(), equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
     });
   }
 

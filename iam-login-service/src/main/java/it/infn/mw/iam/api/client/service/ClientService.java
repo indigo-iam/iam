@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.client.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -29,6 +30,8 @@ public interface ClientService {
   Page<ClientDetailsEntity> findAllDynamicallyRegistered(Pageable page);
 
   Page<ClientDetailsEntity> findAll(Pageable page);
+
+  List<ClientDetailsEntity> findAll();
 
   Optional<ClientDetailsEntity> findClientByClientId(String clientId);
 

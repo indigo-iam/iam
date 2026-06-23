@@ -15,10 +15,11 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,12 +29,13 @@ import java.util.Date;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,7 +76,7 @@ class ResourceOwnerPasswordCredentialsTests {
   IamAccountRepository accountRepo;
 
   @Autowired
-  OAuth2TokenEntityService tokenService;
+  ResourceServerTokenServices tokenService;
 
   @Autowired
   IamOAuthAccessTokenRepository accessTokenRepo;
@@ -236,25 +238,33 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientSecret = "secret";
 
     // @formatter:off
-    mvc.perform(post("/token")
+    String response = mvc.perform(post("/token")
         .with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
         .param("scope", "openid profile offline_access"))
-      .andExpect(status().isOk());
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
     // @formatter:on
 
-    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(1));
-    assertThat(tokenService.getAllRefreshTokensForUser(USERNAME), hasSize(1));
+    DefaultOAuth2AccessToken tokenResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    assertNotNull(tokenService.readAccessToken(tokenResponse.getValue()));
+    assertTrue(
+        refreshTokenRepo.findByTokenValue(tokenResponse.getRefreshToken().getValue()).isPresent());
 
     IamAccount testAccount = accountRepo.findByUsername(USERNAME)
       .orElseThrow(() -> new AssertionError(String.format("Expected %s user not found", USERNAME)));
 
     accountService.deleteAccount(testAccount);
 
-    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(0));
-    assertThat(tokenService.getAllRefreshTokensForUser(USERNAME), hasSize(0));
-
+    assertThrows(InvalidTokenException.class,
+        () -> tokenService.readAccessToken(tokenResponse.getValue()));
+    assertFalse(
+        refreshTokenRepo.findByTokenValue(tokenResponse.getRefreshToken().getValue()).isPresent());
   }
 }

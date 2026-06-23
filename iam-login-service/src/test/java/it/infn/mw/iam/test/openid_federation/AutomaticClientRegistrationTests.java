@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -68,6 +67,7 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;

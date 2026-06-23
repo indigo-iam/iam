@@ -42,35 +42,47 @@ public class DisabledClientRegistrationService implements ClientRegistrationServ
     LOG.info(REGISTRATION_DISABLED_MSG);
   }
 
-  private RegisteredClientDTO registrationDisabled() {
-    throw new InvalidClientRegistrationRequest(REGISTRATION_DISABLED_MSG);
+  private RuntimeException registrationDisabled() {
+    return new InvalidClientRegistrationRequest(REGISTRATION_DISABLED_MSG);
   }
 
   @Override
   public RegisteredClientDTO registerClient(@Valid RegisteredClientDTO request,
       Authentication authentication) {
-    return registrationDisabled();
+    throw registrationDisabled();
+  }
+
+  @Override
+  public RegisteredClientDTO registerProtectedResource(@Valid RegisteredClientDTO request,
+      Authentication authentication) {
+    throw registrationDisabled();
   }
 
   @Override
   public RegisteredClientDTO retrieveClient(String clientId, Authentication authentication) {
-    return registrationDisabled();
+    throw registrationDisabled();
   }
 
   @Override
   public RegisteredClientDTO updateClient(String clientId, @Valid RegisteredClientDTO request,
       Authentication authentication) {
-    return registrationDisabled();
+    throw registrationDisabled();
+  }
+
+  @Override
+  public RegisteredClientDTO updateProtectedResource(String clientId, @Valid RegisteredClientDTO request,
+      Authentication authentication) {
+    throw registrationDisabled();
   }
 
   @Override
   public void deleteClient(String clientId, Authentication authentication) {
-    registrationDisabled();
+    throw registrationDisabled();
   }
 
   @Override
   public RegisteredClientDTO redeemClient(@NotBlank String clientId,
       @NotBlank String registrationAccessToken, Authentication authentication) {
-    return registrationDisabled();
+    throw registrationDisabled();
   }
 }

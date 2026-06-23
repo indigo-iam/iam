@@ -18,10 +18,12 @@ package it.infn.mw.iam.core;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.ClientRegistrationException;
+import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
+@Service
 public class IamClientDetailsService implements ClientDetailsService {
 
   private final IamClientRepository clientRepo;

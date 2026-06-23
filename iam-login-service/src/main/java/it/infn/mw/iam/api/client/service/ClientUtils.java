@@ -97,4 +97,45 @@ public class ClientUtils {
       .substring(0, BCRYPT_MAX_SIZE);
   }
 
+  public ClientDetailsEntity setupProtectedResourceDefaults(ClientDetailsEntity client) {
+
+    client.setAccessTokenValiditySeconds(0);
+    client.setRefreshTokenValiditySeconds(0);
+    client.setIdTokenValiditySeconds(0);
+    client.setDeviceCodeValiditySeconds(0);
+    client.setAllowIntrospection(true);
+    client.setGrantTypes(Set.of());
+    client.setResponseTypes(Set.of());
+    client.setRedirectUris(Set.of());
+    client.setPostLogoutRedirectUris(Set.of());
+    client.setActive(true);
+    client.setDefaultACRvalues(Set.of());
+    client.setDefaultMaxAge(null);
+    client.setIdTokenEncryptedResponseAlg(null);
+    client.setIdTokenEncryptedResponseEnc(null);
+    client.setIdTokenSignedResponseAlg(null);
+    client.setInitiateLoginUri(null);
+    client.setRequestObjectSigningAlg(null);
+    client.setRequireAuthTime(null);
+    client.setReuseRefreshToken(false);
+    client.setSectorIdentifierUri(null);
+    client.setSubjectType(null);
+    client.setUserInfoEncryptedResponseAlg(null);
+    client.setUserInfoEncryptedResponseEnc(null);
+    client.setUserInfoSignedResponseAlg(null);
+    client.setDynamicallyRegistered(true);
+    client.setAllowIntrospection(true);
+    client.setUpScopingEnabled(false);
+    if (isNull(client.getTokenEndpointAuthMethod())) {
+      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    }
+    if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
+      client.setClientSecret(generateClientSecret());
+    } else {
+      client.setClientSecret(null);
+    }
+    client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
+    client.setClearAccessTokensOnRefresh(false);
+    return client;
+  }
 }

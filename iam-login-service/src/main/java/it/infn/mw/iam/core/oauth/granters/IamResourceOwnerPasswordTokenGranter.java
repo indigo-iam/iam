@@ -38,19 +38,16 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @SuppressWarnings("deprecation")
 public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordTokenGranter {
 
-  private AUPSignatureCheckService signatureCheckService;
-  private AccountUtils accountUtils;
+  private final AUPSignatureCheckService signatureCheckService;
+  private final AccountUtils accountUtils;
 
   public IamResourceOwnerPasswordTokenGranter(AuthenticationManager authenticationManager,
       AuthorizationServerTokenServices tokenServices, ClientDetailsService clientDetailsService,
-      OAuth2RequestFactory requestFactory) {
+      OAuth2RequestFactory requestFactory, AUPSignatureCheckService signatureCheckService,
+      AccountUtils accountUtils) {
     super(authenticationManager, tokenServices, clientDetailsService, requestFactory);
-  }
-
-  public IamResourceOwnerPasswordTokenGranter(AuthenticationManager authenticationManager,
-      AuthorizationServerTokenServices tokenServices, ClientDetailsService clientDetailsService,
-      OAuth2RequestFactory requestFactory, String grantType) {
-    super(authenticationManager, tokenServices, clientDetailsService, requestFactory, grantType);
+    this.accountUtils = accountUtils;
+    this.signatureCheckService = signatureCheckService;
   }
 
   @Override
@@ -73,16 +70,8 @@ public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordT
     return signatureCheckService;
   }
 
-  public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
-    this.signatureCheckService = signatureCheckService;
-  }
-
   public AccountUtils getAccountUtils() {
     return accountUtils;
-  }
-
-  public void setAccountUtils(AccountUtils accountUtils) {
-    this.accountUtils = accountUtils;
   }
 
   @Override

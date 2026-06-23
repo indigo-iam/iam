@@ -26,13 +26,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.nimbusds.jwt.JWT;
-
 public interface IamOAuthRefreshTokenRepository
     extends JpaRepository<OAuth2RefreshTokenEntity, Long> {
 
-  @Query("select r from OAuth2RefreshTokenEntity r where r.jwt = :value")
-  Optional<OAuth2RefreshTokenEntity> findByTokenValue(@Param("value") JWT value);
+  @Query("select r from OAuth2RefreshTokenEntity r where r.value = :value")
+  Optional<OAuth2RefreshTokenEntity> findByTokenValue(@Param("value") String value);
 
   @Query("select r from OAuth2RefreshTokenEntity r where r.client.id = :clientId")
   List<OAuth2RefreshTokenEntity> findByClientId(@Param("clientId") Long id);

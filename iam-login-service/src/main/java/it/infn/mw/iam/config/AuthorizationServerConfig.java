@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.config;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +30,7 @@ import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -42,7 +42,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   UserDetailsService iamUserDetailsService;
 
   @Autowired
-  OAuth2TokenEntityService tokenServices;
+  AuthorizationServerTokenServices tokenServices;
 
   @Autowired
   @Qualifier("iamClientDetailsEntityService")

@@ -30,7 +30,6 @@ import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.service.AuthenticationHolderEntityService;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +41,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
@@ -68,34 +68,34 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   GarbageCollector gc;
 
   @Autowired
-  private ApprovedSiteService approvedSiteService;
+  ApprovedSiteService approvedSiteService;
 
   @Autowired
-  private IamApprovedSiteRepository siteRepository;
+  IamApprovedSiteRepository siteRepository;
 
   @Autowired
-  private IamAuthorizationCodeRepository codeRepository;
+  IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
-  private AuthenticationHolderEntityService authenticationHolderService;
+  AuthenticationHolderEntityService authenticationHolderService;
 
   @Autowired
-  private IamAuthenticationHolderRepository authenticationHolderRepository;
+  IamAuthenticationHolderRepository authenticationHolderRepository;
 
   @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepository;
+  IamOAuthAccessTokenRepository accessTokenRepository;
 
   @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepository;
+  IamOAuthRefreshTokenRepository refreshTokenRepository;
 
   @Autowired
-  private DeviceCodeService codeService;
+  DeviceCodeService codeService;
 
   @Autowired
-  private IamDeviceCodeRepository deviceCodeRepository;
+  IamDeviceCodeRepository deviceCodeRepository;
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  ClientService clientService;
 
   @Autowired
   SecurityContextUtils sc;
@@ -113,7 +113,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   private DeviceCode createDeviceCode(String clientId, Set<String> scopes)
       throws DeviceCodeCreationException {
     DeviceCode dc = codeService.createNewDeviceCode(scopes,
-        clientDetailsService.loadClientByClientId(clientId), Map.of());
+        clientService.findClientByClientId(clientId).orElseThrow(), Map.of());
     dc.setExpiration(clock.now());
     return dc;
   }
@@ -123,8 +123,9 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   }
 
   private OAuth2Authentication getOAuth2Authentication(Set<String> scopes) {
-    return oauth2Authentication(clientDetailsService.loadClientByClientId(PASSWORD_CLIENT_ID),
-        TEST_USERNAME, scopes.toArray(new String[0]));
+    return oauth2Authentication(
+        clientService.findClientByClientId(PASSWORD_CLIENT_ID).orElseThrow(), TEST_USERNAME,
+        scopes.toArray(new String[0]));
   }
 
   @BeforeEach

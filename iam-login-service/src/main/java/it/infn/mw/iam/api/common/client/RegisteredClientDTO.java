@@ -23,7 +23,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Null;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -67,8 +66,12 @@ import it.infn.mw.iam.api.common.ClientViews;
  *
  */
 public class RegisteredClientDTO {
+
+  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class})
+  private Long id;
+
   @Null(message = "must be null in client registration requests",
-      groups = OnDynamicClientRegistration.class)
+      groups = {OnDynamicClientRegistration.class})
   @ClientIdAvailable(groups = OnClientCreation.class)
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -127,7 +130,6 @@ public class RegisteredClientDTO {
   private Set<@Email(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class}) String> contacts;
 
-  @NotEmpty(message = "Invalid client: empty grant type")
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<AuthorizationGrantType> grantTypes;
@@ -228,7 +230,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private Date clientSecretExpiresAt;
+  private Long clientSecretExpiresAt = 0L;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -285,6 +287,14 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   private JWSAlgorithm requestObjectSigningAlgorithm;
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
 
   public String getClientId() {
     return clientId;
@@ -487,12 +497,8 @@ public class RegisteredClientDTO {
     this.registrationClientUri = registrationClientUri;
   }
 
-  public Date getClientSecretExpiresAt() {
+  public Long getClientSecretExpiresAt() {
     return clientSecretExpiresAt;
-  }
-
-  public void setClientSecretExpiresAt(Date clientSecretExpiresAt) {
-    this.clientSecretExpiresAt = clientSecretExpiresAt;
   }
 
   public Date getClientIdIssuedAt() {

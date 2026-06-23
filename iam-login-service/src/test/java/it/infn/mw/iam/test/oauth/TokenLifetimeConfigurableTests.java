@@ -46,7 +46,7 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
+import it.infn.mw.iam.core.as.IamAuthorizationServerTokenServices;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
@@ -68,7 +68,8 @@ public class TokenLifetimeConfigurableTests {
 
   private static final String SCOPE = "openid profile offline_access";
   private static final String CUSTOM_LIFETIME = "300";
-  private static final String INVALID_PARAMETER = IamTokenEnhancer.INVALID_PARAMETER;
+  private static final String INVALID_PARAMETER =
+      IamAuthorizationServerTokenServices.INVALID_PARAMETER;
 
   private static final long TOLERANCE = 5;
   private static final long DEFAULT_ACCESS_TOKEN_LIFETIME = 3600L;

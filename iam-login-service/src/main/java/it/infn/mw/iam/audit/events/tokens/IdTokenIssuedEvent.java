@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.tokens;
+package it.infn.mw.iam.audit.events.tokens;
 
-public class Constants {
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 
-  public static final String ACCESS_TOKENS_ENDPOINT = "/iam/api/access-tokens";
-  public static final String REFRESH_TOKENS_ENDPOINT = "/iam/api/refresh-tokens";
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.nimbusds.jwt.JWT;
 
-  private Constants() {
-    // utility class, it should not be instantiated
+@JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "subject",
+    "grantType", "header", "payload", "source"})
+public class IdTokenIssuedEvent extends SignedTokenEvent {
+
+  private static final long serialVersionUID = 1L;
+
+  public IdTokenIssuedEvent(Object source, JWT token,
+      AuthenticationHolderEntity authenticationHolder) {
+    super(source, token, authenticationHolder, "Issue id token");
   }
+
 }

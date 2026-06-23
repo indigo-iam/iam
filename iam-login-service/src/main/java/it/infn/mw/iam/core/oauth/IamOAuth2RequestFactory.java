@@ -57,8 +57,6 @@ import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -95,6 +93,8 @@ import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
@@ -110,20 +110,20 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   private final ClientDetailsService clientDetailsService;
   private final DeviceCodeService deviceCodeService;
   private final AuthorizationCodeRepository authzCodeRepository;
-  private final OAuth2TokenEntityService tokenServices;
+  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final AudienceRequestValidator audienceRequestValidator;
   private final AuthorizationRequestBuilder authorizationRequestBuilder;
 
   public IamOAuth2RequestFactory(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
       JWTProfileResolver profileResolver, DeviceCodeService deviceCodeService,
-      AuthorizationCodeRepository authzCodeRepository, OAuth2TokenEntityService tokenServices,
+      AuthorizationCodeRepository authzCodeRepository, IamOAuthRefreshTokenRepository refreshTokenRepo,
       ClientKeyCacheService validators) {
     super(clientDetailsService);
     this.profileResolver = profileResolver;
     this.clientDetailsService = clientDetailsService;
     this.deviceCodeService = deviceCodeService;
     this.authzCodeRepository = authzCodeRepository;
-    this.tokenServices = tokenServices;
+    this.refreshTokenRepo = refreshTokenRepo;
     this.audienceRequestValidator = new AudienceRequestValidator();
 
     RequestObjectProcessor requestObjectProcessor =
@@ -238,23 +238,21 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     switch (grantType) {
       case AUTHZ_CODE_GRANT:
-        return Optional
-          .ofNullable(authzCodeRepository
-            .getByCode(tokenRequestParameters.get(IamOAuthRequestParameters.AUTHZ_CODE_KEY)))
+        String authzCode = tokenRequestParameters.get(IamOAuthRequestParameters.AUTHZ_CODE_KEY);
+        return Optional.ofNullable(authzCodeRepository.getByCode(authzCode))
           .map(AuthorizationCodeEntity::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 
       case DEVICE_CODE_GRANT:
-        return Optional
-          .ofNullable(deviceCodeService.findDeviceCode(
-              tokenRequestParameters.get(IamOAuthRequestParameters.DEVICE_CODE_KEY), client))
+        String deviceCode = tokenRequestParameters.get(IamOAuthRequestParameters.DEVICE_CODE_KEY);
+        return Optional.ofNullable(deviceCodeService.findDeviceCode(deviceCode, client))
           .map(DeviceCode::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 
       case REFRESH_TOKEN_GRANT:
-        return Optional
-          .ofNullable(tokenServices.getRefreshToken(
-              tokenRequestParameters.get(IamOAuthRequestParameters.REFRESH_TOKEN_KEY)))
+        String refreshToken =
+            tokenRequestParameters.get(IamOAuthRequestParameters.REFRESH_TOKEN_KEY);
+        return refreshTokenRepo.findByTokenValue(refreshToken)
           .map(token -> token.getAuthenticationHolder())
           .map(holder -> holder.getRequestParameters());
 

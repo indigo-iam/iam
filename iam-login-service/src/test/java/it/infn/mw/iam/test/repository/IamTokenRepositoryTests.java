@@ -31,7 +31,6 @@ import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,7 +38,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -72,12 +70,6 @@ class IamTokenRepositoryTests extends TokenGetterUtils {
 
   @Autowired
   AuthenticationHolderRepository authenticationHolderRepo;
-
-  @Autowired
-  ClientDetailsEntityService clientDetailsService;
-
-  @Autowired
-  IamTokenService tokenService;
 
   @Autowired
   SecurityContextUtils context;

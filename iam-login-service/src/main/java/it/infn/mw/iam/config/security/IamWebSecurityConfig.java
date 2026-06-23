@@ -43,7 +43,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -80,6 +79,7 @@ import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
+import it.infn.mw.iam.core.web.loginpage.IamLogoutSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -88,11 +88,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @Configuration
 @EnableWebSecurity
 public class IamWebSecurityConfig {
-
-  @Bean
-  SecurityEvaluationContextExtension contextExtension() {
-    return new SecurityEvaluationContextExtension();
-  }
 
   @Configuration
   @Order(100)
@@ -146,6 +141,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
+
+    @Autowired
+    private IamLogoutSuccessHandler iamLogoutSuccessHandler;
 
     @Autowired
     private Clock clock;
@@ -216,6 +214,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(iamLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()

@@ -21,15 +21,14 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.StatsService;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +37,8 @@ import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @Component
 public class IamUserApprovalUtils {
@@ -45,15 +46,15 @@ public class IamUserApprovalUtils {
   private final Clock clock;
   private final SystemScopeService scopeService;
   private final StatsService statsService;
-  private final UserInfoService userInfoService;
+  private final IamAccountService accountService;
   private final JWTProfileResolver profileResolver;
 
   public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService, StatsService statsService,
-      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
+      IamAccountService accountService, JWTProfileResolver profileResolver) {
     this.clock = clock;
     this.scopeService = scopeService;
     this.statsService = statsService;
-    this.userInfoService = userInfoService;
+    this.accountService = accountService;
     this.profileResolver = profileResolver;
   }
 
@@ -76,14 +77,14 @@ public class IamUserApprovalUtils {
   public Map<String, Map<String, String>> claimsForScopes(Authentication authUser,
       Set<SystemScope> scopes) {
 
-    UserInfo user = userInfoService.getByUsername(authUser.getName());
+    Optional<IamAccount> account = accountService.findByUsername(authUser.getName());
     ScopeClaimTranslationService scopeClaimTranslationService =
         profileResolver.resolveProfile(scopeService.toStrings(scopes))
           .getScopeClaimTranslationService();
 
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
-    if (user != null) {
-      JsonObject userJson = user.toJson();
+    if (account.isPresent()) {
+      JsonObject userJson = account.get().toJson();
 
       for (SystemScope systemScope : scopes) {
         Map<String, String> claimValues = new HashMap<>();

@@ -19,18 +19,18 @@ import static java.util.Objects.isNull;
 
 import java.util.Set;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.stereotype.Component;
 
 @Component
 @SuppressWarnings("deprecation")
 public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2AuthenticationScopeResolver {
 
-  private final OAuth2TokenEntityService tokenService;
+  private final ResourceServerTokenServices tokenService;
 
-  public DefaultOAuth2AuthenticationScopeResolver(OAuth2TokenEntityService tokenService) {
+  public DefaultOAuth2AuthenticationScopeResolver(ResourceServerTokenServices tokenService) {
     this.tokenService = tokenService;
   }
 

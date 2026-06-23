@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.client.service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -139,18 +140,19 @@ public class DefaultClientService implements ClientService {
     return clientRepo.findAll(page);
   }
 
+  @Override
+  public List<ClientDetailsEntity> findAll() {
+    return clientRepo.findAll();
+  }
 
   @Override
   public Page<ClientDetailsEntity> findAllDynamicallyRegistered(Pageable page) {
     return clientRepo.findAll(ClientSpecs.isDynamicallyRegistered(), page);
   }
 
-
   @Override
   public Page<IamAccountClient> findClientOwners(String clientId, Pageable page) {
-
     return accountClientRepo.findByClientClientId(clientId, page);
-
   }
 
   @Override

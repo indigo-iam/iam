@@ -16,51 +16,37 @@
 package it.infn.mw.iam.api.tokens.service;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
-import it.infn.mw.iam.api.tokens.converter.TokensConverter;
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @Service
 public class DefaultAccessTokenService extends AbstractTokenService<AccessToken> {
 
-  private TokensConverter tokensConverter;
-  private IamOAuthAccessTokenRepository tokenRepository;
+  private final IamOAuthAccessTokenRepository tokenRepository;
 
-  public DefaultAccessTokenService(Clock clock, IamProperties properties, TokenRevocationService revokeService,
-      IamOAuthAccessTokenRepository tokenRepository,
-      TokensConverter tokensConverter) {
+  public DefaultAccessTokenService(Clock clock, TokenRevocationService revokeService,
+      IamAccountService accountService, ScimResourceLocationProvider resourceLocationProvider,
+      IamOAuthAccessTokenRepository tokenRepository) {
 
-    super(clock, properties, revokeService);
+    super(clock, revokeService, accountService, resourceLocationProvider);
     this.tokenRepository = tokenRepository;
-    this.tokensConverter = tokensConverter;
   }
 
-  @Override
-  public void revokeTokenById(Long id) {
+  private Page<AccessToken> getAllValidTokens(OffsetPageable op) {
 
-    if (properties.getAccessToken().isStoreOnDatabase()) {
-      tokenRepository.findById(id).ifPresent(revokeService::revokeAccessToken);
-    } else {
-      throw new IllegalStateException("Access Tokens are not stored on database and cannot be retrieved via this API");
-    }
-  }
-
-  private Page<OAuth2AccessTokenEntity> getAllValidTokens(OffsetPageable op) {
-
-    return tokenRepository.findAllValidAccessTokens(now(), op);
+    return tokenRepository.findAllValidAccessTokens(now(), op).map(this::toAccessToken);
   }
 
   private long countAllValidTokens() {
@@ -68,9 +54,9 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokens(now());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForUser(String userId, OffsetPageable op) {
+  private Page<AccessToken> getAllValidTokensForUser(String userId, OffsetPageable op) {
 
-    return tokenRepository.findValidAccessTokensForUser(userId, now(), op);
+    return tokenRepository.findValidAccessTokensForUser(userId, now(), op).map(this::toAccessToken);
   }
 
   private long countAllValidTokensForUser(String userId) {
@@ -78,10 +64,10 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokensForUser(userId, now());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForClient(String clientId,
-      OffsetPageable op) {
+  private Page<AccessToken> getAllValidTokensForClient(String clientId, OffsetPageable op) {
 
-    return tokenRepository.findValidAccessTokensForClient(clientId, now(), op);
+    return tokenRepository.findValidAccessTokensForClient(clientId, now(), op)
+      .map(this::toAccessToken);
   }
 
   private long countAllValidTokensForClient(String clientId) {
@@ -89,91 +75,96 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokensForClient(clientId, now());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForUserAndClient(String userId,
-      String clientId, OffsetPageable op) {
-
-    return tokenRepository.findValidAccessTokensForUserAndClient(userId, clientId, now(), op);
-  }
-
-  private long countAllValidTokensForUserAndClient(String userId, String clientId) {
-
-    return tokenRepository.countValidAccessTokensForUserAndClient(userId, clientId, now());
-  }
-
-  private ListResponseDTO<AccessToken> buildCountResponse(long countResponse) {
-
-    return new ListResponseDTO.Builder<AccessToken>().totalResults(countResponse)
-      .resources(Collections.emptyList())
-      .startIndex(1)
-      .itemsPerPage(0)
-      .build();
-  }
-
-  private ListResponseDTO<AccessToken> buildListResponse(Page<OAuth2AccessTokenEntity> entities,
+  private Page<AccessToken> getAllValidTokensForUserAndClient(String username, String clientId,
       OffsetPageable op) {
 
-    List<AccessToken> resources = new ArrayList<>();
-    entities.getContent().forEach(a -> resources.add(tokensConverter.toAccessToken(a)));
-    return buildListResponse(resources, op, entities.getTotalElements());
+    return tokenRepository.findValidAccessTokensForUserAndClient(username, clientId, now(), op)
+      .map(this::toAccessToken);
+  }
+
+  private long countAllValidTokensForUserAndClient(String username, String clientId) {
+
+    return tokenRepository.countValidAccessTokensForUserAndClient(username, clientId, now());
   }
 
   @Override
   public ListResponseDTO<AccessToken> getAllTokens(TokensPageRequest pageRequest) {
 
+    long count = countAllValidTokens();
+
     if (isCountRequest(pageRequest)) {
 
-      long count = countAllValidTokens();
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokens(op);
-    return buildListResponse(entities, op);
+    Page<AccessToken> entities = getAllValidTokens(op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
   @Override
-  public ListResponseDTO<AccessToken> getTokensForUser(String userId,
+  public ListResponseDTO<AccessToken> getTokensForUser(String username,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForUser(username);
 
-      long count = countAllValidTokensForUser(userId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokensForUser(userId, op);
-    return buildListResponse(entities, op);
+    Page<AccessToken> entities = getAllValidTokensForUser(username, op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
   @Override
   public ListResponseDTO<AccessToken> getTokensForClient(String clientId,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForClient(clientId);
 
-      long count = countAllValidTokensForClient(clientId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokensForClient(clientId, op);
-    return buildListResponse(entities, op);
+    Page<AccessToken> entities = getAllValidTokensForClient(clientId, op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
   @Override
-  public ListResponseDTO<AccessToken> getTokensForClientAndUser(String userId, String clientId,
+  public ListResponseDTO<AccessToken> getTokensForClientAndUser(String username, String clientId,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForUserAndClient(username, clientId);
 
-      long count = countAllValidTokensForUserAndClient(userId, clientId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities =
-        getAllValidTokensForUserAndClient(userId, clientId, op);
-    return buildListResponse(entities, op);
+    Page<AccessToken> entities = getAllValidTokensForUserAndClient(username, clientId, op);
+    return buildListResponse(entities.getContent(), op, count);
+  }
+
+  @Override
+  public void revoke(Long id) {
+
+    tokenRepository.findById(id).ifPresent(this.revocationService::revokeAccessToken);
+  }
+
+  @Override
+  public Optional<AccessToken> getToken(Long id) {
+
+    return tokenRepository.findById(id).map(this::toAccessToken);
+  }
+
+  @Override
+  public List<AccessToken> getAllTokensForUser(String username) {
+
+    return tokenRepository.findAccessTokensForUser(username)
+      .stream()
+      .map(this::toAccessToken)
+      .toList();
   }
 }
