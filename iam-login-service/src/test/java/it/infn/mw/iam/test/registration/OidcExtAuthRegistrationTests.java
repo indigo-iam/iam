@@ -31,6 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.mitre.openid.connect.model.DefaultUserInfo;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -47,6 +49,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
@@ -58,8 +61,20 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
 @IamMockMvcIntegrationTest
+//@formatter:on
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-  FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
+    FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {
+        "mfa.password-to-encrypt-and-decrypt=secret",
+        "oidc.providers[0].name=provider",
+        "oidc.providers[0].issuer=urn:test-oidc-issuer",
+        "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost/openid_connect_login",
+        "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
+        })
+//@formatter:on
 class OidcExtAuthRegistrationTests {
 
   @Autowired
@@ -73,6 +88,9 @@ class OidcExtAuthRegistrationTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
+
+  @Autowired
+  private UserInfoFetcher userInfoFetcher;
 
   @Autowired
   private MockMvc mvc;
@@ -126,6 +144,11 @@ class OidcExtAuthRegistrationTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
+    DefaultUserInfo userInfo = new DefaultUserInfo();
+    userInfo.setSub(TEST_100_USER);
+
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
     session = (MockHttpSession) mvc
@@ -146,7 +169,8 @@ class OidcExtAuthRegistrationTests {
         startsWith("Your registration request to indigo-dc was submitted successfully"));
 
     // the same happens after having confirmed the request
-    mvc.perform(post("/registration/verify").content("token=" + token)
+    mvc
+      .perform(post("/registration/verify").content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));

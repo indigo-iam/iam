@@ -17,24 +17,13 @@ package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.apache.http.client.HttpClient;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
-import org.mitre.openid.connect.client.UserInfoFetcher;
-import org.mitre.openid.connect.client.service.AuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.AuthRequestUrlBuilder;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
+import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.client.service.impl.DynamicServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
-import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -42,30 +31,36 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.AdminAuthoritiesMapper;
+import it.infn.mw.iam.authn.oidc.AuthorizationRequestOptionService;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
+import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -83,34 +78,31 @@ public class OidcConfiguration {
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
   @Bean
-  FilterRegistrationBean<OidcClientFilter> disabledAutomaticOidcFilterRegistration(
-      OidcClientFilter f) {
+  FilterRegistrationBean<OIDCAuthenticationFilter> disabledAutomaticOidcFilterRegistration(
+      OIDCAuthenticationFilter f) {
 
-    FilterRegistrationBean<OidcClientFilter> b = new FilterRegistrationBean<>(f);
+    FilterRegistrationBean<OIDCAuthenticationFilter> b = new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OidcClientFilter openIdConnectAuthenticationFilterCanl(Clock clock, OidcTokenRequestor tokenRequestor,
+  OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(
+      JWKSetCacheService validationServices,
+      SymmetricKeyJWTValidatorCacheService symmetricCacheService, IssuerService issuerService,
+      OIDCProviderMetadataService servers, OidcProviderProperties clients,
+      AuthorizationRequestOptionService authOptions, PlainAuthRequestUrlBuilder authRequestBuilder,
+      Clock clock, OidcTokenRequestor tokenRequestor, Environment env, ObjectMapper objectMapper,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
-      @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
-      IssuerService issuerService, ServerConfigurationService serverConfigurationService,
-      ClientConfigurationService clientConfigurationService,
-      AuthRequestUrlBuilder authRequestUrlBuilder,
-      AuthRequestOptionsService authRequestOptionsService, JWKSetCacheService validationServices) {
+      @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
 
-    OidcClientFilter filter = new OidcClientFilter(clock, tokenRequestor, 300);
+    OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(validationServices,
+        symmetricCacheService, issuerService, servers, clients, authOptions, authRequestBuilder,
+        clock, tokenRequestor, env, objectMapper, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
-    filter.setIssuerService(issuerService);
-    filter.setServerConfigurationService(serverConfigurationService);
-    filter.setClientConfigurationService(clientConfigurationService);
-    filter.setAuthRequestOptionsService(authRequestOptionsService);
-    filter.setAuthRequestUrlBuilder(authRequestUrlBuilder);
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
-    filter.setValidationServices(validationServices);
 
     return filter;
   }
@@ -149,21 +141,18 @@ public class OidcConfiguration {
   }
 
   @Bean
-  OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
-      SessionTimeoutHelper timeoutHelper,
+  OIDCAuthenticationProvider openIdConnectAuthenticationProvider(
+      AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
+      SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
-      IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
+      OidcAccountProvisioningService oidcProvisioningService,
+      IamTotpMfaProperties iamTotpMfaProperties, AdminAuthoritiesMapper authoritiesMapper,
+      UserInfoFetcher userInfoFetcher) {
 
-    OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
-            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService, iamTotpMfaProperties);
-
-    provider.setUserInfoFetcher(userInfoFetcher);
-
-    return provider;
+    return new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper, accountRepo,
+        inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService,
+        iamTotpMfaProperties, authoritiesMapper, userInfoFetcher);
   }
 
   @Bean
@@ -191,42 +180,55 @@ public class OidcConfiguration {
     return !Strings.isNullOrEmpty(provider.getClient().getClientId());
   }
 
+  // @Bean
+  // ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
+  //
+  // Map<String, RegisteredClient> clients = new LinkedHashMap<>();
+  //
+  // providers.getValidatedProviders().forEach(provider -> {
+  // RegisteredClient rc = new RegisteredClient();
+  // rc.setClientId(provider.getClient().getClientId());
+  // rc.setClientSecret(provider.getClient().getClientSecret());
+  // rc.setRedirectUris(
+  // Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getRedirectUris())));
+  // rc.setScope(Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getScope().split(","))));
+  // clients.put(provider.getIssuer(), rc);
+  // });
+  //
+  // if (clients.isEmpty()) {
+  // return new NullClientConfigurationService();
+  // }
+  //
+  //
+  // StaticClientConfigurationService config = new StaticClientConfigurationService();
+  // config.setClients(clients);
+  //
+  // return config;
+  // }
+
   @Bean
-  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
-
-    Map<String, RegisteredClient> clients = new LinkedHashMap<>();
-
-    providers.getValidatedProviders().forEach(provider -> {
-      RegisteredClient rc = new RegisteredClient();
-      rc.setClientId(provider.getClient().getClientId());
-      rc.setClientSecret(provider.getClient().getClientSecret());
-      rc.setRedirectUris(
-          Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getRedirectUris())));
-      rc.setScope(Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getScope().split(","))));
-      clients.put(provider.getIssuer(), rc);
-    });
-
-    if (clients.isEmpty()) {
-      return new NullClientConfigurationService();
-    }
-
-
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
+  AuthorizationRequestOptionService authOptions() {
+    return new AuthorizationRequestOptionService();
   }
 
   @Bean
-  AuthRequestOptionsService authOptions() {
-
-    return new StaticAuthRequestOptionsService();
-  }
-
-  @Bean
-  AuthRequestUrlBuilder authRequestBuilder() {
-
+  PlainAuthRequestUrlBuilder authRequestBuilder() {
     return new PlainAuthRequestUrlBuilder();
+  }
+
+  @Bean
+  RestTemplate oidcDiscoveryRestTemplate() {
+    return new RestTemplate();
+  }
+
+  @Bean
+  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
+    return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
+  }
+
+  @Bean
+  AdminAuthoritiesMapper authoritiesMapper() {
+    return new AdminAuthoritiesMapper();
   }
 
   @Bean
@@ -234,8 +236,4 @@ public class OidcConfiguration {
     return new UserInfoFetcher();
   }
 
-  @Bean
-  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
-    return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
-  }
 }

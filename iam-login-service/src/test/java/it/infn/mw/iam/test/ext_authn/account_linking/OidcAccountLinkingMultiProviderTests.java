@@ -40,6 +40,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mitre.openid.connect.model.DefaultUserInfo;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -50,6 +52,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.ext_authn.oidc.FullyMockedOidcClientConfiguration;
@@ -58,8 +61,28 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, OidcMultiProviderTestConfig.class,
-  FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
+// @formatter:off
+@SpringBootTest(
+    classes = {IamLoginService.class, OidcMultiProviderTestConfig.class,
+        FullyMockedOidcClientConfiguration.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {
+        "oidc.providers[0].name=provider1",
+        "oidc.providers[0].issuer=http://oidc-01.test",
+        "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost/openid_connect_login",
+        "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC",
+        "oidc.providers[1].name=provider2",
+        "oidc.providers[1].issuer=http://oidc-02.test",
+        "oidc.providers[1].client.clientId=iam",
+        "oidc.providers[1].client.clientSecret=secret",
+        "oidc.providers[1].client.scope=openid profile email",
+        "oidc.providers[1].client.redirectUris=http://localhost/openid_connect_login",
+        "oidc.providers[1].client.tokenEndpointAuthMethod=SECRET_BASIC"
+        })
+//@formatter:on
 class OidcAccountLinkingMultiProviderTests {
 
   @Autowired
@@ -67,6 +90,9 @@ class OidcAccountLinkingMultiProviderTests {
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  UserInfoFetcher userInfoFetcher;
 
   @Autowired
   private MockMvc mvc;
@@ -131,6 +157,11 @@ class OidcAccountLinkingMultiProviderTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
+    DefaultUserInfo userInfo = new DefaultUserInfo();
+    userInfo.setSub(TEST_100_USER);
+
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
         nonce, Map.of());
 
@@ -187,6 +218,11 @@ class OidcAccountLinkingMultiProviderTests {
 
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
+
+    DefaultUserInfo userInfo = new DefaultUserInfo();
+    userInfo.setSub(TEST_100_USER);
+
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
         nonce, Map.of());

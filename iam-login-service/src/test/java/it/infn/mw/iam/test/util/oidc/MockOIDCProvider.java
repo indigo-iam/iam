@@ -29,7 +29,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.authn.oidc.OidcClientError;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
+import it.infn.mw.iam.authn.oidc.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;

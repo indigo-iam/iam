@@ -24,10 +24,15 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationServiceException;
 
 import com.google.common.collect.Maps;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.JWTParser;
 
 public class JwtUtils {
   public static final Logger LOG = LoggerFactory.getLogger(JwtUtils.class);
@@ -37,7 +42,7 @@ public class JwtUtils {
   }
 
   public static Map<String, String> getClaimsAsMap(JWT jwt) {
-    
+
     Map<String, String> claimsMap = Maps.newHashMap();
 
     JWTClaimsSet claims;
@@ -66,6 +71,36 @@ public class JwtUtils {
       }
     }
     return claimsMap;
+  }
+
+  public static JWTClaimsSet parseClaims(JWT idToken) {
+
+    try {
+      return idToken.getJWTClaimsSet();
+    } catch (ParseException e) {
+      throw new AuthenticationServiceException("Error parsing JWT claims: " + e.getMessage());
+    }
+
+  }
+
+  public static JWT parseToken(String tokenValue) {
+
+    try {
+      return JWTParser.parse(tokenValue);
+
+    } catch (ParseException e) {
+      throw new AuthenticationServiceException("Token parse error");
+    }
+  }
+
+  public static JsonObject jsonStringSanityChecks(String jsonString) {
+
+    JsonElement jsonRoot = JsonParser.parseString(jsonString);
+    if (!jsonRoot.isJsonObject()) {
+      throw new AuthenticationServiceException("Not a JSON object: " + jsonRoot);
+    }
+
+    return jsonRoot.getAsJsonObject();
   }
 
 }

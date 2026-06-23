@@ -36,9 +36,21 @@ import org.springframework.web.util.UriComponentsBuilder;
 import it.infn.mw.iam.IamLoginService;
 
 @Transactional
+//@formatter:off
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
-  webEnvironment = WebEnvironment.RANDOM_PORT,
-  properties = "mfa.password-to-encrypt-and-decrypt=secret")
+  webEnvironment = WebEnvironment.DEFINED_PORT,
+  properties = {
+      "mfa.password-to-encrypt-and-decrypt=secret",
+      "server.port=8989",
+      "oidc.providers[0].name=provider",
+      "oidc.providers[0].issuer=urn:test-oidc-issuer",
+      "oidc.providers[0].client.clientId=iam",
+      "oidc.providers[0].client.clientSecret=secret",
+      "oidc.providers[0].client.scope=openid profile email",
+      "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
+      "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
+      })
+//@formatter:on
 @ActiveProfiles({"h2-test", "mfa"})
 class OidcExternalAuthenticationWithMfaProfileTests
   extends OidcExternalAuthenticationTestsSupport {

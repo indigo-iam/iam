@@ -125,8 +125,7 @@ public class IamTestClientConfiguration {
     cde.setCodeChallengeMethod(iamClientConfig.getClient().getCodeChallengeMethod());
 
     if (Strings.isNotBlank(iamClientConfig.getClient().getScope())) {
-      cde.setScope(
-          Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
+      cde.setScope(Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
     }
 
     clients.put(iamClientConfig.getIssuer(), new RegisteredClient(cde));
