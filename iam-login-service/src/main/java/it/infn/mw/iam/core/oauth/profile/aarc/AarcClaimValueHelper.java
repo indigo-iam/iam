@@ -78,11 +78,23 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         encodedGroupName);
   }
 
+  private String resolveScopeDomain() {
+    if (properties.getAarcProfile() != null) {
+      String configuredScopeDomain = properties.getAarcProfile().getAffiliationScope();
+      if (configuredScopeDomain != null && !configuredScopeDomain.isBlank()) {
+        return configuredScopeDomain;
+      }
+    }
+  
+    return properties.getIssuer();
+  }
+
   @Override
   public Object resolveClaim(String claimName, OAuth2Authentication auth,
       Optional<IamAccount> account) {
 
     final String SCOPED_FORMAT = "%s@%s";
+    String scopeDomain = resolveScopeDomain();
 
     Optional<SavedUserAuthentication> userAuth =
         (auth != null && auth.getUserAuthentication() != null)
@@ -107,17 +119,15 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
           return resolveGroups(account.get().getUserInfo());
         case AarcExtraClaimNames.VOPERSON_ID:
-          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(),
-              properties.getOrganisation().getName());
+          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(), scopeDomain);
         case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
-          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
-              properties.getOrganisation().getName());
+          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE, scopeDomain);
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
             if (account.get().getAffiliation() != null) {
               scopedAffiliations.add(format(SCOPED_FORMAT, account.get().getAffiliation(),
-                  properties.getOrganisation().getName()));
+                  scopeDomain));
             }
             String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
                 Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));

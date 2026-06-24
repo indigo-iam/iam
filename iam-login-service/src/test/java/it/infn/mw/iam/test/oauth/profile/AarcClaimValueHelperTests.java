@@ -152,6 +152,48 @@ class AarcClaimValueHelperTests {
   }
 
   @Test
+  void testResolveScopedClaimsUseConfiguredScopeDomainWhenPresent() {
+    properties.setIssuer("https://issuer.example");
+    properties.getAarcProfile().setAffiliationScope("https://scope.example");
+
+    IamAccount account = mock(IamAccount.class);
+    IamUserInfo accountUserInfo = mock(IamUserInfo.class);
+
+    when(account.getUserInfo()).thenReturn(accountUserInfo);
+    when(accountUserInfo.getSub()).thenReturn("test-subject");
+
+    String vopersonId = (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null,
+        Optional.of(account));
+    String scopedAffiliation = (String) helper.resolveClaim(
+        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
+
+    assertThat(vopersonId, org.hamcrest.Matchers.equalTo("test-subject@https://scope.example"));
+    assertThat(scopedAffiliation,
+        org.hamcrest.Matchers.equalTo("member@https://scope.example"));
+  }
+
+  @Test
+  void testResolveScopedClaimsUseIssuerWhenScopeDomainMissing() {
+    properties.setIssuer("https://issuer.example");
+    properties.getAarcProfile().setAffiliationScope(null);
+
+    IamAccount account = mock(IamAccount.class);
+    IamUserInfo accountUserInfo = mock(IamUserInfo.class);
+
+    when(account.getUserInfo()).thenReturn(accountUserInfo);
+    when(accountUserInfo.getSub()).thenReturn("test-subject");
+
+    String vopersonId = (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null,
+        Optional.of(account));
+    String scopedAffiliation = (String) helper.resolveClaim(
+        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
+
+    assertThat(vopersonId, org.hamcrest.Matchers.equalTo("test-subject@https://issuer.example"));
+    assertThat(scopedAffiliation,
+        org.hamcrest.Matchers.equalTo("member@https://issuer.example"));
+  }
+
+  @Test
   void testResolveScopedAffiliations() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
