@@ -102,7 +102,7 @@ public class ExplicitRegistrationEntityStatementBuilder {
       .expirationTime(Date.from(Instant.now().plusSeconds(expirationSec)))
       .claim("jwks", jwks)
       .claim("authority_hints", authorityHints)
-      .claim("metadata", Map.of("openid_relying_party", metadata))
+      .claim("metadata", metadata)
       .build();
 
     JWSHeader header = new JWSHeader.Builder(alg).keyID(signingKey.getKeyID())
