@@ -167,8 +167,8 @@ class AarcClaimValueHelperTests {
     String scopedAffiliation = (String) helper.resolveClaim(
         AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
-    assertEquals(vopersonId, "test-subject@https://scope.example");
-    assertEquals(scopedAffiliation, "member@https://scope.example");
+    assertEquals("test-subject@https://scope.example", vopersonId);
+    assertEquals("member@https://scope.example", scopedAffiliation);
   }
 
   @Test
@@ -187,8 +187,8 @@ class AarcClaimValueHelperTests {
     String scopedAffiliation = (String) helper.resolveClaim(
         AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
-    assertEquals(vopersonId, "test-subject@https://issuer.example");
-    assertEquals(scopedAffiliation, "member@https://issuer.example");
+    assertEquals("test-subject@https://issuer.example", vopersonId);
+    assertEquals("member@https://issuer.example", scopedAffiliation);
   }
 
   @Test
