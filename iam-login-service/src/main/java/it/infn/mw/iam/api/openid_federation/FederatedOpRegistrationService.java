@@ -129,6 +129,7 @@ public class FederatedOpRegistrationService {
 
     // 5. POST explicit registration request
     String responseJwt = postRegistration(regEndpoint, registrationJwt);
+    LOG.debug("Explicit registration response: {}", responseJwt);
 
     EntityStatement es = null;
     try {
