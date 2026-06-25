@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -168,8 +167,8 @@ class AarcClaimValueHelperTests {
     String scopedAffiliation = (String) helper.resolveClaim(
         AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
-    assertThat(vopersonId, equalTo("test-subject@https://scope.example"));
-    assertThat(scopedAffiliation, equalTo("member@https://scope.example"));
+    assertEquals(vopersonId, "test-subject@https://scope.example");
+    assertEquals(scopedAffiliation, "member@https://scope.example");
   }
 
   @Test
@@ -188,8 +187,8 @@ class AarcClaimValueHelperTests {
     String scopedAffiliation = (String) helper.resolveClaim(
         AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
-    assertThat(vopersonId, equalTo("test-subject@https://issuer.example"));
-    assertThat(scopedAffiliation, equalTo("member@https://issuer.example"));
+    assertEquals(vopersonId, "test-subject@https://issuer.example");
+    assertEquals(scopedAffiliation, "member@https://issuer.example");
   }
 
   @Test
