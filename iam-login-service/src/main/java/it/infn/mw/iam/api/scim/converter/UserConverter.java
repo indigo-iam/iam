@@ -18,18 +18,26 @@ package it.infn.mw.iam.api.scim.converter;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
+import it.infn.mw.iam.api.scim.model.ScimAarcName;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
+import it.infn.mw.iam.api.scim.model.ScimAffiliation;
+import it.infn.mw.iam.api.scim.model.ScimAssurance;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
+import it.infn.mw.iam.api.scim.model.ScimEntitlement;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.config.scim.ScimProperties.AttributeDescriptor;
 import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
@@ -46,6 +54,12 @@ import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 @Service
 public class UserConverter implements Converter<ScimUser, IamAccount> {
 
+  public static final String REFEDS_ASSURANCE_URI = "https://refeds.org/assurance";
+  public static final String REFEDS_ASSURANCE_IAP_LOW_URI = "https://refeds.org/assurance/IAP/low";
+
+  public static final Set<String> DEFAULT_LOA =
+      Set.of(REFEDS_ASSURANCE_URI, REFEDS_ASSURANCE_IAP_LOW_URI);
+
   private final ScimResourceLocationProvider resourceLocationProvider;
 
   private final AddressConverter addressConverter;
@@ -57,20 +71,23 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
   private final AccountGroupManagerService groupManagerService;
 
-  private final ScimProperties properties;
+  private final ScimProperties scimProperties;
+  private final IamProperties iamProperties;
 
-  public UserConverter(ScimProperties properties, ScimResourceLocationProvider rlp,
+  public UserConverter(ScimProperties scimProperties, ScimResourceLocationProvider rlp,
       AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
-      X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService) {
+      X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService,
+      IamProperties iamProperties) {
 
     this.resourceLocationProvider = rlp;
-    this.properties = properties;
+    this.scimProperties = scimProperties;
     this.addressConverter = ac;
     this.oidcIdConverter = oidc;
     this.sshKeyConverter = sshc;
     this.samlIdConverter = samlc;
     this.x509CertificateIamConverter = x509Iamcc;
     this.groupManagerService = groupManagerService;
+    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -239,7 +256,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       builder.affiliation(entity.getAffiliation());
     }
 
-    for (LabelDescriptor ld : properties.getIncludeLabels()) {
+    for (LabelDescriptor ld : scimProperties.getIncludeLabels()) {
       entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
         .ifPresent(el -> builder.addLabel(ScimLabel.builder()
           .withPrefix(el.getPrefix())
@@ -248,7 +265,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    for (AttributeDescriptor ad : properties.getIncludeAttributes()) {
+    for (AttributeDescriptor ad : scimProperties.getIncludeAttributes()) {
       entity.getAttributeByName(ad.getName())
         .ifPresent(attribute -> builder.addAttribute(ScimAttribute.builder()
           .withName(attribute.getName())
@@ -256,7 +273,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (properties.isIncludeManagedGroups()) {
+    if (scimProperties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)
         .getManagedGroups()
         .forEach(mg -> builder.addManagedGroup(ScimGroupRef.builder()
@@ -266,8 +283,31 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (properties.isIncludeAuthorities()) {
+    if (scimProperties.isIncludeAuthorities()) {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
+    }
+
+    builder.enableAarc(scimProperties.isEnableAarc());
+
+    if (scimProperties.isEnableAarc()) {
+      builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
+      builder.organizationName(iamProperties.getOrganisation().getName());
+      builder.aarcDisplayName(entity.getUserInfo().getName());
+      builder.aarcName(new ScimAarcName(getScimName(entity)));
+      builder.addAarcEmail(entity.getUserInfo().getEmail());
+
+      if (entity.hasAffiliation()) {
+        builder.addVoPersonExternalAffiliation(new ScimAffiliation(
+            entity.getAffiliation() + "@" + iamProperties.getOrganisation().getName()));
+      } else {
+        builder.addVoPersonExternalAffiliation(
+            new ScimAffiliation("member" + "@" + iamProperties.getOrganisation().getName()));
+      }
+
+      DEFAULT_LOA.forEach(a -> builder.addAssurance(new ScimAssurance(a)));
+
+      resolveGroups(entity.getUserInfo())
+        .forEach(e -> builder.addEntitlements(new ScimEntitlement(e)));
     }
 
     return builder.build();
@@ -318,5 +358,30 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     return ScimPhoto.builder().value(entity.getUserInfo().getPicture()).build();
+  }
+
+  public Set<String> resolveGroups(IamUserInfo userInfo) {
+
+    Set<String> encodedGroups = new HashSet<>();
+    userInfo.getGroups().forEach(g -> encodedGroups.add(encodeGroup(g)));
+    return encodedGroups;
+  }
+
+  private String encodeGroup(IamGroup group) {
+
+    var aarcConfig = iamProperties.getAarcProfile();
+
+    String urnNid = aarcConfig.getUrnNid();
+    String urnDelegatedNamespace = aarcConfig.getUrnDelegatedNamespace();
+    String encodedGroupName = group.getName().replace("/", ":");
+
+    String encodedSubnamespace = "";
+    String urnSubnamespaces = aarcConfig.getUrnSubnamespaces();
+    if (urnSubnamespaces != null && !urnSubnamespaces.isBlank()) {
+      encodedSubnamespace = ":" + String.join(":", urnSubnamespaces.trim().split("\\s+"));
+    }
+
+    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace,
+        encodedGroupName);
   }
 }
