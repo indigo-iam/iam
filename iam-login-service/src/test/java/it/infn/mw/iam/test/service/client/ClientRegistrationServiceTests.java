@@ -39,6 +39,7 @@ import static org.mockito.Mockito.lenient;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,10 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 @Transactional
 @ActiveProfiles({"h2-test", "wlcg-scopes"})
 class ClientRegistrationServiceTests extends TokenGetterUtils {
+
+  final List<String> VALID_REDIRECT_URIS = List.of("http://localhost/redirect",
+      "http://127.0.0.1:8080/redirect", "http://[::1]:61023/oauth2redirect",
+      "http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect", "edu.kit.data.oidc-agent:/redirect");
 
   @Autowired
   IamClientRepository clientRepo;
@@ -183,6 +188,15 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setClientName("example");
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     request.setRedirectUris(Set.of(uri));
+    return request;
+  }
+
+  private RegisteredClientDTO createClientDTO(String redirectUri, String postLogoutRedirectUri) {
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of(redirectUri));
+    request.setPostLogoutRedirectUris(Set.of(postLogoutRedirectUri));
     return request;
   }
 
@@ -297,35 +311,91 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testValidRedirectUris() {
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://localhost/redirect");
+
+    VALID_REDIRECT_URIS.forEach(uri -> {
+      Assertions.assertDoesNotThrow(() -> {
+        RegisteredClientDTO request = createClientDTO(uri);
+        service.registerClient(request, userAuth);
+      });
+    });
+  }
+
+  @Test
+  void testInvalidPostLogoutRedirectUriScheme() {
+    ConstraintViolationException exception =
+        Assertions.assertThrows(ConstraintViolationException.class, () -> {
+          RegisteredClientDTO request = createClientDTO(VALID_REDIRECT_URIS.get(0), "not-a-uri");
+
+          service.registerClient(request, userAuth);
+        });
+
+    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: null"));
+
+    exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
+      RegisteredClientDTO request = createClientDTO(VALID_REDIRECT_URIS.get(0), "myapp://redirect");
 
       service.registerClient(request, userAuth);
     });
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://127.0.0.1:8080/redirect");
+    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: myapp"));
+
+    exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
+      RegisteredClientDTO request = createClientDTO("javascript:alert(1)");
 
       service.registerClient(request, userAuth);
     });
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://[::1]:61023/oauth2redirect");
+    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: javascript"));
+  }
 
-      service.registerClient(request, userAuth);
-    });
+  @Test
+  void testMalformedPostLogoutRedirectUri() {
+    ConstraintViolationException exception =
+        Assertions.assertThrows(ConstraintViolationException.class, () -> {
+          RegisteredClientDTO request = createClientDTO(VALID_REDIRECT_URIS.get(0), " ");
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request =
-          createClientDTO("http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect");
+          service.registerClient(request, userAuth);
+        });
 
-      service.registerClient(request, userAuth);
-    });
+    assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
+  }
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("edu.kit.data.oidc-agent:/redirect");
+  @Test
+  void testNonLoopbackHttpPostLogoutRedirectUri() {
+    ConstraintViolationException exception =
+        Assertions.assertThrows(ConstraintViolationException.class, () -> {
+          RegisteredClientDTO request =
+              createClientDTO(VALID_REDIRECT_URIS.get(0), "http://example/redirect");
 
-      service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth);
+        });
+
+    assertThat(exception.getMessage(),
+        containsString("Plain http redirect URIs are only allowed for loopback"));
+  }
+
+  @Test
+  void testPostLogoutRedirectUriContainingFragments() {
+    ConstraintViolationException exception =
+        Assertions.assertThrows(ConstraintViolationException.class, () -> {
+          RegisteredClientDTO request = createClientDTO(VALID_REDIRECT_URIS.get(0),
+              "https://example.com/callback#token=abc123");
+
+          service.registerClient(request, userAuth);
+        });
+
+    assertThat(exception.getMessage(), containsString("Invalid redirect URI: contains a fragment"));
+  }
+
+  @Test
+  void testValidPostLogoutRedirectUris() {
+
+    String validRedirectUri = VALID_REDIRECT_URIS.get(0);
+    VALID_REDIRECT_URIS.forEach(postLogoutUri -> {
+      Assertions.assertDoesNotThrow(() -> {
+        RegisteredClientDTO request = createClientDTO(validRedirectUri, postLogoutUri);
+        service.registerClient(request, userAuth);
+      });
     });
   }
 
