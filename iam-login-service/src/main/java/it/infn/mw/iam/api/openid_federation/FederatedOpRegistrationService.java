@@ -147,13 +147,11 @@ public class FederatedOpRegistrationService {
     RegisteredClientDTO dtoClient =
         createClientDtoFromOpResponse(es.getSignedStatement().getJWTClaimsSet());
 
-    RegisteredClientDTO registeredClient = federateClientsService.saveClient(dtoClient);
-
     if (existingClient.isPresent()) {
       federateClientsService.deleteClient(existingClient.get());
     }
 
-    return registeredClient;
+    return federateClientsService.saveClient(dtoClient);
   }
 
   private List<String> selectAuthorityHints(TrustChain trustChain, String issuer)

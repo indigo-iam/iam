@@ -17,16 +17,16 @@ package it.infn.mw.iam.persistence.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
 import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 
 public interface IamFederatedClientRepository
-    extends PagingAndSortingRepository<IamFederatedClientEntity, Long>,
-    JpaSpecificationExecutor<IamFederatedClientEntity> {
+    extends JpaSpecificationExecutor<IamFederatedClientEntity>,
+    JpaRepository<IamFederatedClientEntity, Long> {
 
   Optional<IamFederatedClientEntity> findByClientId(String clientId);
 

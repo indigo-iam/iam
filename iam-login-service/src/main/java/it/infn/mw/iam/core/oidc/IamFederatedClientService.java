@@ -65,6 +65,7 @@ public class IamFederatedClientService {
 
   public void deleteClient(IamFederatedClientEntity client) {
     iamFedClientsRepo.delete(client);
+    iamFedClientsRepo.flush();
     eventPublisher.publishEvent(new FederatedClientRemovedEvent(this, client));
   }
 }
