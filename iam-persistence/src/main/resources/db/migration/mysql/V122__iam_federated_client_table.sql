@@ -16,25 +16,25 @@ CREATE TABLE IF NOT EXISTS iam_federated_client (
 	expiration TIMESTAMP NOT NULL,
     entity_id VARCHAR(512) NOT NULL,
 	
-	UNIQUE (client_id)
+	UNIQUE (entity_id)
 );
 
-CREATE TABLE iam_federated_client_redirect_uri (
+CREATE TABLE IF NOT EXISTS iam_federated_client_redirect_uri (
     owner_id VARCHAR(256),
     redirect_uri VARCHAR(2048)
 );
 
-CREATE TABLE iam_federated_client_grant_type (
+CREATE TABLE IF NOT EXISTS iam_federated_client_grant_type (
     owner_id VARCHAR(256),
     grant_type VARCHAR(2000)
 );
 
-CREATE TABLE iam_federated_client_response_type (
+CREATE TABLE IF NOT EXISTS iam_federated_client_response_type (
     owner_id VARCHAR(256),
     response_type VARCHAR(2000)
 );
 
-CREATE TABLE iam_federated_client_scope (
+CREATE TABLE IF NOT EXISTS iam_federated_client_scope (
     owner_id VARCHAR(256),
     scope VARCHAR(2048)
 );
