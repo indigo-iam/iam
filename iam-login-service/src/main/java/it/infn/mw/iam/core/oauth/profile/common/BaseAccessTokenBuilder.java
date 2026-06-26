@@ -233,7 +233,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
   protected boolean isIncludeScope() {
 
     return getProperties().getAccessToken().isIncludeScope()
-        || !getProperties().getAccessToken().isStoreOnDatabase();
+        || !getProperties().getAccessToken().isStoreOnDatabase()
+        || getProperties().getDashboard().isEnabled();
   }
 
   protected boolean isIncludeNbf() {

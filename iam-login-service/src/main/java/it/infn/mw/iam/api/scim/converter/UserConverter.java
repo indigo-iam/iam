@@ -30,6 +30,7 @@ import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.config.scim.ScimProperties.AttributeDescriptor;
 import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
@@ -57,14 +58,16 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
   private final AccountGroupManagerService groupManagerService;
 
-  private final ScimProperties properties;
+  private final IamProperties iamProperties;
+  private final ScimProperties scimProperties;
 
-  public UserConverter(ScimProperties properties, ScimResourceLocationProvider rlp,
+  public UserConverter(IamProperties iamProperties, ScimProperties scimProperties, ScimResourceLocationProvider rlp,
       AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
       X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService) {
 
+    this.iamProperties = iamProperties;
+    this.scimProperties = scimProperties;
     this.resourceLocationProvider = rlp;
-    this.properties = properties;
     this.addressConverter = ac;
     this.oidcIdConverter = oidc;
     this.sshKeyConverter = sshc;
@@ -239,7 +242,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       builder.affiliation(entity.getAffiliation());
     }
 
-    for (LabelDescriptor ld : properties.getIncludeLabels()) {
+    for (LabelDescriptor ld : scimProperties.getIncludeLabels()) {
       entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
         .ifPresent(el -> builder.addLabel(ScimLabel.builder()
           .withPrefix(el.getPrefix())
@@ -248,7 +251,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    for (AttributeDescriptor ad : properties.getIncludeAttributes()) {
+    for (AttributeDescriptor ad : scimProperties.getIncludeAttributes()) {
       entity.getAttributeByName(ad.getName())
         .ifPresent(attribute -> builder.addAttribute(ScimAttribute.builder()
           .withName(attribute.getName())
@@ -256,7 +259,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (properties.isIncludeManagedGroups()) {
+    if (scimProperties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)
         .getManagedGroups()
         .forEach(mg -> builder.addManagedGroup(ScimGroupRef.builder()
@@ -266,7 +269,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (properties.isIncludeAuthorities()) {
+    if (scimProperties.isIncludeAuthorities() || iamProperties.getDashboard().isEnabled()) {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
     }
 
