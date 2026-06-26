@@ -95,8 +95,8 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 class FederatedOpRegistrationServiceTests {
 
   private static final String ISS = "https://op.example.com";
-  private static final String SUB = "http://localhost:8080";
-  private static final String AUD = "http://localhost:8080";
+  private static final String SUB = "http://localhost:8080/";
+  private static final String AUD = "http://localhost:8080/";
   private static final String TA = "https://ta1.example.com";
 
   @TestConfiguration

@@ -90,8 +90,8 @@ public class FederatedOpRegistrationService {
   private final RestTemplate restTemplate;
   private final Clock clock;
 
-  @Value("${iam.baseUrl}")
-  private String iamBaseUrl;
+  @Value("${iam.issuer}")
+  private String iamIssuer;
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
@@ -305,7 +305,7 @@ public class FederatedOpRegistrationService {
     }
   }
 
-  private void validateJwt(EntityStatement es, String issuer) throws FederationException {
+  private void validateJwt(EntityStatement es, String opEntityId) throws FederationException {
     Date now = Date.from(clock.instant());
     Date iat = es.getClaimsSet().getIssueTime();
     Date exp = es.getClaimsSet().getExpirationTime();
@@ -318,16 +318,16 @@ public class FederatedOpRegistrationService {
       throw invalidClientMetadata("Entity Statement is expired: " + exp);
     }
 
-    if (!es.getClaimsSet().getIssuer().getValue().equals(issuer)) {
+    if (!es.getClaimsSet().getIssuer().getValue().equals(opEntityId)) {
       throw invalidClientMetadata("Invalid issuer");
     }
 
-    if (!es.getClaimsSet().getSubject().getValue().equals(iamBaseUrl)) {
+    if (!es.getClaimsSet().getSubject().getValue().equals(iamIssuer)) {
       throw invalidClientMetadata("Invalid subject");
     }
 
     List<Audience> audience = es.getClaimsSet().getAudience();
-    if (audience == null || audience.stream().noneMatch(aud -> iamBaseUrl.equals(aud.getValue()))) {
+    if (audience == null || audience.size() != 1 || !iamIssuer.equals(audience.get(0).getValue())) {
       throw invalidClientMetadata("Invalid audience");
     }
   }
