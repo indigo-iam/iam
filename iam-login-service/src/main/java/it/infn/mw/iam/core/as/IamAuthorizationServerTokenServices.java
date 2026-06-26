@@ -423,8 +423,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     
     OAuth2Authentication newOAuth2Authentication =
         new OAuth2Authentication(newOAuth2Request, authHolder.getUserAuth());
-    
-    AuthenticationHolderEntity newAuthHolder = createAuthenticationHolder(newOAuth2Authentication);    
 
     JWTProfile profile = profileResolver.resolveProfile(client.getScope());
 
@@ -478,7 +476,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       revocationService.revokeRefreshToken(refreshToken);
     }
 
-    token.setAuthenticationHolder(newAuthHolder);
+    token.setAuthenticationHolder(authHolder);
 
 
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
