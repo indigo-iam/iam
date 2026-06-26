@@ -41,7 +41,7 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
         "scim.include_authorities=false", "iam.access_token.include_scope=false",
         "iam.access_token.store_on_database=true"})
 @AutoConfigureMockMvc
-public class DashboardIntegrationTests extends TokenGetterUtils {
+class DashboardIntegrationTests extends TokenGetterUtils {
 
   @Autowired
   SecurityContextUtils context;
