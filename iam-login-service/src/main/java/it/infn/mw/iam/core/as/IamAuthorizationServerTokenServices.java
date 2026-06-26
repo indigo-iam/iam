@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -229,7 +228,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     OAuth2AccessTokenEntity savedAccessToken = saveAccessToken(accessToken);
-    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken));
+    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken, authentication.getOAuth2Request().getGrantType()));
     return savedAccessToken;
   }
 
@@ -421,16 +420,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     OAuth2Request newOAuth2Request =
         authHolder.getAuthentication().getOAuth2Request().refresh(authRequest);
-
-    Map<String, String> params = new HashMap<>(newOAuth2Request.getRequestParameters());
-    params.put("grant_type", authRequest.getGrantType());
-
-    OAuth2Request updatedOAuth2Request = newOAuth2Request.createOAuth2Request(params);
     
     OAuth2Authentication newOAuth2Authentication =
-        new OAuth2Authentication(updatedOAuth2Request, authHolder.getUserAuth());
-    
-    AuthenticationHolderEntity newAuthHolder = createAuthenticationHolder(newOAuth2Authentication);    
+        new OAuth2Authentication(newOAuth2Request, authHolder.getUserAuth());
 
     JWTProfile profile = profileResolver.resolveProfile(client.getScope());
 
@@ -479,12 +471,12 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       token.setRefreshToken(refreshToken);
     } else {
       // otherwise, make a new refresh token
-      token.setRefreshToken(createRefreshToken(client, newAuthHolder));
+      token.setRefreshToken(createRefreshToken(client, authHolder));
       // clean up the old refresh token
       revocationService.revokeRefreshToken(refreshToken);
     }
 
-    token.setAuthenticationHolder(newAuthHolder);
+    token.setAuthenticationHolder(authHolder);
 
 
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
@@ -508,7 +500,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
     token = saveAccessToken(token);
 
-    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
+    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token, authRequest.getGrantType()));
     return token;
   }
 
