@@ -102,10 +102,10 @@ public class DefaultGarbageCollector implements GarbageCollector {
 
     Page<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo
       .getExpiredAuthorizationCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
-    LOG.debug("Found {} expired authorization codes", expiredAuthzCodes.getTotalElements());
     authzCodeRepo.deleteAll(expiredAuthzCodes);
     if (expiredAuthzCodes.getTotalElements() > 0) {
-      LOG.info("Removed {} expired authorization codes", expiredAuthzCodes.getTotalElements());
+      LOG.info("Removed {} of {} expired authorization codes",
+          expiredAuthzCodes.getNumberOfElements(), expiredAuthzCodes.getTotalElements());
     }
   }
 
@@ -114,10 +114,9 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredDeviceCodes(int count) {
 
-    List<DeviceCode> expiredDeviceCodes =
-        deviceCodeRepo.findExpired(Date.from(clock.instant()));
+    List<DeviceCode> expiredDeviceCodes = deviceCodeRepo.findExpired(Date.from(clock.instant()));
     deviceCodeRepo.deleteAll(expiredDeviceCodes);
-    if (expiredDeviceCodes.isEmpty()) {
+    if (!expiredDeviceCodes.isEmpty()) {
       LOG.info("Removed {} expired device codes", expiredDeviceCodes.size());
     }
   }
@@ -131,7 +130,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .findExpired(Date.from(clock.instant()), new OffsetPageable(0, count));
     revokedAccessTokenRepo.deleteAll(revokedTokens);
     if (revokedTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} revoked access tokens", revokedTokens.getTotalElements());
+      LOG.info("Removed {} of {} revoked access tokens", revokedTokens.getNumberOfElements(),
+          revokedTokens.getTotalElements());
     }
   }
 
@@ -144,7 +144,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
         accessTokenRepo.findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
     accessTokenRepo.deleteAll(expiredAccessTokens);
     if (expiredAccessTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} expired access tokens", expiredAccessTokens.getTotalElements());
+      LOG.info("Removed {} of {} expired access tokens", expiredAccessTokens.getNumberOfElements(),
+          expiredAccessTokens.getTotalElements());
     }
   }
 
@@ -157,7 +158,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
     refreshTokenRepo.deleteAll(expiredRefreshTokens);
     if (expiredRefreshTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} expired refresh tokens", expiredRefreshTokens.getTotalElements());
+      LOG.info("Removed {} of {} expired refresh tokens",
+          expiredRefreshTokens.getNumberOfElements(), expiredRefreshTokens.getTotalElements());
     }
   }
 
@@ -170,7 +172,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .getOrphans(new OffsetPageable(0, count), Date.from(clock.instant()));
     authenticationHolderRepository.deleteAll(orphanedHolders);
     if (orphanedHolders.getTotalElements() > 0) {
-      LOG.info("Removed {} orphaned authentication holders", orphanedHolders.getTotalElements());
+      LOG.info("Removed {} of {} orphaned authentication holders",
+          orphanedHolders.getNumberOfElements(), orphanedHolders.getTotalElements());
     }
   }
 
@@ -184,7 +187,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
     expiredClients.getContent()
       .forEach(client -> clientService.updateClientStatus(client, false, "expired_client_task"));
     if (expiredClients.getTotalElements() > 0) {
-      LOG.info("Suspended {} expired clients", expiredClients.getTotalElements());
+      LOG.info("Suspended {} of {} expired clients", expiredClients.getNumberOfElements(),
+          expiredClients.getTotalElements());
     }
   }
 
