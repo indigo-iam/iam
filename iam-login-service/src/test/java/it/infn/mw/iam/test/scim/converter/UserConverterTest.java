@@ -56,17 +56,17 @@ class UserConverterTest {
   private X509CertificateConverter x509CertificateIamConverter;
   @Mock
   private AccountGroupManagerService groupManagerService;
-  @Mock
-  private IamProperties iamProperties;
-  @Mock
-  private ScimProperties scimProperties;
 
+  private IamProperties iamProperties;
+  private ScimProperties scimProperties;
   private UserConverter userConverter;
 
   @BeforeEach
   void setup() {
 
     lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
+    iamProperties = new IamProperties();
+    scimProperties = new ScimProperties();
     userConverter = new UserConverter(iamProperties, scimProperties, resourceLocationProvider,
         addressConverter, oidcIdConverter, sshKeyConverter, samlIdConverter,
         x509CertificateIamConverter, groupManagerService);
