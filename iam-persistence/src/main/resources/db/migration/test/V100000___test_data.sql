@@ -157,6 +157,7 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (13, 'email'),
   (13, 'address'),
   (13, 'phone'),
+  (14, 'openid'),
   (14, 'profile'),
   (14, 'email'),
   (14, 'address'),

@@ -19,12 +19,12 @@ package it.infn.mw.iam.test.registration;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.HIDDEN;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.MANDATORY;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.OPTIONAL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.CERTIFICATE;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.NOTES;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.CERTIFICATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
@@ -50,7 +50,7 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.validation.RegistrationFieldsValidationService;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class RegistrationFieldsValidationServiceTests {
 
     private final String TEST_USERNAME = "unregistereduser";

@@ -22,11 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.test.TestUtils;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@Transactional
 class RegistrationApiControllerTests {
 
   @Value("${local.server.port}")

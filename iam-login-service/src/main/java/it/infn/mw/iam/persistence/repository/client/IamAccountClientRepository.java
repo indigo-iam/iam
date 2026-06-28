@@ -25,7 +25,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
@@ -52,16 +51,13 @@ public interface IamAccountClientRepository
   Optional<IamAccountClient> findByAccountAndClientId(IamAccount account, long clientId);
 
   @Modifying
-  @Transactional
   @Query("delete from IamAccountClient ac where ac.client.id = :clientId")
   void deleteByClientId(@Param("clientId") long clientId);
 
   @Modifying
-  @Transactional
   void deleteByAccount(IamAccount account);
 
   @Modifying
-  @Transactional
   @Query("delete from IamAccountClient ac where ac.account = :account and ac.client.id = :clientId")
   void deleteByAccountAndClientId(@Param("account") IamAccount account,
       @Param("clientId") long clientId);

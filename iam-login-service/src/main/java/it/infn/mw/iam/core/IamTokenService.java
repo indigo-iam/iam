@@ -182,16 +182,25 @@ public class IamTokenService implements OAuth2TokenEntityService {
   @Override
   public OAuth2AccessTokenEntity saveAccessToken(OAuth2AccessTokenEntity accessToken) {
 
-    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)
-        || iamProperties.getAccessToken().isStoreOnDatabase()) {
-
+    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)) {
       AuthenticationHolderEntity ah =
-          authenticationHolderRepo.saveAndFlush(accessToken.getAuthenticationHolder());
-      accessToken.setAuthenticationHolder(ah);
-      return accessTokenRepo.saveAndFlush(accessToken);
+          authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+        accessToken.setAuthenticationHolder(ah);
+      return accessTokenRepo.save(accessToken);
+    }
+    if (!iamProperties.getAccessToken().isStoreOnDatabase()) {
+      // nothing to save
+      return accessToken;
     }
 
-    return accessToken;
+    if (accessToken.getRefreshToken() != null) {
+      // authentication holder has been already saved: save access token only
+      return accessTokenRepo.save(accessToken);
+    }
+    AuthenticationHolderEntity ah =
+      authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+    accessToken.setAuthenticationHolder(ah);
+    return accessTokenRepo.save(accessToken);
   }
 
   @Override

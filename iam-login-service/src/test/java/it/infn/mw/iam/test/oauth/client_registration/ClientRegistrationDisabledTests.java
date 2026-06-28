@@ -26,16 +26,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
     properties = "client-registration.enable=false")
+@AutoConfigureMockMvc
+@Transactional
 public class ClientRegistrationDisabledTests extends ClientRegistrationTestSupport {
 
   public static final String REGISTRATION_DISABLED_MSG = "Client registration is disabled";
@@ -63,7 +65,5 @@ public class ClientRegistrationDisabledTests extends ClientRegistrationTestSuppo
       .andExpect(status().isBadRequest())
       .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
-
   }
-
 }
