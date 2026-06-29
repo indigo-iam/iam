@@ -210,7 +210,7 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRegisteredRpRedirectsToAuthorize() throws Exception {
-    createClient();
+    createFederatedClient();
 
     LocalDate today = LocalDate.now();
     LocalDate tomorrow = today.plusDays(1);
@@ -238,8 +238,8 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testExpiredRpIsDeletedAndRegisteredAgain() throws Exception {
-    createClient();
+  void testExpiredOpIsDeletedAndRegisteredAgain() throws Exception {
+    createFederatedClient();
 
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
@@ -344,7 +344,7 @@ class FederatedOpRegistrationServiceTests {
     performCall(ISS, SUB, iat, exp, AUD, ta);
   }
 
-  private void createClient() {
+  private void createFederatedClient() {
     client = new IamFederatedClientEntity();
     client.setActive(true);
     client.setClientId("federated-client");
