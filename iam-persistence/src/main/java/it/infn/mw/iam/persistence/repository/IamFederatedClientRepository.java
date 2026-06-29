@@ -28,8 +28,6 @@ public interface IamFederatedClientRepository
     extends JpaSpecificationExecutor<IamFederatedClientEntity>,
     JpaRepository<IamFederatedClientEntity, Long> {
 
-  Optional<IamFederatedClientEntity> findByClientId(String clientId);
-
   @Query("select e from IamFederatedClientEntity e where e.entityId = :entityId")
   Optional<IamFederatedClientEntity> findByEntityId(@Param("entityId") String entityId);
 }
