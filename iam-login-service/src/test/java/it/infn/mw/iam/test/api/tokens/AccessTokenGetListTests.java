@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
-import static it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest.TOKENS_MAX_PAGE_SIZE;
+import static it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest.MAX_PAGE_SIZE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -244,41 +244,41 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   void getAccessTokenListLimitedToPageSizeFirstPage() throws Exception {
 
     context.useLocalTestUser();
-    for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
+    for (int i = 0; i < MAX_PAGE_SIZE; i++) {
       getPasswordToken(DEFAULT_SCOPES);
     }
 
-    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
+    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
 
     context.useBearerAdminToken();
     /* get first page */
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
 
-    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
+    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
     assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(TOKENS_MAX_PAGE_SIZE));
-    assertThat(atl.getResources().size(), equalTo(TOKENS_MAX_PAGE_SIZE));
+    assertThat(atl.getItemsPerPage(), equalTo(MAX_PAGE_SIZE));
+    assertThat(atl.getResources().size(), equalTo(MAX_PAGE_SIZE));
   }
 
   @Test
   void getAccessTokenListLimitedToPageSizeSecondPage() throws Exception {
 
     context.useLocalTestUser();
-    for (int i = 0; i < TOKENS_MAX_PAGE_SIZE; i++) {
+    for (int i = 0; i < MAX_PAGE_SIZE; i++) {
       getPasswordToken(DEFAULT_SCOPES);
     }
 
-    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
+    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
 
     MultiValueMap<String, String> params =
-        MultiValueMapBuilder.builder().startIndex(TOKENS_MAX_PAGE_SIZE).build();
+        MultiValueMapBuilder.builder().startIndex(MAX_PAGE_SIZE).build();
 
     context.useBearerAdminToken();
     /* get second page */
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(TOKENS_MAX_PAGE_SIZE)));
-    assertThat(atl.getStartIndex(), equalTo(TOKENS_MAX_PAGE_SIZE));
+    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
+    assertThat(atl.getStartIndex(), equalTo(MAX_PAGE_SIZE));
     assertThat(atl.getItemsPerPage(), equalTo(1));
     assertThat(atl.getResources().size(), equalTo(1));
   }

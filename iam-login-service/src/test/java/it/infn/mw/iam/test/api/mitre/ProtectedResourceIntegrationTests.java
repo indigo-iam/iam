@@ -62,25 +62,25 @@ class ProtectedResourceIntegrationTests {
 
   private ResultActions doCreateProtectedResource(String clientJson) throws Exception {
 
-    return mvc.perform(post(PROTECTED_RESOURCE_ENDPOINT).content(clientJson)
-      .contentType(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        post(PROTECTED_RESOURCE_ENDPOINT).content(clientJson).contentType(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doGetProtectedResource(String clientId, String rat) throws Exception {
 
-    return mvc.perform(get(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId)
-      .header("Authorization", "Bearer " + rat)
-      .accept(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        get(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId).header("Authorization", "Bearer " + rat)
+          .accept(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doUpdateProtectedResource(String clientId, String clientJson, String rat)
       throws Exception {
 
-    return mvc.perform(put(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId)
-      .header("Authorization", "Bearer " + rat)
-      .content(clientJson)
-      .contentType(APPLICATION_JSON_VALUE)
-      .accept(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        put(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId).header("Authorization", "Bearer " + rat)
+          .content(clientJson)
+          .contentType(APPLICATION_JSON_VALUE)
+          .accept(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doDeleteProtectedResource(String clientId, String rat) throws Exception {
@@ -101,11 +101,11 @@ class ProtectedResourceIntegrationTests {
     clientJson.addProperty(SCOPE, SCOPES);
 
     // create protected resource
-    RegisteredClientDTO testedResource =
-        mapper.readValue(doCreateProtectedResource(clientJson.toString()).andExpect(status().isCreated())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(), RegisteredClientDTO.class);
+    RegisteredClientDTO testedResource = mapper
+      .readValue(doCreateProtectedResource(clientJson.toString()).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), RegisteredClientDTO.class);
 
     // verify registration access token exists and expiration is null
     assertNull(JWTParser.parse(testedResource.getRegistrationAccessToken())
@@ -130,6 +130,9 @@ class ProtectedResourceIntegrationTests {
     assertEquals(2, fromDb.getScope().size());
     assertTrue(fromDb.getScope().contains("profile"));
     assertTrue(fromDb.getScope().contains("email"));
+
+    doGetProtectedResource(testedResource.getClientId(), "invalid-token")
+      .andExpect(status().isUnauthorized());
 
     // retrieve protected resource from API
     RegisteredClientDTO fromAPI =
@@ -157,13 +160,17 @@ class ProtectedResourceIntegrationTests {
     clientJson = new JsonObject();
     clientJson.addProperty(CLIENT_NAME, NAME);
     clientJson.addProperty(SCOPE, "openid email");
-    RegisteredClientDTO updated =
-        mapper.readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(),
-            testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString(),
-            RegisteredClientDTO.class);
+
+    doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(), "invalid-token")
+      .andExpect(status().isUnauthorized());
+
+    RegisteredClientDTO updated = mapper
+      .readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(),
+          testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(),
+          RegisteredClientDTO.class);
 
     assertEquals(testedResource.getClientId(), updated.getClientId());
     assertEquals(NAME, updated.getClientName());
@@ -178,6 +185,9 @@ class ProtectedResourceIntegrationTests {
     assertEquals(2, updated.getScope().size());
     assertTrue(updated.getScope().contains("openid"));
     assertTrue(updated.getScope().contains("email"));
+
+    doDeleteProtectedResource(testedResource.getClientId(), "invalid-token")
+      .andExpect(status().isUnauthorized());
 
     doDeleteProtectedResource(testedResource.getClientId(),
         testedResource.getRegistrationAccessToken()).andExpect(status().isNoContent());
