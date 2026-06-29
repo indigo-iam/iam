@@ -41,7 +41,7 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class LegacyClientsApiControllerTests {
+class LegacyClientsApiControllerTests {
 
   @Autowired
   private MockMvc mvc;

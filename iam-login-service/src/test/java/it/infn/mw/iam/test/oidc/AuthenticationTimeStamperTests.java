@@ -72,7 +72,7 @@ class AuthenticationTimeStamperTests {
 
     stamper.onAuthenticationSuccess(request, response, authentication);
 
-    verify(session).setAttribute(eq(PromptService.PROMPTED), eq(Boolean.TRUE));
+    verify(session).setAttribute(PromptService.PROMPTED, Boolean.TRUE);
     verify(session).removeAttribute(PromptService.PROMPT_REQUESTED);
   }
 }

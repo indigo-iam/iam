@@ -19,7 +19,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;

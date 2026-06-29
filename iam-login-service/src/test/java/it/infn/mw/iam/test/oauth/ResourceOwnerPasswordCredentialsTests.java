@@ -30,6 +30,7 @@ import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
@@ -37,6 +38,7 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -50,12 +52,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
     properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
+@Transactional
 class ResourceOwnerPasswordCredentialsTests {
 
   static final String GRANT_TYPE = "password";
@@ -99,16 +101,14 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "secret";
 
-    // @formatter:off
-    mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
         .param("scope", SCOPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo(SCOPE)));
-    // @formatter:on
   }
 
   @Test
@@ -130,17 +130,16 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "secret";
 
-    // @formatter:off
-    mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
         .param("scope", SCOPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_grant"))
-      .andExpect(jsonPath("$.error_description").value("User test needs to sign AUP for this organization in order to proceed."));
-    // @formatter:on
+      .andExpect(jsonPath("$.error_description")
+        .value("User test needs to sign AUP for this organization in order to proceed."));
   }
 
   @Test
@@ -149,9 +148,8 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "secret";
 
-    // @formatter:off
-    mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", "wrong_password")
@@ -159,7 +157,6 @@ class ResourceOwnerPasswordCredentialsTests {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
       .andExpect(jsonPath("$.error_description", equalTo("Bad credentials")));
-    // @formatter:on
   }
 
   @Test
@@ -168,18 +165,15 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "socret";
 
-    // @formatter:off
-    mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
         .param("scope", SCOPE))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("unauthorized")))
-      .andExpect(jsonPath("$.error_description", equalTo("Bad credentials")))
-      ;
-    // @formatter:on
+      .andExpect(jsonPath("$.error_description", equalTo("Bad credentials")));
   }
 
   @Test
@@ -188,9 +182,8 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "unknown";
     String clientSecret = "socret";
 
-    // @formatter:off
-    mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
@@ -198,9 +191,7 @@ class ResourceOwnerPasswordCredentialsTests {
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("unauthorized")))
-      .andExpect(jsonPath("$.error_description", equalTo("Client with id unknown was not found")))
-      ;
-    // @formatter:on
+      .andExpect(jsonPath("$.error_description", equalTo("Client with id unknown was not found")));
   }
 
   @Test
@@ -209,9 +200,8 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "secret";
 
-    // @formatter:off
-    String response = mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    String response = mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
@@ -220,7 +210,6 @@ class ResourceOwnerPasswordCredentialsTests {
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
 
     DefaultOAuth2AccessToken tokenResponse =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
@@ -237,9 +226,8 @@ class ResourceOwnerPasswordCredentialsTests {
     String clientId = "password-grant";
     String clientSecret = "secret";
 
-    // @formatter:off
-    String response = mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
+    String response = mvc
+      .perform(post("/token").with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("username", USERNAME)
         .param("password", PASSWORD)
@@ -248,23 +236,21 @@ class ResourceOwnerPasswordCredentialsTests {
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
 
     DefaultOAuth2AccessToken tokenResponse =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
 
-    assertNotNull(tokenService.readAccessToken(tokenResponse.getValue()));
-    assertTrue(
-        refreshTokenRepo.findByTokenValue(tokenResponse.getRefreshToken().getValue()).isPresent());
+    String accessToken = tokenResponse.getValue();
+    String refreshToken = tokenResponse.getRefreshToken().getValue();
+    assertNotNull(tokenService.readAccessToken(accessToken));
+    assertTrue(refreshTokenRepo.findByTokenValue(refreshToken).isPresent());
 
     IamAccount testAccount = accountRepo.findByUsername(USERNAME)
       .orElseThrow(() -> new AssertionError(String.format("Expected %s user not found", USERNAME)));
 
     accountService.deleteAccount(testAccount);
 
-    assertThrows(InvalidTokenException.class,
-        () -> tokenService.readAccessToken(tokenResponse.getValue()));
-    assertFalse(
-        refreshTokenRepo.findByTokenValue(tokenResponse.getRefreshToken().getValue()).isPresent());
+    assertThrows(InvalidTokenException.class, () -> tokenService.readAccessToken(accessToken));
+    assertFalse(refreshTokenRepo.findByTokenValue(refreshToken).isPresent());
   }
 }
