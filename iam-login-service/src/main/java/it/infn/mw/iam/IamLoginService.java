@@ -15,10 +15,7 @@
  */
 package it.infn.mw.iam;
 
-import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.openid.connect.service.impl.DefaultApprovedSiteService;
 import org.mitre.openid.connect.view.UserInfoView;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
 import org.mitre.openid.connect.web.RootController;
@@ -67,13 +64,7 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=CorsFilter.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoView.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultDeviceCodeService.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultOAuth2AuthorizationCodeService.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultApprovedSiteService.class)
+        value=UserInfoView.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

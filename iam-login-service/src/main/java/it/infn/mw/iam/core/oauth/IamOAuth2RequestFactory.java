@@ -55,7 +55,6 @@ import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +93,7 @@ import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
@@ -109,14 +109,14 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   private final JWTProfileResolver profileResolver;
   private final ClientDetailsService clientDetailsService;
   private final DeviceCodeService deviceCodeService;
-  private final AuthorizationCodeRepository authzCodeRepository;
+  private final IamAuthorizationCodeRepository authzCodeRepository;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final AudienceRequestValidator audienceRequestValidator;
   private final AuthorizationRequestBuilder authorizationRequestBuilder;
 
   public IamOAuth2RequestFactory(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
       JWTProfileResolver profileResolver, DeviceCodeService deviceCodeService,
-      AuthorizationCodeRepository authzCodeRepository, IamOAuthRefreshTokenRepository refreshTokenRepo,
+      IamAuthorizationCodeRepository authzCodeRepository, IamOAuthRefreshTokenRepository refreshTokenRepo,
       ClientKeyCacheService validators) {
     super(clientDetailsService);
     this.profileResolver = profileResolver;
@@ -239,7 +239,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     switch (grantType) {
       case AUTHZ_CODE_GRANT:
         String authzCode = tokenRequestParameters.get(IamOAuthRequestParameters.AUTHZ_CODE_KEY);
-        return Optional.ofNullable(authzCodeRepository.getByCode(authzCode))
+        return authzCodeRepository.findByCode(authzCode)
           .map(AuthorizationCodeEntity::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 

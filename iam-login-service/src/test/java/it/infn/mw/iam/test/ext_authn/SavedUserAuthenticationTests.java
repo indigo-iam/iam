@@ -23,16 +23,17 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 
 @SpringBootTest
 class SavedUserAuthenticationTests {
 
   @Autowired
-  private AuthenticationHolderRepository authHolderRepo;
+  private IamAuthenticationHolderRepository authHolderRepo;
 
   @Test
   void testMultipleCaseSensitiveAdditionalInfoAreInserted() {

@@ -29,7 +29,6 @@ import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
@@ -77,7 +77,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
-  AuthenticationHolderEntityService authenticationHolderService;
+  IamAuthenticationHolderEntityService authenticationHolderService;
 
   @Autowired
   IamAuthenticationHolderRepository authenticationHolderRepository;

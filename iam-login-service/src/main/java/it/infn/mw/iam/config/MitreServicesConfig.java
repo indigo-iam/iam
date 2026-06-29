@@ -23,7 +23,6 @@ import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
@@ -66,6 +65,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
@@ -143,7 +143,7 @@ public class MitreServicesConfig {
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
-      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
+      DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
       IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
       ClientKeyCacheService validators) {
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,

@@ -59,6 +59,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -88,6 +89,7 @@ import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 @Service
+@Transactional
 @Primary
 public class IamAuthorizationServerTokenServices implements AuthorizationServerTokenServices {
 
@@ -208,7 +210,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     OAuth2AccessTokenEntity savedAccessToken = saveAccessToken(accessToken);
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken));
     return savedAccessToken;
-
   }
 
   private boolean isRefreshTokenRequested(String grantType, Set<String> scopes) {
@@ -368,16 +369,25 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   private OAuth2AccessTokenEntity saveAccessToken(OAuth2AccessTokenEntity accessToken) {
 
-    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)
-        || iamProperties.getAccessToken().isStoreOnDatabase()) {
-
+    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)) {
       AuthenticationHolderEntity ah =
-          authenticationHolderRepo.saveAndFlush(accessToken.getAuthenticationHolder());
-      accessToken.setAuthenticationHolder(ah);
-      return accessTokenRepo.saveAndFlush(accessToken);
+          authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+        accessToken.setAuthenticationHolder(ah);
+      return accessTokenRepo.save(accessToken);
+    }
+    if (!iamProperties.getAccessToken().isStoreOnDatabase()) {
+      // nothing to save
+      return accessToken;
     }
 
-    return accessToken;
+    if (accessToken.getRefreshToken() != null) {
+      // authentication holder has been already saved: save access token only
+      return accessTokenRepo.save(accessToken);
+    }
+    AuthenticationHolderEntity ah =
+      authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+    accessToken.setAuthenticationHolder(ah);
+    return accessTokenRepo.save(accessToken);
   }
 
   @Override
