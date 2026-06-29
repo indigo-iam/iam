@@ -22,7 +22,9 @@ import org.springframework.security.authentication.event.AuthenticationFailureBa
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.stereotype.Component;
 
+@Component
 public class IamAuthenticationEventPublisher
     implements AuthenticationEventPublisher, ApplicationEventPublisherAware {
 
@@ -37,9 +39,9 @@ public class IamAuthenticationEventPublisher
   @Override
   public void publishAuthenticationFailure(AuthenticationException exception,
       Authentication authentication) {
+
     eventPublisher
       .publishEvent(new AuthenticationFailureBadCredentialsEvent(authentication, exception));
-
   }
 
   @Override

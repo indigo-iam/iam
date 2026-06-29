@@ -20,7 +20,6 @@ import java.util.Map;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
@@ -28,7 +27,6 @@ import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 
 @SuppressWarnings("deprecation")
 @Service
-@Transactional
 public class IamAuthenticationHolderEntityService {
 
   final IamAuthenticationHolderRepository repo;

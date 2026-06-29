@@ -70,7 +70,7 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
               user.get().getUsername()));
     }
 
-    return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
+    return super.getAccessToken(client, tokenRequest);
   }
 
 }

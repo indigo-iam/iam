@@ -140,7 +140,6 @@ import it.infn.mw.iam.core.oidc.LoginHintService;
 import it.infn.mw.iam.core.oidc.MaxAgeService;
 import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
-import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
 import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
@@ -446,14 +445,10 @@ public class IamConfig {
     return new DefaultWebResponseExceptionTranslator();
   }
 
-  @Bean(name = "iamAuthenticationEventPublisher")
-  AuthenticationEventPublisher iamAuthenticationEventPublisher() {
-    return new IamAuthenticationEventPublisher();
-  }
-
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
-      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService) {
+      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService, 
+      AuthenticationEventPublisher eventPublisher) {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
     provider.setUserDetailsService(iamUserDetailsService);
@@ -462,9 +457,8 @@ public class IamConfig {
     ProviderManager pm =
         new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
 
-    pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
+    pm.setAuthenticationEventPublisher(eventPublisher);
     return pm;
-
   }
 
   @Bean

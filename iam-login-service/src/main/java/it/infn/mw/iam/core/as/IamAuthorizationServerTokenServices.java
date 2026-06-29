@@ -29,7 +29,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -41,7 +40,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -71,6 +69,7 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.IdTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
@@ -78,6 +77,7 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.oauth.profile.OIDCTokenService;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
@@ -118,8 +118,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private final ApplicationEventPublisher eventPublisher;
   private final ScopeFilter scopeFilter;
 
-  private final MessageDigest sha256Digest;
-
   public IamAuthorizationServerTokenServices(Clock clock, IamProperties iamProperties,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo,
@@ -144,8 +142,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     this.eventPublisher = eventPublisher;
     this.scopeFilter = scopeFilter;
     this.clock = clock;
-
-    this.sha256Digest = MessageDigest.getInstance("SHA-256");
   }
 
   @Override
@@ -215,9 +211,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private boolean isRefreshTokenRequested(String grantType, Set<String> scopes) {
 
     return scopes.contains(SystemScopeService.OFFLINE_ACCESS)
-        && !grantType.equals("client_credentials");
+        && !grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.name());
   }
-
 
   private OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
       AuthenticationHolderEntity authHolder) {
@@ -308,10 +303,14 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private void handleCodeChallenge(OAuth2Request request) {
 
     String challenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
+    String verifier = request.getRequestParameters().get(CODE_VERIFIER);
+
+    if (verifier == null || verifier.isBlank()) {
+      throw new InvalidRequestException("Missing code_verifier");
+    }
+
     PKCEAlgorithm alg =
         PKCEAlgorithm.parse(valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD)));
-
-    String verifier = request.getRequestParameters().get(CODE_VERIFIER);
 
     if (PKCEAlgorithm.plain.equals(alg)) {
       if (challenge.equals(verifier)) {
@@ -321,14 +320,22 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
     }
     if (PKCEAlgorithm.S256.equals(alg)) {
-      String hash = Base64URL.encode(sha256Digest.digest(verifier.getBytes(US_ASCII))).toString();
-      if (challenge.equals(hash)) {
+      if (challenge.equals(computeS256Challenge(verifier))) {
         LOG.debug("Hashed code verified");
         return;
       }
       throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
     }
     throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
+  }
+
+  private String computeS256Challenge(String verifier) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      return Base64URL.encode(digest.digest(verifier.getBytes(US_ASCII))).toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 not available", e);
+    }
   }
 
   private Date computeExpiration(Map<String, String> requestParameters, ClientDetailsEntity client,
@@ -349,44 +356,32 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   private Optional<Integer> getExpiresIn(Map<String, String> requestParameters) {
 
-    try {
-      if (requestParameters.containsKey(EXPIRES_IN_KEY)) {
-        return Optional.of(Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY)));
-      }
+    if (!requestParameters.containsKey(EXPIRES_IN_KEY)) {
       return Optional.empty();
+    }
+    try {
+      int value = Integer.parseInt(requestParameters.get(EXPIRES_IN_KEY));
+      if (value <= 0) {
+        return Optional.empty();
+      }
+      return Optional.of(value);
     } catch (NumberFormatException e) {
       throw new InvalidRequestException(INVALID_PARAMETER);
     }
   }
 
-  private boolean isResourceAccessToken(OAuth2AccessTokenEntity entity) {
-    return entity.getScope().contains(SystemScopeService.RESOURCE_TOKEN_SCOPE);
-  }
-
-  private boolean isRegistrationAccessToken(OAuth2AccessTokenEntity entity) {
-    return entity.getScope().contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
-  }
-
   private OAuth2AccessTokenEntity saveAccessToken(OAuth2AccessTokenEntity accessToken) {
 
-    if (isRegistrationAccessToken(accessToken) || isResourceAccessToken(accessToken)) {
-      AuthenticationHolderEntity ah =
-          authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
-        accessToken.setAuthenticationHolder(ah);
-      return accessTokenRepo.save(accessToken);
-    }
     if (!iamProperties.getAccessToken().isStoreOnDatabase()) {
       // nothing to save
       return accessToken;
     }
 
-    if (accessToken.getRefreshToken() != null) {
-      // authentication holder has been already saved: save access token only
-      return accessTokenRepo.save(accessToken);
+    if (accessToken.getRefreshToken() == null) {
+      AuthenticationHolderEntity ah =
+          authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+      accessToken.setAuthenticationHolder(ah);
     }
-    AuthenticationHolderEntity ah =
-      authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
-    accessToken.setAuthenticationHolder(ah);
     return accessTokenRepo.save(accessToken);
   }
 
@@ -394,9 +389,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   public OAuth2AccessTokenEntity refreshAccessToken(String refreshTokenValue,
       TokenRequest authRequest) throws AuthenticationException {
 
-    if (Objects.isNull(refreshTokenValue) || refreshTokenValue.isBlank()) {
-      throw new InvalidTokenException("Invalid refresh token: null or empty value");
-    }
     OAuth2RefreshTokenEntity refreshToken = getRefreshToken(refreshTokenValue);
 
     ClientDetailsEntity client = refreshToken.getClient();
@@ -488,7 +480,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   }
 
   private boolean isExpired(Date expiration) {
-    return Date.from(clock.instant()).after(expiration);
+    return expiration != null && clock.instant().isAfter(expiration.toInstant());
   }
 
   private Set<String> computeRefreshedScopes(TokenRequest authRequest,
