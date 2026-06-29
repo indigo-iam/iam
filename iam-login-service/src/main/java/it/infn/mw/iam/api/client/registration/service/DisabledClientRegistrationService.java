@@ -85,4 +85,15 @@ public class DisabledClientRegistrationService implements ClientRegistrationServ
       @NotBlank String registrationAccessToken, Authentication authentication) {
     throw registrationDisabled();
   }
+
+  @Override
+  public RegisteredClientDTO retrieveProtectedResource(@NotBlank String clientId,
+      Authentication authentication) {
+    throw registrationDisabled();
+  }
+
+  @Override
+  public void deleteProtectedResource(@NotBlank String clientId, Authentication authentication) {
+    throw registrationDisabled();
+  }
 }

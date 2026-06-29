@@ -35,6 +35,9 @@ public interface ClientRegistrationService {
   RegisteredClientDTO retrieveClient(@NotBlank String clientId,
       Authentication authentication);
 
+  RegisteredClientDTO retrieveProtectedResource(@NotBlank String clientId,
+      Authentication authentication);
+
   RegisteredClientDTO updateClient(@NotBlank String clientId, @Valid RegisteredClientDTO request,
       Authentication authentication) throws ParseException;
 
@@ -42,6 +45,8 @@ public interface ClientRegistrationService {
       Authentication authentication) throws ParseException;
 
   void deleteClient(@NotBlank String clientId, Authentication authentication);
+
+  void deleteProtectedResource(@NotBlank String clientId, Authentication authentication);
 
   RegisteredClientDTO redeemClient(@NotBlank String clientId,
       @NotBlank String registrationAccessToken,

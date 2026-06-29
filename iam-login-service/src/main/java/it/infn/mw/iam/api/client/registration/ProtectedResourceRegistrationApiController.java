@@ -72,7 +72,7 @@ public class ProtectedResourceRegistrationApiController {
   public RegisteredClientDTO retrieveProtectedResourcet(@PathVariable String clientId,
       Authentication authentication) {
 
-    return service.retrieveClient(clientId, authentication);
+    return service.retrieveProtectedResource(clientId, authentication);
   }
 
   @PutMapping("/{clientId}")
@@ -86,7 +86,7 @@ public class ProtectedResourceRegistrationApiController {
   @DeleteMapping("/{clientId}")
   @ResponseStatus(code = NO_CONTENT)
   public void deleteProtectedResource(@PathVariable String clientId, Authentication authentication) {
-    service.deleteClient(clientId, authentication);
+    service.deleteProtectedResource(clientId, authentication);
   }
 
 

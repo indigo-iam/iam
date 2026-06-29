@@ -266,7 +266,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
         .getScope()
         .contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
     }
+    return false;
+  }
 
+  private boolean resourceAccessTokenAuthenticationValidForClientId(String clientId,
+      Authentication authentication) {
+    if (authentication instanceof OAuth2Authentication oauth) {
+      return oauth.getOAuth2Request().getClientId().equals(clientId)
+          && oauth.getOAuth2Request().getScope().contains(SystemScopeService.RESOURCE_TOKEN_SCOPE);
+    }
     return false;
   }
 
@@ -380,8 +388,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
-    OAuth2AccessTokenEntity ratEntity =
-        registrationTokenService.createRegistrationAccessToken(client);
+    OAuth2AccessTokenEntity ratEntity = registrationTokenService.createResourceAccessToken(client);
     response.setRegistrationAccessToken(ratEntity.getValue());
 
     return response;
@@ -396,13 +403,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       }
 
       return clientService.findClientByClientId(clientId);
-    } else {
-
-      IamAccount account =
-          accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-
-      return clientService.findClientByClientIdAndAccount(clientId, account);
     }
+    IamAccount account =
+        accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+
+    return clientService.findClientByClientIdAndAccount(clientId, account);
   }
 
   @Override
@@ -410,6 +415,33 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     authzChecks(authentication);
 
     return lookupClient(clientId, authentication).map(converter::registrationResponseFromClient)
+      .orElseThrow(clientNotFound(clientId));
+  }
+
+  private Optional<ClientDetailsEntity> lookupProtectedResource(String clientId,
+      Authentication authentication) {
+
+    if (isAnonymous(authentication)) {
+      if (!resourceAccessTokenAuthenticationValidForClientId(clientId, authentication)) {
+        throw new InvalidClientRegistrationRequest(INVALID_ACCESS_TOKEN_ERROR);
+      }
+
+      return clientService.findClientByClientId(clientId);
+    }
+    IamAccount account =
+        accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+
+    return clientService.findClientByClientIdAndAccount(clientId, account);
+
+  }
+
+  @Override
+  public RegisteredClientDTO retrieveProtectedResource(String clientId,
+      Authentication authentication) {
+    authzChecks(authentication);
+
+    return lookupProtectedResource(clientId, authentication)
+      .map(converter::registrationResponseFromClient)
       .orElseThrow(clientNotFound(clientId));
   }
 
@@ -473,7 +505,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     authzChecks(authentication);
 
     ClientDetailsEntity oldClient =
-        lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
+        lookupProtectedResource(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
     checkUserUpdatingSuspendedClient(authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
@@ -511,6 +543,18 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity client =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
+
+    clientService.deleteClient(client);
+
+    eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
+  }
+
+  @Override
+  public void deleteProtectedResource(String clientId, Authentication authentication) {
+    authzChecks(authentication);
+
+    ClientDetailsEntity client =
+        lookupProtectedResource(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
     clientService.deleteClient(client);
 
