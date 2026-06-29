@@ -15,19 +15,10 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import java.util.Date;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import com.nimbusds.jwt.JWT;
-
-@SuppressWarnings("deprecation")
-public interface OIDCTokenService {
-
-  public JWT createIdToken(ClientDetailsEntity client, OAuth2Request request, Date issueTime,
-      String sub, OAuth2AccessTokenEntity accessToken);
+public interface RegistrationTokenService {
 
   public OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client);
 

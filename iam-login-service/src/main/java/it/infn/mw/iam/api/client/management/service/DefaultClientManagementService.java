@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -53,18 +52,15 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerRemoved;
-import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.core.oauth.profile.OIDCTokenService;
+import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -78,27 +74,21 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientUtils clientUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
-  private final OIDCTokenService oidcTokenService;
-  private final IamOAuthAccessTokenRepository accessTokenRepo;
-  private final IamAuthenticationHolderRepository authenticationHolderRepo;
+  private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamOAuthAccessTokenRepository accessTokenRepo,
-      IamAuthenticationHolderRepository authenticationHolderRepo, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory) {
+      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
-    this.oidcTokenService = oidcTokenService;
-    this.accessTokenRepo = accessTokenRepo;
-    this.authenticationHolderRepo = authenticationHolderRepo;
+    this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
   }
@@ -295,38 +285,17 @@ public class DefaultClientManagementService implements ClientManagementService {
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
   }
 
-
-  private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
-      ClientDetailsEntity client) {
-
-    return saveRegistrationToken(oidcTokenService.createRegistrationAccessToken(client));
-  }
-
-  private OAuth2AccessTokenEntity saveRegistrationToken(OAuth2AccessTokenEntity token) {
-    AuthenticationHolderEntity authHolder =
-        authenticationHolderRepo.save(token.getAuthenticationHolder());
-    token.setAuthenticationHolder(authHolder);
-    return accessTokenRepo.save(token);
-  }
-
   @Override
   public RegisteredClientDTO rotateRegistrationAccessToken(@NotBlank String clientId) {
 
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    OAuth2AccessTokenEntity rat = oidcTokenService.rotateRegistrationAccessTokenForClient(client);
-    if (Objects.isNull(rat)) {
-      rat = createRegistrationAccessTokenForClient(client);
-    }
-
-    saveRegistrationToken(rat);
-
-    eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, client));
+    OAuth2AccessTokenEntity rat =
+        registrationTokenService.rotateRegistrationAccessTokenForClient(client);
 
     RegisteredClientDTO response = converter.registeredClientDtoFromEntity(client);
     response.setRegistrationAccessToken(rat.getValue());
-
     return response;
   }
 
