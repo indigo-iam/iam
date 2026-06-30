@@ -16,10 +16,8 @@
 package it.infn.mw.iam.api.tokens.service;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
@@ -27,154 +25,154 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
-import it.infn.mw.iam.api.tokens.converter.TokensConverter;
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @Service
 public class DefaultRefreshTokenService extends AbstractTokenService<RefreshToken> {
 
-  private TokensConverter tokensConverter;
-  private IamOAuthRefreshTokenRepository tokenRepository;
+  private final IamOAuthRefreshTokenRepository tokenRepository;
 
-  public DefaultRefreshTokenService(Clock clock, IamProperties properties,
-      TokenRevocationService revokeService, IamOAuthRefreshTokenRepository tokenRepository,
-      TokensConverter tokensConverter) {
+  public DefaultRefreshTokenService(Clock clock, TokenRevocationService revokeService,
+      IamAccountService accountService, ScimResourceLocationProvider resourceLocationProvider,
+      IamOAuthRefreshTokenRepository tokenRepository) {
 
-    super(clock, properties, revokeService);
+    super(clock, revokeService, accountService, resourceLocationProvider);
     this.tokenRepository = tokenRepository;
-    this.tokensConverter = tokensConverter;
   }
 
-  @Override
-  public void revokeTokenById(Long id) {
+  private Page<RefreshToken> getAllValidTokens(OffsetPageable op) {
 
-    tokenRepository.findById(id).ifPresent(revokeService::revokeRefreshToken);
-  }
-
-  private Page<OAuth2RefreshTokenEntity> getAllValidTokens(OffsetPageable op) {
-
-    return tokenRepository.findAllValidRefreshTokens(Date.from(clock.instant()), op);
+    return tokenRepository.findAllValidRefreshTokens(now(), op).map(this::toRefreshToken);
   }
 
   private long countAllValidTokens() {
 
-    return tokenRepository.countValidRefreshTokens(Date.from(clock.instant()));
+    return tokenRepository.countValidRefreshTokens(now());
   }
 
-  private Page<OAuth2RefreshTokenEntity> getAllValidTokensForUser(String userId,
-      OffsetPageable op) {
+  private Page<RefreshToken> getAllValidTokensForUser(String userId, OffsetPageable op) {
 
-    return tokenRepository.findValidRefreshTokensForUser(userId, Date.from(clock.instant()), op);
+    return tokenRepository.findValidRefreshTokensForUser(userId, now(), op)
+      .map(this::toRefreshToken);
   }
 
   private long countAllValidTokensForUser(String userId) {
 
-    return tokenRepository.countValidRefreshTokensForUser(userId, Date.from(clock.instant()));
+    return tokenRepository.countValidRefreshTokensForUser(userId, now());
   }
 
-  private Page<OAuth2RefreshTokenEntity> getAllValidTokensForClient(String clientId,
-      OffsetPageable op) {
+  private Page<RefreshToken> getAllValidTokensForClient(String clientId, OffsetPageable op) {
 
-    return tokenRepository.findValidRefreshTokensForClient(clientId, Date.from(clock.instant()),
-        op);
+    return tokenRepository.findValidRefreshTokensForClient(clientId, now(), op)
+      .map(this::toRefreshToken);
   }
 
   private long countAllValidTokensForClient(String clientId) {
 
-    return tokenRepository.countValidRefreshTokensForClient(clientId, Date.from(clock.instant()));
+    return tokenRepository.countValidRefreshTokensForClient(clientId, now());
   }
 
-  private Page<OAuth2RefreshTokenEntity> getAllValidTokensForUserAndClient(String userId,
-      String clientId, OffsetPageable op) {
-
-    return tokenRepository.findValidRefreshTokensForUserAndClient(userId, clientId,
-        Date.from(clock.instant()), op);
-  }
-
-  private long countAllValidTokensForUserAndClient(String userId, String clientId) {
-
-    return tokenRepository.countValidRefreshTokensForUserAndClient(userId, clientId,
-        Date.from(clock.instant()));
-  }
-
-  private ListResponseDTO<RefreshToken> buildCountResponse(long countResponse) {
-
-    return new ListResponseDTO.Builder<RefreshToken>().totalResults(countResponse)
-      .resources(Collections.emptyList())
-      .startIndex(1)
-      .itemsPerPage(0)
-      .build();
-  }
-
-  private ListResponseDTO<RefreshToken> buildListResponse(Page<OAuth2RefreshTokenEntity> entities,
+  private Page<RefreshToken> getAllValidTokensForUserAndClient(String username, String clientId,
       OffsetPageable op) {
 
-    List<RefreshToken> resources = new ArrayList<>();
-    entities.getContent().forEach(a -> resources.add(tokensConverter.toRefreshToken(a)));
-    return buildListResponse(resources, op, entities.getTotalElements());
+    return tokenRepository.findValidRefreshTokensForUserAndClient(username, clientId, now(), op)
+      .map(this::toRefreshToken);
+  }
+
+  private long countAllValidTokensForUserAndClient(String username, String clientId) {
+
+    return tokenRepository.countValidRefreshTokensForUserAndClient(username, clientId, now());
+  }
+
+  protected RefreshToken toRefreshToken(OAuth2RefreshTokenEntity entity) {
+    return new RefreshToken(entity.getId(), entity.getValue(), entity.getExpiration(),
+        entity.getAuthenticationHolder().getScope(), entity.getClient().getClientId(),
+        toClientRef(entity.getClient()), toUserRef(entity.getAuthenticationHolder().getUserAuth()));
   }
 
   @Override
   public ListResponseDTO<RefreshToken> getAllTokens(TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokens();
 
-      long count = countAllValidTokens();
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2RefreshTokenEntity> entities = getAllValidTokens(op);
-    return buildListResponse(entities, op);
+    Page<RefreshToken> entities = getAllValidTokens(op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
+
   @Override
-  public ListResponseDTO<RefreshToken> getTokensForUser(String userId,
+  public ListResponseDTO<RefreshToken> getTokensForUser(String username,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForUser(username);
 
-      long count = countAllValidTokensForUser(userId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2RefreshTokenEntity> entities = getAllValidTokensForUser(userId, op);
-    return buildListResponse(entities, op);
+    Page<RefreshToken> entities = getAllValidTokensForUser(username, op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
   @Override
   public ListResponseDTO<RefreshToken> getTokensForClient(String clientId,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForClient(clientId);
 
-      long count = countAllValidTokensForClient(clientId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2RefreshTokenEntity> entities = getAllValidTokensForClient(clientId, op);
-    return buildListResponse(entities, op);
+    Page<RefreshToken> entities = getAllValidTokensForClient(clientId, op);
+    return buildListResponse(entities.getContent(), op, count);
   }
 
   @Override
-  public ListResponseDTO<RefreshToken> getTokensForClientAndUser(String userId, String clientId,
+  public ListResponseDTO<RefreshToken> getTokensForClientAndUser(String username, String clientId,
       TokensPageRequest pageRequest) {
 
-    if (isCountRequest(pageRequest)) {
+    long count = countAllValidTokensForUserAndClient(username, clientId);
 
-      long count = countAllValidTokensForUserAndClient(userId, clientId);
+    if (isCountRequest(pageRequest)) {
       return buildCountResponse(count);
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2RefreshTokenEntity> entities =
-        getAllValidTokensForUserAndClient(userId, clientId, op);
-    return buildListResponse(entities, op);
+    Page<RefreshToken> entities = getAllValidTokensForUserAndClient(username, clientId, op);
+    return buildListResponse(entities.getContent(), op, count);
+  }
+
+  @Override
+  public void revoke(Long id) {
+
+    tokenRepository.findById(id).ifPresent(revocationService::revokeRefreshToken);
+  }
+
+  @Override
+  public Optional<RefreshToken> getToken(Long id) {
+
+    return tokenRepository.findById(id).map(this::toRefreshToken);
+  }
+
+  @Override
+  public List<RefreshToken> getAllTokensForUser(String username) {
+
+    return tokenRepository.findRefreshTokensForUser(username)
+      .stream()
+      .map(this::toRefreshToken)
+      .toList();
   }
 }

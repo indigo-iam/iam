@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.oauth.client_registration;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -28,9 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
+import it.infn.mw.iam.api.client.registration.ProtectedResourceRegistrationApiController;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
@@ -45,23 +48,81 @@ public class ClientRegistrationDisabledTests extends ClientRegistrationTestSuppo
 
   @Test
   void testClientRegistrationDisabled() throws Exception {
+
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
-    mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
+    mvc
+      .perform(
+          post(ClientRegistrationApiController.ENDPOINT).contentType(MediaType.APPLICATION_JSON)
+            .content(jsonInString))
       .andExpect(status().isBadRequest())
-      .andExpect(content().contentType(APPLICATION_JSON))
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc
+      .perform(put(ClientRegistrationApiController.ENDPOINT + "/id")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonInString))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc.perform(get(ClientRegistrationApiController.ENDPOINT + "/id"))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc.perform(delete(ClientRegistrationApiController.ENDPOINT + "/id"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT + "/id/redeem")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonInString))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+  }
+
+  @Test
+  void testProtectedResourceRegistrationDisabled() throws Exception {
+
+    String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
+
+    mvc
+      .perform(post(ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonInString))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc
+      .perform(put(ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT + "/id")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonInString))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
+
+    mvc.perform(get(ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT + "/id"))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
 
     mvc
       .perform(
-          put(REGISTER_ENDPOINT + "/client").contentType(APPLICATION_JSON).content(jsonInString))
+          delete(ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT + "/id"))
       .andExpect(status().isBadRequest())
-      .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
 
-    mvc.perform(get(REGISTER_ENDPOINT + "/client"))
+    mvc.perform(
+        post(ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT + "/id/redeem")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(jsonInString))
       .andExpect(status().isBadRequest())
-      .andExpect(content().contentType(APPLICATION_JSON))
+      .andExpect(content().contentType(MediaType.APPLICATION_JSON))
       .andExpect(jsonPath("$.error", containsString(REGISTRATION_DISABLED_MSG)));
 
   }

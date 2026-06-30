@@ -57,10 +57,6 @@ public abstract class IamAuditApplicationEvent extends ApplicationEvent {
     this.principal = (auth != null) ? auth.getName() : NULL_PRINCIPAL;
   }
 
-  protected IamAuditApplicationEvent(IamEventCategory category, Object source) {
-    this(category, source, null);
-  }
-
   public String getPrincipal() {
     return principal;
   }

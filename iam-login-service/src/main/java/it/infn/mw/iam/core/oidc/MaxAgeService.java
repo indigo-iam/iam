@@ -24,7 +24,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 

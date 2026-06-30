@@ -34,15 +34,14 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.stereotype.Component;
@@ -55,6 +54,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -62,22 +62,19 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientDetailsService;
+  private final ClientService clientService;
   private final ApprovedSiteService approvedSiteService;
   private final WhitelistedSiteService whitelistedSiteService;
   private final SystemScopeService systemScopeService;
   private final AccountUtils accountUtils;
-  private final ClientService clientService;
   private final StatsService statsService;
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
-  public IamUserApprovalHandler(Clock clock, ClientDetailsEntityService clientDetailsService,
-      ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
-      SystemScopeService systemScopeService, AccountUtils accountUtils,
-      ClientService clientService, StatsService statsService) {
+  public IamUserApprovalHandler(Clock clock, ApprovedSiteService approvedSiteService,
+      WhitelistedSiteService whitelistedSiteService, SystemScopeService systemScopeService,
+      AccountUtils accountUtils, ClientService clientService, StatsService statsService) {
     this.clock = clock;
-    this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
     this.whitelistedSiteService = whitelistedSiteService;
     this.systemScopeService = systemScopeService;
@@ -150,7 +147,9 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     String userId = userAuthentication.getName();
     String clientId = authorizationRequest.getClientId();
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(
+          () -> new InvalidClientException("Client with id " + clientId + " was not found"));
     Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
     if (!Boolean.parseBoolean(approvalParams.get(USER_OAUTH_APPROVAL))) {

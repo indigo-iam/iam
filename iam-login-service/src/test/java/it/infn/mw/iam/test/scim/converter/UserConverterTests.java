@@ -60,22 +60,24 @@ class UserConverterTests {
   @Mock
   private AccountGroupManagerService groupManagerService;
   @Mock
-  private ScimProperties scimProperties;
-  @Mock
-  private IamProperties iamProperties;
-  @Mock
   private Organisation org;
 
+  private IamProperties iamProperties;
+  private ScimProperties scimProperties;
   private UserConverter userConverter;
 
   @BeforeEach
   void setup() {
+
     lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
-    lenient().when(iamProperties.getOrganisation()).thenReturn(org);
-    lenient().when(iamProperties.getOrganisation().getName()).thenReturn("indigo-dc");
-    userConverter = new UserConverter(scimProperties, resourceLocationProvider, addressConverter,
-        oidcIdConverter, sshKeyConverter, samlIdConverter, x509CertificateIamConverter,
-        groupManagerService, iamProperties);
+
+    iamProperties = new IamProperties();
+    iamProperties.setOrganisation(org);
+    iamProperties.getOrganisation().setName("indigo-dc");
+    scimProperties = new ScimProperties();
+    userConverter = new UserConverter(iamProperties, scimProperties, resourceLocationProvider,
+        addressConverter, oidcIdConverter, sshKeyConverter, samlIdConverter,
+        x509CertificateIamConverter, groupManagerService);
   }
 
   @Test

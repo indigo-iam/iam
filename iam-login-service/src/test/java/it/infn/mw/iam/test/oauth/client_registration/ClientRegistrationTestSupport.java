@@ -35,12 +35,10 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
-import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 public class ClientRegistrationTestSupport extends TokenGetterUtils {
 
-  public static final String REGISTER_ENDPOINT = ClientRegistrationApiController.ENDPOINT;
   public static final String LEGACY_REGISTER_ENDPOINT = "/register";
 
   public static class ClientJsonStringBuilder {

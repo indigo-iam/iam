@@ -26,9 +26,6 @@ import java.util.Set;
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.web.IntrospectionEndpoint;
-import org.mitre.oauth2.web.RevocationEndpoint;
-import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +37,9 @@ import com.nimbusds.jose.JWSAlgorithm;
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.IamDeviceEndpointController;
+import it.infn.mw.iam.core.oauth.introspection.IamIntrospectionEndpoint;
+import it.infn.mw.iam.core.oauth.revocation.IamRevocationEndpoint;
+import it.infn.mw.iam.core.userinfo.IamUserInfoEndpoint;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @Service
@@ -51,6 +51,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String TOKEN_ENDPOINT = "token";
   public static final String ABOUT_ENDPOINT = "about";
   public static final String SCIM_ENDPOINT = "scim";
+  public static final String LOGOUT_ENDPOINT = "logout";
 
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = newArrayList(
       "client_secret_basic", "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
@@ -106,6 +107,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String deviceAuthorizationEndpoint;
   private final String aboutEndpoint;
   private final String scimEndpoint;
+  private final String logoutEndpoint;
   private Set<String> supportedScopes;
 
 
@@ -126,14 +128,15 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     authorizeEndpoint = buildEndpointUrl(AUTHORIZE_ENDPOINT);
     tokenEndpoint = buildEndpointUrl(TOKEN_ENDPOINT);
-    userinfoEndpoint = buildEndpointUrl(UserInfoEndpoint.URL);
+    userinfoEndpoint = buildEndpointUrl(IamUserInfoEndpoint.URL);
     jwkEndpoint = buildEndpointUrl(IamJWKSetPublishingEndpoint.URL);
     clientRegistrationEndpoint = buildEndpointUrl(ClientRegistrationApiController.ENDPOINT);
-    introspectionEndpoint = buildEndpointUrl(IntrospectionEndpoint.URL);
-    revocationEndpoint = buildEndpointUrl(RevocationEndpoint.URL);
+    introspectionEndpoint = buildEndpointUrl(IamIntrospectionEndpoint.URL);
+    revocationEndpoint = buildEndpointUrl(IamRevocationEndpoint.URL);
     deviceAuthorizationEndpoint = buildEndpointUrl(IamDeviceEndpointController.DEVICE_CODE_URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
+    logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);
     updateSupportedScopes();
   }
 
@@ -220,6 +223,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     updateSupportedScopes();
     result.put("scopes_supported", supportedScopes);
+
+    result.put("end_session_endpoint", logoutEndpoint);
 
     return result;
   }

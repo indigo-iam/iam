@@ -49,6 +49,7 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.gson.JsonObject;
 
 @Entity
 @Table(name = "iam_account")
@@ -640,5 +641,45 @@ public class IamAccount implements Serializable {
 
   public String getAffiliation() {
     return this.userInfo.getAffiliation();
+  }
+
+  public JsonObject toJson() {
+
+    JsonObject obj = new JsonObject();
+    obj.addProperty("sub", uuid);
+    obj.addProperty("name", userInfo.getName());
+    obj.addProperty("preferred_username", userInfo.getPreferredUsername());
+    obj.addProperty("given_name", userInfo.getGivenName());
+    obj.addProperty("family_name", userInfo.getFamilyName());
+    obj.addProperty("middle_name", userInfo.getMiddleName());
+    obj.addProperty("nickname", userInfo.getNickname());
+    obj.addProperty("profile", userInfo.getProfile());
+    obj.addProperty("picture", userInfo.getPicture());
+    obj.addProperty("website", userInfo.getWebsite());
+    obj.addProperty("gender", userInfo.getGender());
+    obj.addProperty("zoneinfo", userInfo.getZoneinfo());
+    obj.addProperty("locale", userInfo.getLocale());
+    obj.addProperty("updated_at", userInfo.getUpdatedTime());
+    obj.addProperty("birthdate", userInfo.getBirthdate());
+
+    obj.addProperty("email", userInfo.getEmail());
+    obj.addProperty("email_verified", userInfo.getEmailVerified());
+
+    obj.addProperty("phone_number", userInfo.getPhoneNumber());
+    obj.addProperty("phone_number_verified", userInfo.getPhoneNumberVerified());
+
+    if (userInfo.getAddress() != null) {
+
+      JsonObject addr = new JsonObject();
+      addr.addProperty("formatted", userInfo.getAddress().getFormatted());
+      addr.addProperty("street_address", userInfo.getAddress().getStreetAddress());
+      addr.addProperty("locality", userInfo.getAddress().getLocality());
+      addr.addProperty("region", userInfo.getAddress().getRegion());
+      addr.addProperty("postal_code", userInfo.getAddress().getPostalCode());
+      addr.addProperty("country", userInfo.getAddress().getCountry());
+
+      obj.add("address", addr);
+    }
+    return obj;
   }
 }

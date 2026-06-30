@@ -47,6 +47,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @RestController
 public class IamUserInfoEndpoint {
 
+  public static final String URL = "/userinfo";
+
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
 
   private final JWTProfileResolver profileResolver;
@@ -66,7 +68,7 @@ public class IamUserInfoEndpoint {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @GetMapping(path = "/userinfo", produces = {MediaType.APPLICATION_JSON_VALUE})
+  @GetMapping(path = URL, produces = {MediaType.APPLICATION_JSON_VALUE})
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
     String username = auth.getName();

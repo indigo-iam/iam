@@ -30,7 +30,7 @@ import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
 
 @SuppressWarnings("deprecation")
-public class TokenEvent extends IamAuditApplicationEvent {
+public abstract class TokenEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -1843180591267883819L;
 
@@ -41,7 +41,7 @@ public class TokenEvent extends IamAuditApplicationEvent {
   private final String grantType;
   private transient Map<String, Object> payload;
 
-  public TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
+  protected TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
     super(IamEventCategory.TOKEN, source, message);
 
     // subject will contains user-name or client name

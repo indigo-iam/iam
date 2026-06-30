@@ -37,8 +37,6 @@ public class ClientRegistrationProperties {
     @NotNull(message = "Provide a default refresh token lifetime")
     private int defaultRefreshTokenValiditySeconds;
 
-    private int defaultRegistrationAccessTokenValiditySeconds = -1;
-
     public int getDefaultAccessTokenValiditySeconds() {
       return defaultAccessTokenValiditySeconds;
     }
@@ -69,16 +67,6 @@ public class ClientRegistrationProperties {
 
     public void setDefaultRefreshTokenValiditySeconds(int defaultRefreshTokenValiditySeconds) {
       this.defaultRefreshTokenValiditySeconds = defaultRefreshTokenValiditySeconds;
-    }
-
-    public int getDefaultRegistrationAccessTokenValiditySeconds() {
-      return defaultRegistrationAccessTokenValiditySeconds;
-    }
-
-    public void setDefaultRegistrationAccessTokenValiditySeconds(
-        int defaultRegistrationAccessTokenValiditySeconds) {
-      this.defaultRegistrationAccessTokenValiditySeconds =
-          defaultRegistrationAccessTokenValiditySeconds;
     }
 
   }

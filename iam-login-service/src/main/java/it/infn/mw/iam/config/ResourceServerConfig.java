@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.config;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +23,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationManager;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -34,10 +34,10 @@ public class ResourceServerConfig {
   private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
+  private ResourceServerTokenServices tokenService;
 
   @Bean
-  public FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
+  FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
       final OAuth2AuthenticationProcessingFilter f) {
 
     FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> b =
@@ -47,7 +47,7 @@ public class ResourceServerConfig {
   }
 
   @Bean(name = "resourceServerFilter")
-  public OAuth2AuthenticationProcessingFilter oauthResourceServerFilter() {
+  OAuth2AuthenticationProcessingFilter oauthResourceServerFilter() {
 
     OAuth2AuthenticationManager manager = new OAuth2AuthenticationManager();
     manager.setTokenServices(tokenService);

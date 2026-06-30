@@ -40,7 +40,7 @@ class DashboardConfigurationStartupTests {
   @Test
   void contextStartsWithValidDashboardConfiguration() {
     contextRunner
-      .withPropertyValues("iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+      .withPropertyValues("iam.dashboard.enabled=true",
           "iam.dashboard.client-id=dashboard-client",
           "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456")
       .run(context -> {
@@ -58,14 +58,14 @@ class DashboardConfigurationStartupTests {
   @Test
   void contextFailsWhenClientIdMissing() {
     assertValidationFailure("dashboard.clientId is required when dashboard is enabled",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
 
   @Test
   void contextFailsWhenClientIdBlank() {
     assertValidationFailure("dashboard.clientId is required when dashboard is enabled",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=", "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
 
@@ -73,7 +73,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientIdTooShort() {
     assertValidationFailure(
         "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=abc",
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
@@ -82,7 +82,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientIdInvalidCharacters() {
     assertValidationFailure(
         "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=bad/id",
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
@@ -91,7 +91,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientIdContainsSpaces() {
     assertValidationFailure(
         "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=bad client",
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
@@ -100,7 +100,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientIdTooLong() {
     assertValidationFailure(
         "dashboard.clientId must be 4–256 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=" + "a".repeat(257),
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwxyz123456");
   }
@@ -108,14 +108,14 @@ class DashboardConfigurationStartupTests {
   @Test
   void contextFailsWhenClientSecretMissing() {
     assertValidationFailure("dashboard.clientSecret is required when dashboard is enabled",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=dashboard-client");
   }
 
   @Test
   void contextFailsWhenClientSecretBlank() {
     assertValidationFailure("dashboard.clientSecret is required when dashboard is enabled",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=dashboard-client", "iam.dashboard.client-secret=");
   }
 
@@ -123,7 +123,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientSecretTooShort() {
     assertValidationFailure(
         "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=dashboard-client", "iam.dashboard.client-secret=short");
   }
 
@@ -131,7 +131,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientSecretTooLong() {
     assertValidationFailure(
         "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=dashboard-client",
         "iam.dashboard.client-secret=" + "a".repeat(73));
   }
@@ -140,7 +140,7 @@ class DashboardConfigurationStartupTests {
   void contextFailsWhenClientSecretContainsInvalidCharacters() {
     assertValidationFailure(
         "dashboard.clientSecret must be 32–72 characters and contain only letters, numbers, '-', '.', '_' or '~'",
-        "iam.base-url=https://iam.example.org", "iam.dashboard.enabled=true",
+        "iam.dashboard.enabled=true",
         "iam.dashboard.client-id=dashboard-client",
         "iam.dashboard.client-secret=abcdefghijklmnopqrstuvwx/1234567890");
   }

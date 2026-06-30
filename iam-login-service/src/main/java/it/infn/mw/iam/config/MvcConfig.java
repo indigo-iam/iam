@@ -46,8 +46,7 @@ public class MvcConfig implements WebMvcConfigurer {
   private IamProperties iamProperties;
   private ResourceHandlerConfigurer resourceConfigurer;
 
-  public MvcConfig(
-      @Qualifier("mitreUserInfoInterceptor") IamUserInfoInterceptor userInfoInterceptor,
+  public MvcConfig(IamUserInfoInterceptor userInfoInterceptor,
       @Qualifier("mitreServerConfigInterceptor") ServerConfigInterceptor serverConfigInterceptor,
       IamViewInfoInterceptor iamViewInfoInterceptor, IamProperties iamProperties,
       ResourceHandlerConfigurer resourceConfigurer) {

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,8 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,8 +36,8 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
@@ -71,13 +68,7 @@ class IamTokenRepositoryTests extends TokenGetterUtils {
   IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
-  AuthenticationHolderRepository authenticationHolderRepo;
-
-  @Autowired
-  ClientDetailsEntityService clientDetailsService;
-
-  @Autowired
-  IamTokenService tokenService;
+  IamAuthenticationHolderRepository authenticationHolderRepo;
 
   @Autowired
   SecurityContextUtils context;
@@ -170,13 +161,13 @@ class IamTokenRepositoryTests extends TokenGetterUtils {
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
     accessTokenRepo.delete(at);
-    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(false));
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    assertTrue(refreshTokenRepo.findById(rt.getId()).isPresent());
+    assertTrue(authenticationHolderRepo.findById(ah.getId()).isPresent());
     refreshTokenRepo.delete(rt);
-    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(true));
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
-    authenticationHolderRepo.remove(ah);
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
+    assertFalse(refreshTokenRepo.findById(rt.getId()).isPresent());
+    assertTrue(authenticationHolderRepo.findById(ah.getId()).isPresent());
+    authenticationHolderRepo.delete(ah);
+    assertFalse(authenticationHolderRepo.findById(ah.getId()).isPresent());
   }
 
   @Test
@@ -189,13 +180,13 @@ class IamTokenRepositoryTests extends TokenGetterUtils {
     OAuth2AccessTokenEntity at =
         accessTokenRepo.findByTokenValue(tokenUtils.sha256(response.accessToken())).orElseThrow();
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
-    assertThat(accessTokenRepo.findAll()).hasSize(1);
-    assertThat(refreshTokenRepo.findAll()).hasSize(1);
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
-    authenticationHolderRepo.remove(ah);
-    assertThat(accessTokenRepo.findAll()).isEmpty();
-    assertThat(refreshTokenRepo.findAll()).isEmpty();
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
+    assertEquals(1, accessTokenRepo.count());
+    assertEquals(1, refreshTokenRepo.count());
+    assertTrue(authenticationHolderRepo.findById(ah.getId()).isPresent());
+    authenticationHolderRepo.delete(ah);
+    assertEquals(0, accessTokenRepo.count());
+    assertEquals(0, refreshTokenRepo.count());
+    assertFalse(authenticationHolderRepo.findById(ah.getId()).isPresent());
   }
 
   @Test

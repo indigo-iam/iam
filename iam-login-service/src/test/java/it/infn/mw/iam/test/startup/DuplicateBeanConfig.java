@@ -15,9 +15,12 @@
  */
 package it.infn.mw.iam.test.startup;
 
-import org.mitre.openid.connect.token.TofuUserApprovalHandler;
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 
 @SuppressWarnings("deprecation")
@@ -25,7 +28,32 @@ import org.springframework.security.oauth2.provider.approval.UserApprovalHandler
 public class DuplicateBeanConfig {
 
   @Bean
-  UserApprovalHandler userApprovalHandler2() {
-    return new TofuUserApprovalHandler();
+  UserApprovalHandler userApprovalHandlerNum2() {
+    return new UserApprovalHandler() {
+
+      @Override
+      public boolean isApproved(AuthorizationRequest authorizationRequest,
+          Authentication userAuthentication) {
+        return false;
+      }
+
+      @Override
+      public AuthorizationRequest checkForPreApproval(AuthorizationRequest authorizationRequest,
+          Authentication userAuthentication) {
+        return null;
+      }
+
+      @Override
+      public AuthorizationRequest updateAfterApproval(AuthorizationRequest authorizationRequest,
+          Authentication userAuthentication) {
+        return null;
+      }
+
+      @Override
+      public Map<String, Object> getUserApprovalRequest(AuthorizationRequest authorizationRequest,
+          Authentication userAuthentication) {
+        return null;
+      }
+    };
   }
 }

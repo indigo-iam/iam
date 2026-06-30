@@ -71,23 +71,22 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
   private final AccountGroupManagerService groupManagerService;
 
-  private final ScimProperties scimProperties;
   private final IamProperties iamProperties;
+  private final ScimProperties scimProperties;
 
-  public UserConverter(ScimProperties scimProperties, ScimResourceLocationProvider rlp,
+  public UserConverter(IamProperties iamProperties, ScimProperties scimProperties, ScimResourceLocationProvider rlp,
       AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
-      X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService,
-      IamProperties iamProperties) {
+      X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService) {
 
-    this.resourceLocationProvider = rlp;
+    this.iamProperties = iamProperties;
     this.scimProperties = scimProperties;
+    this.resourceLocationProvider = rlp;
     this.addressConverter = ac;
     this.oidcIdConverter = oidc;
     this.sshKeyConverter = sshc;
     this.samlIdConverter = samlc;
     this.x509CertificateIamConverter = x509Iamcc;
     this.groupManagerService = groupManagerService;
-    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -283,7 +282,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (scimProperties.isIncludeAuthorities()) {
+    if (scimProperties.isIncludeAuthorities() || iamProperties.getDashboard().isEnabled()) {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
     }
 
