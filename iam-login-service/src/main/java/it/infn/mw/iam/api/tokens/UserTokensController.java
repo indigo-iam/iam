@@ -96,7 +96,7 @@ public class UserTokensController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @DeleteMapping(value = {"/api/tokens/refresh/{id}", "/iam/api/tokens/access/{id}"})
+  @DeleteMapping(value = {"/api/tokens/refresh/{id}", "/iam/api/tokens/refresh/{id}"})
   public String deleteRefreshToken(@PathVariable Long id, Authentication auth, ModelMap m) {
 
     IamAccount authenticatedUser = getAuthenticatedUserOrFail(auth);

@@ -19,7 +19,7 @@ var AccessTokenModel = Backbone.Model.extend({
 
 	defaults: {
 		id: null,
-		value: null,
+		audiences: null,
 		refreshTokenId: null,
 		scopes: [],
 		clientId: null,
@@ -27,7 +27,7 @@ var AccessTokenModel = Backbone.Model.extend({
 		expiration: null
 	},
 
-	urlRoot: 'api/tokens/access'
+	urlRoot: 'iam/api/tokens/access'
 });
 
 var AccessTokenCollection = Backbone.Collection.extend({
@@ -35,7 +35,7 @@ var AccessTokenCollection = Backbone.Collection.extend({
 
 	model: AccessTokenModel,
 
-	url: 'api/tokens/access'
+	url: 'iam/api/tokens/access'
 
 });
 
@@ -168,14 +168,13 @@ var RefreshTokenModel = Backbone.Model.extend({
 
 	defaults: {
 		id: null,
-		value: null,
 		scopes: [],
 		clientId: null,
 		userId: null,
 		expiration: null
 	},
 
-	urlRoot: 'api/tokens/refresh'
+	urlRoot: 'iam/api/tokens/refresh'
 });
 
 var RefreshTokenCollection = Backbone.Collection.extend({
@@ -183,7 +182,7 @@ var RefreshTokenCollection = Backbone.Collection.extend({
 
 	model: RefreshTokenModel,
 
-	url: 'api/tokens/refresh'
+	url: 'iam/api/tokens/refresh'
 
 });
 

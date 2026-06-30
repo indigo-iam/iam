@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonFilter("attributeFilter")
 public record AccessToken(
     @JsonProperty("id") Long id,
-    @JsonProperty("value") String value,
+    @JsonProperty("audiences") Set<String> audiences,
     @JsonProperty("scopes") Set<String> scopes,
     @JsonProperty("expiration") Date expiration,
     @JsonProperty("clientId") String clientId,

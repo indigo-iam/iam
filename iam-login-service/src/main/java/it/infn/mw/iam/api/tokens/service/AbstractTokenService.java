@@ -21,16 +21,12 @@ import java.util.Date;
 import java.util.List;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.ClientRef;
-import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.model.UserRef;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
@@ -80,19 +76,6 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
     builder.resources(resources);
     builder.totalResults(totalElements);
     return builder.build();
-  }
-
-  protected AccessToken toAccessToken(OAuth2AccessTokenEntity entity) {
-    return new AccessToken(entity.getId(), entity.getValue(), entity.getScope(),
-        entity.getExpiration(), entity.getClient().getClientId(), toClientRef(entity.getClient()),
-        toUserRef(entity.getAuthenticationHolder().getUserAuth()),
-        entity.getRefreshToken() != null ? entity.getRefreshToken().getId() : null);
-  }
-
-  protected RefreshToken toRefreshToken(OAuth2RefreshTokenEntity entity) {
-    return new RefreshToken(entity.getId(), entity.getValue(), entity.getExpiration(),
-        entity.getAuthenticationHolder().getScope(), entity.getClient().getClientId(),
-        toClientRef(entity.getClient()), toUserRef(entity.getAuthenticationHolder().getUserAuth()));
   }
 
   protected ClientRef toClientRef(ClientDetailsEntity entity) {

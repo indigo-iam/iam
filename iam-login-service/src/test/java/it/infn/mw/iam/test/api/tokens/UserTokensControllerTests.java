@@ -238,8 +238,8 @@ class UserTokensControllerTests {
 
   private AccessToken accessToken(Long id, String username) {
 
-    return new AccessToken(id, "access-token-value", Set.of("openid"), new Date(), "client-id",
-        clientRef(), userRef(username), 100L);
+    return new AccessToken(id, Set.of("https://localhost:8080/"), Set.of("openid"), new Date(),
+        "client-id", clientRef(), userRef(username), 100L);
   }
 
   private RefreshToken refreshToken(Long id, String username) {

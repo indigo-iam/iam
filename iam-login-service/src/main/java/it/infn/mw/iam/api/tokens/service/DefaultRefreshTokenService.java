@@ -19,6 +19,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -86,6 +87,12 @@ public class DefaultRefreshTokenService extends AbstractTokenService<RefreshToke
   private long countAllValidTokensForUserAndClient(String username, String clientId) {
 
     return tokenRepository.countValidRefreshTokensForUserAndClient(username, clientId, now());
+  }
+
+  protected RefreshToken toRefreshToken(OAuth2RefreshTokenEntity entity) {
+    return new RefreshToken(entity.getId(), entity.getValue(), entity.getExpiration(),
+        entity.getAuthenticationHolder().getScope(), entity.getClient().getClientId(),
+        toClientRef(entity.getClient()), toUserRef(entity.getAuthenticationHolder().getUserAuth()));
   }
 
   @Override

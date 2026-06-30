@@ -57,7 +57,6 @@ import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @SuppressWarnings("deprecation")
 @Service
-@Primary
 @Transactional
 public class IamRegistrationTokenService implements RegistrationTokenService {
 

@@ -19,6 +19,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -85,6 +86,13 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
   private long countAllValidTokensForUserAndClient(String username, String clientId) {
 
     return tokenRepository.countValidAccessTokensForUserAndClient(username, clientId, now());
+  }
+
+  protected AccessToken toAccessToken(OAuth2AccessTokenEntity entity) {
+    return new AccessToken(entity.getId(), entity.getAudiences(), entity.getScope(),
+        entity.getExpiration(), entity.getClient().getClientId(), toClientRef(entity.getClient()),
+        toUserRef(entity.getAuthenticationHolder().getUserAuth()),
+        entity.getRefreshToken() != null ? entity.getRefreshToken().getId() : null);
   }
 
   @Override

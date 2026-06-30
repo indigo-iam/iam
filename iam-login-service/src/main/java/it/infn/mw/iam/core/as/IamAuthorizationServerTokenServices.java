@@ -162,6 +162,13 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   }
 
   @Override
+  public OAuth2AccessToken getAccessToken(OAuth2Authentication authentication) {
+
+    throw new UnsupportedOperationException(
+        "Unable to look up access token from authentication object.");
+  }
+
+  @Override
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication)
       throws AuthenticationException {
 
@@ -540,14 +547,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       .orElseThrow(() -> new InvalidTokenException("Invalid refresh token: token not found"));
   }
 
-  @Override
-  public OAuth2AccessToken getAccessToken(OAuth2Authentication authentication) {
-
-    throw new UnsupportedOperationException(
-        "Unable to look up access token from authentication object.");
-  }
-
-  public JWT createIdToken(ClientDetailsEntity client, OAuth2Request request, Date issueTime,
+  private JWT createIdToken(ClientDetailsEntity client, OAuth2Request request, Date issueTime,
       String sub, OAuth2AccessTokenEntity accessToken) {
 
     JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
