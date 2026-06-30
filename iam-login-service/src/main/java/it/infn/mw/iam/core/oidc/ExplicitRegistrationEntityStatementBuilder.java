@@ -122,6 +122,7 @@ public class ExplicitRegistrationEntityStatementBuilder {
     rpMetadata.put("redirect_uris",
         List.of(URI.create(iamProperties.getBaseUrl()).resolve("/openid_connect_login")));
     rpMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    rpMetadata.put("scope", "openid");
     return rpMetadata;
   }
 }
