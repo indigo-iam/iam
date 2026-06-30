@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.transaction.Transactional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +121,8 @@ public class DefaultRegistrationRequestService
   private IamProperties iamProperties;
 
   private ApplicationEventPublisher eventPublisher;
+
+  private  static final String BAD_STATUS_TRANSITION_MSG = "Bad status transition from [%s] to [%s]";
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
@@ -410,7 +410,7 @@ public class DefaultRegistrationRequestService
 
     if (!checkStatusTransition(request.getStatus(), REJECTED)) {
       throw new IllegalArgumentException(
-          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), APPROVED));
     }
 
     return handleReject(request, motivation, doNotSendEmail);
@@ -423,7 +423,7 @@ public class DefaultRegistrationRequestService
 
     if (!checkStatusTransition(request.getStatus(), APPROVED)) {
       throw new IllegalArgumentException(
-          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), APPROVED));
     }
 
     return handleApprove(request);
@@ -433,7 +433,7 @@ public class DefaultRegistrationRequestService
   public RegistrationRequestDto timeoutRequest(IamRegistrationRequest request) {
     if (!checkStatusTransition(request.getStatus(), TIMEOUT)) {
       throw new IllegalArgumentException(
-          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), TIMEOUT));
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), TIMEOUT));
     }
     return handleReject(request, Optional.of("Expired timeout"), true);
   }
