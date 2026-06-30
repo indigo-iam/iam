@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.registration;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public interface RegistrationRequestService {
 
@@ -45,6 +45,5 @@ public interface RegistrationRequestService {
 
   Boolean emailAvailable(String emailAddress);
 
-  void cleanupExpiredRegistrationRequests(Instant expiryTime);
-
+  RegistrationRequestDto timeoutRequest(IamRegistrationRequest request);
 }

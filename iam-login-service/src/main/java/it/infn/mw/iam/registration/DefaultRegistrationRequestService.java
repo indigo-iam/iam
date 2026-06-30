@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.REJECTED;
+import static it.infn.mw.iam.core.IamRegistrationRequestStatus.TIMEOUT;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
@@ -142,6 +143,7 @@ public class DefaultRegistrationRequestService
         .put(NEW, CONFIRMED, true)
         .put(NEW, APPROVED, true)
         .put(NEW, REJECTED, true)
+        .put(NEW, TIMEOUT, true)
         .put(CONFIRMED, APPROVED, true)
         .put(CONFIRMED, REJECTED, true)
         .put(APPROVED, CONFIRMED, true)
@@ -428,21 +430,11 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
-  @Transactional
-  public void cleanupExpiredRegistrationRequests(Instant expiryTime) {
-
-    Date expiryDate = Date.from(expiryTime);
-    List<Long> accountIds = requestRepository.findAccountIdsForExpiredRegistrations(expiryDate);
-
-    if (accountIds.isEmpty()) {
-      LOG.debug("Cleanup skipped: no expired registrations found (expiryTime= {})", expiryTime);
-      return;
+  public RegistrationRequestDto timeoutRequest(IamRegistrationRequest request) {
+    if (!checkStatusTransition(request.getStatus(), TIMEOUT)) {
+      throw new IllegalArgumentException(
+          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), TIMEOUT));
     }
-
-    int deletedRegistrations = requestRepository.deleteExpiredRegistrations(expiryDate);
-    int deletedAccounts = accountService.deleteAccountsForExpiredRegistrations(accountIds);
-
-    LOG.info("Cleanup removed {} registrations and {} accounts (expiryTime= {})",
-        deletedRegistrations, deletedAccounts, expiryTime);
+    return handleReject(request, Optional.of("Expired timeout"), true);
   }
 }

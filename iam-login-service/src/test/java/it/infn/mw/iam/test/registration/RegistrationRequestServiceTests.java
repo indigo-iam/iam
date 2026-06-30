@@ -15,117 +15,96 @@
  */
 package it.infn.mw.iam.test.registration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+
+import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
+import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import it.infn.mw.iam.core.user.IamAccountService;
-import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
+import org.springframework.context.ApplicationEventPublisher;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.registration.DefaultRegistrationRequestService;
+import it.infn.mw.iam.registration.RegistrationConverter;
+import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.notification.NotificationFactory;
 
 @ExtendWith(MockitoExtension.class)
 class RegistrationRequestServiceTests {
 
-    @Mock
-    private IamRegistrationRequestRepository requestRepository;
-
-    @Mock
-    private IamAccountService accountService;
-
     @InjectMocks
-    private DefaultRegistrationRequestService registrationRequestService;
+    private DefaultRegistrationRequestService service;
 
-    private Instant expiryTime;
-    private Date expiryDate;
+    @Mock
+    private IamRegistrationRequest request;
+
+    @Mock
+    private RegistrationConverter converter;
+
+    @Mock 
+    private NotificationFactory notificationFactory;
+
+    @Mock 
+    private IamAccountService accountService; 
+
+    @Mock 
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock 
+    private IamAccount account; 
 
     @BeforeEach
     void setup() {
-        expiryTime = Instant.now().minus(7, ChronoUnit.DAYS);
-        expiryDate = Date.from(expiryTime);
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void shouldDeleteRegistrationsAndAccounts() {
+    void shouldReturnDtoWhenStatusTransitionIsValid() {
+        
+        when(request.getStatus()).thenReturn(NEW);
+        when(request.getAccount()).thenReturn(account);
+        when(account.getUsername()).thenReturn("test-user");
 
-        List<Long> accountIds = List.of(1L, 2L);
+        RegistrationRequestDto dto = new RegistrationRequestDto();
+       
+        when(converter.fromEntity(any(IamRegistrationRequest.class)))
+                .thenReturn(dto);
 
-        when(requestRepository.findAccountIdsForExpiredRegistrations(expiryDate))
-                .thenReturn(accountIds);
+        RegistrationRequestDto result = service.timeoutRequest(request);
 
-        when(requestRepository.deleteExpiredRegistrations(expiryDate))
-                .thenReturn(2);
+        assertNotNull(result);
+        assertEquals(dto, result);
 
-        when(accountService.deleteAccountsForExpiredRegistrations(accountIds))
-                .thenReturn(2);
-
-        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
-
-        verify(requestRepository).findAccountIdsForExpiredRegistrations(expiryDate);
-        verify(requestRepository).deleteExpiredRegistrations(expiryDate);
-        verify(accountService).deleteAccountsForExpiredRegistrations(accountIds);
+        verify(converter).fromEntity(any());
+        verify(accountService).deleteAccount(account);
+        verify(eventPublisher).publishEvent(any());
     }
 
     @Test
-    void shouldHandleNoExpiredRegistrations() {
+    void shouldThrowExceptionWhenStatusTransitionIsInvalid() {
 
-        when(requestRepository.findAccountIdsForExpiredRegistrations(expiryDate))
-                .thenReturn(Collections.emptyList());
+        when(request.getStatus()).thenReturn(APPROVED);
 
-        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.timeoutRequest(request)
+        );
 
-        verify(accountService, never()).deleteAccountsForExpiredRegistrations(Collections.emptyList());
+        assertTrue(exception.getMessage().contains("Bad status transition"));
     }
-
-    @Test
-    void shouldDeleteRegistrationsBeforeAccounts() {
-
-        List<Long> accountIds = List.of(1L);
-
-        when(requestRepository.findAccountIdsForExpiredRegistrations(any()))
-                .thenReturn(accountIds);
-
-        when(requestRepository.deleteExpiredRegistrations(any()))
-                .thenReturn(1);
-
-        when(accountService.deleteAccountsForExpiredRegistrations(accountIds))
-                .thenReturn(1);
-
-        registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
-
-        InOrder inOrder = inOrder(requestRepository, accountService);
-
-        inOrder.verify(requestRepository).findAccountIdsForExpiredRegistrations(any());
-        inOrder.verify(requestRepository).deleteExpiredRegistrations(any());
-        inOrder.verify(accountService).deleteAccountsForExpiredRegistrations(accountIds);
-    }
-
-    @Test
-    void shouldPropagateExceptionAndRollback() {
-
-        when(requestRepository.findAccountIdsForExpiredRegistrations(any()))
-                .thenThrow(new RuntimeException("DB failure"));
-
-        assertThrows(RuntimeException.class,
-                () -> registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime));
-
-        verify(requestRepository, never()).deleteExpiredRegistrations(any());
-        verify(accountService, never()).deleteAccountsForExpiredRegistrations(any());
-    }
-
 }

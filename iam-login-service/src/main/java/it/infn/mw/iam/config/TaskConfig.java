@@ -17,6 +17,7 @@ package it.infn.mw.iam.config;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +43,7 @@ import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
+import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.RegistrationRequestService;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
@@ -64,6 +66,7 @@ public class TaskConfig implements SchedulingConfigurer {
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
   private NotificationStoreService notificationStoreService;
+  private IamRegistrationRequestRepository registrationRequestRepository;
   private RegistrationRequestService registrationRequestService;
   private NotificationDeliveryTask deliveryTask;
   private LifecycleProperties lifecycleProperties;
@@ -88,12 +91,14 @@ public class TaskConfig implements SchedulingConfigurer {
   private String cleanupExpiredRegistrationCronSchedule;
 
   public TaskConfig(NotificationStoreService notificationStoreService,
+      IamRegistrationRequestRepository registrationRequestRepository,
       RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
       ExecutorService taskScheduler, GarbageCollector garbageCollector) {
 
     this.notificationStoreService = notificationStoreService;
+    this.registrationRequestRepository = registrationRequestRepository;
     this.registrationRequestService = registrationRequestService;
     this.deliveryTask = deliveryTask;
     this.lifecycleProperties = lifecycleProperties;
@@ -155,9 +160,10 @@ public class TaskConfig implements SchedulingConfigurer {
   }
 
   private void scheduledCleanUpExpireRegistration() {
-    LOG.info("Running cleanup with expiryDays= {}", expiryDays);
+    LOG.info("Running registration request cleanup with expiry days= {}", expiryDays);
     Instant expiryTime = Instant.now().minus(expiryDays, ChronoUnit.DAYS);
-    registrationRequestService.cleanupExpiredRegistrationRequests(expiryTime);
+    registrationRequestRepository.findExpiredRequests(Date.from(expiryTime))
+        .forEach(registrationRequestService::timeoutRequest);
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

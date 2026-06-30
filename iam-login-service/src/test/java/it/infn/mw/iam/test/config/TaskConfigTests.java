@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import it.infn.mw.iam.config.TaskConfig;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.RegistrationRequestService;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +51,9 @@ class TaskConfigTests {
 
     @Mock
     private RegistrationRequestService registrationRequestService;
+
+    @Mock
+    private IamRegistrationRequestRepository registrationRequestRepository;
 
     @InjectMocks
     private TaskConfig taskConfig;
@@ -102,7 +108,7 @@ class TaskConfigTests {
         task.run();
 
         verify(registrationRequestService, times(1))
-                .cleanupExpiredRegistrationRequests(any(Instant.class));
+                .timeoutRequest(any(IamRegistrationRequest.class));
     }
 
     @Test
@@ -125,15 +131,16 @@ class TaskConfigTests {
 
         task.run();
 
-        ArgumentCaptor<Instant> instantCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Date> instantCaptor = ArgumentCaptor.forClass(Date.class);
 
-        verify(registrationRequestService)
-                .cleanupExpiredRegistrationRequests(instantCaptor.capture());
+        verify(registrationRequestRepository)
+                .findExpiredRequests(instantCaptor.capture());
 
-        Instant actual = instantCaptor.getValue();
+        Date actual = instantCaptor.getValue();
+        Instant actualInstant = actual.toInstant();
 
         // allow slight time drift
-        assertTrue(!actual.isBefore(beforeRun.minusSeconds(2)) &&
-                !actual.isAfter(beforeRun.plusSeconds(2)));
+        assertTrue(!actualInstant.isBefore(beforeRun.minusSeconds(2)) &&
+                !actualInstant.isAfter(beforeRun.plusSeconds(2)));
     }
 }

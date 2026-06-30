@@ -19,7 +19,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -42,14 +41,8 @@ public interface IamRegistrationRequestRepository
   @Query("select r from IamRegistrationRequest r where r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW or r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED")
   List<IamRegistrationRequest> findPendingRequests();
 
-  @Query("SELECT r.account.id FROM IamRegistrationRequest r " +
+  @Query("SELECT r FROM IamRegistrationRequest r " +
           "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
           "AND r.creationTime < :expiryTime")
-  List<Long> findAccountIdsForExpiredRegistrations(@Param("expiryTime") Date expiryTime);
-
-  @Modifying
-  @Query("DELETE FROM IamRegistrationRequest r " +
-          "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
-          "AND r.creationTime < :expiryTime")
-  int deleteExpiredRegistrations(@Param("expiryTime") Date expiryTime);
+  List<IamRegistrationRequest> findExpiredRequests(@Param("expiryTime") Date expiryTime);
 }
