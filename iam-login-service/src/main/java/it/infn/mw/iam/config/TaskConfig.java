@@ -160,7 +160,7 @@ public class TaskConfig implements SchedulingConfigurer {
   }
 
   private void scheduledCleanUpExpireRegistration() {
-    LOG.info("Running registration request cleanup with expiry days= {}", expiryDays);
+    LOG.info("Running expired registration request cleanup with expiry days= {}", expiryDays);
     Instant expiryTime = Instant.now().minus(expiryDays, ChronoUnit.DAYS);
     registrationRequestRepository.findExpiredRequests(Date.from(expiryTime))
         .forEach(registrationRequestService::timeoutRequest);
