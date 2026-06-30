@@ -36,12 +36,10 @@ import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultBlacklistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultStatsService;
 import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
-import org.mitre.openid.connect.service.impl.DummyResourceSetService;
 import org.mitre.openid.connect.service.impl.InMemoryClientLogoLoadingService;
 import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
 import org.mitre.openid.connect.service.impl.UUIDPairwiseIdentiferService;
 import org.mitre.openid.connect.web.ServerConfigInterceptor;
-import org.mitre.uma.service.ResourceSetService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -227,12 +225,6 @@ public class MitreServicesConfig {
   BlacklistedSiteService defaultBlacklistedSiteService() {
 
     return new DefaultBlacklistedSiteService();
-  }
-
-  @Bean
-  ResourceSetService defaultResourceSetService() {
-
-    return new DummyResourceSetService();
   }
 
   @Bean
