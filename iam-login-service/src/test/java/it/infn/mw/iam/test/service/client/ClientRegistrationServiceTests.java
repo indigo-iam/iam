@@ -26,8 +26,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,11 +37,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 
 import java.text.ParseException;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import javax.validation.ConstraintViolationException;
 
@@ -1088,38 +1086,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   }
 
   @Test
-  void testRatIsUpdated() throws ParseException {
-    ClientDefaultsProperties props = new ClientDefaultsProperties();
-    props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
-
-    registrationProperties.setClientDefaults(props);
-
-    RegisteredClientDTO request = new RegisteredClientDTO();
-    request.setClientName("example");
-    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
-    request.setRedirectUris(Set.of("https://test.example/cb"));
-
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
-
-    lenient().when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
-    lenient().when(oauthRequest.getClientId()).thenReturn(response.getClientId());
-    lenient().when(oauthRequest.getScope())
-      .thenReturn(Set.of(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
-
-    RegisteredClientDTO updateRequest = response;
-    response.setClientDescription("Whatever");
-
-    clock.advance(Duration.ofDays(2));
-
-    RegisteredClientDTO updateResponse =
-        service.updateClient(response.getClientId(), updateRequest, ratAuth);
-
-    assertThat(updateResponse.getRegistrationAccessToken(), notNullValue());
-    assertThat(updateResponse.getRegistrationAccessToken(),
-        not(equalTo(response.getRegistrationAccessToken())));
-  }
-
-  @Test
   void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -1205,7 +1171,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   @Test
   void testRedeemClient() throws ParseException {
     ClientDefaultsProperties props = new ClientDefaultsProperties();
-    props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
 
     registrationProperties.setClientDefaults(props);
 
@@ -1223,13 +1188,13 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
               noAuth);
         });
 
-    assertThat(exception.getMessage(), containsString("No authenticated user found"));
+    assertTrue(exception.getMessage().contains("No authenticated user found"));
 
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       service.redeemClient(response.getClientId(), "invalid-token", userAuth);
     });
 
-    assertThat(exception.getMessage(), containsString("Invalid registration access token"));
+    assertTrue(exception.getMessage().contains("Invalid registration access token"));
 
     // Test with rat linked to another client
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -1237,22 +1202,13 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
           userAuth);
     });
 
-    assertThat(exception.getMessage(), containsString("Invalid registration access token"));
+    assertTrue(exception.getMessage().contains("Invalid registration access token"));
 
     service.redeemClient(response.getClientId(), response.getRegistrationAccessToken(), userAuth);
 
     RegisteredClientDTO redeemedResponse = service.retrieveClient(response.getClientId(), userAuth);
 
-    assertThat(redeemedResponse.getClientId(), is(response.getClientId()));
-
-    clock.advance(Duration.ofDays(2));
-
-    Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
-      service.redeemClient(response.getClientId(), response.getRegistrationAccessToken(),
-          anotherUserAuth);
-    });
-
-    assertThat(exception.getMessage(), containsString("Invalid registration access token"));
+    assertEquals(redeemedResponse.getClientId(), response.getClientId());
   }
 
   @Test
@@ -1277,8 +1233,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     client.setJwk(VALID_JSON_VALUE);
     try {
       savedClient = service.registerClient(client, userAuth);
-      assertThat(savedClient.getClientId(), is(savedClient.getClientId()));
-      assertThat(savedClient.getJwk(), is(VALID_JSON_VALUE));
+      assertEquals(VALID_JSON_VALUE, savedClient.getJwk());
     } finally {
       service.deleteClient(savedClient.getClientId(), userAuth);
     }

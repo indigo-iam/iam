@@ -16,26 +16,37 @@
 package it.infn.mw.iam.api.tokens.service;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.SavedUserAuthentication;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
+import it.infn.mw.iam.api.tokens.model.ClientRef;
+import it.infn.mw.iam.api.tokens.model.UserRef;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 public abstract class AbstractTokenService<T> implements TokenService<T> {
 
-  protected Clock clock;
-  protected IamProperties properties;
-  protected TokenRevocationService revokeService;
+  protected final Clock clock;
+  protected final TokenRevocationService revocationService;
+  protected final IamAccountService accountService;
+  protected final ScimResourceLocationProvider resourceLocationProvider;
 
-  protected AbstractTokenService(Clock clock, IamProperties properties, TokenRevocationService revokeService) {
+  protected AbstractTokenService(Clock clock, TokenRevocationService revocationService,
+      IamAccountService accountService, ScimResourceLocationProvider resourceLocationProvider) {
 
     this.clock = clock;
-    this.properties = properties;
-    this.revokeService = revokeService;
+    this.revocationService = revocationService;
+    this.accountService = accountService;
+    this.resourceLocationProvider = resourceLocationProvider;
   }
 
   protected Date now() {
@@ -45,15 +56,15 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
 
   protected OffsetPageable getOffsetPageable(TokensPageRequest pageRequest) {
 
-    if (pageRequest.getCount() == 0) {
+    if (pageRequest.count() == 0) {
       return new OffsetPageable(0, 1);
     }
-    return new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
+    return new OffsetPageable(pageRequest.startIndex() - 1, pageRequest.count());
   }
 
   protected boolean isCountRequest(TokensPageRequest pageRequest) {
 
-    return pageRequest.getCount() == 0;
+    return pageRequest.count() == 0;
   }
 
   protected ListResponseDTO<T> buildListResponse(List<T> resources, OffsetPageable op,
@@ -67,4 +78,31 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
     return builder.build();
   }
 
+  protected ClientRef toClientRef(ClientDetailsEntity entity) {
+    if (entity == null) {
+      return null;
+    }
+
+    return new ClientRef(entity.getId(), entity.getClientId(), entity.getClientName(),
+        entity.getContacts(), entity.getClientUri());
+  }
+
+  protected UserRef toUserRef(SavedUserAuthentication savedUserAuthentication) {
+    if (savedUserAuthentication == null) {
+      return null;
+    }
+    IamAccount a = accountService.findByUsername(savedUserAuthentication.getName())
+      .orElseThrow(() -> new IllegalStateException("Owner of the token not found"));
+    return new UserRef(a.getUuid(), a.getUsername(),
+        resourceLocationProvider.userLocation(a.getUuid()));
+  }
+
+  protected ListResponseDTO<T> buildCountResponse(long countResponse) {
+
+    return new ListResponseDTO.Builder<T>().totalResults(countResponse)
+      .resources(Collections.emptyList())
+      .startIndex(1)
+      .itemsPerPage(0)
+      .build();
+  }
 }

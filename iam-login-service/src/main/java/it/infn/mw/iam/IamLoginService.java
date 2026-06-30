@@ -15,20 +15,10 @@
  */
 package it.infn.mw.iam;
 
-import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.oauth2.web.IntrospectionEndpoint;
-import org.mitre.oauth2.web.OAuthConfirmationController;
-import org.mitre.oauth2.web.RevocationEndpoint;
-import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
-import org.mitre.openid.connect.service.impl.DefaultApprovedSiteService;
-import org.mitre.openid.connect.token.ConnectTokenEnhancer;
-import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.view.UserInfoView;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
 import org.mitre.openid.connect.web.RootController;
-import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -68,33 +58,13 @@ import it.infn.mw.iam.core.util.IamBanner;
     "org.mitre.discovery.view"},
 excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=RootController.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=JWKSetPublishingEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=CorsFilter.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=OAuthConfirmationController.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=TofuUserApprovalHandler.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=IntrospectionEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=RevocationEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoView.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=AuthorizationRequestFilter.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=ConnectTokenEnhancer.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultDeviceCodeService.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultOAuth2AuthorizationCodeService.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DefaultApprovedSiteService.class)
+        value=UserInfoView.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

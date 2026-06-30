@@ -17,31 +17,21 @@ package it.infn.mw.iam.config.security;
 
 import static org.springframework.http.HttpMethod.OPTIONS;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
-import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.authn.TokenEndpointBasicAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 
 @SuppressWarnings("deprecation")
@@ -55,53 +45,18 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
   @Autowired
-  @Qualifier("clientUserDetailsService")
-  private ClientUserDetailsService userDetailsService;
-
-  @Autowired
   private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
 
   @Autowired
   private ClientCredentialsTokenEndpointFilter ccFilter;
 
+  @Autowired
+  private TokenEndpointBasicAuthenticationProvider basicAuthProvider;
+
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider() {
-
-      @Override
-      public Authentication authenticate(Authentication authentication)
-          throws AuthenticationException {
-
-        String clientId = authentication.getName();
-        ClientDetailsEntity client = null;
-        try {
-          client = userDetailsService.getClientDetailsService().loadClientByClientId(clientId);
-        } catch (InvalidClientException e) {
-          throw new BadCredentialsException(e.getMessage());
-        }
-
-        if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
-            && client.getClientSecret() != null) {
-          throw new AuthenticationServiceException("Public client requires no secret");
-        }
-        if (!supportsBasic(client)) {
-          throw new BadCredentialsException("Client does not support basic authentication");
-        }
-
-        return super.authenticate(authentication);
-      }
-
-      private boolean supportsBasic(ClientDetailsEntity c) {
-        return AuthMethod.SECRET_BASIC.equals(c.getTokenEndpointAuthMethod())
-            || AuthMethod.NONE.equals(c.getTokenEndpointAuthMethod());
-      }
-    };
-
-    provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
-    provider.setUserDetailsService(userDetailsService);
-
-    auth.authenticationProvider(provider);
+    auth.authenticationProvider(basicAuthProvider);
   }
 
   @Override

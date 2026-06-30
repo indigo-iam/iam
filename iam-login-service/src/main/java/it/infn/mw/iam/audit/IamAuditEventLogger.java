@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
@@ -35,7 +34,6 @@ public class IamAuditEventLogger implements AuditEventLogger {
   
   private IamAuditApplicationEvent lastEvent;
   
-  @Autowired
   public IamAuditEventLogger(AuditDataSerializer serializer) {
     this.serializer = serializer;
   }

@@ -15,16 +15,10 @@
  */
 package it.infn.mw.iam.config;
 
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.repository.OAuth2ClientRepository;
-import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.oauth2.repository.impl.JpaAuthenticationHolderRepository;
-import org.mitre.oauth2.repository.impl.JpaAuthorizationCodeRepository;
 import org.mitre.oauth2.repository.impl.JpaDeviceCodeRepository;
-import org.mitre.oauth2.repository.impl.JpaOAuth2TokenRepository;
 import org.mitre.oauth2.repository.impl.JpaSystemScopeRepository;
 import org.mitre.openid.connect.repository.ApprovedSiteRepository;
 import org.mitre.openid.connect.repository.BlacklistedSiteRepository;
@@ -35,7 +29,6 @@ import org.mitre.openid.connect.repository.impl.JpaApprovedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaBlacklistedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaPairwiseIdentifierRepository;
 import org.mitre.openid.connect.repository.impl.JpaWhitelistedSiteRepository;
-import org.mitre.openid.connect.service.impl.MITREidDataService_1_3;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -46,18 +39,6 @@ import it.infn.mw.iam.persistence.repository.client.IamOAuth2ClientRepositoryAda
 
 @Configuration
 public class MitreRepositoryConfig {
-
-  @Bean
-  AuthenticationHolderRepository authenticationHolderRepository() {
-
-    return new JpaAuthenticationHolderRepository();
-  }
-
-  @Bean
-  AuthorizationCodeRepository authorizationCodeRepository() {
-
-    return new JpaAuthorizationCodeRepository();
-  }
 
   @Bean
   PairwiseIdentifierRepository defaultPairwiseIdentifierRepository() {
@@ -75,12 +56,6 @@ public class MitreRepositoryConfig {
   OAuth2ClientRepository defaultOAuth2ClientRepository(IamClientRepository clientRepo,
       IamAccountClientRepository accountClientRepo) {
     return new IamOAuth2ClientRepositoryAdapter(clientRepo, accountClientRepo);
-  }
-
-  @Bean
-  OAuth2TokenRepository defaultOAuth2TokenRepository() {
-
-    return new JpaOAuth2TokenRepository();
   }
 
   @Bean
@@ -110,10 +85,5 @@ public class MitreRepositoryConfig {
   @Bean
   DeviceCodeRepository deviceCodeRepository() {
     return new JpaDeviceCodeRepository();
-  }
-  
-  @Bean
-  MITREidDataService_1_3 dataService13() {
-    return new MITREidDataService_1_3();
   }
 }

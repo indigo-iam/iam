@@ -23,12 +23,12 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 
 @SuppressWarnings("deprecation")
@@ -37,11 +37,11 @@ public class IamAuthorizationCodeService implements AuthorizationCodeServices {
 
   private final Clock clock;
   private final IamAuthorizationCodeRepository codeRepository;
-  private final AuthenticationHolderEntityService authenticationHolderService;
+  private final IamAuthenticationHolderEntityService authenticationHolderService;
   private final SecureRandom random;
 
   public IamAuthorizationCodeService(Clock clock, IamAuthorizationCodeRepository codeRepository,
-      AuthenticationHolderEntityService authenticationHolderService, SecureRandom random) {
+      IamAuthenticationHolderEntityService authenticationHolderService, SecureRandom random) {
 
     this.clock = clock;
     this.codeRepository = codeRepository;

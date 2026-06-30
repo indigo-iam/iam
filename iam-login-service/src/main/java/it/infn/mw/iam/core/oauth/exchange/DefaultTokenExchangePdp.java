@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.core.oauth.exchange;
 
+import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.deny;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.fromPolicy;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.invalidScope;
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notApplicable;
-import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.deny;
 import static java.util.Comparator.comparing;
 
 import java.util.Arrays;
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
@@ -46,7 +47,6 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
-import it.infn.mw.iam.core.IamTokenService;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -61,7 +61,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final IamTokenExchangePolicyRepository repo;
 
-  private final IamTokenService tokenService;
+  private final ResourceServerTokenServices resourceServer;
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
@@ -72,10 +72,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService) {
+      ScopeMatcherRegistry scopeMatcherRegistry, ResourceServerTokenServices resourceServer) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
-    this.tokenService = tokenService;
+    this.resourceServer = resourceServer;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
@@ -128,7 +128,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     }
     // Token introspection as a backup
     try {
-      OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
+      OAuth2AccessTokenEntity at =
+          (OAuth2AccessTokenEntity) resourceServer.readAccessToken(subjectToken);
 
       if (at == null || at.getScope() == null || at.getScope().isEmpty()) {
         throw new IllegalStateException("Token introspection returned no scopes");

@@ -58,7 +58,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.api.common.ListResponseDTO;
-import it.infn.mw.iam.api.tokens.Constants;
+import it.infn.mw.iam.api.tokens.AccessTokensController;
+import it.infn.mw.iam.api.tokens.RefreshTokensController;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
@@ -68,8 +69,10 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 @SuppressWarnings("deprecation")
 public class TokenGetterUtils implements StructuredScopeTestSupportConstants {
 
-  protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
-  protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
+  protected static final String REFRESH_TOKENS_BASE_PATH =
+      RefreshTokensController.REFRESH_TOKENS_ENDPOINT;
+  protected static final String ACCESS_TOKENS_BASE_PATH =
+      AccessTokensController.ACCESS_TOKENS_ENDPOINT;
 
   @Autowired
   protected ObjectMapper mapper;
@@ -439,7 +442,8 @@ public class TokenGetterUtils implements StructuredScopeTestSupportConstants {
       .param("token_type_hint", tokenTypeHint));
   }
 
-  protected String buildPlainJwt(String issuer, String subject, String clientId, String scopes, Instant iat) {
+  protected String buildPlainJwt(String issuer, String subject, String clientId, String scopes,
+      Instant iat) {
 
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(subject)

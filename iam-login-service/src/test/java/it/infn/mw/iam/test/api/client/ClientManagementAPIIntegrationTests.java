@@ -38,33 +38,37 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.tokens.Constants;
+import it.infn.mw.iam.api.tokens.AccessTokensController;
+import it.infn.mw.iam.api.tokens.RefreshTokensController;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@TestPropertySource(properties = {"iam.access_token.store_on_database=true",})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
+@AutoConfigureMockMvc
+@Transactional
 class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
 
   public static final String[] REFRESH_SCOPES = {"openid", "profile", "offline_access"};
@@ -75,9 +79,11 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
 
   private static final String TESTUSER_USERNAME = "test_102";
 
-  protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
+  protected static final String REFRESH_TOKENS_BASE_PATH =
+      RefreshTokensController.REFRESH_TOKENS_ENDPOINT;
 
-  protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
+  protected static final String ACCESS_TOKENS_BASE_PATH =
+      AccessTokensController.ACCESS_TOKENS_ENDPOINT;
 
   @Autowired
   private MockMvc mvc;
@@ -92,7 +98,10 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   private IamClientRepository clientRepo;
 
   @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  private IamOAuthRefreshTokenRepository refreshRepo;
+
+  @Autowired
+  private ClientService clientDetailsService;
 
   @Autowired
   SecurityContextUtils context;
@@ -104,6 +113,7 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     context.cleanupSecurityContext();
     mockOAuth2Filter.cleanupSecurityContext();
     numClients = clientRepo.count();
+    refreshRepo.deleteAll();
   }
 
   @AfterEach
@@ -469,7 +479,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   @Test
   void testResetClient() throws Exception {
 
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    ClientDetailsEntity client =
+        clientDetailsService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
 
     context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
     getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password",

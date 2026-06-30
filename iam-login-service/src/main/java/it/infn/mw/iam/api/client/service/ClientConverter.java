@@ -107,6 +107,7 @@ public class ClientConverter {
   public RegisteredClientDTO registeredClientDtoFromEntity(ClientDetailsEntity entity) {
     RegisteredClientDTO clientDTO = new RegisteredClientDTO();
 
+    clientDTO.setId(entity.getId());
     clientDTO.setClientId(entity.getClientId());
     clientDTO.setClientSecret(entity.getClientSecret());
     clientDTO.setClientName(entity.getClientName());
@@ -211,7 +212,7 @@ public class ClientConverter {
 
     client.setUpScopingEnabled(dto.isUpScopingEnabled());
 
-    if (!isNull(dto.getGrantTypes())) {
+    if (!isNull(dto.getGrantTypes()) && !dto.getGrantTypes().isEmpty()) {
       client.setGrantTypes(
           dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }

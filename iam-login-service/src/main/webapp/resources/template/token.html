@@ -100,10 +100,6 @@
     </td>
 
     <td>
-		<div class="token-value">
-			<code class="token-substring" style="cursor: pointer" data-i18n="[title]token.token-table.click-to-display" title="Click to display full token value"><%- token.value.substr(0,27) %> ...</code>
-			<input type="text" readonly style="cursor: text" class="token-full input-xxlarge" value="<%- token.value %>" />
-		</div>
 		<div class="scope-list"></div>
     </td>
 
@@ -124,13 +120,9 @@
 		<span class="label label-info" title="Number of associated access tokens" data-i18n="[title]token.token-table.number-of-tokens"><%- accessTokenCount %></span>
     </td>
 
-    <td>
-		<div class="token-value">
-			<code class="token-substring" style="cursor: pointer" data-i18n="[title]token.token-table.click-to-display" title="Click to display full token value"><%- token.value.substr(0,27) %> ...</code>
-			<input type="text" readonly style="cursor: text" class="token-full input-xxlarge" value="<%- token.value %>" />
-		</div>
+		<td>
 		<div class="scope-list"></div>
-    </td>
+		</td>
 
 	<td>
 		<%- formattedExpiration %>

@@ -24,34 +24,37 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.authn.util.Authorities;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class IamTokenServiceTests extends TokenGetterUtils {
 
   static final String TEST_CLIENT_ID = "client";
   static final String TESTUSER_USERNAME = "test";
 
   @Autowired
-  IamTokenService tokenService;
+  AuthorizationServerTokenServices tokenService;
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  ClientService clientService;
 
   @Test
   void testPreAuthenticatedUserCannotGetToken() {
@@ -60,7 +63,7 @@ class IamTokenServiceTests extends TokenGetterUtils {
     savedAuth.setAuthenticated(true);
     savedAuth.setAuthorities(List.of(Authorities.ROLE_PRE_AUTHENTICATED));
 
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
 
     OAuth2Request req = new OAuth2Request(Map.of("grant_type", "authorization_code"),
         client.getClientId(), null, true, Set.of("openid"), null, null, null, null);

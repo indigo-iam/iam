@@ -37,13 +37,15 @@ import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 @RestController
 public class IamIntrospectionEndpoint {
 
+  public static final String URL = "/introspect";
+
   private IntrospectionService introspectionService;
 
   public IamIntrospectionEndpoint(IntrospectionService introspectionService) {
     this.introspectionService = introspectionService;
   }
 
-  @PostMapping(value = "/introspect", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
+  @PostMapping(value = URL, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
       produces = {MediaType.APPLICATION_JSON_VALUE})
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public IntrospectionResponse introspect(

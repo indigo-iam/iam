@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.tokens.exception;
+package it.infn.mw.iam.audit.events.tokens;
 
-public class TokenNotFoundException extends RuntimeException {
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 
-  private final Long tokenId;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWT;
 
-  /**
-   * 
-   */
+public abstract class SignedTokenEvent extends TokenEvent {
+
   private static final long serialVersionUID = 1L;
 
-  public TokenNotFoundException(Long tokenId) {
-    super("Token with id = " + tokenId + " not found");
-    this.tokenId = tokenId;
+  private final HeaderDTO header = new HeaderDTO();
+
+  protected SignedTokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder,
+      String message) {
+    super(source, token, authenticationHolder, message);
+
+    this.header.setAlg(token.getHeader().getAlgorithm().getName());
+    this.header.setKid(String.valueOf(((JWSHeader) token.getHeader()).getKeyID()));
+
   }
 
-  public Long getTokenId() {
-    return tokenId;
+  public HeaderDTO getHeader() {
+    return header;
   }
-
 }

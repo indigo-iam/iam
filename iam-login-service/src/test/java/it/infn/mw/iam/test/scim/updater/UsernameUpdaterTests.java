@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.scim.updater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -145,11 +146,11 @@ class UsernameUpdaterTests extends TokenGetterUtils {
     ListResponseDTO<AccessToken> newAccessTokens = getAccessTokenList(filterNewUsername);
     ListResponseDTO<RefreshToken> newRefreshTokens = getRefreshTokenList(filterNewUsername);
 
-    assertThat(oldAccessTokens.getTotalResults(), is(0L));
-    assertThat(newAccessTokens.getTotalResults(), is(1L));
+    assertEquals(0, oldAccessTokens.getResources().size());
+    assertEquals(1, newAccessTokens.getResources().size());
 
-    assertThat(oldRefreshTokens.getTotalResults(), is(0L));
-    assertThat(newRefreshTokens.getTotalResults(), is(1L));
+    assertEquals(0, oldRefreshTokens.getResources().size());
+    assertEquals(1, newRefreshTokens.getResources().size());
 
   }
 

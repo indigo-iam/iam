@@ -49,12 +49,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
@@ -88,7 +88,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   DefaultTokenExchangePdp pdp;
 
   @Mock
-  IamTokenService tokenService;
+  ResourceServerTokenServices tokenService;
 
   private ListAppender<ILoggingEvent> logCaptor;
 
@@ -99,7 +99,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
     private final Set<ScopeMatcher> scopesToReturn;
 
     TestableDefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
+        ScopeMatcherRegistry scopeMatcherRegistry, ResourceServerTokenServices tokenService,
         Set<ScopeMatcher> scopesToReturn) {
 
       super(repo, scopeMatcherRegistry, tokenService);
