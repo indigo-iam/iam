@@ -92,7 +92,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) {
 
-    return refreshTokenRepo.findByTokenValue(token.getJwt()).isEmpty();
+    return refreshTokenRepo.findByTokenValue(token.getValue()).isEmpty();
   }
 
   @Override
@@ -158,7 +158,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public void revokeRefreshToken(OAuth2RefreshTokenEntity rt) {
 
-    refreshTokenRepo.findByTokenValue(rt.getJwt()).ifPresent(token -> {
+    refreshTokenRepo.findByTokenValue(rt.getValue()).ifPresent(token -> {
       refreshTokenRepo.delete(token);
       clientService.useClient(token.getClient());
       String jwtId = getJwtId(token.getJwt());

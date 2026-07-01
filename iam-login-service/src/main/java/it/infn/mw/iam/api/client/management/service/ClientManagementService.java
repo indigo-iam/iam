@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.client.management.service;
 
 import java.text.ParseException;
+import java.util.List;
 import java.util.Optional;
 
 import javax.validation.Valid;
@@ -35,6 +36,8 @@ public interface ClientManagementService {
       @NotNull Pageable pageable);
 
   ListResponseDTO<RegisteredClientDTO> retrieveAllClients(@NotNull Pageable pageable);
+
+  List<RegisteredClientDTO> retrieveAllClients();
 
   Optional<RegisteredClientDTO> retrieveClientByClientId(@NotBlank String clientId);
 

@@ -32,7 +32,7 @@ public class ValidGrantTypeValidator
   public boolean isValid(RegisteredClientDTO value, ConstraintValidatorContext context) {
 
     if (isNull(value.getGrantTypes())) {
-      value.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      value.setGrantTypes(Set.of());
       return true;
     }
 

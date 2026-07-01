@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.tokens;
+package it.infn.mw.iam.core.oauth.profile;
 
-public interface TokensResourceLocationProvider {
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 
-  public String accessTokenLocation(Long accessTokenId);
+public interface RegistrationTokenService {
 
-  public String refreshTokenLocation(Long refreshTokenId);
+  public OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client);
+
+  public OAuth2AccessTokenEntity createResourceAccessToken(ClientDetailsEntity client);
+
+  public OAuth2AccessTokenEntity rotateRegistrationAccessTokenForClient(ClientDetailsEntity client);
 }

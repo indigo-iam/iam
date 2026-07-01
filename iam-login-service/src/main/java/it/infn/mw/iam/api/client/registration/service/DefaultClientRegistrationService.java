@@ -23,12 +23,11 @@ import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
 import java.text.ParseException;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import javax.validation.constraints.NotBlank;
@@ -37,14 +36,13 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -60,12 +58,11 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.client.ClientRegistered;
-import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -91,31 +88,29 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE,
           AuthorizationGrantType.CLIENT_CREDENTIALS);
 
-  private final Clock clock;
   private final ClientService clientService;
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
-  private final OIDCTokenService clientTokenService;
-  private final IamTokenService tokenService;
+  private final RegistrationTokenService registrationTokenService;
+  private final ResourceServerTokenServices resourceServer;
   private final SystemScopeService systemScopeService;
   private final ClientRegistrationProperties registrationProperties;
   private final ScopeMatcherRegistry scopeMatcherRegistry;
   private final ApplicationEventPublisher eventPublisher;
 
-  public DefaultClientRegistrationService(Clock clock, ClientService clientService,
-      AccountUtils accountUtils, ClientConverter converter, ClientUtils clientUtils,
-      OIDCTokenService clientTokenService, IamTokenService tokenService,
+  public DefaultClientRegistrationService(ClientService clientService, AccountUtils accountUtils,
+      ClientConverter converter, ClientUtils clientUtils,
+      RegistrationTokenService registrationTokenService, ResourceServerTokenServices resourceServer,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
       ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
 
-    this.clock = clock;
     this.clientService = clientService;
     this.accountUtils = accountUtils;
     this.converter = converter;
     this.clientUtils = clientUtils;
-    this.clientTokenService = clientTokenService;
-    this.tokenService = tokenService;
+    this.registrationTokenService = registrationTokenService;
+    this.resourceServer = resourceServer;
     this.systemScopeService = scopeService;
     this.registrationProperties = registrationProperties;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
@@ -271,73 +266,34 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
         .getScope()
         .contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
     }
-
     return false;
   }
 
-  private boolean ratHasExpired(OAuth2AccessTokenEntity token) throws ParseException {
-    final int defaultRatValiditySeconds = registrationProperties.getClientDefaults()
-      .getDefaultRegistrationAccessTokenValiditySeconds();
-
-    if (defaultRatValiditySeconds < 0) {
-      return false;
+  private boolean resourceAccessTokenAuthenticationValidForClientId(String clientId,
+      Authentication authentication) {
+    if (authentication instanceof OAuth2Authentication oauth) {
+      return oauth.getOAuth2Request().getClientId().equals(clientId)
+          && oauth.getOAuth2Request().getScope().contains(SystemScopeService.RESOURCE_TOKEN_SCOPE);
     }
-
-    Instant ratIssueTime = token.getJwt().getJWTClaimsSet().getIssueTime().toInstant();
-    Instant ratExpirationTime = ratIssueTime.plusSeconds(defaultRatValiditySeconds);
-
-    return clock.instant().isAfter(ratExpirationTime);
+    return false;
   }
 
   private boolean registrationAccessTokenValueValidForClientId(String clientId, String rat) {
 
     try {
 
-      OAuth2AccessTokenEntity token = tokenService.readAccessToken(rat);
+      OAuth2AccessTokenEntity token = (OAuth2AccessTokenEntity) resourceServer.readAccessToken(rat);
 
       var hasRegistrationScope =
           token.getScope().contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
 
       var matchesClientId = token.getClient().getClientId().equals(clientId);
 
-      var ratHasNotExpired = !ratHasExpired(token);
-
-      return hasRegistrationScope && matchesClientId && ratHasNotExpired;
+      return hasRegistrationScope && matchesClientId;
 
     } catch (Exception e) {
       return false;
     }
-  }
-
-  private Optional<String> maybeUpdateRegistrationAccessToken(ClientDetailsEntity client,
-      Authentication auth) {
-
-    if ((auth instanceof OAuth2Authentication oauth)
-        && registrationAccessTokenAuthenticationValidForClientId(client.getClientId(), auth)) {
-
-      OAuth2AuthenticationDetails details = (OAuth2AuthenticationDetails) oauth.getDetails();
-      OAuth2AccessTokenEntity token = tokenService.readAccessToken(details.getTokenValue());
-
-      try {
-        if (ratHasExpired(token)) {
-          tokenService.revokeAccessToken(token);
-          token = clientTokenService.createRegistrationAccessToken(client);
-          tokenService.saveAccessToken(token);
-          return Optional.of(token.getValue());
-        } else {
-          return Optional.empty();
-        }
-      } catch (ParseException e) {
-        // if there's a problem in parsing the token, we consider it
-        // expired and issue a new one
-        tokenService.revokeAccessToken(token);
-        token = clientTokenService.createRegistrationAccessToken(client);
-        tokenService.saveAccessToken(token);
-        return Optional.of(token.getValue());
-      }
-    }
-
-    return Optional.empty();
   }
 
   private void checkUserUpdatingSuspendedClient(Authentication authentication,
@@ -387,8 +343,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     if (!hasRelyingParty(request) && isAnonymous(authentication)) {
 
-      OAuth2AccessTokenEntity ratEntity = clientTokenService.createRegistrationAccessToken(client);
-      tokenService.saveAccessToken(ratEntity);
+      OAuth2AccessTokenEntity ratEntity =
+          registrationTokenService.createRegistrationAccessToken(client);
       response.setRegistrationAccessToken(ratEntity.getValue());
 
     } else if (!isAnonymous(authentication)) {
@@ -406,6 +362,38 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return response;
   }
 
+  @Override
+  public RegisteredClientDTO registerProtectedResource(RegisteredClientDTO request,
+      Authentication authentication) throws ParseException {
+
+    authzChecks(authentication);
+
+    ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
+    clientUtils.setupProtectedResourceDefaults(client);
+    client.setClientId(UUID.randomUUID().toString());
+    cleanupRequestedScopes(client, authentication);
+
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authentication);
+
+    if (account.isPresent()) {
+      client.getContacts().add(account.get().getUserInfo().getEmail());
+    }
+
+    client = clientService.saveNewClient(client);
+    eventPublisher.publishEvent(new ClientRegistered(this, client));
+
+    if (account.isPresent()) {
+      clientService.linkClientToAccount(client, account.get());
+    }
+
+    RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+
+    OAuth2AccessTokenEntity ratEntity = registrationTokenService.createResourceAccessToken(client);
+    response.setRegistrationAccessToken(ratEntity.getValue());
+
+    return response;
+  }
+
   private Optional<ClientDetailsEntity> lookupClient(String clientId,
       Authentication authentication) {
 
@@ -415,13 +403,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       }
 
       return clientService.findClientByClientId(clientId);
-    } else {
-
-      IamAccount account =
-          accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-
-      return clientService.findClientByClientIdAndAccount(clientId, account);
     }
+    IamAccount account =
+        accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+
+    return clientService.findClientByClientIdAndAccount(clientId, account);
   }
 
   @Override
@@ -429,6 +415,33 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     authzChecks(authentication);
 
     return lookupClient(clientId, authentication).map(converter::registrationResponseFromClient)
+      .orElseThrow(clientNotFound(clientId));
+  }
+
+  private Optional<ClientDetailsEntity> lookupProtectedResource(String clientId,
+      Authentication authentication) {
+
+    if (isAnonymous(authentication)) {
+      if (!resourceAccessTokenAuthenticationValidForClientId(clientId, authentication)) {
+        throw new InvalidClientRegistrationRequest(INVALID_ACCESS_TOKEN_ERROR);
+      }
+
+      return clientService.findClientByClientId(clientId);
+    }
+    IamAccount account =
+        accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+
+    return clientService.findClientByClientIdAndAccount(clientId, account);
+
+  }
+
+  @Override
+  public RegisteredClientDTO retrieveProtectedResource(String clientId,
+      Authentication authentication) {
+    authzChecks(authentication);
+
+    return lookupProtectedResource(clientId, authentication)
+      .map(converter::registrationResponseFromClient)
       .orElseThrow(clientNotFound(clientId));
   }
 
@@ -447,11 +460,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
-    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
+        && Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(clientUtils.generateClientSecret());
-    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
+      .contains(newClient.getTokenEndpointAuthMethod())
+        && !Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(null);
     } else {
       newClient.setClientSecret(oldClient.getClientSecret());
@@ -480,13 +494,47 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
 
-    RegisteredClientDTO response = converter.registrationResponseFromClient(savedClient);
+    return converter.registrationResponseFromClient(savedClient);
+  }
 
-    maybeUpdateRegistrationAccessToken(savedClient, authentication).ifPresent(t -> {
-      eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
-      response.setRegistrationAccessToken(t);
-    });
-    return response;
+  @Validated(OnDynamicClientUpdate.class)
+  @Override
+  public RegisteredClientDTO updateProtectedResource(String clientId, RegisteredClientDTO request,
+      Authentication authentication) throws ParseException {
+
+    authzChecks(authentication);
+
+    ClientDetailsEntity oldClient =
+        lookupProtectedResource(clientId, authentication).orElseThrow(clientNotFound(clientId));
+
+    checkUserUpdatingSuspendedClient(authentication, oldClient);
+    cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
+
+    ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
+    newClient.setId(oldClient.getId());
+    newClient.setClientId(oldClient.getClientId());
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
+        && Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(clientUtils.generateClientSecret());
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
+      .contains(newClient.getTokenEndpointAuthMethod())
+        && !Objects.isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(null);
+    } else {
+      newClient.setClientSecret(oldClient.getClientSecret());
+    }
+    clientUtils.setupProtectedResourceDefaults(newClient);
+    newClient.setActive(oldClient.isActive());
+
+    if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
+      removeCustomScopes(newClient);
+    }
+
+    ClientDetailsEntity savedClient = clientService.updateClient(newClient);
+
+    eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
+
+    return converter.registrationResponseFromClient(savedClient);
   }
 
   @Override
@@ -495,6 +543,18 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity client =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
+
+    clientService.deleteClient(client);
+
+    eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
+  }
+
+  @Override
+  public void deleteProtectedResource(String clientId, Authentication authentication) {
+    authzChecks(authentication);
+
+    ClientDetailsEntity client =
+        lookupProtectedResource(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
     clientService.deleteClient(client);
 

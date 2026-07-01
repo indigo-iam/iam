@@ -15,11 +15,8 @@
  */
 package it.infn.mw.iam.api.tokens;
 
-import static it.infn.mw.iam.api.tokens.Constants.REFRESH_TOKENS_ENDPOINT;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
-import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.service.TokenService;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
@@ -41,23 +37,23 @@ import it.infn.mw.iam.core.user.exception.IamAccountException;
 
 @RestController
 @Transactional
-@RequestMapping(REFRESH_TOKENS_ENDPOINT)
+@RequestMapping(RefreshTokensController.REFRESH_TOKENS_ENDPOINT)
 public class RefreshTokensController extends TokensControllerSupport {
+
+  public static final String REFRESH_TOKENS_ENDPOINT = "/iam/api/refresh-tokens";
 
   @Autowired
   private TokenService<RefreshToken> tokenService;
 
   @GetMapping(produces = APPLICATION_JSON_CONTENT_TYPE)
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public MappingJacksonValue lisRefreshTokens(@RequestParam(required = false) Integer count,
+  public ListResponseDTO<RefreshToken> listRefreshTokens(@RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex,
       @RequestParam(required = false) String userId,
-      @RequestParam(required = false) String clientId,
-      @RequestParam(required = false) final String attributes) {
+      @RequestParam(required = false) String clientId) {
 
-    TokensPageRequest pr = buildTokensPageRequest(count, startIndex);
-    ListResponseDTO<RefreshToken> results = getFilteredList(pr, userId, clientId, tokenService);
-    return filterAttributes(results, attributes);
+    TokensPageRequest pr = TokensPageRequest.of(count, startIndex);
+    return getFilteredList(pr, userId, clientId, tokenService);
   }
 
   @DeleteMapping(value = "/{id}")
@@ -65,15 +61,7 @@ public class RefreshTokensController extends TokensControllerSupport {
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void revokeRefreshToken(@PathVariable Long id) {
 
-    tokenService.revokeTokenById(id);
-  }
-
-
-  @ResponseStatus(value = HttpStatus.NOT_FOUND)
-  @ExceptionHandler(TokenNotFoundException.class)
-  public ErrorDTO tokenNotFoundError(Exception ex) {
-
-    return ErrorDTO.fromString(ex.getMessage());
+    tokenService.revoke(id);
   }
 
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)

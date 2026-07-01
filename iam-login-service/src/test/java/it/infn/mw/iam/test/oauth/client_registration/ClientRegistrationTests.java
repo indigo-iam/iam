@@ -39,7 +39,6 @@ import java.io.UnsupportedEncodingException;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.repository.OAuth2ClientRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -52,6 +51,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 
@@ -64,7 +64,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
   ObjectMapper mapper;
 
   @Autowired
-  ClientDetailsEntityService clientService;
+  ClientService clientService;
 
   @Autowired
   OAuth2ClientRepository clientRepo;
@@ -79,9 +79,9 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
     // @formatter:off
     mvc.perform(post(LEGACY_REGISTER_ENDPOINT)
-            .contentType(APPLICATION_JSON)
-            .content(jsonInString))
-          .andExpect(status().isNotFound());
+      .contentType(APPLICATION_JSON)
+      .content(jsonInString))
+      .andExpect(status().isNotFound());
     // @formatter:on
   }
 
@@ -252,7 +252,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
     String clientId = jsonNode.get("client_id").asText();
 
-    ClientDetailsEntity clientModel = clientService.loadClientByClientId(clientId);
+    ClientDetailsEntity clientModel = clientService.findClientByClientId(clientId).orElseThrow();
     clientModel.getGrantTypes().add("password");
     clientModel.getGrantTypes().add(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
 
@@ -279,7 +279,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
           jsonPath("$.grant_types", hasItem(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)));
 
 
-    clientModel = clientService.loadClientByClientId(clientId);
+    clientModel = clientService.findClientByClientId(clientId).orElseThrow();
     clientModel.getGrantTypes().remove("password");
     clientModel.getGrantTypes().remove(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
     clientRepo.saveClient(clientModel);
@@ -320,7 +320,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
     String clientId = jsonNode.get("client_id").asText();
 
-    ClientDetailsEntity clientModel = clientService.loadClientByClientId(clientId);
+    ClientDetailsEntity clientModel = clientService.findClientByClientId(clientId).orElseThrow();
     assertThat(clientModel.getGrantTypes(), not(contains(IamDeviceCodeTokenGranter.GRANT_TYPE)));
     assertThat(clientModel.getDeviceCodeValiditySeconds(), greaterThan(0));
 
@@ -330,7 +330,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
         .content(clientJson))
       .andExpect(status().isOk());
 
-    clientModel = clientService.loadClientByClientId(clientId);
+    clientModel = clientService.findClientByClientId(clientId).orElseThrow();
     assertThat(clientModel.getGrantTypes(), not(contains(IamDeviceCodeTokenGranter.GRANT_TYPE)));
     assertThat(clientModel.getDeviceCodeValiditySeconds(), greaterThan(0));
 

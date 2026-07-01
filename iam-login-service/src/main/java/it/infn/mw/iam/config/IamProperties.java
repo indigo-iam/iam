@@ -19,6 +19,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.constraints.Pattern;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -709,6 +711,10 @@ public class IamProperties {
 
   private String host;
 
+  @Pattern(
+      regexp = ".*/",
+      message = "issuer must end with '/'"
+  )
   private String issuer;
 
   private String baseUrl;

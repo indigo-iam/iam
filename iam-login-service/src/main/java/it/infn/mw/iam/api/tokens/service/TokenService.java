@@ -15,21 +15,26 @@
  */
 package it.infn.mw.iam.api.tokens.service;
 
+import java.util.List;
+import java.util.Optional;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
 
 public interface TokenService<T> {
 
-  ListResponseDTO<T> getAllTokens(final TokensPageRequest pageRequest);
+  ListResponseDTO<T> getAllTokens(TokensPageRequest pageRequest);
 
-  ListResponseDTO<T> getTokensForUser(final String userId, final TokensPageRequest pageRequest);
+  List<T> getAllTokensForUser(String username);
 
-  ListResponseDTO<T> getTokensForClient(final String clientId,
-      final TokensPageRequest pageRequest);
+  ListResponseDTO<T> getTokensForUser(String username, TokensPageRequest pageRequest);
 
-  ListResponseDTO<T> getTokensForClientAndUser(final String userId, final String clientId,
-      final TokensPageRequest pageRequest);
+  ListResponseDTO<T> getTokensForClient(String clientId, TokensPageRequest pageRequest);
 
-  void revokeTokenById(Long id);
+  ListResponseDTO<T> getTokensForClientAndUser(String username, String clientId, TokensPageRequest pageRequest);
+
+  Optional<T> getToken(Long id);
+
+  void revoke(Long id);
 
 }

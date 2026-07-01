@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.tokens;
+package it.infn.mw.iam.audit.events.tokens;
 
-public class Constants {
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 
-  public static final String ACCESS_TOKENS_ENDPOINT = "/iam/api/access-tokens";
-  public static final String REFRESH_TOKENS_ENDPOINT = "/iam/api/refresh-tokens";
+public class ResourceTokenIssuedEvent extends SignedTokenEvent {
 
-  private Constants() {
-    // utility class, it should not be instantiated
+  private static final long serialVersionUID = 1L;
+
+  public ResourceTokenIssuedEvent(Object source, OAuth2AccessTokenEntity registrationToken) {
+    super(source, registrationToken.getJwt(), registrationToken.getAuthenticationHolder(),
+        "Issue registration token");
   }
+
 }

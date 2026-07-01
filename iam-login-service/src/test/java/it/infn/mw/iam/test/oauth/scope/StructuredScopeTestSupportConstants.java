@@ -109,6 +109,8 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String EMPTY_SCOPES = "";
 
+  static final String AFFILIATION_SCOPE = "iam.example";    
+
   static final String ORGANISATION_NAME = "indigo-dc";
 
   static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";

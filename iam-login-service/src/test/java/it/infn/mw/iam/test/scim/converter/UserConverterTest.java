@@ -34,6 +34,7 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -55,18 +56,20 @@ class UserConverterTest {
   private X509CertificateConverter x509CertificateIamConverter;
   @Mock
   private AccountGroupManagerService groupManagerService;
-  @Mock
-  private ScimProperties properties;
 
+  private IamProperties iamProperties;
+  private ScimProperties scimProperties;
   private UserConverter userConverter;
 
   @BeforeEach
   void setup() {
 
     lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
-    userConverter =
-        new UserConverter(properties, resourceLocationProvider, addressConverter, oidcIdConverter,
-            sshKeyConverter, samlIdConverter, x509CertificateIamConverter, groupManagerService);
+    iamProperties = new IamProperties();
+    scimProperties = new ScimProperties();
+    userConverter = new UserConverter(iamProperties, scimProperties, resourceLocationProvider,
+        addressConverter, oidcIdConverter, sshKeyConverter, samlIdConverter,
+        x509CertificateIamConverter, groupManagerService);
   }
 
   @Test
