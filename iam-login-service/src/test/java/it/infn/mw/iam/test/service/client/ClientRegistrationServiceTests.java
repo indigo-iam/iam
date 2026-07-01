@@ -47,6 +47,8 @@ import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
@@ -301,7 +303,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testValidRedirectUris() {
-
     VALID_REDIRECT_URIS.forEach(uri -> {
       Assertions.assertDoesNotThrow(() -> {
         RegisteredClientDTO request = createClientDTO(uri);
@@ -310,42 +311,27 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     });
   }
 
-  @Test
-  void testInvalidPostLogoutRedirectUriScheme() {
-
+  @ParameterizedTest
+  @CsvSource({"'not-a-uri', 'null'", "'myapp://redirect', 'myapp'",
+      "'javascript:alert(1)', 'javascript'"})
+  void testInvalidPostLogoutRedirectUriScheme(String postLogoutUri, String expectedScheme) {
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    final RegisteredClientDTO request = createClientDTO(redirectUri, postLogoutUri);
 
-    ConstraintViolationException exception =
-        Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          RegisteredClientDTO request = createClientDTO(redirectUri, "not-a-uri");
-          service.registerClient(request, userAuth);
-        });
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
 
-    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: null"));
-
-    exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
-      RegisteredClientDTO request = createClientDTO(redirectUri, "myapp://redirect");
-      service.registerClient(request, userAuth);
-    });
-
-    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: myapp"));
-
-    exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
-      RegisteredClientDTO request = createClientDTO(redirectUri, "javascript:alert(1)");
-      service.registerClient(request, userAuth);
-    });
-
-    assertThat(exception.getMessage(), containsString("Invalid redirect URI scheme: javascript"));
+    assertThat(exception.getMessage(),
+        containsString("Invalid redirect URI scheme: " + expectedScheme));
   }
 
   @Test
   void testMalformedPostLogoutRedirectUri() {
-
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    RegisteredClientDTO request = createClientDTO(redirectUri, " ");
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          RegisteredClientDTO request = createClientDTO(redirectUri, " ");
           service.registerClient(request, userAuth);
         });
 
@@ -354,12 +340,11 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testNonLoopbackHttpPostLogoutRedirectUri() {
-
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    RegisteredClientDTO request = createClientDTO(redirectUri, "http://example/redirect");
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          RegisteredClientDTO request = createClientDTO(redirectUri, "http://example/redirect");
           service.registerClient(request, userAuth);
         });
 
@@ -369,13 +354,12 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testPostLogoutRedirectUriContainingFragments() {
-
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    RegisteredClientDTO request =
+        createClientDTO(redirectUri, "https://example.com/callback#token=abc123");
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          RegisteredClientDTO request =
-              createClientDTO(redirectUri, "https://example.com/callback#token=abc123");
           service.registerClient(request, userAuth);
         });
 
@@ -384,7 +368,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testValidPostLogoutRedirectUris() {
-
     String validRedirectUri = VALID_REDIRECT_URIS.get(0);
 
     VALID_REDIRECT_URIS.forEach(postLogoutUri -> {
@@ -397,7 +380,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testBlacklistedUriValidation() {
-
     lenient().when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
 
     ConstraintViolationException exception =
