@@ -84,7 +84,7 @@ public class FederatedOpRegistrationService {
 
   private final TrustChainService tcService;
   private final ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder;
-  private final IamFederatedClientService federateClientsService;
+  private final IamFederatedClientService federatedClientService;
   private final OpenidFederationProperties oidFedProperties;
   private final TrustAnchorRepository trustAnchorRepository;
   private final RestTemplate restTemplate;
@@ -95,13 +95,13 @@ public class FederatedOpRegistrationService {
 
   public FederatedOpRegistrationService(TrustChainService tcService,
       ExplicitRegistrationEntityStatementBuilder explRegistrationEsBuilder,
-      IamFederatedClientService federateClientsService, OpenidFederationProperties oidFedProperties,
+      IamFederatedClientService federatedClientService, OpenidFederationProperties oidFedProperties,
       TrustAnchorRepository trustAnchorRepository, RestTemplateFactory restTemplateFactory,
       Clock clock) {
 
     this.tcService = tcService;
     this.explRegistrationEsBuilder = explRegistrationEsBuilder;
-    this.federateClientsService = federateClientsService;
+    this.federatedClientService = federatedClientService;
     this.oidFedProperties = oidFedProperties;
     this.trustAnchorRepository = trustAnchorRepository;
     this.restTemplate = restTemplateFactory.newRestTemplate();
@@ -148,10 +148,10 @@ public class FederatedOpRegistrationService {
         createClientDtoFromOpResponse(es.getSignedStatement().getJWTClaimsSet());
 
     if (existingClient.isPresent()) {
-      federateClientsService.deleteClient(existingClient.get());
+      federatedClientService.deleteClient(existingClient.get());
     }
 
-    return federateClientsService.saveClient(dtoClient);
+    return federatedClientService.saveClient(dtoClient);
   }
 
   private List<String> selectAuthorityHints(TrustChain trustChain, String issuer)
