@@ -32,16 +32,17 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.config.IamProperties;
@@ -53,17 +54,19 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 
 @SuppressWarnings({"deprecation", "unchecked"})
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@TestPropertySource(properties = {
-// @formatter:off
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {
+    // @formatter:off
   "iam.aarc-profile.urn-delegated-namespace=projectescape.eu",
   "iam.aarc-profile.urn-subnamespaces=sub mission",
-  // @formatter:on
-})
+    // @formatter:on
+    })
+@AutoConfigureMockMvc
 @Transactional
 class AarcClaimValueHelperTests {
 
@@ -162,10 +165,10 @@ class AarcClaimValueHelperTests {
     when(account.getUserInfo()).thenReturn(accountUserInfo);
     when(accountUserInfo.getSub()).thenReturn("test-subject");
 
-    String vopersonId = (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null,
-        Optional.of(account));
-    String scopedAffiliation = (String) helper.resolveClaim(
-        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
+    String vopersonId =
+        (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null, Optional.of(account));
+    String scopedAffiliation = (String) helper
+      .resolveClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
     assertEquals("test-subject@https://scope.example", vopersonId);
     assertEquals("member@https://scope.example", scopedAffiliation);
@@ -182,13 +185,13 @@ class AarcClaimValueHelperTests {
     when(account.getUserInfo()).thenReturn(accountUserInfo);
     when(accountUserInfo.getSub()).thenReturn("test-subject");
 
-    String vopersonId = (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null,
-        Optional.of(account));
-    String scopedAffiliation = (String) helper.resolveClaim(
-        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
+    String vopersonId =
+        (String) helper.resolveClaim(AarcExtraClaimNames.VOPERSON_ID, null, Optional.of(account));
+    String scopedAffiliation = (String) helper
+      .resolveClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, null, Optional.of(account));
 
-    assertEquals("test-subject@https://issuer.example", vopersonId);
-    assertEquals("member@https://issuer.example", scopedAffiliation);
+    assertEquals("test-subject@https://issuer.example/", vopersonId);
+    assertEquals("member@https://issuer.example/", scopedAffiliation);
   }
 
   @Test
