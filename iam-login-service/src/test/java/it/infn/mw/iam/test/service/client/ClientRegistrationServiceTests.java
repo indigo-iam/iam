@@ -325,45 +325,19 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
         containsString("Invalid redirect URI scheme: " + expectedScheme));
   }
 
-  @Test
-  void testMalformedPostLogoutRedirectUri() {
+  @ParameterizedTest
+  @CsvSource({"' ', 'Invalid redirect URI'",
+      "'http://example/redirect', 'Plain http redirect URIs are only allowed for loopback'",
+      "'https://example.com/callback#token=abc123', 'Invalid redirect URI: contains a fragment'"})
+  void testInvalidPostLogoutRedirectUri(String postLogoutRedirectUri, String expectedMessage) {
+
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
-    RegisteredClientDTO request = createClientDTO(redirectUri, " ");
+    final RegisteredClientDTO request = createClientDTO(redirectUri, postLogoutRedirectUri);
 
-    ConstraintViolationException exception =
-        Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          service.registerClient(request, userAuth);
-        });
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
 
-    assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
-  }
-
-  @Test
-  void testNonLoopbackHttpPostLogoutRedirectUri() {
-    final String redirectUri = VALID_REDIRECT_URIS.get(0);
-    RegisteredClientDTO request = createClientDTO(redirectUri, "http://example/redirect");
-
-    ConstraintViolationException exception =
-        Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          service.registerClient(request, userAuth);
-        });
-
-    assertThat(exception.getMessage(),
-        containsString("Plain http redirect URIs are only allowed for loopback"));
-  }
-
-  @Test
-  void testPostLogoutRedirectUriContainingFragments() {
-    final String redirectUri = VALID_REDIRECT_URIS.get(0);
-    RegisteredClientDTO request =
-        createClientDTO(redirectUri, "https://example.com/callback#token=abc123");
-
-    ConstraintViolationException exception =
-        Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          service.registerClient(request, userAuth);
-        });
-
-    assertThat(exception.getMessage(), containsString("Invalid redirect URI: contains a fragment"));
+    assertThat(exception.getMessage(), containsString(expectedMessage));
   }
 
   @Test
