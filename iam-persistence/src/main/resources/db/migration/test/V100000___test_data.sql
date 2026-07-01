@@ -189,6 +189,7 @@ INSERT INTO client_scope (owner_id, scope) VALUES
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
   (1, 'https://iam.local.io/iam-test-client/openid_connect_login'),
+  (1, 'http://localhost:9090/iam-test-client/login/oauth2/code/dynamic'),
   (3, 'http://localhost:4000/callback'),
   (4, 'http://localhost:5000/callback'),
   (11, 'http://localhost:1234/callback'),
