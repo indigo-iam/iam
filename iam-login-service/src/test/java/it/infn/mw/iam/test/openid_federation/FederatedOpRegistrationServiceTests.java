@@ -164,11 +164,12 @@ class FederatedOpRegistrationServiceTests {
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<IamFederatedClientEntity> client = clientRepo.findByEntityId("https://op.example.com");
-    assertTrue(client.isPresent());
-    assertEquals("OIDFed remote client", client.get().getClientName());
+    Optional<IamFederatedClientEntity> federatedClient =
+        clientRepo.findByEntityId("https://op.example.com");
+    assertTrue(federatedClient.isPresent());
+    assertEquals("OIDFed remote client", federatedClient.get().getClientName());
 
-    clientRepo.delete(client.get());
+    clientRepo.delete(federatedClient.get());
   }
 
   @Test
