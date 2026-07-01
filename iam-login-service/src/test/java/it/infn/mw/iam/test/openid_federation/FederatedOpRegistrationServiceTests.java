@@ -151,34 +151,20 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRpRegistration() throws Exception {
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer("https://remote-op.example.com");
-    sc.setAuthorizationEndpointUri("https://remote-op.example.com/authorize");
-    sc.setTokenEndpointUri("https://remote-op.example.com/token");
-    sc.setJwksUri("https://remote-op.example.com/jwks");
-
-    when(serverConfigurationService.getServerConfiguration("https://remote-op.example.com"))
-      .thenReturn(sc);
-
-    fakeChain = TrustChainTestFactory.createOpToTaChain("https://remote-op.example.com", null,
-        URI.create("https://remote-op.example.com/jwk"), "https://ta1.example.com");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse("https://remote-op.example.com", SUB, iat, exp, AUD, TA);
+    String rpJwt = opJwtResponse("https://op.example.com", SUB, iat, exp, AUD, TA);
 
     mockRtf.getMockServer()
-      .expect(requestTo("https://remote-op.example.com/fedreg"))
+      .expect(requestTo("https://op.example.com/fedreg"))
       .andExpect(method(HttpMethod.POST))
       .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
-    mvc.perform(get("/openid_connect_login?iss=" + "https://remote-op.example.com"))
+    mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<IamFederatedClientEntity> client =
-        clientRepo.findByEntityId("https://remote-op.example.com");
+    Optional<IamFederatedClientEntity> client = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(client.isPresent());
     assertEquals("OIDFed remote client", client.get().getClientName());
 
@@ -363,6 +349,7 @@ class FederatedOpRegistrationServiceTests {
     client.setGrantTypes(Set.of("code"));
     client.setResponseTypes(Set.of("code"));
     client.setScope(Set.of("openid"));
+    clientRepo.save(client);
   }
 
   private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud, String ta)
