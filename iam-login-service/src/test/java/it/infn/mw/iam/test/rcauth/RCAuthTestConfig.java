@@ -22,13 +22,19 @@ import java.io.IOException;
 import java.text.ParseException;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 
 @Configuration
 public class RCAuthTestConfig extends RCAuthTestSupport {
@@ -39,22 +45,23 @@ public class RCAuthTestConfig extends RCAuthTestSupport {
 
   @Bean
   @Primary
-  ServerConfigurationService serverConfigService() {
+  OIDCProviderMetadataService mockOIDCProviderMetadata(DefaultOidcDiscoveryService discoveryService,
+      RestTemplateFactory restTemplateFactory) {
 
-    ServerConfigurationService scs = mock(ServerConfigurationService.class);
-    ServerConfiguration sc = mock(ServerConfiguration.class);
-    when(sc.getAuthorizationEndpointUri()).thenReturn(AUTHORIZATION_URI);
-    when(sc.getTokenEndpointUri()).thenReturn(TOKEN_URI);
-    when(sc.getJwksUri()).thenReturn(JWK_URI);
+    ObjectNode raw = new ObjectMapper().createObjectNode();
 
-    when(scs.getServerConfiguration(RCAuthTestSupport.ISSUER)).thenReturn(sc);
-    return scs;
+    OIDCProviderMetadata op =
+        new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI, USERINFO_URI, raw);
+
+    OIDCProviderMetadataService service = Mockito.mock(OIDCProviderMetadataService.class);
+    Mockito.when(service.load(ISSUER)).thenReturn(op);
+
+    return service;
   }
 
   @Bean
   @Primary
-  JWKSetCacheService mockjwkSetCacheService()
-      throws IOException, ParseException {
+  JWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
 
     IamJWTSigningService signatureValidator = new IamJWTSigningService(rcAuthKeyStore());
 
