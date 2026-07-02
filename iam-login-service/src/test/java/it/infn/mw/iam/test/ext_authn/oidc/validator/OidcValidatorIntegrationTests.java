@@ -61,13 +61,13 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
     OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.DEFINED_PORT,
     properties = {
-        "server.port=8989",
+        "server.port=8990",
         "oidc.providers[0].name=provider",
         "oidc.providers[0].issuer=urn:test-oidc-issuer",
         "oidc.providers[0].client.clientId=iam",
         "oidc.providers[0].client.clientSecret=secret",
         "oidc.providers[0].client.scope=openid profile email",
-        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
+        "oidc.providers[0].client.redirectUris=http://localhost:8990/openid_connect_login",
         "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
         })
 //@formatter:on

@@ -41,13 +41,13 @@ import it.infn.mw.iam.IamLoginService;
   webEnvironment = WebEnvironment.DEFINED_PORT,
   properties = {
       "mfa.password-to-encrypt-and-decrypt=secret",
-      "server.port=8989",
+      "server.port=8991",
       "oidc.providers[0].name=provider",
       "oidc.providers[0].issuer=urn:test-oidc-issuer",
       "oidc.providers[0].client.clientId=iam",
       "oidc.providers[0].client.clientSecret=secret",
       "oidc.providers[0].client.scope=openid profile email",
-      "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
+      "oidc.providers[0].client.redirectUris=http://localhost:8991/openid_connect_login",
       "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
       })
 //@formatter:on
