@@ -32,8 +32,6 @@ import java.util.function.Supplier;
 import javax.servlet.http.HttpSession;
 
 import org.bouncycastle.operator.OperatorCreationException;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +41,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.config.IamProperties;
 
 @Service
@@ -74,7 +74,7 @@ public class DefaultRcAuthRequestService implements RCAuthRequestService {
 
   final IamProperties iamProperties;
   final RCAuthProperties properties;
-  final ServerConfigurationService serverConfigService;
+  final OIDCProviderMetadataService serverConfigService;
   final RCAuthTokenRequestor tokenRequestor;
   final RCAuthCertificateRequestor certRequestor;
   final SecureRandom rng;
@@ -82,7 +82,7 @@ public class DefaultRcAuthRequestService implements RCAuthRequestService {
 
   @Autowired
   public DefaultRcAuthRequestService(IamProperties iamProperties, RCAuthProperties properties,
-      ServerConfigurationService scs, RCAuthTokenRequestor requestor,
+      OIDCProviderMetadataService scs, RCAuthTokenRequestor requestor,
       RCAuthCertificateRequestor certRequestor) {
     this.iamProperties = iamProperties;
     this.properties = properties;
@@ -100,10 +100,9 @@ public class DefaultRcAuthRequestService implements RCAuthRequestService {
     return () -> new RCAuthError(CTXT_NOT_FOUND_ERROR);
   }
 
-  protected ServerConfiguration resolveServerConfiguration() {
+  protected OIDCProviderMetadata resolveServerConfiguration() {
 
-    ServerConfiguration serverConfig =
-        serverConfigService.getServerConfiguration(properties.getIssuer());
+    OIDCProviderMetadata serverConfig = serverConfigService.load(properties.getIssuer());
 
     if (isNull(serverConfig)) {
       throw new RCAuthError("Configuration not found for issuer: " + properties.getIssuer());
@@ -124,10 +123,10 @@ public class DefaultRcAuthRequestService implements RCAuthRequestService {
   @Override
   public String buildAuthorizationRequest(HttpSession session) {
 
-    ServerConfiguration serverConfig = resolveServerConfiguration();
+    OIDCProviderMetadata serverConfig = resolveServerConfiguration();
 
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(serverConfig.getAuthorizationEndpointUri());
+        UriComponentsBuilder.fromHttpUrl(serverConfig.authorizationEndpoint());
 
     RCAuthExchangeContext ctxt = RCAuthExchangeContext.newContext();
 
