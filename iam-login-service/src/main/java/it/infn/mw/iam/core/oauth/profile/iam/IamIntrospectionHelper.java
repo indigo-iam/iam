@@ -58,7 +58,9 @@ public class IamIntrospectionHelper extends BaseIntrospectionHelper {
         .map(IamAccountGroupMembership::getGroup)
         .map(IamGroup::getName)
         .collect(Collectors.toSet());
-      claims.put("groups", StringUtils.join(groupNames, ','));
+      if (!groupNames.isEmpty()) {
+        claims.put("groups", StringUtils.join(groupNames, ','));
+      }
     }
   }
 }
