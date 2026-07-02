@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -65,10 +64,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.gson.JsonObject;
 import com.nimbusds.jose.Algorithm;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -188,7 +186,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     String nonce = createNonce(session);
     String state = createState(session);
-    Map<String, String> options = authOptions.getOptions(serverConfig, clientConfig, request);
+    Map<String, String> options = authOptions.getOptions();
 
     populateAcrOptions(session, request, options);
     addPkceChallenge(session, clientConfig.getClient(), options);
@@ -213,11 +211,8 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
           tokenRequestor.requestTokens(config, initTokenRequestParameters(request, config));
 
     } catch (OidcClientError e) {
-      String msg = String.format("Error executing token request against endpoint %s",
-          config.metadata.tokenEndpoint());
-
-      LOG.error(msg, e);
-      throw new OidcClientError(msg, e);
+      throw new OidcClientError(String.format("Error executing token request against endpoint %s",
+          config.metadata.tokenEndpoint()), e);
     }
 
     LOG.debug("Token Endpoint returned string: {}", tokenResponseString);
@@ -297,7 +292,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     form.add("grant_type", "authorization_code");
     form.add("code", request.getParameter("code"));
 
-    form.setAll(authOptions.getTokenOptions(config.metadata, config.clientConfig, request));
+    form.setAll(authOptions.getTokenOptions());
 
     String redirectUri =
         getStoredSessionString(request.getSession(), REDIRECT_URI_SESSION_VARIABLE);
@@ -320,28 +315,24 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     if (idToken instanceof SignedJWT signedIdToken) {
 
-      // JWTSigningAndValidationService jwtValidator = null;
-      //
-      // if (tokenAlg.equals(JWSAlgorithm.HS256) || tokenAlg.equals(JWSAlgorithm.HS384)
-      // || tokenAlg.equals(JWSAlgorithm.HS512)) {
-      //
-      // // generate one based on client secret
-      // jwtValidator = symmetricCacheService.getSymmetricValidator(client);
-      // } else {
-      // // otherwise load from the server's public key
-      // jwtValidator = validationServices.getValidator(config.metadata.jwksUri());
-      // }
+
+      if (tokenAlg.equals(JWSAlgorithm.HS256) || tokenAlg.equals(JWSAlgorithm.HS384)
+          || tokenAlg.equals(JWSAlgorithm.HS512)) {
+
+        throw new UnsupportedOperationException(
+            String.format("Symmetric ID token signing agorithm %s is not supported", tokenAlg));
+      }
+
       JWTSigningAndValidationService jwtValidator =
           validationServices.getValidator(config.metadata.jwksUri());
 
-      if (jwtValidator != null) {
-        if (!jwtValidator.validateSignature(signedIdToken)) {
-          throw new AuthenticationServiceException("Signature validation failed");
-        }
-      } else {
-        logger.error("No validation service found. Skipping signature validation");
+      if (jwtValidator == null) {
         throw new AuthenticationServiceException(
             "Unable to find an appropriate signature validator for ID Token.");
+      }
+
+      if (!jwtValidator.validateSignature(signedIdToken)) {
+        throw new AuthenticationServiceException("ID Token signature validation failed");
       }
     }
 
@@ -514,9 +505,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       String codeVerifier = createCodeVerifier(session);
       options.put("code_challenge_method", client.getCodeChallengeMethod());
 
-      if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.plain)) {
+      if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.plain.getName())) {
         options.put("code_challenge", codeVerifier);
-      } else if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.S256)) {
+      } else if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.S256.getName())) {
         try {
           MessageDigest digest = MessageDigest.getInstance("SHA-256");
           String hash =

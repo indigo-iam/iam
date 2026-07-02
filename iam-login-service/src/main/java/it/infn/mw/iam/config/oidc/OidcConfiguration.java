@@ -180,32 +180,6 @@ public class OidcConfiguration {
     return !Strings.isNullOrEmpty(provider.getClient().getClientId());
   }
 
-  // @Bean
-  // ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
-  //
-  // Map<String, RegisteredClient> clients = new LinkedHashMap<>();
-  //
-  // providers.getValidatedProviders().forEach(provider -> {
-  // RegisteredClient rc = new RegisteredClient();
-  // rc.setClientId(provider.getClient().getClientId());
-  // rc.setClientSecret(provider.getClient().getClientSecret());
-  // rc.setRedirectUris(
-  // Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getRedirectUris())));
-  // rc.setScope(Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getScope().split(","))));
-  // clients.put(provider.getIssuer(), rc);
-  // });
-  //
-  // if (clients.isEmpty()) {
-  // return new NullClientConfigurationService();
-  // }
-  //
-  //
-  // StaticClientConfigurationService config = new StaticClientConfigurationService();
-  // config.setClients(clients);
-  //
-  // return config;
-  // }
-
   @Bean
   AuthorizationRequestOptionService authOptions() {
     return new AuthorizationRequestOptionService();

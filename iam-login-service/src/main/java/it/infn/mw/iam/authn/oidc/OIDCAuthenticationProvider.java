@@ -215,7 +215,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
   private Authentication createAuthenticationToken(PendingOIDCAuthenticationToken token,
       Collection<? extends GrantedAuthority> authorities, UserInfo userInfo) {
     return new OIDCAuthenticationToken(token.getSub(), token.getIssuer(), userInfo, authorities,
-        token.getIdToken(), token.getAccessTokenValue(), token.getRefreshTokenValue());
+        token.getIdToken(), token.getAccessTokenValue());
   }
 
   @Override

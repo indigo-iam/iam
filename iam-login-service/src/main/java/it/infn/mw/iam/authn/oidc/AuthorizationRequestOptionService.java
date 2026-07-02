@@ -28,16 +28,6 @@ public class AuthorizationRequestOptionService {
   private Map<String, String> options = new HashMap<>();
   private Map<String, String> tokenOptions = new HashMap<>();
 
-  public Map<String, String> getOptions(OIDCProviderMetadata server, OidcProvider client,
-      HttpServletRequest request) {
-    return options;
-  }
-
-  public Map<String, String> getTokenOptions(OIDCProviderMetadata server, OidcProvider client,
-      HttpServletRequest request) {
-    return tokenOptions;
-  }
-
   public Map<String, String> getOptions() {
     return options;
   }
