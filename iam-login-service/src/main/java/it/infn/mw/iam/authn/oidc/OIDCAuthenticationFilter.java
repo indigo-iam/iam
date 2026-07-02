@@ -208,7 +208,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     try {
       tokenResponseString =
-          tokenRequestor.requestTokens(config, initTokenRequestParameters(request, config));
+          tokenRequestor.requestTokens(config, initTokenRequestParameters(request));
 
     } catch (OidcClientError e) {
       throw new OidcClientError(String.format("Error executing token request against endpoint %s",
@@ -285,8 +285,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     return new OidcProviderConfiguration(serverConfig, clientConfig);
   }
 
-  protected MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request,
-      OidcProviderConfiguration config) {
+  protected MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request) {
 
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");

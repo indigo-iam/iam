@@ -38,7 +38,7 @@ public class AdminAuthoritiesMapper {
 
   private Set<SubjectIssuerGrantedAuthority> admins = new HashSet<>();
 
-  public Collection<? extends GrantedAuthority> mapAuthorities(JWT idToken) {
+  public Collection<GrantedAuthority> mapAuthorities(JWT idToken) {
 
     Set<GrantedAuthority> out = new HashSet<>();
     try {
