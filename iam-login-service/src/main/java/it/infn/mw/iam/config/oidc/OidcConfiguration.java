@@ -18,9 +18,11 @@ package it.infn.mw.iam.config.oidc;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
+import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -180,8 +182,8 @@ public class OidcConfiguration {
   }
 
   @Bean
-  AdminAuthoritiesMapper authoritiesMapper() {
-    return new AdminAuthoritiesMapper();
+  AdminAuthoritiesMapper authoritiesMapper(Set<SubjectIssuerGrantedAuthority> admins) {
+    return new AdminAuthoritiesMapper(admins);
   }
 
   @Bean

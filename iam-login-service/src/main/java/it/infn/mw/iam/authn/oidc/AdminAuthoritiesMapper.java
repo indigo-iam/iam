@@ -36,7 +36,11 @@ public class AdminAuthoritiesMapper {
   private static final SimpleGrantedAuthority ROLE_ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
   private static final SimpleGrantedAuthority ROLE_USER = new SimpleGrantedAuthority("ROLE_USER");
 
-  private Set<SubjectIssuerGrantedAuthority> admins = new HashSet<>();
+  private Set<SubjectIssuerGrantedAuthority> admins;
+  
+  public AdminAuthoritiesMapper(Set<SubjectIssuerGrantedAuthority> admins) {
+    this.admins = admins;
+  }
 
   public Collection<GrantedAuthority> mapAuthorities(JWT idToken) {
 
@@ -62,10 +66,6 @@ public class AdminAuthoritiesMapper {
 
   public Set<SubjectIssuerGrantedAuthority> getAdmins() {
     return admins;
-  }
-
-  public void setAdmins(Set<SubjectIssuerGrantedAuthority> admins) {
-    this.admins = admins;
   }
 
 }
