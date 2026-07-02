@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -52,22 +53,23 @@ import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@IamRandomPortIntegrationTest
-//@formatter:on
-@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-    OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.DEFINED_PORT,
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+//@formatter:off
+@SpringBootTest(
+    classes = {
+        IamLoginService.class, OidcTestConfig.class, OidcValidatorIntegrationTests.Config.class},
+    webEnvironment = WebEnvironment.DEFINED_PORT,
     properties = {
-        "server.port=8990",
+        "server.port=8989",
         "oidc.providers[0].name=provider",
         "oidc.providers[0].issuer=urn:test-oidc-issuer",
         "oidc.providers[0].client.clientId=iam",
         "oidc.providers[0].client.clientSecret=secret",
         "oidc.providers[0].client.scope=openid profile email",
-        "oidc.providers[0].client.redirectUris=http://localhost:8990/openid_connect_login",
+        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
         "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
         })
 //@formatter:on

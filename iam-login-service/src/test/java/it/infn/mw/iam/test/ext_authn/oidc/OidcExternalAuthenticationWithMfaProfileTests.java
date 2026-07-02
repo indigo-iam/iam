@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -35,19 +36,20 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Transactional
 //@formatter:off
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
   webEnvironment = WebEnvironment.DEFINED_PORT,
   properties = {
       "mfa.password-to-encrypt-and-decrypt=secret",
-      "server.port=8991",
+      "server.port=8989",
       "oidc.providers[0].name=provider",
       "oidc.providers[0].issuer=urn:test-oidc-issuer",
       "oidc.providers[0].client.clientId=iam",
       "oidc.providers[0].client.clientSecret=secret",
       "oidc.providers[0].client.scope=openid profile email",
-      "oidc.providers[0].client.redirectUris=http://localhost:8991/openid_connect_login",
+      "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
       "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
       })
 //@formatter:on
