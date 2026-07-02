@@ -15,47 +15,41 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.text.ParseException;
 import java.util.ArrayList;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 
 import com.google.common.collect.ImmutableMap;
 import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 
 public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken {
 
-  private static final long serialVersionUID = 22100073066377804L;
+  private static final long serialVersionUID = -3039943580483543553L;
 
   private final ImmutableMap<String, String> principal;
+
+  private final String subject;
+  private final String issuer;
+  private final transient OIDCProviderMetadata serverConfiguration;
+  private transient JWT idToken;
   private final String accessTokenValue;
   private final String refreshTokenValue;
-  private transient JWT idToken;
-  private final String issuer;
-  private final String sub;
-
-  private final transient OIDCProviderMetadata serverConfiguration;
 
   public PendingOIDCAuthenticationToken(String subject, String issuer,
       OIDCProviderMetadata serverConfiguration, JWT idToken, String accessTokenValue,
       String refreshTokenValue) {
 
-    super(new ArrayList<GrantedAuthority>(0));
-
+    super(new ArrayList<>());
     this.principal = ImmutableMap.of("sub", subject, "iss", issuer);
-    this.sub = subject;
+
+    this.subject = subject;
     this.issuer = issuer;
+    this.serverConfiguration = serverConfiguration;
     this.idToken = idToken;
     this.accessTokenValue = accessTokenValue;
     this.refreshTokenValue = refreshTokenValue;
-    this.serverConfiguration = serverConfiguration;
 
     setAuthenticated(false);
   }
@@ -71,7 +65,7 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
   }
 
   public String getSub() {
-    return sub;
+    return subject;
   }
 
   public JWT getIdToken() {
@@ -92,24 +86,6 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
 
   public String getIssuer() {
     return issuer;
-  }
-
-  private void writeObject(ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
-    if (idToken == null) {
-      out.writeObject(null);
-    } else {
-      out.writeObject(idToken.serialize());
-    }
-  }
-
-  private void readObject(ObjectInputStream in)
-      throws IOException, ClassNotFoundException, ParseException {
-    in.defaultReadObject();
-    Object o = in.readObject();
-    if (o != null) {
-      idToken = JWTParser.parse((String) o);
-    }
   }
 
 }

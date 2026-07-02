@@ -18,16 +18,10 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.Clock;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,15 +30,12 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Sets;
 import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
-import it.infn.mw.iam.config.oidc.OidcClient;
-import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;

@@ -26,7 +26,7 @@ import com.nimbusds.jwt.JWT;
 
 public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 8085760433250417654L;
 
   private final ImmutableMap<String, String> principal;
 
@@ -35,9 +35,11 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
   private final UserInfo userInfo;
   private transient JWT idToken;
   private final String accessTokenValue;
+  private final String refreshTokenValue;
 
   public OIDCAuthenticationToken(String subject, String issuer, UserInfo userInfo,
-      Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue) {
+      Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue,
+      String refreshTokenValue) {
 
     super(authorities);
     this.principal = ImmutableMap.of("sub", subject, "iss", issuer);
@@ -47,6 +49,7 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
     this.userInfo = userInfo;
     this.idToken = idToken;
     this.accessTokenValue = accessTokenValue;
+    this.refreshTokenValue = refreshTokenValue;
 
     setAuthenticated(true);
   }
@@ -77,4 +80,7 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
     return userInfo;
   }
 
+  public String getRefreshToken() {
+    return refreshTokenValue;
+  }
 }

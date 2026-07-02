@@ -18,11 +18,6 @@ package it.infn.mw.iam.authn.oidc;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
-import it.infn.mw.iam.config.oidc.OidcProvider;
-
 public class AuthorizationRequestOptionService {
 
   private Map<String, String> options = new HashMap<>();

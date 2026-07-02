@@ -69,7 +69,6 @@ public class UserInfoFetcher {
 
   }
 
-
   private class UserInfoLoader extends CacheLoader<PendingOIDCAuthenticationToken, UserInfo> {
     private HttpComponentsClientHttpRequestFactory factory;
 
@@ -106,14 +105,11 @@ public class UserInfoFetcher {
       String userInfoString =
           restTemplate.getForObject(serverConfiguration.userInfoEndpoint(), String.class);
 
-
       if (!Strings.isNullOrEmpty(userInfoString)) {
 
-        JsonObject userInfoJson = new JsonParser().parse(userInfoString).getAsJsonObject();
+        JsonObject userInfoJson = JsonParser.parseString(userInfoString).getAsJsonObject();
 
-        UserInfo userInfo = fromJson(userInfoJson);
-
-        return userInfo;
+        return fromJson(userInfoJson);
       } else {
         throw new IllegalArgumentException("Unable to load user info");
       }
