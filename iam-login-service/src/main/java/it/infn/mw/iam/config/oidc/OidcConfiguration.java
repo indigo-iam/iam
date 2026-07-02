@@ -162,25 +162,6 @@ public class OidcConfiguration {
   }
 
   @Bean
-  @Profile("!canl")
-  ServerConfigurationService dynamicServerConfiguration() {
-
-    return new DynamicServerConfigurationService();
-  }
-
-  @Bean
-  @Profile("canl")
-  ServerConfigurationService canlDynamicServerConfiguration(
-      @Qualifier("canlHttpClient") HttpClient client) {
-
-    return new DynamicServerConfigurationService(client);
-  }
-
-  public boolean configuredProvider(OidcProvider provider) {
-    return !Strings.isNullOrEmpty(provider.getClient().getClientId());
-  }
-
-  @Bean
   AuthorizationRequestOptionService authOptions() {
     return new AuthorizationRequestOptionService();
   }
