@@ -1621,14 +1621,3 @@ INSERT INTO whitelisted_site(id, creator_user_id, client_id) VALUES
 INSERT INTO whitelisted_site_scope(owner_id, scope) VALUES
 (1, 'openid'),
 (1, 'profile');
-
-INSERT INTO iam_federated_client(id, client_id, client_secret, client_name, token_endpoint_auth_method, jwks_uri, jwks, created_at, active, expiration, entity_id) VALUES
-(1, 'federated-client', 'secret', 'Remote RP', 'SECRET_BASIC', 'https://op.example.com/jwk', null, CURRENT_TIMESTAMP(), true, CURRENT_TIMESTAMP(), 'https://op.example.com');
-
-INSERT INTO iam_federated_client_redirect_uri(owner_id, redirect_uri) VALUES (1, 'http://localhost:8080/openid_connect_login');
-
-INSERT INTO iam_federated_client_grant_type(owner_id, grant_type) VALUES (1, 'code');
-
-INSERT INTO iam_federated_client_response_type(owner_id, response_type) VALUES (1, 'code');
-
-INSERT INTO iam_federated_client_scope(owner_id, scope) VALUES (1, 'openid');

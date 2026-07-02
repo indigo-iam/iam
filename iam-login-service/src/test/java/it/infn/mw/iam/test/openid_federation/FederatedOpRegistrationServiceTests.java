@@ -63,7 +63,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -76,6 +75,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
@@ -91,7 +91,6 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @TestPropertySource(properties = {
     "openid-federation.trust-anchors=https://ta1.example.com,https://ta2.example.com",
     "openid-federation.entity-configuration.authority-hints=https://ta1.example.com,https://auth-hint.example.com"})
-@Transactional
 class FederatedOpRegistrationServiceTests {
 
   private static final String ISS = "https://op.example.com";
@@ -130,6 +129,8 @@ class FederatedOpRegistrationServiceTests {
 
   MockRestTemplateFactory mockRtf;
 
+  IamFederatedClientEntity client;
+
   @BeforeEach
   void setup() throws JOSEException, FederationException {
     ServerConfiguration sc = new ServerConfiguration();
@@ -150,36 +151,25 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRpRegistration() throws Exception {
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer("https://remote-op.example.com");
-    sc.setAuthorizationEndpointUri("https://remote-op.example.com/authorize");
-    sc.setTokenEndpointUri("https://remote-op.example.com/token");
-    sc.setJwksUri("https://remote-op.example.com/jwks");
-
-    when(serverConfigurationService.getServerConfiguration("https://remote-op.example.com"))
-      .thenReturn(sc);
-
-    fakeChain = TrustChainTestFactory.createOpToTaChain("https://remote-op.example.com", null,
-        URI.create("https://remote-op.example.com/jwk"), "https://ta1.example.com");
-    when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
-
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
-    String rpJwt = opJwtResponse("https://remote-op.example.com", SUB, iat, exp, AUD, TA);
+    String rpJwt = opJwtResponse("https://op.example.com", SUB, iat, exp, AUD, TA);
 
     mockRtf.getMockServer()
-      .expect(requestTo("https://remote-op.example.com/fedreg"))
+      .expect(requestTo("https://op.example.com/fedreg"))
       .andExpect(method(HttpMethod.POST))
       .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
-    mvc.perform(get("/openid_connect_login?iss=" + "https://remote-op.example.com"))
+    mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
-    Optional<IamFederatedClientEntity> client =
-        clientRepo.findByEntityId("https://remote-op.example.com");
-    assertTrue(client.isPresent());
-    assertEquals("OIDFed remote client", client.get().getClientName());
+    Optional<IamFederatedClientEntity> federatedClient =
+        clientRepo.findByEntityId("https://op.example.com");
+    assertTrue(federatedClient.isPresent());
+    assertEquals("OIDFed remote client", federatedClient.get().getClientName());
+
+    clientRepo.delete(federatedClient.get());
   }
 
   @Test
@@ -207,17 +197,20 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRegisteredRpRedirectsToAuthorize() throws Exception {
-    Optional<IamFederatedClientEntity> registeredOp = clientRepo.findByClientId("federated-client");
+    createFederatedClient();
+
     LocalDate today = LocalDate.now();
     LocalDate tomorrow = today.plusDays(1);
     Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    registeredOp.get().setExpiration(tomorrowDate);
-    registeredOp.get().setEntityId("https://op.example.com");
-    clientRepo.save(registeredOp.get());
+    client.setExpiration(tomorrowDate);
+    client.setEntityId("https://op.example.com");
+    clientRepo.save(client);
 
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrlPattern("https://op.example.com/authorize*"));
+
+    clientRepo.delete(client);
   }
 
   @Test
@@ -234,7 +227,9 @@ class FederatedOpRegistrationServiceTests {
   }
 
   @Test
-  void testExpiredRpIsDeletedAndRegisteredAgain() throws Exception {
+  void testExpiredOpIsDeletedAndRegisteredAgain() throws Exception {
+    createFederatedClient();
+
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
 
@@ -245,14 +240,15 @@ class FederatedOpRegistrationServiceTests {
       .andExpect(method(HttpMethod.POST))
       .andRespond(withSuccess(rpJwt, MediaType.APPLICATION_JSON));
 
-    Optional<IamFederatedClientEntity> expiredOp = clientRepo.findByClientId("federated-client");
-
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound());
 
     Optional<IamFederatedClientEntity> newOp = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(newOp.isPresent());
-    assertNotEquals(expiredOp.get().getClientId(), newOp.get().getClientId());
+    assertNotEquals(client.getClientId(), newOp.get().getClientId());
+
+    clientRepo.delete(client);
+    clientRepo.delete(newOp.get());
   }
 
   @Test
@@ -338,6 +334,23 @@ class FederatedOpRegistrationServiceTests {
     String ta = "https://ta2.example.com";
 
     performCall(ISS, SUB, iat, exp, AUD, ta);
+  }
+
+  private void createFederatedClient() {
+    client = new IamFederatedClientEntity();
+    client.setActive(true);
+    client.setClientId("federated-client");
+    client.setClientSecret("secret");
+    client.setClientName("Remote OP");
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic.name());
+    client.setJwksUri("https://op.example.com/jwk");
+    client.setEntityId("https://op.example.com");
+    client.setExpiration(Date.from(clock.instant()));
+    client.setRedirectUris(Set.of("http://localhost:8080/openid_connect_login"));
+    client.setGrantTypes(Set.of("code"));
+    client.setResponseTypes(Set.of("code"));
+    client.setScope(Set.of("openid"));
+    clientRepo.save(client);
   }
 
   private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud, String ta)
