@@ -34,6 +34,7 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -95,7 +96,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   private IssuerService issuerService;
   private OIDCProviderMetadataService servers;
   private OidcProviderProperties clients;
-  private AuthorizationRequestOptionService authOptions;
   private PlainAuthRequestUrlBuilder authRequestBuilder;
   private Clock clock;
   private OidcTokenRequestor tokenRequestor;
@@ -106,9 +106,8 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   public OIDCAuthenticationFilter(JWKSetCacheService validationServices,
       SymmetricKeyJWTValidatorCacheService symmetricCacheService, IssuerService issuerService,
       OIDCProviderMetadataService servers, OidcProviderProperties clients,
-      AuthorizationRequestOptionService authOptions, PlainAuthRequestUrlBuilder authRequestBuilder,
-      Clock clock, OidcTokenRequestor tokenRequestor, Environment env, ObjectMapper objectMapper,
-      int timeSkewAllowance) {
+      PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
+      Environment env, ObjectMapper objectMapper, int timeSkewAllowance) {
 
     super(FILTER_PROCESSES_URL);
     this.validationServices = validationServices;
@@ -116,7 +115,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     this.issuerService = issuerService;
     this.servers = servers;
     this.clients = clients;
-    this.authOptions = authOptions;
     this.authRequestBuilder = authRequestBuilder;
     this.clock = clock;
     this.tokenRequestor = tokenRequestor;
@@ -186,7 +184,8 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     String nonce = createNonce(session);
     String state = createState(session);
-    Map<String, String> options = authOptions.getOptions();
+
+    Map<String, String> options = new HashMap<>();
 
     populateAcrOptions(session, request, options);
     addPkceChallenge(session, clientConfig.getClient().codeChallengeMethod(), options);
@@ -290,8 +289,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");
     form.add("code", request.getParameter("code"));
-
-    form.setAll(authOptions.getTokenOptions());
 
     String redirectUri =
         getStoredSessionString(request.getSession(), REDIRECT_URI_SESSION_VARIABLE);

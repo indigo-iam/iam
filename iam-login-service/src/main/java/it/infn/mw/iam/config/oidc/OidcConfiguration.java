@@ -17,7 +17,6 @@ package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
@@ -48,7 +47,6 @@ import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.oidc.AdminAuthoritiesMapper;
-import it.infn.mw.iam.authn.oidc.AuthorizationRequestOptionService;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
@@ -90,15 +88,15 @@ public class OidcConfiguration {
       JWKSetCacheService validationServices,
       SymmetricKeyJWTValidatorCacheService symmetricCacheService, IssuerService issuerService,
       OIDCProviderMetadataService servers, OidcProviderProperties clients,
-      AuthorizationRequestOptionService authOptions, PlainAuthRequestUrlBuilder authRequestBuilder,
-      Clock clock, OidcTokenRequestor tokenRequestor, Environment env, ObjectMapper objectMapper,
+      PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
+      Environment env, ObjectMapper objectMapper,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
 
-    OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(validationServices,
-        symmetricCacheService, issuerService, servers, clients, authOptions, authRequestBuilder,
-        clock, tokenRequestor, env, objectMapper, 300);
+    OIDCAuthenticationFilter filter =
+        new OIDCAuthenticationFilter(validationServices, symmetricCacheService, issuerService,
+            servers, clients, authRequestBuilder, clock, tokenRequestor, env, objectMapper, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
@@ -158,12 +156,6 @@ public class OidcConfiguration {
   IssuerService oidcIssuerService() {
 
     return new IamThirdPartyIssuerService();
-  }
-
-  @Bean
-  AuthorizationRequestOptionService authOptions(Map<String, String> options,
-      Map<String, String> tokenOptions) {
-    return new AuthorizationRequestOptionService(options, tokenOptions);
   }
 
   @Bean
