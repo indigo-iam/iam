@@ -37,46 +37,44 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 @PreAuthorize("hasRole('ROLE_USER')")
 public class ApprovedSiteController {
 
-    private final ApprovedSiteService approvedSiteService;
-    private final ClientService clientService;
-    private final AccountUtils accountUtils;
+  private final ApprovedSiteService approvedSiteService;
+  private final ClientService clientService;
+  private final AccountUtils accountUtils;
 
-    public ApprovedSiteController(ApprovedSiteService approvedSiteService, ClientService clientService,
-            AccountUtils accountUtils) {
-        this.approvedSiteService = approvedSiteService;
-        this.clientService = clientService;
-        this.accountUtils = accountUtils;
-    }
+  public ApprovedSiteController(ApprovedSiteService approvedSiteService,
+      ClientService clientService, AccountUtils accountUtils) {
+    this.approvedSiteService = approvedSiteService;
+    this.clientService = clientService;
+    this.accountUtils = accountUtils;
+  }
 
-    @GetMapping(value = "/approved")
-    public List<ApprovedSiteWithClientDetailsDTO> getAllApprovedSites() {
-        IamAccount account = accountUtils.getAuthenticatedUserAccount()
-                .orElseThrow(
-                        () -> new IllegalStateException("No iam account found for authenticated user"));
+  @GetMapping(value = "/approved")
+  public List<ApprovedSiteWithClientDetailsDTO> getAllApprovedSites() {
+    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+      .orElseThrow(() -> new IllegalStateException("No iam account found for authenticated user"));
 
-        return approvedSiteService.getByUserId(account.getUsername())
-                .stream()
-                .map(this::toDto)
-                .toList();
-    }
+    return approvedSiteService.getByUserId(account.getUsername())
+      .stream()
+      .map(this::toDto)
+      .toList();
+  }
 
-    private ApprovedSiteWithClientDetailsDTO toDto(ApprovedSite approvedSite) {
+  private ApprovedSiteWithClientDetailsDTO toDto(ApprovedSite approvedSite) {
 
-        ClientDetailsEntity client = clientService
-                .findClientByClientId(approvedSite.getClientId())
-                .orElseThrow(ClientSuppliers.clientNotFound(approvedSite.getClientId()));
+    ClientDetailsEntity client = clientService.findClientByClientId(approvedSite.getClientId())
+      .orElseThrow(ClientSuppliers.clientNotFound(approvedSite.getClientId()));
 
-        ApprovedSiteWithClientDetailsDTO dto = new ApprovedSiteWithClientDetailsDTO();
-        dto.setId(approvedSite.getId());
-        dto.setUserId(approvedSite.getUserId());
-        dto.setClientId(approvedSite.getClientId());
-        dto.setClientName(client.getClientName());
-        dto.setClientDescription(client.getClientDescription());
-        dto.setAuthorizationDate(approvedSite.getCreationDate());
-        dto.setAccessDate(approvedSite.getAccessDate());
-        dto.setTimeoutDate(approvedSite.getTimeoutDate());
-        dto.setAllowedScopes(approvedSite.getAllowedScopes());
+    ApprovedSiteWithClientDetailsDTO dto = new ApprovedSiteWithClientDetailsDTO();
+    dto.setId(approvedSite.getId());
+    dto.setUserId(approvedSite.getUserId());
+    dto.setClientId(approvedSite.getClientId());
+    dto.setClientName(client.getClientName());
+    dto.setClientDescription(client.getClientDescription());
+    dto.setAuthorizationDate(approvedSite.getCreationDate());
+    dto.setAccessDate(approvedSite.getAccessDate());
+    dto.setTimeoutDate(approvedSite.getTimeoutDate());
+    dto.setAllowedScopes(approvedSite.getAllowedScopes());
 
-        return dto;
-    }
+    return dto;
+  }
 }
