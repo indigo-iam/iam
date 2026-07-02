@@ -17,13 +17,11 @@ package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Map;
 
-import org.apache.http.client.HttpClient;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.DynamicServerConfigurationService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,7 +39,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
@@ -162,8 +159,9 @@ public class OidcConfiguration {
   }
 
   @Bean
-  AuthorizationRequestOptionService authOptions() {
-    return new AuthorizationRequestOptionService();
+  AuthorizationRequestOptionService authOptions(Map<String, String> options,
+      Map<String, String> tokenOptions) {
+    return new AuthorizationRequestOptionService(options, tokenOptions);
   }
 
   @Bean

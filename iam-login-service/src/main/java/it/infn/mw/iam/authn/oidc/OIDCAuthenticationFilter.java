@@ -189,7 +189,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     Map<String, String> options = authOptions.getOptions();
 
     populateAcrOptions(session, request, options);
-    addPkceChallenge(session, clientConfig.getClient(), options);
+    addPkceChallenge(session, clientConfig.getClient().codeChallengeMethod(), options);
 
     String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig,
         redirectUri, nonce, state, options, issResp.getLoginHint());
@@ -309,7 +309,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
     OidcClient client = config.clientConfig.getClient();
 
-    validateAlgorithmMatch(tokenAlg, client.getIdTokenSignedResponseAlg());
+    validateAlgorithmMatch(tokenAlg, client.idTokenSignedResponseAlg());
     handlePlainJwt(idToken, tokenAlg);
 
     if (idToken instanceof SignedJWT signedIdToken) {
@@ -388,7 +388,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     if (aud == null) {
       throw new AuthenticationServiceException("Id token audience is null");
     }
-    String oidcClientId = config.clientConfig.getClient().getClientId();
+    String oidcClientId = config.clientConfig.getClient().clientId();
     if (!aud.contains(oidcClientId)) {
       throw new AuthenticationServiceException(
           String.format("Audience does not match, expected %s got %s", oidcClientId, aud));
@@ -461,7 +461,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   private String determineRedirectUri(OidcProvider clientConfig, HttpServletRequest request) {
 
-    String redirectUri = clientConfig.getClient().getRedirectUris();
+    String redirectUri = clientConfig.getClient().redirectUris();
 
     if (redirectUri == null || !redirectUri.equals(request.getRequestURL().toString())) {
       throw new AuthenticationServiceException(
@@ -496,17 +496,17 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
   }
 
-  private void addPkceChallenge(HttpSession session, OidcClient client,
+  private void addPkceChallenge(HttpSession session, String codeChallengeMethod,
       Map<String, String> options) {
 
-    if (client.getCodeChallengeMethod() != null) {
+    if (codeChallengeMethod != null) {
 
       String codeVerifier = createCodeVerifier(session);
-      options.put("code_challenge_method", client.getCodeChallengeMethod());
+      options.put("code_challenge_method", codeChallengeMethod);
 
-      if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.plain.getName())) {
+      if (codeChallengeMethod.equals(PKCEAlgorithm.plain.getName())) {
         options.put("code_challenge", codeVerifier);
-      } else if (client.getCodeChallengeMethod().equals(PKCEAlgorithm.S256.getName())) {
+      } else if (codeChallengeMethod.equals(PKCEAlgorithm.S256.getName())) {
         try {
           MessageDigest digest = MessageDigest.getInstance("SHA-256");
           String hash =

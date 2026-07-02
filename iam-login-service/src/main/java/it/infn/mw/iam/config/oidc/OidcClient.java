@@ -17,75 +17,8 @@ package it.infn.mw.iam.config.oidc;
 
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 
-public class OidcClient {
-
-  private String clientId;
-
-  private String clientSecret;
-
-  private String redirectUris;
-
-  private String scope;
-
-  private String codeChallengeMethod;
-
-  private String idTokenSignedResponseAlg;
-
-  private AuthMethod tokenEndpointAuthMethod;
-
-  public String getClientId() {
-    return clientId;
-  }
-
-  public void setClientId(String clientId) {
-    this.clientId = clientId;
-  }
-
-  public String getClientSecret() {
-    return clientSecret;
-  }
-
-  public void setClientSecret(String clientSecret) {
-    this.clientSecret = clientSecret;
-  }
-
-  public String getRedirectUris() {
-    return redirectUris;
-  }
-
-  public void setRedirectUris(String redirectUris) {
-    this.redirectUris = redirectUris;
-  }
-
-  public String getScope() {
-    return scope;
-  }
-
-  public void setScope(String scope) {
-    this.scope = scope;
-  }
-
-  public String getCodeChallengeMethod() {
-    return codeChallengeMethod;
-  }
-
-  public void setCodeChallengeMethod(String codeChallengeMethod) {
-    this.codeChallengeMethod = codeChallengeMethod;
-  }
-
-  public String getIdTokenSignedResponseAlg() {
-    return idTokenSignedResponseAlg;
-  }
-
-  public void setIdTokenSignedResponseAlg(String idTokenSignedResponseAlg) {
-    this.idTokenSignedResponseAlg = idTokenSignedResponseAlg;
-  }
-
-  public AuthMethod getTokenEndpointAuthMethod() {
-    return tokenEndpointAuthMethod;
-  }
-
-  public void setTokenEndpointAuthMethod(AuthMethod tokenEndpointAuthMethod) {
-    this.tokenEndpointAuthMethod = tokenEndpointAuthMethod;
-  }
+public record OidcClient(
+    String clientId, String clientSecret, String redirectUris, String scope,
+    String codeChallengeMethod, String idTokenSignedResponseAlg,
+    AuthMethod tokenEndpointAuthMethod) {
 }

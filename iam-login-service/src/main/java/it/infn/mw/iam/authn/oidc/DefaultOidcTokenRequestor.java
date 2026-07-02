@@ -52,7 +52,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
   private void basicAuthRequest(OidcClient oidcClientConfig, HttpHeaders headers) {
 
-    String auth = oidcClientConfig.getClientId() + ":" + oidcClientConfig.getClientSecret();
+    String auth = oidcClientConfig.clientId() + ":" + oidcClientConfig.clientSecret();
     byte[] encodedAuth = org.apache.commons.codec.binary.Base64
       .encodeBase64(auth.getBytes(StandardCharsets.US_ASCII));
     String authHeader = "Basic " + new String(encodedAuth);
@@ -73,8 +73,8 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
   protected void formAuthRequest(OidcClient oidcClientConfig,
       MultiValueMap<String, String> requestParams) {
 
-    requestParams.add("client_id", oidcClientConfig.getClientId());
-    requestParams.add("client_secret", oidcClientConfig.getClientSecret());
+    requestParams.add("client_id", oidcClientConfig.clientId());
+    requestParams.add("client_secret", oidcClientConfig.clientSecret());
 
   }
 
@@ -83,7 +83,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     HttpHeaders headers = new HttpHeaders();
 
-    switch (oidcClientConfig.getTokenEndpointAuthMethod()) {
+    switch (oidcClientConfig.tokenEndpointAuthMethod()) {
 
       case SECRET_BASIC:
         basicAuthRequest(oidcClientConfig, headers);

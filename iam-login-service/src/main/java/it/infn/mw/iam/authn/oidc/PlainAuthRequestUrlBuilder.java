@@ -36,9 +36,9 @@ public class PlainAuthRequestUrlBuilder {
 
       URIBuilder uriBuilder = new URIBuilder(serverConfig.authorizationEndpoint());
       uriBuilder.addParameter("response_type", "code");
-      uriBuilder.addParameter("client_id", clientConfig.getClient().getClientId());
+      uriBuilder.addParameter("client_id", clientConfig.getClient().clientId());
       uriBuilder.addParameter("scope",
-          String.join(" ", clientConfig.getClient().getScope().split(",")));
+          String.join(" ", clientConfig.getClient().scope().split(",")));
       uriBuilder.addParameter("redirect_uri", redirectUri);
       uriBuilder.addParameter("nonce", nonce);
       uriBuilder.addParameter("state", state);

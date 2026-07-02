@@ -15,28 +15,24 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class AuthorizationRequestOptionService {
 
-  private Map<String, String> options = new HashMap<>();
-  private Map<String, String> tokenOptions = new HashMap<>();
+  private Map<String, String> options;
+  private Map<String, String> tokenOptions;
+
+  public AuthorizationRequestOptionService(Map<String, String> options, Map<String, String> tokenOptions) {
+    this.options = options;
+    this.tokenOptions = options;
+  }
 
   public Map<String, String> getOptions() {
     return options;
   }
 
-  public void setOptions(Map<String, String> options) {
-    this.options = options;
-  }
-
   public Map<String, String> getTokenOptions() {
     return tokenOptions;
-  }
-
-  public void setTokenOptions(Map<String, String> tokenOptions) {
-    this.tokenOptions = tokenOptions;
   }
 
 }
