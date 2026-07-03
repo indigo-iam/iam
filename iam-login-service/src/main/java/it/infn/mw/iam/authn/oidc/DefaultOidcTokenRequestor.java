@@ -20,7 +20,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import org.apache.commons.lang.NotImplementedException;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -60,16 +60,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
     headers.set("Authorization", authHeader);
   }
 
-  private void jwtAuthRequest() {
-
-    throw new NotImplementedException("Signed JWT authN method not yet implemented");
-  }
-
-  private void jwtPrivateKeyAuthRequest() {
-
-    throw new NotImplementedException("JWT authN method not yet implemented");
-  }
-
   protected void formAuthRequest(OidcClient oidcClientConfig,
       MultiValueMap<String, String> requestParams) {
 
@@ -83,23 +73,22 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     HttpHeaders headers = new HttpHeaders();
 
-    switch (oidcClientConfig.tokenEndpointAuthMethod()) {
+    AuthMethod tokenEndpointAuthMethod = oidcClientConfig.tokenEndpointAuthMethod();
+
+    if (tokenEndpointAuthMethod == null) {
+      tokenEndpointAuthMethod = AuthMethod.SECRET_BASIC;
+    }
+
+    switch (tokenEndpointAuthMethod) {
 
       case SECRET_BASIC:
         basicAuthRequest(oidcClientConfig, headers);
-        break;
-      case SECRET_JWT:
-        jwtAuthRequest();
-        break;
-      case PRIVATE_KEY:
-        jwtPrivateKeyAuthRequest();
         break;
       case SECRET_POST:
         formAuthRequest(oidcClientConfig, tokenRequestParams);
         break;
       case NONE:
         break;
-
       default:
         throw new AuthenticationServiceException(
             "Unsupported token endpoint authentication method");
