@@ -19,6 +19,8 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
@@ -179,8 +181,19 @@ public class OidcConfiguration {
   }
 
   @Bean
-  UserInfoFetcher userInfoFetcher() {
-    return new UserInfoFetcher();
+  UserInfoFetcher userInfoFetcher(HttpComponentsClientHttpRequestFactory factory) {
+    return new UserInfoFetcher(factory);
+  }
+
+  @Bean
+  HttpComponentsClientHttpRequestFactory userinfoRequestFactory() {
+    return new HttpComponentsClientHttpRequestFactory(
+        HttpClientBuilder.create().useSystemProperties().build());
+  }
+
+  @Bean
+  HttpClient httpClient() {
+    return HttpClientBuilder.create().useSystemProperties().build();
   }
 
 }

@@ -45,6 +45,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -92,10 +93,10 @@ class OidcAccountLinkingMultiProviderTests {
   private IamAccountRepository iamAccountRepo;
 
   @Autowired
-  UserInfoFetcher userInfoFetcher;
-
-  @Autowired
   private MockMvc mvc;
+
+  @MockBean
+  UserInfoFetcher userInfoFetcher;
 
   private static final String TEST_100_USER = "test_100";
   private static final String OIDC_ACCOUNT_LINKING_ENDPOINT = "/iam/account-linking/OIDC";

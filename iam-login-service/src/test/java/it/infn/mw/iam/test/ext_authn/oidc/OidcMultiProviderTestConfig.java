@@ -35,7 +35,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
@@ -60,13 +59,6 @@ public class OidcMultiProviderTestConfig {
   public static final String TEST_OIDC_02_TOKEN_ENDPOINT_URI = "http://oidc-02.test/token";
   public static final String TEST_OIDC_02_JWKS_URI = "http://oidc-02.test/jwk";
   public static final String TEST_OIDC_02_USERINFO_URI = "http://oidc-02.test/userinfo";
-
-  @Bean
-  @Primary
-  UserInfoFetcher userInfoFetcher() {
-    UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
-    return fetcher;
-  }
 
   @Bean
   @Primary

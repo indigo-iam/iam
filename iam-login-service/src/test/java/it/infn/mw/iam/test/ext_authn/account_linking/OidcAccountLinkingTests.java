@@ -45,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -88,7 +89,7 @@ class OidcAccountLinkingTests {
   @Autowired
   IamAccountRepository iamAccountRepo;
 
-  @Autowired
+  @MockBean
   UserInfoFetcher userInfoFetcher;
 
   @Autowired
