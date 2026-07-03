@@ -42,7 +42,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.IamProperties;
 
 @Service

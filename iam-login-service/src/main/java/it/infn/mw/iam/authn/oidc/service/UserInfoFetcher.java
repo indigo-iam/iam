@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc;
+package it.infn.mw.iam.authn.oidc.service;
 
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
@@ -27,6 +27,9 @@ import org.springframework.web.client.RestTemplate;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
 
 public class UserInfoFetcher {
 

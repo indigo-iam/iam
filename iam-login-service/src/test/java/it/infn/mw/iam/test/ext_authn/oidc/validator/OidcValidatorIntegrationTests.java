@@ -50,7 +50,7 @@ import com.nimbusds.jwt.JWT;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.common.Fail;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
-import it.infn.mw.iam.authn.oidc.UserInfoFetcher;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;

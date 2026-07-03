@@ -58,7 +58,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.DefaultRcAuthRequestService;
 import it.infn.mw.iam.rcauth.RCAuthAuthorizationResponse;
