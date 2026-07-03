@@ -24,7 +24,6 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 
 public class PlainAuthRequestUrlBuilder {

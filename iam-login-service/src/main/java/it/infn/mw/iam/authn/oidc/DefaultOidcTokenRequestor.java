@@ -125,15 +125,15 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
   }
 
   @Override
-  public String requestTokens(OidcProviderConfiguration conf,
+  public String requestTokens(String tokenEndpoint, OidcClient client,
       MultiValueMap<String, String> tokenRequestParams) {
 
     RestOperations restTemplate = restTemplateFactory.newRestTemplate();
 
     try {
 
-      return restTemplate.postForObject(conf.metadata.tokenEndpoint(),
-          prepareTokenRequest(conf.clientConfig.getClient(), tokenRequestParams), String.class);
+      return restTemplate.postForObject(tokenEndpoint,
+          prepareTokenRequest(client, tokenRequestParams), String.class);
 
     } catch (HttpClientErrorException e) {
 

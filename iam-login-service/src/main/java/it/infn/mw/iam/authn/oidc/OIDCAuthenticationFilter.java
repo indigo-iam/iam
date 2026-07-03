@@ -74,7 +74,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
@@ -174,10 +173,10 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       return;
     }
 
-    OidcConfiguration config = loadOidcConfiguration(session, issResp);
-
-    OIDCProviderMetadata serverConfig = config.metadata;
-    OidcProvider clientConfig = config.clientConfig();
+    String issuer = getValidIssuerFromRequest(session, issResp);
+    OIDCProviderMetadata serverConfig = getOidcProviderMetadata(issuer);
+    OidcProvider clientConfig = getMatchedOidcProvider(issuer);
+    session.setAttribute(ISSUER_SESSION_VARIABLE, serverConfig.issuer());
 
     String redirectUri = determineRedirectUri(clientConfig, request);
     session.setAttribute(REDIRECT_URI_SESSION_VARIABLE, redirectUri);
@@ -201,17 +200,20 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   protected Authentication handleAuthorizationCodeResponse(HttpServletRequest request) {
 
     validateState(request);
-    OidcProviderConfiguration config = lookupProvider(request);
+
+    String issuer = getIssuerFromSession(request);
+    OidcProvider clientConfig = getMatchedOidcProvider(issuer);
+    OIDCProviderMetadata metadata = getOidcProviderMetadata(issuer);
 
     String tokenResponseString = null;
 
     try {
-      tokenResponseString =
-          tokenRequestor.requestTokens(config, initTokenRequestParameters(request));
+      tokenResponseString = tokenRequestor.requestTokens(metadata.tokenEndpoint(),
+          clientConfig.getClient(), initTokenRequestParameters(request));
 
     } catch (OidcClientError e) {
       throw new OidcClientError(String.format("Error executing token request against endpoint %s",
-          config.metadata.tokenEndpoint()), e);
+          metadata.tokenEndpoint()), e);
     }
 
     LOG.debug("Token Endpoint returned string: {}", tokenResponseString);
@@ -238,11 +240,12 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     JWT idToken = parseToken(idTokenValue);
     JWTClaimsSet idClaims = parseClaims(idToken);
 
-    validateSignature(idToken, config);
-    validateClaims(request.getSession(), idClaims, config);
+    validateSignature(idToken, metadata, clientConfig);
+    validateClaims(idClaims, metadata.issuer(), clientConfig.getClient().clientId());
+    validateNonceSession(request.getSession(), idClaims);
 
     PendingOIDCAuthenticationToken oidcToken = new PendingOIDCAuthenticationToken(
-        idClaims.getSubject(), idClaims.getIssuer(), config.metadata, idToken, accessTokenValue);
+        idClaims.getSubject(), idClaims.getIssuer(), metadata, idToken, accessTokenValue);
 
     return getAuthenticationManager().authenticate(oidcToken);
 
@@ -256,26 +259,14 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   }
 
-  protected OidcProviderConfiguration lookupProvider(HttpServletRequest request) {
+  private OidcProvider getMatchedOidcProvider(String issuer) {
 
-    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
-    if (issuer == null) {
-      throw new AuthenticationServiceException("Issuer not found in session.");
-    }
-    OIDCProviderMetadata serverConfig = servers.load(issuer);
-
-    if (serverConfig == null) {
-      throw new AuthenticationServiceException(String.format("Unknow OpenID provider: %s", issuer));
-    }
-
-    OidcProvider clientConfig = clients.getProviders()
+    return clients.getProviders()
       .stream()
       .filter(c -> c.getIssuer().equals(issuer))
       .findFirst()
       .orElseThrow(() -> new AuthenticationServiceException(
-          String.format("Client configuration not found for OpenID provider: %s", issuer)));
-
-    return new OidcProviderConfiguration(serverConfig, clientConfig);
+          String.format("No client configuration found for issuer: %s", issuer)));
   }
 
   protected MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request) {
@@ -295,10 +286,11 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   }
 
-  protected void validateSignature(JWT idToken, OidcProviderConfiguration config) {
+  protected void validateSignature(JWT idToken, OIDCProviderMetadata metadata,
+      OidcProvider clientConfig) {
 
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
-    OidcClient client = config.clientConfig.getClient();
+    OidcClient client = clientConfig.getClient();
 
     validateAlgorithmMatch(tokenAlg, client.idTokenSignedResponseAlg());
     handlePlainJwt(idToken, tokenAlg);
@@ -314,7 +306,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       }
 
       JWTSigningAndValidationService jwtValidator =
-          validationServices.getValidator(config.metadata.jwksUri());
+          validationServices.getValidator(metadata.jwksUri());
 
       if (jwtValidator == null) {
         throw new AuthenticationServiceException(
@@ -328,14 +320,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   }
 
-  protected void validateClaims(HttpSession session, JWTClaimsSet idClaims,
-      OidcProviderConfiguration config) {
+  protected void validateClaims(JWTClaimsSet idClaims, String expectedIssuer, String clientId) {
 
     String tokenIssuer = idClaims.getIssuer();
     if (tokenIssuer == null) {
       throw new AuthenticationServiceException("Id Token Issuer is null");
     }
-    String expectedIssuer = config.metadata.issuer();
+
     if (!tokenIssuer.equals(expectedIssuer)) {
       throw new AuthenticationServiceException(
           String.format("Issuers do not match, expected %s got %s", expectedIssuer, tokenIssuer));
@@ -379,12 +370,14 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     if (aud == null) {
       throw new AuthenticationServiceException("Id token audience is null");
     }
-    String oidcClientId = config.clientConfig.getClient().clientId();
-    if (!aud.contains(oidcClientId)) {
-      throw new AuthenticationServiceException(
-          String.format("Audience does not match, expected %s got %s", oidcClientId, aud));
-    }
 
+    if (!aud.contains(clientId)) {
+      throw new AuthenticationServiceException(
+          String.format("Audience does not match, expected %s got %s", clientId, aud));
+    }
+  }
+
+  private void validateNonceSession(HttpSession session, JWTClaimsSet idClaims) {
     String nonce;
     try {
       nonce = idClaims.getStringClaim("nonce");
@@ -413,11 +406,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
   }
 
-  private record OidcConfiguration(OIDCProviderMetadata metadata, OidcProvider clientConfig) {
-  }
-
-  private OidcConfiguration loadOidcConfiguration(HttpSession session,
-      IssuerServiceResponse issResp) {
+  private String getValidIssuerFromRequest(HttpSession session, IssuerServiceResponse issResp) {
 
     if (!Strings.isNullOrEmpty(issResp.getTargetLinkUri())) {
       session.setAttribute(TARGET_SESSION_VARIABLE, issResp.getTargetLinkUri());
@@ -429,25 +418,29 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       LOG.error("No issuer found: {}", issuer);
       throw new AuthenticationServiceException(String.format("No issuer found: %s", issuer));
     }
+    return issuer;
+  }
 
-    OIDCProviderMetadata serverConfig = servers.load(issuer);
+  private String getIssuerFromSession(HttpServletRequest request) {
 
-    if (serverConfig == null) {
+    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
+
+    if (issuer == null) {
+      throw new AuthenticationServiceException("Issuer not found in session.");
+    }
+    return issuer;
+  }
+
+  private OIDCProviderMetadata getOidcProviderMetadata(String issuer) {
+
+    OIDCProviderMetadata metadata = servers.load(issuer);
+
+    if (metadata == null) {
       LOG.error("No server configuration found for issuer: {}", issuer);
       throw new AuthenticationServiceException(
           String.format("No server configuration found for issuer: %s", issuer));
     }
-
-    session.setAttribute(ISSUER_SESSION_VARIABLE, serverConfig.issuer());
-
-    OidcProvider clientConfig = clients.getProviders()
-      .stream()
-      .filter(c -> c.getIssuer().equals(issuer))
-      .findFirst()
-      .orElseThrow(() -> new AuthenticationServiceException(
-          String.format("No client configuration found for issuer: %s", issuer)));
-
-    return new OidcConfiguration(serverConfig, clientConfig);
+    return metadata;
   }
 
   private String determineRedirectUri(OidcProvider clientConfig, HttpServletRequest request) {

@@ -16,7 +16,7 @@
 package it.infn.mw.iam.rcauth.oidc;
 
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 
 public interface RCAuthTokenResponseVerifier {

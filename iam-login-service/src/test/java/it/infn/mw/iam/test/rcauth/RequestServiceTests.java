@@ -42,7 +42,6 @@ import java.net.URLEncoder;
 import java.text.ParseException;
 
 import javax.servlet.http.HttpSession;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,10 +54,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService;
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.DefaultRcAuthRequestService;
 import it.infn.mw.iam.rcauth.RCAuthAuthorizationResponse;

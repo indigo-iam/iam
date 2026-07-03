@@ -22,8 +22,6 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 
 import com.nimbusds.jwt.JWT;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
-
 @SuppressWarnings("java:S2160")
 public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken {
 

@@ -15,17 +15,8 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
-import it.infn.mw.iam.config.oidc.OidcProvider;
+import com.fasterxml.jackson.databind.JsonNode;
 
-public class OidcProviderConfiguration {
-
-  OIDCProviderMetadata metadata;
-  OidcProvider clientConfig;
-
-  public OidcProviderConfiguration(OIDCProviderMetadata metadata, OidcProvider clientConfig) {
-    this.metadata = metadata;
-    this.clientConfig = clientConfig;
-  }
-
+public record OIDCProviderMetadata(String issuer, String authorizationEndpoint,
+    String tokenEndpoint, String jwksUri, String userInfoEndpoint, JsonNode raw) {
 }

@@ -28,8 +28,6 @@ import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
-
 public class UserInfoFetcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);

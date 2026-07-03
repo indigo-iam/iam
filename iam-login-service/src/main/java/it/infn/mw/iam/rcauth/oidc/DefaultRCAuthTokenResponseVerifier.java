@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.RCAuthError;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
