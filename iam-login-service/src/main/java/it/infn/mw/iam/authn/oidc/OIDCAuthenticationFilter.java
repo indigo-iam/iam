@@ -47,7 +47,6 @@ import javax.servlet.http.HttpSession;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.openid.connect.client.model.IssuerServiceResponse;
 import org.mitre.openid.connect.client.service.IssuerService;
@@ -91,7 +90,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   protected static final String FILTER_PROCESSES_URL = "/openid_connect_login";
 
   private JWKSetCacheService validationServices;
-  private SymmetricKeyJWTValidatorCacheService symmetricCacheService;
   private IssuerService issuerService;
   private OIDCProviderMetadataService servers;
   private OidcProviderProperties clients;
@@ -103,14 +101,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   private int timeSkewAllowance;
 
   public OIDCAuthenticationFilter(JWKSetCacheService validationServices,
-      SymmetricKeyJWTValidatorCacheService symmetricCacheService, IssuerService issuerService,
-      OIDCProviderMetadataService servers, OidcProviderProperties clients,
-      PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
-      Environment env, ObjectMapper objectMapper, int timeSkewAllowance) {
+      IssuerService issuerService, OIDCProviderMetadataService servers,
+      OidcProviderProperties clients, PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock,
+      OidcTokenRequestor tokenRequestor, Environment env, ObjectMapper objectMapper,
+      int timeSkewAllowance) {
 
     super(FILTER_PROCESSES_URL);
     this.validationServices = validationServices;
-    this.symmetricCacheService = symmetricCacheService;
     this.issuerService = issuerService;
     this.servers = servers;
     this.clients = clients;
@@ -129,11 +126,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     if (validationServices == null) {
       validationServices = new JWKSetCacheService();
     }
-
-    if (symmetricCacheService == null) {
-      symmetricCacheService = new SymmetricKeyJWTValidatorCacheService();
-    }
-
   }
 
   @Override
@@ -256,7 +248,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     throw new OidcClientError("External authentication error", request.getParameter("error"),
         request.getParameter("error_description"), request.getParameter("error_uri"));
-
   }
 
   private OidcProvider getMatchedOidcProvider(String issuer) {

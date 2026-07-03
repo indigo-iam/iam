@@ -22,7 +22,6 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -87,8 +86,7 @@ public class OidcConfiguration {
 
   @Bean(name = "OIDCAuthenticationFilter")
   OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(
-      JWKSetCacheService validationServices,
-      SymmetricKeyJWTValidatorCacheService symmetricCacheService, IssuerService issuerService,
+      JWKSetCacheService validationServices, IssuerService issuerService,
       OIDCProviderMetadataService servers, OidcProviderProperties clients,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper,
@@ -97,8 +95,8 @@ public class OidcConfiguration {
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
 
     OIDCAuthenticationFilter filter =
-        new OIDCAuthenticationFilter(validationServices, symmetricCacheService, issuerService,
-            servers, clients, authRequestBuilder, clock, tokenRequestor, env, objectMapper, 300);
+        new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
+            authRequestBuilder, clock, tokenRequestor, env, objectMapper, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
