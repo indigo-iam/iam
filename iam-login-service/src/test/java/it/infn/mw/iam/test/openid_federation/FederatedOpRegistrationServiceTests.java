@@ -33,8 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
@@ -147,7 +146,10 @@ class FederatedOpRegistrationServiceTests {
     fakeChain = TrustChainTestFactory.createOpToTaChain(ISS, null, URI.create(ISS + "/jwk"),
         "https://ta1.example.com");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
+  }
 
+  @AfterEach
+  void cleanup() {
     clientRepo.deleteAll();
   }
 
@@ -197,13 +199,8 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testRegisteredRpRedirectsToAuthorize() throws Exception {
-    createFederatedClient();
-
-    LocalDate today = LocalDate.now();
-    LocalDate tomorrow = today.plusDays(1);
-    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    client.setExpiration(tomorrowDate);
-    client.setEntityId("https://op.example.com");
+    Date tomorrow = Date.from(clock.instant().plus(1, ChronoUnit.DAYS));
+    client = createFederatedClient(tomorrow);
     clientRepo.save(client);
 
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
@@ -226,7 +223,9 @@ class FederatedOpRegistrationServiceTests {
 
   @Test
   void testExpiredOpIsDeletedAndRegisteredAgain() throws Exception {
-    createFederatedClient();
+    Date yesterday = Date.from(clock.instant().minus(1, ChronoUnit.DAYS));
+    client = createFederatedClient(yesterday);
+    clientRepo.save(client);
 
     Date iat = Date.from(clock.instant());
     Date exp = fakeChain.resolveExpirationTime();
@@ -331,7 +330,7 @@ class FederatedOpRegistrationServiceTests {
     performCall(ISS, SUB, iat, exp, AUD, ta);
   }
 
-  private void createFederatedClient() {
+  private IamFederatedClientEntity createFederatedClient(Date exp) {
     client = new IamFederatedClientEntity();
     client.setActive(true);
     client.setClientId("federated-client");
@@ -340,12 +339,12 @@ class FederatedOpRegistrationServiceTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic.name());
     client.setJwksUri("https://op.example.com/jwk");
     client.setEntityId("https://op.example.com");
-    client.setExpiration(Date.from(clock.instant()));
+    client.setExpiration(exp);
     client.setRedirectUris(Set.of("http://localhost:8080/openid_connect_login"));
     client.setGrantTypes(Set.of("code"));
     client.setResponseTypes(Set.of("code"));
     client.setScope(Set.of("openid"));
-    clientRepo.save(client);
+    return client;
   }
 
   private String opJwtResponse(String iss, String sub, Date iat, Date exp, String aud, String ta)
