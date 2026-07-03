@@ -41,7 +41,7 @@ public abstract class TokenEvent extends IamAuditApplicationEvent {
   private final String grantType;
   private transient Map<String, Object> payload;
 
-  public TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String grantType, String message) {
+  protected TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String grantType, String message) {
     super(IamEventCategory.TOKEN, source, message);
 
     // subject will contains user-name or client name
