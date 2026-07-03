@@ -16,19 +16,20 @@
 package it.infn.mw.iam.authn.oidc;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
-import com.google.common.collect.ImmutableMap;
 import com.nimbusds.jwt.JWT;
 
+@SuppressWarnings("java:S2160")
 public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 8085760433250417654L;
 
-  private final ImmutableMap<String, String> principal;
+  private final Map<String, String> principal;
 
   private final String subject;
   private final String issuer;
@@ -42,7 +43,7 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
       String refreshTokenValue) {
 
     super(authorities);
-    this.principal = ImmutableMap.of("sub", subject, "iss", issuer);
+    this.principal = Map.of("sub", subject, "iss", issuer);
 
     this.subject = subject;
     this.issuer = issuer;

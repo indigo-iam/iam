@@ -15,20 +15,21 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 
-import com.google.common.collect.ImmutableMap;
 import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadataService.OIDCProviderMetadata;
 
+@SuppressWarnings("java:S2160")
 public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = -3039943580483543553L;
 
-  private final ImmutableMap<String, String> principal;
+  private final Map<String, String> principal;
 
   private final String subject;
   private final String issuer;
@@ -41,8 +42,8 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
       OIDCProviderMetadata serverConfiguration, JWT idToken, String accessTokenValue,
       String refreshTokenValue) {
 
-    super(new ArrayList<>());
-    this.principal = ImmutableMap.of("sub", subject, "iss", issuer);
+    super(List.of());
+    this.principal = Map.of("sub", subject, "iss", issuer);
 
     this.subject = subject;
     this.issuer = issuer;
@@ -72,15 +73,11 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
     return idToken;
   }
 
-  public String getAccessTokenValue() {
-    return accessTokenValue;
-  }
-
   public String getRefreshTokenValue() {
     return refreshTokenValue;
   }
 
-  public OIDCProviderMetadata getServerConfiguration() {
+  public OIDCProviderMetadata getWellKnownEndpoint() {
     return serverConfiguration;
   }
 

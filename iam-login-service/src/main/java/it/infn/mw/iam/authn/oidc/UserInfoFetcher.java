@@ -47,7 +47,7 @@ public class UserInfoFetcher {
 
     LOG.debug("No cache of the userinfo endpoint is used for token subject {}", token.getSub());
 
-    OIDCProviderMetadata metadata = token.getServerConfiguration();
+    OIDCProviderMetadata metadata = token.getWellKnownEndpoint();
 
     if (metadata == null || Strings.isNullOrEmpty(metadata.userInfoEndpoint())) {
       LOG.warn("No userinfo endpoint available.");
@@ -71,7 +71,7 @@ public class UserInfoFetcher {
       PendingOIDCAuthenticationToken token) {
 
     return (request, body, execution) -> {
-      request.getHeaders().setBearerAuth(token.getAccessTokenValue());
+      request.getHeaders().setBearerAuth((String) token.getCredentials());
 
       return execution.execute(request, body);
     };
