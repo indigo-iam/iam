@@ -36,11 +36,9 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
   private final transient OIDCProviderMetadata serverConfiguration;
   private transient JWT idToken;
   private final String accessTokenValue;
-  private final String refreshTokenValue;
 
   public PendingOIDCAuthenticationToken(String subject, String issuer,
-      OIDCProviderMetadata serverConfiguration, JWT idToken, String accessTokenValue,
-      String refreshTokenValue) {
+      OIDCProviderMetadata serverConfiguration, JWT idToken, String accessTokenValue) {
 
     super(List.of());
     this.principal = Map.of("sub", subject, "iss", issuer);
@@ -50,7 +48,6 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
     this.serverConfiguration = serverConfiguration;
     this.idToken = idToken;
     this.accessTokenValue = accessTokenValue;
-    this.refreshTokenValue = refreshTokenValue;
 
     setAuthenticated(false);
   }
@@ -71,10 +68,6 @@ public class PendingOIDCAuthenticationToken extends AbstractAuthenticationToken 
 
   public JWT getIdToken() {
     return idToken;
-  }
-
-  public String getRefreshTokenValue() {
-    return refreshTokenValue;
   }
 
   public OIDCProviderMetadata getWellKnownEndpoint() {

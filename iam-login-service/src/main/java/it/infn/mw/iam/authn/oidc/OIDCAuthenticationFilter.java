@@ -220,7 +220,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     String accessTokenValue = null;
     String idTokenValue = null;
-    String refreshTokenValue = null;
 
     if (tokenResponse.has("access_token")) {
       accessTokenValue = tokenResponse.get("access_token").getAsString();
@@ -236,19 +235,14 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       throw new AuthenticationServiceException("Token Endpoint did not return an id_token");
     }
 
-    if (tokenResponse.has("refresh_token")) {
-      refreshTokenValue = tokenResponse.get("refresh_token").getAsString();
-    }
-
     JWT idToken = parseToken(idTokenValue);
     JWTClaimsSet idClaims = parseClaims(idToken);
 
     validateSignature(idToken, config);
     validateClaims(request.getSession(), idClaims, config);
 
-    PendingOIDCAuthenticationToken oidcToken =
-        new PendingOIDCAuthenticationToken(idClaims.getSubject(), idClaims.getIssuer(),
-            config.metadata, idToken, accessTokenValue, refreshTokenValue);
+    PendingOIDCAuthenticationToken oidcToken = new PendingOIDCAuthenticationToken(
+        idClaims.getSubject(), idClaims.getIssuer(), config.metadata, idToken, accessTokenValue);
 
     return getAuthenticationManager().authenticate(oidcToken);
 

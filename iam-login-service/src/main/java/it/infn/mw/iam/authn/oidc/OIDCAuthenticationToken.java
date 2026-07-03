@@ -36,11 +36,9 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
   private final UserInfo userInfo;
   private transient JWT idToken;
   private final String accessTokenValue;
-  private final String refreshTokenValue;
 
   public OIDCAuthenticationToken(String subject, String issuer, UserInfo userInfo,
-      Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue,
-      String refreshTokenValue) {
+      Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue) {
 
     super(authorities);
     this.principal = Map.of("sub", subject, "iss", issuer);
@@ -50,7 +48,6 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
     this.userInfo = userInfo;
     this.idToken = idToken;
     this.accessTokenValue = accessTokenValue;
-    this.refreshTokenValue = refreshTokenValue;
 
     setAuthenticated(true);
   }
@@ -81,7 +78,4 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
     return userInfo;
   }
 
-  public String getRefreshToken() {
-    return refreshTokenValue;
-  }
 }
