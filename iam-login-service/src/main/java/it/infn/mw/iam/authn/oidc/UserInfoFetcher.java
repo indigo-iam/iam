@@ -15,16 +15,12 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import java.io.IOException;
-import java.net.URI;
-
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
@@ -39,7 +35,7 @@ public class UserInfoFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);
 
   public static final String USERINFO_CACHE_NAME = "userInfo";
-  
+
   private HttpComponentsClientHttpRequestFactory factory;
 
   public UserInfoFetcher(HttpComponentsClientHttpRequestFactory factory) {
@@ -51,41 +47,34 @@ public class UserInfoFetcher {
 
     LOG.debug("No cache of the userinfo endpoint is used for token subject {}", token.getSub());
 
-    OIDCProviderMetadata serverConfiguration = token.getServerConfiguration();
+    OIDCProviderMetadata metadata = token.getServerConfiguration();
 
-    if (serverConfiguration == null) {
-      LOG.warn("No server configuration found.");
+    if (metadata == null || Strings.isNullOrEmpty(metadata.userInfoEndpoint())) {
+      LOG.warn("No userinfo endpoint available.");
       return null;
     }
 
-    if (Strings.isNullOrEmpty(serverConfiguration.userInfoEndpoint())) {
-      LOG.warn("No userinfo endpoint, not fetching.");
-      return null;
-    }
+    RestTemplate restTemplate = new RestTemplate(factory);
+    restTemplate.getInterceptors().add(bearerTokenInterceptor(token));
 
-    RestTemplate restTemplate = new RestTemplate(factory) {
+    String response = restTemplate.getForObject(metadata.userInfoEndpoint(), String.class);
 
-      @Override
-      protected ClientHttpRequest createRequest(URI url, HttpMethod method) throws IOException {
-        ClientHttpRequest httpRequest = super.createRequest(url, method);
-        httpRequest.getHeaders()
-          .add("Authorization", String.format("Bearer %s", token.getAccessTokenValue()));
-        return httpRequest;
-      }
-    };
-
-    String userInfoString =
-        restTemplate.getForObject(serverConfiguration.userInfoEndpoint(), String.class);
-
-    if (!Strings.isNullOrEmpty(userInfoString)) {
-
-      JsonObject userInfoJson = JsonParser.parseString(userInfoString).getAsJsonObject();
-
-      return fromJson(userInfoJson);
-    } else {
+    if (Strings.isNullOrEmpty(response)) {
       throw new IllegalArgumentException("Unable to load user info");
     }
 
+    return fromJson(JsonParser.parseString(response).getAsJsonObject());
+
+  }
+
+  private ClientHttpRequestInterceptor bearerTokenInterceptor(
+      PendingOIDCAuthenticationToken token) {
+
+    return (request, body, execution) -> {
+      request.getHeaders().setBearerAuth(token.getAccessTokenValue());
+
+      return execution.execute(request, body);
+    };
   }
 
   protected UserInfo fromJson(JsonObject userInfoJson) {
