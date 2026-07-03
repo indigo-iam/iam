@@ -58,7 +58,7 @@ public class UserInfoFetcher {
     RestTemplate restTemplate = new RestTemplate(factory);
     restTemplate.getInterceptors().add(bearerTokenInterceptor(token));
 
-    String response = restTemplate.getForObject(metadata.userInfoEndpoint(), String.class);
+    String response = fetchUserInfo(restTemplate, metadata.userInfoEndpoint());
 
     if (Strings.isNullOrEmpty(response)) {
       throw new IllegalArgumentException("Unable to load user info");
@@ -78,7 +78,11 @@ public class UserInfoFetcher {
     };
   }
 
-  protected UserInfo fromJson(JsonObject userInfoJson) {
+  public String fetchUserInfo(RestTemplate restTemplate, String endpoint) {
+    return restTemplate.getForObject(endpoint, String.class);
+  }
+
+  private UserInfo fromJson(JsonObject userInfoJson) {
     return DefaultUserInfo.fromJson(userInfoJson);
   }
 }
