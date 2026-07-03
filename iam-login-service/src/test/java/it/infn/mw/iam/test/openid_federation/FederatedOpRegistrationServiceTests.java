@@ -147,6 +147,8 @@ class FederatedOpRegistrationServiceTests {
     fakeChain = TrustChainTestFactory.createOpToTaChain(ISS, null, URI.create(ISS + "/jwk"),
         "https://ta1.example.com");
     when(trustChainService.validateFromEntityId(any())).thenReturn(fakeChain);
+
+    clientRepo.deleteAll();
   }
 
   @Test
@@ -168,8 +170,6 @@ class FederatedOpRegistrationServiceTests {
         clientRepo.findByEntityId("https://op.example.com");
     assertTrue(federatedClient.isPresent());
     assertEquals("OIDFed remote client", federatedClient.get().getClientName());
-
-    clientRepo.delete(federatedClient.get());
   }
 
   @Test
@@ -209,8 +209,6 @@ class FederatedOpRegistrationServiceTests {
     mvc.perform(get("/openid_connect_login?iss=" + "https://op.example.com"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrlPattern("https://op.example.com/authorize*"));
-
-    clientRepo.delete(client);
   }
 
   @Test
@@ -246,9 +244,6 @@ class FederatedOpRegistrationServiceTests {
     Optional<IamFederatedClientEntity> newOp = clientRepo.findByEntityId("https://op.example.com");
     assertTrue(newOp.isPresent());
     assertNotEquals(client.getClientId(), newOp.get().getClientId());
-
-    clientRepo.delete(client);
-    clientRepo.delete(newOp.get());
   }
 
   @Test
