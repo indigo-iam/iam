@@ -28,7 +28,6 @@ import java.util.TreeSet;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.mitre.openid.connect.service.StatsService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +35,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -45,17 +45,18 @@ public class IamUserApprovalUtils {
 
   private final Clock clock;
   private final SystemScopeService scopeService;
-  private final StatsService statsService;
   private final IamAccountService accountService;
   private final JWTProfileResolver profileResolver;
+  private final ApprovedSiteService approvedSiteService;
 
-  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService, StatsService statsService,
-      IamAccountService accountService, JWTProfileResolver profileResolver) {
+  public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService,
+      IamAccountService accountService, JWTProfileResolver profileResolver,
+      ApprovedSiteService approvedSiteService) {
     this.clock = clock;
     this.scopeService = scopeService;
-    this.statsService = statsService;
     this.accountService = accountService;
     this.profileResolver = profileResolver;
+    this.approvedSiteService = approvedSiteService;
   }
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
@@ -104,7 +105,7 @@ public class IamUserApprovalUtils {
 
   public Integer approvedSiteCount(String clientId) {
 
-    return statsService.getCountForClientId(clientId).getApprovedSiteCount();
+    return approvedSiteService.getByClientId(clientId).size();
   }
 
   public Boolean isSafeClient(Integer count, Date clientCreatedAt) {

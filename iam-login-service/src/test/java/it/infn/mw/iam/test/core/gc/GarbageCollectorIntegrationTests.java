@@ -30,7 +30,6 @@ import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +42,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
+import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
@@ -143,7 +143,8 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   void clearExpiredApprovedSites() {
 
     assertThat(siteRepository.count(), equalTo(0L));
-    approvedSiteService.createApprovedSite(PASSWORD_CLIENT_ID, TEST_USERNAME,
+    approvedSiteService.createApprovedSite(
+        clientService.findClientByClientId(PASSWORD_CLIENT_ID).orElseThrow(), TEST_USERNAME,
         Date.from(clock.daysBefore(2)), Set.of("openid"));
     assertThat(siteRepository.count(), equalTo(1L));
     clock.advance(Duration.ofDays(1));

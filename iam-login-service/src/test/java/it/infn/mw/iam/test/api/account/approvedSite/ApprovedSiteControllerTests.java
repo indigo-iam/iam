@@ -24,78 +24,73 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-@SpringBootTest(webEnvironment = WebEnvironment.MOCK)
-@AutoConfigureMockMvc(printOnlyOnFailure = true)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
 @Transactional
 public class ApprovedSiteControllerTests extends TokenGetterUtils {
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
 
   public static final String SCOPE = "openid profile";
 
-  @Autowired
-  MockMvc mvc;
-
   @Test
-  @WithMockUser(username = TEST_USERNAME, roles = { "USER" })
+  @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
   void testIamApiApprovedReturnsClientDetails() throws Exception {
 
-        MockHttpSession session = performImplicitFlowAndGetSession();
+    MockHttpSession session = performImplicitFlowAndGetSession();
 
-        mvc.perform(get("/iam/api/approved").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").exists())
-                .andExpect(jsonPath("$[0].userId").value(TEST_USERNAME))
-                .andExpect(jsonPath("$[0].clientId").value(IMPLICIT_CLIENT_ID))
-                .andExpect(jsonPath("$[0].clientName").value("Implicit Flow client"))
-                .andExpect(jsonPath("$[0].clientDescription")
-                                .value("implicit-flow-client description"))
-                .andExpect(jsonPath("$[0].authorizationDate").isNotEmpty())
-                .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
-                .andExpect(jsonPath("$[0].timeoutDate").doesNotExist())
-                .andExpect(jsonPath("$[0].allowedScopes",
-                                containsInAnyOrder("openid", "profile")));
+    mvc.perform(get("/iam/api/approved").session(session))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0]").exists())
+      .andExpect(jsonPath("$[0].userId").value(TEST_USERNAME))
+      .andExpect(jsonPath("$[0].clientId").value(IMPLICIT_CLIENT_ID))
+      .andExpect(jsonPath("$[0].clientName").value("Implicit Flow client"))
+      .andExpect(jsonPath("$[0].clientDescription").value("implicit-flow-client description"))
+      .andExpect(jsonPath("$[0].authorizationDate").isNotEmpty())
+      .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
+      .andExpect(jsonPath("$[0].timeoutDate").doesNotExist())
+      .andExpect(jsonPath("$[0].allowedScopes", containsInAnyOrder("openid", "profile")));
   }
 
   private MockHttpSession performImplicitFlowAndGetSession() throws Exception {
 
-        String authzEndpointUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-                        .queryParam("response_type", "token id_token")
-                        .queryParam("client_id", IMPLICIT_CLIENT_ID)
-                        .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
-                        .queryParam("scope", SCOPE)
-                        .queryParam("nonce", "1")
-                        .queryParam("state", "1")
-                        .build()
-                        .toUriString();
+    String authzEndpointUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
+      .queryParam("response_type", "token id_token")
+      .queryParam("client_id", IMPLICIT_CLIENT_ID)
+      .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .build()
+      .toUriString();
 
-        MockHttpSession session = (MockHttpSession) mvc.perform(get(authzEndpointUrl))
-                        .andExpect(status().isOk())
-                        .andExpect(view().name("forward:/oauth/confirm_access"))
-                        .andReturn()
-                        .getRequest()
-                        .getSession();
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(authzEndpointUrl))
+      .andExpect(status().isOk())
+      .andExpect(view().name("forward:/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-        mvc.perform(post("/authorize").with(csrf())
-                        .param("user_oauth_approval", "true")
-                        .param("scope_openid", "openid")
-                        .param("scope_profile", "profile")
-                        .param("authorize", "Authorize")
-                        .param("remember", "until-revoked")
-                        .session(session))
-                        .andExpect(status().is3xxRedirection());
+    mvc
+      .perform(post("/authorize").with(csrf())
+        .param("user_oauth_approval", "true")
+        .param("scope_openid", "openid")
+        .param("scope_profile", "profile")
+        .param("authorize", "Authorize")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().is3xxRedirection());
 
-        return session;
+    return session;
   }
 }

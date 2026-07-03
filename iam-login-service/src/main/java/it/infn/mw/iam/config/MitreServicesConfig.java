@@ -31,10 +31,8 @@ import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
 import org.mitre.openid.connect.service.LoginHintExtracter;
 import org.mitre.openid.connect.service.PairwiseIdentiferService;
-import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultBlacklistedSiteService;
-import org.mitre.openid.connect.service.impl.DefaultStatsService;
 import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.InMemoryClientLogoLoadingService;
 import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
@@ -207,12 +205,6 @@ public class MitreServicesConfig {
   PairwiseIdentiferService defaultPairwiseIdentifierService() {
 
     return new UUIDPairwiseIdentiferService();
-  }
-
-  @Bean
-  StatsService defaultStatsService() {
-
-    return new DefaultStatsService();
   }
 
   @Bean

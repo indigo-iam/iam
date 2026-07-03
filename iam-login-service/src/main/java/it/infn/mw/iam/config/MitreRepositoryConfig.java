@@ -17,15 +17,11 @@ package it.infn.mw.iam.config;
 
 import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.oauth2.repository.impl.JpaDeviceCodeRepository;
 import org.mitre.oauth2.repository.impl.JpaSystemScopeRepository;
-import org.mitre.openid.connect.repository.ApprovedSiteRepository;
 import org.mitre.openid.connect.repository.BlacklistedSiteRepository;
 import org.mitre.openid.connect.repository.PairwiseIdentifierRepository;
 import org.mitre.openid.connect.repository.UserInfoRepository;
 import org.mitre.openid.connect.repository.WhitelistedSiteRepository;
-import org.mitre.openid.connect.repository.impl.JpaApprovedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaBlacklistedSiteRepository;
 import org.mitre.openid.connect.repository.impl.JpaPairwiseIdentifierRepository;
 import org.mitre.openid.connect.repository.impl.JpaWhitelistedSiteRepository;
@@ -59,12 +55,6 @@ public class MitreRepositoryConfig {
   }
 
   @Bean
-  ApprovedSiteRepository defaultApprovedSiteRepository() {
-
-    return new JpaApprovedSiteRepository();
-  }
-
-  @Bean
   WhitelistedSiteRepository defaultWhitelistedSiteRepository() {
 
     return new JpaWhitelistedSiteRepository();
@@ -80,10 +70,5 @@ public class MitreRepositoryConfig {
   SystemScopeRepository defaultSystemScopeRepository() {
 
     return new JpaSystemScopeRepository();
-  }
-
-  @Bean
-  DeviceCodeRepository deviceCodeRepository() {
-    return new JpaDeviceCodeRepository();
   }
 }
