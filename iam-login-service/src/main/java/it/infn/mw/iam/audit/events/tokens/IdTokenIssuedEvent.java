@@ -27,8 +27,8 @@ public class IdTokenIssuedEvent extends SignedTokenEvent {
   private static final long serialVersionUID = 1L;
 
   public IdTokenIssuedEvent(Object source, JWT token,
-      AuthenticationHolderEntity authenticationHolder) {
-    super(source, token, authenticationHolder, "Issue id token");
+      AuthenticationHolderEntity authenticationHolder, String grantType) {
+    super(source, token, authenticationHolder, grantType, "Issue id token");
   }
 
 }

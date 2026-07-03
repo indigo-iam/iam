@@ -27,8 +27,8 @@ public abstract class SignedTokenEvent extends TokenEvent {
   private final HeaderDTO header = new HeaderDTO();
 
   protected SignedTokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder,
-      String message) {
-    super(source, token, authenticationHolder, message);
+      String grantType, String message) {
+    super(source, token, authenticationHolder, grantType, message);
 
     this.header.setAlg(token.getHeader().getAlgorithm().getName());
     this.header.setKid(String.valueOf(((JWSHeader) token.getHeader()).getKeyID()));

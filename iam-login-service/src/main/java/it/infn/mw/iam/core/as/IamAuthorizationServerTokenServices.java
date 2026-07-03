@@ -204,7 +204,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     if (client.isAllowRefresh()
         && isRefreshTokenRequested(request.getGrantType(), accessToken.getScope())) {
 
-      accessToken.setRefreshToken(createRefreshToken(client, authHolder));
+      accessToken.setRefreshToken(createRefreshToken(client, authHolder, request.getGrantType()));
     }
 
     JWTProfile profile = profileResolver.resolveProfile(client.getScope());
@@ -219,7 +219,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
       JWT idToken =
           createIdToken(client, request, Date.from(iat), account.get().getUuid(), accessToken);
-      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder));
+      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder, request.getGrantType()));
       accessToken.setIdToken(idToken);
     }
 
@@ -239,7 +239,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   }
 
   private OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
-      AuthenticationHolderEntity authHolder) {
+      AuthenticationHolderEntity authHolder, String grantType) {
 
     String jti = UUID.randomUUID().toString();
     Instant iat = clock.instant();
@@ -265,7 +265,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     refreshToken.setClient(client);
 
     refreshToken = saveRefreshToken(refreshToken);
-    eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, refreshToken));
+    eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, refreshToken, grantType));
 
     return refreshToken;
   }
@@ -471,7 +471,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       token.setRefreshToken(refreshToken);
     } else {
       // otherwise, make a new refresh token
-      token.setRefreshToken(createRefreshToken(client, authHolder));
+      token.setRefreshToken(createRefreshToken(client, authHolder, authRequest.getGrantType()));
       // clean up the old refresh token
       revocationService.revokeRefreshToken(refreshToken);
     }
@@ -491,7 +491,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       JWT idToken = createIdToken(client, newOAuth2Request, Date.from(tokenIssueInstant),
           account.get().getUuid(), token);
 
-      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder));
+      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder, authRequest.getGrantType()));
       token.setIdToken(idToken);
     }
 

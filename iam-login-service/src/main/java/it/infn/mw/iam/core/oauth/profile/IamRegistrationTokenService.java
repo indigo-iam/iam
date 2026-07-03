@@ -87,7 +87,8 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
 
     OAuth2AccessTokenEntity registrationToken = saveRegistrationToken(
         buildRegistrationAccessToken(client, SystemScopeService.REGISTRATION_TOKEN_SCOPE));
-    eventPublisher.publishEvent(new RegistrationTokenIssuedEvent(this, registrationToken));
+    String grantType = registrationToken.getAuthenticationHolder().getAuthentication().getOAuth2Request().getGrantType();
+    eventPublisher.publishEvent(new RegistrationTokenIssuedEvent(this, registrationToken, grantType));
     return registrationToken;
   }
 
@@ -96,7 +97,8 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
 
     OAuth2AccessTokenEntity resourceToken = saveRegistrationToken(
         buildRegistrationAccessToken(client, SystemScopeService.RESOURCE_TOKEN_SCOPE));
-    eventPublisher.publishEvent(new ResourceTokenIssuedEvent(this, resourceToken));
+    String grantType = resourceToken.getAuthenticationHolder().getAuthentication().getOAuth2Request().getGrantType();    
+    eventPublisher.publishEvent(new ResourceTokenIssuedEvent(this, resourceToken, grantType));
     return resourceToken;
   }
 
