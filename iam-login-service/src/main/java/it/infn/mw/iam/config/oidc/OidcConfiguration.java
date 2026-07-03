@@ -191,7 +191,7 @@ public class OidcConfiguration {
         HttpClientBuilder.create().useSystemProperties().build());
   }
 
-  @Bean
+  @Bean(name = "oidcHttpClient")
   HttpClient httpClient() {
     return HttpClientBuilder.create().useSystemProperties().build();
   }

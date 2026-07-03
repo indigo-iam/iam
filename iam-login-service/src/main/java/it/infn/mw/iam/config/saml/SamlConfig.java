@@ -399,7 +399,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     return manager;
   }
 
-  @Bean
+  @Bean(name = "samlHttpClient")
   HttpClient httpClient() {
     return new HttpClient(connectionManager);
   }
