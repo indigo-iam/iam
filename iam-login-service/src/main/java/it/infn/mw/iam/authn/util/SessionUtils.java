@@ -89,4 +89,8 @@ public class SessionUtils {
     return getStoredSessionString(session, NONCE_SESSION_VARIABLE);
   }
 
+  public static String getStoredCodeVerifier(HttpSession session) {
+    return getStoredSessionString(session, CODE_VERIFIER_SESSION_VARIABLE);
+  }
+
 }

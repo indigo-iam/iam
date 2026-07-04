@@ -22,6 +22,7 @@ import static it.infn.mw.iam.authn.util.SessionUtils.NONCE_SESSION_VARIABLE;
 import static it.infn.mw.iam.authn.util.SessionUtils.createCodeVerifier;
 import static it.infn.mw.iam.authn.util.SessionUtils.createNonce;
 import static it.infn.mw.iam.authn.util.SessionUtils.createState;
+import static it.infn.mw.iam.authn.util.SessionUtils.getStoredCodeVerifier;
 import static it.infn.mw.iam.authn.util.SessionUtils.getStoredNonce;
 import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
 import static it.infn.mw.iam.authn.util.SessionUtils.validateState;
@@ -261,14 +262,19 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
           String.format("No client configuration found for issuer: %s", issuer)));
   }
 
-  protected MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request) {
+  public MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request) {
 
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");
     form.add("code", request.getParameter("code"));
 
-    String redirectUri =
-        getStoredSessionString(request.getSession(), REDIRECT_URI_SESSION_VARIABLE);
+    HttpSession session = request.getSession();
+    String codeVerifier = getStoredCodeVerifier(session);
+    if (codeVerifier != null) {
+      form.add("code_verifier", codeVerifier);
+    }
+
+    String redirectUri = getStoredSessionString(session, REDIRECT_URI_SESSION_VARIABLE);
 
     if (redirectUri != null) {
       form.add(REDIRECT_URI_SESSION_VARIABLE, redirectUri);
@@ -386,7 +392,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     String storedNonce = getStoredNonce(session);
 
     if (!nonce.equals(storedNonce)) {
-      logger.error((String.format(
+      LOG.error((String.format(
           "Possible replay attack detected! The comparison of the nonce in the returned "
               + "ID Token to the session %s failed. Expected %s got %s.",
           NONCE_SESSION_VARIABLE, storedNonce, nonce)));
@@ -472,7 +478,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
   }
 
-  private void addPkceChallenge(HttpSession session, String codeChallengeMethod,
+  public void addPkceChallenge(HttpSession session, String codeChallengeMethod,
       Map<String, String> options) {
 
     if (codeChallengeMethod != null) {
@@ -480,19 +486,23 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       String codeVerifier = createCodeVerifier(session);
       options.put("code_challenge_method", codeChallengeMethod);
 
-      if (codeChallengeMethod.equals(PKCEAlgorithm.plain.getName())) {
-        options.put("code_challenge", codeVerifier);
-      } else if (codeChallengeMethod.equals(PKCEAlgorithm.S256.getName())) {
-        try {
-          MessageDigest digest = MessageDigest.getInstance("SHA-256");
-          String hash =
-              Base64URL.encode(digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)))
-                .toString();
-          options.put("code_challenge", hash);
-        } catch (NoSuchAlgorithmException e) {
-          throw new IllegalStateException("SHA-256 algorithm not available", e);
-        }
+      // OAuth2.1 states the only PKCE algorithm allowed is S256
+      // (restricted also in Spring Authorization Server)
+      if (!codeChallengeMethod.equals(PKCEAlgorithm.S256.getName())) {
+        throw new AuthenticationServiceException(String
+          .format("PKCE algorithm not supported. Expected S256 got %s", codeChallengeMethod));
       }
+
+      try {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        String hash =
+            Base64URL.encode(digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)))
+              .toString();
+        options.put("code_challenge", hash);
+      } catch (NoSuchAlgorithmException e) {
+        throw new IllegalStateException("SHA-256 algorithm not available", e);
+      }
+
     }
   }
 
