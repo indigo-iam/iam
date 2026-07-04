@@ -68,7 +68,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
-public class OidcConfiguration {
+public class OidcConfig {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;

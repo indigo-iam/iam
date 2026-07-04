@@ -122,15 +122,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   }
 
   @Override
-  public void afterPropertiesSet() {
-    super.afterPropertiesSet();
-
-    if (validationServices == null) {
-      validationServices = new JWKSetCacheService();
-    }
-  }
-
-  @Override
   public Authentication attemptAuthentication(HttpServletRequest request,
       HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
 
