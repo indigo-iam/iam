@@ -95,7 +95,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
     }
 
     return new HttpEntity<>(tokenRequestParams, headers);
-
   }
 
   Optional<TokenEndpointErrorResponse> parseErrorResponse(HttpClientErrorException e) {
@@ -110,7 +109,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
       return Optional.empty();
     }
-
   }
 
   @Override
@@ -144,7 +142,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
       String errorMessage = String.format("Token request error: %s", e.getMessage());
       throw new OidcClientError(errorMessage, e);
     }
-
   }
 
 }
