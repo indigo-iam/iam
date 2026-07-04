@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
+import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,7 +42,10 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jose.util.Base64URL;
 
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
@@ -50,7 +55,7 @@ import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 
 @ExtendWith(MockitoExtension.class)
-public class OIDCExternalAuthenticationWithPKCE {
+class OIDCAuthenticationFilterTests {
 
   private static final String CODE_VERIFIER_SESSION_VARIABLE = "code_verifier";
   private static final String REDIRECT_URI_SESSION_VARIABLE = "redirect_uri";
@@ -79,8 +84,8 @@ public class OIDCExternalAuthenticationWithPKCE {
   @Mock
   private Environment env;
 
-  @Mock
-  private ObjectMapper objectMapper;
+  // @Mock
+  // private ObjectMapper objectMapper;
 
   private OIDCAuthenticationFilter filter;
 
@@ -88,7 +93,7 @@ public class OIDCExternalAuthenticationWithPKCE {
   @BeforeEach
   void setUp() {
     filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
-        authRequestBuilder, clock, tokenRequestor, env, objectMapper, 60);
+        authRequestBuilder, clock, tokenRequestor, env, new ObjectMapper(), 60);
   }
 
   @Test
@@ -97,9 +102,9 @@ public class OIDCExternalAuthenticationWithPKCE {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
-    filter.addPkceChallenge(session, "S256", options);
+    filter.addPkceChallenge(session, PKCEAlgorithm.S256.getName(), options);
 
-    assertEquals("S256", options.get("code_challenge_method"));
+    assertEquals(PKCEAlgorithm.S256.getName(), options.get("code_challenge_method"));
 
     String verifier = (String) session.getAttribute(CODE_VERIFIER_SESSION_VARIABLE);
     assertNotNull(verifier);
@@ -118,7 +123,7 @@ public class OIDCExternalAuthenticationWithPKCE {
     Map<String, String> options = new HashMap<>();
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-        () -> filter.addPkceChallenge(session, "plain", options));
+        () -> filter.addPkceChallenge(session, PKCEAlgorithm.plain.getName(), options));
 
     assertTrue(ex.getMessage().contains("Expected S256"));
   }
@@ -137,7 +142,7 @@ public class OIDCExternalAuthenticationWithPKCE {
   }
 
   @Test
-  void shouldSendStoredCodeVerifierToTokenEndpoint() {
+  void testSendStoredCodeVerifierToTokenEndpoint() {
 
     MockHttpServletRequest request = new MockHttpServletRequest();
 
@@ -156,6 +161,81 @@ public class OIDCExternalAuthenticationWithPKCE {
     assertEquals("abc", params.getFirst("code"));
     assertEquals("myVerifier", params.getFirst("code_verifier"));
     assertEquals("https://test.example/callback", params.getFirst("redirect_uri"));
+  }
+
+  @Test
+  void testUseAcrValuesFromRequestParameter() throws Exception {
+
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpSession session = new MockHttpSession();
+
+    request.setParameter("acr_values", "acr1 acr2");
+
+    Map<String, String> options = new HashMap<>();
+
+    filter.populateAcrOptions(session, request, options);
+
+    assertEquals("acr1 acr2", options.get("acr_values"));
+  }
+
+  @Test
+  void testExtractAcrValuesFromClaimsJson() throws Exception {
+
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpSession session = new MockHttpSession();
+    ObjectMapper mapper = new ObjectMapper();
+
+    ObjectNode claims = mapper.createObjectNode();
+
+    ObjectNode idToken = mapper.createObjectNode();
+    ObjectNode acr = mapper.createObjectNode();
+    ArrayNode values = mapper.createArrayNode();
+
+    values.add("acr1");
+    values.add("acr2");
+
+    acr.set("values", values);
+    idToken.set("acr", acr);
+    claims.set("id_token", idToken);
+
+    request.setParameter("claims", mapper.writeValueAsString(claims));
+
+    Map<String, String> options = new HashMap<>();
+
+    filter.populateAcrOptions(session, request, options);
+
+    assertEquals("acr1 acr2", options.get("acr_values"));
+    assertEquals("acr1 acr2", session.getAttribute("acr_values"));
+  }
+
+  @Test
+  void testdUseMfaDefaultWhenNoAcrAndNoClaims() throws JsonProcessingException {
+
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpSession session = new MockHttpSession();
+
+    when(env.getActiveProfiles()).thenReturn(new String[] {"mfa"});
+
+    Map<String, String> options = new HashMap<>();
+
+    filter.populateAcrOptions(session, request, options);
+
+    assertEquals("https://refeds.org/profile/mfa", options.get("acr_values"));
+  }
+
+  @Test
+  void testNotAddAcrValuesWhenNothingProvided() throws JsonProcessingException {
+
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpSession session = new MockHttpSession();
+
+    when(env.getActiveProfiles()).thenReturn(new String[] {});
+
+    Map<String, String> options = new HashMap<>();
+
+    filter.populateAcrOptions(session, request, options);
+
+    assertTrue(options.isEmpty());
   }
 
 }

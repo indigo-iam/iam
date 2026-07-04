@@ -392,11 +392,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     String storedNonce = getStoredNonce(session);
 
     if (!nonce.equals(storedNonce)) {
-      LOG.error((String.format(
-          "Possible replay attack detected! The comparison of the nonce in the returned "
-              + "ID Token to the session %s failed. Expected %s got %s.",
-          NONCE_SESSION_VARIABLE, storedNonce, nonce)));
-
       throw new AuthenticationServiceException(String.format(
           "Possible replay attack detected! The comparison of the nonce in the returned "
               + "ID Token to the session %s failed. Expected %s got %s.",
@@ -454,7 +449,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     return redirectUri;
   }
 
-  private void populateAcrOptions(HttpSession session, HttpServletRequest request,
+  public void populateAcrOptions(HttpSession session, HttpServletRequest request,
       Map<String, String> options) throws JsonProcessingException {
 
     if (request.getParameter(ACR_SESSION_VARIABLE) != null) {
