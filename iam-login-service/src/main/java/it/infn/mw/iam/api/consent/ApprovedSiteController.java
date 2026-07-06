@@ -95,33 +95,29 @@ public class ApprovedSiteController {
   }
 
   private ApprovedSite findApprovedSite(Long id) {
+
     return approvedSiteService.getById(id)
       .orElseThrow(() -> new InvalidRequestException(
           "The requested approved site with id: " + id + " could not be found."));
   }
 
   private void validateAuthentication(Authentication authn, String expectedUserId) {
-    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authn)
       .orElseThrow(() -> new IllegalStateException("No IAM account found for authenticated user"));
 
-    if (!expectedUserId.equals(account.getUuid())) {
+    if (!expectedUserId.equals(account.getUsername())) {
       throw new UnauthorizedUserException("You do not have permission to view this approved site.");
     }
   }
 
   private ApprovedSiteWithClientDetailsDTO toDto(ApprovedSite approvedSite) {
 
-    ApprovedSiteWithClientDetailsDTO dto = new ApprovedSiteWithClientDetailsDTO();
-    dto.setId(approvedSite.getId());
-    dto.setUserId(approvedSite.getUserId());
-    dto.setClientId(approvedSite.getClient().getClientId());
-    dto.setClientName(approvedSite.getClient().getClientName());
-    dto.setClientDescription(approvedSite.getClient().getClientDescription());
-    dto.setAuthorizationDate(approvedSite.getCreationDate());
-    dto.setAccessDate(approvedSite.getAccessDate());
-    dto.setTimeoutDate(approvedSite.getTimeoutDate());
-    dto.setAllowedScopes(approvedSite.getAllowedScopes());
-    return dto;
+    return new ApprovedSiteWithClientDetailsDTO(approvedSite.getId(), approvedSite.getUserId(),
+        approvedSite.getClient().getClientId(), approvedSite.getClient().getClientName(),
+        approvedSite.getClient().getClientDescription(), approvedSite.getCreationDate(),
+        approvedSite.getAccessDate(), approvedSite.getTimeoutDate(),
+        approvedSite.getAllowedScopes());
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
@@ -131,7 +127,7 @@ public class ApprovedSiteController {
   }
 
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler(InvalidRequestException.class)
+  @ExceptionHandler(IllegalStateException.class)
   public ErrorDTO handleIllegalStateException(HttpServletRequest request, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
