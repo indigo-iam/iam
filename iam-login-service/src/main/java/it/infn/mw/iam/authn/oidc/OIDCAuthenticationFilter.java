@@ -295,11 +295,11 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   }
 
-  protected void validateClaims(JWTClaimsSet idClaims, String expectedIssuer, String clientId) {
+  public void validateClaims(JWTClaimsSet idClaims, String expectedIssuer, String clientId) {
 
     String tokenIssuer = idClaims.getIssuer();
     if (tokenIssuer == null) {
-      throw new AuthenticationServiceException("Id Token Issuer is null");
+      throw new AuthenticationServiceException("Id Token issuer is null");
     }
 
     if (!tokenIssuer.equals(expectedIssuer)) {

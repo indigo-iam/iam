@@ -87,7 +87,6 @@ public class JwtUtils {
 
     try {
       return JWTParser.parse(tokenValue);
-
     } catch (ParseException e) {
       throw new AuthenticationServiceException("Token parse error");
     }

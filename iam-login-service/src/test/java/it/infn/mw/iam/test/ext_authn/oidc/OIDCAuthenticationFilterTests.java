@@ -442,7 +442,7 @@ class OIDCAuthenticationFilterTests {
   }
 
   @Test
-  void testThrowExceptionWhenTokenResponseDoesNotContainIdToken() throws JsonProcessingException {
+  void testThrowExceptionWhenTokenResponseDoesNotContainIdToken() {
 
     MockHttpServletRequest request = createAuthorizationCodeRequest(ISSUER);
 
