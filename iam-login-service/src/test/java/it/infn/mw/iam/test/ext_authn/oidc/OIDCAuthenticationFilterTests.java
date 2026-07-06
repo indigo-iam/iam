@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -72,6 +71,7 @@ class OIDCAuthenticationFilterTests {
 
   private static final String CODE_VERIFIER_SESSION_VARIABLE = "code_verifier";
   private static final String REDIRECT_URI_SESSION_VARIABLE = "redirect_uri";
+  private static final String ISSUER = "https://issuer.example";
 
   @Mock
   private JWKSetCacheService validationServices;
@@ -113,14 +113,14 @@ class OIDCAuthenticationFilterTests {
 
     request.setParameter("error", "access_denied");
     request.setParameter("error_description", "User denied access");
-    request.setParameter("error_uri", "https://test.example/error");
+    request.setParameter("error_uri", ISSUER);
 
     OidcClientError ex =
         assertThrows(OidcClientError.class, () -> filter.attemptAuthentication(request, response));
 
     assertEquals("access_denied", ex.getError());
     assertEquals("User denied access", ex.getErrorDescription());
-    assertEquals("https://test.example/error", ex.getErrorUri());
+    assertEquals(ISSUER, ex.getErrorUri());
   }
 
   @Test
@@ -147,12 +147,12 @@ class OIDCAuthenticationFilterTests {
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
     when(issResp.shouldRedirect()).thenReturn(true);
-    when(issResp.getRedirectUrl()).thenReturn("https://issuer.example/login");
+    when(issResp.getRedirectUrl()).thenReturn(ISSUER + "/login");
 
     Authentication authentication = filter.attemptAuthentication(request, response);
 
     assertNull(authentication);
-    assertEquals("https://issuer.example/login", response.getRedirectedUrl());
+    assertEquals(ISSUER + "/login", response.getRedirectedUrl());
   }
 
   @Test
@@ -167,9 +167,9 @@ class OIDCAuthenticationFilterTests {
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
     when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn("https://issuer.example");
+    when(issResp.getIssuer()).thenReturn(ISSUER);
 
-    when(servers.load("https://issuer.example")).thenReturn(null);
+    when(servers.load(ISSUER)).thenReturn(null);
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
@@ -189,21 +189,16 @@ class OIDCAuthenticationFilterTests {
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
     when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn("https://issuer.example");
+    when(issResp.getIssuer()).thenReturn(ISSUER);
 
-    ObjectNode raw = new ObjectMapper().createObjectNode();
-    OIDCProviderMetadata metadata = new OIDCProviderMetadata("https://issuer.example",
-        "https://issuer.example/authorize", "https://issuer.example/token",
-        "https://issuer.example/jwks", "https://issuer.example/userinfo", raw);
-    when(servers.load("https://issuer.example")).thenReturn(metadata);
+    loadOIDCProviderMetadata(ISSUER);
 
     when(clients.getProviders()).thenReturn(Collections.emptyList());
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
 
-    assertTrue(ex.getMessage()
-      .contains("No client configuration found for issuer: https://issuer.example"));
+    assertTrue(ex.getMessage().contains("No client configuration found for issuer: " + ISSUER));
   }
 
   @Test
@@ -218,25 +213,29 @@ class OIDCAuthenticationFilterTests {
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
     when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn("https://issuer.example");
+    when(issResp.getIssuer()).thenReturn(ISSUER);
 
-    loadOIDCProviderMetadata("https://issuer.example");
+    loadOIDCProviderMetadata(ISSUER);
 
     OidcProvider provider = Mockito.mock(OidcProvider.class);
     OidcClient client = new OidcClient("client", "secret",
         "https://expected.example/openid_connect_login", null, null, null, null);
 
-    when(provider.getIssuer()).thenReturn("https://issuer.example");
+    when(provider.getIssuer()).thenReturn(ISSUER);
     when(provider.getClient()).thenReturn(client);
-
     when(clients.getProviders()).thenReturn(List.of(provider));
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
+    assertTrue(ex.getMessage().contains("RequestURI mismatch."));
 
-    assertTrue(ex.getMessage()
-      .contains("RequestURI mismatch. Expected https://expected.example/openid_connect_login "
-          + "got http://localhosthttps://wrong.example/openid_connect_login"));
+    client = new OidcClient("client", "secret", null, null, null, null, null);
+    when(provider.getClient()).thenReturn(client);
+    when(clients.getProviders()).thenReturn(List.of(provider));
+
+    ex = assertThrows(AuthenticationServiceException.class,
+        () -> filter.attemptAuthentication(request, response));
+    assertTrue(ex.getMessage().contains("RequestURI mismatch."));
   }
 
   @Test
@@ -340,8 +339,10 @@ class OIDCAuthenticationFilterTests {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
+    String algorithm = PKCEAlgorithm.plain.getName();
+
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-        () -> filter.addPkceChallenge(session, PKCEAlgorithm.plain.getName(), options));
+        () -> filter.addPkceChallenge(session, algorithm, options));
 
     assertTrue(ex.getMessage().contains("Expected S256"));
   }
@@ -382,7 +383,7 @@ class OIDCAuthenticationFilterTests {
   }
 
   @Test
-  void shouldThrowWhenStateDoesNotMatch() {
+  void testThrowExceptionWhenStateDoesNotMatch() {
 
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpSession session = new MockHttpSession();
@@ -398,15 +399,15 @@ class OIDCAuthenticationFilterTests {
   }
 
   @Test
-  void shouldThrowWhenIssuerIsMissingFromSession() {
+  void testThrowExceptionWhenIssuerIsMissingFromSession() {
 
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpSession session = new MockHttpSession();
 
-    session.setAttribute("state", "abc");
+    session.setAttribute("state", "1234");
     request.setSession(session);
 
-    request.setParameter("state", "abc");
+    request.setParameter("state", "1234");
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.handleAuthorizationCodeResponse(request));
@@ -414,46 +415,76 @@ class OIDCAuthenticationFilterTests {
     assertEquals("Issuer not found in session.", ex.getMessage());
   }
 
-//  @Test
-//  void shouldThrowWhenTokenResponseDoesNotContainAccessToken() {
-//
-//    createAuthorizationCodeRequest();
-//
-//    OIDCProviderMetadata metadata = loadOIDCProviderMetadata("https://issuer.example");
-//
-//    OidcProvider provider = Mock.mock(OidcProvider.class);
-//    OidcClient client = Mock.mock(OidcClient.class);
-//
-//    when(provider.getIssuer()).thenReturn("issuer");
-//    when(provider.getClient()).thenReturn(client);
-//
-//    when(clients.getProviders()).thenReturn(List.of(provider));
-//
-//    when(tokenRequestor.requestTokens(eq(metadata.tokenEndpoint()), eq(client), any()))
-//      .thenReturn("{\"id_token\":\"dummy\"}");
-//
-//    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-//        () -> filter.handleAuthorizationCodeResponse(request));
-//
-//    assertTrue(ex.getMessage().contains("access_token"));
-//  }
+  @Test
+  void testThrowExceptionWhenTokenResponseDoesNotContainAccessToken() {
+
+    MockHttpServletRequest request = createAuthorizationCodeRequest(ISSUER);
+
+    OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
+
+    OidcProvider provider = Mockito.mock(OidcProvider.class);
+    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
+        null, null, null);
+
+    when(provider.getIssuer()).thenReturn(ISSUER);
+    when(provider.getClient()).thenReturn(client);
+    when(clients.getProviders()).thenReturn(List.of(provider));
+
+    ObjectNode node = new ObjectMapper().createObjectNode();
+    node.put("id_token", "dummy");
+    when(tokenRequestor.requestTokens(eq(metadata.tokenEndpoint()), eq(client), any()))
+      .thenReturn(node.toString());
+
+    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
+        () -> filter.handleAuthorizationCodeResponse(request));
+
+    assertTrue(ex.getMessage().contains("access_token"));
+  }
+
+  @Test
+  void testThrowExceptionWhenTokenResponseDoesNotContainIdToken() throws JsonProcessingException {
+
+    MockHttpServletRequest request = createAuthorizationCodeRequest(ISSUER);
+
+    OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
+    when(servers.load(ISSUER)).thenReturn(metadata);
+
+    OidcProvider provider = Mockito.mock(OidcProvider.class);
+    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
+        null, null, null);
+
+    when(provider.getIssuer()).thenReturn(ISSUER);
+    when(provider.getClient()).thenReturn(client);
+
+    when(clients.getProviders()).thenReturn(List.of(provider));
+
+    ObjectNode node = new ObjectMapper().createObjectNode();
+    node.put("access_token", "dummy");
+    when(tokenRequestor.requestTokens(eq(metadata.tokenEndpoint()), eq(client), any()))
+      .thenReturn(node.toString());
+
+    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
+        () -> filter.handleAuthorizationCodeResponse(request));
+
+    assertEquals("Token Endpoint did not return an id_token", ex.getMessage());
+  }
 
   private OIDCProviderMetadata loadOIDCProviderMetadata(String issuer) {
-    
+
     ObjectNode raw = new ObjectMapper().createObjectNode();
     OIDCProviderMetadata metadata = new OIDCProviderMetadata(issuer, issuer + "/authorize",
         issuer + "/token", issuer + "/jwks", issuer + "/userinfo", raw);
     when(servers.load(issuer)).thenReturn(metadata);
-    
+
     return metadata;
   }
 
-  private MockHttpServletRequest createAuthorizationCodeRequest() {
+  private MockHttpServletRequest createAuthorizationCodeRequest(String issuer) {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpSession session = new MockHttpSession();
 
     session.setAttribute("state", "1234");
-    session.setAttribute("issuer", "https://issuer.example");
+    session.setAttribute("issuer", issuer);
 
     request.setSession(session);
     request.setParameter("state", "1234");

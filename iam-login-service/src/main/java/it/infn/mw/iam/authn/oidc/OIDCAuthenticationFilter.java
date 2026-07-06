@@ -126,20 +126,15 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
 
     if (!Strings.isNullOrEmpty(request.getParameter("error"))) {
+      throw new OidcClientError("External authentication error", request.getParameter("error"),
+          request.getParameter("error_description"), request.getParameter("error_uri"));
 
-      handleError(request, response);
-      return null;
-
-    } else if (!Strings.isNullOrEmpty(request.getParameter("code"))) {
-
-      return handleAuthorizationCodeResponse(request);
-
-    } else {
-
-      handleAuthorizationRequest(request, response);
-      return null;
     }
-
+    if (!Strings.isNullOrEmpty(request.getParameter("code"))) {
+      return handleAuthorizationCodeResponse(request);
+    }
+    handleAuthorizationRequest(request, response);
+    return null;
   }
 
   private void handleAuthorizationRequest(HttpServletRequest request, HttpServletResponse response)
@@ -217,7 +212,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     if (tokenResponse.has(ID_TOKEN_VARIABLE)) {
       idTokenValue = tokenResponse.get(ID_TOKEN_VARIABLE).getAsString();
     } else {
-      logger.error("Token Endpoint did not return an id_token");
       throw new AuthenticationServiceException("Token Endpoint did not return an id_token");
     }
 
@@ -233,13 +227,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     return getAuthenticationManager().authenticate(oidcToken);
 
-  }
-
-  protected void handleError(HttpServletRequest request, HttpServletResponse response)
-      throws IOException {
-
-    throw new OidcClientError("External authentication error", request.getParameter("error"),
-        request.getParameter("error_description"), request.getParameter("error_uri"));
   }
 
   private OidcProvider getMatchedOidcProvider(String issuer) {
