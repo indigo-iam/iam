@@ -149,8 +149,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     IssuerServiceResponse issResp = issuerService.getIssuer(request);
 
     if (issResp == null) {
-      LOG.error("Null issuer response returned from service.");
-      throw new AuthenticationServiceException("No issuer found.");
+      throw new AuthenticationServiceException("Null issuer response returned from service.");
     }
 
     if (issResp.shouldRedirect()) {
@@ -182,7 +181,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     response.sendRedirect(authRequest);
   }
 
-  protected Authentication handleAuthorizationCodeResponse(HttpServletRequest request) {
+  public Authentication handleAuthorizationCodeResponse(HttpServletRequest request) {
 
     validateState(request);
 
@@ -420,7 +419,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     OIDCProviderMetadata metadata = servers.load(issuer);
 
     if (metadata == null) {
-      LOG.error("No server configuration found for issuer: {}", issuer);
       throw new AuthenticationServiceException(
           String.format("No server configuration found for issuer: %s", issuer));
     }
