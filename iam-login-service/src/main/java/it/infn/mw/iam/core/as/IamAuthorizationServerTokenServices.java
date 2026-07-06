@@ -111,9 +111,13 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   public static final String EXPIRES_IN_KEY = "expires_in";
   public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
+  public static final String CODE_MISSING_ERROR = "Expected code challenge not found";
   public static final String CODE_VERIFICATION_ERROR = "Code challenge and verifier do not match";
+  public static final String UNEXPECTED_CODE_ERROR = "Unexpected code challenge for client";
   public static final String UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR =
       "Unsupported code challenge method";
+  public static final String CLIENT_NOT_CONFIGURED =
+      "PKCE not configured for this client but challenge found";
 
   public static final Logger LOG =
       LoggerFactory.getLogger(IamAuthorizationServerTokenServices.class);
@@ -190,7 +194,15 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     if (hasCodeChallenge(request)) {
-      handleCodeChallenge(request);
+      if (PKCEAlgorithm.NONE.equals(client.getCodeChallengeMethod())) {
+        throw new InvalidRequestException(CLIENT_NOT_CONFIGURED);
+      }
+      handleCodeChallenge(request, client.getCodeChallengeMethod());
+    } else {
+      if (PKCEAlgorithm.S256.equals(client.getCodeChallengeMethod())
+          || PKCEAlgorithm.plain.equals(client.getCodeChallengeMethod())) {
+        throw new InvalidRequestException(CODE_MISSING_ERROR);
+      }
     }
 
     Instant iat = clock.instant();
@@ -324,7 +336,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     return request.getExtensions().containsKey(CODE_CHALLENGE);
   }
 
-  private void handleCodeChallenge(OAuth2Request request) {
+  private void handleCodeChallenge(OAuth2Request request, PKCEAlgorithm expected) {
 
     String challenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
     String verifier = request.getRequestParameters().get(CODE_VERIFIER);
@@ -335,6 +347,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     PKCEAlgorithm alg =
         PKCEAlgorithm.parse(valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD)));
+    if (!expected.equals(alg)) {
+      throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
+    }
 
     if (PKCEAlgorithm.plain.equals(alg)) {
       if (challenge.equals(verifier)) {
