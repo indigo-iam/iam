@@ -25,9 +25,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -40,15 +42,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.approved_site.dto.ApprovedSiteWithClientDetailsDTO;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class ApprovedSiteControllerTests extends TokenGetterUtils {
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
 
   public static final String SCOPE = "openid profile";
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
@@ -134,6 +141,11 @@ public class ApprovedSiteControllerTests extends TokenGetterUtils {
       .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
       .andExpect(jsonPath("$[0].timeoutDate").exists())
       .andExpect(jsonPath("$[0].allowedScopes", containsInAnyOrder("openid", "profile")));
+
+    clock.advance(Duration.ofHours(2));
+
+    performImplicitFlowAndExpectForwardToConfirmAccess();
+
   }
 
   private MockHttpSession performImplicitFlowAndGetSession(String remember) throws Exception {
