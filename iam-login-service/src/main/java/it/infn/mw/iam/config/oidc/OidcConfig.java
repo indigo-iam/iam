@@ -38,7 +38,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -57,9 +56,9 @@ import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
@@ -164,11 +163,6 @@ public class OidcConfig {
   }
 
   @Bean
-  RestTemplate oidcDiscoveryRestTemplate() {
-    return new RestTemplate();
-  }
-
-  @Bean
   OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }
@@ -184,7 +178,7 @@ public class OidcConfig {
   }
 
   @Bean
-  HttpComponentsClientHttpRequestFactory userinfoRequestFactory() {
+  HttpComponentsClientHttpRequestFactory userInfoRequestFactory() {
     return new HttpComponentsClientHttpRequestFactory(
         HttpClientBuilder.create().useSystemProperties().build());
   }

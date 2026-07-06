@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 
 @Service
@@ -30,9 +31,9 @@ public class OIDCProviderMetadataService {
   private final RestTemplate restTemplate;
 
   public OIDCProviderMetadataService(DefaultOidcDiscoveryService discoveryService,
-      RestTemplate restTemplate) {
+      RestTemplateFactory restTemplateFactory) {
     this.discoveryService = discoveryService;
-    this.restTemplate = restTemplate;
+    this.restTemplate = restTemplateFactory.newRestTemplate();
   }
 
   public OIDCProviderMetadata load(String issuer) {
