@@ -16,66 +16,30 @@
 package it.infn.mw.iam.authn.oidc;
 
 import java.util.Collection;
-import java.util.Map;
 
 import org.mitre.openid.connect.model.UserInfo;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 import com.nimbusds.jwt.JWT;
 
 @SuppressWarnings("java:S2160")
-public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
+public class OIDCAuthenticationToken extends BaseOIDCAuthenticationToken {
 
   private static final long serialVersionUID = 8085760433250417654L;
 
-  private final Map<String, String> principal;
-
-  private final String subject;
-  private final String issuer;
   private final UserInfo userInfo;
-  private transient JWT idToken;
-  private final String accessTokenValue;
 
   public OIDCAuthenticationToken(String subject, String issuer, UserInfo userInfo,
       Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue) {
 
-    super(authorities);
-    this.principal = Map.of("sub", subject, "iss", issuer);
+    super(subject, issuer, authorities, idToken, accessTokenValue);
 
-    this.subject = subject;
-    this.issuer = issuer;
     this.userInfo = userInfo;
-    this.idToken = idToken;
-    this.accessTokenValue = accessTokenValue;
-
     setAuthenticated(true);
   }
 
-  @Override
-  public Object getCredentials() {
-    return accessTokenValue;
-  }
-
-  @Override
-  public Object getPrincipal() {
-    return principal;
-  }
-
-  public String getSub() {
-    return subject;
-  }
-
-  public JWT getIdToken() {
-    return idToken;
-  }
-
-  public String getIssuer() {
-    return issuer;
-  }
 
   public UserInfo getUserInfo() {
     return userInfo;
   }
-
 }
