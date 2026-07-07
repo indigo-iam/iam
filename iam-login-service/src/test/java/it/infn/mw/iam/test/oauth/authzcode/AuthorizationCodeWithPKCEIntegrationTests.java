@@ -42,10 +42,9 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
-class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
+class AuthorizationCodeWithPKCEIntegrationTests {
 
   static final String TEST_PKCE_S256_CLIENT_ID = "pkce-s256-client";
   static final String TEST_PKCE_PLAIN_CLIENT_ID = "pkce-plain-client";
@@ -173,6 +172,82 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
       .then();
   }
 
+  private ValidatableResponse getTokenResponseWithoutPkce(String clientId, String clientSecret,
+      String redirectUri, String scope, String username, String password) {
+
+    ValidatableResponse resp1 = RestAssured.given()
+      .queryParam("response_type", "code")
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
+
+    RestAssured.given()
+      .formParam("username", username)
+      .formParam("password", password)
+      .formParam("submit", "Login")
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .redirects()
+      .follow(false)
+      .when()
+      .post(loginUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value());
+
+    RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .queryParam("response_type", "code")
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value());
+
+    ValidatableResponse resp2 = RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .formParam("user_oauth_approval", "true")
+      .formParam("authorize", "Authorize")
+      .formParam("remember", "none")
+      .redirects()
+      .follow(false)
+      .when()
+      .post(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.SEE_OTHER.value());
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
+      .build()
+      .getQueryParams()
+      .get("code")
+      .get(0);
+
+    return RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", redirectUri)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .auth()
+      .preemptive()
+      .basic(clientId, clientSecret)
+      .when()
+      .post(tokenUrl)
+      .then();
+  }
+
   @BeforeAll
   static void init() {
     TestUtils.initRestAssured();
@@ -206,6 +281,18 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
         TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
+  }
+
+  @Test
+  void testAuthzCodeWithoutPkceButClientConfigured() throws Exception {
+
+    getTokenResponseWithoutPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
+
+    getTokenResponseWithoutPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
