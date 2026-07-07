@@ -1,0 +1,14 @@
+[Unit]
+Description=INDIGO IAM VOMS AA Service for %I
+After=syslog.target network.target
+
+[Service]
+EnvironmentFile=/etc/sysconfig/iam-voms-aa.%i
+WorkingDirectory=/etc/iam-voms-aa
+ExecStart=/usr/bin/java $IAM_JAVA_OPTS -jar /usr/share/indigo-iam/iam-voms-aa.jar
+KillMode=process
+User=iam
+SyslogIdentifier=iam-voms-aa.%i
+
+[Install]
+WantedBy=multi-user.target

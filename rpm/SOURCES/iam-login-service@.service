@@ -1,14 +1,14 @@
 [Unit]
-Description=INDIGO IAM Service
+Description=INDIGO IAM Service for %I
 After=syslog.target network.target
 
 [Service]
-EnvironmentFile=/etc/sysconfig/iam-login-service
+EnvironmentFile=/etc/sysconfig/iam-login-service.%i
 WorkingDirectory=/etc/iam-login-service
 ExecStart=/usr/bin/java $IAM_JAVA_OPTS -jar /usr/share/indigo-iam/iam-login-service.war
 KillMode=process
 User=iam
-SyslogIdentifier=iam-login-service
+SyslogIdentifier=iam-login-service.%i
 
 [Install]
 WantedBy=multi-user.target
