@@ -38,13 +38,10 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.token.DeviceTokenGranter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
@@ -68,6 +65,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.core.oauth.device.DeviceCodeCreationException;
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -293,8 +293,9 @@ public class IamDeviceEndpointController {
   private void checkAuthzGrant(ClientDetailsEntity client) {
     Collection<String> authorizedGrantTypes = client.getAuthorizedGrantTypes();
     if (authorizedGrantTypes != null && !authorizedGrantTypes.isEmpty()
-        && !authorizedGrantTypes.contains(DeviceTokenGranter.GRANT_TYPE)) {
-      throw new InvalidClientException("Unauthorized grant type: " + DeviceTokenGranter.GRANT_TYPE);
+        && !authorizedGrantTypes.contains(IamDeviceCodeTokenGranter.GRANT_TYPE)) {
+      throw new InvalidClientException(
+          "Unauthorized grant type: " + IamDeviceCodeTokenGranter.GRANT_TYPE);
     }
   }
 

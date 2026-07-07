@@ -20,9 +20,7 @@ import java.util.Collection;
 import java.util.Date;
 
 import org.mitre.oauth2.exception.AuthorizationPendingException;
-import org.mitre.oauth2.exception.DeviceCodeExpiredException;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -32,6 +30,9 @@ import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+
+import it.infn.mw.iam.core.oauth.device.DeviceCodeExpiredException;
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 
 @SuppressWarnings("deprecation")
 public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {

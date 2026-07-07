@@ -24,11 +24,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
