@@ -18,25 +18,24 @@ package it.infn.mw.iam.authn.oidc;
 import static it.infn.mw.iam.authn.util.JwtUtils.jsonStringSanityChecks;
 import static it.infn.mw.iam.authn.util.JwtUtils.parseClaims;
 import static it.infn.mw.iam.authn.util.JwtUtils.parseToken;
-import static it.infn.mw.iam.authn.util.SessionUtils.NONCE_SESSION_VARIABLE;
+import static it.infn.mw.iam.authn.util.JwtUtils.validateClaims;
+import static it.infn.mw.iam.authn.util.JwtUtils.validateSignature;
 import static it.infn.mw.iam.authn.util.SessionUtils.createCodeVerifier;
 import static it.infn.mw.iam.authn.util.SessionUtils.createNonce;
 import static it.infn.mw.iam.authn.util.SessionUtils.createState;
 import static it.infn.mw.iam.authn.util.SessionUtils.getStoredCodeVerifier;
-import static it.infn.mw.iam.authn.util.SessionUtils.getStoredNonce;
 import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
+import static it.infn.mw.iam.authn.util.SessionUtils.validateNonceSession;
 import static it.infn.mw.iam.authn.util.SessionUtils.validateState;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -66,16 +65,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
-import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
-import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
-import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 
@@ -218,8 +212,15 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     JWT idToken = parseToken(idTokenValue);
     JWTClaimsSet idClaims = parseClaims(idToken);
 
-    validateSignature(idToken, metadata.jwksUri(), clientConfig.getClient());
-    validateClaims(idClaims, metadata.issuer(), clientConfig.getClient().clientId());
+    Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
+    Date skewedMax = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
+    JWTSigningAndValidationService jwtValidator =
+        validationServices.getValidator(metadata.jwksUri());
+
+    validateSignature(idToken, clientConfig.getClient().idTokenSignedResponseAlg(), jwtValidator);
+    validateClaims(idClaims, metadata.issuer(), clientConfig.getClient().clientId(), skewedMin,
+        skewedMax);
+
     validateNonceSession(request.getSession(), idClaims);
 
     PendingOIDCAuthenticationToken oidcToken = new PendingOIDCAuthenticationToken(
@@ -237,6 +238,17 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       .findFirst()
       .orElseThrow(() -> new AuthenticationServiceException(
           String.format("No client configuration found for issuer: %s", issuer)));
+  }
+
+  private OIDCProviderMetadata getOidcProviderMetadata(String issuer) {
+
+    OIDCProviderMetadata metadata = servers.load(issuer);
+
+    if (metadata == null) {
+      throw new AuthenticationServiceException(
+          String.format("No server configuration found for issuer: %s", issuer));
+    }
+    return metadata;
   }
 
   public MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request) {
@@ -259,120 +271,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     return form;
 
-  }
-
-  protected void validateSignature(JWT idToken, String jwksUri, OidcClient client) {
-
-    Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
-
-    validateAlgorithmMatch(tokenAlg, client.idTokenSignedResponseAlg());
-    handlePlainJwt(idToken, tokenAlg);
-
-    if (idToken instanceof SignedJWT signedIdToken) {
-
-
-      if (tokenAlg.equals(JWSAlgorithm.HS256) || tokenAlg.equals(JWSAlgorithm.HS384)
-          || tokenAlg.equals(JWSAlgorithm.HS512)) {
-
-        throw new UnsupportedOperationException(
-            String.format("Symmetric ID token signing agorithm %s is not supported", tokenAlg));
-      }
-
-      JWTSigningAndValidationService jwtValidator = validationServices.getValidator(jwksUri);
-
-      if (jwtValidator == null) {
-        throw new AuthenticationServiceException(
-            "Unable to find an appropriate signature validator for ID Token.");
-      }
-
-      if (!jwtValidator.validateSignature(signedIdToken)) {
-        throw new AuthenticationServiceException("ID Token signature validation failed");
-      }
-    }
-
-  }
-
-  public void validateClaims(JWTClaimsSet idClaims, String expectedIssuer, String clientId) {
-
-    String tokenIssuer = idClaims.getIssuer();
-    if (tokenIssuer == null) {
-      throw new AuthenticationServiceException("Issuer claim not present in the ID token");
-    }
-
-    if (!tokenIssuer.equals(expectedIssuer)) {
-      throw new AuthenticationServiceException(String.format(
-          "ID token issuer claim does not match the client configuration, expected %s got %s",
-          expectedIssuer, tokenIssuer));
-    }
-
-    Date expiration = idClaims.getExpirationTime();
-    if (expiration == null) {
-      throw new AuthenticationServiceException("ID Token does not have required expiration claim");
-    }
-
-    Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
-    Date skewedMax = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
-
-    if (skewedMin.after(expiration)) {
-      throw new AuthenticationServiceException(
-          String.format("ID Token is expired: %s", expiration));
-    }
-
-    Date notBefore = idClaims.getNotBeforeTime();
-    if (notBefore != null) {
-
-      Date skewedNbf = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
-
-      if (skewedNbf.before(notBefore)) {
-        throw new AuthenticationServiceException(
-            String.format("ID Token not valid until: %s", notBefore));
-      }
-    }
-
-    Date issuedAt = idClaims.getIssueTime();
-    if (issuedAt == null) {
-      throw new AuthenticationServiceException("ID Token does not have required issued-at claim");
-    }
-
-    if (skewedMax.before(issuedAt)) {
-      throw new AuthenticationServiceException(
-          String.format("Id Token was issued in the future: %s", issuedAt));
-    }
-
-    List<String> aud = idClaims.getAudience();
-    if (aud.isEmpty()) {
-      throw new AuthenticationServiceException("Audience claim not present in the ID token");
-    }
-
-    if (!aud.contains(clientId)) {
-      throw new AuthenticationServiceException(
-          String.format("ID token audience claim does not match the client configuration %s got %s",
-              clientId, aud));
-    }
-  }
-
-  private void validateNonceSession(HttpSession session, JWTClaimsSet idClaims) {
-    String nonce;
-    try {
-      nonce = idClaims.getStringClaim("nonce");
-    } catch (ParseException e) {
-      throw new AuthenticationServiceException(
-          String.format("nonce claim parse error: %s", e.getMessage()));
-    }
-
-    if (Strings.isNullOrEmpty(nonce)) {
-      logger.error("ID token did not contain a nonce claim.");
-      throw new AuthenticationServiceException("ID token did not contain a nonce claim.");
-    }
-
-    String storedNonce = getStoredNonce(session);
-
-    if (!nonce.equals(storedNonce)) {
-      throw new AuthenticationServiceException(String.format(
-          "Possible replay attack detected! The comparison of the nonce in the returned "
-              + "ID Token to the session %s failed. Expected %s got %s.",
-          NONCE_SESSION_VARIABLE, storedNonce, nonce));
-    }
   }
 
   private String getValidIssuerFromRequest(HttpSession session, IssuerServiceResponse issResp) {
@@ -398,17 +296,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       throw new AuthenticationServiceException("Issuer not found in session.");
     }
     return issuer;
-  }
-
-  private OIDCProviderMetadata getOidcProviderMetadata(String issuer) {
-
-    OIDCProviderMetadata metadata = servers.load(issuer);
-
-    if (metadata == null) {
-      throw new AuthenticationServiceException(
-          String.format("No server configuration found for issuer: %s", issuer));
-    }
-    return metadata;
   }
 
   private String determineRedirectUri(OidcProvider clientConfig, HttpServletRequest request) {
@@ -472,27 +359,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       } catch (NoSuchAlgorithmException e) {
         throw new IllegalStateException("SHA-256 algorithm not available", e);
       }
-
-    }
-  }
-
-  private void validateAlgorithmMatch(Algorithm tokenAlg, String clientAlg) {
-
-    if (clientAlg != null && !clientAlg.equals(tokenAlg.toString())) {
-      throw new AuthenticationServiceException(String
-        .format("Token algorithm %s does not match expected algorithm %s", tokenAlg, clientAlg));
-    }
-
-  }
-
-  private void handlePlainJwt(JWT idToken, Algorithm clientAlg) {
-    if (!(idToken instanceof PlainJWT)) {
-      return;
-    }
-
-    if (clientAlg == null) {
-      throw new AuthenticationServiceException(
-          "Unsigned ID tokens can only be used if explicitly configured in client.");
     }
   }
 

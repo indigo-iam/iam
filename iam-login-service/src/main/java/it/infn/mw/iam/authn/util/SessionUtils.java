@@ -17,11 +17,15 @@ package it.infn.mw.iam.authn.util;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.security.authentication.AuthenticationServiceException;
+
+import com.google.common.base.Strings;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 public class SessionUtils {
 
@@ -58,6 +62,29 @@ public class SessionUtils {
     if (storedState == null || !storedState.equals(requestState)) {
       throw new AuthenticationServiceException(String.format(
           "State parameter mismatch on return. Expected %s got %s", storedState, requestState));
+    }
+  }
+
+  public static void validateNonceSession(HttpSession session, JWTClaimsSet idClaims) {
+    String nonce;
+    try {
+      nonce = idClaims.getStringClaim("nonce");
+    } catch (ParseException e) {
+      throw new AuthenticationServiceException(
+          String.format("nonce claim parse error: %s", e.getMessage()));
+    }
+
+    if (Strings.isNullOrEmpty(nonce)) {
+      throw new AuthenticationServiceException("ID token did not contain a nonce claim.");
+    }
+
+    String storedNonce = getStoredNonce(session);
+
+    if (!nonce.equals(storedNonce)) {
+      throw new AuthenticationServiceException(String.format(
+          "Possible replay attack detected! The comparison of the nonce in the returned "
+              + "ID Token to the session %s failed. Expected %s got %s.",
+          NONCE_SESSION_VARIABLE, storedNonce, nonce));
     }
   }
 
