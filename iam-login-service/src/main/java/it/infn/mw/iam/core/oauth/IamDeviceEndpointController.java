@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_DEVICE_PAGE;
@@ -23,6 +22,7 @@ import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.DEVICE_APPROVE
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REQUEST_USER_CODE_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
@@ -42,7 +42,6 @@ import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.token.DeviceTokenGranter;
@@ -70,6 +69,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
@@ -89,14 +89,14 @@ public class IamDeviceEndpointController {
   private final OAuth2RequestFactory oAuth2RequestFactory;
   private final UserApprovalHandler iamUserApprovalHandler;
   private final IamUserApprovalUtils userApprovalUtils;
-  private final DeviceCodeRepository deviceCodeRepository;
+  private final IamDeviceCodeRepository deviceCodeRepository;
   private final ScopeFilter scopeFilter;
 
   public IamDeviceEndpointController(Clock clock, IamClientRepository clientRepository,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      DeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
+      IamDeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
     this.clock = clock;
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;

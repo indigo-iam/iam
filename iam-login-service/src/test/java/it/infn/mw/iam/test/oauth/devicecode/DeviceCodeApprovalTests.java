@@ -41,7 +41,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,6 +53,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.consent.ApprovedSiteController;
+import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
@@ -703,7 +704,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get("/api/approved").session(session))
+    mvc.perform(get(ApprovedSiteController.URL).session(session))
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))))
@@ -840,7 +841,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get("/api/approved").session(session))
+    mvc.perform(get(ApprovedSiteController.URL).session(session))
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))))

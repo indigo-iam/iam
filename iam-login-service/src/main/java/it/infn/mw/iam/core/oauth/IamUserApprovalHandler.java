@@ -37,8 +37,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.model.WhitelistedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
-import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
@@ -54,6 +52,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -67,20 +66,18 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private final WhitelistedSiteService whitelistedSiteService;
   private final SystemScopeService systemScopeService;
   private final AccountUtils accountUtils;
-  private final StatsService statsService;
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   public IamUserApprovalHandler(Clock clock, ApprovedSiteService approvedSiteService,
       WhitelistedSiteService whitelistedSiteService, SystemScopeService systemScopeService,
-      AccountUtils accountUtils, ClientService clientService, StatsService statsService) {
+      AccountUtils accountUtils, ClientService clientService) {
     this.clock = clock;
     this.approvedSiteService = approvedSiteService;
     this.whitelistedSiteService = whitelistedSiteService;
     this.systemScopeService = systemScopeService;
     this.accountUtils = accountUtils;
     this.clientService = clientService;
-    this.statsService = statsService;
   }
 
   @Override
@@ -114,12 +111,12 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     for (ApprovedSite ap : aps) {
 
-      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
+      if (!approvedSiteService.isExpired(ap)
+          && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
 
 
         ap.setAccessDate(Date.from(clock.instant()));
         approvedSiteService.save(ap);
-        statsService.resetCache();
 
         authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
@@ -182,8 +179,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       }
 
       ApprovedSite newSite =
-          approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
-      statsService.resetCache();
+          approvedSiteService.createApprovedSite(client, userId, timeout, approvedScopes);
       String newSiteId = newSite.getId().toString();
       authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
     }

@@ -30,10 +30,10 @@ public interface IamApprovedSiteRepository extends JpaRepository<ApprovedSite, L
   @Query("select a from ApprovedSite a where a.timeoutDate is not null and a.timeoutDate <= :timestamp")
   Page<ApprovedSite> getExpiredCodes(@Param("timestamp") Date timestamp, Pageable pageable);
 
-  List<ApprovedSite> findByClientId(String clientId);
-
   List<ApprovedSite> findByUserId(String userId);
 
-  List<ApprovedSite> findByClientIdAndUserId(String clientId, String userId);
+  List<ApprovedSite> findByClient_ClientId(String clientId);
+
+  List<ApprovedSite> findByClient_ClientIdAndUserId(String clientId, String userId);
 
 }
