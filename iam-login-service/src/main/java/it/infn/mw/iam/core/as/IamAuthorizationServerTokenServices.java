@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.as;
 
-import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE_METHOD;
@@ -23,6 +22,7 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_VER
 import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.NONCE;
 
+import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
@@ -348,46 +348,57 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   private void handleCodeChallenge(OAuth2Request request, ClientDetailsEntity client) {
 
-    String codeChallenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
-    if (codeChallenge == null && clientRequiresCodeChallenge(client)) {
-      throw new InvalidRequestException(MISSING_CODE_CHALLENGE_ERROR);
+    Map<String, Serializable> extensions = request.getExtensions();
+
+    Object rawCodeChallenge = extensions.get(CODE_CHALLENGE);
+
+    if (rawCodeChallenge == null) {
+      if (clientRequiresCodeChallenge(client)) {
+        throw new InvalidRequestException(MISSING_CODE_CHALLENGE_ERROR);
+      }
+      return;
     }
-    String codeChallengeMethod = valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD));
-    if (codeChallengeMethod == null) {
-      codeChallengeMethod = "plain";
-    }
-    if (!codeChallengeMethod.equalsIgnoreCase("S256")
-        && !codeChallengeMethod.equalsIgnoreCase("plain")) {
-      // invalid code challenge method: see rfc7636#section-6.2.2
+
+    String codeChallenge = rawCodeChallenge.toString();
+
+    Object rawMethod = extensions.get(CODE_CHALLENGE_METHOD);
+    String codeChallengeMethod =
+        rawMethod == null ? "plain" : rawMethod.toString().toLowerCase();
+
+    if (!codeChallengeMethod.equals("s256") && !codeChallengeMethod.equals("plain")) {
       throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
     }
+
     String verifier = request.getRequestParameters().get(CODE_VERIFIER);
+
     if (verifier == null || verifier.isBlank()) {
       throw new InvalidRequestException(MISSING_CODE_VERIFIER_ERROR);
     }
 
-    switch (codeChallengeMethod.toLowerCase()) {
-      case "plain":
-        if (clientRequiresCodeChallengeS256(client)) {
-          throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
-        }
-        if (!codeChallenge.equals(verifier)) {
-          throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
-        }
-        LOG.debug("Plain code verified");
-        return;
-      case "s256":
-        if (clientRequiresCodeChallengePlain(client) || clientRequiresCodeChallengeNone(client)) {
-          throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
-        }
-        if (!codeChallenge.equals(computeS256Challenge(verifier))) {
-          throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
-        }
-        LOG.debug("Hashed code verified");
-        return;
-      default:
-        throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
+    if (codeChallengeMethod.equals("plain")) {
+      if (clientRequiresCodeChallengeS256(client)) {
+        throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
+      }
+
+      if (!codeChallenge.equals(verifier)) {
+        throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
+      }
+
+      LOG.debug("Plain code verified");
+      return;
     }
+
+    if (clientRequiresCodeChallengePlain(client) || clientRequiresCodeChallengeNone(client)) {
+      throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
+    }
+
+    String expectedChallenge = computeS256Challenge(verifier);
+
+    if (!codeChallenge.equals(expectedChallenge)) {
+      throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
+    }
+
+    LOG.debug("Hashed code verified");
   }
 
   private String computeS256Challenge(String verifier) {
