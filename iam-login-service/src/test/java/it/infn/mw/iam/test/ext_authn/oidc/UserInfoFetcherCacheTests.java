@@ -18,18 +18,19 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 
 public class UserInfoFetcherCacheTests {
@@ -68,11 +70,18 @@ public class UserInfoFetcherCacheTests {
   @EnableCaching
   class InMemoryCacheTest {
 
-    @SpyBean
+    @Autowired
     private UserInfoFetcher userInfoFetcher;
 
     @Autowired
     private CacheManager cacheManager;
+
+    @MockBean
+    private RestTemplateFactory restTemplateFactory;
+
+    @Mock
+    private RestTemplate restTemplate;
+
 
     @BeforeEach
     void clearCache() {
@@ -83,15 +92,15 @@ public class UserInfoFetcherCacheTests {
     void testUserInfoFetcherCacheWorks() {
 
       PendingOIDCAuthenticationToken token = buildToken();
-
       String userInfoJson = String.format("{\"sub\":\"%s\"}", SUB);
-      doReturn(userInfoJson).when(userInfoFetcher)
-        .fetchUserInfo(any(RestTemplate.class), anyString());
+
+      when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
+      when(restTemplate.getForObject(anyString(), eq(String.class))).thenReturn(userInfoJson);
 
       userInfoFetcher.loadUserInfo(token);
       userInfoFetcher.loadUserInfo(token);
 
-      verify(userInfoFetcher, times(1)).fetchUserInfo(any(RestTemplate.class), anyString());
+      verify(restTemplate, times(1)).getForObject(anyString(), eq(String.class));
 
       assertNotNull(cacheManager.getCache(UserInfoFetcher.USERINFO_CACHE_NAME).get(SUB));
       assertTrue(cacheManager instanceof CaffeineCacheManager);
@@ -117,11 +126,17 @@ public class UserInfoFetcherCacheTests {
   @EnableCaching
   class NoCacheTest {
 
-    @SpyBean
+    @Autowired
     private UserInfoFetcher userInfoFetcher;
 
     @Autowired
     private CacheManager cacheManager;
+
+    @MockBean
+    private RestTemplateFactory restTemplateFactory;
+
+    @Mock
+    private RestTemplate restTemplate;
 
     @BeforeEach
     void clearCache() {
@@ -132,15 +147,15 @@ public class UserInfoFetcherCacheTests {
     void testOidcDiscoveryNotCached() {
 
       PendingOIDCAuthenticationToken token = buildToken();
-
       String userInfoJson = String.format("{\"sub\":\"%s\"}", SUB);
-      doReturn(userInfoJson).when(userInfoFetcher)
-        .fetchUserInfo(any(RestTemplate.class), anyString());
+
+      when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
+      when(restTemplate.getForObject(anyString(), eq(String.class))).thenReturn(userInfoJson);
 
       userInfoFetcher.loadUserInfo(token);
       userInfoFetcher.loadUserInfo(token);
 
-      verify(userInfoFetcher, times(2)).fetchUserInfo(any(RestTemplate.class), anyString());
+      verify(restTemplate, times(2)).getForObject(anyString(), eq(String.class));
 
       assertNull(cacheManager.getCache(UserInfoFetcher.USERINFO_CACHE_NAME).get(SUB));
       assertTrue(cacheManager instanceof NoOpCacheManager);

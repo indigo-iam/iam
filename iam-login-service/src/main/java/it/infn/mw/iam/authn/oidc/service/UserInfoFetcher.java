@@ -20,8 +20,7 @@ import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import com.google.common.base.Strings;
@@ -30,16 +29,18 @@ import com.google.gson.JsonParser;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 
+@Component
 public class UserInfoFetcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);
 
   public static final String USERINFO_CACHE_NAME = "userInfo";
 
-  private HttpComponentsClientHttpRequestFactory factory;
+  private RestTemplateFactory factory;
 
-  public UserInfoFetcher(HttpComponentsClientHttpRequestFactory factory) {
+  public UserInfoFetcher(RestTemplateFactory factory) {
     this.factory = factory;
   }
 
@@ -55,35 +56,19 @@ public class UserInfoFetcher {
       return null;
     }
 
-    RestTemplate restTemplate = new RestTemplate(factory);
-    restTemplate.getInterceptors().add(bearerTokenInterceptor(token));
+    RestTemplate restTemplate = factory.newRestTemplate();
 
-    String response = fetchUserInfo(restTemplate, metadata.userInfoEndpoint());
+    restTemplate.getInterceptors().add(new BearerTokenInterceptor((String) token.getCredentials()));
+
+    String response = restTemplate.getForObject(metadata.userInfoEndpoint(), String.class);
 
     if (Strings.isNullOrEmpty(response)) {
       throw new IllegalArgumentException("Unable to load user info");
     }
 
-    return fromJson(JsonParser.parseString(response).getAsJsonObject());
-
-  }
-
-  private ClientHttpRequestInterceptor bearerTokenInterceptor(
-      PendingOIDCAuthenticationToken token) {
-
-    return (request, body, execution) -> {
-      request.getHeaders().setBearerAuth((String) token.getCredentials());
-
-      return execution.execute(request, body);
-    };
-  }
-
-  public String fetchUserInfo(RestTemplate restTemplate, String endpoint) {
-    return restTemplate.getForObject(endpoint, String.class);
-  }
-
-  private UserInfo fromJson(JsonObject userInfoJson) {
+    JsonObject userInfoJson = JsonParser.parseString(response).getAsJsonObject();
     return DefaultUserInfo.fromJson(userInfoJson);
+
   }
 }
 

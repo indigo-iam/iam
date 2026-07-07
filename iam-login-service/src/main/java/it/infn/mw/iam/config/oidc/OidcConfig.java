@@ -19,8 +19,6 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.client.service.IssuerService;
@@ -173,19 +171,8 @@ public class OidcConfig {
   }
 
   @Bean
-  UserInfoFetcher userInfoFetcher(HttpComponentsClientHttpRequestFactory factory) {
+  UserInfoFetcher userInfoFetcher(RestTemplateFactory factory) {
     return new UserInfoFetcher(factory);
-  }
-
-  @Bean
-  HttpComponentsClientHttpRequestFactory userInfoRequestFactory() {
-    return new HttpComponentsClientHttpRequestFactory(
-        HttpClientBuilder.create().useSystemProperties().build());
-  }
-
-  @Bean(name = "oidcHttpClient")
-  HttpClient httpClient() {
-    return HttpClientBuilder.create().useSystemProperties().build();
   }
 
 }

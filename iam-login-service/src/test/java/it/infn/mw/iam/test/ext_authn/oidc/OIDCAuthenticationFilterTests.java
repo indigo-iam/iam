@@ -47,6 +47,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.MultiValueMap;
 
@@ -56,15 +57,27 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jose.util.Base64URL;
 
+import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
+import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.AdminAuthoritiesMapper;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.OidcClientError;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @ExtendWith(MockitoExtension.class)
 class OIDCAuthenticationFilterTests {
@@ -97,10 +110,46 @@ class OIDCAuthenticationFilterTests {
   @Mock
   private Environment env;
 
+  @Mock
+  private AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
+
+  @Mock
+  private SessionTimeoutHelper sessionTimeoutHelper;
+
+  @Mock
+  private IamAccountRepository accountRepo;
+
+  @Mock
+  private InactiveAccountAuthenticationHander inactiveAccountHandler;
+
+  @Mock
+  private IamTotpMfaRepository totpMfaRepository;
+
+  @Mock
+  private IamOidcJITAccountProvisioningProperties jitProperties;
+
+  @Mock
+  private OidcAccountProvisioningService oidcProvisioningService;
+
+  @Mock
+  private IamTotpMfaProperties iamTotpMfaProperties;
+
+  @Mock
+  private AdminAuthoritiesMapper authoritiesMapper;
+
+  @Mock
+  private UserInfoFetcher userInfoFetcher;
+
+  private OIDCAuthenticationProvider provider;
+
   private OIDCAuthenticationFilter filter;
 
   @BeforeEach
   void setUp() {
+    provider = new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper,
+        accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
+        oidcProvisioningService, iamTotpMfaProperties, authoritiesMapper, userInfoFetcher);
+
     filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
         authRequestBuilder, clock, tokenRequestor, env, new ObjectMapper(), 60);
   }
@@ -467,6 +516,17 @@ class OIDCAuthenticationFilterTests {
         () -> filter.handleAuthorizationCodeResponse(request));
 
     assertEquals("Token Endpoint did not return an id_token", ex.getMessage());
+  }
+
+  @Test
+  void testAuthenticateReturnsNullWhenAuthenticationIsNotSupported() {
+
+    Authentication unsupportedAuthentication =
+        new UsernamePasswordAuthenticationToken("user", "password");
+
+    Authentication result = provider.authenticate(unsupportedAuthentication);
+
+    assertNull(result);
   }
 
   private OIDCProviderMetadata loadOIDCProviderMetadata(String issuer) {
