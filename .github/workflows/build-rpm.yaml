@@ -92,9 +92,9 @@ jobs:
           echo "%_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase ${MAVEN_GPG_PASSPHRASE}" >> ~/.rpmmacros
       - name: Build RPM
         run: |
-          cp rpmbuild/BUILD/iam-login-service/iam-login-service.spec rpmbuild/SPECS/iam-login-service.spec
-          rpmlint rpmbuild/SPECS/iam-login-service.spec
-          rpmbuild --define "base_version ${VERSION}" -ba rpmbuild/SPECS/iam-login-service.spec
+          cp rpmbuild/BUILD/rpm/indigo-iam.spec rpmbuild/SPECS/indigo-iam.spec
+          rpmlint rpmbuild/SPECS/indigo-iam.spec
+          rpmbuild --define "base_version ${VERSION}" -ba rpmbuild/SPECS/indigo-iam.spec
           if [[ "${{ matrix.version }}" = 8 ]]; then
             echo "Skip signing on AlmaLinux 8 to avoid error: RPM-GPG-KEY-pmanager: key 1 import failed"
             exit 0
@@ -107,10 +107,13 @@ jobs:
             rpmbuild/RPMS/noarch/*.rpm
       - name: Upload release to repo
         if: env.REPO != ''
+        env:
+          NEXUS_USERNAME: ${{ vars.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
           for f in rpmbuild/RPMS/noarch/*.rpm; do
             curl --fail \
-              --user "${{ vars.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}" \
+              --user "${{ NEXUS_USERNAME }}:${{ NEXUS_PASSWORD }}" \
               --upload-file "$f" \
               "https://repo.cloud.cnaf.infn.it/repository/indigo-iam-rpm-${{ env.REPO }}/almalinux${{ matrix.version }}/"
           done
