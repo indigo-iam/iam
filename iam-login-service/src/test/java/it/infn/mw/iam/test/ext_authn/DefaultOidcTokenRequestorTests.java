@@ -37,13 +37,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
@@ -110,15 +109,17 @@ class DefaultOidcTokenRequestorTests {
     when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
       .thenThrow(new RestClientException("connection refused"));
 
+    MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
+    String tokenEndpoint = ISSUER + "/token";
+
     OidcClientError ex = assertThrows(OidcClientError.class,
-        () -> requestor.requestTokens(ISSUER + "/token", client, new LinkedMultiValueMap<>()));
+        () -> requestor.requestTokens(tokenEndpoint, client, requestParams));
 
     assertEquals("Token request error: connection refused", ex.getMessage());
   }
 
   @Test
-  void testRequestTokensWithBadRequestAndInvalidJsonResponse()
-      throws StreamReadException, DatabindException, IOException {
+  void testRequestTokensWithBadRequestAndInvalidJsonResponse() throws IOException {
 
     OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
         null, null, AuthMethod.NONE);
@@ -134,8 +135,11 @@ class DefaultOidcTokenRequestorTests {
     when(mapper.readValue(any(byte[].class), eq(TokenEndpointErrorResponse.class)))
       .thenThrow(new IOException("cannot parse"));
 
+    MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
+    String tokenEndpoint = ISSUER + "/token";
+
     OidcClientError ex = assertThrows(OidcClientError.class,
-        () -> requestor.requestTokens(ISSUER + "/token", client, new LinkedMultiValueMap<>()));
+        () -> requestor.requestTokens(tokenEndpoint, client, requestParams));
 
     assertTrue(ex.getMessage().contains("Token request error"));
   }
