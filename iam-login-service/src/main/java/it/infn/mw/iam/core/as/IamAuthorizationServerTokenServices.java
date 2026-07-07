@@ -194,12 +194,13 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     if (hasCodeChallenge(request)) {
-      if (PKCEAlgorithm.NONE.equals(client.getCodeChallengeMethod())) {
+      if (client.getCodeChallengeMethod() == null
+          || PKCEAlgorithm.none.equals(client.getCodeChallengeMethod())) {
         throw new InvalidRequestException(CLIENT_NOT_CONFIGURED);
       }
       handleCodeChallenge(request, client.getCodeChallengeMethod());
     } else {
-      if (PKCEAlgorithm.S256.equals(client.getCodeChallengeMethod())
+      if (PKCEAlgorithm.s256.equals(client.getCodeChallengeMethod())
           || PKCEAlgorithm.plain.equals(client.getCodeChallengeMethod())) {
         throw new InvalidRequestException(CODE_MISSING_ERROR);
       }
@@ -338,6 +339,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   private void handleCodeChallenge(OAuth2Request request, PKCEAlgorithm expected) {
 
+    String codeChallengeMethod = valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD));
     String challenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
     String verifier = request.getRequestParameters().get(CODE_VERIFIER);
 
@@ -345,8 +347,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       throw new InvalidRequestException("Missing code_verifier");
     }
 
-    PKCEAlgorithm alg =
-        PKCEAlgorithm.parse(valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD)));
+    PKCEAlgorithm alg = PKCEAlgorithm.valueOf(codeChallengeMethod);
     if (!expected.equals(alg)) {
       throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
     }
@@ -358,7 +359,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       }
       throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
     }
-    if (PKCEAlgorithm.S256.equals(alg)) {
+    if (PKCEAlgorithm.s256.equals(alg)) {
       if (challenge.equals(computeS256Challenge(verifier))) {
         LOG.debug("Hashed code verified");
         return;

@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.commons.codec.binary.Base64;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
+import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
@@ -89,6 +90,7 @@ public class ClientUtils {
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
     client.setClearAccessTokensOnRefresh(false);
+    client.setCodeChallengeMethod(PKCEAlgorithm.none);
     return client;
   }
 
@@ -126,6 +128,7 @@ public class ClientUtils {
     client.setDynamicallyRegistered(true);
     client.setAllowIntrospection(true);
     client.setUpScopingEnabled(false);
+    client.setCodeChallengeMethod(PKCEAlgorithm.none);
     if (isNull(client.getTokenEndpointAuthMethod())) {
       client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
     }

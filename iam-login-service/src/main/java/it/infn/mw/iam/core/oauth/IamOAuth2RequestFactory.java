@@ -399,7 +399,7 @@ class AuthorizationRequestBuilder {
     authzRequest.getExtensions().put(CODE_CHALLENGE, inputParams.get(CODE_CHALLENGE));
     authzRequest.getExtensions()
       .put(CODE_CHALLENGE_METHOD,
-          inputParams.getOrDefault(CODE_CHALLENGE_METHOD, PKCEAlgorithm.plain.getName()));
+          inputParams.getOrDefault(CODE_CHALLENGE_METHOD, PKCEAlgorithm.plain.name()));
   }
 
   private void addRequestObjectExtension(Map<String, String> inputParams,

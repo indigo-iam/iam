@@ -93,7 +93,7 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
   private ValidatableResponse getTokenResponseWithPkce(String clientId, String clientSecret,
       String redirectUri, String scope, String username, String password, String codeVerifier,
-      String codeChallenge, String codeChallengeMethod) {
+      String codeChallenge, PKCEAlgorithm codeChallengeMethod) {
 
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", "code")
@@ -195,7 +195,7 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
         SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge,
-        PKCEAlgorithm.S256.getName()).statusCode(HttpStatus.OK.value());
+        PKCEAlgorithm.s256).statusCode(HttpStatus.OK.value());
   }
 
   @Test
@@ -204,9 +204,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge,
-        PKCEAlgorithm.S256.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
+        TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -214,9 +214,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     String codeVerifier = generateCodeVerifier();
 
-    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeVerifier,
-        PKCEAlgorithm.plain.getName()).statusCode(HttpStatus.OK.value());
+    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier,
+        codeVerifier, PKCEAlgorithm.plain).statusCode(HttpStatus.OK.value());
   }
 
   @Test
@@ -227,7 +227,7 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
         SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, Base64URL.encode("wrong-verifier").toString(),
-        codeChallenge, PKCEAlgorithm.S256.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+        codeChallenge, PKCEAlgorithm.s256).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -236,9 +236,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, "wrong-verifier", codeChallenge,
-        PKCEAlgorithm.plain.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, "wrong-verifier",
+        codeChallenge, PKCEAlgorithm.plain).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -248,8 +248,8 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, null, codeChallenge,
-        PKCEAlgorithm.S256.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, null, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -260,6 +260,6 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
         SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge,
-        PKCEAlgorithm.NONE.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+        PKCEAlgorithm.none).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 }

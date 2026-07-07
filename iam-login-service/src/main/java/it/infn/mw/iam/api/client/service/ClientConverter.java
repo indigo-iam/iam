@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -87,8 +86,8 @@ public class ClientConverter {
     client.setClearAccessTokensOnRefresh(dto.isClearAccessTokensOnRefresh());
 
     if (dto.getCodeChallengeMethod() != null) {
-      PKCEAlgorithm pkceAlgo = PKCEAlgorithm.parse(dto.getCodeChallengeMethod());
-      client.setCodeChallengeMethod(pkceAlgo);
+
+      client.setCodeChallengeMethod(dto.getCodeChallengeMethod());
     }
 
     if (dto.getTokenEndpointAuthMethod() != null) {
@@ -161,7 +160,7 @@ public class ClientConverter {
     }
 
     if (entity.getCodeChallengeMethod() != null) {
-      clientDTO.setCodeChallengeMethod(entity.getCodeChallengeMethod().getName());
+      clientDTO.setCodeChallengeMethod(entity.getCodeChallengeMethod());
     }
 
     if (entity.getRequireAuthTime() != null) {
@@ -234,8 +233,7 @@ public class ClientConverter {
     }
 
     if (dto.getCodeChallengeMethod() != null) {
-      PKCEAlgorithm pkceAlgo = PKCEAlgorithm.parse(dto.getCodeChallengeMethod());
-      client.setCodeChallengeMethod(pkceAlgo);
+      client.setCodeChallengeMethod(dto.getCodeChallengeMethod());
     }
 
     // bypasses MitreID default setting to zero inside client's entity

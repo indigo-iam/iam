@@ -70,7 +70,7 @@ class DashboardConfigServiceTest {
     c.setRedirectUris(Set.of("https://iam.example.org/ui/api/auth/oauth2/callback/indigo-iam"));
     c.setGrantTypes(Set.of("authorization_code", "refresh_token"));
     c.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    c.setCodeChallengeMethod(PKCEAlgorithm.S256);
+    c.setCodeChallengeMethod(PKCEAlgorithm.s256);
     c.setActive(true);
     return c;
   }

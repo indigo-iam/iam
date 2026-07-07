@@ -79,8 +79,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
             .map(JWSAlgorithm::getName)
             .collect(toList());
 
-  private static final List<String> CODE_CHALLENGE_METHODS =
-      newArrayList(PKCEAlgorithm.plain.getName(), PKCEAlgorithm.S256.getName());
+  private static final List<PKCEAlgorithm> CODE_CHALLENGE_METHODS =
+      newArrayList(PKCEAlgorithm.plain, PKCEAlgorithm.s256);
 
   private static final List<String> USERINFO_JWS_ALGOS_SUPPORTED = SIGNING_ALGOS;
 
