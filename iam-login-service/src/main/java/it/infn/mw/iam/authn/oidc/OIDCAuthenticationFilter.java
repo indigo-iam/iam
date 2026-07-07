@@ -218,7 +218,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     JWT idToken = parseToken(idTokenValue);
     JWTClaimsSet idClaims = parseClaims(idToken);
 
-    validateSignature(idToken, metadata, clientConfig);
+    validateSignature(idToken, metadata.jwksUri(), clientConfig.getClient());
     validateClaims(idClaims, metadata.issuer(), clientConfig.getClient().clientId());
     validateNonceSession(request.getSession(), idClaims);
 
@@ -261,11 +261,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   }
 
-  protected void validateSignature(JWT idToken, OIDCProviderMetadata metadata,
-      OidcProvider clientConfig) {
+  protected void validateSignature(JWT idToken, String jwksUri, OidcClient client) {
 
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
-    OidcClient client = clientConfig.getClient();
 
     validateAlgorithmMatch(tokenAlg, client.idTokenSignedResponseAlg());
     handlePlainJwt(idToken, tokenAlg);
@@ -280,8 +278,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
             String.format("Symmetric ID token signing agorithm %s is not supported", tokenAlg));
       }
 
-      JWTSigningAndValidationService jwtValidator =
-          validationServices.getValidator(metadata.jwksUri());
+      JWTSigningAndValidationService jwtValidator = validationServices.getValidator(jwksUri);
 
       if (jwtValidator == null) {
         throw new AuthenticationServiceException(

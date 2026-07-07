@@ -44,6 +44,8 @@ class OIDCProviderMetadataServiceTests {
   @Mock
   private RestTemplate restTemplate;
 
+  private static final String ISSUER = "https://test.example";
+
 
   @Test
   void testLoadMetadataSuccessfully() {
@@ -51,26 +53,25 @@ class OIDCProviderMetadataServiceTests {
     ObjectMapper mapper = new ObjectMapper();
 
     ObjectNode doc = mapper.createObjectNode();
-    doc.put("issuer", "https://issuer.example");
-    doc.put("authorization_endpoint", "https://issuer.example/auth");
-    doc.put("token_endpoint", "https://issuer.example/token");
-    doc.put("jwks_uri", "https://issuer.example/jwks");
-    doc.put("userinfo_endpoint", "https://issuer.example/userinfo");
+    doc.put("issuer", ISSUER);
+    doc.put("authorization_endpoint", ISSUER + "/authorize");
+    doc.put("token_endpoint", ISSUER + "/token");
+    doc.put("jwks_uri", ISSUER + "/jwks");
+    doc.put("userinfo_endpoint", ISSUER + "/userinfo");
 
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
-    when(discoveryService.getDiscoveryDocument("https://issuer.example", restTemplate))
-      .thenReturn(doc);
+    when(discoveryService.getDiscoveryDocument(ISSUER, restTemplate)).thenReturn(doc);
 
     OIDCProviderMetadataService service =
         new OIDCProviderMetadataService(discoveryService, restTemplateFactory);
 
-    OIDCProviderMetadata metadata = service.load("https://issuer.example");
+    OIDCProviderMetadata metadata = service.load(ISSUER);
 
-    assertEquals("https://issuer.example", metadata.issuer());
-    assertEquals("https://issuer.example/auth", metadata.authorizationEndpoint());
-    assertEquals("https://issuer.example/token", metadata.tokenEndpoint());
-    assertEquals("https://issuer.example/jwks", metadata.jwksUri());
-    assertEquals("https://issuer.example/userinfo", metadata.userInfoEndpoint());
+    assertEquals(ISSUER, metadata.issuer());
+    assertEquals(ISSUER + "/authorize", metadata.authorizationEndpoint());
+    assertEquals(ISSUER + "/token", metadata.tokenEndpoint());
+    assertEquals(ISSUER + "/jwks", metadata.jwksUri());
+    assertEquals(ISSUER + "/userinfo", metadata.userInfoEndpoint());
   }
 
 
