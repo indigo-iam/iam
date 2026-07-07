@@ -182,12 +182,9 @@ public class JwtUtils {
     }
 
     Date notBefore = idClaims.getNotBeforeTime();
-    if (notBefore != null) {
-
-      if (skewedMax.before(notBefore)) {
-        throw new AuthenticationServiceException(
-            String.format("ID token not valid until: %s", notBefore));
-      }
+    if (notBefore != null && skewedMax.before(notBefore)) {
+      throw new AuthenticationServiceException(
+          String.format("ID token not valid until: %s", notBefore));
     }
 
     Date issuedAt = idClaims.getIssueTime();

@@ -103,9 +103,10 @@ class JwtUtilsValidationTests {
 
     JsonArray json = new JsonArray();
     json.add("value");
+    String invalidJson = json.toString();
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-        () -> JwtUtils.jsonStringSanityChecks(json.toString()));
+        () -> JwtUtils.jsonStringSanityChecks(invalidJson));
     assertTrue(ex.getMessage().contains("Not a JSON object"));
   }
 
@@ -227,7 +228,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionWhenAlgorithmDoesNotMatch() throws Exception {
+  void testThrowExceptionWhenAlgorithmDoesNotMatch() {
 
     SignedJWT jwt = mock(SignedJWT.class);
     JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
@@ -240,7 +241,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionForPlainJwt() throws Exception {
+  void testThrowExceptionForPlainJwt() {
 
     PlainJWT jwt = mock(PlainJWT.class);
     when(jwt.getHeader()).thenReturn(null);
@@ -251,7 +252,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionForHs256() throws Exception {
+  void testThrowExceptionForHs256() {
 
     SignedJWT jwt = mock(SignedJWT.class);
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.HS256));
@@ -274,7 +275,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionWhenValidatorIsNull() throws Exception {
+  void testThrowExceptionWhenValidatorIsNull() {
 
     SignedJWT jwt = mock(SignedJWT.class);
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.RS256));
@@ -285,7 +286,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionWhenSignatureValidationFails() throws Exception {
+  void testThrowExceptionWhenSignatureValidationFails() {
 
     SignedJWT jwt = mock(SignedJWT.class);
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.RS256));
@@ -299,7 +300,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testValidateSignatureSuccess() throws Exception {
+  void testValidateSignatureSuccess() {
 
     SignedJWT jwt = mock(SignedJWT.class);
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.RS256));
@@ -311,7 +312,7 @@ class JwtUtilsValidationTests {
   }
 
   @Test
-  void testThrowExceptionWhenNonceClaimParsingFails() throws Exception {
+  void testThrowExceptionWhenNonceClaimParsingFails() {
 
     JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("nonce", 12345).build();
     HttpSession session = mock(HttpSession.class);

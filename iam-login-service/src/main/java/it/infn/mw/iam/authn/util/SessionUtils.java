@@ -68,7 +68,7 @@ public class SessionUtils {
   public static void validateNonceSession(HttpSession session, JWTClaimsSet idClaims) {
     String nonce;
     try {
-      nonce = idClaims.getStringClaim("nonce");
+      nonce = idClaims.getStringClaim(NONCE_SESSION_VARIABLE);
     } catch (ParseException e) {
       throw new AuthenticationServiceException(
           String.format("nonce claim parse error: %s", e.getMessage()));
