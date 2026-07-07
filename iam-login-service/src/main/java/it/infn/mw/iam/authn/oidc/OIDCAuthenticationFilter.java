@@ -296,17 +296,18 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     String tokenIssuer = idClaims.getIssuer();
     if (tokenIssuer == null) {
-      throw new AuthenticationServiceException("Id Token issuer is null");
+      throw new AuthenticationServiceException("Issuer claim not present in the ID token");
     }
 
     if (!tokenIssuer.equals(expectedIssuer)) {
-      throw new AuthenticationServiceException(
-          String.format("Issuers do not match, expected %s got %s", expectedIssuer, tokenIssuer));
+      throw new AuthenticationServiceException(String.format(
+          "ID token issuer claim does not match the client configuration, expected %s got %s",
+          expectedIssuer, tokenIssuer));
     }
 
     Date expiration = idClaims.getExpirationTime();
     if (expiration == null) {
-      throw new AuthenticationServiceException("Id Token does not have required expiration claim");
+      throw new AuthenticationServiceException("ID Token does not have required expiration claim");
     }
 
     Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
@@ -314,7 +315,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     if (skewedMin.after(expiration)) {
       throw new AuthenticationServiceException(
-          String.format("Id Token is expired: %s", expiration));
+          String.format("ID Token is expired: %s", expiration));
     }
 
     Date notBefore = idClaims.getNotBeforeTime();
@@ -324,13 +325,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
       if (skewedNbf.before(notBefore)) {
         throw new AuthenticationServiceException(
-            String.format("Id Token not valid until: %s", notBefore));
+            String.format("ID Token not valid until: %s", notBefore));
       }
     }
 
     Date issuedAt = idClaims.getIssueTime();
     if (issuedAt == null) {
-      throw new AuthenticationServiceException("Id Token does not have required issued-at claim");
+      throw new AuthenticationServiceException("ID Token does not have required issued-at claim");
     }
 
     if (skewedMax.before(issuedAt)) {
@@ -339,13 +340,14 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
 
     List<String> aud = idClaims.getAudience();
-    if (aud == null) {
-      throw new AuthenticationServiceException("Id token audience is null");
+    if (aud.isEmpty()) {
+      throw new AuthenticationServiceException("Audience claim not present in the ID token");
     }
 
     if (!aud.contains(clientId)) {
       throw new AuthenticationServiceException(
-          String.format("Audience does not match, expected %s got %s", clientId, aud));
+          String.format("ID token audience claim does not match the client configuration %s got %s",
+              clientId, aud));
     }
   }
 
