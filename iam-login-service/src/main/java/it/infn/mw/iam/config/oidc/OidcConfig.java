@@ -170,9 +170,4 @@ public class OidcConfig {
     return new AdminAuthoritiesMapper(admins);
   }
 
-  @Bean
-  UserInfoFetcher userInfoFetcher(RestTemplateFactory factory) {
-    return new UserInfoFetcher(factory);
-  }
-
 }
