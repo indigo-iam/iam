@@ -90,7 +90,7 @@ public class ClientUtils {
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
     client.setClearAccessTokensOnRefresh(false);
-    client.setCodeChallengeMethod(PKCEAlgorithm.none);
+    client.setCodeChallengeMethod(PKCEAlgorithm.optional);
     return client;
   }
 

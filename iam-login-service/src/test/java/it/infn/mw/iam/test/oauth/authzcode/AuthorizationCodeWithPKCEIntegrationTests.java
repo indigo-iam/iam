@@ -48,6 +48,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
 
   static final String TEST_PKCE_S256_CLIENT_ID = "pkce-s256-client";
   static final String TEST_PKCE_PLAIN_CLIENT_ID = "pkce-plain-client";
+  static final String TEST_PKCE_NONE_CLIENT_ID = "pkce-none-client";
   static final String TEST_CLIENT_SECRET = "secret";
   static final String TEST_CLIENT_REDIRECT_URI =
       "https://iam.local.io/iam-test-client/openid_connect_login";
@@ -274,12 +275,23 @@ class AuthorizationCodeWithPKCEIntegrationTests {
   }
 
   @Test
-  void testAuthzCodeWithPkceShaCodeChallengeButClientNotConfigured() throws Exception {
+  void testAuthzCodeWithPkceCodeChallengeAndClientWithOptionalAlg() throws Exception {
 
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
+        TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.OK.value());
+  }
+
+  @Test
+  void testAuthzCodeWithPkceCodeChallengeAndClientWithNoneAlg() throws Exception {
+
+    String codeVerifier = generateCodeVerifier();
+    String codeChallenge = generateSha256CodeChallenge(codeVerifier);
+
+    getTokenResponseWithPkce(TEST_PKCE_NONE_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
         TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }

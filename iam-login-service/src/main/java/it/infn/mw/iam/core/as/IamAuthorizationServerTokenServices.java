@@ -111,7 +111,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   public static final String EXPIRES_IN_KEY = "expires_in";
   public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
-  public static final String CODE_MISSING_ERROR = "Expected code challenge not found";
+  public static final String MISSING_CODE_CHALLENGE_ERROR = "Expected code challenge not found";
+  public static final String MISSING_CODE_VERIFIER_ERROR = "Expected code verifier not found";
   public static final String CODE_VERIFICATION_ERROR = "Code challenge and verifier do not match";
   public static final String UNEXPECTED_CODE_ERROR = "Unexpected code challenge for client";
   public static final String UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR =
@@ -193,18 +194,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       account = accountService.findByUsername(username);
     }
 
-    if (hasCodeChallenge(request)) {
-      if (client.getCodeChallengeMethod() == null
-          || PKCEAlgorithm.none.equals(client.getCodeChallengeMethod())) {
-        throw new InvalidRequestException(CLIENT_NOT_CONFIGURED);
-      }
-      handleCodeChallenge(request, client.getCodeChallengeMethod());
-    } else {
-      if (PKCEAlgorithm.s256.equals(client.getCodeChallengeMethod())
-          || PKCEAlgorithm.plain.equals(client.getCodeChallengeMethod())) {
-        throw new InvalidRequestException(CODE_MISSING_ERROR);
-      }
-    }
+    handleCodeChallenge(request, client);
 
     Instant iat = clock.instant();
     AuthenticationHolderEntity authHolder = createAuthenticationHolder(authentication);
@@ -244,6 +234,30 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken));
     return savedAccessToken;
   }
+
+  private boolean clientRequiresCodeChallenge(ClientDetailsEntity client) {
+
+    return clientRequiresCodeChallengePlain(client) || clientRequiresCodeChallengeS256(client);
+  }
+
+  private boolean clientRequiresCodeChallengePlain(ClientDetailsEntity client) {
+
+    return client.getCodeChallengeMethod() != null
+        && PKCEAlgorithm.plain.equals(client.getCodeChallengeMethod());
+  }
+
+  private boolean clientRequiresCodeChallengeS256(ClientDetailsEntity client) {
+
+    return client.getCodeChallengeMethod() != null
+        && PKCEAlgorithm.s256.equals(client.getCodeChallengeMethod());
+  }
+
+  private boolean clientRequiresCodeChallengeNone(ClientDetailsEntity client) {
+
+    return client.getCodeChallengeMethod() != null
+        && PKCEAlgorithm.none.equals(client.getCodeChallengeMethod());
+  }
+
 
   private boolean isRefreshTokenRequested(String grantType, Set<String> scopes) {
 
@@ -332,41 +346,48 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     return signedJWT;
   }
 
-  private boolean hasCodeChallenge(OAuth2Request request) {
+  private void handleCodeChallenge(OAuth2Request request, ClientDetailsEntity client) {
 
-    return request.getExtensions().containsKey(CODE_CHALLENGE);
-  }
-
-  private void handleCodeChallenge(OAuth2Request request, PKCEAlgorithm expected) {
-
+    String codeChallenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
+    if (codeChallenge == null && clientRequiresCodeChallenge(client)) {
+      throw new InvalidRequestException(MISSING_CODE_CHALLENGE_ERROR);
+    }
     String codeChallengeMethod = valueOf(request.getExtensions().get(CODE_CHALLENGE_METHOD));
-    String challenge = valueOf(request.getExtensions().get(CODE_CHALLENGE));
+    if (codeChallengeMethod == null) {
+      codeChallengeMethod = "plain";
+    }
+    if (!codeChallengeMethod.equalsIgnoreCase("S256")
+        && !codeChallengeMethod.equalsIgnoreCase("plain")) {
+      // invalid code challenge method: see rfc7636#section-6.2.2
+      throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
+    }
     String verifier = request.getRequestParameters().get(CODE_VERIFIER);
-
     if (verifier == null || verifier.isBlank()) {
-      throw new InvalidRequestException("Missing code_verifier");
+      throw new InvalidRequestException(MISSING_CODE_VERIFIER_ERROR);
     }
 
-    PKCEAlgorithm alg = PKCEAlgorithm.valueOf(codeChallengeMethod);
-    if (!expected.equals(alg)) {
-      throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
-    }
-
-    if (PKCEAlgorithm.plain.equals(alg)) {
-      if (challenge.equals(verifier)) {
+    switch (codeChallengeMethod.toLowerCase()) {
+      case "plain":
+        if (clientRequiresCodeChallengeS256(client)) {
+          throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
+        }
+        if (!codeChallenge.equals(verifier)) {
+          throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
+        }
         LOG.debug("Plain code verified");
         return;
-      }
-      throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
-    }
-    if (PKCEAlgorithm.s256.equals(alg)) {
-      if (challenge.equals(computeS256Challenge(verifier))) {
+      case "s256":
+        if (clientRequiresCodeChallengePlain(client) || clientRequiresCodeChallengeNone(client)) {
+          throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
+        }
+        if (!codeChallenge.equals(computeS256Challenge(verifier))) {
+          throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
+        }
         LOG.debug("Hashed code verified");
         return;
-      }
-      throw new InvalidRequestException(CODE_VERIFICATION_ERROR);
+      default:
+        throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
     }
-    throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
   }
 
   private String computeS256Challenge(String verifier) {
