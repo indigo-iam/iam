@@ -30,7 +30,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,6 +37,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -175,7 +175,8 @@ class OidcJitAccountProvisioningTests {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 
   @Test
@@ -191,7 +192,8 @@ class OidcJitAccountProvisioningTests {
 
     when(repo.findByEmail("test@iam.test")).thenReturn(Optional.of(mock(IamAccount.class)));
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 
   @Test
@@ -204,16 +206,19 @@ class OidcJitAccountProvisioningTests {
     UserInfo userInfo = token.getUserInfo();
     when(userInfo.getGivenName()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
 
     when(userInfo.getGivenName()).thenReturn("John");
     when(userInfo.getFamilyName()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
 
     when(userInfo.getFamilyName()).thenReturn("Doe");
     when(userInfo.getEmail()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 }

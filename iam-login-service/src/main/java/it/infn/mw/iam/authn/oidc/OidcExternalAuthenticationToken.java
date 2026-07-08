@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 import com.google.common.collect.Maps;
