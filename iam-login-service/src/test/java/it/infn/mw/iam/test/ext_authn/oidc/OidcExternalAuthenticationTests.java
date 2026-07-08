@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.random.RandomGenerator;
 
 import org.hamcrest.Matchers;
@@ -366,7 +367,7 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub(userName);
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
 
 }

@@ -110,7 +110,7 @@ class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSuppo
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub("unregistered");
 
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 
     String tokenResponse =
         mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);

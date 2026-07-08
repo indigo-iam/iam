@@ -555,7 +555,7 @@ class OIDCAuthenticationFilterTests {
 
     when(pendingToken.getSub()).thenReturn("token-sub");
     when(userInfo.getSub()).thenReturn("userinfo-sub");
-    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
 
     assertThrows(AuthenticationServiceException.class,
         () -> authProvider.authenticate(pendingToken));
@@ -567,7 +567,7 @@ class OIDCAuthenticationFilterTests {
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
     UserInfo userInfo = buildUserInfo();
 
-    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
     when(jitProperties.getEnabled()).thenReturn(true);
 
@@ -589,7 +589,7 @@ class OIDCAuthenticationFilterTests {
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn("1234");
-    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
     when(jitProperties.getEnabled()).thenReturn(false);
     when(sessionTimeoutHelper.getDefaultSessionExpirationTime())
@@ -607,12 +607,12 @@ class OIDCAuthenticationFilterTests {
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn(null);
-    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> authProvider.authenticate(pendingToken));
 
-    assertEquals("Authentication failed", ex.getMessage());
+    assertEquals("Authentication failed: invalid subject", ex.getMessage());
   }
 
   @Test
@@ -637,7 +637,7 @@ class OIDCAuthenticationFilterTests {
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn("1234");
 
-    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
     when(userInfo.getName()).thenReturn("Test");
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
     when(jitProperties.getEnabled()).thenReturn(false);

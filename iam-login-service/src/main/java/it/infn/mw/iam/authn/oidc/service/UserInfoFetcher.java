@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.authn.oidc.service;
 
+import java.util.Optional;
+
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
@@ -41,13 +43,13 @@ public class UserInfoFetcher {
     this.factory = factory;
   }
 
-  public UserInfo loadUserInfo(final PendingOIDCAuthenticationToken token) {
+  public Optional<UserInfo> loadUserInfo(final PendingOIDCAuthenticationToken token) {
 
     OIDCProviderMetadata metadata = token.getWellKnownEndpoint();
 
     if (metadata == null || Strings.isNullOrEmpty(metadata.userInfoEndpoint())) {
       LOG.warn("No userinfo endpoint available.");
-      return null;
+      return Optional.empty();
     }
 
     RestTemplate restTemplate = factory.newRestTemplate();
@@ -57,11 +59,12 @@ public class UserInfoFetcher {
     String response = restTemplate.getForObject(metadata.userInfoEndpoint(), String.class);
 
     if (Strings.isNullOrEmpty(response)) {
-      throw new IllegalArgumentException("Unable to load user info");
+      LOG.warn("Received empty userinfo response from {}", metadata.userInfoEndpoint());
+      return Optional.empty();
     }
 
     JsonObject userInfoJson = JsonParser.parseString(response).getAsJsonObject();
-    return DefaultUserInfo.fromJson(userInfoJson);
+    return Optional.of(DefaultUserInfo.fromJson(userInfoJson));
 
   }
 }

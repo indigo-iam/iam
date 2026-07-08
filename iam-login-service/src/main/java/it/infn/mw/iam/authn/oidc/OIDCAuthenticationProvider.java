@@ -109,11 +109,13 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       return null;
     }
 
-    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken);
+    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken)
+      .orElseThrow(
+          () -> new AuthenticationServiceException("Authentication failed: no userinfo response"));
 
     if (Strings.isNullOrEmpty(userInfo.getSub())
         || !userInfo.getSub().equals(pendingToken.getSub())) {
-      throw new AuthenticationServiceException("Authentication failed");
+      throw new AuthenticationServiceException("Authentication failed: invalid subject");
     }
 
     JWT idToken = pendingToken.getIdToken();

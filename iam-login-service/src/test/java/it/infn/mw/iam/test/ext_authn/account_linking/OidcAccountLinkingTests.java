@@ -37,6 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.model.DefaultUserInfo;
@@ -342,7 +344,7 @@ class OidcAccountLinkingTests {
 
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub(userName);
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
 
 }

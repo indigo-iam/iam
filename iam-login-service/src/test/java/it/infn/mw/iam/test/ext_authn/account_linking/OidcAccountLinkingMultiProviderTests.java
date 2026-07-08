@@ -161,7 +161,7 @@ class OidcAccountLinkingMultiProviderTests {
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub(TEST_100_USER);
 
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
         nonce, Map.of());
@@ -223,7 +223,7 @@ class OidcAccountLinkingMultiProviderTests {
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub(TEST_100_USER);
 
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
         nonce, Map.of());

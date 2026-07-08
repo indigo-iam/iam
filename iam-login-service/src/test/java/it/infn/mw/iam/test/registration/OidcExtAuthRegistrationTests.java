@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mockito.Mockito;
@@ -148,7 +150,7 @@ class OidcExtAuthRegistrationTests {
     DefaultUserInfo userInfo = new DefaultUserInfo();
     userInfo.setSub(TEST_100_USER);
 
-    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(userInfo);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 

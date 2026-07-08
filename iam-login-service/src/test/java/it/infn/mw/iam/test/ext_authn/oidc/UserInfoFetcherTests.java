@@ -16,12 +16,12 @@
 package it.infn.mw.iam.test.ext_authn.oidc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,58 +79,57 @@ class UserInfoFetcherTests {
     when(restTemplate.getForObject(USERINFO_ENDPOINT, String.class))
       .thenReturn(userInfoJson.toString());
 
-    UserInfo result = userInfoFetcher.loadUserInfo(token);
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
 
-    assertNotNull(result);
-    assertEquals(SUB, result.getSub());
+    assertTrue(userInfo.isPresent());
+    assertEquals(SUB, userInfo.get().getSub());
     verify(restTemplate).getForObject(USERINFO_ENDPOINT, String.class);
   }
 
   @Test
-  void testNullMetadataReturnsNull() {
+  void testNullMetadataReturnsEmptyUserInfo() {
 
     when(token.getWellKnownEndpoint()).thenReturn(null);
 
-    UserInfo userInfo = userInfoFetcher.loadUserInfo(token);
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
 
-    assertNull(userInfo);
+    assertTrue(userInfo.isEmpty());
     verifyNoInteractions(restTemplateFactory);
     verifyNoInteractions(restTemplate);
   }
 
   @Test
-  void testNullUserInfoEndpointReturnsNull() {
+  void testNullUserInfoEndpointReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
         ISSUER + "/token", ISSUER + "/jwks", null, new ObjectMapper().createObjectNode());
 
     when(token.getWellKnownEndpoint()).thenReturn(metadata);
 
-    UserInfo result = userInfoFetcher.loadUserInfo(token);
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
 
-    assertNull(result);
+    assertTrue(userInfo.isEmpty());
     verifyNoInteractions(restTemplateFactory);
     verifyNoInteractions(restTemplate);
   }
 
   @Test
-  void testEmptyUserInfoEndpointReturnsNull() {
-
+  void testEmptyUserInfoEndpointReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata emptyMetadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
         ISSUER + "/token", ISSUER + "/jwks", "", new ObjectMapper().createObjectNode());
 
     when(token.getWellKnownEndpoint()).thenReturn(emptyMetadata);
 
-    UserInfo userInfo = userInfoFetcher.loadUserInfo(token);
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
 
-    assertNull(userInfo);
+    assertTrue(userInfo.isEmpty());
     verifyNoInteractions(restTemplateFactory);
     verifyNoInteractions(restTemplate);
   }
 
   @Test
-  void testEmptyResponseThrowsException() {
+  void testEmptyResponseReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata metadata =
         new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
@@ -141,11 +140,12 @@ class UserInfoFetcherTests {
     when(token.getCredentials()).thenReturn("access-token");
     when(restTemplate.getForObject(USERINFO_ENDPOINT, String.class)).thenReturn("");
 
-    assertThrows(IllegalArgumentException.class, () -> userInfoFetcher.loadUserInfo(token));
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
+    assertTrue(userInfo.isEmpty());
   }
 
   @Test
-  void testNullResponseThrowsException() {
+  void testNullResponseReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata metadata =
         new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
@@ -156,6 +156,7 @@ class UserInfoFetcherTests {
     when(token.getCredentials()).thenReturn("access-token");
     when(restTemplate.getForObject(USERINFO_ENDPOINT, String.class)).thenReturn(null);
 
-    assertThrows(IllegalArgumentException.class, () -> userInfoFetcher.loadUserInfo(token));
+    Optional<UserInfo> userInfo = userInfoFetcher.loadUserInfo(token);
+    assertTrue(userInfo.isEmpty());
   }
 }
