@@ -62,7 +62,6 @@ jobs:
     - name: Copy artifacts to docker dir
       run: |
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
-        cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
         cp iam-voms-aa/target/iam-voms-aa.jar iam-voms-aa/docker
 
     - name: Setup QEMU
@@ -91,18 +90,6 @@ jobs:
           type=ref,event=tag
           type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
 
-    - name: Docker metainformation for iam-test-client
-      id: tc-meta
-      # tag v5
-      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-      with:
-        images: indigoiam/iam-test-client
-        flavor: |
-          latest=false
-        tags: |
-          type=sha
-          type=ref,event=tag
-
     - name: Docker metainformation for iam-voms-aa
       id: va-meta
       # tag v5
@@ -126,17 +113,6 @@ jobs:
         file: iam-login-service/docker/Dockerfile.prod
         platforms: linux/amd64,linux/arm64
         push: ${{ startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/develop' }}
-
-    - name: Build & push iam-test-client docker image
-      # tag v6
-      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-      with:
-        tags: ${{ steps.tc-meta.outputs.tags }}
-        labels: ${{ steps.tc-meta.outputs.labels }}
-        context: iam-test-client/docker/
-        file: iam-test-client/docker/Dockerfile.prod
-        platforms: linux/amd64,linux/arm64
-        push: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     - name: Build & push iam-voms-aa docker image
       # tag v6
