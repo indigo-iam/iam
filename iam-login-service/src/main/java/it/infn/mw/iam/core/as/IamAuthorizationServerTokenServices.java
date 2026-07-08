@@ -228,7 +228,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     OAuth2AccessTokenEntity savedAccessToken = saveAccessToken(accessToken);
-    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken, authentication.getOAuth2Request().getGrantType()));
+    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken, request.getGrantType()));
     return savedAccessToken;
   }
 
