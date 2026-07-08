@@ -152,11 +152,6 @@ public class OidcConfig {
   }
 
   @Bean
-  PlainAuthRequestUrlBuilder authRequestBuilder() {
-    return new PlainAuthRequestUrlBuilder();
-  }
-
-  @Bean
   OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }

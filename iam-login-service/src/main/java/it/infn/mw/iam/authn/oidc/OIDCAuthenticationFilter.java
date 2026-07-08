@@ -73,7 +73,6 @@ import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 
-@SuppressWarnings("deprecation")
 public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
   public static final Logger LOG = LoggerFactory.getLogger(OIDCAuthenticationFilter.class);

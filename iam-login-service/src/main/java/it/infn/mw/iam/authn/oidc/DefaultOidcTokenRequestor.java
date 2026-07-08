@@ -75,10 +75,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     AuthMethod tokenEndpointAuthMethod = oidcClientConfig.tokenEndpointAuthMethod();
 
-    if (tokenEndpointAuthMethod == null) {
-      tokenEndpointAuthMethod = AuthMethod.SECRET_BASIC;
-    }
-
     switch (tokenEndpointAuthMethod) {
 
       case SECRET_BASIC:

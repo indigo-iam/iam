@@ -21,11 +21,13 @@ import java.util.Map.Entry;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.config.oidc.OidcProvider;
 
+@Component
 public class PlainAuthRequestUrlBuilder {
 
   public String buildAuthRequestUrl(OIDCProviderMetadata serverConfig, OidcProvider clientConfig,
