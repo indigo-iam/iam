@@ -344,7 +344,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
       // OAuth2.1 states the only PKCE algorithm allowed is S256
       // (restricted also in Spring Authorization Server)
-      if (!codeChallengeMethod.equals(PKCEAlgorithm.S256.getName())) {
+      if (!codeChallengeMethod.equals(PKCEAlgorithm.s256.name())) {
         throw new AuthenticationServiceException(String
           .format("PKCE algorithm not supported. Expected S256 got %s", codeChallengeMethod));
       }

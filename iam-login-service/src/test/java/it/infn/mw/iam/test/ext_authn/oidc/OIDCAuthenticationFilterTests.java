@@ -380,9 +380,9 @@ class OIDCAuthenticationFilterTests {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
-    filter.addPkceChallenge(session, PKCEAlgorithm.S256.getName(), options);
+    filter.addPkceChallenge(session, PKCEAlgorithm.s256.name(), options);
 
-    assertEquals(PKCEAlgorithm.S256.getName(), options.get("code_challenge_method"));
+    assertEquals(PKCEAlgorithm.s256.name(), options.get("code_challenge_method"));
 
     String verifier = (String) session.getAttribute(CODE_VERIFIER_SESSION_VARIABLE);
     assertNotNull(verifier);
@@ -400,7 +400,7 @@ class OIDCAuthenticationFilterTests {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
-    String algorithm = PKCEAlgorithm.plain.getName();
+    String algorithm = PKCEAlgorithm.plain.name();
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.addPkceChallenge(session, algorithm, options));
