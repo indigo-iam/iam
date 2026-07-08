@@ -19,7 +19,6 @@ import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,18 +35,13 @@ public class UserInfoFetcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);
 
-  public static final String USERINFO_CACHE_NAME = "userInfo";
-
   private RestTemplateFactory factory;
 
   public UserInfoFetcher(RestTemplateFactory factory) {
     this.factory = factory;
   }
 
-  @Cacheable(cacheNames = USERINFO_CACHE_NAME, key = "#token?.sub")
   public UserInfo loadUserInfo(final PendingOIDCAuthenticationToken token) {
-
-    LOG.debug("No cache of the userinfo endpoint is used for token subject {}", token.getSub());
 
     OIDCProviderMetadata metadata = token.getWellKnownEndpoint();
 

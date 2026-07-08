@@ -61,7 +61,6 @@ class UserInfoFetcherTests {
   void setup() {
 
     userInfoFetcher = new UserInfoFetcher(restTemplateFactory);
-    when(token.getSub()).thenReturn(SUB);
   }
 
   @Test
