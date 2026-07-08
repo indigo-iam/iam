@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
@@ -73,7 +75,6 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
   private final IamOidcJITAccountProvisioningProperties jitProperties;
   private final OidcAccountProvisioningService oidcProvisioningService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
-  private final AdminAuthoritiesMapper authoritiesMapper;
   private final UserInfoFetcher userInfoFetcher;
 
   public OIDCAuthenticationProvider(
@@ -82,8 +83,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
       OidcAccountProvisioningService oidcProvisioningService,
-      IamTotpMfaProperties iamTotpMfaProperties, AdminAuthoritiesMapper authoritiesMapper,
-      UserInfoFetcher userInfoFetcher) {
+      IamTotpMfaProperties iamTotpMfaProperties, UserInfoFetcher userInfoFetcher) {
 
     this.tokenValidatorService = tokenValidatorService;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
@@ -93,7 +93,6 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
     this.jitProperties = jitProperties;
     this.oidcProvisioningService = oidcProvisioningService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
-    this.authoritiesMapper = authoritiesMapper;
     this.userInfoFetcher = userInfoFetcher;
   }
 
@@ -121,8 +120,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
     JWT idToken = pendingToken.getIdToken();
 
     OIDCAuthenticationToken token =
-        (OIDCAuthenticationToken) createAuthenticationToken(pendingToken,
-            authoritiesMapper.mapAuthorities(idToken), userInfo);
+        createAuthenticationToken(pendingToken, mapAuthorities(idToken), userInfo);
 
     tokenValidatorService.validateAuthentication(token);
 
@@ -137,6 +135,21 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
     }
     inactiveAccountHandler.handleInactiveAccount(account.get());
     return registeredOidcAuthentication(account.get(), token);
+  }
+
+  public Collection<GrantedAuthority> mapAuthorities(JWT idToken) {
+
+    Set<GrantedAuthority> out = new HashSet<>();
+    try {
+      JWTClaimsSet claims = idToken.getJWTClaimsSet();
+      SubjectIssuerGrantedAuthority authority =
+          new SubjectIssuerGrantedAuthority(claims.getSubject(), claims.getIssuer());
+      out.add(authority);
+      out.add(new SimpleGrantedAuthority("ROLE_USER"));
+    } catch (ParseException e) {
+      LOG.error("Unable to parse ID Token inside of authorities mapper (huh?)");
+    }
+    return out;
   }
 
   private Authentication registeredOidcAuthentication(IamAccount account,
@@ -219,7 +232,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       .collect(Collectors.toList());
   }
 
-  private Authentication createAuthenticationToken(PendingOIDCAuthenticationToken token,
+  private OIDCAuthenticationToken createAuthenticationToken(PendingOIDCAuthenticationToken token,
       Collection<GrantedAuthority> authorities, UserInfo userInfo) {
     return new OIDCAuthenticationToken(token.getSub(), token.getIssuer(), userInfo, authorities,
         token.getIdToken(), (String) token.getCredentials());

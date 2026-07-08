@@ -17,10 +17,8 @@ package it.infn.mw.iam.config.oidc;
 
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +42,6 @@ import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
-import it.infn.mw.iam.authn.oidc.AdminAuthoritiesMapper;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
@@ -141,12 +138,11 @@ public class OidcConfig {
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
       OidcAccountProvisioningService oidcProvisioningService,
-      IamTotpMfaProperties iamTotpMfaProperties, AdminAuthoritiesMapper authoritiesMapper,
-      UserInfoFetcher userInfoFetcher) {
+      IamTotpMfaProperties iamTotpMfaProperties, UserInfoFetcher userInfoFetcher) {
 
     return new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper, accountRepo,
         inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService,
-        iamTotpMfaProperties, authoritiesMapper, userInfoFetcher);
+        iamTotpMfaProperties, userInfoFetcher);
   }
 
   @Bean
@@ -163,11 +159,6 @@ public class OidcConfig {
   @Bean
   OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
-  }
-
-  @Bean
-  AdminAuthoritiesMapper authoritiesMapper(Set<SubjectIssuerGrantedAuthority> admins) {
-    return new AdminAuthoritiesMapper(admins);
   }
 
 }

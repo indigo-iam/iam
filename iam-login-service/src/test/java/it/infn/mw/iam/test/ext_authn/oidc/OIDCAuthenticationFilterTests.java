@@ -72,7 +72,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
-import it.infn.mw.iam.authn.oidc.AdminAuthoritiesMapper;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
@@ -151,9 +150,6 @@ class OIDCAuthenticationFilterTests {
   private IamTotpMfaProperties iamTotpMfaProperties;
 
   @Mock
-  private AdminAuthoritiesMapper authoritiesMapper;
-
-  @Mock
   private UserInfoFetcher userInfoFetcher;
 
   private OIDCAuthenticationProvider authProvider;
@@ -164,7 +160,7 @@ class OIDCAuthenticationFilterTests {
   void setUp() {
     authProvider = new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper,
         accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
-        oidcProvisioningService, iamTotpMfaProperties, authoritiesMapper, userInfoFetcher);
+        oidcProvisioningService, iamTotpMfaProperties, userInfoFetcher);
 
     filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
         authRequestBuilder, clock, tokenRequestor, env, new ObjectMapper(), 60);
@@ -564,7 +560,7 @@ class OIDCAuthenticationFilterTests {
   @Test
   void testJitProvisioningCreatesNewAccount() throws ParseException {
 
-    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
     UserInfo userInfo = buildUserInfo();
 
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
@@ -586,7 +582,7 @@ class OIDCAuthenticationFilterTests {
   @Test
   void testUnregisteredAuthenticationWhenJitDisabled() throws ParseException {
 
-    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn("1234");
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
@@ -604,7 +600,7 @@ class OIDCAuthenticationFilterTests {
   @Test
   void testUnregisteredAuthenticationFailsWhenUserInfoIsInvalid() throws ParseException {
 
-    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn(null);
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
@@ -632,7 +628,7 @@ class OIDCAuthenticationFilterTests {
   @Test
   void testUnregisteredUserUsesUserInfoNameAsUsername() throws ParseException {
 
-    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
 
     UserInfo userInfo = Mockito.mock(UserInfo.class);
     when(userInfo.getSub()).thenReturn("1234");
@@ -671,10 +667,11 @@ class OIDCAuthenticationFilterTests {
     return (String) method.invoke(authProvider, token);
   }
 
-  private PendingOIDCAuthenticationToken buildPendingToken() throws ParseException {
+  private PendingOIDCAuthenticationToken buildPendingToken(String subject) throws ParseException {
 
     JWT idToken = Mockito.mock(JWT.class);
-    lenient().when(idToken.getJWTClaimsSet()).thenReturn(new JWTClaimsSet.Builder().build());
+    lenient().when(idToken.getJWTClaimsSet())
+      .thenReturn(new JWTClaimsSet.Builder().subject(subject).issuer(ISSUER).build());
 
     OIDCProviderMetadata metadata =
         new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
