@@ -105,18 +105,22 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       return null;
     }
 
-    PendingOIDCAuthenticationToken pendigToken = (PendingOIDCAuthenticationToken) authentication;
-    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendigToken);
+    if (!(authentication instanceof PendingOIDCAuthenticationToken pendingToken)) {
+      return null;
+    }
+
+    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken);
 
     if (!Strings.isNullOrEmpty(userInfo.getSub())
-        && !userInfo.getSub().equals(pendigToken.getSub())) {
+        && !userInfo.getSub().equals(pendingToken.getSub())) {
       throw new AuthenticationServiceException("Authentication failed");
     }
 
-    JWT idToken = pendigToken.getIdToken();
+    JWT idToken = pendingToken.getIdToken();
 
-    OIDCAuthenticationToken token = (OIDCAuthenticationToken) createAuthenticationToken(pendigToken,
-        authoritiesMapper.mapAuthorities(idToken), userInfo);
+    OIDCAuthenticationToken token =
+        (OIDCAuthenticationToken) createAuthenticationToken(pendingToken,
+            authoritiesMapper.mapAuthorities(idToken), userInfo);
 
     tokenValidatorService.validateAuthentication(token);
 
