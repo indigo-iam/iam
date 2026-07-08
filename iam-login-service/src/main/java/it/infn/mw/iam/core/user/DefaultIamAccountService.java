@@ -805,27 +805,4 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     return account;
   }
 
-  @Override
-  public int deleteAccountsForExpiredRegistrations(List<Long> ids) {
-
-    if (ids == null || ids.isEmpty()) {
-      return 0;
-    }
-
-    int deletedCount = 0;
-
-    Iterable<IamAccount> accounts = accountRepo.findAllById(ids);
-
-    for (IamAccount account : accounts) {
-
-      accountRepo.delete(account);
-
-      eventPublisher.publishEvent(new AccountRemovedEvent(this, account, "Expired registration cleanup"));
-
-      deletedCount++;
-    }
-
-    return deletedCount;
-  }
-
 }

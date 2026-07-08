@@ -81,13 +81,13 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
-  @Value("${iam.cleanup.expired.registration.expiry-days:7}")
+  @Value("${iam.cleanup.expired.registration.expiry-days}")
   private long expiryDays;
   
-  @Value("${iam.cleanup.expired.registration.enabled:false}")
+  @Value("${iam.cleanup.expired.registration.enabled}")
   private boolean cleanupExpiredRegistrationCronScheduleEnabled;
 
-  @Value("${iam.cleanup.expired.registration.cron:0 0 7 * * *}")
+  @Value("${iam.cleanup.expired.registration.cron}")
   private String cleanupExpiredRegistrationCronSchedule;
 
   public TaskConfig(NotificationStoreService notificationStoreService,

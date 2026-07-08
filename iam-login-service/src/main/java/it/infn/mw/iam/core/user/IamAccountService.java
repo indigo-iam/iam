@@ -257,12 +257,4 @@ public interface IamAccountService {
    */
   IamAccount signAup(IamAccount account, IamAup aup);
 
-  
-  /**
-   * Deletes {@link IamAccount} records associated with the given account IDs.
-   *
-   * @param ids list of account IDs to delete
-   * @return number of accounts successfully deleted
-   */
-  int deleteAccountsForExpiredRegistrations(List<Long> ids);
 }
