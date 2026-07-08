@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.user;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;

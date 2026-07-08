@@ -30,12 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -50,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -59,7 +55,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
-import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
