@@ -140,13 +140,13 @@ class OIDCAuthenticationFilterTests {
   @Mock
   private UserInfoFetcher userInfoFetcher;
 
-  private OIDCAuthenticationProvider provider;
+  private OIDCAuthenticationProvider authProvider;
 
   private OIDCAuthenticationFilter filter;
 
   @BeforeEach
   void setUp() {
-    provider = new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper,
+    authProvider = new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper,
         accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
         oidcProvisioningService, iamTotpMfaProperties, authoritiesMapper, userInfoFetcher);
 
@@ -524,7 +524,7 @@ class OIDCAuthenticationFilterTests {
     Authentication unsupportedAuthentication =
         new UsernamePasswordAuthenticationToken("user", "password");
 
-    Authentication result = provider.authenticate(unsupportedAuthentication);
+    Authentication result = authProvider.authenticate(unsupportedAuthentication);
 
     assertNull(result);
   }
