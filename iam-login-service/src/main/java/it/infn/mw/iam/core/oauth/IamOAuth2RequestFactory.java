@@ -55,7 +55,6 @@ import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -90,6 +89,7 @@ import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.error.InvalidResourceError;
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
@@ -245,7 +245,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
       case DEVICE_CODE_GRANT:
         String deviceCode = tokenRequestParameters.get(IamOAuthRequestParameters.DEVICE_CODE_KEY);
-        return Optional.ofNullable(deviceCodeService.findDeviceCode(deviceCode, client))
+        return deviceCodeService.findByDeviceCodeAndClient(deviceCode, client)
           .map(DeviceCode::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 

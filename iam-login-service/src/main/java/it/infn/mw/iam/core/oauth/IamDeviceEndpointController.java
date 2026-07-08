@@ -38,13 +38,10 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.token.DeviceTokenGranter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
@@ -68,6 +65,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -163,13 +162,6 @@ public class IamDeviceEndpointController {
 
 
       return JsonEntityView.VIEWNAME;
-    } catch (DeviceCodeCreationException dcce) {
-
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      model.put(JsonErrorView.ERROR, dcce.getError());
-      model.put(JsonErrorView.ERROR_MESSAGE, dcce.getMessage());
-
-      return JsonErrorView.VIEWNAME;
     } catch (URISyntaxException use) {
       logger
         .error("unable to build verification_uri_complete due to wrong syntax of uri components");
@@ -196,28 +188,29 @@ public class IamDeviceEndpointController {
   public String readUserCode(@RequestParam("user_code") String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
 
-    DeviceCode dc = deviceCodeService.lookUpByUserCode(userCode);
+    Optional<DeviceCode> dc = deviceCodeService.findByUserCode(userCode);
 
-    if (dc == null) {
+    if (dc.isEmpty()) {
       model.addAttribute(ERROR_STRING, "noUserCode");
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.getExpiration() != null && dc.getExpiration().before(Date.from(clock.instant()))) {
+    Date now = Date.from(clock.instant());
+    if (dc.get().getExpiration() != null && dc.get().getExpiration().before(now)) {
       model.addAttribute(ERROR_STRING, "expiredUserCode");
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (dc.isApproved()) {
+    if (dc.get().isApproved()) {
       model.addAttribute(ERROR_STRING, "userCodeAlreadyApproved");
       return REQUEST_USER_CODE_STRING;
     }
 
-    ClientDetailsEntity client = clientRepository.findByClientId(dc.getClientId())
+    ClientDetailsEntity client = clientRepository.findByClientId(dc.get().getClientId())
       .orElseThrow(() -> new IllegalStateException("Stored device code client id not found"));
 
     AuthorizationRequest authorizationRequest =
-        oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
+        oAuth2RequestFactory.createAuthorizationRequest(dc.get().getRequestParameters());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
 
@@ -225,8 +218,8 @@ public class IamDeviceEndpointController {
 
     Set<String> sortedAndFilteredScopes = userApprovalUtils.sortScopes(
         scopeService.fromStrings(scopeFilter.filterScopes(authorizationRequest.getScope(), authn)));
-    dc.setScope(sortedAndFilteredScopes);
-    deviceCodeRepository.save(dc);
+    dc.get().setScope(sortedAndFilteredScopes);
+    deviceCodeRepository.save(dc.get());
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
         || authorizationRequest.isApproved()) {
@@ -234,16 +227,16 @@ public class IamDeviceEndpointController {
       OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
       OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
 
-      deviceCodeService.approveDeviceCode(dc, o2Auth);
+      deviceCodeService.approveDeviceCode(dc.get(), o2Auth);
 
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
       return DEVICE_APPROVED_PAGE;
     }
 
-    setModelForConsentPage(model, authn, dc, client);
+    setModelForConsentPage(model, authn, dc.get(), client);
 
     session.setAttribute("authorizationRequest", authorizationRequest);
-    session.setAttribute("deviceCode", dc);
+    session.setAttribute("deviceCode", dc.get());
 
     return APPROVE_DEVICE_PAGE;
   }
@@ -293,8 +286,9 @@ public class IamDeviceEndpointController {
   private void checkAuthzGrant(ClientDetailsEntity client) {
     Collection<String> authorizedGrantTypes = client.getAuthorizedGrantTypes();
     if (authorizedGrantTypes != null && !authorizedGrantTypes.isEmpty()
-        && !authorizedGrantTypes.contains(DeviceTokenGranter.GRANT_TYPE)) {
-      throw new InvalidClientException("Unauthorized grant type: " + DeviceTokenGranter.GRANT_TYPE);
+        && !authorizedGrantTypes.contains(IamDeviceCodeTokenGranter.GRANT_TYPE)) {
+      throw new InvalidClientException(
+          "Unauthorized grant type: " + IamDeviceCodeTokenGranter.GRANT_TYPE);
     }
   }
 

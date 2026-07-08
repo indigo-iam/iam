@@ -24,11 +24,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
@@ -51,9 +49,9 @@ public class IamDeviceCodeService implements DeviceCodeService {
   }
 
   @Override
-  public DeviceCode lookUpByUserCode(String userCode) {
+  public Optional<DeviceCode> findByUserCode(String userCode) {
 
-    return codeRepository.findByUserCode(userCode).orElse(null);
+    return codeRepository.findByUserCode(userCode);
   }
 
   @Override
@@ -67,19 +65,15 @@ public class IamDeviceCodeService implements DeviceCodeService {
   }
 
   @Override
-  public DeviceCode findDeviceCode(String deviceCode, ClientDetails client) {
+  public Optional<DeviceCode> findByDeviceCodeAndClient(String deviceCode, ClientDetails client) {
 
-    Optional<DeviceCode> found = codeRepository.findByDeviceCode(deviceCode);
-    if (found.isPresent() && found.get().getClientId().equals(client.getClientId())) {
-      return found.get();
-    }
-    return null;
+    return codeRepository.findByDeviceCodeAndClientId(deviceCode, client.getClientId());
   }
 
   @Override
-  public void clearDeviceCode(String deviceCode, ClientDetails client) {
+  public void clearDeviceCode(DeviceCode dc) {
 
-    codeRepository.findByDeviceCode(deviceCode).ifPresent(codeRepository::delete);
+    codeRepository.findById(dc.getId()).ifPresent(codeRepository::delete);
   }
 
   private String generateToken() {
@@ -91,7 +85,7 @@ public class IamDeviceCodeService implements DeviceCodeService {
 
   @Override
   public DeviceCode createNewDeviceCode(Set<String> requestedScopes, ClientDetailsEntity client,
-      Map<String, String> parameters) throws DeviceCodeCreationException {
+      Map<String, String> parameters) {
 
     String deviceCode = UUID.randomUUID().toString();
     String userCode = generateToken().toUpperCase();
@@ -108,11 +102,4 @@ public class IamDeviceCodeService implements DeviceCodeService {
     return codeRepository.save(dc);
 
   }
-
-  @Override
-  public void clearExpiredDeviceCodes() {
-
-    // not implemented. See @GarbageCollector
-  }
-
 }
