@@ -21,16 +21,24 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.text.ParseException;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +47,8 @@ import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.openid.connect.client.model.IssuerServiceResponse;
 import org.mitre.openid.connect.client.service.IssuerService;
+import org.mitre.openid.connect.model.DefaultUserInfo;
+import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,7 +65,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonObject;
 import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
@@ -65,7 +78,9 @@ import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.OidcClientError;
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
+import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
@@ -76,6 +91,7 @@ import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
@@ -529,6 +545,97 @@ class OIDCAuthenticationFilterTests {
     assertNull(result);
   }
 
+  @Test
+  void testAuthenticationFailsWhenUserInfoSubjectDoesNotMatchTokenSubject() {
+
+    PendingOIDCAuthenticationToken pendingToken =
+        Mockito.mock(PendingOIDCAuthenticationToken.class);
+
+    UserInfo userInfo = Mockito.mock(UserInfo.class);
+
+    when(pendingToken.getSub()).thenReturn("token-sub");
+    when(userInfo.getSub()).thenReturn("userinfo-sub");
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+
+    assertThrows(AuthenticationServiceException.class,
+        () -> authProvider.authenticate(pendingToken));
+  }
+
+  @Test
+  void testJitProvisioningCreatesNewAccount() throws ParseException {
+
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    UserInfo userInfo = buildUserInfo();
+
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
+    when(jitProperties.getEnabled()).thenReturn(true);
+
+    IamAccount account = Mockito.mock(IamAccount.class);
+    when(oidcProvisioningService.provisionAccount(any())).thenReturn(account);
+
+    when(sessionTimeoutHelper.getDefaultSessionExpirationTime())
+      .thenReturn(Instant.now().plusSeconds(3600));
+
+    Authentication result = authProvider.authenticate(pendingToken);
+
+    assertNotNull(result);
+    verify(oidcProvisioningService).provisionAccount(any());
+  }
+
+  @Test
+  void testUnregisteredAuthenticationWhenJitDisabled() throws ParseException {
+
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    UserInfo userInfo = Mockito.mock(UserInfo.class);
+
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
+    when(jitProperties.getEnabled()).thenReturn(false);
+    when(sessionTimeoutHelper.getDefaultSessionExpirationTime())
+      .thenReturn(Instant.now().plusSeconds(3600));
+
+    Authentication result = authProvider.authenticate(pendingToken);
+
+    assertNotNull(result);
+    verifyNoInteractions(oidcProvisioningService);
+  }
+
+  @Test
+  void testComputeAcrValueHandlesParseException() throws Exception {
+
+    OIDCAuthenticationToken token = Mockito.mock(OIDCAuthenticationToken.class);
+    JWT jwt = Mockito.mock(JWT.class);
+
+    when(token.getIdToken()).thenReturn(jwt);
+    when(jwt.getJWTClaimsSet()).thenThrow(new ParseException("invalid jwt", 0));
+
+    String acr = invokeComputeAcrValue(token);
+
+    assertNull(acr);
+  }
+
+  @Test
+  void testUnregisteredUserUsesUserInfoNameAsUsername() throws ParseException {
+
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+
+    UserInfo userInfo = Mockito.mock(UserInfo.class);
+
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+    when(userInfo.getName()).thenReturn("Test");
+    when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
+    when(jitProperties.getEnabled()).thenReturn(false);
+    when(sessionTimeoutHelper.getDefaultSessionExpirationTime())
+      .thenReturn(Instant.now().plusSeconds(3600));
+
+    Authentication result = authProvider.authenticate(pendingToken);
+
+    OidcExternalAuthenticationToken external = (OidcExternalAuthenticationToken) result;
+
+    assertEquals("Test", external.getName());
+  }
+
   private OIDCProviderMetadata loadOIDCProviderMetadata(String issuer) {
 
     ObjectNode raw = new ObjectMapper().createObjectNode();
@@ -537,6 +644,28 @@ class OIDCAuthenticationFilterTests {
     when(servers.load(issuer)).thenReturn(metadata);
 
     return metadata;
+  }
+
+  private String invokeComputeAcrValue(OIDCAuthenticationToken token) throws Exception {
+
+    Method method = OIDCAuthenticationProvider.class.getDeclaredMethod("computeAcrValue",
+        OIDCAuthenticationToken.class);
+
+    method.setAccessible(true);
+
+    return (String) method.invoke(authProvider, token);
+  }
+
+  private PendingOIDCAuthenticationToken buildPendingToken() throws ParseException {
+
+    JWT idToken = Mockito.mock(JWT.class);
+    lenient().when(idToken.getJWTClaimsSet()).thenReturn(new JWTClaimsSet.Builder().build());
+
+    OIDCProviderMetadata metadata =
+        new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
+            ISSUER + "/userinfo", new ObjectMapper().createObjectNode());
+
+    return new PendingOIDCAuthenticationToken("1234", ISSUER, metadata, idToken, "access-token");
   }
 
   private MockHttpServletRequest createAuthorizationCodeRequest(String issuer) {
@@ -551,5 +680,14 @@ class OIDCAuthenticationFilterTests {
     request.setParameter("code", "5678");
 
     return request;
+  }
+
+  private UserInfo buildUserInfo() {
+
+    JsonObject json = new JsonObject();
+    json.addProperty("sub", "1234");
+    json.addProperty("name", "Test");
+
+    return DefaultUserInfo.fromJson(json);
   }
 }
