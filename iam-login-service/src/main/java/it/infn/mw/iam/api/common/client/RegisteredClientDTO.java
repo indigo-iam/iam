@@ -24,10 +24,10 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Null;
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
+import org.mitre.oauth2.model.PKCEAlgorithm;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -262,11 +262,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  @Pattern(regexp = "^$|none|plain|S256",
-      message = "must be either an empty string, none, plain or S256",
-      groups = {OnClientCreation.class, OnClientUpdate.class, OnDynamicClientRegistration.class,
-          OnDynamicClientUpdate.class})
-  private String codeChallengeMethod;
+  private PKCEAlgorithm codeChallengeMethod;
 
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -549,11 +545,11 @@ public class RegisteredClientDTO {
     this.jwk = jwk;
   }
 
-  public String getCodeChallengeMethod() {
+  public PKCEAlgorithm getCodeChallengeMethod() {
     return codeChallengeMethod;
   }
 
-  public void setCodeChallengeMethod(String codeChallengeMethod) {
+  public void setCodeChallengeMethod(PKCEAlgorithm codeChallengeMethod) {
     this.codeChallengeMethod = codeChallengeMethod;
   }
 

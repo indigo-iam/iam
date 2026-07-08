@@ -151,7 +151,7 @@ class DashboardConfigServiceTest {
     client.setScope(scopes);
     client.setGrantTypes(grantTypes);
     client.setRedirectUris(Set.of(redirectUris));
-    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
+    client.setCodeChallengeMethod(PKCEAlgorithm.s256);
     client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
     client.setActive(isActive);
     return client;
