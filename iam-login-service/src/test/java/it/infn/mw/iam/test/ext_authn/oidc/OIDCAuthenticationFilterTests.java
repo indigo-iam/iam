@@ -34,9 +34,7 @@ import java.security.MessageDigest;
 import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -72,6 +70,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.ClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
@@ -88,8 +87,6 @@ import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
-import it.infn.mw.iam.config.oidc.OidcProvider;
-import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -111,7 +108,7 @@ class OIDCAuthenticationFilterTests {
   private OIDCProviderMetadataService servers;
 
   @Mock
-  private OidcProviderProperties clients;
+  private ClientConfigurationService clientConfigurationService;
 
   @Mock
   private PlainAuthRequestUrlBuilder authRequestBuilder;
@@ -162,8 +159,9 @@ class OIDCAuthenticationFilterTests {
         accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
         oidcProvisioningService, iamTotpMfaProperties, userInfoFetcher);
 
-    filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
-        authRequestBuilder, clock, tokenRequestor, env, new ObjectMapper(), 60);
+    filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers,
+        clientConfigurationService, authRequestBuilder, clock, tokenRequestor, env,
+        new ObjectMapper(), 60);
   }
 
   @Test
@@ -254,7 +252,8 @@ class OIDCAuthenticationFilterTests {
 
     loadOIDCProviderMetadata(ISSUER);
 
-    when(clients.getProviders()).thenReturn(Collections.emptyList());
+    when(clientConfigurationService.getClientConfiguration(Mockito.anyString()))
+      .thenReturn(Optional.empty());
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
@@ -278,21 +277,17 @@ class OIDCAuthenticationFilterTests {
 
     loadOIDCProviderMetadata(ISSUER);
 
-    OidcProvider provider = Mockito.mock(OidcProvider.class);
     OidcClient client = new OidcClient("client", "secret",
         "https://expected.example/openid_connect_login", null, null, null, null);
 
-    when(provider.getIssuer()).thenReturn(ISSUER);
-    when(provider.getClient()).thenReturn(client);
-    when(clients.getProviders()).thenReturn(List.of(provider));
+    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
     assertTrue(ex.getMessage().contains("RequestURI mismatch."));
 
     client = new OidcClient("client", "secret", null, null, null, null, null);
-    when(provider.getClient()).thenReturn(client);
-    when(clients.getProviders()).thenReturn(List.of(provider));
+    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 
     ex = assertThrows(AuthenticationServiceException.class,
         () -> filter.attemptAuthentication(request, response));
@@ -483,13 +478,10 @@ class OIDCAuthenticationFilterTests {
 
     OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
 
-    OidcProvider provider = Mockito.mock(OidcProvider.class);
     OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
         null, null, null);
 
-    when(provider.getIssuer()).thenReturn(ISSUER);
-    when(provider.getClient()).thenReturn(client);
-    when(clients.getProviders()).thenReturn(List.of(provider));
+    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 
     ObjectNode node = new ObjectMapper().createObjectNode();
     node.put("id_token", "dummy");
@@ -510,14 +502,10 @@ class OIDCAuthenticationFilterTests {
     OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
     when(servers.load(ISSUER)).thenReturn(metadata);
 
-    OidcProvider provider = Mockito.mock(OidcProvider.class);
     OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
         null, null, null);
 
-    when(provider.getIssuer()).thenReturn(ISSUER);
-    when(provider.getClient()).thenReturn(client);
-
-    when(clients.getProviders()).thenReturn(List.of(provider));
+    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 
     ObjectNode node = new ObjectMapper().createObjectNode();
     node.put("access_token", "dummy");

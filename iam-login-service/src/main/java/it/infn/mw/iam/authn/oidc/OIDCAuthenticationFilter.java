@@ -70,8 +70,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
-import it.infn.mw.iam.config.oidc.OidcProvider;
-import it.infn.mw.iam.config.oidc.OidcProviderProperties;
+import it.infn.mw.iam.config.oidc.OidcClient;
 
 public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -84,28 +83,28 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   protected static final String ID_TOKEN_VARIABLE = "id_token";
   protected static final String FILTER_PROCESSES_URL = "/openid_connect_login";
 
-  private JWKSetCacheService validationServices;
-  private IssuerService issuerService;
-  private OIDCProviderMetadataService servers;
-  private OidcProviderProperties clients;
-  private PlainAuthRequestUrlBuilder authRequestBuilder;
-  private Clock clock;
-  private OidcTokenRequestor tokenRequestor;
-  private Environment env;
-  private ObjectMapper objectMapper;
-  private int timeSkewAllowance;
+  private final JWKSetCacheService validationServices;
+  private final IssuerService issuerService;
+  private final OIDCProviderMetadataService servers;
+  private final ClientConfigurationService clientConfigurationService;
+  private final PlainAuthRequestUrlBuilder authRequestBuilder;
+  private final Clock clock;
+  private final OidcTokenRequestor tokenRequestor;
+  private final Environment env;
+  private final ObjectMapper objectMapper;
+  private final int timeSkewAllowance;
 
   public OIDCAuthenticationFilter(JWKSetCacheService validationServices,
       IssuerService issuerService, OIDCProviderMetadataService servers,
-      OidcProviderProperties clients, PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock,
-      OidcTokenRequestor tokenRequestor, Environment env, ObjectMapper objectMapper,
-      int timeSkewAllowance) {
+      ClientConfigurationService clientConfigurationService,
+      PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
+      Environment env, ObjectMapper objectMapper, int timeSkewAllowance) {
 
     super(FILTER_PROCESSES_URL);
     this.validationServices = validationServices;
     this.issuerService = issuerService;
     this.servers = servers;
-    this.clients = clients;
+    this.clientConfigurationService = clientConfigurationService;
     this.authRequestBuilder = authRequestBuilder;
     this.clock = clock;
     this.tokenRequestor = tokenRequestor;
@@ -147,7 +146,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     String issuer = getValidIssuerFromRequest(session, issResp);
     OIDCProviderMetadata serverConfig = getOidcProviderMetadata(issuer);
-    OidcProvider clientConfig = getMatchedOidcProvider(issuer);
+    OidcClient clientConfig = clientConfigurationService.getClientConfiguration(issuer)
+      .orElseThrow(() -> new AuthenticationServiceException(
+          String.format("No client configuration found for issuer: %s", issuer)));
     session.setAttribute(ISSUER_SESSION_VARIABLE, serverConfig.issuer());
 
     String redirectUri = determineRedirectUri(clientConfig, request);
@@ -159,7 +160,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     Map<String, String> options = new HashMap<>();
 
     populateAcrOptions(session, request, options);
-    addPkceChallenge(session, clientConfig.getClient().codeChallengeMethod(), options);
+    addPkceChallenge(session, clientConfig.codeChallengeMethod(), options);
 
     String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig,
         redirectUri, nonce, state, options, issResp.getLoginHint());
@@ -174,14 +175,16 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     validateState(request);
 
     String issuer = getIssuerFromSession(request);
-    OidcProvider clientConfig = getMatchedOidcProvider(issuer);
+    OidcClient clientConfig = clientConfigurationService.getClientConfiguration(issuer)
+      .orElseThrow(() -> new AuthenticationServiceException(
+          String.format("No client configuration found for issuer: %s", issuer)));
     OIDCProviderMetadata metadata = getOidcProviderMetadata(issuer);
 
     String tokenResponseString = null;
 
     try {
-      tokenResponseString = tokenRequestor.requestTokens(metadata.tokenEndpoint(),
-          clientConfig.getClient(), initTokenRequestParameters(request));
+      tokenResponseString = tokenRequestor.requestTokens(metadata.tokenEndpoint(), clientConfig,
+          initTokenRequestParameters(request));
 
     } catch (OidcClientError e) {
       throw new OidcClientError(String.format("Error executing token request against endpoint %s",
@@ -216,8 +219,8 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     JWTSigningAndValidationService jwtValidator =
         validationServices.getValidator(metadata.jwksUri());
 
-    validateSignature(idToken, clientConfig.getClient().idTokenSignedResponseAlg(), jwtValidator);
-    validateClaims(idClaims, metadata.issuer(), clientConfig.getClient().clientId(), skewedMin,
+    validateSignature(idToken, clientConfig.idTokenSignedResponseAlg(), jwtValidator);
+    validateClaims(idClaims, metadata.issuer(), clientConfig.clientId(), skewedMin,
         skewedMax);
 
     validateNonceSession(request.getSession(), idClaims);
@@ -227,16 +230,6 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     return getAuthenticationManager().authenticate(oidcToken);
 
-  }
-
-  private OidcProvider getMatchedOidcProvider(String issuer) {
-
-    return clients.getProviders()
-      .stream()
-      .filter(c -> c.getIssuer().equals(issuer))
-      .findFirst()
-      .orElseThrow(() -> new AuthenticationServiceException(
-          String.format("No client configuration found for issuer: %s", issuer)));
   }
 
   private OIDCProviderMetadata getOidcProviderMetadata(String issuer) {
@@ -297,9 +290,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     return issuer;
   }
 
-  private String determineRedirectUri(OidcProvider clientConfig, HttpServletRequest request) {
+  private String determineRedirectUri(OidcClient clientConfig, HttpServletRequest request) {
 
-    String redirectUri = clientConfig.getClient().redirectUris();
+    String redirectUri = clientConfig.redirectUris();
 
     if (redirectUri == null || !redirectUri.equals(request.getRequestURL().toString())) {
       throw new AuthenticationServiceException(

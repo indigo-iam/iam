@@ -25,21 +25,20 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.config.oidc.OidcProvider;
+import it.infn.mw.iam.config.oidc.OidcClient;
 
 @Component
 public class PlainAuthRequestUrlBuilder {
 
-  public String buildAuthRequestUrl(OIDCProviderMetadata serverConfig, OidcProvider clientConfig,
+  public String buildAuthRequestUrl(OIDCProviderMetadata serverConfig, OidcClient clientConfig,
       String redirectUri, String nonce, String state, Map<String, String> options,
       String loginHint) {
     try {
 
       URIBuilder uriBuilder = new URIBuilder(serverConfig.authorizationEndpoint());
       uriBuilder.addParameter("response_type", "code");
-      uriBuilder.addParameter("client_id", clientConfig.getClient().clientId());
-      uriBuilder.addParameter("scope",
-          String.join(" ", clientConfig.getClient().scope().split(",")));
+      uriBuilder.addParameter("client_id", clientConfig.clientId());
+      uriBuilder.addParameter("scope", String.join(" ", clientConfig.scope().split(",")));
       uriBuilder.addParameter("redirect_uri", redirectUri);
       uriBuilder.addParameter("nonce", nonce);
       uriBuilder.addParameter("state", state);
