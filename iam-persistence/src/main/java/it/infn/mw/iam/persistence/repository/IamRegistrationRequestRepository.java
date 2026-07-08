@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +40,9 @@ public interface IamRegistrationRequestRepository
 
   @Query("select r from IamRegistrationRequest r where r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW or r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED")
   List<IamRegistrationRequest> findPendingRequests();
+
+  @Query("SELECT r FROM IamRegistrationRequest r " +
+          "WHERE r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW " +
+          "AND r.creationTime < :expiryTime")
+  List<IamRegistrationRequest> findExpiredRequests(@Param("expiryTime") Date expiryTime);
 }
