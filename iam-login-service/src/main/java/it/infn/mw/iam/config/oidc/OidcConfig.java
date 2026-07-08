@@ -42,6 +42,8 @@ import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.ClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.DefaultClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
@@ -78,19 +80,24 @@ public class OidcConfig {
     return b;
   }
 
+  @Bean
+  ClientConfigurationService clientConfigurationService(OidcProviderProperties oidcProperties) {
+    return new DefaultClientConfigurationService(oidcProperties);
+  }
+
   @Bean(name = "OIDCAuthenticationFilter")
   OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(
       JWKSetCacheService validationServices, IssuerService issuerService,
-      OIDCProviderMetadataService servers, OidcProviderProperties clients,
+      OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
 
-    OIDCAuthenticationFilter filter =
-        new OIDCAuthenticationFilter(validationServices, issuerService, servers, clients,
-            authRequestBuilder, clock, tokenRequestor, env, objectMapper, 300);
+    OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(validationServices,
+        issuerService, servers, clientConfigurationService, authRequestBuilder, clock,
+        tokenRequestor, env, objectMapper, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);
     filter.setAuthenticationSuccessHandler(successHandler);
     filter.setAuthenticationFailureHandler(failureHandler);
