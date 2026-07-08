@@ -111,8 +111,8 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
 
     UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken);
 
-    if (!Strings.isNullOrEmpty(userInfo.getSub())
-        && !userInfo.getSub().equals(pendingToken.getSub())) {
+    if (Strings.isNullOrEmpty(userInfo.getSub())
+        || !userInfo.getSub().equals(pendingToken.getSub())) {
       throw new AuthenticationServiceException("Authentication failed");
     }
 

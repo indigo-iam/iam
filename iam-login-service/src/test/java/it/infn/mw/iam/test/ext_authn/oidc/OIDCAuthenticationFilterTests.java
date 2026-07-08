@@ -588,7 +588,7 @@ class OIDCAuthenticationFilterTests {
 
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
     UserInfo userInfo = Mockito.mock(UserInfo.class);
-
+    when(userInfo.getSub()).thenReturn("1234");
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
     when(jitProperties.getEnabled()).thenReturn(false);
@@ -599,6 +599,20 @@ class OIDCAuthenticationFilterTests {
 
     assertNotNull(result);
     verifyNoInteractions(oidcProvisioningService);
+  }
+
+  @Test
+  void testUnregisteredAuthenticationFailsWhenUserInfoIsInvalid() throws ParseException {
+
+    PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
+    UserInfo userInfo = Mockito.mock(UserInfo.class);
+    when(userInfo.getSub()).thenReturn(null);
+    when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
+
+    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
+        () -> authProvider.authenticate(pendingToken));
+
+    assertEquals("Authentication failed", ex.getMessage());
   }
 
   @Test
@@ -621,6 +635,7 @@ class OIDCAuthenticationFilterTests {
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken();
 
     UserInfo userInfo = Mockito.mock(UserInfo.class);
+    when(userInfo.getSub()).thenReturn("1234");
 
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(userInfo);
     when(userInfo.getName()).thenReturn("Test");
