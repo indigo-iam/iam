@@ -81,7 +81,7 @@ public class X509TrustConfig {
 
   }
 
-  @Bean(name="canlHttpClient")
+  @Bean(name = "canlHttpClient")
   HttpClient httpClient() {
 
     SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(sslContext());

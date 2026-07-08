@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public record OIDCProviderMetadata(String issuer, String authorizationEndpoint,
-    String tokenEndpoint, String jwksUri, String userInfoEndpoint, JsonNode raw) {
+    String tokenEndpoint, String jwksUri, String userInfoEndpoint) {
 }

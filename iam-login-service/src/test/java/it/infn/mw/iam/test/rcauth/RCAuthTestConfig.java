@@ -27,9 +27,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
@@ -48,10 +45,8 @@ public class RCAuthTestConfig extends RCAuthTestSupport {
   OIDCProviderMetadataService mockOIDCProviderMetadata(DefaultOidcDiscoveryService discoveryService,
       RestTemplateFactory restTemplateFactory) {
 
-    ObjectNode raw = new ObjectMapper().createObjectNode();
-
     OIDCProviderMetadata op =
-        new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI, USERINFO_URI, raw);
+        new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI, USERINFO_URI);
 
     OIDCProviderMetadataService service = Mockito.mock(OIDCProviderMetadataService.class);
     Mockito.when(service.load(ISSUER)).thenReturn(op);

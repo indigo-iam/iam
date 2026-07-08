@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
@@ -74,11 +73,9 @@ public class OidcTestConfig {
   OIDCProviderMetadataService mockOIDCProviderMetadata(DefaultOidcDiscoveryService discoveryService,
       RestTemplateFactory restTemplateFactory) {
 
-    ObjectNode raw = new ObjectMapper().createObjectNode();
-
     OIDCProviderMetadata op =
         new OIDCProviderMetadata(TEST_OIDC_ISSUER, TEST_OIDC_AUTHORIZATION_ENDPOINT_URI,
-            TEST_OIDC_TOKEN_ENDPOINT_URI, TEST_OIDC_JWKS_URI, TEST_OIDC_USERINFO_URI, raw);
+            TEST_OIDC_TOKEN_ENDPOINT_URI, TEST_OIDC_JWKS_URI, TEST_OIDC_USERINFO_URI);
 
     OIDCProviderMetadataService service = Mockito.mock(OIDCProviderMetadataService.class);
     Mockito.when(service.load(TEST_OIDC_ISSUER)).thenReturn(op);

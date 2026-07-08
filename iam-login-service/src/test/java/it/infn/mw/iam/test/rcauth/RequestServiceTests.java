@@ -54,7 +54,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
@@ -108,8 +107,8 @@ class RequestServiceTests extends RCAuthTestSupport {
   @BeforeEach
   void setup() throws IOException {
 
-    serverConfig = new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI,
-        USERINFO_URI, new ObjectMapper().createObjectNode());
+    serverConfig =
+        new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI, USERINFO_URI);
 
     lenient().when(props.getKeySize()).thenReturn(512);
     lenient().when(props.getClientId()).thenReturn(CLIENT_ID);

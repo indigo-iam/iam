@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
@@ -66,9 +65,8 @@ class UserInfoFetcherTests {
   @Test
   void testLoadUserInfoReturnsParsedUserInfo() {
 
-    OIDCProviderMetadata metadata =
-        new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
-            USERINFO_ENDPOINT, new ObjectMapper().createObjectNode());
+    OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
+        ISSUER + "/token", ISSUER + "/jwks", USERINFO_ENDPOINT);
 
     when(token.getWellKnownEndpoint()).thenReturn(metadata);
     when(token.getCredentials()).thenReturn("access-token");
@@ -102,7 +100,7 @@ class UserInfoFetcherTests {
   void testNullUserInfoEndpointReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
-        ISSUER + "/token", ISSUER + "/jwks", null, new ObjectMapper().createObjectNode());
+        ISSUER + "/token", ISSUER + "/jwks", null);
 
     when(token.getWellKnownEndpoint()).thenReturn(metadata);
 
@@ -117,7 +115,7 @@ class UserInfoFetcherTests {
   void testEmptyUserInfoEndpointReturnsEmptyUserInfo() {
 
     OIDCProviderMetadata emptyMetadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
-        ISSUER + "/token", ISSUER + "/jwks", "", new ObjectMapper().createObjectNode());
+        ISSUER + "/token", ISSUER + "/jwks", "");
 
     when(token.getWellKnownEndpoint()).thenReturn(emptyMetadata);
 
@@ -131,9 +129,8 @@ class UserInfoFetcherTests {
   @Test
   void testEmptyResponseReturnsEmptyUserInfo() {
 
-    OIDCProviderMetadata metadata =
-        new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
-            USERINFO_ENDPOINT, new ObjectMapper().createObjectNode());
+    OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
+        ISSUER + "/token", ISSUER + "/jwks", USERINFO_ENDPOINT);
 
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
     when(token.getWellKnownEndpoint()).thenReturn(metadata);
@@ -147,9 +144,8 @@ class UserInfoFetcherTests {
   @Test
   void testNullResponseReturnsEmptyUserInfo() {
 
-    OIDCProviderMetadata metadata =
-        new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
-            USERINFO_ENDPOINT, new ObjectMapper().createObjectNode());
+    OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
+        ISSUER + "/token", ISSUER + "/jwks", USERINFO_ENDPOINT);
 
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
     when(token.getWellKnownEndpoint()).thenReturn(metadata);

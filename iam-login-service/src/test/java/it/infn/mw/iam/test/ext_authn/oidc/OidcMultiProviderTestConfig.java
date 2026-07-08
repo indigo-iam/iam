@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
@@ -78,15 +77,13 @@ public class OidcMultiProviderTestConfig {
   OIDCProviderMetadataService mockOIDCProviderMetadata(DefaultOidcDiscoveryService discoveryService,
       RestTemplateFactory restTemplateFactory) {
 
-    ObjectNode raw = new ObjectMapper().createObjectNode();
-
     OIDCProviderMetadata op01 =
         new OIDCProviderMetadata(TEST_OIDC_01_ISSUER, TEST_OIDC_01_AUTHZ_ENDPOINT_URI,
-            TEST_OIDC_01_TOKEN_ENDPOINT_URI, TEST_OIDC_01_JWKS_URI, TEST_OIDC_01_USERINFO_URI, raw);
+            TEST_OIDC_01_TOKEN_ENDPOINT_URI, TEST_OIDC_01_JWKS_URI, TEST_OIDC_01_USERINFO_URI);
 
     OIDCProviderMetadata op02 =
         new OIDCProviderMetadata(TEST_OIDC_02_ISSUER, TEST_OIDC_02_AUTHZ_ENDPOINT_URI,
-            TEST_OIDC_02_TOKEN_ENDPOINT_URI, TEST_OIDC_02_JWKS_URI, TEST_OIDC_02_USERINFO_URI, raw);
+            TEST_OIDC_02_TOKEN_ENDPOINT_URI, TEST_OIDC_02_JWKS_URI, TEST_OIDC_02_USERINFO_URI);
 
     OIDCProviderMetadataService service = Mockito.mock(OIDCProviderMetadataService.class);
     Mockito.when(service.load(TEST_OIDC_01_ISSUER)).thenReturn(op01);

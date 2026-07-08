@@ -649,9 +649,8 @@ class OIDCAuthenticationFilterTests {
 
   private OIDCProviderMetadata loadOIDCProviderMetadata(String issuer) {
 
-    ObjectNode raw = new ObjectMapper().createObjectNode();
     OIDCProviderMetadata metadata = new OIDCProviderMetadata(issuer, issuer + "/authorize",
-        issuer + "/token", issuer + "/jwks", issuer + "/userinfo", raw);
+        issuer + "/token", issuer + "/jwks", issuer + "/userinfo");
     when(servers.load(issuer)).thenReturn(metadata);
 
     return metadata;
@@ -673,9 +672,8 @@ class OIDCAuthenticationFilterTests {
     lenient().when(idToken.getJWTClaimsSet())
       .thenReturn(new JWTClaimsSet.Builder().subject(subject).issuer(ISSUER).build());
 
-    OIDCProviderMetadata metadata =
-        new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize", ISSUER + "/token", ISSUER + "/jwks",
-            ISSUER + "/userinfo", new ObjectMapper().createObjectNode());
+    OIDCProviderMetadata metadata = new OIDCProviderMetadata(ISSUER, ISSUER + "/authorize",
+        ISSUER + "/token", ISSUER + "/jwks", ISSUER + "/userinfo");
 
     return new PendingOIDCAuthenticationToken("1234", ISSUER, metadata, idToken, "access-token");
   }

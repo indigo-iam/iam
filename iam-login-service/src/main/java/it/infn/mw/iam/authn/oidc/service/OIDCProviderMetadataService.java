@@ -42,7 +42,6 @@ public class OIDCProviderMetadataService {
 
     return new OIDCProviderMetadata(document.get("issuer").asText(),
         document.get("authorization_endpoint").asText(), document.get("token_endpoint").asText(),
-        document.get("jwks_uri").asText(), document.path("userinfo_endpoint").asText(null),
-        document);
+        document.get("jwks_uri").asText(), document.path("userinfo_endpoint").asText(null));
   }
 }
