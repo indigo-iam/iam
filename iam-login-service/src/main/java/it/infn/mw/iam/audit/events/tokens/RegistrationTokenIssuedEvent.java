@@ -21,8 +21,8 @@ public class RegistrationTokenIssuedEvent extends SignedTokenEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public RegistrationTokenIssuedEvent(Object source, OAuth2AccessTokenEntity registrationToken) {
-    super(source, registrationToken.getJwt(), registrationToken.getAuthenticationHolder(), "Issue registration token");
+  public RegistrationTokenIssuedEvent(Object source, OAuth2AccessTokenEntity registrationToken, String grantType) {
+    super(source, registrationToken.getJwt(), registrationToken.getAuthenticationHolder(), grantType, "Issue registration token");
   }
 
 }

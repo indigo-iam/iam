@@ -41,13 +41,13 @@ public abstract class TokenEvent extends IamAuditApplicationEvent {
   private final String grantType;
   private transient Map<String, Object> payload;
 
-  protected TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
+  protected TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String grantType, String message) {
     super(IamEventCategory.TOKEN, source, message);
 
     // subject will contains user-name or client name
     this.subject = authenticationHolder.getAuthentication().getName();
     this.scopes = authenticationHolder.getScope();
-    this.grantType = authenticationHolder.getAuthentication().getOAuth2Request().getGrantType();
+    this.grantType = grantType;
 
     try {
       this.payload = token.getJWTClaimsSet().getClaims();
