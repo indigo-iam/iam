@@ -41,7 +41,6 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
-import it.infn.mw.iam.core.oauth.device.DeviceCodeCreationException;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
@@ -110,8 +109,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
     return new AuthorizationCodeEntity(generator.generate(), authHolder, clock.now());
   }
 
-  private DeviceCode createDeviceCode(String clientId, Set<String> scopes)
-      throws DeviceCodeCreationException {
+  private DeviceCode createDeviceCode(String clientId, Set<String> scopes) {
     DeviceCode dc = codeService.createNewDeviceCode(scopes,
         clientService.findClientByClientId(clientId).orElseThrow(), Map.of());
     dc.setExpiration(clock.now());
@@ -190,7 +188,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  void clearExpiredDeviceCodes() throws DeviceCodeCreationException {
+  void clearExpiredDeviceCodes() {
 
     assertThat(deviceCodeRepository.count(), equalTo(0L));
     deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));

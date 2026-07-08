@@ -245,7 +245,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
       case DEVICE_CODE_GRANT:
         String deviceCode = tokenRequestParameters.get(IamOAuthRequestParameters.DEVICE_CODE_KEY);
-        return Optional.ofNullable(deviceCodeService.findDeviceCode(deviceCode, client))
+        return deviceCodeService.findByDeviceCodeAndClient(deviceCode, client)
           .map(DeviceCode::getAuthenticationHolder)
           .map(holder -> holder.getRequestParameters());
 

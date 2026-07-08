@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.device;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -26,15 +27,14 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 @SuppressWarnings("deprecation")
 public interface DeviceCodeService {
 
-  public DeviceCode lookUpByUserCode(String userCode);
+  public Optional<DeviceCode> findByUserCode(String userCode);
 
   public DeviceCode approveDeviceCode(DeviceCode dc, OAuth2Authentication o2Auth);
 
-  public DeviceCode findDeviceCode(String deviceCode, ClientDetails client);
+  public Optional<DeviceCode> findByDeviceCodeAndClient(String deviceCode, ClientDetails client);
 
-  public void clearDeviceCode(String deviceCode, ClientDetails client);
+  public void clearDeviceCode(DeviceCode deviceCode);
 
-  public DeviceCode createNewDeviceCode(Set<String> requestedScopes, ClientDetailsEntity client, Map<String, String> parameters) throws DeviceCodeCreationException;
-
-  public void clearExpiredDeviceCodes();
+  public DeviceCode createNewDeviceCode(Set<String> requestedScopes, ClientDetailsEntity client,
+      Map<String, String> parameters);
 }
