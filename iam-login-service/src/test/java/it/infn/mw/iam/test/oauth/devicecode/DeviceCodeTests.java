@@ -882,7 +882,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testExpiredDeviceCodeOnTokenEndpoint() throws UnsupportedEncodingException, Exception {
+  void testExpiredDeviceCodeOnTokenEndpoint() throws Exception {
 
     String response = mvc
         .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
