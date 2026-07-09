@@ -28,6 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,6 +44,7 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
     ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@Transactional
 public class ScimGroupCreationTests {
   private final static String GROUP_URI = ScimUtils.getGroupsLocation();
 
@@ -55,7 +57,7 @@ public class ScimGroupCreationTests {
   @Test
   void testCreateGroupWithAnExistingName() throws Exception {
 
-    String name = "groupA";
+    String name = "Group-Name";
     ScimGroup group = ScimGroup.builder(name).build();
 
     String result = mvc
@@ -76,6 +78,6 @@ public class ScimGroupCreationTests {
     mvc
       .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isCreated());
+      .andExpect(status().isBadRequest());
   }
 }

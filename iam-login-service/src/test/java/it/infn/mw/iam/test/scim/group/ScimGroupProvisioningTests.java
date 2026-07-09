@@ -317,11 +317,7 @@ class ScimGroupProvisioningTests {
       .andExpect(jsonPath("$.displayName", is(groupName)))
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
-
-
-
   }
-
 
   @Test
   void groupListFilterReference() {
@@ -362,6 +358,5 @@ class ScimGroupProvisioningTests {
     assertEquals(1, response.getResources().size());
 
     logger.detachAppender(mockAppender);
-
   }
 }
