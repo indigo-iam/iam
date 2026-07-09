@@ -28,7 +28,6 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 
 import java.util.Map;
 
-import org.mitre.openid.connect.client.UserInfoFetcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -47,6 +46,7 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;

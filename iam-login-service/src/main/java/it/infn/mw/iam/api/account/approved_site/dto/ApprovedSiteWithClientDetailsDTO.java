@@ -21,105 +21,33 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-public class ApprovedSiteWithClientDetailsDTO {
-    // unique id
-    private Long id;
+public record ApprovedSiteWithClientDetailsDTO(
+// @formatter:off
+  Long id,
+  String userId,
+  String clientId,
+  String clientName,
+  String clientDescription,
 
-    // which user made the approval
-    private String userId;
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ssXXX",
+      timezone = "UTC")
+  Date authorizationDate,
 
-    // which OAuth2 client is this tied to
-    private String clientId;
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ssXXX",
+      timezone = "UTC")
+  Date accessDate,
 
-    private String clientName;
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ssXXX",
+      timezone = "UTC")
+  Date timeoutDate,
 
-    private String clientDescription;
-
-    // when was this first approved?
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "UTC")
-    private Date authorizationDate;
-
-    // when was this last accessed?
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "UTC")
-    private Date accessDate;
-
-    // if this is a time-limited access, when does it run out?
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "UTC")
-    private Date timeoutDate;
-
-    // what scopes have been allowed
-    // this should include all information for what data to access
-    private Set<String> allowedScopes;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getClientName() {
-        return clientName;
-    }
-
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
-    }
-
-    public String getClientDescription() {
-        return clientDescription;
-    }
-
-    public void setClientDescription(String clientDescription) {
-        this.clientDescription = clientDescription;
-    }
-
-    public Date getAuthorizationDate() {
-        return authorizationDate;
-    }
-
-    public void setAuthorizationDate(Date authorizationDate) {
-        this.authorizationDate = authorizationDate;
-    }
-
-    public Date getAccessDate() {
-        return accessDate;
-    }
-
-    public void setAccessDate(Date accessDate) {
-        this.accessDate = accessDate;
-    }
-
-    public Date getTimeoutDate() {
-        return timeoutDate;
-    }
-
-    public void setTimeoutDate(Date timeoutDate) {
-        this.timeoutDate = timeoutDate;
-    }
-
-    public Set<String> getAllowedScopes() {
-        return allowedScopes;
-    }
-
-    public void setAllowedScopes(Set<String> allowedScopes) {
-        this.allowedScopes = allowedScopes;
-    }
+  Set<String> allowedScopes
+//@formatter:on
+) {
 }

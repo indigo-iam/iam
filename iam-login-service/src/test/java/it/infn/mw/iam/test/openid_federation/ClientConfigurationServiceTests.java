@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -24,27 +24,25 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
-import it.infn.mw.iam.api.openid_federation.FederationClientConfigurationService;
-import it.infn.mw.iam.authn.oidc.exception.ClientConfigurationNotFoundException;
-import it.infn.mw.iam.authn.oidc.service.CompositeClientConfigurationService;
-import it.infn.mw.iam.authn.oidc.service.SafeStaticClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.ClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.OpenIdFederationClientConfigurationService;
+import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.config.oidc.OidcProvider;
+import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 
@@ -57,105 +55,84 @@ class ClientConfigurationServiceTests {
   @Mock
   FederatedOpRegistrationService federationRegistrationService;
 
-  ClientConfigurationService service;
+  @Mock
+  OidcProviderProperties oidcProperties;
 
-  FederationClientConfigurationService federationService;
+  ClientConfigurationService service;
 
   @BeforeEach
   void setup() {
-    federationService = new FederationClientConfigurationService(clientRepo,
-        federationRegistrationService, Clock.systemUTC());
+    service = new OpenIdFederationClientConfigurationService(oidcProperties,
+        Clock.systemUTC(), clientRepo, federationRegistrationService);
   }
 
-  private RegisteredClientDTO mockDto() {
-    RegisteredClientDTO dto = new RegisteredClientDTO();
-    dto.setClientId("federated-client");
-    dto.setClientSecret("secret");
+  private RegisteredClientDTO mockDto(String clientId) {
 
+    RegisteredClientDTO dto = new RegisteredClientDTO();
+    dto.setClientId(clientId);
+    dto.setClientSecret("secret");
     dto.setRedirectUris(Set.of("https://client/callback"));
     dto.setScope(Set.of("openid"));
-
     return dto;
+  }
+
+  private OidcProvider mockProvider(String issuer, OidcClient client) {
+
+    OidcProvider staticProvider = new OidcProvider();
+    staticProvider.setIssuer(issuer);
+    staticProvider.setClient(client);
+    return staticProvider;
+  }
+
+  private OidcClient mockClient(String clientId) {
+
+    return new OidcClient(clientId, "secret", "https://client/callback", "openid", null,
+        null, AuthMethod.SECRET_BASIC);
   }
 
   @Test
   void returnStaticClientWhenIssuerIsConfigured() {
+
     String issuer = "https://static.example.org";
+    String clientId = "static-client";
 
-    RegisteredClient staticClient = new RegisteredClient();
-    staticClient.setClientId("static-client");
+    when(oidcProperties.getProviders())
+      .thenReturn(List.of(mockProvider(issuer, mockClient(clientId))));
 
-    Map<String, RegisteredClient> clients = Map.of(issuer, staticClient);
+    Optional<OidcClient> result = service.getClientConfiguration(issuer);
 
-    ClientConfigurationService staticService = new SafeStaticClientConfigurationService(clients);
-
-    service = new CompositeClientConfigurationService(List.of(staticService, federationService));
-
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer(issuer);
-
-    RegisteredClient result = service.getClientConfiguration(sc);
-
-    assertThat(result.getClientId()).isEqualTo("static-client");
-
+    assertEquals(clientId, result.get().clientId());
     verifyNoInteractions(federationRegistrationService);
   }
 
   @Test
   void fallBackToFederationWhenStaticMissing() throws Exception {
+
+    when(oidcProperties.getProviders()).thenReturn(List.of());
+
     String issuer = "https://federated.example.org";
+    String clientId = "federated-client";
 
-    when(federationRegistrationService.registerOp(eq(issuer), any())).thenReturn(mockDto());
+    when(federationRegistrationService.registerOp(eq(issuer), any())).thenReturn(mockDto(clientId));
 
-    service = new CompositeClientConfigurationService(List.of(federationService));
+    Optional<OidcClient> result = service.getClientConfiguration(issuer);
 
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer(issuer);
-
-    RegisteredClient result = service.getClientConfiguration(sc);
-
-    assertThat(result).isNotNull();
-    assertThat(result.getClientId()).isEqualTo("federated-client");
+    assertEquals(clientId, result.get().clientId());
 
     verify(federationRegistrationService).registerOp(eq(issuer), any());
   }
 
   @Test
   void throwExceptionWhenFederationFails() throws Exception {
+
+    when(oidcProperties.getProviders()).thenReturn(List.of());
+
     String issuer = "https://federated.example.org";
 
     when(federationRegistrationService.registerOp(eq(issuer), any()))
       .thenThrow(FederationException.invalidRequest("error"));
 
-    service = new CompositeClientConfigurationService(List.of(federationService));
-
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer(issuer);
-
-    assertThatThrownBy(() -> service.getClientConfiguration(sc))
+    assertThatThrownBy(() -> service.getClientConfiguration(issuer))
       .isInstanceOf(AuthenticationServiceException.class);
-  }
-
-  @Test
-  void throwExceptionWhenIssuerIsNotConfigured() {
-    service = new SafeStaticClientConfigurationService(Collections.emptyMap());
-
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer("https://unknown.org");
-
-    assertThatThrownBy(() -> service.getClientConfiguration(sc))
-      .isInstanceOf(ClientConfigurationNotFoundException.class)
-      .hasMessageContaining("No static client for issuer");
-  }
-
-  @Test
-  void throwExceptionWhenNoConfigurationExists() {
-    service = new CompositeClientConfigurationService(List.of());
-
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer("https://unknown.example.org");
-
-    assertThatThrownBy(() -> service.getClientConfiguration(sc))
-      .isInstanceOf(ClientConfigurationNotFoundException.class);
   }
 }

@@ -38,7 +38,6 @@ import java.io.UnsupportedEncodingException;
 
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -54,6 +53,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -67,7 +67,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
   ClientService clientService;
 
   @Autowired
-  OAuth2ClientRepository clientRepo;
+  IamClientRepository clientRepo;
 
   @Autowired
   MockMvc mvc;
@@ -256,7 +256,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     clientModel.getGrantTypes().add("password");
     clientModel.getGrantTypes().add(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
 
-    clientRepo.saveClient(clientModel);
+    clientRepo.save(clientModel);
 
     clientJson = mvc
       .perform(get(registrationUri).contentType(APPLICATION_JSON)
@@ -282,7 +282,7 @@ class ClientRegistrationTests extends ClientRegistrationTestSupport {
     clientModel = clientService.findClientByClientId(clientId).orElseThrow();
     clientModel.getGrantTypes().remove("password");
     clientModel.getGrantTypes().remove(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE);
-    clientRepo.saveClient(clientModel);
+    clientRepo.save(clientModel);
 
     mvc
       .perform(get(registrationUri).contentType(APPLICATION_JSON)

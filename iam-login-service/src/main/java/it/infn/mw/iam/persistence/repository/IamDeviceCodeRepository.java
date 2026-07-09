@@ -28,7 +28,7 @@ public interface IamDeviceCodeRepository extends JpaRepository<DeviceCode, Long>
 
   Optional<DeviceCode> findById(String id);
 
-  Optional<DeviceCode> findByDeviceCode(String deviceCode);
+  Optional<DeviceCode> findByDeviceCodeAndClientId(String deviceCode, String clientId);
 
   Optional<DeviceCode> findByUserCode(String userCode);
 

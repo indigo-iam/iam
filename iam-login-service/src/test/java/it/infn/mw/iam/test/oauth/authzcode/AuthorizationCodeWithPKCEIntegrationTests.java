@@ -42,12 +42,13 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
-class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
+class AuthorizationCodeWithPKCEIntegrationTests {
 
-  static final String TEST_CLIENT_ID = "client";
+  static final String TEST_PKCE_S256_CLIENT_ID = "pkce-s256-client";
+  static final String TEST_PKCE_PLAIN_CLIENT_ID = "pkce-plain-client";
+  static final String TEST_PKCE_NONE_CLIENT_ID = "pkce-none-client";
   static final String TEST_CLIENT_SECRET = "secret";
   static final String TEST_CLIENT_REDIRECT_URI =
       "https://iam.local.io/iam-test-client/openid_connect_login";
@@ -90,14 +91,15 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
   }
 
-  private ValidatableResponse getTokenResponseWithPkce(String codeVerifier, String codeChallenge,
-      String codeChallengeMethod) {
+  private ValidatableResponse getTokenResponseWithPkce(String clientId, String clientSecret,
+      String redirectUri, String scope, String username, String password, String codeVerifier,
+      String codeChallenge, PKCEAlgorithm codeChallengeMethod) {
 
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", "code")
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
       .queryParam("nonce", "1")
       .queryParam("state", "1")
       .queryParam("code_challenge", codeChallenge)
@@ -111,8 +113,8 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
       .header("Location", is(loginUrl));
 
     RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
+      .formParam("username", username)
+      .formParam("password", password)
       .formParam("submit", "Login")
       .cookie(resp1.extract().detailedCookie("JSESSIONID"))
       .redirects()
@@ -125,9 +127,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     RestAssured.given()
       .cookie(resp1.extract().detailedCookie("JSESSIONID"))
       .queryParam("response_type", "code")
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
       .queryParam("nonce", "1")
       .queryParam("state", "1")
       .queryParam("code_challenge", codeChallenge)
@@ -159,13 +161,89 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     return RestAssured.given()
       .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .formParam("redirect_uri", redirectUri)
       .formParam("code", authzCode)
       .formParam("state", "1")
       .formParam("code_verifier", codeVerifier)
       .auth()
       .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .basic(clientId, clientSecret)
+      .when()
+      .post(tokenUrl)
+      .then();
+  }
+
+  private ValidatableResponse getTokenResponseWithoutPkce(String clientId, String clientSecret,
+      String redirectUri, String scope, String username, String password) {
+
+    ValidatableResponse resp1 = RestAssured.given()
+      .queryParam("response_type", "code")
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
+
+    RestAssured.given()
+      .formParam("username", username)
+      .formParam("password", password)
+      .formParam("submit", "Login")
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .redirects()
+      .follow(false)
+      .when()
+      .post(loginUrl)
+      .then()
+      .statusCode(HttpStatus.FOUND.value());
+
+    RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .queryParam("response_type", "code")
+      .queryParam("client_id", clientId)
+      .queryParam("redirect_uri", redirectUri)
+      .queryParam("scope", scope)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
+      .when()
+      .get(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value());
+
+    ValidatableResponse resp2 = RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .formParam("user_oauth_approval", "true")
+      .formParam("authorize", "Authorize")
+      .formParam("remember", "none")
+      .redirects()
+      .follow(false)
+      .when()
+      .post(authorizeUrl)
+      .then()
+      .statusCode(HttpStatus.SEE_OTHER.value());
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
+      .build()
+      .getQueryParams()
+      .get("code")
+      .get(0);
+
+    return RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", redirectUri)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .auth()
+      .preemptive()
+      .basic(clientId, clientSecret)
       .when()
       .post(tokenUrl)
       .then();
@@ -191,8 +269,43 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce(codeVerifier, codeChallenge, PKCEAlgorithm.S256.getName())
-      .statusCode(HttpStatus.OK.value());
+    getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.OK.value());
+  }
+
+  @Test
+  void testAuthzCodeWithPkceCodeChallengeAndClientWithOptionalAlg() throws Exception {
+
+    String codeVerifier = generateCodeVerifier();
+    String codeChallenge = generateSha256CodeChallenge(codeVerifier);
+
+    getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
+        TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.OK.value());
+  }
+
+  @Test
+  void testAuthzCodeWithPkceCodeChallengeAndClientWithNoneAlg() throws Exception {
+
+    String codeVerifier = generateCodeVerifier();
+    String codeChallenge = generateSha256CodeChallenge(codeVerifier);
+
+    getTokenResponseWithPkce(TEST_PKCE_NONE_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
+  }
+
+  @Test
+  void testAuthzCodeWithoutPkceButClientConfigured() {
+
+    getTokenResponseWithoutPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
+
+    getTokenResponseWithoutPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -200,8 +313,19 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
 
     String codeVerifier = generateCodeVerifier();
 
-    getTokenResponseWithPkce(codeVerifier, codeVerifier, PKCEAlgorithm.plain.getName())
-      .statusCode(HttpStatus.OK.value());
+    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier,
+        codeVerifier, PKCEAlgorithm.plain).statusCode(HttpStatus.OK.value());
+  }
+
+  @Test
+  void testAuthzCodeWithPkcePlainCodeChallengeWithClientConfiguredForS256() {
+
+    String codeVerifier = generateCodeVerifier();
+
+    getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeVerifier, PKCEAlgorithm.plain)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -210,8 +334,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce(Base64URL.encode("wrong-verifier").toString(), codeChallenge,
-        PKCEAlgorithm.S256.getName()).statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, Base64URL.encode("wrong-verifier").toString(),
+        codeChallenge, PKCEAlgorithm.s256).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -220,8 +345,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce("wrong-verifier", codeChallenge, PKCEAlgorithm.plain.getName())
-      .statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
+        TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, "wrong-verifier",
+        codeChallenge, PKCEAlgorithm.plain).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -230,8 +356,9 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce(null, codeChallenge, PKCEAlgorithm.S256.getName())
-      .statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, null, codeChallenge, PKCEAlgorithm.s256)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -240,7 +367,8 @@ class AuthorizationCodeWithPKCEIntegrationTests extends ScopePolicyTestUtils {
     String codeVerifier = generateCodeVerifier();
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
-    getTokenResponseWithPkce(codeVerifier, codeChallenge, PKCEAlgorithm.NONE.getName())
-      .statusCode(HttpStatus.BAD_REQUEST.value());
+    getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.none)
+          .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 }

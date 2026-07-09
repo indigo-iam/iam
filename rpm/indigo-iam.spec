@@ -1,11 +1,13 @@
 %define user  iam
 %define jdk_version  17
 %define mvn_version  3.8.0
+%define login_svc iam-login-service
+%define voms_svc  iam-voms-aa
 
 %{!?_unitdir: %global _unitdir %{_prefix}/lib/systemd/system}
 %{!?base_version: %global base_version 0.0.0}
 
-Name:      iam-login-service
+Name:      indigo-iam
 Version:   %{base_version}
 Release:   1%{?dist}
 BuildRoot: %{_tmppath}/%{name}-%{version}-build
@@ -21,51 +23,118 @@ BuildRequires: maven >= %{mvn_version}
 
 Requires:      java-%{jdk_version}-openjdk
 
+%{?systemd_requires}
+Requires(pre):     /usr/sbin/useradd
+
+
 %description
 The INDIGO IAM (Identity and Access Management service) provides 
 user identity and policy information to services so that consistent 
 authorization decisions can be enforced across distributed services.
+
+%package login-service
+Summary:   INDIGO Identity and Access Management Login Service
+Requires: %{name} = %{version}
+Obsoletes: iam-login-service <= 1.14.1
+
+%description login-service
+This package provides the main Indigo IAM login service.
+
+%package voms-aa
+Summary:   INDIGO Identity and Access Management VOMS-AA Service
+Requires: %{name} = %{version}
+
+%description voms-aa
+This package provides the optional VOMS Attribute Authority service.
 
 %prep
 
 %build
 mvn -U -B -DskipTests clean package
 
+%check
+#mvn -B test
+
 %install
-install -d %{buildroot}/var/lib/indigo/%{name}
-install -d %{buildroot}%{_sysconfdir}/%{name}/config
 install -d %{buildroot}%{_sysconfdir}/sysconfig
-install -d %{buildroot}/%{_unitdir}
+install -d %{buildroot}%{_unitdir}
+install -d %{buildroot}%{_datadir}/%{name}
 
-install -m 644 "%{name}/target/%{name}.war" %{buildroot}/var/lib/indigo/%{name}/
-install -m 644 "rpm/SOURCES/%{name}.service" %{buildroot}%{_unitdir}/
-install -m 644 "rpm/SOURCES/%{name}" %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+# iam-login-service
+install -d %{buildroot}%{_sysconfdir}/%{login_svc}/config
+install -m 644 "%{login_svc}/target/%{login_svc}.war" %{buildroot}%{_datadir}/%{name}/%{login_svc}.war
+install -m 644 "rpm/SOURCES/%{login_svc}.service" %{buildroot}%{_unitdir}/%{login_svc}.service
+install -m 644 "rpm/SOURCES/%{login_svc}@.service" %{buildroot}%{_unitdir}/%{login_svc}@.service
+install -m 644 "rpm/SOURCES/%{login_svc}" %{buildroot}%{_sysconfdir}/sysconfig/%{login_svc}
+# iam-voms-aa
+install -d %{buildroot}%{_sysconfdir}/%{voms_svc}/config
+install -m 644 "%{voms_svc}/target/%{voms_svc}.jar" %{buildroot}%{_datadir}/%{name}/%{voms_svc}.jar
+install -m 644 "rpm/SOURCES/%{voms_svc}.service" %{buildroot}%{_unitdir}/%{voms_svc}.service
+install -m 644 "rpm/SOURCES/%{voms_svc}@.service" %{buildroot}%{_unitdir}/%{voms_svc}@.service
+install -m 644 "rpm/SOURCES/%{voms_svc}" %{buildroot}%{_sysconfdir}/sysconfig/%{voms_svc}
 
-%post
-# Create service user if not exists
-if ! getent passwd %{user} > /dev/null; then
-    useradd --comment "INDIGO IAM" --system --user-group --home-dir /var/lib/indigo/%{name} --no-create-home --shell /sbin/nologin %{user}
-fi
+%pre
+getent group %{user} &>/dev/null || groupadd -r %{user}
+getent passwd %{user} &>/dev/null || \
+    /usr/sbin/useradd -r -g %{user} -s /sbin/nologin -c "INDIGO IAM" \
+        -m -d /var/lib/indigo/%{name} %{user}
+exit 0
 
-chown -R %{user}:%{user} /var/lib/indigo/%{name}
-%systemd_post %{name}.service
+%post login-service
+for srv in %{login_svc}.service `systemctl | awk '/%{login_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_post $srv
+done
 
-%preun
-%systemd_preun %{name}.service
+%preun login-service
+for srv in %{login_svc}.service `systemctl | awk '/%{login_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_preun $srv
+done
 
-%postun
-%systemd_postun_with_restart %{name}.service
+%postun login-service
+for srv in %{login_svc}.service `systemctl | awk '/%{login_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_postun_with_restart $srv
+done
+
+%post voms-aa
+for srv in %{voms_svc}.service `systemctl | awk '/%{voms_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_post $srv
+done
+
+%preun voms-aa
+for srv in %{voms_svc}.service `systemctl | awk '/%{voms_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_preun $srv
+done
+
+%postun voms-aa
+for srv in %{voms_svc}.service `systemctl | awk '/%{voms_svc}@.*\.service/{print $1}'`;
+do
+  %systemd_postun_with_restart $srv
+done
 
 
 %files
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%dir %{_sysconfdir}/sysconfig
-%dir %{_sysconfdir}/%{name}
-%dir %{_sysconfdir}/%{name}/config
-%dir /var/lib/indigo
-%dir /var/lib/indigo/%{name}
-/var/lib/indigo/%{name}/%{name}.war
-%{_unitdir}/%{name}.service
+%dir %{_datadir}/%{name}
+
+%files login-service
+%config(noreplace) %attr(0600,iam,iam) %{_sysconfdir}/sysconfig/%{login_svc}
+%dir %{_sysconfdir}/%{login_svc}/config
+%{_datadir}/%{name}/%{login_svc}.war
+%{_unitdir}/%{login_svc}.service
+%{_unitdir}/%{login_svc}@.service
+
+%files voms-aa
+%config(noreplace) %attr(0600,iam,iam) %{_sysconfdir}/sysconfig/%{voms_svc}
+%dir %{_sysconfdir}/%{voms_svc}
+%dir %{_sysconfdir}/%{voms_svc}/config
+%{_datadir}/%{name}/%{voms_svc}.jar
+%{_unitdir}/%{voms_svc}.service
+%{_unitdir}/%{voms_svc}@.service
+
 
 %changelog
 * Mon Jan 26 2026 Enrico Vianello <enrico.vianello@cnaf.infn.it> 1.13.4

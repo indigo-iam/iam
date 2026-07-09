@@ -46,8 +46,6 @@ import javax.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -58,6 +56,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nimbusds.jose.JOSEException;
 
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
+import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.DefaultRcAuthRequestService;
 import it.infn.mw.iam.rcauth.RCAuthAuthorizationResponse;
@@ -82,13 +82,10 @@ class RequestServiceTests extends RCAuthTestSupport {
   RCAuthProperties props;
 
   @Mock
-  ServerConfigurationService scs;
+  OIDCProviderMetadataService metadataService;
 
   @Mock
   HttpSession session;
-
-  @Mock
-  ServerConfiguration serverConfig;
 
   @Mock
   RCAuthTokenRequestor tokenRequestor;
@@ -105,14 +102,18 @@ class RequestServiceTests extends RCAuthTestSupport {
   @InjectMocks
   DefaultRcAuthRequestService service;
 
+  private OIDCProviderMetadata serverConfig;
+
   @BeforeEach
   void setup() throws IOException {
+
+    serverConfig =
+        new OIDCProviderMetadata(ISSUER, AUTHORIZATION_URI, TOKEN_URI, JWK_URI, USERINFO_URI);
 
     lenient().when(props.getKeySize()).thenReturn(512);
     lenient().when(props.getClientId()).thenReturn(CLIENT_ID);
     lenient().when(props.getIssuer()).thenReturn(ISSUER);
-    lenient().when(scs.getServerConfiguration(Mockito.anyString())).thenReturn(serverConfig);
-    lenient().when(serverConfig.getAuthorizationEndpointUri()).thenReturn(AUTHORIZATION_URI);
+    lenient().when(metadataService.load(Mockito.anyString())).thenReturn(serverConfig);
     lenient().when(iamProps.getBaseUrl()).thenReturn(IAM_BASE_URL);
     lenient().when(tokenRequestor.getAccessToken(Mockito.anyString())).thenReturn(tokenResponse);
     lenient().when(certRequestor.getCertificate(Mockito.any(), Mockito.any()))
@@ -203,7 +204,7 @@ class RequestServiceTests extends RCAuthTestSupport {
 
   @Test
   void testHandleCodeResponseMissingCertificateSubjectClaim()
-    throws UnsupportedEncodingException, JOSEException {
+      throws UnsupportedEncodingException, JOSEException {
 
     service.buildAuthorizationRequest(session);
 

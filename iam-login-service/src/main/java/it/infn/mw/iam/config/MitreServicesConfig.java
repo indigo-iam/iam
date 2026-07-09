@@ -23,7 +23,6 @@ import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
@@ -31,10 +30,8 @@ import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
 import org.mitre.openid.connect.service.LoginHintExtracter;
 import org.mitre.openid.connect.service.PairwiseIdentiferService;
-import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultBlacklistedSiteService;
-import org.mitre.openid.connect.service.impl.DefaultStatsService;
 import org.mitre.openid.connect.service.impl.DefaultWhitelistedSiteService;
 import org.mitre.openid.connect.service.impl.InMemoryClientLogoLoadingService;
 import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
@@ -59,6 +56,7 @@ import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -207,12 +205,6 @@ public class MitreServicesConfig {
   PairwiseIdentiferService defaultPairwiseIdentifierService() {
 
     return new UUIDPairwiseIdentiferService();
-  }
-
-  @Bean
-  StatsService defaultStatsService() {
-
-    return new DefaultStatsService();
   }
 
   @Bean

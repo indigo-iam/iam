@@ -155,15 +155,16 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: OP → TA */
-  public static TrustChain createOpToTaChain(String op, String aud, URI jwksUri, String ta)
+  public static TrustChain createOpToTaChain(Clock clock, String op, String aud, URI jwksUri, String ta)
       throws JOSEException {
-    Date now = new Date();
-    Date exp = new Date(now.getTime() + 600000);
+
+    Date now = Date.from(clock.instant());
+    Date exp = Date.from(clock.instant().plusSeconds(500));
 
     // OP self EC with authority_hint = TA
     OIDCProviderMetadata clientMetadata =
         new OIDCProviderMetadata(Issuer.parse(op), List.of(SubjectType.PUBLIC), jwksUri);
-    clientMetadata.setFederationRegistrationEndpointURI(URI.create(op + "/fedreg"));
+    clientMetadata.setFederationRegistrationEndpointURI(URI.create(op + "fedreg"));
     EntityStatement rpEC =
         selfECForOp(op, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 

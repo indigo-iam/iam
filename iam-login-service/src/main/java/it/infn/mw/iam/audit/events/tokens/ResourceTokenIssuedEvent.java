@@ -21,9 +21,9 @@ public class ResourceTokenIssuedEvent extends SignedTokenEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public ResourceTokenIssuedEvent(Object source, OAuth2AccessTokenEntity registrationToken) {
+  public ResourceTokenIssuedEvent(Object source, OAuth2AccessTokenEntity registrationToken, String grantType) {
     super(source, registrationToken.getJwt(), registrationToken.getAuthenticationHolder(),
-        "Issue registration token");
+        grantType, "Issue registration token");
   }
 
 }

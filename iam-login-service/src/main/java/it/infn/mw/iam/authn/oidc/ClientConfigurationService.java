@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc.exception;
+package it.infn.mw.iam.authn.oidc;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import java.util.Optional;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class ClientConfigurationNotFoundException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+import it.infn.mw.iam.config.oidc.OidcClient;
 
-  public ClientConfigurationNotFoundException(String msg) {
-    super(msg);
-  }
+public interface ClientConfigurationService {
+
+  public Optional<OidcClient> getClientConfiguration(String issuer);
 }

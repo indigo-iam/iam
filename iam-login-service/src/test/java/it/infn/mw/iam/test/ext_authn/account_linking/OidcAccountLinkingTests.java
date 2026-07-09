@@ -37,12 +37,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.mitre.openid.connect.model.DefaultUserInfo;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -51,6 +56,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
@@ -58,8 +64,21 @@ import it.infn.mw.iam.test.ext_authn.oidc.FullyMockedOidcClientConfiguration;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
-@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-    FullyMockedOidcClientConfiguration.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+//@formatter:off
+@SpringBootTest(
+    classes = {IamLoginService.class, OidcTestConfig.class,
+        FullyMockedOidcClientConfiguration.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK, 
+    properties = {
+        "oidc.providers[0].name=provider",
+        "oidc.providers[0].issuer=urn:test-oidc-issuer",
+        "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost/openid_connect_login",
+        "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
+        })
+//@formatter:on
 @AutoConfigureMockMvc
 @Transactional
 class OidcAccountLinkingTests {
@@ -71,6 +90,9 @@ class OidcAccountLinkingTests {
 
   @Autowired
   IamAccountRepository iamAccountRepo;
+
+  @MockBean
+  UserInfoFetcher userInfoFetcher;
 
   @Autowired
   MockMvc mvc;
@@ -116,6 +138,8 @@ class OidcAccountLinkingTests {
 
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
+
+    mockUserInfoResponseForUser(TEST_100_USER);
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
@@ -181,6 +205,8 @@ class OidcAccountLinkingTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
+    mockUserInfoResponseForUser("test-user");
+
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
 
     session = (MockHttpSession) mvc
@@ -238,6 +264,8 @@ class OidcAccountLinkingTests {
 
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
+
+    mockUserInfoResponseForUser("test-user");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
     session = (MockHttpSession) mvc
@@ -310,6 +338,13 @@ class OidcAccountLinkingTests {
       .andExpect(request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
       .andExpect(authenticated().withUsername(TEST_100_USER));
 
+  }
+
+  private void mockUserInfoResponseForUser(String userName) {
+
+    DefaultUserInfo userInfo = new DefaultUserInfo();
+    userInfo.setSub(userName);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
 
 }

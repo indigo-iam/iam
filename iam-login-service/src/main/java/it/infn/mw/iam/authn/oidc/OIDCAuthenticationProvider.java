@@ -21,6 +21,7 @@ import static java.util.Objects.isNull;
 
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +30,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.mitre.openid.connect.model.PendingOIDCAuthenticationToken;
+import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
+import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,11 +43,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -56,27 +61,29 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
+public class OIDCAuthenticationProvider implements AuthenticationProvider {
 
-  public static final Logger LOG = LoggerFactory.getLogger(OidcAuthenticationProvider.class);
+  public static final Logger LOG = LoggerFactory.getLogger(OIDCAuthenticationProvider.class);
 
   private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
 
   private final AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
+  private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamAccountRepository accountRepo;
   private final InactiveAccountAuthenticationHander inactiveAccountHandler;
   private final IamTotpMfaRepository totpMfaRepository;
-  private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamOidcJITAccountProvisioningProperties jitProperties;
   private final OidcAccountProvisioningService oidcProvisioningService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final UserInfoFetcher userInfoFetcher;
 
-  public OidcAuthenticationProvider(
+  public OIDCAuthenticationProvider(
       AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
-      OidcAccountProvisioningService oidcProvisioningService,  IamTotpMfaProperties iamTotpMfaProperties) {
+      OidcAccountProvisioningService oidcProvisioningService,
+      IamTotpMfaProperties iamTotpMfaProperties, UserInfoFetcher userInfoFetcher) {
 
     this.tokenValidatorService = tokenValidatorService;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
@@ -86,16 +93,34 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     this.jitProperties = jitProperties;
     this.oidcProvisioningService = oidcProvisioningService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.userInfoFetcher = userInfoFetcher;
   }
 
   @Override
-  public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+  public Authentication authenticate(final Authentication authentication)
+      throws AuthenticationException {
 
-    OIDCAuthenticationToken token = (OIDCAuthenticationToken) super.authenticate(authentication);
-
-    if (token == null) {
+    if (!supports(authentication.getClass())) {
       return null;
     }
+
+    if (!(authentication instanceof PendingOIDCAuthenticationToken pendingToken)) {
+      return null;
+    }
+
+    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken)
+      .orElseThrow(
+          () -> new AuthenticationServiceException("Authentication failed: no userinfo response"));
+
+    if (Strings.isNullOrEmpty(userInfo.getSub())
+        || !userInfo.getSub().equals(pendingToken.getSub())) {
+      throw new AuthenticationServiceException("Authentication failed: invalid subject");
+    }
+
+    JWT idToken = pendingToken.getIdToken();
+
+    OIDCAuthenticationToken token =
+        createAuthenticationToken(pendingToken, mapAuthorities(idToken), userInfo);
 
     tokenValidatorService.validateAuthentication(token);
 
@@ -112,12 +137,27 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     return registeredOidcAuthentication(account.get(), token);
   }
 
+  public Collection<GrantedAuthority> mapAuthorities(JWT idToken) {
+
+    Set<GrantedAuthority> out = new HashSet<>();
+    try {
+      JWTClaimsSet claims = idToken.getJWTClaimsSet();
+      SubjectIssuerGrantedAuthority authority =
+          new SubjectIssuerGrantedAuthority(claims.getSubject(), claims.getIssuer());
+      out.add(authority);
+      out.add(new SimpleGrantedAuthority("ROLE_USER"));
+    } catch (ParseException e) {
+      LOG.error("Unable to parse ID Token inside of authorities mapper (huh?)");
+    }
+    return out;
+  }
+
   private Authentication registeredOidcAuthentication(IamAccount account,
       OIDCAuthenticationToken token) {
 
     String acrValue = computeAcrValue(token);
     Optional<IamTotpMfa> mfaSettings = totpMfaRepository.findByAccount(account);
-    
+
     boolean mfaMissing = mfaNotDone(acrValue);
     boolean active = mfaSettings.map(IamTotpMfa::isActive).orElse(false);
     boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
@@ -190,6 +230,12 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     return authorities.stream()
       .map(auth -> new SimpleGrantedAuthority(auth.getAuthority()))
       .collect(Collectors.toList());
+  }
+
+  private OIDCAuthenticationToken createAuthenticationToken(PendingOIDCAuthenticationToken token,
+      Collection<GrantedAuthority> authorities, UserInfo userInfo) {
+    return new OIDCAuthenticationToken(token.getSub(), token.getIssuer(), userInfo, authorities,
+        token.getIdToken(), (String) token.getCredentials());
   }
 
   @Override

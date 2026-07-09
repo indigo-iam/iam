@@ -17,9 +17,8 @@ package it.infn.mw.iam.test.oauth.consent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,25 +32,22 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.security.oauth2.provider.ClientDetails;
 
 import it.infn.mw.iam.core.oauth.consent.IamApprovedSiteService;
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
-@SuppressWarnings("deprecation")
 class IamApprovedSiteServiceTests {
 
   @Mock
   private IamApprovedSiteRepository siteRepository;
 
   @Mock
-  private IamOAuthAccessTokenRepository accessTokenRepository;
+  private ClientDetailsEntity client;
 
   private Clock clock;
 
@@ -62,7 +58,7 @@ class IamApprovedSiteServiceTests {
 
     MockitoAnnotations.openMocks(this);
     clock = Clock.fixed(Clock.systemUTC().instant(), ZoneId.of("UTC"));
-    service = new IamApprovedSiteService(clock, siteRepository, accessTokenRepository);
+    service = new IamApprovedSiteService(clock, siteRepository);
   }
 
   @Test
@@ -73,8 +69,9 @@ class IamApprovedSiteServiceTests {
     ApprovedSite saved = new ApprovedSite();
 
     when(siteRepository.saveAndFlush(any())).thenReturn(saved);
+    when(client.getClientId()).thenReturn("client1");
 
-    ApprovedSite result = service.createApprovedSite("client1", "user1", timeout, scopes);
+    ApprovedSite result = service.createApprovedSite(client, "user1", timeout, scopes);
 
     assertNotNull(result);
 
@@ -83,7 +80,7 @@ class IamApprovedSiteServiceTests {
 
     ApprovedSite created = captor.getValue();
 
-    assertEquals("client1", created.getClientId());
+    assertEquals("client1", created.getClient().getClientId());
     assertEquals("user1", created.getUserId());
     assertEquals(timeout, created.getTimeoutDate());
     assertEquals(scopes, created.getAllowedScopes());
@@ -108,54 +105,37 @@ class IamApprovedSiteServiceTests {
     ApprovedSite site = new ApprovedSite();
     when(siteRepository.findById(1L)).thenReturn(Optional.of(site));
 
-    ApprovedSite result = service.getById(1L);
+    ApprovedSite result = service.getById(1L).orElseThrow();
 
     assertEquals(site, result);
   }
 
   @Test
   void testGetById_notFound() {
+
     when(siteRepository.findById(1L)).thenReturn(Optional.empty());
-
-    ApprovedSite result = service.getById(1L);
-
-    assertNull(result);
+    assertTrue(service.getById(1L).isEmpty());
   }
 
   @Test
   void testRemove() {
+
     ApprovedSite site = new ApprovedSite();
-
     service.remove(site);
-
     verify(siteRepository).delete(site);
   }
 
   @Test
   void testClearApprovedSitesForClient() {
-    ClientDetails client = mock(ClientDetails.class);
-    when(client.getClientId()).thenReturn("client1");
 
     ApprovedSite site1 = new ApprovedSite();
     ApprovedSite site2 = new ApprovedSite();
 
-    when(siteRepository.findByClientId("client1")).thenReturn(List.of(site1, site2));
+    when(siteRepository.findByClient_ClientId("client1")).thenReturn(List.of(site1, site2));
 
-    service.clearApprovedSitesForClient(client);
+    service.clearApprovedSitesForClient("client1");
 
     verify(siteRepository).delete(site1);
     verify(siteRepository).delete(site2);
-  }
-
-  @Test
-  void testGetApprovedAccessTokens() {
-    ApprovedSite site = new ApprovedSite();
-    List<OAuth2AccessTokenEntity> tokens = List.of(mock(OAuth2AccessTokenEntity.class));
-
-    when(accessTokenRepository.findTokensForApprovedSite(site)).thenReturn(tokens);
-
-    List<OAuth2AccessTokenEntity> result = service.getApprovedAccessTokens(site);
-
-    assertEquals(tokens, result);
   }
 }

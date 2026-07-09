@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Attribute;
@@ -47,6 +46,7 @@ import com.google.common.collect.Lists;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;

@@ -81,8 +81,8 @@ public class X509TrustConfig {
 
   }
 
-  @Bean(name="canlHttpClient")
-  public HttpClient httpClient() {
+  @Bean(name = "canlHttpClient")
+  HttpClient httpClient() {
 
     SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(sslContext());
 
@@ -104,7 +104,7 @@ public class X509TrustConfig {
   }
 
   @Bean(name = "canlRequestFactory")
-  public ClientHttpRequestFactory httpRequestFactory() {
+  ClientHttpRequestFactory httpRequestFactory() {
 
     return new HttpComponentsClientHttpRequestFactory(httpClient());
   }

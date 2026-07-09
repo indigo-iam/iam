@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc.service;
+package it.infn.mw.iam.core.oauth.device;
 
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
-public class NullClientConfigurationService implements ClientConfigurationService {
+@SuppressWarnings("deprecation")
+public class DeviceCodeExpiredException extends OAuth2Exception {
 
-  @Override
-  public RegisteredClient getClientConfiguration(ServerConfiguration issuer) {
-    return null;
+  private static final long serialVersionUID = -7078098692596870940L;
+
+  public DeviceCodeExpiredException(String msg) {
+    super(msg);
   }
 
+  @Override
+  public String getOAuth2ErrorCode() {
+    return "expired_token";
+  }
 }

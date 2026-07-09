@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,12 +33,14 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
 
   private Clock clock;
-  private UserInfo userInfo = null;
+  private IamUserInfo userInfo = null;
   private Map<String, String> stringClaims = Maps.newHashMap();
 
   public OidcSecurityContextBuilder(Clock clock) {
@@ -48,7 +49,7 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
     issuer = "test-oidc-issuer";
     subject = "test-oidc-subject";
     username = "test-oidc-subject";
-    userInfo = mock(UserInfo.class);
+    userInfo = mock(IamUserInfo.class);
   }
 
   @Override

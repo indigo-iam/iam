@@ -66,8 +66,8 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -337,16 +337,16 @@ public class IamWebSecurityConfig {
     private AuthenticationManager oidcAuthManager;
 
     @Autowired
-    OidcAuthenticationProvider authProvider;
+    OIDCAuthenticationProvider authProvider;
 
     @Autowired
     private IamProperties iamProperties;
 
-    private OidcClientFilter oidcFilter;
+    private OIDCAuthenticationFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
 
     public ExternalOidcLogin(
-        @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
+        @Qualifier("OIDCAuthenticationFilter") OIDCAuthenticationFilter oidcClientFilter,
         UserLoginConfig userLoginConfig) {
       this.oidcFilter = oidcClientFilter;
       this.userLoginConfig = userLoginConfig;

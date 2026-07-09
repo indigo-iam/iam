@@ -16,45 +16,38 @@
 package it.infn.mw.iam.core.oauth.consent;
 
 import java.time.Clock;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
-@SuppressWarnings("deprecation")
 @Service
 public class IamApprovedSiteService implements ApprovedSiteService {
 
   private final Clock clock;
   private final IamApprovedSiteRepository siteRepository;
-  private final IamOAuthAccessTokenRepository accessTokenRepository;
 
-  public IamApprovedSiteService(Clock clock, IamApprovedSiteRepository siteRepository,
-      IamOAuthAccessTokenRepository accessTokenRepository) {
+  public IamApprovedSiteService(Clock clock, IamApprovedSiteRepository siteRepository) {
 
     this.clock = clock;
     this.siteRepository = siteRepository;
-    this.accessTokenRepository = accessTokenRepository;
   }
 
   @Override
-  public ApprovedSite createApprovedSite(String clientId, String userId, Date timeoutDate,
+  public ApprovedSite createApprovedSite(ClientDetailsEntity client, String userId, Date timeoutDate,
       Set<String> allowedScopes) {
 
     ApprovedSite as = new ApprovedSite();
     Date now = Date.from(clock.instant());
     as.setCreationDate(now);
     as.setAccessDate(now);
-    as.setClientId(clientId);
+    as.setClient(client);
     as.setUserId(userId);
     as.setTimeoutDate(timeoutDate);
     as.setAllowedScopes(allowedScopes);
@@ -62,15 +55,15 @@ public class IamApprovedSiteService implements ApprovedSiteService {
   }
 
   @Override
-  public Collection<ApprovedSite> getAll() {
+  public List<ApprovedSite> getAll() {
 
     return siteRepository.findAll();
   }
 
   @Override
-  public Collection<ApprovedSite> getByClientIdAndUserId(String clientId, String userId) {
+  public List<ApprovedSite> getByClientIdAndUserId(String clientId, String userId) {
 
-    return siteRepository.findByClientIdAndUserId(clientId, userId);
+    return siteRepository.findByClient_ClientIdAndUserId(clientId, userId);
   }
 
   @Override
@@ -80,9 +73,9 @@ public class IamApprovedSiteService implements ApprovedSiteService {
   }
 
   @Override
-  public ApprovedSite getById(Long id) {
+  public Optional<ApprovedSite> getById(Long id) {
 
-    return siteRepository.findById(id).orElse(null);
+    return siteRepository.findById(id);
   }
 
   @Override
@@ -92,33 +85,29 @@ public class IamApprovedSiteService implements ApprovedSiteService {
   }
 
   @Override
-  public Collection<ApprovedSite> getByUserId(String userId) {
+  public List<ApprovedSite> getByUserId(String userId) {
 
     return siteRepository.findByUserId(userId);
   }
 
   @Override
-  public Collection<ApprovedSite> getByClientId(String clientId) {
+  public List<ApprovedSite> getByClientId(String clientId) {
 
     return siteRepository.findByUserId(clientId);
   }
 
   @Override
-  public void clearApprovedSitesForClient(ClientDetails client) {
+  public void clearApprovedSitesForClient(String clientId) {
 
-    siteRepository.findByClientId(client.getClientId()).forEach(this::remove);
+    siteRepository.findByClient_ClientId(clientId).forEach(this::remove);
   }
 
   @Override
-  public void clearExpiredSites() {
-
-    // See @GarbageCollector
-  }
-
-  @Override
-  public List<OAuth2AccessTokenEntity> getApprovedAccessTokens(ApprovedSite approvedSite) {
-
-    return accessTokenRepository.findTokensForApprovedSite(approvedSite);
+  public boolean isExpired(ApprovedSite approvedSite) {
+    if (approvedSite.getTimeoutDate() == null) {
+      return false;
+    }
+    return clock.instant().isAfter(approvedSite.getTimeoutDate().toInstant());
   }
 
 }

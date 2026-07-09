@@ -31,8 +31,8 @@ public class AccessTokenIssuedEvent extends SignedTokenEvent {
 
   private String refreshTokenJti;
 
-  public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token) {
-    super(source, token.getJwt(), token.getAuthenticationHolder(), "Issue access token");
+  public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token, String grantType) {
+    super(source, token.getJwt(), token.getAuthenticationHolder(), grantType, "Issue access token");
 
     if (token.getRefreshToken() != null) {
       try {
