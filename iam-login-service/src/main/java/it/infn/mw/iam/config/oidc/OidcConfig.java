@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.util.Arrays;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -59,6 +58,7 @@ import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.client.IssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 

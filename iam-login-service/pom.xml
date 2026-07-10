@@ -304,11 +304,6 @@
       </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>org.mitre</groupId>
-      <artifactId>openid-connect-client</artifactId>
-    </dependency>
-
     <!-- VOMS -->
     <dependency>
       <groupId>org.italiangrid</groupId>

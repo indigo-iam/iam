@@ -19,10 +19,10 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.time.Clock;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.impl.StaticSingleIssuerService;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +35,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
@@ -62,10 +64,12 @@ public class OidcTestConfig {
   @Primary
   IssuerService oidcIssuerService() {
 
-    StaticSingleIssuerService issuerService = new StaticSingleIssuerService();
-    issuerService.setIssuer(TEST_OIDC_ISSUER);
-
-    return issuerService;
+    return new IssuerService() {
+      @Override
+      public IssuerServiceResponse getIssuer(HttpServletRequest request) {
+        return new IssuerServiceResponse(TEST_OIDC_ISSUER, null, null, null);
+      }
+    };
   }
 
   @Bean
