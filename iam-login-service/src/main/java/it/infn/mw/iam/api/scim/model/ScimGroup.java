@@ -32,8 +32,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.infn.mw.iam.api.group.validator.GroupNameAssigned;
-
 @JsonInclude(Include.NON_EMPTY)
 @JsonFilter("attributeFilter")
 public final class ScimGroup extends ScimResource {
@@ -43,7 +41,6 @@ public final class ScimGroup extends ScimResource {
 
   @NotBlank
   @Length(max = 512)
-  @GroupNameAssigned
   private final String displayName;
 
   @Valid

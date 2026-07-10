@@ -78,6 +78,6 @@ public class ScimGroupCreationTests {
     mvc
       .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isBadRequest());
+      .andExpect(status().isConflict());
   }
 }

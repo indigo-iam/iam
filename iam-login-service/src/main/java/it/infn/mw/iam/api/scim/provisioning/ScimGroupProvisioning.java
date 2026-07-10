@@ -75,18 +75,18 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final ScimResourceLocationProvider locationProvider;
 
-  public ScimGroupProvisioning(Clock clock, IamGroupService groupService, IamAccountService accountService,
-      GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
-
+  public ScimGroupProvisioning(Clock clock, IamGroupService groupService,
+      IamAccountService accountService, GroupRequestsService groupRequestsService,
+      GroupConverter converter, ScimResourceLocationProvider locationProvider,
+      IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory =
-        new DefaultGroupMembershipUpdaterFactory(clock, accountService, locationProvider, accountRepo);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(clock, accountService,
+        locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -99,21 +99,16 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new ScimPatchOperationNotSupported(
           "path value " + op.getPath() + " is not currently supported");
     }
-
   }
 
   @Override
   public ScimGroup create(ScimGroup group) {
 
-    displayNameSanityChecks(group.getDisplayName());
-
-    IamGroup iamGroup = new IamGroup();
-    String uuid = UUID.randomUUID().toString();
-
-    iamGroup.setUuid(uuid);
-    iamGroup.setName(group.getDisplayName());
+    String displayName = group.getDisplayName();
+    displayNameSanityChecks(displayName);
 
     IamGroup iamParentGroup = null;
+    String groupName = displayName;
 
     if (group.getIndigoGroup().getParentGroup() != null) {
       String parentGroupUuid = group.getIndigoGroup().getParentGroup().getValue();
@@ -123,14 +118,21 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
         .orElseThrow(() -> new ScimResourceNotFoundException(
             String.format("Parent group '%s' not found", parentGroupUuid)));
 
-      String fullName = String.format("%s/%s", parentGroupName, group.getDisplayName());
-      fullNameSanityChecks(fullName);
+      groupName = String.format("%s/%s", parentGroupName, displayName);
+      fullNameSanityChecks(groupName);
+    }
 
-      iamGroup.setName(fullName);
+    if (!isGroupNameAvailable(groupName)) {
+      throw new ScimResourceExistsException(groupName + " is already mapped to another group");
+    }
 
+    IamGroup iamGroup = new IamGroup();
+    iamGroup.setUuid(UUID.randomUUID().toString());
+    iamGroup.setName(groupName);
+
+    if (iamParentGroup != null) {
       iamGroup.setParentGroup(iamParentGroup);
       iamParentGroup.getChildrenGroups().add(iamGroup);
-
     }
 
     groupService.createGroup(iamGroup);
@@ -210,6 +212,11 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     return !groupService.findByNameWithDifferentId(displayName, id).isPresent();
   }
 
+  private boolean isGroupNameAvailable(String displayName) {
+
+    return !groupService.findByName(displayName).isPresent();
+  }
+
   @Override
   public ScimListResponse<ScimGroup> list(ScimPageRequest pageRequest) {
 
@@ -287,8 +294,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     if (count == 0) {
       long numberOfMembersInGroup = accountService.countGroupMembers(iamGroup);
 
-      results.totalResults(numberOfMembersInGroup)
-          .resources(Collections.emptyList());
+      results.totalResults(numberOfMembersInGroup).resources(Collections.emptyList());
 
       return results.build();
     }
@@ -296,13 +302,14 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), count);
     Page<IamAccount> accounts = accountService.findGroupMembers(iamGroup, pr);
 
-    List<ScimMemberRef> resources = accounts.getContent().stream()
-        .map(a -> ScimMemberRef.builder()
-            .value(a.getUuid())
-            .display(a.getUserInfo().getName())
-            .ref(locationProvider.userLocation(a.getUuid()))
-            .build())
-        .toList();
+    List<ScimMemberRef> resources = accounts.getContent()
+      .stream()
+      .map(a -> ScimMemberRef.builder()
+        .value(a.getUuid())
+        .display(a.getUserInfo().getName())
+        .ref(locationProvider.userLocation(a.getUuid()))
+        .build())
+      .toList();
 
     results.fromPage(accounts, pr);
     results.resources(resources);
