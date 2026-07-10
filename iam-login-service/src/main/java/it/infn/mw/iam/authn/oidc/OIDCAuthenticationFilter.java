@@ -48,8 +48,6 @@ import javax.servlet.http.HttpSession;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -71,6 +69,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 
 public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -140,7 +140,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
 
     if (issResp.shouldRedirect()) {
-      response.sendRedirect(issResp.getRedirectUrl());
+      response.sendRedirect(issResp.redirectUrl());
       return;
     }
 
@@ -163,7 +163,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     addPkceChallenge(session, clientConfig.codeChallengeMethod(), options);
 
     String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig,
-        redirectUri, nonce, state, options, issResp.getLoginHint());
+        redirectUri, nonce, state, options, issResp.loginHint());
 
     LOG.debug("Auth Request: {}", authRequest);
 
@@ -267,11 +267,11 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   private String getValidIssuerFromRequest(HttpSession session, IssuerServiceResponse issResp) {
 
-    if (!Strings.isNullOrEmpty(issResp.getTargetLinkUri())) {
-      session.setAttribute(TARGET_SESSION_VARIABLE, issResp.getTargetLinkUri());
+    if (!Strings.isNullOrEmpty(issResp.targetLinkUri())) {
+      session.setAttribute(TARGET_SESSION_VARIABLE, issResp.targetLinkUri());
     }
 
-    String issuer = issResp.getIssuer();
+    String issuer = issResp.issuer();
 
     if (Strings.isNullOrEmpty(issuer)) {
       LOG.error("No issuer found: {}", issuer);

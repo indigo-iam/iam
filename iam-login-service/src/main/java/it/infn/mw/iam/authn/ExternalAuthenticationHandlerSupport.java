@@ -60,10 +60,8 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
 
   public static final String EXT_AUTHN_UNREGISTERED_USER_ROLE = "EXT_AUTH_UNREGISTERED";
 
-  public static final String EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING = "ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE;
-
   public static final GrantedAuthority EXT_AUTHN_UNREGISTERED_USER_AUTH =
-      new SimpleGrantedAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING);
+      new SimpleGrantedAuthority("ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE);
 
   public static final String EXT_AUTH_ERROR_KEY =
       ExternalAuthenticationHandlerSupport.class.getName() + ".ERROR";

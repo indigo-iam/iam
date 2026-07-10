@@ -21,7 +21,6 @@ import java.time.Clock;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +34,7 @@ import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.client.IssuerService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;

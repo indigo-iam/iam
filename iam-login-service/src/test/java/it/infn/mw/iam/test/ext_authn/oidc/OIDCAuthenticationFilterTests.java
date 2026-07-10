@@ -43,8 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.Mock;
@@ -87,6 +85,8 @@ import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -202,11 +202,10 @@ class OIDCAuthenticationFilterTests {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, ISSUER + "/login");
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(true);
-    when(issResp.getRedirectUrl()).thenReturn(ISSUER + "/login");
 
     Authentication authentication = filter.attemptAuthentication(request, response);
 
@@ -222,11 +221,10 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
 
     when(servers.load(ISSUER)).thenReturn(null);
 
@@ -244,11 +242,10 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
 
     loadOIDCProviderMetadata(ISSUER);
 
@@ -269,11 +266,10 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
 
     loadOIDCProviderMetadata(ISSUER);
 
