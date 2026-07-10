@@ -45,8 +45,8 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 @AutoConfigureMockMvc
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 @Transactional
-public class ScimGroupCreationTests {
-  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
+class ScimGroupCreationTests {
+  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
 
   @Autowired
   private MockMvc mvc;
