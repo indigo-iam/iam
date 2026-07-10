@@ -135,7 +135,7 @@ public class DashboardConfigService {
     client.setClientSecret(secret);
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     client.setAccessTokenValiditySeconds(3600);
-    client.setCodeChallengeMethod(PKCEAlgorithm.s256);
+    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setActive(true);
     client.setRedirectUris(Set.of(url));
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.REFRESH_TOKEN));
@@ -147,7 +147,7 @@ public class DashboardConfigService {
     client.setScope(DASHBOARD_SCOPES);
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
-    client.setCodeChallengeMethod(PKCEAlgorithm.s256);
+    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setClientSecret(secret);
     client.setRedirectUris(Set.of(url));
     client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
@@ -181,6 +181,6 @@ public class DashboardConfigService {
   }
 
   public static boolean usesPKCES256(ClientDetailsEntity client) {
-    return PKCEAlgorithm.s256.equals(client.getCodeChallengeMethod());
+    return PKCEAlgorithm.S256.equals(client.getCodeChallengeMethod());
   }
 }

@@ -23,6 +23,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
@@ -42,7 +43,11 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
 public class JwtUtils {
+
   public static final Logger LOG = LoggerFactory.getLogger(JwtUtils.class);
+
+  public static final Set<JWSAlgorithm> UNSUPPORTED_IDTOKEN_SIGNATURE_ALGS =
+      Set.of(JWSAlgorithm.HS256, JWSAlgorithm.HS384, JWSAlgorithm.HS512);
 
   private JwtUtils() {
     // empty on purpose
@@ -109,19 +114,33 @@ public class JwtUtils {
     return json.getAsJsonObject();
   }
 
-  public static void validateSignature(JWT idToken, String clientConfigResponseAlg,
+  public static void validateSignature(JWT idToken, String clientAlg,
       JWTSigningAndValidationService jwtValidator) {
 
-    handlePlainJwt(idToken, clientConfigResponseAlg);
-
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
-    validateAlgorithmMatch(tokenAlg, clientConfigResponseAlg);
+
+    if (clientAlg != null && !clientAlg.equals(tokenAlg.toString())) {
+      throw new AuthenticationServiceException(String
+        .format("Token algorithm %s does not match expected algorithm %s", tokenAlg, clientAlg));
+    }
+
+    if (idToken instanceof PlainJWT) {
+
+      if (clientAlg == null) {
+        throw new AuthenticationServiceException(
+            "Unsigned ID tokens can only be used if explicitly configured in client.");
+      }
+
+      if (tokenAlg != null && !tokenAlg.equals(Algorithm.NONE)) {
+        throw new AuthenticationServiceException(
+            "Unsigned token received, expected signature with " + tokenAlg);
+      }
+      return;
+    }
 
     if (idToken instanceof SignedJWT signedIdToken) {
 
-      if (tokenAlg.equals(JWSAlgorithm.HS256) || tokenAlg.equals(JWSAlgorithm.HS384)
-          || tokenAlg.equals(JWSAlgorithm.HS512)) {
-
+      if (UNSUPPORTED_IDTOKEN_SIGNATURE_ALGS.contains(tokenAlg)) {
         throw new UnsupportedOperationException(
             String.format("Symmetric ID token signing agorithm %s is not supported", tokenAlg));
       }
@@ -134,27 +153,11 @@ public class JwtUtils {
       if (!jwtValidator.validateSignature(signedIdToken)) {
         throw new AuthenticationServiceException("ID token signature validation failed");
       }
-    }
 
-  }
-
-  private static void validateAlgorithmMatch(Algorithm tokenAlg, String clientAlg) {
-
-    if (clientAlg != null && !clientAlg.equals(tokenAlg.toString())) {
-      throw new AuthenticationServiceException(String
-        .format("Token algorithm %s does not match expected algorithm %s", tokenAlg, clientAlg));
-    }
-  }
-
-  private static void handlePlainJwt(JWT idToken, String clientAlg) {
-    if (!(idToken instanceof PlainJWT)) {
       return;
     }
 
-    if (clientAlg == null) {
-      throw new AuthenticationServiceException(
-          "Unsupported client configuration signing algorithm");
-    }
+    throw new AuthenticationServiceException("Unexpected encrypted ID token");
   }
 
   public static void validateClaims(JWTClaimsSet idClaims, String expectedIssuer, String clientId,

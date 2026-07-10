@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.PlainHeader;
 import com.nimbusds.jose.shaded.gson.JsonArray;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -244,11 +245,13 @@ class JwtUtilsValidationTests {
   void testThrowExceptionForPlainJwt() {
 
     PlainJWT jwt = mock(PlainJWT.class);
-    when(jwt.getHeader()).thenReturn(null);
+    PlainHeader header = new PlainHeader();
+    when(jwt.getHeader()).thenReturn(header);
 
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
         () -> JwtUtils.validateSignature(jwt, null, null));
-    assertEquals("Unsupported client configuration signing algorithm", ex.getMessage());
+    assertEquals("Unsigned ID tokens can only be used if explicitly configured in client.",
+        ex.getMessage());
   }
 
   @Test
