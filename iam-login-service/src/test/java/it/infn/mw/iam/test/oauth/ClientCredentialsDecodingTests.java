@@ -44,7 +44,7 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
-public class ClientCredentialsDecodingTests {
+class ClientCredentialsDecodingTests {
 
   @Autowired
   private MockMvc mvc;
