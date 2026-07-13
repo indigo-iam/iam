@@ -15,12 +15,6 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import static it.infn.mw.iam.authn.util.JwtUtils.jsonStringSanityChecks;
-import static it.infn.mw.iam.authn.util.JwtUtils.parseClaims;
-import static it.infn.mw.iam.authn.util.JwtUtils.parseToken;
-import static it.infn.mw.iam.authn.util.JwtUtils.validateClaims;
-import static it.infn.mw.iam.authn.util.JwtUtils.validateSignature;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -60,6 +54,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.util.JwtUtils;
 import it.infn.mw.iam.authn.util.SessionUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
@@ -191,7 +186,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     LOG.debug("Token Endpoint returned string: {}", tokenResponseString);
 
-    JsonObject tokenResponse = jsonStringSanityChecks(tokenResponseString);
+    JsonObject tokenResponse = JwtUtils.jsonStringSanityChecks(tokenResponseString);
 
     String accessTokenValue = null;
     String idTokenValue = null;
@@ -209,16 +204,17 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       throw new AuthenticationServiceException("Token Endpoint did not return an id_token");
     }
 
-    JWT idToken = parseToken(idTokenValue);
-    JWTClaimsSet idClaims = parseClaims(idToken);
+    JWT idToken = JwtUtils.parseToken(idTokenValue);
+    JWTClaimsSet idClaims = JwtUtils.parseClaims(idToken);
 
     Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
     Date skewedMax = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
     JWTSigningAndValidationService jwtValidator =
         validationServices.getValidator(metadata.jwksUri());
 
-    validateSignature(idToken, clientConfig.idTokenSignedResponseAlg(), jwtValidator);
-    validateClaims(idClaims, metadata.issuer(), clientConfig.clientId(), skewedMin, skewedMax);
+    JwtUtils.validateSignature(idToken, clientConfig.idTokenSignedResponseAlg(), jwtValidator);
+    JwtUtils.validateClaims(idClaims, metadata.issuer(), clientConfig.clientId(), skewedMin,
+        skewedMax);
 
     SessionUtils.validateNonceSession(request.getSession(), idClaims);
 
