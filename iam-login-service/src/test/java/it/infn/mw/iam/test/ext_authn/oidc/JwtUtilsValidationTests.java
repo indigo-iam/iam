@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
@@ -37,6 +38,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
+import com.nimbusds.jose.Header;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.PlainHeader;
@@ -257,24 +259,26 @@ class JwtUtilsValidationTests {
   @Test
   void testThrowExceptionForHs256() {
 
+    final String expectedMessage = "Symmetric ID token signing algorithm %s is not supported";
+
     SignedJWT jwt = mock(SignedJWT.class);
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.HS256));
 
     UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class,
         () -> JwtUtils.validateSignature(jwt, "HS256", null));
-    assertEquals("Symmetric ID token signing agorithm HS256 is not supported", ex.getMessage());
+    assertEquals(String.format(expectedMessage, "HS256"), ex.getMessage());
 
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.HS384));
 
     ex = assertThrows(UnsupportedOperationException.class,
         () -> JwtUtils.validateSignature(jwt, "HS384", null));
-    assertEquals("Symmetric ID token signing agorithm HS384 is not supported", ex.getMessage());
+    assertEquals(String.format(expectedMessage, "HS384"), ex.getMessage());
 
     when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.HS512));
 
     ex = assertThrows(UnsupportedOperationException.class,
         () -> JwtUtils.validateSignature(jwt, "HS512", null));
-    assertEquals("Symmetric ID token signing agorithm HS512 is not supported", ex.getMessage());
+    assertEquals(String.format(expectedMessage, "HS512"), ex.getMessage());
   }
 
   @Test
@@ -367,4 +371,32 @@ class JwtUtilsValidationTests {
     assertDoesNotThrow(() -> SessionUtils.validateNonceSession(session, claims));
   }
 
+  @Test
+  void testThrowExceptionForUnexpectedJwtType() {
+
+    JWT jwt = mock(JWT.class);
+    Header header = mock(Header.class);
+
+    when(header.getAlgorithm()).thenReturn(JWSAlgorithm.RS256);
+    when(jwt.getHeader()).thenReturn(header);
+
+    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
+        () -> JwtUtils.validateSignature(jwt, "RS256", null));
+
+    assertEquals("Unexpected encrypted ID token", ex.getMessage());
+  }
+
+  @Test
+  void testValidateSignedTokenWhenClientAlgorithmIsNotConfigured() {
+
+    SignedJWT jwt = mock(SignedJWT.class);
+    when(jwt.getHeader()).thenReturn(new JWSHeader(JWSAlgorithm.RS256));
+
+    JWTSigningAndValidationService validator = mock(JWTSigningAndValidationService.class);
+    when(validator.validateSignature(jwt)).thenReturn(true);
+
+    assertDoesNotThrow(() -> JwtUtils.validateSignature(jwt, null, validator));
+
+    verify(validator).validateSignature(jwt);
+  }
 }

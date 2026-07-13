@@ -117,16 +117,6 @@ public class JwtUtils {
   public static void validateSignature(JWT idToken, String clientAlg,
       JWTSigningAndValidationService jwtValidator) {
 
-    Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
-    if (tokenAlg == null) {
-      throw new AuthenticationServiceException("Expected algorithm in ID token header.");
-    }
-
-    if (clientAlg != null && !clientAlg.equals(tokenAlg.toString())) {
-      throw new AuthenticationServiceException(String
-        .format("Token algorithm %s does not match expected algorithm %s", tokenAlg, clientAlg));
-    }
-
     if (idToken instanceof PlainJWT) {
 
       if (clientAlg == null) {
@@ -134,18 +124,26 @@ public class JwtUtils {
             "Unsigned ID tokens can only be used if explicitly configured in client.");
       }
 
-      if (!Algorithm.NONE.equals(tokenAlg)) {
+      if (!Algorithm.NONE.getName().equals(clientAlg)) {
         throw new AuthenticationServiceException(
-            "Unsigned token received, expected signature with " + tokenAlg);
+            String.format("Token algorithm %s does not match expected algorithm %s",
+                Algorithm.NONE.getName(), clientAlg));
       }
       return;
     }
 
-    if (idToken instanceof SignedJWT signedIdToken) {
+    if (idToken instanceof SignedJWT signedJwt) {
 
-      if (UNSUPPORTED_IDTOKEN_SIGNATURE_ALGS.contains(tokenAlg)) {
+      Algorithm alg = signedJwt.getHeader().getAlgorithm();
+
+      if (clientAlg != null && !clientAlg.equals(alg.getName())) {
+        throw new AuthenticationServiceException(String
+          .format("Token algorithm %s does not match expected algorithm %s", alg, clientAlg));
+      }
+
+      if (UNSUPPORTED_IDTOKEN_SIGNATURE_ALGS.contains(alg)) {
         throw new UnsupportedOperationException(
-            String.format("Symmetric ID token signing agorithm %s is not supported", tokenAlg));
+            String.format("Symmetric ID token signing algorithm %s is not supported", alg));
       }
 
       if (jwtValidator == null) {
@@ -153,7 +151,7 @@ public class JwtUtils {
             "Unable to find an appropriate signature validator for ID token");
       }
 
-      if (!jwtValidator.validateSignature(signedIdToken)) {
+      if (!jwtValidator.validateSignature(signedJwt)) {
         throw new AuthenticationServiceException("ID token signature validation failed");
       }
 
