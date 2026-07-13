@@ -399,4 +399,15 @@ class JwtUtilsValidationTests {
 
     verify(validator).validateSignature(jwt);
   }
+
+  @Test
+  void testThrowExceptionWhenPlainJwtAlgorithmDoesNotMatchConfiguredAlgorithm() {
+
+    PlainJWT jwt = new PlainJWT(new JWTClaimsSet.Builder().build());
+
+    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
+        () -> JwtUtils.validateSignature(jwt, JWSAlgorithm.RS256.getName(), null));
+
+    assertEquals("Token algorithm none does not match expected algorithm RS256", ex.getMessage());
+  }
 }
