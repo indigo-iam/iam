@@ -118,6 +118,9 @@ public class JwtUtils {
       JWTSigningAndValidationService jwtValidator) {
 
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
+    if (tokenAlg == null) {
+      throw new AuthenticationServiceException("Expected algorithm in ID token header.");
+    }
 
     if (clientAlg != null && !clientAlg.equals(tokenAlg.toString())) {
       throw new AuthenticationServiceException(String
@@ -131,7 +134,7 @@ public class JwtUtils {
             "Unsigned ID tokens can only be used if explicitly configured in client.");
       }
 
-      if (tokenAlg != null && !tokenAlg.equals(Algorithm.NONE)) {
+      if (!Algorithm.NONE.equals(tokenAlg)) {
         throw new AuthenticationServiceException(
             "Unsigned token received, expected signature with " + tokenAlg);
       }
