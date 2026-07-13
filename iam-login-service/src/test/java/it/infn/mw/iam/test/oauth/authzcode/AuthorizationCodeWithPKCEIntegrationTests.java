@@ -270,7 +270,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.S256)
           .statusCode(HttpStatus.OK.value());
   }
 
@@ -281,7 +281,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce("client", TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI, SCOPE,
-        TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+        TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.S256)
           .statusCode(HttpStatus.OK.value());
   }
 
@@ -292,7 +292,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce(TEST_PKCE_NONE_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.s256)
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.S256)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
@@ -336,7 +336,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
         SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, Base64URL.encode("wrong-verifier").toString(),
-        codeChallenge, PKCEAlgorithm.s256).statusCode(HttpStatus.BAD_REQUEST.value());
+        codeChallenge, PKCEAlgorithm.S256).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -357,7 +357,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, null, codeChallenge, PKCEAlgorithm.s256)
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, null, codeChallenge, PKCEAlgorithm.S256)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 

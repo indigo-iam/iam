@@ -249,7 +249,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private boolean clientRequiresCodeChallengeS256(ClientDetailsEntity client) {
 
     return client.getCodeChallengeMethod() != null
-        && PKCEAlgorithm.s256.equals(client.getCodeChallengeMethod());
+        && PKCEAlgorithm.S256.equals(client.getCodeChallengeMethod());
   }
 
   private boolean clientRequiresCodeChallengeNone(ClientDetailsEntity client) {

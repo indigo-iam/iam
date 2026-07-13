@@ -17,7 +17,7 @@ package it.infn.mw.iam.config.oidc;
 
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 
-public record OidcClient(String clientId, String clientSecret, String redirectUris, String scope,
+public record OidcClient(String clientId, String clientSecret, String scope,
     String codeChallengeMethod, String idTokenSignedResponseAlg,
     AuthMethod tokenEndpointAuthMethod) {
 
