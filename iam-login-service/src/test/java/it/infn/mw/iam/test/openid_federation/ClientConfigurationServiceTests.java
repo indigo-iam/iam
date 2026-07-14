@@ -62,8 +62,8 @@ class ClientConfigurationServiceTests {
 
   @BeforeEach
   void setup() {
-    service = new OpenIdFederationClientConfigurationService(oidcProperties,
-        Clock.systemUTC(), clientRepo, federationRegistrationService);
+    service = new OpenIdFederationClientConfigurationService(oidcProperties, Clock.systemUTC(),
+        clientRepo, federationRegistrationService);
   }
 
   private RegisteredClientDTO mockDto(String clientId) {
@@ -86,8 +86,7 @@ class ClientConfigurationServiceTests {
 
   private OidcClient mockClient(String clientId) {
 
-    return new OidcClient(clientId, "secret", "https://client/callback", "openid", null,
-        null, AuthMethod.SECRET_BASIC);
+    return new OidcClient(clientId, "secret", "openid", null, null, AuthMethod.SECRET_BASIC);
   }
 
   @Test

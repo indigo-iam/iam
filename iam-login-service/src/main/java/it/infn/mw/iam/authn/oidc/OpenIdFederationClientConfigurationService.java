@@ -70,13 +70,11 @@ public class OpenIdFederationClientConfigurationService extends DefaultClientCon
 
   private OidcClient toOidcClient(IamFederatedClientEntity client) {
     return new OidcClient(client.getClientId(), client.getClientSecret(),
-        client.getRedirectUris().iterator().next(), String.join(" ", client.getScope()), null, null,
-        null);
+        String.join(" ", client.getScope()), null, null, null);
   }
 
   private OidcClient toOidcClient(RegisteredClientDTO client) {
     return new OidcClient(client.getClientId(), client.getClientSecret(),
-        client.getRedirectUris().iterator().next(), String.join(" ", client.getScope()), null, null,
-        null);
+        String.join(" ", client.getScope()), null, null, null);
   }
 }
