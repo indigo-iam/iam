@@ -33,7 +33,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"saml.wayf-login-button.text=Sign in with EduGAIN",
-  "saml.wayf-login-button.image.url=https://example.org/test.png"})
+  "saml.wayf-login-button.image.url=https://example.org/test.png",
+  "IAM_SAML_WAYF_LOGIN_BUTTON_VISIBLE=false"})
 @WithAnonymousUser
 class WayfLoginButtonTests {
 
@@ -48,7 +49,7 @@ class WayfLoginButtonTests {
       .andExpect(jsonPath("$.text", is("Sign in with EduGAIN")))
       .andExpect(jsonPath("$.image.url", is("https://example.org/test.png")))
       .andExpect(jsonPath("$.image.size", is("SMALL")))
-      .andExpect(jsonPath("$.visible", is(true)));
+      .andExpect(jsonPath("$.visible", is(false)));
   }
 
 }
