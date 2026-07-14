@@ -18,7 +18,6 @@ package it.infn.mw.iam;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.openid.connect.view.UserInfoView;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
-import org.mitre.openid.connect.web.RootController;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -57,8 +56,6 @@ import it.infn.mw.iam.core.util.IamBanner;
     "org.mitre.discovery.web", 
     "org.mitre.discovery.view"},
 excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=RootController.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=JWKSetPublishingEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,

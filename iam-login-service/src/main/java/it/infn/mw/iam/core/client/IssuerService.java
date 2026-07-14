@@ -13,17 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.config.oidc;
+package it.infn.mw.iam.core.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
+import javax.servlet.http.HttpServletRequest;
 
-public record OidcClient(String clientId, String clientSecret, String scope,
-    String codeChallengeMethod, String idTokenSignedResponseAlg,
-    AuthMethod tokenEndpointAuthMethod) {
+public interface IssuerService {
 
-  public OidcClient {
-    if (tokenEndpointAuthMethod == null) {
-      tokenEndpointAuthMethod = AuthMethod.SECRET_BASIC;
-    }
-  }
+  public IssuerServiceResponse getIssuer(HttpServletRequest request);
 }

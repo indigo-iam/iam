@@ -15,19 +15,6 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import static it.infn.mw.iam.authn.util.JwtUtils.jsonStringSanityChecks;
-import static it.infn.mw.iam.authn.util.JwtUtils.parseClaims;
-import static it.infn.mw.iam.authn.util.JwtUtils.parseToken;
-import static it.infn.mw.iam.authn.util.JwtUtils.validateClaims;
-import static it.infn.mw.iam.authn.util.JwtUtils.validateSignature;
-import static it.infn.mw.iam.authn.util.SessionUtils.createCodeVerifier;
-import static it.infn.mw.iam.authn.util.SessionUtils.createNonce;
-import static it.infn.mw.iam.authn.util.SessionUtils.createState;
-import static it.infn.mw.iam.authn.util.SessionUtils.getStoredCodeVerifier;
-import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
-import static it.infn.mw.iam.authn.util.SessionUtils.validateNonceSession;
-import static it.infn.mw.iam.authn.util.SessionUtils.validateState;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -47,9 +34,6 @@ import javax.servlet.http.HttpSession;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -70,7 +54,12 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.authn.util.JwtUtils;
+import it.infn.mw.iam.authn.util.SessionUtils;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 
 public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -83,6 +72,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   protected static final String ID_TOKEN_VARIABLE = "id_token";
   protected static final String FILTER_PROCESSES_URL = "/openid_connect_login";
 
+  private final IamProperties properties;
   private final JWKSetCacheService validationServices;
   private final IssuerService issuerService;
   private final OIDCProviderMetadataService servers;
@@ -94,13 +84,14 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   private final ObjectMapper objectMapper;
   private final int timeSkewAllowance;
 
-  public OIDCAuthenticationFilter(JWKSetCacheService validationServices,
+  public OIDCAuthenticationFilter(IamProperties properties, JWKSetCacheService validationServices,
       IssuerService issuerService, OIDCProviderMetadataService servers,
       ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper, int timeSkewAllowance) {
 
     super(FILTER_PROCESSES_URL);
+    this.properties = properties;
     this.validationServices = validationServices;
     this.issuerService = issuerService;
     this.servers = servers;
@@ -140,7 +131,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     }
 
     if (issResp.shouldRedirect()) {
-      response.sendRedirect(issResp.getRedirectUrl());
+      response.sendRedirect(issResp.redirectUrl());
       return;
     }
 
@@ -151,11 +142,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
           String.format("No client configuration found for issuer: %s", issuer)));
     session.setAttribute(ISSUER_SESSION_VARIABLE, serverConfig.issuer());
 
-    String redirectUri = determineRedirectUri(clientConfig, request);
+    String redirectUri =
+        properties.getBaseUrl().endsWith("/") ? properties.getBaseUrl() + "openid_connect_login"
+            : properties.getBaseUrl() + "/openid_connect_login";
     session.setAttribute(REDIRECT_URI_SESSION_VARIABLE, redirectUri);
 
-    String nonce = createNonce(session);
-    String state = createState(session);
+    String nonce = SessionUtils.createNonce(session);
+    String state = SessionUtils.createState(session);
 
     Map<String, String> options = new HashMap<>();
 
@@ -163,7 +156,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     addPkceChallenge(session, clientConfig.codeChallengeMethod(), options);
 
     String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig,
-        redirectUri, nonce, state, options, issResp.getLoginHint());
+        redirectUri, nonce, state, options, issResp.loginHint());
 
     LOG.debug("Auth Request: {}", authRequest);
 
@@ -172,7 +165,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   public Authentication handleAuthorizationCodeResponse(HttpServletRequest request) {
 
-    validateState(request);
+    SessionUtils.validateState(request);
 
     String issuer = getIssuerFromSession(request);
     OidcClient clientConfig = clientConfigurationService.getClientConfiguration(issuer)
@@ -193,7 +186,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
     LOG.debug("Token Endpoint returned string: {}", tokenResponseString);
 
-    JsonObject tokenResponse = jsonStringSanityChecks(tokenResponseString);
+    JsonObject tokenResponse = JwtUtils.jsonStringSanityChecks(tokenResponseString);
 
     String accessTokenValue = null;
     String idTokenValue = null;
@@ -211,19 +204,19 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
       throw new AuthenticationServiceException("Token Endpoint did not return an id_token");
     }
 
-    JWT idToken = parseToken(idTokenValue);
-    JWTClaimsSet idClaims = parseClaims(idToken);
+    JWT idToken = JwtUtils.parseToken(idTokenValue);
+    JWTClaimsSet idClaims = JwtUtils.parseClaims(idToken);
 
     Date skewedMin = Date.from(clock.instant().minusMillis(timeSkewAllowance * 1000L));
     Date skewedMax = Date.from(clock.instant().plusMillis(timeSkewAllowance * 1000L));
     JWTSigningAndValidationService jwtValidator =
         validationServices.getValidator(metadata.jwksUri());
 
-    validateSignature(idToken, clientConfig.idTokenSignedResponseAlg(), jwtValidator);
-    validateClaims(idClaims, metadata.issuer(), clientConfig.clientId(), skewedMin,
+    JwtUtils.validateSignature(idToken, clientConfig.idTokenSignedResponseAlg(), jwtValidator);
+    JwtUtils.validateClaims(idClaims, metadata.issuer(), clientConfig.clientId(), skewedMin,
         skewedMax);
 
-    validateNonceSession(request.getSession(), idClaims);
+    SessionUtils.validateNonceSession(request.getSession(), idClaims);
 
     PendingOIDCAuthenticationToken oidcToken = new PendingOIDCAuthenticationToken(
         idClaims.getSubject(), idClaims.getIssuer(), metadata, idToken, accessTokenValue);
@@ -250,12 +243,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
     form.add("code", request.getParameter("code"));
 
     HttpSession session = request.getSession();
-    String codeVerifier = getStoredCodeVerifier(session);
+    String codeVerifier = SessionUtils.getStoredCodeVerifier(session);
     if (codeVerifier != null) {
       form.add("code_verifier", codeVerifier);
     }
 
-    String redirectUri = getStoredSessionString(session, REDIRECT_URI_SESSION_VARIABLE);
+    String redirectUri =
+        SessionUtils.getStoredSessionString(session, REDIRECT_URI_SESSION_VARIABLE);
 
     if (redirectUri != null) {
       form.add(REDIRECT_URI_SESSION_VARIABLE, redirectUri);
@@ -267,11 +261,11 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   private String getValidIssuerFromRequest(HttpSession session, IssuerServiceResponse issResp) {
 
-    if (!Strings.isNullOrEmpty(issResp.getTargetLinkUri())) {
-      session.setAttribute(TARGET_SESSION_VARIABLE, issResp.getTargetLinkUri());
+    if (!Strings.isNullOrEmpty(issResp.targetLinkUri())) {
+      session.setAttribute(TARGET_SESSION_VARIABLE, issResp.targetLinkUri());
     }
 
-    String issuer = issResp.getIssuer();
+    String issuer = issResp.issuer();
 
     if (Strings.isNullOrEmpty(issuer)) {
       LOG.error("No issuer found: {}", issuer);
@@ -282,25 +276,13 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 
   private String getIssuerFromSession(HttpServletRequest request) {
 
-    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
+    String issuer =
+        SessionUtils.getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
 
     if (issuer == null) {
       throw new AuthenticationServiceException("Issuer not found in session.");
     }
     return issuer;
-  }
-
-  private String determineRedirectUri(OidcClient clientConfig, HttpServletRequest request) {
-
-    String redirectUri = clientConfig.redirectUris();
-
-    if (redirectUri == null || !redirectUri.equals(request.getRequestURL().toString())) {
-      throw new AuthenticationServiceException(
-          String.format("RequestURI mismatch. Expected %s got %s", redirectUri,
-              request.getRequestURL().toString()));
-    }
-
-    return redirectUri;
   }
 
   public void populateAcrOptions(HttpSession session, HttpServletRequest request,
@@ -330,27 +312,24 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   public void addPkceChallenge(HttpSession session, String codeChallengeMethod,
       Map<String, String> options) {
 
-    if (codeChallengeMethod != null) {
+    if (codeChallengeMethod == null) {
+      return;
+    }
+    if (!"S256".equalsIgnoreCase(codeChallengeMethod)) {
+      throw new AuthenticationServiceException(
+          String.format("PKCE algorithm not supported. Expected S256 got %s", codeChallengeMethod));
+    }
+    String codeVerifier = SessionUtils.createCodeVerifier(session);
+    options.put("code_challenge_method", "S256");
 
-      String codeVerifier = createCodeVerifier(session);
-      options.put("code_challenge_method", codeChallengeMethod);
-
-      // OAuth2.1 states the only PKCE algorithm allowed is S256
-      // (restricted also in Spring Authorization Server)
-      if (!codeChallengeMethod.equals(PKCEAlgorithm.s256.name())) {
-        throw new AuthenticationServiceException(String
-          .format("PKCE algorithm not supported. Expected S256 got %s", codeChallengeMethod));
-      }
-
-      try {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        String hash =
-            Base64URL.encode(digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)))
-              .toString();
-        options.put("code_challenge", hash);
-      } catch (NoSuchAlgorithmException e) {
-        throw new IllegalStateException("SHA-256 algorithm not available", e);
-      }
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      String hash =
+          Base64URL.encode(digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)))
+            .toString();
+      options.put("code_challenge", hash);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 algorithm not available", e);
     }
   }
 

@@ -76,8 +76,8 @@ class DefaultOidcTokenRequestorTests {
   @Test
   void testPrepareTokenRequestWithSecretPostAuthMethod() throws JsonProcessingException {
 
-    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
-        null, null, AuthMethod.SECRET_POST);
+    OidcClient client =
+        new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_POST);
 
     Map<String, String> mockResponse = Map.of("access_token", "token");
     String jsonResponse = mapper.writeValueAsString(mockResponse);
@@ -90,8 +90,7 @@ class DefaultOidcTokenRequestorTests {
 
     assertEquals(jsonResponse, response);
 
-    client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null, null, null,
-        AuthMethod.NONE);
+    client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
     when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
       .thenReturn(jsonResponse);
 
@@ -103,8 +102,7 @@ class DefaultOidcTokenRequestorTests {
   @Test
   void testRequestTokensThrowsOidcClientErrorOnRestClientException() {
 
-    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
-        null, null, AuthMethod.NONE);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
 
     when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
       .thenThrow(new RestClientException("connection refused"));
@@ -121,8 +119,7 @@ class DefaultOidcTokenRequestorTests {
   @Test
   void testRequestTokensWithBadRequestAndInvalidJsonResponse() throws IOException {
 
-    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
-        null, null, AuthMethod.NONE);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
 
     HttpClientErrorException exception =
         HttpClientErrorException.create(HttpStatus.BAD_REQUEST, "Bad request", HttpHeaders.EMPTY,

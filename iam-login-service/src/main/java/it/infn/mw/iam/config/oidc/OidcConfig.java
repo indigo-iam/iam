@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.util.Arrays;
 
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -59,8 +58,10 @@ import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.client.IssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -99,7 +100,7 @@ public class OidcConfig {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(
+  OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(IamProperties properties,
       JWKSetCacheService validationServices, IssuerService issuerService,
       OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
@@ -107,8 +108,8 @@ public class OidcConfig {
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
-        
-    OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(validationServices,
+
+    OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(properties, validationServices,
         issuerService, servers, clientConfigurationService, authRequestBuilder, clock,
         tokenRequestor, env, objectMapper, 300);
     filter.setAuthenticationManager(oidcAuthenticationManager);

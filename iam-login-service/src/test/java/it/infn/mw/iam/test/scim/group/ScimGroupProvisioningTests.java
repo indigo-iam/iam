@@ -84,7 +84,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 class ScimGroupProvisioningTests {
 
-  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
+  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -317,11 +317,7 @@ class ScimGroupProvisioningTests {
       .andExpect(jsonPath("$.displayName", is(groupName)))
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
-
-
-
   }
-
 
   @Test
   void groupListFilterReference() {
@@ -362,6 +358,5 @@ class ScimGroupProvisioningTests {
     assertEquals(1, response.getResources().size());
 
     logger.detachAppender(mockAppender);
-
   }
 }

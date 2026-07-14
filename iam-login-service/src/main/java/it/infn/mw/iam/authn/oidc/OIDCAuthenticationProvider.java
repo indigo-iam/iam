@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.client.SubjectIssuerGrantedAuthority;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
@@ -139,17 +137,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
 
   public Collection<GrantedAuthority> mapAuthorities(JWT idToken) {
 
-    Set<GrantedAuthority> out = new HashSet<>();
-    try {
-      JWTClaimsSet claims = idToken.getJWTClaimsSet();
-      SubjectIssuerGrantedAuthority authority =
-          new SubjectIssuerGrantedAuthority(claims.getSubject(), claims.getIssuer());
-      out.add(authority);
-      out.add(new SimpleGrantedAuthority("ROLE_USER"));
-    } catch (ParseException e) {
-      LOG.error("Unable to parse ID Token inside of authorities mapper (huh?)");
-    }
-    return out;
+    return Set.of(new SimpleGrantedAuthority("ROLE_USER"));
   }
 
   private Authentication registeredOidcAuthentication(IamAccount account,

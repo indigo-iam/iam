@@ -20,9 +20,10 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.security.authentication.AuthenticationServiceException;
+
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 
 public class IamThirdPartyIssuerService implements IssuerService {
 
@@ -44,7 +45,7 @@ public class IamThirdPartyIssuerService implements IssuerService {
     }
 
     return new IssuerServiceResponse(iss, request.getParameter("login_hint"),
-        request.getParameter("target_link_uri"));
+        request.getParameter("target_link_uri"), null);
   }
 
   public Set<String> getBlacklist() {

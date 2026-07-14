@@ -43,8 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.Mock;
@@ -84,9 +82,12 @@ import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -99,59 +100,62 @@ class OIDCAuthenticationFilterTests {
   private static final String ISSUER = "https://issuer.example";
 
   @Mock
-  private JWKSetCacheService validationServices;
+  IamProperties properties;
 
   @Mock
-  private IssuerService issuerService;
+  JWKSetCacheService validationServices;
 
   @Mock
-  private OIDCProviderMetadataService servers;
+  IssuerService issuerService;
 
   @Mock
-  private ClientConfigurationService clientConfigurationService;
+  OIDCProviderMetadataService servers;
 
   @Mock
-  private PlainAuthRequestUrlBuilder authRequestBuilder;
+  ClientConfigurationService clientConfigurationService;
 
   @Mock
-  private Clock clock;
+  PlainAuthRequestUrlBuilder authRequestBuilder;
 
   @Mock
-  private OidcTokenRequestor tokenRequestor;
+  Clock clock;
 
   @Mock
-  private Environment env;
+  OidcTokenRequestor tokenRequestor;
 
   @Mock
-  private AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
+  Environment env;
 
   @Mock
-  private SessionTimeoutHelper sessionTimeoutHelper;
+  AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
 
   @Mock
-  private IamAccountRepository accountRepo;
+  SessionTimeoutHelper sessionTimeoutHelper;
 
   @Mock
-  private InactiveAccountAuthenticationHander inactiveAccountHandler;
+  IamAccountRepository accountRepo;
 
   @Mock
-  private IamTotpMfaRepository totpMfaRepository;
+  InactiveAccountAuthenticationHander inactiveAccountHandler;
 
   @Mock
-  private IamOidcJITAccountProvisioningProperties jitProperties;
+  IamTotpMfaRepository totpMfaRepository;
 
   @Mock
-  private OidcAccountProvisioningService oidcProvisioningService;
+  IamOidcJITAccountProvisioningProperties jitProperties;
 
   @Mock
-  private IamTotpMfaProperties iamTotpMfaProperties;
+  OidcAccountProvisioningService oidcProvisioningService;
 
   @Mock
-  private UserInfoFetcher userInfoFetcher;
+  IamTotpMfaProperties iamTotpMfaProperties;
 
-  private OIDCAuthenticationProvider authProvider;
+  @Mock
+  UserInfoFetcher userInfoFetcher;
 
-  private OIDCAuthenticationFilter filter;
+  OIDCAuthenticationProvider authProvider;
+
+  OIDCAuthenticationFilter filter;
 
   @BeforeEach
   void setUp() {
@@ -159,7 +163,7 @@ class OIDCAuthenticationFilterTests {
         accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
         oidcProvisioningService, iamTotpMfaProperties, userInfoFetcher);
 
-    filter = new OIDCAuthenticationFilter(validationServices, issuerService, servers,
+    filter = new OIDCAuthenticationFilter(properties, validationServices, issuerService, servers,
         clientConfigurationService, authRequestBuilder, clock, tokenRequestor, env,
         new ObjectMapper(), 60);
   }
@@ -202,11 +206,10 @@ class OIDCAuthenticationFilterTests {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, ISSUER + "/login");
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(true);
-    when(issResp.getRedirectUrl()).thenReturn(ISSUER + "/login");
 
     Authentication authentication = filter.attemptAuthentication(request, response);
 
@@ -222,11 +225,10 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
 
     when(servers.load(ISSUER)).thenReturn(null);
 
@@ -244,11 +246,10 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
+    IssuerServiceResponse issResp =
+        new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
 
     loadOIDCProviderMetadata(ISSUER);
 
@@ -259,39 +260,6 @@ class OIDCAuthenticationFilterTests {
         () -> filter.attemptAuthentication(request, response));
 
     assertTrue(ex.getMessage().contains("No client configuration found for issuer: " + ISSUER));
-  }
-
-  @Test
-  void testThrowExceptionWhenRedirectUriDoesNotMatchRequest() {
-
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    request.setRequestURI("https://wrong.example/openid_connect_login");
-
-    MockHttpServletResponse response = new MockHttpServletResponse();
-
-    IssuerServiceResponse issResp = Mockito.mock(IssuerServiceResponse.class);
-
-    when(issuerService.getIssuer(request)).thenReturn(issResp);
-    when(issResp.shouldRedirect()).thenReturn(false);
-    when(issResp.getIssuer()).thenReturn(ISSUER);
-
-    loadOIDCProviderMetadata(ISSUER);
-
-    OidcClient client = new OidcClient("client", "secret",
-        "https://expected.example/openid_connect_login", null, null, null, null);
-
-    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
-
-    AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-        () -> filter.attemptAuthentication(request, response));
-    assertTrue(ex.getMessage().contains("RequestURI mismatch."));
-
-    client = new OidcClient("client", "secret", null, null, null, null, null);
-    when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
-
-    ex = assertThrows(AuthenticationServiceException.class,
-        () -> filter.attemptAuthentication(request, response));
-    assertTrue(ex.getMessage().contains("RequestURI mismatch."));
   }
 
   @Test
@@ -375,9 +343,9 @@ class OIDCAuthenticationFilterTests {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
-    filter.addPkceChallenge(session, PKCEAlgorithm.s256.name(), options);
+    filter.addPkceChallenge(session, "S256", options);
 
-    assertEquals(PKCEAlgorithm.s256.name(), options.get("code_challenge_method"));
+    assertEquals(PKCEAlgorithm.S256.name(), options.get("code_challenge_method"));
 
     String verifier = (String) session.getAttribute(CODE_VERIFIER_SESSION_VARIABLE);
     assertNotNull(verifier);
@@ -395,10 +363,8 @@ class OIDCAuthenticationFilterTests {
     MockHttpSession session = new MockHttpSession();
     Map<String, String> options = new HashMap<>();
 
-    String algorithm = PKCEAlgorithm.plain.name();
-
     AuthenticationServiceException ex = assertThrows(AuthenticationServiceException.class,
-        () -> filter.addPkceChallenge(session, algorithm, options));
+        () -> filter.addPkceChallenge(session, "plain", options));
 
     assertTrue(ex.getMessage().contains("Expected S256"));
   }
@@ -478,8 +444,8 @@ class OIDCAuthenticationFilterTests {
 
     OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
 
-    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
-        null, null, null);
+    OidcClient client =
+        new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null, null, null);
 
     when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 
@@ -502,8 +468,8 @@ class OIDCAuthenticationFilterTests {
     OIDCProviderMetadata metadata = loadOIDCProviderMetadata(ISSUER);
     when(servers.load(ISSUER)).thenReturn(metadata);
 
-    OidcClient client = new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null,
-        null, null, null);
+    OidcClient client =
+        new OidcClient("client", "secret", ISSUER + "/openid_connect_login", null, null, null);
 
     when(clientConfigurationService.getClientConfiguration(ISSUER)).thenReturn(Optional.of(client));
 

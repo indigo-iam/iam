@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.14.2 (2026-07-09)
+## 1.14.2 (2026-07-14)
 
 * Fix broken client owners API calls
 * Handle count zero for group member API calls properly
@@ -22,6 +22,7 @@
 * Add iam-voms-aa RPM (and refactor RPM build)
 * Import OIDCAuth* from MitreID and related deps
     * Fix broken support PKCE when authenticathing through a remote OIDC provider
+* Validate group name uniqueness before group creation
 
 ## 1.14.1 (2026-06-10)
 
