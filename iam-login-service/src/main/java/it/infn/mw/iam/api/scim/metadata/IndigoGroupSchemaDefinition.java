@@ -55,7 +55,7 @@ public class IndigoGroupSchemaDefinition extends ScimSchemaDefinition {
             MUTABILITY_IMMUTABLE, RETURNED_DEFAULT, UNIQUENESS_NONE, null,
             Arrays.asList(parentGroupValue, parentGroupDisplay, parentGroupRef)),
         attr("description", "string", false, "Group description", false, false,
-            MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
+            MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
         attr("labels", "complex", true, "Group labels", false, null, MUTABILITY_READ_ONLY,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null,
             Arrays.asList(labelPrefix, labelName, labelValue)));

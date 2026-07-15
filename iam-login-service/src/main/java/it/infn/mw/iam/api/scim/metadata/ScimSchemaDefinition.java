@@ -36,7 +36,9 @@ public abstract class ScimSchemaDefinition {
   protected static final String MUTABILITY_IMMUTABLE = "immutable";
   protected static final String MUTABILITY_READ_ONLY = "readOnly";
   protected static final String MUTABILITY_READ_WRITE = "readWrite";
+  protected static final String MUTABILITY_WRITE_ONLY = "writeOnly";
   protected static final String RETURNED_DEFAULT = "default";
+  protected static final String RETURNED_NEVER = "never";
 
   protected static final String UNIQUENESS_NONE = "none";
   protected static final String UNIQUENESS_SERVER = "server";

@@ -36,7 +36,7 @@ public class GroupSchemaDefinition extends ScimSchemaDefinition {
     SchemaAttribute memberValue = attr("value", "string", false, "Member identifier", false,
         false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
     SchemaAttribute memberDisplay = attr("display", "string", false, "Member display name", false,
-        false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
+        false, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
     SchemaAttribute memberRef = attr("$ref", "reference", false, "Resource reference", false,
         false, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
 

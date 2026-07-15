@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimResourceType;
 import it.infn.mw.iam.api.scim.model.ScimSchema;
@@ -156,7 +158,8 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testSchemasEndpointSupportsSingleSchemaRetrieval() throws Exception {
 
-    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+    mvc.perform(
+        get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.schemas", hasItem(ScimSchema.SCHEMA_SCHEMA)))
@@ -169,18 +172,83 @@ class ScimDiscoveryEndpointTests {
   }
 
   @Test
-  void testUserSchemaDeclaresAllRepositoryCoreUserAttributes() throws Exception {
+  void testUserSchemaDeclaresOnlySupportedCoreUserAttributes() throws Exception {
 
-    mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+    mvc.perform(
+        get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.attributes[*].name",
-          hasItems("userName", "name", "displayName", "nickName", "profileUrl", "title",
-              "userType", "preferredLanguage", "locale", "timezone", "active", "emails",
-              "addresses", "photos", "groups")))
+          hasItems("userName", "password", "name", "displayName", "nickName", "profileUrl",
+              "locale", "timezone", "active", "emails", "addresses", "photos", "groups")))
+      .andExpect(jsonPath("$.attributes[*].name", not(hasItem("title"))))
+      .andExpect(jsonPath("$.attributes[*].name", not(hasItem("userType"))))
+      .andExpect(jsonPath("$.attributes[*].name", not(hasItem("preferredLanguage"))))
       .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
-          hasItems("formatted", "givenName", "familyName", "middleName", "honorificPrefix",
-              "honorificSuffix")))
+          hasItems("formatted", "givenName", "familyName")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
+          not(hasItem("middleName"))))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
+          not(hasItem("honorificPrefix"))))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'name')].subAttributes[*].name",
+          not(hasItem("honorificSuffix"))))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'name')].required", hasItem(true)))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'name')].subAttributes[?(@.name == 'givenName')].required",
+          hasItem(true)))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'name')].subAttributes[?(@.name == 'familyName')].required",
+          hasItem(true)))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].mutability",
+          hasItem("writeOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].returned", hasItem("never")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'emails')].required", hasItem(true)))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'emails')].subAttributes[?(@.name == 'value')].required",
+          hasItem(true)))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'displayName')].mutability", hasItem("readOnly")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'nickName')].mutability", hasItem("readOnly")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'profileUrl')].mutability", hasItem("readOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'locale')].mutability", hasItem("readOnly")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'timezone')].mutability", hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'emails')].subAttributes[?(@.name == 'type')].mutability",
+          hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'emails')].subAttributes[?(@.name == 'primary')].mutability",
+          hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'addresses')].subAttributes[?(@.name == 'type')].mutability",
+          hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'addresses')].subAttributes[?(@.name == 'primary')].mutability",
+          hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'photos')].subAttributes[?(@.name == 'type')].mutability",
+          hasItem("readOnly")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'groups')].mutability", hasItem("readOnly")));
+  }
+
+  @Test
+  void testGroupSchemaMutabilityMatchesProvisioningBehavior() throws Exception {
+
+    mvc.perform(
+        get(SCHEMAS_ENDPOINT + "/{id}", ScimGroup.GROUP_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.attributes[?(@.name == 'displayName')].mutability",
+          hasItem("readWrite")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'members')].subAttributes[?(@.name == 'value')].mutability",
+          hasItem("readWrite")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'members')].subAttributes[?(@.name == 'display')].mutability",
+          hasItem("readOnly")))
+      .andExpect(jsonPath(
+          "$.attributes[?(@.name == 'members')].subAttributes[?(@.name == '$ref')].mutability",
+          hasItem("readOnly")));
   }
 
   @Test
@@ -206,6 +274,10 @@ class ScimDiscoveryEndpointTests {
       .andExpect(status().isOk())
       .andExpect(
           jsonPath("$.attributes[*].name", hasItems("parentGroup", "description", "labels")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'parentGroup')].mutability",
+          hasItem("immutable")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'description')].mutability",
+          hasItem("readWrite")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'parentGroup')].subAttributes[*].name",
           hasItems("value", "display", "$ref")));
   }

@@ -36,29 +36,20 @@ public class UserSchemaDefinition extends ScimSchemaDefinition {
 
     SchemaAttribute formattedName = attr("formatted", "string", false, "Formatted full name",
         false, false, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute givenName = attr("givenName", "string", false, "Given name", false, false,
+    SchemaAttribute givenName = attr("givenName", "string", false, "Given name", true, false,
         MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute familyName = attr("familyName", "string", false, "Family name", false,
+    SchemaAttribute familyName = attr("familyName", "string", false, "Family name", true,
         false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute middleName = attr("middleName", "string", false, "Middle name", false,
-        false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute honorificPrefix = attr("honorificPrefix", "string", false,
-        "Honorific prefix", false, false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT,
-        UNIQUENESS_NONE, null, null);
-    SchemaAttribute honorificSuffix = attr("honorificSuffix", "string", false,
-        "Honorific suffix", false, false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT,
-        UNIQUENESS_NONE, null, null);
-
-    SchemaAttribute emailValue = attr("value", "string", false, "Email address", false, false,
+    SchemaAttribute emailValue = attr("value", "string", false, "Email address", true, false,
         MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_SERVER, null, null);
     SchemaAttribute emailType = attr("type", "string", false, "Email type", false, false,
-        MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE,
+        MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE,
         Arrays.asList("work", "home", "other"), null);
     SchemaAttribute emailPrimary = attr("primary", "boolean", false, "Primary email", false,
-        null, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
+        null, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
 
     SchemaAttribute addressType = attr("type", "string", false, "Address type", false, false,
-        MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE,
+        MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE,
         Arrays.asList("work", "home", "other"), null);
     SchemaAttribute addressFormatted = attr("formatted", "string", false, "Formatted address",
         false, false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
@@ -73,12 +64,12 @@ public class UserSchemaDefinition extends ScimSchemaDefinition {
     SchemaAttribute addressCountry = attr("country", "string", false, "Country", false, false,
         MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
     SchemaAttribute addressPrimary = attr("primary", "boolean", false, "Primary address",
-        false, null, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
+        false, null, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
 
     SchemaAttribute photoValue = attr("value", "string", false, "Photo URI", false, false,
         MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
     SchemaAttribute photoType = attr("type", "string", false, "Photo type", false, false,
-        MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE,
+        MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE,
         Arrays.asList("photo", "thumbnail"), null);
 
     SchemaAttribute groupValue = attr("value", "string", false, "Group identifier", false,
@@ -91,29 +82,24 @@ public class UserSchemaDefinition extends ScimSchemaDefinition {
     List<SchemaAttribute> attributes = Arrays.asList(
         attr("userName", "string", false, "Unique username", true, false,
             MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_SERVER, null, null),
-        attr("name", "complex", false, "User's full name", false, null, MUTABILITY_READ_WRITE,
+        attr("password", "string", false, "User password", false, false,
+            MUTABILITY_WRITE_ONLY, RETURNED_NEVER, UNIQUENESS_NONE, null, null),
+        attr("name", "complex", false, "User's full name", true, null, MUTABILITY_READ_WRITE,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null,
-            Arrays.asList(formattedName, familyName, givenName, middleName, honorificPrefix,
-                honorificSuffix)),
+            Arrays.asList(formattedName, familyName, givenName)),
         attr("displayName", "string", false, "Display name", false, false,
-            MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("nickName", "string", false, "Nickname", false, false, MUTABILITY_READ_WRITE,
+            MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
+        attr("nickName", "string", false, "Nickname", false, false, MUTABILITY_READ_ONLY,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
         attr("profileUrl", "string", false, "Profile URL", false, false,
-            MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("title", "string", false, "Title", false, false, MUTABILITY_READ_WRITE,
+            MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
+        attr("locale", "string", false, "Locale", false, false, MUTABILITY_READ_ONLY,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("userType", "string", false, "User type", false, false, MUTABILITY_READ_WRITE,
-            RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("preferredLanguage", "string", false, "Preferred language", false, false,
-            MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("locale", "string", false, "Locale", false, false, MUTABILITY_READ_WRITE,
-            RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("timezone", "string", false, "Timezone", false, false, MUTABILITY_READ_WRITE,
+        attr("timezone", "string", false, "Timezone", false, false, MUTABILITY_READ_ONLY,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
         attr("active", "boolean", false, "Active status", false, null, MUTABILITY_READ_WRITE,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("emails", "complex", true, "Email addresses", false, null, MUTABILITY_READ_WRITE,
+        attr("emails", "complex", true, "Email addresses", true, null, MUTABILITY_READ_WRITE,
             RETURNED_DEFAULT, UNIQUENESS_NONE, null,
             Arrays.asList(emailValue, emailType, emailPrimary)),
         attr("addresses", "complex", true, "Postal addresses", false, null,
