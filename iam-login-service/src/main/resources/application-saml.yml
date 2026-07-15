@@ -32,16 +32,6 @@ saml:
     text: ${IAM_SAML_LOGIN_BUTTON_TEXT:Your institutional account}
     # Hide the WAYF button when direct login shortcuts replace IdP discovery.
     visible: ${IAM_SAML_WAYF_LOGIN_BUTTON_VISIBLE:true}
-
-  # Add direct login buttons for frequently used IdPs. Each shortcut bypasses
-  # the WAYF discovery page and redirects directly to the configured entity ID.
-  # The entity ID must match an IdP in the configured metadata.
-  # login-shortcuts:
-  #   - name: example-idp
-  #     entity-id: https://idp.example.org/idp/shibboleth
-  #     enabled: true
-  #     login-button:
-  #       text: Sign in with Example IdP
     
   idp-entity-id-whilelist: ${IAM_SAML_IDP_ENTITY_ID_WHITELIST}
   

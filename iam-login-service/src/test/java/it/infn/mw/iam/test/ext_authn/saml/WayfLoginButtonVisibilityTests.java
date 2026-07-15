@@ -32,23 +32,18 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"saml.wayf-login-button.text=Sign in with EduGAIN",
-  "saml.wayf-login-button.image.url=https://example.org/test.png"})
+@TestPropertySource(properties = "IAM_SAML_WAYF_LOGIN_BUTTON_VISIBLE=false")
 @WithAnonymousUser
-class WayfLoginButtonTests {
+class WayfLoginButtonVisibilityTests {
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  void getWayfLoginButtonConfiguration() throws Exception {
+  void wayfLoginButtonCanBeHidden() throws Exception {
 
     mvc.perform(get("/iam/config/saml/wayf-login-button"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.text", is("Sign in with EduGAIN")))
-      .andExpect(jsonPath("$.image.url", is("https://example.org/test.png")))
-      .andExpect(jsonPath("$.image.size", is("SMALL")))
-      .andExpect(jsonPath("$.visible", is(true)));
+      .andExpect(jsonPath("$.visible", is(false)));
   }
-
 }
