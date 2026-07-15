@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
@@ -62,6 +63,46 @@ class ScimUserTest extends ScimMockMvcTestSupport {
           .getStatus());
 
     // Delete
+    assertEquals(204,
+        authorizedDelete(SCIM_BASE + "/Users/" + userId, token).getResponse().getStatus());
+  }
+
+  @Test
+  void patchUserAcceptsCaseInsensitiveOperationType() throws Exception {
+
+    String token = clientCredentialsToken(StructuredScopeTestSupportConstants.SCIM_CLIENT_RW_ID,
+        StructuredScopeTestSupportConstants.SCIM_CLIENT_RW_SECRET, "scim:read scim:write");
+
+    ScimUser user = ScimUser.builder()
+      .userName("scim-case-insensitive-patch-user")
+      .name(ScimName.builder().givenName("Test").familyName("User").build())
+      .addEmail(ScimEmail.builder().email("scim-case-insensitive@test.org").build())
+      .build();
+
+    var createResult =
+        authorizedPost(SCIM_BASE + "/Users", token, mapper.writeValueAsString(user));
+    assertEquals(201, createResult.getResponse().getStatus());
+
+    JsonNode created = mapper.readTree(createResult.getResponse().getContentAsString());
+    String userId = created.get("id").asText();
+
+    ScimUserPatchRequest request = ScimUserPatchRequest.builder()
+      .replace(ScimUser.builder().userName("scim-case-patch-updated").build())
+      .build();
+
+    ObjectNode patchJson = mapper.valueToTree(request);
+    ((ObjectNode) patchJson.get("Operations").get(0)).put("op", "Replace");
+
+    assertEquals(204,
+        authorizedPatch(SCIM_BASE + "/Users/" + userId, token,
+            mapper.writeValueAsString(patchJson)).getResponse().getStatus());
+
+    var getResult = authorizedGet(SCIM_BASE + "/Users/" + userId, token);
+    assertEquals(200, getResult.getResponse().getStatus());
+
+    JsonNode updated = mapper.readTree(getResult.getResponse().getContentAsString());
+    assertEquals("scim-case-patch-updated", updated.get("userName").asText());
+
     assertEquals(204,
         authorizedDelete(SCIM_BASE + "/Users/" + userId, token).getResponse().getStatus());
   }
