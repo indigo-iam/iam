@@ -52,13 +52,13 @@ public class IamUserInfo implements Serializable {
   @OneToOne(mappedBy = "userInfo")
   private IamAccount iamAccount;
 
-  @Column(name="givenname", nullable = false, length = 64)
+  @Column(name = "givenname", nullable = false, length = 64)
   private String givenName;
 
-  @Column(name="familyname", nullable = false, length = 64)
+  @Column(name = "familyname", nullable = false, length = 64)
   private String familyName;
 
-  @Column(name="middlename", length = 64)
+  @Column(name = "middlename", length = 64)
   private String middleName;
 
   private String nickname;
@@ -72,21 +72,21 @@ public class IamUserInfo implements Serializable {
   @Column(nullable = false, length = 128)
   private String email;
 
-  @Column(name="emailverified")
+  @Column(name = "emailverified")
   private Boolean emailVerified;
 
   private String gender;
   private String zoneinfo;
   private String locale;
-  
-  @Column(name="phonenumber")
+
+  @Column(name = "phonenumber")
   private String phoneNumber;
 
-  @Column(name="phonenumberverified")
+  @Column(name = "phonenumberverified")
   private Boolean phoneNumberVerified;
-  
-  @OneToOne(optional=true, cascade=CascadeType.ALL)
-  @JoinColumn(name="address_id")
+
+  @OneToOne(optional = true, cascade = CascadeType.ALL)
+  @JoinColumn(name = "address_id")
   private IamAddress address;
 
   private String birthdate;
@@ -402,19 +402,16 @@ public class IamUserInfo implements Serializable {
     } else {
       return src;
     }
-
   }
-  
-  
+
   public String getName() {
 
     return getFormatted(this.givenName, this.middleName, this.familyName);
   }
-  
+
   public void setName(String name) {
 
     // NO-OP
-
   }
 
   public String getAffiliation() {

@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.ERROR;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -43,14 +40,14 @@ public class OAuthError {
 
         URIBuilder uriBuilder = new URIBuilder(redirectUri);
 
-        uriBuilder.addParameter(ERROR, error);
+        uriBuilder.addParameter(ConnectRequestParameters.ERROR, error);
 
         if (!Strings.isNullOrEmpty(description)) {
           uriBuilder.addParameter("error_description", description);
         }
 
         if (!Strings.isNullOrEmpty(state)) {
-          uriBuilder.addParameter(STATE, state);
+          uriBuilder.addParameter(ConnectRequestParameters.STATE, state);
         }
 
         response.sendRedirect(uriBuilder.build().toString());

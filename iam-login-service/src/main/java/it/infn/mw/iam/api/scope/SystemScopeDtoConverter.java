@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.api.scope;
 
-import org.mitre.oauth2.model.SystemScope;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.scim.converter.Converter;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 @Component
 public class SystemScopeDtoConverter implements Converter<SystemScopeDto, SystemScope>{

@@ -20,9 +20,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
-
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
@@ -31,7 +28,9 @@ import it.infn.mw.iam.api.tokens.model.UserRef;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 public abstract class AbstractTokenService<T> implements TokenService<T> {
 

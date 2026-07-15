@@ -16,15 +16,10 @@
 package it.infn.mw.iam.core.rs;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
@@ -34,6 +29,8 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -95,10 +92,6 @@ public class DefaultIamResourceServerTokenServices implements ResourceServerToke
     entity.setExpiration(accessToken.expiration());
     entity.setScope(accessToken.scopes());
     entity.setTokenType(OAuth2AccessToken.BEARER_TYPE);
-    if (!Objects.isNull(accessToken.refreshToken())) {
-      OAuth2RefreshToken refreshToken = new DefaultOAuth2RefreshToken(accessToken.refreshToken());
-      entity.setRefreshToken(refreshToken);
-    }
     entity.setTokenValueHash(tokenUtils.sha256(accessToken.jwt().serialize()));
     entity.setClient(loadClient(accessToken.clientId()));
     entity.getAdditionalInformation().clear();

@@ -26,12 +26,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
 import org.h2.server.web.WebServlet;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -59,17 +58,21 @@ import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenGranter;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeTokenGranter;
+import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
+import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
 import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswordTokenGranter;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.servlet.LocaleResolver;
@@ -83,12 +86,19 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
+import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.consent.BlockedUriService;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
@@ -130,6 +140,7 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgUserinfoHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
@@ -141,6 +152,7 @@ import it.infn.mw.iam.core.oidc.MaxAgeService;
 import it.infn.mw.iam.core.oidc.PromptService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
+import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
@@ -153,8 +165,11 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -366,7 +381,7 @@ public class IamConfig {
 
   @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
-      SystemScopeRepository scopeRepo) {
+      IamScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
     return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
         scopeRepo);
@@ -447,7 +462,7 @@ public class IamConfig {
 
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
-      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService, 
+      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService,
       AuthenticationEventPublisher eventPublisher) {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -586,5 +601,58 @@ public class IamConfig {
   @Bean
   SecurityEvaluationContextExtension contextExtension() {
     return new SecurityEvaluationContextExtension();
+  }
+
+  @Bean(name = "iamClientDetailsEntityService")
+  ClientDetailsService clientDetailsService(IamClientRepository clientRepo) {
+
+    return new IamClientDetailsService(clientRepo);
+  }
+
+  @Bean(name = "clientUserDetailsService")
+  ClientUserDetailsService defaultClientUserDetailsService(ClientService clientService) {
+
+    return new IAMClientUserDetailsService(clientService);
+  }
+
+  @Bean
+  Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
+
+    return new Http403ForbiddenEntryPoint();
+  }
+
+  @Bean
+  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
+
+    OAuth2AuthenticationEntryPoint entryPoint = new OAuth2AuthenticationEntryPoint();
+    entryPoint.setRealmName("openidconnect");
+    return entryPoint;
+  }
+
+  @Bean
+  RedirectResolver blacklistAwareRedirectResolver(BlockedUriService blockedUriService) {
+
+    return new BlockedUriAwareRedirectResolver(blockedUriService, true);
+  }
+
+  @Bean
+  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
+
+    return new ScopeMatcherOAuthRequestValidator(registry);
+  }
+
+  @Bean
+  OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
+      DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
+      ClientKeyCacheService validators) {
+    return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
+        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators);
+  }
+
+  @Bean
+  IamJWKSetCacheService defaultCacheService(RestTemplateFactory rtf) {
+
+    return new IamJWKSetCacheService(rtf, 100, 1, TimeUnit.HOURS);
   }
 }

@@ -325,13 +325,13 @@ public class IamProperties {
   }
 
   public static class DeviceCodeProperties {
-    Boolean allowCompleteVerificationUri = true;
+    boolean allowCompleteVerificationUri = true;
 
-    public Boolean getAllowCompleteVerificationUri() {
+    public boolean getAllowCompleteVerificationUri() {
       return allowCompleteVerificationUri;
     }
 
-    public void setAllowCompleteVerificationUri(Boolean allowCompleteVerificationUri) {
+    public void setAllowCompleteVerificationUri(boolean allowCompleteVerificationUri) {
       this.allowCompleteVerificationUri = allowCompleteVerificationUri;
     }
 
@@ -771,6 +771,8 @@ public class IamProperties {
 
   private AarcProfile aarcProfile = new AarcProfile();
 
+  private List<String> languageNamespaces = List.of("messages");
+
   private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {
@@ -1022,7 +1024,7 @@ public class IamProperties {
   public void setDashboard(DashboardProperties dashboard) {
     this.dashboard = dashboard;
   }
-  
+
   public Boolean isDashboardPropertiesEnable() {
     return dashboard != null;
   }
@@ -1035,4 +1037,7 @@ public class IamProperties {
     this.aarcProfile = aarcProfile;
   }
 
+  public List<String> getLanguageNamespaces() {
+    return languageNamespaces;
+  }
 }

@@ -15,11 +15,9 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import java.util.Map;
-
 @FunctionalInterface
 public interface WellKnownInfoProvider {
 
-  Map<String, Object> getWellKnownInfo();
+  WellKnownConfiguration getWellKnownInfo();
 
 }

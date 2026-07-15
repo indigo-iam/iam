@@ -27,7 +27,7 @@ import it.infn.mw.iam.core.client.IssuerServiceResponse;
 
 public class IamThirdPartyIssuerService implements IssuerService {
 
-  private Set<String> blacklist = new HashSet<>();
+  private Set<String> blockedList = new HashSet<>();
   private Set<String> whitelist = new HashSet<>();
 
   @Override
@@ -40,20 +40,12 @@ public class IamThirdPartyIssuerService implements IssuerService {
           "Whitelist was nonempty, issuer was not in whitelist: " + iss);
     }
 
-    if (blacklist.contains(iss)) {
-      throw new AuthenticationServiceException("Issuer was in blacklist: " + iss);
+    if (blockedList.contains(iss)) {
+      throw new AuthenticationServiceException("Issuer was in blockedList: " + iss);
     }
 
     return new IssuerServiceResponse(iss, request.getParameter("login_hint"),
         request.getParameter("target_link_uri"), null);
-  }
-
-  public Set<String> getBlacklist() {
-    return blacklist;
-  }
-
-  public void setBlacklist(Set<String> blacklist) {
-    this.blacklist = blacklist;
   }
 
   public Set<String> getWhitelist() {

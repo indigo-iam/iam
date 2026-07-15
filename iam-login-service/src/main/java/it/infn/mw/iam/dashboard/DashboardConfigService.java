@@ -20,10 +20,6 @@ import java.text.ParseException;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +32,10 @@ import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
@@ -46,7 +46,7 @@ public class DashboardConfigService {
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
   public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
-      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS, "email", "profile",
+      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email", "profile",
           "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
   private final IamClientRepository clientRepository;
@@ -150,7 +150,7 @@ public class DashboardConfigService {
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setClientSecret(secret);
     client.setRedirectUris(Set.of(url));
-    client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setActive(true);
 
     clientRepository.save(client);
@@ -177,7 +177,7 @@ public class DashboardConfigService {
   }
 
   public static boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
-    return AuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod());
+    return ClientAuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod());
   }
 
   public static boolean usesPKCES256(ClientDetailsEntity client) {

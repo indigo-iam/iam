@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.assertion;
 
-import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
@@ -26,10 +25,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -46,6 +41,10 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class TokenEndpointJwtClientAuthenticationProvider implements AuthenticationProvider {
 
@@ -86,9 +85,9 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
   private void clientAuthMethodChecks(ClientDetailsEntity client, SignedJWT jws) {
 
     if (client.getTokenEndpointAuthMethod() == null
-        || client.getTokenEndpointAuthMethod().equals(AuthMethod.NONE)
-        || client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_BASIC)
-        || client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_POST)) {
+        || client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.NONE)
+        || client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.SECRET_BASIC)
+        || client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.SECRET_POST)) {
 
       throw new AuthenticationServiceException(
           "Client does not support JWT-based client autentication");
@@ -101,13 +100,12 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
       throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
 
-    if (client.getTokenEndpointAuthMethod().equals(AuthMethod.PRIVATE_KEY)) {
+    if (client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.PRIVATE_KEY)) {
       if (!JWSAlgorithm.Family.SIGNATURE.contains(alg)) {
         throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
-    } else if (client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_JWT)
-        && !JWSAlgorithm.Family.HMAC_SHA.contains(alg)) {
-      throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
+    } else if (client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.SECRET_JWT)) {
+      throw new AuthenticationServiceException(ClientAuthMethod.SECRET_JWT + " has been deprecated");
     }
   }
 
@@ -117,7 +115,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     JWTSigningAndValidationService validator =
         Optional.ofNullable(validators.getValidator(client, alg))
           .orElseThrow(() -> new AuthenticationServiceException(
-              format("Unable to resolve validator for client '%s' and algorithm '%s'",
+              String.format("Unable to resolve validator for client '%s' and algorithm '%s'",
                   client.getClientId(), alg.getName())));
 
     if (!validator.validateSignature(jws)) {
