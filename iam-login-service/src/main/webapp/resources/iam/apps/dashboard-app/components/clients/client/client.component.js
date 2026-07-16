@@ -24,7 +24,6 @@
         $ctrl.newClient = data.client;
         $ctrl.secret = $ctrl.newClient.client_secret;
         $ctrl.clientId = $ctrl.newClient.client_id;
-        $ctrl.confirmation = true;
         $ctrl.clientIdCopied = false;
         $ctrl.clientSecretCopied = false;
 
