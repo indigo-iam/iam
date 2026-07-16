@@ -34,7 +34,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (24, 'pkce-s256-client', 'secret', 'Client with PKCE S256', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'S256', true),
   (25, 'pkce-plain-client', 'secret', 'Client with PKCE plain', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'plain', true),
   (26, 'pkce-none-client', 'secret', 'Client with PKCE none', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'none', true),
-  (27, 'https://federated-client.com', 'secret', 'Federated client', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true);
+  (27, 'https://federated-client.com', 'secret', 'Federated client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true);
 
 UPDATE client_details SET client_description = 'implicit-flow-client description'
 WHERE id = 13 AND client_id = 'implicit-flow-client';
