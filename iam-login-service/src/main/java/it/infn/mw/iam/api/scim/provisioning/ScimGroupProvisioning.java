@@ -250,6 +250,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   @Override
   public ScimGroup replace(String id, ScimGroup oldScimGroup) {
 
+    IamGroup groupToUpdate = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
+
     String newDisplayName = oldScimGroup.getDisplayName();
     displayNameSanityChecks(newDisplayName);
 
@@ -257,9 +259,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new ScimResourceExistsException(
           String.format("%s is already mapped to another group", newDisplayName));
     }
-
-    IamGroup groupToUpdate = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
-    String oldGroupName = groupToUpdate.getName();
 
     if (groupToUpdate.getParentGroup() != null) {
       String parentGroupUuid = groupToUpdate.getParentGroup().getUuid();
@@ -285,7 +284,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       groupToUpdate.setDescription(oldScimGroup.getIndigoGroup().getDescription());
     }
 
-    groupService.updateGroup(oldGroupName, groupToUpdate);
+    groupService.updateGroup(groupToUpdate.getName(), groupToUpdate);
 
     return converter.dtoFromEntity(groupToUpdate);
   }
