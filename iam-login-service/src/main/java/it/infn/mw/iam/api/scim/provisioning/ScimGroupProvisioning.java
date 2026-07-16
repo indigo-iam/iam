@@ -259,6 +259,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       throw new ScimResourceExistsException(
           String.format("%s is already mapped to another group", newDisplayName));
     }
+    
+    if (!groupToUpdate.getChildrenGroups().isEmpty()) {
+      throw new IllegalArgumentException("The current group contains child group(s)");
+    }
 
     if (groupToUpdate.getParentGroup() != null) {
 
@@ -269,10 +273,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       groupToUpdate.setName(fullName);
     } else {
       groupToUpdate.setName(newDisplayName);
-    }
-
-    if (!groupToUpdate.getChildrenGroups().isEmpty()) {
-      throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
     if (oldScimGroup.getIndigoGroup().getDescription() != null) {
