@@ -261,11 +261,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
     if (groupToUpdate.getParentGroup() != null) {
-      String parentGroupUuid = groupToUpdate.getParentGroup().getUuid();
-
-      groupService.findByUuid(parentGroupUuid)
-        .orElseThrow(() -> new ScimResourceNotFoundException(
-            String.format("Parent group '%s' not found", parentGroupUuid)));
 
       String fullName =
           String.format("%s/%s", groupToUpdate.getParentGroup().getName(), newDisplayName);
