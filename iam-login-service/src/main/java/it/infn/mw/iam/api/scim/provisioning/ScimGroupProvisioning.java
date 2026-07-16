@@ -248,13 +248,14 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   }
 
   @Override
-  public ScimGroup replace(String id, ScimGroup scimItemToBeReplaced) {
+  public ScimGroup replace(String id, ScimGroup oldScimGroup) {
 
-    String displayName = scimItemToBeReplaced.getDisplayName();
-    displayNameSanityChecks(displayName);
+    String newDisplayName = oldScimGroup.getDisplayName();
+    displayNameSanityChecks(newDisplayName);
 
-    if (!isGroupNameAvailable(displayName, id)) {
-      throw new ScimResourceExistsException(displayName + " is already mapped to another group");
+    if (!isGroupNameAvailable(newDisplayName, id)) {
+      throw new ScimResourceExistsException(
+          String.format("%s is already mapped to another group", newDisplayName));
     }
 
     IamGroup groupToUpdate = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
@@ -268,20 +269,20 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
             String.format("Parent group '%s' not found", parentGroupUuid)));
 
       String fullName =
-          String.format("%s/%s", groupToUpdate.getParentGroup().getName(), displayName);
+          String.format("%s/%s", groupToUpdate.getParentGroup().getName(), newDisplayName);
       fullNameSanityChecks(fullName);
 
       groupToUpdate.setName(fullName);
     } else {
-      groupToUpdate.setName(displayName);
+      groupToUpdate.setName(newDisplayName);
     }
 
     if (!groupToUpdate.getChildrenGroups().isEmpty()) {
       throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
-    if (scimItemToBeReplaced.getIndigoGroup().getDescription() != null) {
-      groupToUpdate.setDescription(scimItemToBeReplaced.getIndigoGroup().getDescription());
+    if (oldScimGroup.getIndigoGroup().getDescription() != null) {
+      groupToUpdate.setDescription(oldScimGroup.getIndigoGroup().getDescription());
     }
 
     groupService.updateGroup(oldGroupName, groupToUpdate);
