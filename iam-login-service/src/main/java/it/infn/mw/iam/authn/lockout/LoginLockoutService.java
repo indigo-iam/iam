@@ -35,6 +35,10 @@ public interface LoginLockoutService {
    * Throws {@link org.springframework.security.authentication.LockedException} if the account
    * is currently suspended. If a previous suspension has expired, silently resets the attempt
    * counter for a fresh round.
+   *
+   * The exception message is internal only: callers translate it to the same generic
+   * bad-credentials failure returned for any other failed login, to prevent account
+   * enumeration. The account owner is notified of the lockout by email.
    */
   void checkIamAccountLockout(String username);
 

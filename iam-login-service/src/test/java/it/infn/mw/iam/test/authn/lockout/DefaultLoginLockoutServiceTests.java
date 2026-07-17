@@ -44,6 +44,7 @@ import org.springframework.security.authentication.LockedException;
 
 import it.infn.mw.iam.authn.lockout.DefaultLoginLockoutService;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.config.IamProperties.LoginLockoutProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
@@ -64,6 +65,9 @@ class DefaultLoginLockoutServiceTests {
   private IamAccountRepository accountRepo;
 
   @Mock
+  private NotificationFactory notificationFactory;
+
+  @Mock
   private IamProperties iamProperties;
 
   private LoginLockoutProperties lockoutProps;
@@ -80,7 +84,8 @@ class DefaultLoginLockoutServiceTests {
     lockoutProps.setDisableAfterMaxSuspensionRounds(true);
 
     when(iamProperties.getLoginLockout()).thenReturn(lockoutProps);
-    service = new DefaultLoginLockoutService(lockoutRepo, accountRepo, iamProperties);
+    service = new DefaultLoginLockoutService(lockoutRepo, accountRepo, notificationFactory,
+        iamProperties);
 
     account = new IamAccount();
     account.setId(1L);

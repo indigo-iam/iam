@@ -388,6 +388,28 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
+  public IamEmailNotification createAccountLockedMessage(IamAccount account,
+      int suspensionDurationMinutes) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("suspensionDurationMinutes", suspensionDurationMinutes);
+    model.put("hasLocalPassword",
+        account.getPassword() != null && !account.getPassword().isEmpty());
+
+    String subject = "Account temporarily locked";
+
+    IamEmailNotification notification = createMessage("accountLocked.ftl", model,
+        IamNotificationType.ACCOUNT_LOCKED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created account locked message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
   public IamEmailNotification createAccountRestoredMessage(IamAccount account) {
     String recipient = account.getUserInfo().getName();
 

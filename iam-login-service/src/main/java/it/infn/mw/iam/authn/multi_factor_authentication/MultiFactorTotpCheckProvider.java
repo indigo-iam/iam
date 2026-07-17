@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -67,10 +68,20 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
     String username = authentication.getName();
 
-    lockoutService.checkIamAccountLockout(username);
+    // Mask the lockout as a generic failure; the account owner is informed by email
+    try {
+      lockoutService.checkIamAccountLockout(username);
+    } catch (LockedException e) {
+      throw new BadCredentialsException("Bad TOTP");
+    }
 
     IamAccount account = accountRepo.findByUsername(username)
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+
+    // a disabled account must not complete TOTP authentication
+    if (!account.isActive()) {
+      throw new BadCredentialsException("Bad TOTP");
+    }
 
     if (!isValidTotp(account, totp)) {
       lockoutService.recordFailedAttempt(username);

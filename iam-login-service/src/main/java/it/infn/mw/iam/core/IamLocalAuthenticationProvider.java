@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -103,6 +104,21 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
             new UsernamePasswordAuthenticationToken(
                 authentication.getPrincipal(), authentication.getCredentials());
         authentication = super.authenticate(userpassToken);
+      } catch (InternalAuthenticationServiceException e) {
+        // DaoAuthenticationProvider wraps the DisabledException raised for inactive accounts
+        // while loading user details; mask it and rethrow genuine internal errors
+        if (e.getCause() instanceof DisabledException) {
+          lockoutService.recordFailedAttempt(username);
+          throw badCredentials();
+        }
+        throw e;
+      } catch (DisabledException e) {
+        // keep the intentional configuration message, mask account state
+        if (DISABLED_AUTH_MESSAGE.equals(e.getMessage())) {
+          throw e;
+        }
+        lockoutService.recordFailedAttempt(username);
+        throw badCredentials();
       } catch (BadCredentialsException e) {
         lockoutService.recordFailedAttempt(username);
         throw e;
@@ -139,6 +155,8 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), currentAuthorities);
       token.setAuthenticated(false);
+      // re-authentication of this session token should not re-run the password and lockout checks
+      token.setPreAuthenticated(true);
       token.setAuthenticationMethodReferences(refs);
       token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
@@ -167,6 +185,11 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
             && userDetails.getAuthorities().stream().noneMatch(ADMIN_MATCHER))) {
       throw new DisabledException(DISABLED_AUTH_MESSAGE);
     }
+  }
+
+  private BadCredentialsException badCredentials() {
+    return new BadCredentialsException(messages
+      .getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
   }
 
   @Override

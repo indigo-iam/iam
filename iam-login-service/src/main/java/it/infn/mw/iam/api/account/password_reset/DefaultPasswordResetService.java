@@ -31,6 +31,7 @@ import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerifie
 import it.infn.mw.iam.api.account.password_reset.error.UserNotFoundError;
 import it.infn.mw.iam.audit.events.account.password.PasswordResetEvent;
 import it.infn.mw.iam.audit.events.account.password.PasswordUpdatedEvent;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -46,17 +47,19 @@ public class DefaultPasswordResetService
   private final NotificationFactory notificationFactory;
   private final TokenGenerator tokenGenerator;
   private final PasswordEncoder passwordEncoder;
+  private final LoginLockoutService lockoutService;
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public DefaultPasswordResetService(IamAccountRepository accountRepository,
       NotificationFactory notificationFactory, TokenGenerator tokenGenerator,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder, LoginLockoutService lockoutService) {
 
     this.accountRepository = accountRepository;
     this.notificationFactory = notificationFactory;
     this.tokenGenerator = tokenGenerator;
     this.passwordEncoder = passwordEncoder;
+    this.lockoutService = lockoutService;
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -90,6 +93,9 @@ public class DefaultPasswordResetService
     account.setResetKey(null);
 
     accountRepository.save(account);
+
+    // completing the reset proves control of the linked email address
+    lockoutService.resetFailedAttempts(account.getUsername());
 
     eventPublisher.publishEvent(new PasswordResetEvent(this, account,
         String.format("User %s reset its password", account.getUsername())));

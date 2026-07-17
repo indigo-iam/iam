@@ -57,6 +57,9 @@ public interface NotificationFactory {
 
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
 
+  IamEmailNotification createAccountLockedMessage(IamAccount account,
+      int suspensionDurationMinutes);
+
   IamEmailNotification createAccountRestoredMessage(IamAccount account);
 
   IamEmailNotification createMfaDisableMessage(IamAccount account);

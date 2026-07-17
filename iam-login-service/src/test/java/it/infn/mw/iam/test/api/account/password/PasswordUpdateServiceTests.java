@@ -37,6 +37,7 @@ import it.infn.mw.iam.api.account.password_reset.DefaultPasswordResetService;
 import it.infn.mw.iam.api.account.password_reset.error.BadUserPasswordError;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerified;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotFoundError;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -54,12 +55,15 @@ class PasswordUpdateServiceTests {
   @Mock
   ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  LoginLockoutService lockoutService;
+
   private final String OLD_PASSWORD = "old";
   private final String NEW_PASSWORD = "new";
 
   @BeforeEach
   void init() {
-    updateService = new DefaultPasswordResetService(accountRepository, null, null, encoder);
+    updateService = new DefaultPasswordResetService(accountRepository, null, null, encoder, lockoutService);
     updateService.setApplicationEventPublisher(eventPublisher);
   }
 
@@ -150,6 +154,27 @@ class PasswordUpdateServiceTests {
     updateService.updatePassword(USERNAME, OLD_PASSWORD, NEW_PASSWORD);
 
     assertThat(encoder.matches(NEW_PASSWORD, account.getPassword()), is(true));
+
+  }
+
+  @Test
+  void testPasswordResetClearsLoginLockout() {
+
+    final String USERNAME = "locked_user";
+    final String RESET_KEY = "reset-key";
+    final String NEW_PASSWORD = "new_password";
+
+    IamAccount account = newAccount(USERNAME);
+    account.setActive(true);
+    account.getUserInfo().setEmailVerified(true);
+    account.setResetKey(RESET_KEY);
+
+    Mockito.when(accountRepository.findByResetKey(RESET_KEY)).thenReturn(Optional.of(account));
+
+    updateService.resetPassword(RESET_KEY, NEW_PASSWORD);
+
+    assertThat(encoder.matches(NEW_PASSWORD, account.getPassword()), is(true));
+    Mockito.verify(lockoutService).resetFailedAttempts(USERNAME);
 
   }
 }

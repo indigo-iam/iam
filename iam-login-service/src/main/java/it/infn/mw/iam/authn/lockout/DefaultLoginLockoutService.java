@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.lockout;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -30,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.config.IamProperties.LoginLockoutProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
@@ -44,11 +44,14 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
   private final IamAccountLoginLockoutRepository lockoutRepo;
   private final IamAccountRepository accountRepo;
   private final LoginLockoutProperties lockoutProperties;
+  private final NotificationFactory notificationFactory;
 
   public DefaultLoginLockoutService(IamAccountLoginLockoutRepository lockoutRepo,
-      IamAccountRepository accountRepo, IamProperties iamProperties) {
+      IamAccountRepository accountRepo, NotificationFactory notificationFactory,
+      IamProperties iamProperties) {
     this.lockoutRepo = lockoutRepo;
     this.accountRepo = accountRepo;
+    this.notificationFactory = notificationFactory;
     this.lockoutProperties = iamProperties.getLoginLockout();
   }
 
@@ -101,11 +104,7 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
     if (isSuspended(lockout)) {
       LOG.info("[LOGIN-LOCKOUT] Login blocked: account '{}' is suspended until {}", username,
           lockout.getSuspendedUntil());
-      long minutesRemaining =
-          Duration.between(Instant.now(), lockout.getSuspendedUntil().toInstant()).toMinutes() + 1;
-      throw new LockedException(String.format(
-          "Account is temporarily suspended. Please try again in %d minute%s or contact support for assistance.",
-          minutesRemaining, minutesRemaining == 1 ? "" : "s"));
+      throw new LockedException("Bad credentials");
     }
 
     // Previous suspension has expired; reset the attempt counter for a fresh round
@@ -176,6 +175,7 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
         lockoutRepo.delete(lockout);
         LOG.warn("[LOGIN-LOCKOUT] Account '{}' disabled after {} suspension rounds", username,
             lockoutProperties.getMaxSuspensionRounds());
+        notifyQuietly(() -> notificationFactory.createAccountSuspendedMessage(account));
         return;
       }
 
@@ -187,6 +187,9 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       LOG.warn("[LOGIN-LOCKOUT] Account '{}' suspended until {} (round {} of {})", username,
           lockout.getSuspendedUntil(), lockout.getLockoutCount(),
           lockoutProperties.getMaxSuspensionRounds());
+
+      notifyQuietly(() -> notificationFactory.createAccountLockedMessage(account,
+          lockoutProperties.getSuspensionDurationMinutes()));
     }
 
     lockoutRepo.save(lockout);
@@ -214,6 +217,17 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       lockoutRepo.delete(lockout);
       LOG.info("[LOGIN-LOCKOUT] Admin revoked suspension for account '{}'", lockout.getAccount().getUsername());
     });
+  }
+
+  /**
+   * Notification failures must not break the authentication flow.
+   */
+  private void notifyQuietly(Runnable notification) {
+    try {
+      notification.run();
+    } catch (RuntimeException e) {
+      LOG.error("[LOGIN-LOCKOUT] Error creating lockout notification: {}", e.getMessage());
+    }
   }
 
   private boolean isSuspended(IamAccountLoginLockout lockout) {

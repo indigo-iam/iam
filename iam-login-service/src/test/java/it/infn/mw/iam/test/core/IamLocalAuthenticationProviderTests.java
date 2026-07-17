@@ -16,6 +16,7 @@
 
 package it.infn.mw.iam.test.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,8 +36,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -109,12 +115,41 @@ class IamLocalAuthenticationProviderTests {
     }
 
   @Test
-  void lockedExceptionBlocksAuthentication() {
-        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("locked", "cred");
-        doThrow(new LockedException("Suspended")).when(lockoutService).checkIamAccountLockout("locked");
+  void disabledAccountIsMaskedAsGenericBadCredentials() {
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("disabled", "cred");
+        when(uds.loadUserByUsername("disabled"))
+            .thenThrow(new DisabledException("User 'disabled' is not active."));
 
-        assertThrows(LockedException.class, () -> iamLocalAuthenticationProvider.authenticate(token));
-        verify(accountRepo, never()).findByUsername(anyString());
+        BadCredentialsException e = assertThrows(BadCredentialsException.class,
+            () -> iamLocalAuthenticationProvider.authenticate(token));
+        assertEquals("Bad credentials", e.getMessage());
+        verify(lockoutService).recordFailedAttempt("disabled");
+    }
+
+  @Test
+  void lockoutIsMaskedAsGenericBadCredentials() {
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("inactive", "cred");
+        UserDetails user = User.withUsername("inactive")
+            .password("pwd")
+            .authorities("ROLE_USER")
+            .disabled(true)
+            .build();
+        when(uds.loadUserByUsername("inactive")).thenReturn(user);
+
+        BadCredentialsException e = assertThrows(BadCredentialsException.class,
+            () -> iamLocalAuthenticationProvider.authenticate(token));
+        assertEquals("Bad credentials", e.getMessage());
+        verify(lockoutService).recordFailedAttempt("inactive");
+    }
+
+  @Test
+  void internalErrorsAreNotMaskedAsBadCredentials() {
+        ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("user", "cred");
+        when(uds.loadUserByUsername("user"))
+            .thenThrow(new IllegalStateException("database unavailable"));
+
+        assertThrows(InternalAuthenticationServiceException.class,
+            () -> iamLocalAuthenticationProvider.authenticate(token));
     }
 
   @Test
