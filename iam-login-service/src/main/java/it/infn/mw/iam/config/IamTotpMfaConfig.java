@@ -65,6 +65,9 @@ public class IamTotpMfaConfig {
   @Autowired
   private AccountUtils accountUtils;
 
+  @Autowired
+  private IamProperties iamProperties;
+
   /**
    * Responsible for generating new TOTP secrets
    * 
@@ -123,7 +126,7 @@ public class IamTotpMfaConfig {
 
   public AuthenticationSuccessHandler successHandler(Clock clock) {
     return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
-        accountRepo, iamBaseUrl);
+        accountRepo, iamBaseUrl, iamProperties);
   }
 
   /**
@@ -140,5 +143,4 @@ public class IamTotpMfaConfig {
   MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
     return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
   }
-
 }

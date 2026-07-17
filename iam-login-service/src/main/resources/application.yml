@@ -192,6 +192,7 @@ iam:
     enabled: ${IAM_DASHBOARD_ENABLED:false}
     client-id: ${IAM_DASHBOARD_CLIENT_ID:}
     client-secret: ${IAM_DASHBOARD_CLIENT_SECRET:}
+    base-path: ${IAM_DASHBAORD_BASE_PATH:/dashboard}
 
   cleanup:
     expired:
