@@ -21,8 +21,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 
 import java.lang.reflect.Field;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -31,9 +31,11 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
@@ -50,11 +52,15 @@ import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 @WithAnonymousUser
 @TestPropertySource(properties = {
     "group-request-reminder.enabled=true",
@@ -69,6 +75,9 @@ class GroupRequestReminderTaskTests {
 
   @Autowired
   private GroupRequestReminderTask reminderTask;
+
+  @Autowired
+  private MutableClock clock;
 
   @Autowired
   private IamGroupRequestRepository groupRequestRepo;
@@ -119,6 +128,22 @@ class GroupRequestReminderTaskTests {
     reminderTask.sendReminders();
 
     assertThat(getReminders(), hasSize(1));
+  }
+
+  @Test
+  void reminderIsSentAgainAfterRepeatInterval() {
+    IamGroup group = groupRepo.findByName(GROUP_NAME).orElseThrow();
+    IamAccount account = accountRepo.findByUsername("test_100").orElseThrow();
+    assignGroupManager(account, group);
+    savePendingRequest(account, group, 5);
+
+    reminderTask.sendReminders();
+    assertThat(getReminders(), hasSize(1));
+
+    clock.advance(Duration.ofDays(2));
+    reminderTask.sendReminders();
+
+    assertThat(getReminders(), hasSize(2));
   }
 
   @Test
@@ -279,8 +304,7 @@ class GroupRequestReminderTaskTests {
     request.setGroup(group);
     request.setStatus(IamGroupRequestStatus.PENDING);
     request.setNotes("Test request");
-    request.setCreationTime(Date.from(
-        LocalDate.now().minusDays(daysAgo).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+    request.setCreationTime(Date.from(clock.instant().minus(daysAgo, ChronoUnit.DAYS)));
     return groupRequestRepo.save(request);
   }
 }

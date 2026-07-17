@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.web.group;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ public class GroupRequestReminderTask {
   @Value("${group-request-reminder.notify-admins:false}")
   private boolean notifyAdmins;
 
+  private final Clock clock;
   private final IamGroupRequestRepository groupRequestRepo;
   private final NotificationFactory notificationFactory;
   private final IamEmailNotificationRepository emailNotificationRepo;
@@ -63,12 +65,14 @@ public class GroupRequestReminderTask {
   private final AdminNotificationDeliveryStrategy adminDeliveryStrategy;
 
   public GroupRequestReminderTask(
+    Clock clock,
     IamGroupRequestRepository groupRequestRepo,
     NotificationFactory notificationFactory,
     IamEmailNotificationRepository emailNotificationRepo,
     AddressResolutionService addressResolutionService,
     AdminNotificationDeliveryStrategy adminDeliveryStrategy
    ) {
+    this.clock = clock;
     this.groupRequestRepo = groupRequestRepo;
     this.notificationFactory = notificationFactory;
     this.emailNotificationRepo = emailNotificationRepo;
@@ -90,7 +94,7 @@ public class GroupRequestReminderTask {
       return;
     }
 
-    Instant now = Instant.now();
+    Instant now = clock.instant();
     Date cutoffDate = Date.from(now.minus(thresholdDays, ChronoUnit.DAYS));
     Date sinceDate = Date.from(now.minus(repeatIntervalDays, ChronoUnit.DAYS));
 
