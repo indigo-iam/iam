@@ -15,11 +15,15 @@
  */
 package it.infn.mw.iam.core.authn;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -46,7 +50,8 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    String clientId = authentication.getName();
+    String clientId = URLDecoder.decode(authentication.getName(), StandardCharsets.UTF_8);
+
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(
           () -> new BadCredentialsException("Client with id " + clientId + " was not found"));
@@ -57,6 +62,13 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
     }
     if (!supportsBasic(client)) {
       throw new BadCredentialsException("Client does not support basic authentication");
+    }
+
+    if (AuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod())) {
+      String clientSecret =
+          URLDecoder.decode(authentication.getCredentials().toString(), StandardCharsets.UTF_8);
+
+      return super.authenticate(new UsernamePasswordAuthenticationToken(clientId, clientSecret));
     }
 
     return super.authenticate(authentication);
