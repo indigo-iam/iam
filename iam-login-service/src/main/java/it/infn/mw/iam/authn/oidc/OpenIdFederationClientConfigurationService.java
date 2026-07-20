@@ -54,15 +54,12 @@ public class OpenIdFederationClientConfigurationService extends DefaultClientCon
       return clientConfig;
     }
     Optional<IamFederatedClientEntity> client = clientRepo.findByEntityId(issuer);
-    if (client.isPresent()) {
-      if (clock.instant().isBefore(client.get().getExpiration().toInstant())) {
-        return Optional.of(toOidcClient(client.get()));
-      }
+    if (client.isPresent() && clock.instant().isBefore(client.get().getExpiration().toInstant())) {
+      return Optional.of(toOidcClient(client.get()));
     }
     try {
       RegisteredClientDTO registered = federationRegistrationService.registerOp(issuer, client);
       return Optional.of(toOidcClient(registered));
-
     } catch (JOSEException | ParseException | FederationException e) {
       throw new AuthenticationServiceException("Unable to register federated OP: " + issuer, e);
     }
