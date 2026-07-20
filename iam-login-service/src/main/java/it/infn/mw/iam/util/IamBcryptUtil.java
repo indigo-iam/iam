@@ -32,7 +32,16 @@ public class IamBcryptUtil {
 
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    System.out.println(encoder.encode(args[0]));
+    String encodedPwd = encoder.encode(args[0]);
+    System.out.printf("Encoded password: %s%n", encodedPwd);
+
+    long start = System.nanoTime();
+    boolean pwdMatched = encoder.matches(args[0], encodedPwd);
+    double elapsed = (System.nanoTime() - start) / 1_000_000.0;
+
+    if (pwdMatched) {
+      System.out.printf("Time to match password with BCrypt library is %.3f ms%n", elapsed);
+    }
   }
 
 }
