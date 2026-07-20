@@ -85,7 +85,6 @@ public class AupSignaturePageController {
     } else {
       view = new ModelAndView("iam/noAup");
     }
-
     return view;
   }
 
@@ -98,9 +97,7 @@ public class AupSignaturePageController {
     }
 
     return ofNullable(savedRequest);
-
   }
-
 
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = "/iam/aup/sign")
@@ -108,7 +105,6 @@ public class AupSignaturePageController {
       HttpSession session) throws IamAupSignatureUpdateError {
 
     Optional<IamAup> aup = repo.findDefaultAup();
-
 
     if (!aup.isPresent()) {
       return new ModelAndView("iam/noAup");
@@ -132,7 +128,6 @@ public class AupSignaturePageController {
         }
       }
     }
-
     return new ModelAndView("redirect:" + dashboardBasePath);
   }
 
