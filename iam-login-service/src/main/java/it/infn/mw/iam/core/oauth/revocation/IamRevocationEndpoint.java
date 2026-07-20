@@ -76,7 +76,7 @@ public class IamRevocationEndpoint {
     this.refreshTokenRepo = refreshTokenRepo;
   }
 
-  @PostMapping(value = "/revoke", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  @PostMapping(value = URL, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public void revoke(@RequestParam(name = OAuth2ParameterNames.TOKEN) String tokenValue,
       Authentication auth)

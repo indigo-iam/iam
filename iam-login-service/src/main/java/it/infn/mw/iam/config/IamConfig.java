@@ -52,7 +52,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -86,6 +85,7 @@ import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
@@ -165,6 +165,9 @@ public class IamConfig {
 
   @Value("${iam.organisation.name}")
   private String iamOrganisationName;
+
+  @Value("${iam.client.secret-encoder-key}")
+  private String secretEncoderKey;
 
   @Bean
   GroupManagerNotificationDeliveryStrategy gmDeliveryStrategy(
@@ -447,7 +450,7 @@ public class IamConfig {
 
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
-      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService, 
+      @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService,
       AuthenticationEventPublisher eventPublisher) {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -556,7 +559,7 @@ public class IamConfig {
 
     DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
     dao.setUserDetailsService(userDetailsService);
-    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    dao.setPasswordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
 
     ClientBasicAuthenticationProvider authProvider =
         new ClientBasicAuthenticationProvider(dao, clientService);
