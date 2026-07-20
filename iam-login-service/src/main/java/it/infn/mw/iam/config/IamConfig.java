@@ -51,7 +51,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -92,6 +91,7 @@ import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
@@ -180,6 +180,9 @@ public class IamConfig {
 
   @Value("${iam.organisation.name}")
   private String iamOrganisationName;
+
+  @Value("${iam.client.secret-encoder-key}")
+  private String secretEncoderKey;
 
   @Bean
   GroupManagerNotificationDeliveryStrategy gmDeliveryStrategy(
@@ -571,7 +574,7 @@ public class IamConfig {
 
     DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
     dao.setUserDetailsService(userDetailsService);
-    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    dao.setPasswordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
 
     ClientBasicAuthenticationProvider authProvider =
         new ClientBasicAuthenticationProvider(dao, clientService);
