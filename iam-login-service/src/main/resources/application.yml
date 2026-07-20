@@ -187,6 +187,7 @@ iam:
 
   client:
     track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
+    secret-encoder-key: ${IAM_CLIENT_SECRET_ENCODER_KEY:}
 
   dashboard:
     enabled: ${IAM_DASHBOARD_ENABLED:false}

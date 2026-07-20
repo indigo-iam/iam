@@ -601,6 +601,7 @@ public class IamProperties {
 
   public static class ClientProperties {
     private boolean trackLastUsed = false;
+    private String secretEncoderKey;
 
     public boolean isTrackLastUsed() {
       return trackLastUsed;
@@ -608,6 +609,14 @@ public class IamProperties {
 
     public void setTrackLastUsed(boolean trackLastUsed) {
       this.trackLastUsed = trackLastUsed;
+    }
+
+    public String getSecretEncoderKey() {
+      return secretEncoderKey;
+    }
+
+    public void setSecretEncoderKey(String secretEncoderKey) {
+      this.secretEncoderKey = secretEncoderKey;
     }
   }
 
@@ -1022,7 +1031,7 @@ public class IamProperties {
   public void setDashboard(DashboardProperties dashboard) {
     this.dashboard = dashboard;
   }
-  
+
   public Boolean isDashboardPropertiesEnable() {
     return dashboard != null;
   }
