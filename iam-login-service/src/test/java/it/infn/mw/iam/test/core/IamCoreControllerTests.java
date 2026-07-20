@@ -63,6 +63,9 @@ class IamCoreControllerTests {
   @Value("${iam.baseUrl}")
   String iamBaseUrl;
 
+  @Value("${iam.dashboard.base-path}")
+  String dashboardBasePath;
+
   @BeforeEach
   void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -75,10 +78,19 @@ class IamCoreControllerTests {
 
   @Test
   void startRegistrationRedirectsToRegisterPage() throws Exception {
+
     mvc.perform(get("/start-registration"))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/register"));
+  }
 
+  @Test
+  @WithMockUser(authorities = "ROLE_USER")
+  void startRegistrationRedirectsToDashboardWhenUserIsAuthenticated() throws Exception {
+
+    mvc.perform(get("/start-registration"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(dashboardBasePath));
   }
 
   @Test
@@ -93,7 +105,6 @@ class IamCoreControllerTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"));
-
   }
 
   @Test
@@ -103,7 +114,6 @@ class IamCoreControllerTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"));
-
   }
 
   @Test
@@ -119,6 +129,7 @@ class IamCoreControllerTests {
   @Test
   @WithMockOIDCUser
   void externallyAuthenticatedUserIsRedirectedToRegisterPage() throws Exception {
+
     mvc.perform(get("/login"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -128,6 +139,7 @@ class IamCoreControllerTests {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void resetSessionClearsSecurityContext() throws Exception {
+
     mvc.perform(get("/reset-session"))
       .andDo(print())
       .andExpect(status().isFound())
@@ -137,12 +149,14 @@ class IamCoreControllerTests {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void authenticatedAccessToRootLeadsToMitreWebapp() throws Exception {
+
     mvc.perform(get("/")).andDo(print()).andExpect(status().isOk()).andExpect(view().name("home"));
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void authenticatedAccessToManageLeadsToMitreManageWebapp() throws Exception {
+
     mvc.perform(get("/manage"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -162,7 +176,6 @@ class IamCoreControllerTests {
 
     mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isBadRequest());
   }
-
 
   @Test
   @WithMockOAuthUser(scopes = {"openid", "profile", "email"}, user = "test",
@@ -190,6 +203,7 @@ class IamCoreControllerTests {
 
   @Test
   void testErrorPage() {
+
     Assertions
       .assertThatThrownBy(() -> mvc.perform(get("/error").contentType(MediaType.APPLICATION_JSON)))
       .hasCauseInstanceOf(RuntimeException.class)
