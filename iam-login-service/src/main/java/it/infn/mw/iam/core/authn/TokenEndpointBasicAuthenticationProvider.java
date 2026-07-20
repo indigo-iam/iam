@@ -19,7 +19,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,6 +28,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
@@ -40,13 +40,12 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
 
   private final ClientService clientService;
 
-  @Value("${iam.client.secret-encoder-key}")
-  private String secretEncoderKey;
-
   public TokenEndpointBasicAuthenticationProvider(
-      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService) {
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
+      IamProperties properties) {
 
-    this.setPasswordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
+    this
+      .setPasswordEncoder(new IamHmacPasswordEncoder(properties.getClient().getSecretEncoderKey()));
     this.setUserDetailsService(userDetailsService);
     this.clientService = userDetailsService.getClientDetailsService();
   }

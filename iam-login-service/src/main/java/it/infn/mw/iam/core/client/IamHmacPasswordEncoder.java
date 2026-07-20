@@ -29,6 +29,11 @@ public class IamHmacPasswordEncoder implements PasswordEncoder {
   private final SecretKeySpec pepperKey;
 
   public IamHmacPasswordEncoder(String masterKey) {
+
+    if (masterKey == null || masterKey.isBlank()) {
+      throw new IllegalArgumentException(
+          "Property 'iam.client.secret-encoder-key' must not be null or empty");
+    }
     this.pepperKey = new SecretKeySpec(masterKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
   }
 
