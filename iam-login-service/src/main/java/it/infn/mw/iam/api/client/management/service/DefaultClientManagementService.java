@@ -36,6 +36,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import com.google.common.base.Strings;
+
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -53,6 +55,10 @@ import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ClientProperties;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -72,6 +78,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientService clientService;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
+  private final ClientProperties clientProperties;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
   private final RegistrationTokenService registrationTokenService;
@@ -79,13 +86,16 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
-      ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
-      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
+      ClientConverter converter, ClientUtils clientUtils, IamProperties iamProperties,
+      UserConverter userConverter, IamAccountRepository accountRepo,
+      RegistrationTokenService registrationTokenService, ApplicationEventPublisher aep,
+      NotificationFactory notificationFactory,
+      ClientRegistrationProperties clientRegistrationProperties) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
+    this.clientProperties = iamProperties.getClient();
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
     this.registrationTokenService = registrationTokenService;
@@ -136,9 +146,21 @@ public class DefaultClientManagementService implements ClientManagementService {
     }
 
     clientUtils.setupClientDefaults(entity);
+
+    String plainClientSecret = entity.getClientSecret();
+    if (!Strings.isNullOrEmpty(plainClientSecret)) {
+
+      String hashedClientSecret = new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey())
+        .encode(plainClientSecret);
+      entity.setClientSecret(hashedClientSecret);
+    }
+
     entity = clientService.saveNewClient(entity);
 
-    return converter.registeredClientDtoFromEntity(entity);
+    RegisteredClientDTO newClient = converter.registeredClientDtoFromEntity(entity);
+    newClient.setClientSecret(plainClientSecret);
+
+    return newClient;
   }
 
   private boolean hasRelyingParty(RegisteredClientDTO request) {
@@ -191,7 +213,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(clientUtils.generateClientSecretHash());
+      // We should add a pop-up window to the UI with the new secret and hash the
+      // client secret in db (the new secret is now available to the user only under
+      // secret regeneration)
+      newClient.setClientSecret(clientUtils.generateClientSecret());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
@@ -240,10 +265,17 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(clientUtils.generateClientSecretHash());
+    String plainClientSecret = clientUtils.generateClientSecret();
+    client.setClientSecret(new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey())
+      .encode(plainClientSecret));
+
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
-    return converter.registeredClientDtoFromEntity(client);
+
+    RegisteredClientDTO updatedClient = converter.registeredClientDtoFromEntity(client);
+    updatedClient.setClientSecret(plainClientSecret);
+
+    return updatedClient;
   }
 
   @Override

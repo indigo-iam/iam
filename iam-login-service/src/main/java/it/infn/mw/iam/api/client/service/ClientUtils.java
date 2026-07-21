@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.util.Authorities;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.ClientProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
@@ -47,12 +44,9 @@ public class ClientUtils {
   private static final SecureRandom RNG = new SecureRandom();
 
   private final ClientRegistrationProperties registrationProperties;
-  private final ClientProperties clientProperties;
 
-  public ClientUtils(ClientRegistrationProperties registrationProperties,
-      IamProperties iamProperties) {
+  public ClientUtils(ClientRegistrationProperties registrationProperties) {
     this.registrationProperties = registrationProperties;
-    this.clientProperties = iamProperties.getClient();
   }
 
   public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
@@ -89,7 +83,7 @@ public class ClientUtils {
 
     if (isNull(client.getClientSecret())
         && AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
-      client.setClientSecret(generateClientSecretHash());
+      client.setClientSecret(generateClientSecret());
     }
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
@@ -97,12 +91,10 @@ public class ClientUtils {
     return client;
   }
 
-  public String generateClientSecretHash() {
-    String clientSecret =
-        Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
-          .substring(0, BCRYPT_MAX_SIZE);
+  public String generateClientSecret() {
 
-    return new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey()).encode(clientSecret);
+    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
+      .substring(0, BCRYPT_MAX_SIZE);
   }
 
   public ClientDetailsEntity setupProtectedResourceDefaults(ClientDetailsEntity client) {
@@ -129,7 +121,7 @@ public class ClientUtils {
       client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     }
     if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
-      client.setClientSecret(generateClientSecretHash());
+      client.setClientSecret(generateClientSecret());
     } else {
       client.setClientSecret(null);
     }
