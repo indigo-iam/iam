@@ -49,12 +49,12 @@ import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
-@SpringBootTest(classes = {IamLoginService.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSupportConstants {
@@ -264,7 +264,9 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
     assertNull(clientDto.getClientSecret());
 
     clientRepository.findByClientId(client.getClientId()).ifPresentOrElse(c -> {
-      assertEquals(clientSecret, c.getClientSecret());
+      assertEquals(c.getClientSecret(),
+          new IamHmacPasswordEncoder("my-super-secret-master-key-provided-by-configuration")
+            .encode(clientSecret));
     }, () -> {
       throw new AssertionError("Client not found");
     });

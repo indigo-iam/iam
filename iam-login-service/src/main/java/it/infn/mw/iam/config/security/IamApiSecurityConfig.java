@@ -21,6 +21,7 @@ import static org.springframework.http.HttpMethod.POST;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
@@ -31,7 +32,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
@@ -41,6 +41,7 @@ import org.springframework.security.web.context.SecurityContextPersistenceFilter
 import it.infn.mw.iam.api.proxy.ProxyCertificatesApiController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.security.IamWebSecurityConfig.UserLoginConfig;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.oauth.FormClientCredentialsAuthenticationFilter;
 
 @SuppressWarnings("deprecation")
@@ -63,10 +64,13 @@ public class IamApiSecurityConfig {
     @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
+    @Value("${iam.client.secret-encoder-key}")
+    private String secretEncoderKey;
+
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+        .passwordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
     }
 
     @Override
