@@ -191,7 +191,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(clientUtils.generateClientSecret());
+      newClient.setClientSecret(clientUtils.generateClientSecretHash());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
@@ -240,7 +240,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(clientUtils.generateClientSecret());
+    client.setClientSecret(clientUtils.generateClientSecretHash());
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
     return converter.registeredClientDtoFromEntity(client);

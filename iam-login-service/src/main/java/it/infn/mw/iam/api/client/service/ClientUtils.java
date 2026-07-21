@@ -28,7 +28,10 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ClientProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
@@ -36,17 +39,20 @@ import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 @Service
 public class ClientUtils {
 
-  public static final Set<ClientAuthMethod> AUTH_METHODS_REQUIRING_SECRET =
-      Set.of(ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST, ClientAuthMethod.SECRET_JWT);
+  public static final Set<ClientAuthMethod> AUTH_METHODS_REQUIRING_SECRET = Set
+    .of(ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST, ClientAuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
   private static final int BCRYPT_MAX_SIZE = 72;
   private static final SecureRandom RNG = new SecureRandom();
 
-  private final ClientRegistrationProperties properties;
+  private final ClientRegistrationProperties registrationProperties;
+  private final ClientProperties clientProperties;
 
-  public ClientUtils(ClientRegistrationProperties properties) {
-    this.properties = properties;
+  public ClientUtils(ClientRegistrationProperties registrationProperties,
+      IamProperties iamProperties) {
+    this.registrationProperties = registrationProperties;
+    this.clientProperties = iamProperties.getClient();
   }
 
   public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
@@ -58,23 +64,23 @@ public class ClientUtils {
     if (client.getAccessTokenValiditySeconds() == null
         || client.getAccessTokenValiditySeconds() == 0) {
       client.setAccessTokenValiditySeconds(
-          properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+          registrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
 
     if (client.getRefreshTokenValiditySeconds() == null) {
       client.setRefreshTokenValiditySeconds(
-          properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+          registrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
     if (client.getIdTokenValiditySeconds() == null || client.getIdTokenValiditySeconds() == 0) {
       client.setIdTokenValiditySeconds(
-          properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+          registrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
     }
 
     if (client.getDeviceCodeValiditySeconds() == null
         || client.getDeviceCodeValiditySeconds() == 0) {
       client.setDeviceCodeValiditySeconds(
-          properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
+          registrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
     }
 
     if (isNull(client.getTokenEndpointAuthMethod())) {
@@ -83,7 +89,7 @@ public class ClientUtils {
 
     if (isNull(client.getClientSecret())
         && AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
-      client.setClientSecret(generateClientSecret());
+      client.setClientSecret(generateClientSecretHash());
     }
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
@@ -91,9 +97,12 @@ public class ClientUtils {
     return client;
   }
 
-  public String generateClientSecret() {
-    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
-      .substring(0, BCRYPT_MAX_SIZE);
+  public String generateClientSecretHash() {
+    String clientSecret =
+        Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
+          .substring(0, BCRYPT_MAX_SIZE);
+
+    return new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey()).encode(clientSecret);
   }
 
   public ClientDetailsEntity setupProtectedResourceDefaults(ClientDetailsEntity client) {
@@ -120,7 +129,7 @@ public class ClientUtils {
       client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     }
     if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
-      client.setClientSecret(generateClientSecret());
+      client.setClientSecret(generateClientSecretHash());
     } else {
       client.setClientSecret(null);
     }
