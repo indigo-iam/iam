@@ -44,6 +44,9 @@ iam:
   versioned-static-resources:
     enable-versioning: false
 
+  client:
+    secret-encoder-key: my-super-secret-master-key-provided-by-configuration
+
 management:
   health:
       mail:
