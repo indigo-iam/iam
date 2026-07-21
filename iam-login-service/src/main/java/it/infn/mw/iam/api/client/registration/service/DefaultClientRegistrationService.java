@@ -46,6 +46,8 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import com.google.common.base.Strings;
+
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
@@ -60,8 +62,11 @@ import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ClientProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
@@ -92,6 +97,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
+  private final ClientProperties clientProperties;
   private final RegistrationTokenService registrationTokenService;
   private final ResourceServerTokenServices resourceServer;
   private final SystemScopeService systemScopeService;
@@ -100,7 +106,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
   public DefaultClientRegistrationService(ClientService clientService, AccountUtils accountUtils,
-      ClientConverter converter, ClientUtils clientUtils,
+      ClientConverter converter, ClientUtils clientUtils, IamProperties iamProperties,
       RegistrationTokenService registrationTokenService, ResourceServerTokenServices resourceServer,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
       ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
@@ -109,6 +115,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     this.accountUtils = accountUtils;
     this.converter = converter;
     this.clientUtils = clientUtils;
+    this.clientProperties = iamProperties.getClient();
     this.registrationTokenService = registrationTokenService;
     this.resourceServer = resourceServer;
     this.systemScopeService = scopeService;
@@ -337,9 +344,14 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
 
+    String plainClientSecret = client.getClientSecret();
+    hashClientSecret(client, plainClientSecret);
+
     client = clientService.saveNewClient(client);
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+
+    response.setClientSecret(plainClientSecret);
 
     if (!hasRelyingParty(request) && isAnonymous(authentication)) {
 
@@ -362,6 +374,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return response;
   }
 
+  private void hashClientSecret(ClientDetailsEntity client, String secret) {
+    if (!Strings.isNullOrEmpty(secret)) {
+
+      String hashedClientSecret =
+          new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey()).encode(secret);
+      client.setClientSecret(hashedClientSecret);
+    }
+  }
+
   @Override
   public RegisteredClientDTO registerProtectedResource(RegisteredClientDTO request,
       Authentication authentication) throws ParseException {
@@ -379,6 +400,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       client.getContacts().add(account.get().getUserInfo().getEmail());
     }
 
+    String plainClientSecret = client.getClientSecret();
+    hashClientSecret(client, plainClientSecret);
+
     client = clientService.saveNewClient(client);
     eventPublisher.publishEvent(new ClientRegistered(this, client));
 
@@ -387,6 +411,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+
+    response.setClientSecret(plainClientSecret);
 
     OAuth2AccessTokenEntity ratEntity = registrationTokenService.createResourceAccessToken(client);
     response.setRegistrationAccessToken(ratEntity.getValue());
@@ -462,7 +488,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(clientUtils.generateClientSecretHash());
+      // We should add a pop-up window to the UI with the new secret and hash the
+      // client secret in db (the new secret is now available to the user only under
+      // secret regeneration)
+      newClient.setClientSecret(clientUtils.generateClientSecret());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
@@ -515,7 +544,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setClientId(oldClient.getClientId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(clientUtils.generateClientSecretHash());
+      // Same as for client update
+      newClient.setClientSecret(clientUtils.generateClientSecret());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
