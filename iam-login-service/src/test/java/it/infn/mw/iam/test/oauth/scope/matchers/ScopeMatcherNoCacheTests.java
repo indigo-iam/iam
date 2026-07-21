@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
@@ -76,7 +77,9 @@ class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);
-    client.setClientSecret(CLIENT_SECRET);
+    client.setClientSecret(
+        new IamHmacPasswordEncoder("my-super-secret-master-key-provided-by-configuration")
+          .encode(CLIENT_SECRET));
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
     client.setGrantTypes(Set.of("client_credentials"));
     clientRepo.save(client);
