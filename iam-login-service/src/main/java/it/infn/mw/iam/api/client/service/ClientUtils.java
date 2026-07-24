@@ -45,8 +45,8 @@ public class ClientUtils {
 
   private final ClientRegistrationProperties properties;
 
-  public ClientUtils(ClientRegistrationProperties registrationProperties) {
-    this.properties = registrationProperties;
+  public ClientUtils(ClientRegistrationProperties properties) {
+    this.properties = properties;
   }
 
   public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
