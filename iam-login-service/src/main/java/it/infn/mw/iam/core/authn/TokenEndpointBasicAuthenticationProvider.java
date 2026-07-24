@@ -59,10 +59,18 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
       .orElseThrow(
           () -> new BadCredentialsException("Client with id " + clientId + " was not found"));
 
-    if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
-        && client.getClientSecret() != null) {
-      throw new AuthenticationServiceException("Public client requires no secret");
+    if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+      if (client.getClientSecret() != null) {
+
+        throw new AuthenticationServiceException("Public client requires no secret");
+      }
+      if (authentication.getCredentials() == null
+          || "".equals(String.valueOf(authentication.getCredentials()))) {
+        return new UsernamePasswordAuthenticationToken(client.getClientId(), null,
+            client.getAuthorities());
+      }
     }
+
     if (!supportsBasic(client)) {
       throw new BadCredentialsException("Client does not support basic authentication");
     }

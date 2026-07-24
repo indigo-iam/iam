@@ -37,6 +37,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -58,6 +59,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
@@ -127,13 +130,16 @@ class FederationRegistrationControllerTests {
 
     when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
 
-    mvc
+    String clientRegistrationResponse = mvc
       .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
         .contentType("application/entity-statement+jwt")
         .content(rpJwt))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+      .andExpect(content().contentType("application/explicit-registration-response+jwt"))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
     // Check authorization code flow works
     ClientDetailsEntity client =
@@ -190,10 +196,15 @@ class FederationRegistrationControllerTests {
       .getQueryParams()
       .getFirst("code");
 
+    SignedJWT signedJwt = SignedJWT.parse(clientRegistrationResponse);
+    JWTClaimsSet claims = signedJwt.getJWTClaimsSet();
+    Map<String, Object> metadata = claims.getJSONObjectClaim("metadata");
+    Map<String, Object> rp = (Map<String, Object>) metadata.get("openid_relying_party");
+    String clientSecret = (String) rp.get("client_secret");
+
     // URL encode client_id and client_secret
     String encodedClientId = URLEncoder.encode(client.getClientId(), StandardCharsets.UTF_8);
-    String encodedClientSecret =
-        URLEncoder.encode(client.getClientSecret(), StandardCharsets.UTF_8);
+    String encodedClientSecret = URLEncoder.encode(clientSecret, StandardCharsets.UTF_8);
 
     String credentials = Base64.getEncoder()
       .encodeToString(
