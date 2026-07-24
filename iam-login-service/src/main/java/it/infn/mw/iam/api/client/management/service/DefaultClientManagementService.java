@@ -60,7 +60,6 @@ import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ClientProperties;
-import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
@@ -89,8 +88,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       ClientConverter converter, ClientUtils clientUtils, IamProperties iamProperties,
       UserConverter userConverter, IamAccountRepository accountRepo,
       RegistrationTokenService registrationTokenService, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory,
-      ClientRegistrationProperties clientRegistrationProperties) {
+      NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
