@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.util;
+package it.infn.mw.iam.util.crypto;
 
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 
-public class IamPbkdf2Util {
+public class IamHmacUtil {
+
+  private static final String MASTER_KEY = "my-super-secret-master-key-provided-by-configuration";
 
   public static void main(String[] args) {
 
@@ -26,7 +28,7 @@ public class IamPbkdf2Util {
       System.exit(1);
     }
 
-    Pbkdf2PasswordEncoder encoder = new Pbkdf2PasswordEncoder();
+    IamHmacPasswordEncoder encoder = new IamHmacPasswordEncoder(MASTER_KEY);
 
     String encodedPwd = encoder.encode(args[0]);
     System.out.printf("Encoded secret: %s%n", encodedPwd);
@@ -36,7 +38,7 @@ public class IamPbkdf2Util {
     double elapsed = (System.nanoTime() - start) / 1_000_000.0;
 
     if (pwdMatched) {
-      System.out.printf("Time to match secret with Pbkdf2 library is %.3f ms%n", elapsed);
+      System.out.printf("Time to match secret with HMAC-SHA256 algorithm is %.3f ms", elapsed);
     }
   }
 
