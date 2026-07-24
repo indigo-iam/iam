@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.util;
+package it.infn.mw.iam.util.crypto;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -40,7 +40,7 @@ public class IamBcryptUtil {
     double elapsed = (System.nanoTime() - start) / 1_000_000.0;
 
     if (pwdMatched) {
-      System.out.printf("Time to match password with BCrypt library is %.3f ms%n", elapsed);
+      System.out.printf("Time to match password with BCrypt library is %.3f ms", elapsed);
     }
   }
 
