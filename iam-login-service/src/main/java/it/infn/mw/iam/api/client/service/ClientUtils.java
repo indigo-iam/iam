@@ -43,10 +43,10 @@ public class ClientUtils {
   private static final int BCRYPT_MAX_SIZE = 72;
   private static final SecureRandom RNG = new SecureRandom();
 
-  private final ClientRegistrationProperties registrationProperties;
+  private final ClientRegistrationProperties properties;
 
   public ClientUtils(ClientRegistrationProperties registrationProperties) {
-    this.registrationProperties = registrationProperties;
+    this.properties = registrationProperties;
   }
 
   public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
@@ -58,23 +58,23 @@ public class ClientUtils {
     if (client.getAccessTokenValiditySeconds() == null
         || client.getAccessTokenValiditySeconds() == 0) {
       client.setAccessTokenValiditySeconds(
-          registrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+          properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
 
     if (client.getRefreshTokenValiditySeconds() == null) {
       client.setRefreshTokenValiditySeconds(
-          registrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+          properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
     if (client.getIdTokenValiditySeconds() == null || client.getIdTokenValiditySeconds() == 0) {
       client.setIdTokenValiditySeconds(
-          registrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+          properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
     }
 
     if (client.getDeviceCodeValiditySeconds() == null
         || client.getDeviceCodeValiditySeconds() == 0) {
       client.setDeviceCodeValiditySeconds(
-          registrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
+          properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
     }
 
     client.setAllowIntrospection(true);
@@ -95,7 +95,6 @@ public class ClientUtils {
   }
 
   public String generateClientSecret() {
-
     return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
       .substring(0, BCRYPT_MAX_SIZE);
   }
