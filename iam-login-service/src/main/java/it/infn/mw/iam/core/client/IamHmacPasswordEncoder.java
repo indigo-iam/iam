@@ -55,6 +55,10 @@ public class IamHmacPasswordEncoder implements PasswordEncoder {
   @Override
   public boolean matches(CharSequence rawPassword, String encodedPassword) {
 
+    if (rawPassword == null || encodedPassword == null) {
+      return false;
+    }
+
     String calculated = encode(rawPassword);
 
     return MessageDigest.isEqual(calculated.getBytes(StandardCharsets.UTF_8),
