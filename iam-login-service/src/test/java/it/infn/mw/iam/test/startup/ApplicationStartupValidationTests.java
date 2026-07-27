@@ -29,14 +29,14 @@ class ApplicationStartupValidationTests {
   void testFailureOnStatupDueToWrongEnum() {
 
     assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo --iam.client.secret-encoder-key=test-secret-key"}));
+        "--iam.jwt-profile.default-profile=pippo"}));
   }
 
   @Test
   void testSuccessStatup() {
 
     assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {"--iam.client.secret-encoder-key=test-secret-key"}));
+      .main(new String[] {}));
   }
 
 }
