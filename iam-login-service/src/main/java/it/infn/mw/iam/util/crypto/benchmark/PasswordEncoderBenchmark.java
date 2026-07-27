@@ -15,8 +15,11 @@
  */
 package it.infn.mw.iam.util.crypto.benchmark;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.codec.binary.Base64;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -29,6 +32,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
@@ -36,8 +40,8 @@ import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
 @Fork(2)
@@ -53,10 +57,15 @@ public class PasswordEncoderBenchmark {
 
   private String encodedPassword;
 
+  private String generateSecret() {
+    return Base64.encodeBase64URLSafeString(new BigInteger(512, new SecureRandom()).toByteArray())
+      .substring(0, 72);
+  }
+
   @Setup(Level.Trial)
   public void setup() {
 
-    rawPassword = "AMbr7GZ8HmCnhKVE0H7ECRaaHZFwKy6TpZgqbsbbJUvSh2VIz0gjpBcE5motlncQMNdUqv8X";
+    rawPassword = generateSecret();
 
     switch (algorithm) {
 
@@ -84,7 +93,9 @@ public class PasswordEncoderBenchmark {
   }
 
   @Benchmark
-  public boolean matches() {
-    return encoder.matches(rawPassword, encodedPassword);
+  public void match(Blackhole blackhole) {
+
+    boolean matches = encoder.matches(rawPassword, encodedPassword);
+    blackhole.consume(matches);
   }
 }
