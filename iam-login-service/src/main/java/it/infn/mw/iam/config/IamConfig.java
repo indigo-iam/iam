@@ -91,7 +91,7 @@ import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
@@ -180,9 +180,6 @@ public class IamConfig {
 
   @Value("${iam.organisation.name}")
   private String iamOrganisationName;
-
-  @Value("${iam.client.secret-encoder-key}")
-  private String secretEncoderKey;
 
   @Bean
   GroupManagerNotificationDeliveryStrategy gmDeliveryStrategy(
@@ -574,7 +571,7 @@ public class IamConfig {
 
     DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
     dao.setUserDetailsService(userDetailsService);
-    dao.setPasswordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
+    dao.setPasswordEncoder(new IamSha256PasswordEncoder());
 
     ClientBasicAuthenticationProvider authProvider =
         new ClientBasicAuthenticationProvider(dao, clientService);

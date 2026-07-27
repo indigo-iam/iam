@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.util.crypto;
 
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
-
 public class IamHmacUtil {
 
   private static final String MASTER_KEY = "my-super-secret-master-key-provided-by-configuration";

@@ -37,11 +37,8 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.CacheProperties;
-<<<<<<< HEAD
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
-=======
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
->>>>>>> 9974b81f3 (Fix tests)
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -96,9 +93,7 @@ class ScopeMatcherCacheTests extends EndpointsTestUtils {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);
-    client.setClientSecret(
-        new IamHmacPasswordEncoder("my-super-secret-master-key-provided-by-configuration")
-          .encode(CLIENT_SECRET));
+    client.setClientSecret(new IamSha256PasswordEncoder().encode(CLIENT_SECRET));
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
     client.setGrantTypes(Set.of("client_credentials"));
     client = clientService.saveNewClient(client);

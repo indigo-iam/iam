@@ -77,7 +77,7 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -483,9 +483,6 @@ public class IamWebSecurityConfig {
     private UserDetailsService userDetailsService;
     private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
 
-    @Value("${iam.client.secret-encoder-key}")
-    private String secretEncoderKey;
-
     public IntrospectEndpointAuthorizationConfig(
         OAuth2AuthenticationEntryPoint authenticationEntryPoint,
         @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
@@ -499,8 +496,7 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
     }
 
     @Override
@@ -530,14 +526,10 @@ public class IamWebSecurityConfig {
     @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
 
-    @Value("${iam.client.secret-encoder-key}")
-    private String secretEncoderKey;
-
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(new IamHmacPasswordEncoder(secretEncoderKey));
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
     }
 
     private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()

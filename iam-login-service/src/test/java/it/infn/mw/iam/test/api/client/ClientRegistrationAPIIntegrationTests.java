@@ -49,7 +49,7 @@ import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
@@ -265,7 +265,7 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
 
     clientRepository.findByClientId(client.getClientId()).ifPresentOrElse(c -> {
       assertEquals(c.getClientSecret(),
-          new IamHmacPasswordEncoder("my-super-secret-master-key-provided-by-configuration")
+          new IamSha256PasswordEncoder()
             .encode(clientSecret));
     }, () -> {
       throw new AssertionError("Client not found");
