@@ -28,9 +28,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
@@ -41,11 +40,9 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
   private final ClientService clientService;
 
   public TokenEndpointBasicAuthenticationProvider(
-      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService,
-      IamProperties properties) {
+      @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService) {
 
-    this
-      .setPasswordEncoder(new IamHmacPasswordEncoder(properties.getClient().getSecretEncoderKey()));
+    this.setPasswordEncoder(new IamSha256PasswordEncoder());
     this.setUserDetailsService(userDetailsService);
     this.clientService = userDetailsService.getClientDetailsService();
   }

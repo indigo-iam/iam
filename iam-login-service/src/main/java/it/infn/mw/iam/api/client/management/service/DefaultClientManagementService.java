@@ -55,9 +55,7 @@ import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.ClientProperties;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -77,7 +75,6 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientService clientService;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
-  private final ClientProperties clientProperties;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
   private final RegistrationTokenService registrationTokenService;
@@ -85,15 +82,13 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
-      ClientConverter converter, ClientUtils clientUtils, IamProperties iamProperties,
-      UserConverter userConverter, IamAccountRepository accountRepo,
-      RegistrationTokenService registrationTokenService, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory) {
+      ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
+      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
-    this.clientProperties = iamProperties.getClient();
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
     this.registrationTokenService = registrationTokenService;
@@ -148,8 +143,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     String plainClientSecret = entity.getClientSecret();
     if (!Strings.isNullOrEmpty(plainClientSecret)) {
 
-      String hashedClientSecret = new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey())
-        .encode(plainClientSecret);
+      String hashedClientSecret = new IamSha256PasswordEncoder().encode(plainClientSecret);
       entity.setClientSecret(hashedClientSecret);
     }
 
@@ -264,8 +258,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     String plainClientSecret = clientUtils.generateClientSecret();
-    client.setClientSecret(new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey())
-      .encode(plainClientSecret));
+    client.setClientSecret(new IamSha256PasswordEncoder().encode(plainClientSecret));
 
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));

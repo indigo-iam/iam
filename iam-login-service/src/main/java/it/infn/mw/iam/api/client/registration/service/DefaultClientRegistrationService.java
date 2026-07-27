@@ -58,11 +58,9 @@ import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.ClientProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
-import it.infn.mw.iam.core.client.IamHmacPasswordEncoder;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
@@ -97,7 +95,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
-  private final ClientProperties clientProperties;
   private final RegistrationTokenService registrationTokenService;
   private final ResourceServerTokenServices resourceServer;
   private final SystemScopeService systemScopeService;
@@ -106,7 +103,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
   public DefaultClientRegistrationService(ClientService clientService, AccountUtils accountUtils,
-      ClientConverter converter, ClientUtils clientUtils, IamProperties iamProperties,
+      ClientConverter converter, ClientUtils clientUtils,
       RegistrationTokenService registrationTokenService, ResourceServerTokenServices resourceServer,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
       ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
@@ -115,7 +112,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     this.accountUtils = accountUtils;
     this.converter = converter;
     this.clientUtils = clientUtils;
-    this.clientProperties = iamProperties.getClient();
     this.registrationTokenService = registrationTokenService;
     this.resourceServer = resourceServer;
     this.systemScopeService = scopeService;
@@ -377,8 +373,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void hashClientSecret(ClientDetailsEntity client, String secret) {
     if (!Strings.isNullOrEmpty(secret)) {
 
-      String hashedClientSecret =
-          new IamHmacPasswordEncoder(clientProperties.getSecretEncoderKey()).encode(secret);
+      String hashedClientSecret = new IamSha256PasswordEncoder().encode(secret);
       client.setClientSecret(hashedClientSecret);
     }
   }
