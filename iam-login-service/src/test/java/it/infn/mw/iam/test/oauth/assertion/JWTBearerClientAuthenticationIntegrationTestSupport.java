@@ -34,6 +34,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
@@ -43,7 +44,8 @@ import it.infn.mw.iam.util.JwkKeyStoreLoader;
 public class JWTBearerClientAuthenticationIntegrationTestSupport extends EndpointsTestUtils {
 
   public static final String CLIENT_ID_SECRET_JWT = "jwt-auth-client_secret_jwt";
-  public static final String CLIENT_ID_SECRET_JWT_SECRET = "Tt10zY1V/25RmejKOyMbyILuRLFMkyjTiBofKlDgP7U=";
+  public static final String CLIENT_ID_SECRET_JWT_SECRET =
+      new IamSha256PasswordEncoder().encode("c8e9eed0-e6e4-4a66-b16e-6f37096356a7");
   public static final String TOKEN_ENDPOINT_AUDIENCE = "http://localhost:8080/token";
   public static final String TOKEN_ENDPOINT = "/token";
   public static final String JWT_BEARER_ASSERTION_TYPE =
