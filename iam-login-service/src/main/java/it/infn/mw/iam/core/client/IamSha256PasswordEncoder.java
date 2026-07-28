@@ -27,6 +27,10 @@ public class IamSha256PasswordEncoder implements PasswordEncoder {
   @Override
   public String encode(CharSequence rawPassword) {
 
+    if (rawPassword == null) {
+      return null;
+    }
+
     try {
       MessageDigest md = MessageDigest.getInstance("SHA-256");
       byte[] digest = md.digest(rawPassword.toString().getBytes(StandardCharsets.UTF_8));
