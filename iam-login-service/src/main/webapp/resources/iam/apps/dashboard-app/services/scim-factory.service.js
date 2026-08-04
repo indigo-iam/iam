@@ -552,25 +552,11 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 
 	function setUserActiveStatus(userId, status) {
 
-		console.info("Patch user-id, set active to ", userId, status);
+		console.info("Set active status for user-id ", userId, status);
 
-		var config = {
-			headers: {
-				'Content-Type': 'application/scim+json'
-			}
-		};
-		var data = {
-			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			Operations: [{
-				op: "replace",
-				value: {
-					active: status
-				}
-			}]
-		};
-		var url = urlUsers + '/' + userId;
+		var url = '/iam/account/' + userId + (status ? '/enable' : '/disable');
 
-		return $http.patch(url, data, config);
+		return $http.patch(url);
 	};
 
 	function updateUser(userId, ops) {

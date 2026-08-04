@@ -301,7 +301,7 @@ function RegistrationRequests(
     self.api.load = loadPendingRequests;
     self.parentCb({$API: self.api});
 
-    if (Utils.isAdmin()) {
+    if (Utils.isAdmin() || Utils.isUserManager()) {
       loadPendingRequests();
       $interval(refreshPendingRequests, 60000);
     }
