@@ -87,7 +87,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER', 'ROLE_USER_MANAGER')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
@@ -118,7 +118,7 @@ public class ScimUserController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER', 'ROLE_USER_MANAGER')")
   @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
 
