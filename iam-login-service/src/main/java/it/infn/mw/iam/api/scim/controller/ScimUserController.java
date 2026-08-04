@@ -164,7 +164,9 @@ public class ScimUserController extends ScimControllerSupport {
     userProvisioningService.update(id, patchRequest.getOperations());
   }
 
-  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')"
+      + " or ((#iam.hasScope('iam:user.write') or #iam.hasDashboardRole('ROLE_USER_MANAGER'))"
+      + " and #iam.canManageAccount(#id))")
   @DeleteMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteUser(@PathVariable final String id) {
