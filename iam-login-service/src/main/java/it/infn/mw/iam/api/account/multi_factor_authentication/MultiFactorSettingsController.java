@@ -57,7 +57,7 @@ public class MultiFactorSettingsController {
    * 
    * @return MultiFactorSettingsDTO the MFA settings for the account
    */
-  @PreAuthorize("#iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER', 'ROLE_USER_MANAGER') or #iam.isUser(#accountId)")
   @GetMapping(value = MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
