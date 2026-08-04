@@ -16,10 +16,11 @@
 (function () {
     'use strict';
 
-    function ClientOwnersController(ClientsService, $uibModal, toaster) {
+    function ClientOwnersController(ClientsService, $uibModal, toaster, Utils, $location) {
         var self = this;
 
         self.assignOwner = assignOwner;
+        self.addOwnerByUsername = addOwnerByUsername;
         self.removeOwner = removeOwner;
         self.onChangePage = onChangePage;
 
@@ -55,11 +56,35 @@
 
         function removeOwner(user) {
             ClientsService.removeClientOwner(self.client.client_id, user.id).then(res => {
+                if (Utils.isMe(user.id) && !Utils.isAdmin()) {
+                    toaster.pop({
+                        type: 'success',
+                        body: 'You are no longer an owner of this client'
+                    });
+                    $location.path('/home/clients');
+                    return;
+                }
                 updateClientOwners();
             }).catch(err => {
                 toaster.pop({
                     type: 'error',
-                    body: "Error removing client owner"
+                    body: (err.data && err.data.error) || "Error removing client owner"
+                });
+            });
+        }
+
+        function addOwnerByUsername() {
+            ClientsService.assignClientOwnerByUsername(self.client.client_id, self.newOwnerUsername).then(res => {
+                self.newOwnerUsername = '';
+                updateClientOwners();
+                toaster.pop({
+                    type: 'success',
+                    body: 'Owner added'
+                });
+            }).catch(err => {
+                toaster.pop({
+                    type: 'error',
+                    body: (err.data && err.data.error) || "Error assigning client owner"
                 });
             });
         }
@@ -103,7 +128,7 @@
                 client: '=',
                 clientOwners: '='
             },
-            controller: ['ClientsService', '$uibModal', 'toaster', ClientOwnersController],
+            controller: ['ClientsService', '$uibModal', 'toaster', 'Utils', '$location', ClientOwnersController],
             controllerAs: '$ctrl'
         };
     }

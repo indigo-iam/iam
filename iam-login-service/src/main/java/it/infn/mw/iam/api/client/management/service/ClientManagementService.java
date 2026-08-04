@@ -59,6 +59,8 @@ public interface ClientManagementService {
 
   void assignClientOwner(@NotBlank String clientId, @IamAccountId String accountId);
 
+  void assignClientOwnerByUsername(@NotBlank String clientId, @NotBlank String username);
+
   void removeClientOwner(@NotBlank String clientId, @IamAccountId String accountId);
 
 

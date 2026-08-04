@@ -63,7 +63,7 @@
         }
     };
 
-    function MyClientController($location, ClientRegistrationService, toaster, $uibModal) {
+    function MyClientController($location, ClientRegistrationService, ClientsService, toaster, $uibModal) {
         var self = this;
 
         self.cancel = cancel;
@@ -78,8 +78,20 @@
                 self.client = self.clientVal;
             } else {
                 self.clientVal = angular.copy(self.client);
+                loadClientOwners();
             }
         };
+
+        function loadClientOwners() {
+            ClientsService.retrieveClientOwners(self.clientVal.client_id, 1, 10).then(res => {
+                self.clientOwners = res;
+            }).catch(err => {
+                toaster.pop({
+                    type: 'error',
+                    body: 'Error fetching client owners'
+                });
+            });
+        }
 
         function resetVal() {
             self.clientVal = angular.copy(self.client);
@@ -225,7 +237,7 @@
                 systemScopes: '<',
                 newClient: '<'
             },
-            controller: ['$location', 'ClientRegistrationService', 'toaster', '$uibModal', MyClientController],
+            controller: ['$location', 'ClientRegistrationService', 'ClientsService', 'toaster', '$uibModal', MyClientController],
             controllerAs: '$ctrl'
         };
     }
