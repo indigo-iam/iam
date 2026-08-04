@@ -49,6 +49,8 @@ public class DefaultScopeFilter implements ScopeFilter {
 
   public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
+  public static final Set<String> USER_MANAGER_SCOPES = Set.of("iam:user.read", "iam:user.write", "scim:read");
+
   private static final Set<String> EXCLUDED_SCOPES = Set.of("openid");
 
   private Cache<String, ScopeMatcher> matchersCache =
@@ -117,12 +119,20 @@ public class DefaultScopeFilter implements ScopeFilter {
 
   private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {
 
-    if (!accountUtils.isAdmin(account)) {
-      return requestedScopes.stream()
-        .filter(s -> !ADMIN_SCOPES.contains(s))
-        .collect(Collectors.toSet());
+    if (accountUtils.isAdmin(account)) {
+      return requestedScopes;
     }
-    return requestedScopes;
+
+    Set<String> restrictedScopes = new HashSet<>(ADMIN_SCOPES);
+    restrictedScopes.addAll(USER_MANAGER_SCOPES);
+
+    if (accountUtils.isUserManager(account)) {
+      restrictedScopes.removeAll(USER_MANAGER_SCOPES);
+    }
+
+    return requestedScopes.stream()
+      .filter(s -> !restrictedScopes.contains(s))
+      .collect(Collectors.toSet());
   }
 
   private Set<String> scopePolicies(Set<String> requestedScopes, IamAccount account) {
