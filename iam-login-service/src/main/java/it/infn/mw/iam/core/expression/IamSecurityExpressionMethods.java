@@ -72,7 +72,7 @@ public class IamSecurityExpressionMethods {
   }
 
   public enum Role {
-    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER
+    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER, ROLE_USER_MANAGER
   }
 
   public boolean isGroupManager(String groupUuid) {
@@ -160,6 +160,18 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
+  }
+
+  public boolean canManageAccount(String accountUuid) {
+    Optional<IamAccount> target = accountUtils.getByAccountId(accountUuid);
+    if (target.isEmpty()) {
+      return true;
+    }
+    if (accountUtils.isAdmin(target.get()) || accountUtils.isUserManager(target.get())) {
+      return false;
+    }
+    Optional<IamAccount> caller = accountUtils.getAuthenticatedUserAccount();
+    return caller.isEmpty() || !caller.get().getUuid().equals(target.get().getUuid());
   }
 
   public boolean isClientOwner(String clientId) {
