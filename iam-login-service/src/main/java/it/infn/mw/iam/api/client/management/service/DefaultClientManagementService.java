@@ -36,8 +36,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -141,11 +139,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     clientUtils.setupClientDefaults(entity);
 
     String plainClientSecret = entity.getClientSecret();
-    if (!Strings.isNullOrEmpty(plainClientSecret)) {
-
-      String hashedClientSecret = new IamSha256PasswordEncoder().encode(plainClientSecret);
-      entity.setClientSecret(hashedClientSecret);
-    }
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode(plainClientSecret);
+    entity.setClientSecret(hashedClientSecret);
 
     entity = clientService.saveNewClient(entity);
 

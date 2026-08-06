@@ -37,6 +37,10 @@ public class IamSha256PasswordEncoder implements PasswordEncoder {
   @Override
   public boolean matches(CharSequence rawPassword, String encodedPassword) {
 
+    if (rawPassword == null || encodedPassword == null) {
+      return false;
+    }
+
     return MessageDigest.isEqual(encode(rawPassword).getBytes(StandardCharsets.UTF_8),
         encodedPassword.getBytes(StandardCharsets.UTF_8));
   }
