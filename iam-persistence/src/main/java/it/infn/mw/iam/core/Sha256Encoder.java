@@ -22,6 +22,10 @@ import java.util.Base64;
 
 public class Sha256Encoder {
 
+  private Sha256Encoder() {
+    // Nothing to do
+  }
+
   public static String encode(String secret) {
 
     try {
