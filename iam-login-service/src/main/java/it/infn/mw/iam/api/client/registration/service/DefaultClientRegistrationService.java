@@ -42,8 +42,6 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import com.google.common.base.Strings;
-
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
@@ -371,11 +369,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   }
 
   private void hashClientSecret(ClientDetailsEntity client, String secret) {
-    if (!Strings.isNullOrEmpty(secret)) {
 
-      String hashedClientSecret = new IamSha256PasswordEncoder().encode(secret);
-      client.setClientSecret(hashedClientSecret);
-    }
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode(secret);
+    client.setClientSecret(hashedClientSecret);
   }
 
   @Override
