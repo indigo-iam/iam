@@ -48,9 +48,6 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   false, 86400, 3600, 600, true,'PRIVATE_KEY', false, 'RS256',
   '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}');
 
-CREATE ALIAS IF NOT EXISTS SHA256_BASE64 FOR "it.infn.mw.iam.util.test.H2Functions.sha256Base64";
-UPDATE client_details SET client_secret = SHA256_BASE64(client_secret);
-
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
   (1, 'profile'),

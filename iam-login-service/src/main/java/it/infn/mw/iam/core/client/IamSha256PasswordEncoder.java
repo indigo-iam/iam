@@ -17,10 +17,10 @@ package it.infn.mw.iam.core.client;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import it.infn.mw.iam.core.Sha256Encoder;
 
 public class IamSha256PasswordEncoder implements PasswordEncoder {
 
@@ -31,15 +31,7 @@ public class IamSha256PasswordEncoder implements PasswordEncoder {
       return null;
     }
 
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] digest = md.digest(rawPassword.toString().getBytes(StandardCharsets.UTF_8));
-
-      return Base64.getEncoder().encodeToString(digest);
-
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Unable to calculate SHA256", e);
-    }
+    return Sha256Encoder.encode(rawPassword.toString());
   }
 
   @Override
