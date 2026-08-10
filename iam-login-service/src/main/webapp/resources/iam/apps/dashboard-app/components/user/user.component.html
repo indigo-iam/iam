@@ -51,7 +51,12 @@
                     </div>
                     <div ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" class="box-footer">
                         <!-- Edit details button -->
-                        <user-edit ng-hide="$ctrl.isReader() && !$ctrl.isMe()" user="$ctrl.user"></user-edit>
+                        <user-edit ng-hide="($ctrl.isReader() || ($ctrl.isUserManager() && !$ctrl.isVoAdmin())) && !$ctrl.isMe()" user="$ctrl.user"></user-edit>
+
+                        <div ng-if="$ctrl.isUserManager() && !$ctrl.isVoAdmin() && !$ctrl.isMe() && !$ctrl.userIsVoAdmin()">
+                            <!-- Enable/disable user buttons -->
+                            <user-status user="$ctrl.user"></user-status>
+                        </div>
 
                         <div ng-if="$ctrl.isVoAdmin()">
                             <!-- Enable/disable user buttons -->
@@ -62,6 +67,9 @@
 
                             <!-- Assign/Revoke monitoring privileges -->
                             <user-monitoring-privileges user="$ctrl.user"></user-monitoring-privileges>
+
+                            <!-- Assign/Revoke user management privileges -->
+                            <user-user-manager-privileges user="$ctrl.user"></user-user-manager-privileges>
 
                             <!-- Change membership end time -->
                             <user-end-time user="$ctrl.user"></user-end-time>

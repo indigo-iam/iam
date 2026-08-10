@@ -49,10 +49,12 @@
         self.currentPage = 1;
         self.voAdmin = Utils.isAdmin();
 
-        $scope.$watch('$ctrl.filter', function() {
-            self.currentPage = 1;
-            filterRequests(1);
-        });
+        if (Utils.isAdmin() || Utils.isGroupManager() || Utils.isReader()) {
+            $scope.$watch('$ctrl.filter', function() {
+                self.currentPage = 1;
+                filterRequests(1);
+            });
+        }
 
         self.groupManagerForGroup = function(req) {
             return Utils.isGroupManagerForGroup(req.groupUuid);
@@ -96,7 +98,9 @@
             self.api = {};
             self.api.load = loadRequests;
             self.parentCb({ $API: self.api });
-            loadRequests();
+            if (Utils.isAdmin() || Utils.isGroupManager() || Utils.isReader()) {
+                loadRequests();
+            }
         };
 
         function filterRequests(startIndex) {

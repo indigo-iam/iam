@@ -68,7 +68,7 @@ public class AccountAttributesController {
   }
 
   @GetMapping(value = "/iam/account/{id}/attributes")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER', 'ROLE_USER_MANAGER')")
   public List<AttributeDTO> getAttributes(@PathVariable String id) {
 
     IamAccount account =

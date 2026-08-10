@@ -55,7 +55,7 @@ class DashboardConfigServiceTest {
   private static final String CLIENT_SECRET = "dashboard-client-secret-01234567890";
   private static final String BASE_URL = "http://localhost:8080";
   private static final Set<String> SCOPES = Sets.newHashSet("openid", "profile", "email", "iam:admin.read",
-      "iam:admin.write", "scim:read", "scim:write", "offline_access");
+      "iam:admin.write", "iam:user.read", "iam:user.write", "scim:read", "scim:write", "offline_access");
   private static final Set<String> AUTH_GRAND_TYPE = Set.of(AuthorizationGrantType.CODE.getGrantType(),
       AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
 

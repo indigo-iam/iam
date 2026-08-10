@@ -126,7 +126,7 @@
         </div>
     </div>
     <div class="box-footer">
-        <button class="btn btn-success" id="add-user-btn" ng-click="$ctrl.openAddNewUserDialog()"><i
+        <button class="btn btn-success" id="add-user-btn" ng-if="$root.loggedUser.isAdmin" ng-click="$ctrl.openAddNewUserDialog()"><i
                 class="fa fa-plus"></i> Add User</button>
     </div>
 </div>

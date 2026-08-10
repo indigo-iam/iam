@@ -29,7 +29,8 @@
             <a ui-sref="user({id: user.id})">{{user.name.formatted}}</a>
         </div>
         <div class="iam-actions col-xs-4 col-sm-4 text-right">
-            <button class="btn btn-danger btn-xs" ng-click="$ctrl.removeOwner(user)">
+            <button class="btn btn-danger btn-xs" ng-disabled="$ctrl.clientOwners.totalResults == 1 && !$root.loggedUser.isAdmin"
+                title="Clients must have at least one owner" ng-click="$ctrl.removeOwner(user)">
                 <i class="fa fa-times"></i>
             </button>
         </div>
@@ -43,5 +44,12 @@
     </div>
 </div>
 <div class="form-group">
-    <button class="btn btn-success" ng-click="$ctrl.assignOwner()">Assign owner</button>
+    <button class="btn btn-success" ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isUserManager || $root.loggedUser.isReader" ng-click="$ctrl.assignOwner()">Assign owner</button>
+
+    <div ng-if="!$root.loggedUser.isAdmin && !$root.loggedUser.isUserManager && !$root.loggedUser.isReader" class="form-inline" style="margin-top: 5px">
+        <input class="form-control" placeholder="Username" ng-model="$ctrl.newOwnerUsername" />
+        <button class="btn btn-success" ng-disabled="!$ctrl.newOwnerUsername" ng-click="$ctrl.addOwnerByUsername()">
+            Add owner
+        </button>
+    </div>
 </div>

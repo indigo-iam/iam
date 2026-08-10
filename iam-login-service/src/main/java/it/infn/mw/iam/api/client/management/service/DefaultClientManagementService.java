@@ -33,6 +33,7 @@ import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
@@ -57,10 +58,12 @@ import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -74,13 +77,16 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientUtils clientUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
+  private final IamAccountClientRepository accountClientRepo;
+  private final AccountUtils accountUtils;
   private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
+      IamAccountRepository accountRepo, IamAccountClientRepository accountClientRepo,
+      AccountUtils accountUtils, RegistrationTokenService registrationTokenService,
       ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
@@ -88,6 +94,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     this.clientUtils = clientUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
+    this.accountClientRepo = accountClientRepo;
+    this.accountUtils = accountUtils;
     this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
@@ -275,14 +283,43 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
   @Override
+  public void assignClientOwnerByUsername(String clientId, String username) {
+
+    ClientDetailsEntity client =
+        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+    IamAccount account =
+        accountRepo.findByUsername(username).orElseThrow(accountNotFound(username));
+    clientService.linkClientToAccount(client, account);
+
+    eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));
+  }
+
+  @Override
   public void removeClientOwner(String clientId, String accountId) {
 
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
+
+    if (accountClientRepo.findByAccountAndClient(account, client).isPresent()
+        && isLastOwnerRemovalForbidden(clientId)) {
+      throw new InvalidRequestException("Clients must have at least one owner");
+    }
+
     clientService.unlinkClientFromAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
+  }
+
+  private boolean isLastOwnerRemovalForbidden(String clientId) {
+
+    boolean privilegedCaller = accountUtils.getAuthenticatedUserAccount()
+      .map(accountUtils::isAdmin)
+      .orElse(true);
+
+    return !privilegedCaller && accountClientRepo
+      .findByClientClientId(clientId, PageRequest.of(0, 1))
+      .getTotalElements() == 1;
   }
 
   @Override

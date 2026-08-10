@@ -35,6 +35,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class AccountUtils {
 
   private static final IamAuthority ROLE_ADMIN = new IamAuthority("ROLE_ADMIN");
+  private static final IamAuthority ROLE_USER_MANAGER = new IamAuthority("ROLE_USER_MANAGER");
 
   IamAccountRepository accountRepo;
 
@@ -64,6 +65,14 @@ public class AccountUtils {
     }
 
     return account.getAuthorities().contains(ROLE_ADMIN);
+  }
+
+  public boolean isUserManager(IamAccount account) {
+    if (account == null || account.getAuthorities().isEmpty()) {
+      return false;
+    }
+
+    return account.getAuthorities().contains(ROLE_USER_MANAGER);
   }
 
   public boolean isPreAuthenticated() {
