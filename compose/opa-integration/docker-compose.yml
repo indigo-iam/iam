@@ -1,0 +1,86 @@
+services:
+
+  iam:
+    container_name: iam
+    build:
+      context: .
+      dockerfile: ./../../iam-login-service/docker/Dockerfile
+
+    environment:
+      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=h2-test,dev
+      # IAM_HOST: iam.local.io
+      IAM_ORGANISATION_NAME: iam-opa
+      IAM_JWT_DEFAULT_PROFILE: wlcg
+      IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
+      IAM_OPA_ENABLED: true
+      IAM_OPA_URL: http://opa:8181
+
+    volumes:
+      - /dev/urandom:/dev/random
+      - ./../../:/indigo-iam:ro
+      - ./../../target:/indigo-iam/target:rw
+      - ./../../iam-common/target:/indigo-iam/iam-common/target:rw
+      - ./../../iam-login-service/target:/indigo-iam/iam-login-service/target:rw
+      - ./../../iam-persistence/target:/indigo-iam/iam-persistence/target:rw
+      - ./../../iam-test-client/target:/indigo-iam/iam-test-client/target:rw
+      - ./../../iam-voms-aa/target:/indigo-iam/iam-voms-aa/target:rw
+
+    ports:
+      - "8080:8080"
+
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080/.well-known/openid-configuration"]
+
+    depends_on:
+      opa:
+        condition: service_healthy
+
+  client:
+    image: indigoiam/iam-test-client:v1.14.2
+
+    container_name: client
+
+    environment:
+      IAM_CLIENT_ISSUER: http://localhost:8080/
+      IAM_CLIENT_SCOPES: openid profile email offline_access
+
+    ports:
+      - "9090:9090"
+
+    depends_on:
+      iam:
+        condition: service_healthy
+
+  nginx-opa:
+    image: nginx:stable-alpine
+    container_name: nginx-opa
+
+    logging:
+      driver: "syslog"
+
+    volumes:
+      - ./iam-policies.tar.gz:/usr/share/nginx/html/bundles/iam-policies.tar.gz
+      - ./nginx/bundle.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost/bundles/iam-policies.tar.gz"]
+
+  opa:
+    image: openpolicyagent/opa:latest-debug
+
+    volumes:
+      - ./opa/conf:/etc/opa/conf
+
+    command: >
+      run --server
+      --log-format text
+      -c /etc/opa/conf/opa-conf.yaml
+      --addr http://0.0.0.0:8181
+
+    healthcheck:
+      test: ["CMD", "wget", "http://localhost:8181/health", "-O", "/tmp/health"]
+
+    depends_on:
+      nginx-opa:
+        condition: service_healthy
