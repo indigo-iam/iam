@@ -707,6 +707,55 @@ public class IamProperties {
     }
   }
 
+  public static class LoginLockoutProperties {
+
+    private boolean enabled = false;
+    private int maxFailedAttemptsBeforeSuspension = 3;
+    private int suspensionDurationMinutes = 30;
+    private int maxSuspensionRounds = 2;
+    private boolean disableAfterMaxSuspensionRounds = false;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public int getMaxFailedAttemptsBeforeSuspension() {
+      return maxFailedAttemptsBeforeSuspension;
+    }
+
+    public void setMaxFailedAttemptsBeforeSuspension(int maxFailedAttemptsBeforeSuspension) {
+      this.maxFailedAttemptsBeforeSuspension = maxFailedAttemptsBeforeSuspension;
+    }
+
+    public int getSuspensionDurationMinutes() {
+      return suspensionDurationMinutes;
+    }
+
+    public void setSuspensionDurationMinutes(int suspensionDurationMinutes) {
+      this.suspensionDurationMinutes = suspensionDurationMinutes;
+    }
+
+    public int getMaxSuspensionRounds() {
+      return maxSuspensionRounds;
+    }
+
+    public void setMaxSuspensionRounds(int maxSuspensionRounds) {
+      this.maxSuspensionRounds = maxSuspensionRounds;
+    }
+
+    public boolean isDisableAfterMaxSuspensionRounds() {
+      return disableAfterMaxSuspensionRounds;
+    }
+
+    public void setDisableAfterMaxSuspensionRounds(boolean disableAfterMaxSuspensionRounds) {
+      this.disableAfterMaxSuspensionRounds = disableAfterMaxSuspensionRounds;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -772,6 +821,8 @@ public class IamProperties {
   private AarcProfile aarcProfile = new AarcProfile();
 
   private DashboardProperties dashboard = new DashboardProperties();
+
+  private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -1033,6 +1084,14 @@ public class IamProperties {
 
   public void setAarcProfile(AarcProfile aarcProfile) {
     this.aarcProfile = aarcProfile;
+  }
+
+  public LoginLockoutProperties getLoginLockout() {
+    return loginLockout;
+  }
+
+  public void setLoginLockout(LoginLockoutProperties loginLockout) {
+    this.loginLockout = loginLockout;
   }
 
 }

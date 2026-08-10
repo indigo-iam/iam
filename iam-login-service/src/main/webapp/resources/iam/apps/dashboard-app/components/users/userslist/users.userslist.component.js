@@ -112,7 +112,7 @@
   }
 
   function UsersListController($q, $scope, $rootScope, $uibModal, ModalService,
-    UsersService, Utils, clipboardService, toaster) {
+    UsersService, Utils, clipboardService, toaster, $http) {
 
     var self = this;
 
@@ -125,6 +125,15 @@
       self.totalResults = self.total;
       self.sortByValue = "name";
       self.sortDirection = "asc";
+      self.suspendedUuids = [];
+
+      $http.get('/iam/account/lockout/suspended').then(function (r) {
+        self.suspendedUuids = r.data;
+      });
+    };
+
+    self.isSuspended = function (user) {
+      return self.suspendedUuids.indexOf(user.id) !== -1;
     };
 
     $scope.$on('refreshUsersList', function (e) {
@@ -261,6 +270,6 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/users/userslist/users.userslist.component.html',
         controller: ['$q', '$scope', '$rootScope', '$uibModal', 'ModalService',
-          'UsersService', 'Utils', 'clipboardService', 'toaster', UsersListController]
+          'UsersService', 'Utils', 'clipboardService', 'toaster', '$http', UsersListController]
       });
 })();

@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -36,6 +37,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
@@ -52,6 +54,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final LoginLockoutService lockoutService;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
@@ -59,13 +62,15 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties,
+      LoginLockoutService lockoutService) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.lockoutService = lockoutService;
   }
 
   /**
@@ -84,14 +89,40 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
 
+    String username = authentication.getName();
+
     // If not preauthenticated then the first step is to validate the default login credentials.
     // Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
     if (!isPreAuthenticated) {
-      UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
-          authentication.getPrincipal(), authentication.getCredentials());
-      authentication = super.authenticate(userpassToken);
+
+      lockoutService.checkIamAccountLockout(username);
+
+      try {
+        UsernamePasswordAuthenticationToken userpassToken =
+            new UsernamePasswordAuthenticationToken(
+                authentication.getPrincipal(), authentication.getCredentials());
+        authentication = super.authenticate(userpassToken);
+      } catch (InternalAuthenticationServiceException e) {
+        // DaoAuthenticationProvider wraps the DisabledException raised for inactive accounts
+        // while loading user details; mask it and rethrow genuine internal errors
+        if (e.getCause() instanceof DisabledException) {
+          lockoutService.recordFailedAttempt(username);
+          throw badCredentials();
+        }
+        throw e;
+      } catch (DisabledException e) {
+        // keep the intentional configuration message, mask account state
+        if (DISABLED_AUTH_MESSAGE.equals(e.getMessage())) {
+          throw e;
+        }
+        lockoutService.recordFailedAttempt(username);
+        throw badCredentials();
+      } catch (BadCredentialsException e) {
+        lockoutService.recordFailedAttempt(username);
+        throw e;
+      }
     }
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
@@ -120,15 +151,21 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       }
 
       // Construct a new authentication object for the PRE_AUTHENTICATED user.
+      // Don't reset lockout yet -> TOTP verification still pending.
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), currentAuthorities);
       token.setAuthenticated(false);
+      // re-authentication of this session token should not re-run the password and lockout checks
+      token.setPreAuthenticated(true);
       token.setAuthenticationMethodReferences(refs);
       token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
       // MFA is not enabled on this account, construct a new authentication object for the FULLY
-      // AUTHENTICATED user, granting their normal authorities
+      // AUTHENTICATED user, granting their normal authorities.
+      // Full auth clear any lockout state.
+      lockoutService.resetFailedAttempts(authentication.getName());
+
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), authentication.getAuthorities());
       token.setAuthenticationMethodReferences(refs);
@@ -148,6 +185,11 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
             && userDetails.getAuthorities().stream().noneMatch(ADMIN_MATCHER))) {
       throw new DisabledException(DISABLED_AUTH_MESSAGE);
     }
+  }
+
+  private BadCredentialsException badCredentials() {
+    return new BadCredentialsException(messages
+      .getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
   }
 
   @Override

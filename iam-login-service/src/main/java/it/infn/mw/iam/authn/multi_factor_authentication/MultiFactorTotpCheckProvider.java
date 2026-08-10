@@ -21,12 +21,14 @@ import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -40,11 +42,13 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService totpMfaService;
+  private final LoginLockoutService lockoutService;
 
   public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo,
-      IamTotpMfaService totpMfaService) {
+      IamTotpMfaService totpMfaService, LoginLockoutService lockoutService) {
     this.accountRepo = accountRepo;
     this.totpMfaService = totpMfaService;
+    this.lockoutService = lockoutService;
   }
 
   @Override
@@ -62,12 +66,30 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       return null;
     }
 
-    IamAccount account = accountRepo.findByUsername(authentication.getName())
-      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+    String username = authentication.getName();
 
-    if (!isValidTotp(account, totp)) {
+    // Mask the lockout as a generic failure; the account owner is informed by email
+    try {
+      lockoutService.checkIamAccountLockout(username);
+    } catch (LockedException e) {
       throw new BadCredentialsException("Bad TOTP");
     }
+
+    IamAccount account = accountRepo.findByUsername(username)
+      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+
+    // a disabled account must not complete TOTP authentication
+    if (!account.isActive()) {
+      throw new BadCredentialsException("Bad TOTP");
+    }
+
+    if (!isValidTotp(account, totp)) {
+      lockoutService.recordFailedAttempt(username);
+      throw new BadCredentialsException("Bad TOTP");
+    }
+
+    // TOTP verified; full authentication achieved. Clear lockout state.
+    lockoutService.resetFailedAttempts(username);
 
     return createSuccessfulAuthentication(authentication);
   }

@@ -15,10 +15,14 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -31,8 +35,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
@@ -53,6 +59,9 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   private IamTotpMfaService totpMfaService;
 
   @Mock
+  private LoginLockoutService lockoutService;
+
+  @Mock
   private ExtendedAuthenticationToken token;
 
   @Mock
@@ -68,28 +77,31 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
     clock = Clock.systemUTC();
     MockitoAnnotations.openMocks(this);
-    multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+    multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, lockoutService);
   }
 
   @Test
   void authenticateReturnsNullWhenTotpIsNull() {
     when(token.getTotp()).thenReturn(null);
     assertNull(multiFactorTotpCheckProvider.authenticate(token));
+    verify(lockoutService, never()).checkIamAccountLockout(anyString());
   }
 
   @Test
-  void authenticateThrowsBadCredentialsExceptionWhenAccountNotFound() {
+  void authenticateChecksLockoutBeforeAccountLookup() {
     when(token.getTotp()).thenReturn("123456");
     when(token.getName()).thenReturn("username");
     when(accountRepo.findByUsername("username")).thenReturn(Optional.empty());
 
     assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
+    verify(lockoutService).checkIamAccountLockout("username");
   }
 
   @Test
   void authenticatePropagatesMfaSecretNotFoundException() {
     IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
     when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
@@ -103,6 +115,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   @Test
   void authenticateThrowsBadCredentialsExceptionWhenTotpIsInvalid() {
     IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
     when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
@@ -110,22 +123,57 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
     assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
+
+    verify(lockoutService).recordFailedAttempt("totp");
+    verify(lockoutService, never()).resetFailedAttempts(anyString());
   }
 
   @Test
-  void authenticateReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+  void authenticateResetsLockoutWhenTotpIsValid() {
     IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
     when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
     when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
 
     assertNotNull(multiFactorTotpCheckProvider.authenticate(token));
+
+    verify(lockoutService).resetFailedAttempts("totp");
+    verify(lockoutService, never()).recordFailedAttempt(anyString());
+  }
+
+  @Test
+  void authenticateRejectsDisabledAccountWithGenericFailure() {
+    IamAccount account = getAccount(clock.instant());
+    account.setActive(false);
+    when(token.getName()).thenReturn("totp");
+    when(token.getTotp()).thenReturn("999999");
+    when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
+
+    BadCredentialsException e = assertThrows(BadCredentialsException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+    assertEquals("Bad TOTP", e.getMessage());
+    verify(lockoutService, never()).resetFailedAttempts(anyString());
+  }
+
+  @Test
+  void authenticateMasksLockoutAsBadTotpWhenSuspended() {
+    when(token.getTotp()).thenReturn("123456");
+    when(token.getName()).thenReturn("locked");
+    doThrow(new LockedException("Bad credentails")).when(lockoutService)
+      .checkIamAccountLockout("locked");
+
+    BadCredentialsException e = assertThrows(BadCredentialsException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+    assertEquals("Bad TOTP", e.getMessage());
+    verify(accountRepo, never()).findByUsername(anyString());
   }
 
   @Test
   void authenticateWithOidcTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
     when(oidcToken.getName()).thenReturn("totp");
     when(oidcToken.getTotp()).thenReturn("123456");
     when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
@@ -137,6 +185,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   @Test
   void authenticateWithSamlTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
     when(samlToken.getName()).thenReturn("totp");
     when(samlToken.getTotp()).thenReturn("123456");
     when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
