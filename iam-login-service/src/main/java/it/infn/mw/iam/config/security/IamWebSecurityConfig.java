@@ -63,6 +63,7 @@ import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
+import it.infn.mw.iam.authn.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
@@ -139,6 +140,9 @@ public class IamWebSecurityConfig {
     private IamProperties iamProperties;
 
     @Autowired
+    private OidcLogoutSuccessHandler oidcLogoutSuccessHandler;
+
+    @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
@@ -175,7 +179,6 @@ public class IamWebSecurityConfig {
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
-
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
@@ -210,6 +213,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(oidcLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()

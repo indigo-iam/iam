@@ -55,39 +55,51 @@ public class ValidRedirectURIsValidator
 
   @Override
   public boolean isValid(RegisteredClientDTO value, ConstraintValidatorContext context) {
-    if (Objects.isNull(value.getRedirectUris())) {
+
+    if (!Objects.isNull(value.getRedirectUris())) {
+      for (String uri : value.getRedirectUris()) {
+        if (!isValid(uri, context)) {
+          return false;
+        }
+      }
+    }
+    if (!Objects.isNull(value.getPostLogoutRedirectUris())) {
+      for (String uri : value.getPostLogoutRedirectUris()) {
+        if (!isValid(uri, context)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private boolean isValid(String uri, ConstraintValidatorContext context) {
+    URI parsedUri;
+    try {
+      parsedUri = new URI(uri);
+    } catch (URISyntaxException e) {
+      return invalid(context, "Invalid redirect URI");
+    }
+
+    if (ALLOWED_REDIRECT_URIS.contains(uri)) {
       return true;
     }
 
-    for (String uri : value.getRedirectUris()) {
-      URI parsedUri;
-      try {
-        parsedUri = new URI(uri);
-      } catch (URISyntaxException e) {
-        return invalid(context, "Invalid redirect URI");
-      }
+    String scheme = parsedUri.getScheme();
+    if (scheme == null || !ALLOWED_SCHEMES.contains(scheme.toLowerCase())) {
+      return invalid(context, format("Invalid redirect URI scheme: %s", scheme));
+    }
 
-      if (ALLOWED_REDIRECT_URIS.contains(uri)) {
-        continue;
-      }
+    if ("http".equalsIgnoreCase(scheme) && !ALLOWED_HOSTS_FOR_HTTP.contains(parsedUri.getHost())) {
+      return invalid(context, "Plain http redirect URIs are only allowed for loopback");
+    }
 
-      String scheme = parsedUri.getScheme();
-      if (scheme == null || !ALLOWED_SCHEMES.contains(scheme.toLowerCase())) {
-        return invalid(context, format("Invalid redirect URI scheme: %s", scheme));
-      }
+    if (parsedUri.getFragment() != null) {
+      return invalid(context, "Invalid redirect URI: contains a fragment");
+    }
 
-      if ("http".equalsIgnoreCase(scheme)
-          && !ALLOWED_HOSTS_FOR_HTTP.contains(parsedUri.getHost())) {
-        return invalid(context, "Plain http redirect URIs are only allowed for loopback");
-      }
-
-      if (parsedUri.getFragment() != null) {
-        return invalid(context, "Invalid redirect URI: contains a fragment");
-      }
-
-      if (denyListService.isBlacklisted(uri)) {
-        return invalid(context, format("Invalid redirect URI: %s is not allowed", uri));
-      }
+    if (denyListService.isBlacklisted(uri)) {
+      return invalid(context, format("Invalid redirect URI: %s is not allowed", uri));
     }
     return true;
   }
