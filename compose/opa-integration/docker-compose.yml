@@ -78,6 +78,9 @@ services:
       -c /etc/opa/conf/opa-conf.yaml
       --addr http://0.0.0.0:8181
 
+    ports:
+      - "8181:8181"
+
     healthcheck:
       test: ["CMD", "wget", "http://localhost:8181/health", "-O", "/tmp/health"]
 

@@ -41,3 +41,13 @@ $ docker compose up -d opa
 ```
 
 Now, if you login trough iam-test-client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
+
+### Using docker-compose
+
+Run the docker compose with
+
+```bash
+$ docker compose up -d
+```
+
+Now, if you login trough iam-test-client at http://localhost:9090/iam_test_client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
