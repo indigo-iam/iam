@@ -29,8 +29,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import org.apache.velocity.exception.ParseErrorException;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -45,7 +43,9 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
 @SuppressWarnings("deprecation")

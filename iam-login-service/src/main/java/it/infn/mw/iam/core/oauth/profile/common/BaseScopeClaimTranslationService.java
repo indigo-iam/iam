@@ -18,11 +18,12 @@ package it.infn.mw.iam.core.oauth.profile.common;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 
 import com.google.common.collect.Sets;
+
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 
 public class BaseScopeClaimTranslationService implements ScopeClaimTranslationService {
 

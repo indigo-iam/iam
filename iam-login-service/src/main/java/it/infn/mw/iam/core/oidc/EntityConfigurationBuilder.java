@@ -43,6 +43,7 @@ import it.infn.mw.iam.core.jwk.JWKUtils;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.core.web.wellknown.WellKnownConfiguration;
 
 @Component
 @Profile("openid-federation")
@@ -88,7 +89,7 @@ public class EntityConfigurationBuilder {
       throw new IllegalStateException("authority_hints must be present!");
     }
 
-    Map<String, Object> wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
+    WellKnownConfiguration wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
     metadata = new HashMap<>();
     metadata.put("openid_provider", buildOpMetadata(wellKnownInfo, iamProperties));
     Map<String, Object> feMetadata = buildFeMetadata(fedProperties);
@@ -125,22 +126,22 @@ public class EntityConfigurationBuilder {
     return jwt.serialize();
   }
 
-  private Map<String, Object> buildOpMetadata(Map<String, Object> wellKnownInfo,
+  private Map<String, Object> buildOpMetadata(WellKnownConfiguration wellKnownInfo,
       IamProperties iamProperties) {
 
     Map<String, Object> opMetadata = new HashMap<>();
-    opMetadata.put("issuer", wellKnownInfo.get("issuer"));
-    opMetadata.put("authorization_endpoint", wellKnownInfo.get("authorization_endpoint"));
-    opMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
-    opMetadata.put("response_types_supported", wellKnownInfo.get("response_types_supported"));
-    opMetadata.put("subject_types_supported", wellKnownInfo.get("subject_types_supported"));
+    opMetadata.put("issuer", wellKnownInfo.issuer());
+    opMetadata.put("authorization_endpoint", wellKnownInfo.authorizationEndpoint());
+    opMetadata.put("jwks_uri", wellKnownInfo.jwksUri());
+    opMetadata.put("response_types_supported", wellKnownInfo.responseTypesSupported());
+    opMetadata.put("subject_types_supported", wellKnownInfo.subjectTypesSupported());
     opMetadata.put("id_token_signing_alg_values_supported",
-        wellKnownInfo.get("id_token_signing_alg_values_supported"));
-    opMetadata.put("token_endpoint", wellKnownInfo.get("token_endpoint"));
-    opMetadata.put("userinfo_endpoint", wellKnownInfo.get("userinfo_endpoint"));
-    opMetadata.put("registration_endpoint", wellKnownInfo.get("registration_endpoint"));
-    opMetadata.put("scopes_supported", wellKnownInfo.get("scopes_supported"));
-    opMetadata.put("claims_supported", wellKnownInfo.get("claims_supported"));
+        wellKnownInfo.idTokenSigningAlgValuesSupported());
+    opMetadata.put("token_endpoint", wellKnownInfo.tokenEndpoint());
+    opMetadata.put("userinfo_endpoint", wellKnownInfo.userinfoEndpoint());
+    opMetadata.put("registration_endpoint", wellKnownInfo.registrationEndpoint());
+    opMetadata.put("scopes_supported", wellKnownInfo.scopesSupported());
+    opMetadata.put("claims_supported", wellKnownInfo.claimsSupported());
     opMetadata.put("client_registration_types_supported", List.of("explicit", "automatic"));
     opMetadata.put("federation_registration_endpoint",
         URI.create(iamProperties.getBaseUrl()).resolve("/iam/api/oid-fed/client-registration"));
@@ -172,14 +173,14 @@ public class EntityConfigurationBuilder {
     return feMetadata;
   }
 
-  private Map<String, Object> buildRpMetadata(Map<String, Object> wellKnownInfo,
+  private Map<String, Object> buildRpMetadata(WellKnownConfiguration wellKnownInfo,
       IamProperties iamProperties) {
     Map<String, Object> rpMetadata = new HashMap<>();
     rpMetadata.put("application_type", "web");
     rpMetadata.put("client_registration_types", List.of("explicit"));
     rpMetadata.put("redirect_uris",
         List.of(URI.create(iamProperties.getBaseUrl()).resolve("/openid_connect_login")));
-    rpMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    rpMetadata.put("jwks_uri", wellKnownInfo.jwksUri());
     return rpMetadata;
   }
 }

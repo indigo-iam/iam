@@ -38,7 +38,6 @@
     <test-clock.version>1.0.2</test-clock.version>
     <eclipselink.version>2.7.9</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
-    <nimbus-jose-jwt.version>9.37.4</nimbus-jose-jwt.version>
   </properties>
 
   <dependencies>
@@ -224,7 +223,6 @@
     <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>${nimbus-jose-jwt.version}</version>
     </dependency>
 
     <!-- OAuth 2 dependencies -->
@@ -290,18 +288,6 @@
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
-    </dependency>
-
-    <!-- Mitre -->
-    <dependency>
-      <groupId>org.mitre</groupId>
-      <artifactId>openid-connect-server</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.persistence</groupId>
-          <artifactId>org.eclipse.persistence.core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- VOMS -->
@@ -405,6 +391,16 @@
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
     </dependency>
 
     <!-- Secret, TOTP, QR code generator for multi-factor authentication -->

@@ -15,10 +15,9 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 
 public class KeycloakIdTokenCustomizer extends IamIdTokenCustomizer {

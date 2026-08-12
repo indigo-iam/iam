@@ -29,8 +29,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,6 +43,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scope.SystemScopeDto;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.SystemScope;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)

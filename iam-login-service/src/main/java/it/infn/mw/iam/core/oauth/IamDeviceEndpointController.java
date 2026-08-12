@@ -23,9 +23,7 @@ import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REQUEST_USER_CODE_STRING;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
 import java.util.Collection;
@@ -38,17 +36,8 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonEntityView;
-import org.mitre.openid.connect.view.JsonErrorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -64,10 +53,18 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exceptions.OAuth2ProtocolException;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.model.SystemScope;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
@@ -83,7 +80,7 @@ public class IamDeviceEndpointController {
   private final Clock clock;
   private final IamClientRepository clientRepository;
   private final SystemScopeService scopeService;
-  private final ConfigurationPropertiesBean config;
+  private final IamProperties properties;
   private final DeviceCodeService deviceCodeService;
   private final OAuth2RequestFactory oAuth2RequestFactory;
   private final UserApprovalHandler iamUserApprovalHandler;
@@ -92,14 +89,14 @@ public class IamDeviceEndpointController {
   private final ScopeFilter scopeFilter;
 
   public IamDeviceEndpointController(Clock clock, IamClientRepository clientRepository,
-      SystemScopeService scopeService, ConfigurationPropertiesBean config,
+      SystemScopeService scopeService, IamProperties properties,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
       IamDeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
     this.clock = clock;
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
-    this.config = config;
+    this.properties = properties;
     this.deviceCodeService = deviceCodeService;
     this.oAuth2RequestFactory = oAuth2RequestFactory;
     this.iamUserApprovalHandler = iamUserApprovalHandler;
@@ -108,66 +105,48 @@ public class IamDeviceEndpointController {
     this.scopeFilter = scopeFilter;
   }
 
+  @ResponseBody
   @PostMapping(value = "/" + DEVICE_CODE_URL,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
-  public String requestDeviceCode(@RequestParam("client_id") String clientId,
+  public DeviceCodeResponse requestDeviceCode(@RequestParam("client_id") String clientId,
       @RequestParam(required = false) String scope, @RequestParam Map<String, String> parameters,
       ModelMap model) {
 
     if (clientId == null || clientId.isBlank()) {
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      return HttpCodeView.VIEWNAME;
+      throw OAuth2ProtocolException.invalidClient("Invalid null or blank client id");
     }
-    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
-    if (client.isEmpty()) {
-      model.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-      return HttpCodeView.VIEWNAME;
-    }
-    checkAuthzGrant(client.get());
+    ClientDetailsEntity client = clientRepository.findByClientId(clientId)
+      .orElseThrow(() -> OAuth2ProtocolException.invalidClient("Client not found"));
+
+    checkAuthzGrant(client);
 
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(scope);
-    Set<String> allowedScopes = client.get().getScope();
+    Set<String> allowedScopes = client.getScope();
 
     if (!scopeService.scopesMatch(allowedScopes, requestedScopes)) {
       logger.error("Client asked for {} but is allowed {}", requestedScopes, allowedScopes);
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      model.put(JsonErrorView.ERROR, "invalid_scope");
-      model.put(JsonErrorView.ERROR_MESSAGE,
-          "One or more requested scope is not allowed for client '" + clientId + "'");
-      return JsonErrorView.VIEWNAME;
+      throw OAuth2ProtocolException
+        .invalidScope("One or more requested scope is not allowed for client '" + clientId + "'");
     }
 
     try {
-      DeviceCode dc =
-          deviceCodeService.createNewDeviceCode(requestedScopes, client.get(), parameters);
-
-      Map<String, Object> response = new HashMap<>();
-      response.put("device_code", dc.getDeviceCode());
-      response.put("user_code", dc.getUserCode());
-      response.put("verification_uri", config.getIssuer() + USER_CODE_URL);
-      if (client.get().getDeviceCodeValiditySeconds() != null) {
-        response.put("expires_in", client.get().getDeviceCodeValiditySeconds());
+      DeviceCode dc = deviceCodeService.createNewDeviceCode(requestedScopes, client, parameters);
+      String verificationUri = properties.getIssuer() + USER_CODE_URL;
+      String verificationUriComplete = null;
+      if (properties.getDeviceCode().getAllowCompleteVerificationUri()) {
+        verificationUriComplete =
+            new URIBuilder(verificationUri).addParameter("user_code", dc.getUserCode())
+              .build()
+              .toString();
       }
-
-      if (config.isAllowCompleteDeviceCodeUri()) {
-        URI verificationUriComplete = new URIBuilder(config.getIssuer() + USER_CODE_URL)
-          .addParameter("user_code", dc.getUserCode())
-          .build();
-
-        response.put("verification_uri_complete", verificationUriComplete.toString());
-      }
-
-      model.put(JsonEntityView.ENTITY, response);
-
-
-      return JsonEntityView.VIEWNAME;
+      return new DeviceCodeResponse(dc.getDeviceCode(), dc.getUserCode(), verificationUri,
+          verificationUriComplete, client.getDeviceCodeValiditySeconds(), null);
     } catch (URISyntaxException use) {
       logger
         .error("unable to build verification_uri_complete due to wrong syntax of uri components");
-      model.put(HttpCodeView.CODE, HttpStatus.INTERNAL_SERVER_ERROR);
-
-      return HttpCodeView.VIEWNAME;
+      throw OAuth2ProtocolException
+        .serverError("Unable to build verification_uri_complete: " + use.getMessage());
     }
   }
 
@@ -177,7 +156,7 @@ public class IamDeviceEndpointController {
       @RequestParam(value = "user_code", required = false) String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
 
-    if (!config.isAllowCompleteDeviceCodeUri() || userCode == null) {
+    if (!properties.getDeviceCode().getAllowCompleteVerificationUri() || userCode == null) {
       return REQUEST_USER_CODE_STRING;
     }
     return readUserCode(userCode, model, session, authn);
@@ -206,7 +185,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    ClientDetailsEntity client = clientRepository.findByClientId(dc.get().getClientId())
+    ClientDetailsEntity client = clientRepository.findByClientId(dc.get().getClient().getClientId())
       .orElseThrow(() -> new IllegalStateException("Stored device code client id not found"));
 
     AuthorizationRequest authorizationRequest =
@@ -221,7 +200,7 @@ public class IamDeviceEndpointController {
     dc.get().setScope(sortedAndFilteredScopes);
     deviceCodeRepository.save(dc.get());
 
-    if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
+    if (authorizationRequest.getExtensions().get(ConnectRequestParameters.APPROVED_SITE) != null
         || authorizationRequest.isApproved()) {
 
       OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
@@ -261,7 +240,7 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    ClientDetailsEntity client = clientRepository.findByClientId(dc.getClientId())
+    ClientDetailsEntity client = clientRepository.findByClientId(dc.getClient().getClientId())
       .orElseThrow(() -> new IllegalStateException("Stored device code client id not found"));
     model.put("client", client);
 
@@ -301,7 +280,7 @@ public class IamDeviceEndpointController {
     model.put("scopes", scopes);
     model.put("claims", userApprovalUtils.claimsForScopes(authn, scopes));
 
-    Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
+    Integer count = userApprovalUtils.consentGrantCount(client.getClientId());
 
     model.put("count", count);
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));

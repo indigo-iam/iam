@@ -17,7 +17,7 @@ package it.infn.mw.iam.core.gc;
 
 public interface GarbageCollector {
 
-  void clearExpiredApprovedSites(int count);
+  void clearExpiredConsentGrants(int count);
 
   void clearExpiredAuthorizationCodes(int count);
 

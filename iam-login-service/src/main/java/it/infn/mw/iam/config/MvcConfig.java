@@ -17,10 +17,8 @@ package it.infn.mw.iam.config;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
-import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -41,13 +39,13 @@ public class MvcConfig implements WebMvcConfigurer {
   public static final Logger LOG = LoggerFactory.getLogger(MvcConfig.class);
 
   private IamUserInfoInterceptor userInfoInterceptor;
-  private ServerConfigInterceptor serverConfigInterceptor;
+  private LegacyServerConfigInterceptor serverConfigInterceptor;
   private IamViewInfoInterceptor iamViewInfoInterceptor;
   private IamProperties iamProperties;
   private ResourceHandlerConfigurer resourceConfigurer;
 
   public MvcConfig(IamUserInfoInterceptor userInfoInterceptor,
-      @Qualifier("mitreServerConfigInterceptor") ServerConfigInterceptor serverConfigInterceptor,
+      LegacyServerConfigInterceptor serverConfigInterceptor,
       IamViewInfoInterceptor iamViewInfoInterceptor, IamProperties iamProperties,
       ResourceHandlerConfigurer resourceConfigurer) {
 

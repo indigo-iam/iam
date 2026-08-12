@@ -113,6 +113,18 @@
       <artifactId>jackson-datatype-joda</artifactId>
     </dependency>
 
+    <!-- OAuth 2 dependencies -->
+    <dependency>
+      <groupId>org.springframework.security.oauth</groupId>
+      <artifactId>spring-security-oauth2</artifactId>
+    </dependency>
+
+    <!-- Nimbus -->
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>

@@ -16,11 +16,6 @@
 package it.infn.mw.iam.core.as;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_CHALLENGE_METHOD;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.CODE_VERIFIER;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.NONCE;
 
 import java.io.Serializable;
 import java.security.MessageDigest;
@@ -31,22 +26,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.util.IdTokenHashUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -69,18 +54,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
@@ -90,17 +72,27 @@ import it.infn.mw.iam.audit.events.tokens.IdTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
+import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.util.IdTokenHashUtils;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -120,6 +112,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   public static final String CLIENT_NOT_CONFIGURED =
       "PKCE not configured for this client but challenge found";
 
+  public static final List<CodeChallengeMethod> SUPPORTED_CODE_CHALLENGE_METHODS =
+      List.of(CodeChallengeMethod.S256, CodeChallengeMethod.PLAIN);
+
   public static final Logger LOG =
       LoggerFactory.getLogger(IamAuthorizationServerTokenServices.class);
 
@@ -127,7 +122,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private final IamProperties iamProperties;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
-  private final IamAuthenticationHolderRepository authenticationHolderRepo;
+  private final IamAuthenticationHolderService authenticationHolderService;
   private final ClientService clientService;
   private final IamAccountService accountService;
   private final JWTSigningAndValidationService jwtSigningService;
@@ -136,24 +131,22 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private final JWTProfileResolver profileResolver;
   private final ApplicationEventPublisher eventPublisher;
   private final ScopeFilter scopeFilter;
-  private final ClientKeyCacheService encrypters;
-  private final SymmetricKeyJWTValidatorCacheService symmetricCacheService;
+  private final TokenUtils tokenUtils;
 
   public IamAuthorizationServerTokenServices(Clock clock, IamProperties iamProperties,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo,
-      IamAuthenticationHolderRepository authenticationHolderRepo, ClientService clientService,
+      IamAuthenticationHolderService authenticationHolderService, ClientService clientService,
       IamAccountService accountService, JWTSigningAndValidationService jwtSigningService,
       TokenRevocationService revocationService, SystemScopeService scopeService,
       JWTProfileResolver profileResolver, ApplicationEventPublisher eventPublisher,
-      ScopeFilter scopeFilter, ClientKeyCacheService encrypters,
-      SymmetricKeyJWTValidatorCacheService symmetricCacheService) {
+      ScopeFilter scopeFilter, TokenUtils tokenUtils) {
 
     this.clock = clock;
     this.iamProperties = iamProperties;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
-    this.authenticationHolderRepo = authenticationHolderRepo;
+    this.authenticationHolderService = authenticationHolderService;
     this.clientService = clientService;
     this.accountService = accountService;
     this.jwtSigningService = jwtSigningService;
@@ -162,8 +155,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     this.profileResolver = profileResolver;
     this.eventPublisher = eventPublisher;
     this.scopeFilter = scopeFilter;
-    this.encrypters = encrypters;
-    this.symmetricCacheService = symmetricCacheService;
+    this.tokenUtils = tokenUtils;
   }
 
   @Override
@@ -197,7 +189,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     handleCodeChallenge(request, client);
 
     Instant iat = clock.instant();
-    AuthenticationHolderEntity authHolder = createAuthenticationHolder(authentication);
+    AuthenticationHolderEntity authHolder =
+        authenticationHolderService.create(authentication, client);
     OAuth2AccessTokenEntity accessToken = new OAuth2AccessTokenEntity();
     accessToken.setClient(client);
     accessToken.setScope(computeScopes(request, authentication));
@@ -215,14 +208,16 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     JWTClaimsSet atClaims =
         profile.getAccessTokenBuilder().buildAccessToken(accessToken, authentication, account, iat);
 
-    accessToken.setJwt(signClaims(atClaims));
-    accessToken.hashMe();
+    SignedJWT signedToken = signClaims(atClaims);
+    accessToken.setJwt(signedToken);
+    accessToken.setTokenValueHash(tokenUtils.sha256(signedToken.serialize()));
 
     if (request.getScope().contains(SystemScopeService.OPENID_SCOPE) && account.isPresent()) {
 
       JWT idToken =
           createIdToken(client, request, Date.from(iat), account.get().getUuid(), accessToken);
-      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder, request.getGrantType()));
+      eventPublisher
+        .publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder, request.getGrantType()));
       accessToken.setIdToken(idToken);
     }
 
@@ -231,7 +226,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     OAuth2AccessTokenEntity savedAccessToken = saveAccessToken(accessToken);
-    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken, request.getGrantType()));
+    eventPublisher
+      .publishEvent(new AccessTokenIssuedEvent(this, savedAccessToken, request.getGrantType()));
     return savedAccessToken;
   }
 
@@ -243,7 +239,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private boolean clientRequiresCodeChallengePlain(ClientDetailsEntity client) {
 
     return client.getCodeChallengeMethod() != null
-        && PKCEAlgorithm.plain.equals(client.getCodeChallengeMethod());
+        && PKCEAlgorithm.PLAIN.equals(client.getCodeChallengeMethod());
   }
 
   private boolean clientRequiresCodeChallengeS256(ClientDetailsEntity client) {
@@ -255,13 +251,13 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private boolean clientRequiresCodeChallengeNone(ClientDetailsEntity client) {
 
     return client.getCodeChallengeMethod() != null
-        && PKCEAlgorithm.none.equals(client.getCodeChallengeMethod());
+        && PKCEAlgorithm.NONE.equals(client.getCodeChallengeMethod());
   }
 
 
   private boolean isRefreshTokenRequested(String grantType, Set<String> scopes) {
 
-    return scopes.contains(SystemScopeService.OFFLINE_ACCESS)
+    return scopes.contains(SystemScopeService.OFFLINE_ACCESS_SCOPE)
         && !grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.name());
   }
 
@@ -300,7 +296,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private OAuth2RefreshTokenEntity saveRefreshToken(OAuth2RefreshTokenEntity refreshToken) {
 
     refreshToken.setAuthenticationHolder(
-        authenticationHolderRepo.save(refreshToken.getAuthenticationHolder()));
+        authenticationHolderService.save(refreshToken.getAuthenticationHolder()));
     return refreshTokenRepo.save(refreshToken);
   }
 
@@ -317,14 +313,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
           .contains(Authorities.ROLE_PRE_AUTHENTICATED)) {
       throw new InvalidGrantException("User is not fully authenticated.");
     }
-  }
-
-  private AuthenticationHolderEntity createAuthenticationHolder(
-      OAuth2Authentication authentication) {
-
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(authentication);
-    return authHolder;
   }
 
   private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
@@ -350,7 +338,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     Map<String, Serializable> extensions = request.getExtensions();
 
-    Object rawCodeChallenge = extensions.get(CODE_CHALLENGE);
+    Object rawCodeChallenge = extensions.get(ConnectRequestParameters.CODE_CHALLENGE);
 
     if (rawCodeChallenge == null) {
       if (clientRequiresCodeChallenge(client)) {
@@ -361,21 +349,22 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     String codeChallenge = rawCodeChallenge.toString();
 
-    Object rawMethod = extensions.get(CODE_CHALLENGE_METHOD);
-    String codeChallengeMethod =
-        rawMethod == null ? "plain" : rawMethod.toString().toLowerCase();
+    String rawMethod =
+        String.valueOf(extensions.get(ConnectRequestParameters.CODE_CHALLENGE_METHOD));
+    CodeChallengeMethod codeChallengeMethod =
+        rawMethod == null ? CodeChallengeMethod.PLAIN : CodeChallengeMethod.parse(rawMethod);
 
-    if (!codeChallengeMethod.equals("s256") && !codeChallengeMethod.equals("plain")) {
+    if (!SUPPORTED_CODE_CHALLENGE_METHODS.contains(codeChallengeMethod)) {
       throw new InvalidRequestException(UNSUPPORTED_CODE_CHALLENGE_METHOD_ERROR);
     }
 
-    String verifier = request.getRequestParameters().get(CODE_VERIFIER);
+    String verifier = request.getRequestParameters().get(ConnectRequestParameters.CODE_VERIFIER);
 
     if (verifier == null || verifier.isBlank()) {
       throw new InvalidRequestException(MISSING_CODE_VERIFIER_ERROR);
     }
 
-    if (codeChallengeMethod.equals("plain")) {
+    if (CodeChallengeMethod.PLAIN.equals(codeChallengeMethod)) {
       if (clientRequiresCodeChallengeS256(client)) {
         throw new InvalidRequestException(UNEXPECTED_CODE_ERROR);
       }
@@ -451,7 +440,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     if (accessToken.getRefreshToken() == null) {
       AuthenticationHolderEntity ah =
-          authenticationHolderRepo.save(accessToken.getAuthenticationHolder());
+          authenticationHolderService.save(accessToken.getAuthenticationHolder());
       accessToken.setAuthenticationHolder(ah);
     }
     return accessTokenRepo.save(accessToken);
@@ -468,7 +457,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     OAuth2Request newOAuth2Request =
         authHolder.getAuthentication().getOAuth2Request().refresh(authRequest);
-    
+
     OAuth2Authentication newOAuth2Authentication =
         new OAuth2Authentication(newOAuth2Request, authHolder.getUserAuth());
 
@@ -530,8 +519,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(token, newOAuth2Authentication, account, tokenIssueInstant);
 
-    token.setJwt(signClaims(atClaims));
-    token.hashMe();
+    SignedJWT signedToken = signClaims(atClaims);
+    token.setJwt(signedToken);
+    token.setTokenValueHash(tokenUtils.sha256(signedToken.serialize()));
 
     if (newOAuth2Request.getScope().contains(SystemScopeService.OPENID_SCOPE)
         && account.isPresent()) {
@@ -539,7 +529,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       JWT idToken = createIdToken(client, newOAuth2Request, Date.from(tokenIssueInstant),
           account.get().getUuid(), token);
 
-      eventPublisher.publishEvent(new IdTokenIssuedEvent(this, idToken, authHolder, authRequest.getGrantType()));
+      eventPublisher.publishEvent(
+          new IdTokenIssuedEvent(this, idToken, authHolder, authRequest.getGrantType()));
       token.setIdToken(idToken);
     }
 
@@ -548,7 +539,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
     token = saveAccessToken(token);
 
-    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token, authRequest.getGrantType()));
+    eventPublisher
+      .publishEvent(new AccessTokenIssuedEvent(this, token, authRequest.getGrantType()));
     return token;
   }
 
@@ -599,12 +591,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private JWT createIdToken(ClientDetailsEntity client, OAuth2Request request, Date issueTime,
       String sub, OAuth2AccessTokenEntity accessToken) {
 
-    JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
-
-    if (client.getIdTokenSignedResponseAlg() != null) {
-      signingAlg = client.getIdTokenSignedResponseAlg();
-    }
-
     JWT idToken = null;
     JWTClaimsSet.Builder idClaims = new JWTClaimsSet.Builder();
 
@@ -622,12 +608,14 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       idClaims.expirationTime(expiration);
     }
 
-    String nonce = (String) request.getExtensions().get(NONCE);
+    String nonce = (String) request.getExtensions().get(ConnectRequestParameters.NONCE);
     if (!Strings.isNullOrEmpty(nonce)) {
       idClaims.claim("nonce", nonce);
     }
 
     Set<String> responseTypes = request.getResponseTypes();
+
+    JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
 
     if (responseTypes.contains("token")) {
       Base64URL atHash = IdTokenHashUtils.getAccessTokenHash(signingAlg, accessToken);
@@ -636,33 +624,12 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     addCustomIdTokenClaims(idClaims, client, request, sub, accessToken);
 
-    if (clientWantsEncryptedIdTokens(client)) {
+    JWSHeader header =
+        new JWSHeader.Builder(signingAlg).keyID(jwtSigningService.getDefaultSignerKeyId()).build();
 
-      JWTEncryptionAndDecryptionService encrypter =
-          Optional.ofNullable(encrypters.getEncrypter(client)).orElseThrow();
-
-      JWEHeader header = new JWEHeader.Builder(client.getIdTokenEncryptedResponseAlg(),
-          client.getIdTokenEncryptedResponseEnc()).build();
-      idToken = new EncryptedJWT(header, idClaims.build());
-      encrypter.encryptJwt((JWEObject) idToken);
-
-    } else {
-
-      JWSHeader header =
-          new JWSHeader.Builder(signingAlg).keyID(jwtSigningService.getDefaultSignerKeyId())
-            .build();
-
-      if (JWSAlgorithm.Family.HMAC_SHA.contains(signingAlg)) {
-        idToken = new SignedJWT(header, idClaims.build());
-        JWTSigningAndValidationService signer =
-            Optional.ofNullable(symmetricCacheService.getSymmetricValidtor(client)).orElseThrow();
-        signer.signJwt((SignedJWT) idToken);
-      } else {
-        idClaims.claim("kid", jwtSigningService.getDefaultSignerKeyId());
-        idToken = new SignedJWT(header, idClaims.build());
-        jwtSigningService.signJwt((SignedJWT) idToken);
-      }
-    }
+    idClaims.claim("kid", jwtSigningService.getDefaultSignerKeyId());
+    idToken = new SignedJWT(header, idClaims.build());
+    jwtSigningService.signJwt((SignedJWT) idToken);
 
     return idToken;
   }
@@ -670,7 +637,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private void handleAuthTimestamp(ClientDetailsEntity client, OAuth2Request request,
       JWTClaimsSet.Builder idClaims) {
 
-    if (request.getExtensions().containsKey(MAX_AGE)
+    if (request.getExtensions().containsKey(ConnectRequestParameters.MAX_AGE)
         || (client.getRequireAuthTime() != null && client.getRequireAuthTime())) {
 
       if (request.getExtensions().get(AuthenticationTimeStamper.AUTH_TIMESTAMP) != null) {
@@ -683,14 +650,6 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
         LOG.debug("Unable to find authentication timestamp while creating ID token");
       }
     }
-  }
-
-  private boolean clientWantsEncryptedIdTokens(ClientDetailsEntity client) {
-    return client.getIdTokenEncryptedResponseAlg() != null
-        && !client.getIdTokenEncryptedResponseAlg().equals(Algorithm.NONE)
-        && client.getIdTokenEncryptedResponseEnc() != null
-        && !client.getIdTokenEncryptedResponseEnc().equals(Algorithm.NONE)
-        && (!Strings.isNullOrEmpty(client.getJwksUri()) || client.getJwks() != null);
   }
 
   private void addCustomIdTokenClaims(Builder idClaims, ClientDetailsEntity client,

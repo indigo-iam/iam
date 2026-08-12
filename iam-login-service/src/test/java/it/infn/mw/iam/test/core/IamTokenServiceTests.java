@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @SuppressWarnings("deprecation")

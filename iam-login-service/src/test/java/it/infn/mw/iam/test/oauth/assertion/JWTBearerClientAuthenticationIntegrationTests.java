@@ -41,7 +41,7 @@ class JWTBearerClientAuthenticationIntegrationTests
   IamProperties iamProperties;
 
   @Test
-  void testSymmetricJwtAuth() throws Exception {
+  void testSymmetricJwtAuthHasBeenDeprecated() throws Exception {
 
     JWT jwt = createSymmetricClientAuthToken(CLIENT_ID_SECRET_JWT, Instant.now().plusSeconds(600));
     String serializedToken = jwt.serialize();
@@ -51,8 +51,8 @@ class JWTBearerClientAuthenticationIntegrationTests
         .param("client_assertion_type", JWT_BEARER_ASSERTION_TYPE)
         .param("client_assertion", serializedToken)
         .param("grant_type", "client_credentials"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.access_token").exists());
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error_description", is("SECRET_JWT has been deprecated")));
   }
 
   @Test

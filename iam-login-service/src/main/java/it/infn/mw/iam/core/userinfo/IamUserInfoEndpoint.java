@@ -21,7 +21,6 @@ import java.util.Set;
 import javax.security.auth.message.AuthException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -39,6 +38,7 @@ import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;

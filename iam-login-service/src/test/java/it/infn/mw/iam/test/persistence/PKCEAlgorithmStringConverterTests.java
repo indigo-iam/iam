@@ -22,12 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.model.convert.PKCEAlgorithmStringConverter;
+
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
+import it.infn.mw.iam.persistence.model.converter.PKCEAlgorithmStringConverter;
 
 class PKCEAlgorithmStringConverterTests {
 
-  private PKCEAlgorithmStringConverter converter = new PKCEAlgorithmStringConverter();
+  private final PKCEAlgorithmStringConverter converter = new PKCEAlgorithmStringConverter();
 
   @Test
   void shouldConvertAlgorithmToDatabaseColumn() {
@@ -48,7 +49,7 @@ class PKCEAlgorithmStringConverterTests {
   @NullAndEmptySource
   @ValueSource(strings = {" ", "   ", "\t", "\n"})
   void shouldUseOptionalForMissingDatabaseValue(String dbData) {
-    assertThat(converter.convertToEntityAttribute(dbData)).isEqualTo(PKCEAlgorithm.optional);
+    assertThat(converter.convertToEntityAttribute(dbData)).isEqualTo(PKCEAlgorithm.OPTIONAL);
   }
 
   @Test

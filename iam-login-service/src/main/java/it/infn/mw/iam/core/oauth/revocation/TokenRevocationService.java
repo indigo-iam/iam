@@ -15,11 +15,10 @@
  */
 package it.infn.mw.iam.core.oauth.revocation;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 
 public interface TokenRevocationService {
 

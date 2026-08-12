@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -101,7 +100,6 @@ public class ExtendedAuthenticationFilter extends AbstractAuthenticationProcessi
    * @return the password that will be presented in the <code>Authentication</code> request token to
    *         the <code>AuthenticationManager</code>
    */
-  @Nullable
   protected String obtainPassword(HttpServletRequest request) {
     return request.getParameter(this.passwordParameter);
   }
@@ -114,7 +112,6 @@ public class ExtendedAuthenticationFilter extends AbstractAuthenticationProcessi
    * @return the username that will be presented in the <code>Authentication</code> request token to
    *         the <code>AuthenticationManager</code>
    */
-  @Nullable
   protected String obtainUsername(HttpServletRequest request) {
     return request.getParameter(this.usernameParameter);
   }

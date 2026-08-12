@@ -15,29 +15,19 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_AUTHZ_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUTHZ_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.STATE_PARAMETER_KEY;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonErrorView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
@@ -52,15 +42,17 @@ import org.springframework.web.bind.support.SessionStatus;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
+import it.infn.mw.iam.core.oauth.exceptions.OAuth2ProtocolException;
+import it.infn.mw.iam.core.oauth.model.OAuth2ErrorCode;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Controller
 @SessionAttributes("authorizationRequest")
 public class IamOAuthConfirmationController {
-
-  private static final Logger logger =
-      LoggerFactory.getLogger(IamOAuthConfirmationController.class);
 
   private IamClientRepository clientRepository;
 
@@ -86,41 +78,40 @@ public class IamOAuthConfirmationController {
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {
 
-    String prompt = (String) authRequest.getExtensions().get(PROMPT);
-    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
+    String prompt = (String) authRequest.getExtensions().get(ConnectRequestParameters.PROMPT);
+    List<String> prompts = Splitter.on(ConnectRequestParameters.PROMPT_SEPARATOR)
+      .splitToList(Strings.nullToEmpty(prompt));
 
     String clientId = authRequest.getClientId();
     if (clientId == null || clientId.isBlank()) {
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      model.put(JsonErrorView.ERROR, "invalid_client");
-      model.put(JsonErrorView.ERROR_MESSAGE, "Null client id");
-      return HttpCodeView.VIEWNAME;
+      throw OAuth2ProtocolException.invalidClient("Invalid null or blank client id");
     }
-    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
-    if (client.isEmpty()) {
-      model.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-      return HttpCodeView.VIEWNAME;
-    }
+    ClientDetailsEntity client = clientRepository.findByClientId(clientId)
+      .orElseThrow(() -> OAuth2ProtocolException.invalidClient("Client not found"));
 
     if (prompts.contains("none")) {
 
-      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client.get());
+      if (prompts.size() > 1) {
+        throw OAuth2ProtocolException
+          .invalidRequest("The prompt value 'none' cannot be combined with other values");
+      }
+
+      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
 
       try {
         URIBuilder uriBuilder = new URIBuilder(url);
 
-        uriBuilder.addParameter(ERROR_STRING, "interaction_required");
+        uriBuilder.addParameter(ERROR_STRING, OAuth2ErrorCode.CONSENT_REQUIRED.value());
         if (!Strings.isNullOrEmpty(authRequest.getState())) {
           uriBuilder.addParameter(STATE_PARAMETER_KEY, authRequest.getState());
         }
 
         status.setComplete();
-        return "redirect:" + uriBuilder.toString();
+        return "redirect:" + uriBuilder;
 
       } catch (URISyntaxException e) {
-        logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
-        model.put("code", HttpStatus.FORBIDDEN);
-        return HttpCodeView.VIEWNAME;
+        throw OAuth2ProtocolException
+          .invalidRequest("Can't build redirect URI for prompt=none: " + e.getMessage());
       }
     }
 
@@ -133,7 +124,7 @@ public class IamOAuthConfirmationController {
 
     authRequest.setScope(scopes);
 
-    setModelForConsentPage(model, authRequest, authUser, client.get());
+    setModelForConsentPage(model, authRequest, authUser, client);
 
     return APPROVE_AUTHZ_PAGE;
   }
@@ -148,7 +139,7 @@ public class IamOAuthConfirmationController {
     model.put("claims", userApprovalUtils.claimsForScopes(authUser,
         scopeService.fromStrings(authRequest.getScope())));
 
-    Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
+    Integer count = userApprovalUtils.consentGrantCount(client.getClientId());
 
     model.put("count", count);
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));

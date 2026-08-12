@@ -21,27 +21,26 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 
 public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
 
   private Clock clock;
-  private IamUserInfo userInfo = null;
-  private Map<String, String> stringClaims = Maps.newHashMap();
+  private UserInfoResponse userInfo = null;
+  private Map<String, String> stringClaims = new HashMap<>();
 
   public OidcSecurityContextBuilder(Clock clock) {
 
@@ -49,15 +48,13 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
     issuer = "test-oidc-issuer";
     subject = "test-oidc-subject";
     username = "test-oidc-subject";
-    userInfo = mock(IamUserInfo.class);
+    userInfo = mock(UserInfoResponse.class);
   }
 
   @Override
   public SecurityContext buildSecurityContext() {
 
     OIDCAuthenticationToken authToken = mock(OIDCAuthenticationToken.class);
-    UserInfo ui = mock(UserInfo.class);
-    when(authToken.getUserInfo()).thenReturn(ui);
 
     JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
 
@@ -66,6 +63,7 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
     stringClaims.entrySet().forEach(e -> builder.claim(e.getKey(), e.getValue()));
 
     JWT idToken = new PlainJWT(builder.build());
+
     when(authToken.getIssuer()).thenReturn(issuer);
     when(authToken.getSub()).thenReturn(subject);
     when(authToken.getPrincipal()).thenReturn(subject + "@" + issuer);
@@ -80,11 +78,13 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
     OidcExternalAuthenticationToken token = new OidcExternalAuthenticationToken(authToken,
         expirationTime, authToken.getPrincipal(), "", authorities);
 
-    when(ui.getGivenName()).thenReturn(stringClaims.get("given_name"));
-    when(ui.getFamilyName()).thenReturn(stringClaims.get("family_name"));
-    when(ui.getName()).thenReturn(stringClaims.get("name"));
-    when(ui.getEmail()).thenReturn(stringClaims.get("email"));
-    when(ui.getPreferredUsername()).thenReturn(username);
+    when(userInfo.getGivenName()).thenReturn(stringClaims.get("given_name"));
+    when(userInfo.getFamilyName()).thenReturn(stringClaims.get("family_name"));
+    when(userInfo.getName()).thenReturn(stringClaims.get("name"));
+    when(userInfo.getEmail()).thenReturn(stringClaims.get("email"));
+    when(userInfo.getPreferredUsername()).thenReturn(username);
+
+    when(authToken.getUserInfo()).thenReturn(userInfo);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(token);
@@ -94,6 +94,7 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
   public SecurityContextBuilderSupport name(String givenName, String familyName) {
 
     if (!Strings.isNullOrEmpty(givenName) && !Strings.isNullOrEmpty(familyName)) {
+
       when(userInfo.getGivenName()).thenReturn(givenName);
       when(userInfo.getFamilyName()).thenReturn(familyName);
       when(userInfo.getName()).thenReturn(givenName + " " + familyName);
@@ -108,6 +109,7 @@ public class OidcSecurityContextBuilder extends SecurityContextBuilderSupport {
   public SecurityContextBuilderSupport email(String email) {
 
     if (!Strings.isNullOrEmpty(email)) {
+
       stringClaims.put("email", email);
       when(userInfo.getEmail()).thenReturn(email);
     }

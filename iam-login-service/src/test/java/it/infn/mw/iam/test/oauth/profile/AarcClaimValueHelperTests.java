@@ -32,7 +32,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,6 +53,7 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings({"deprecation", "unchecked"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,

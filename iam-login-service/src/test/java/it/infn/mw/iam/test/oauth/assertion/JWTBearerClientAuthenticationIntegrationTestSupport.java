@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
@@ -36,6 +35,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.util.JwkKeyStoreLoader;

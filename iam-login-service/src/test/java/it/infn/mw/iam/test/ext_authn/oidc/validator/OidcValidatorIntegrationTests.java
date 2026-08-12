@@ -26,7 +26,6 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -51,6 +50,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.common.Fail;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
@@ -107,8 +107,8 @@ class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSuppo
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    DefaultUserInfo userInfo = new DefaultUserInfo();
-    userInfo.setSub("unregistered");
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn("unregistered");
 
     Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 

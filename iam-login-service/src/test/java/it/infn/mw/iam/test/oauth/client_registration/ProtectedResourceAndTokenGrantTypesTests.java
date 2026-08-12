@@ -26,7 +26,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,6 +35,7 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -57,7 +57,6 @@ class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils {
 
     protectedResource = new ClientDetailsEntity();
     protectedResource.setGrantTypes(Set.of());
-    protectedResource.setAllowIntrospection(true);
     protectedResource.setClientId(PROTECTED_RESOURCE_ID);
     protectedResource.setClientSecret(PROTECTED_RESOURCE_SECRET);
     protectedResource.setScope(Set.of("openid"));
