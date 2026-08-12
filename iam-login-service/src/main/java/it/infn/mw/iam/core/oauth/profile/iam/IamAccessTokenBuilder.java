@@ -24,11 +24,10 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.P
 
 import java.util.Set;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;

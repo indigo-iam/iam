@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.14.2 (2026-07-14)
+## 1.14.2 (2026-07-24)
 
 * Fix broken client owners API calls
 * Handle count zero for group member API calls properly
@@ -23,6 +23,8 @@
 * Import OIDCAuth* from MitreID and related deps
     * Fix broken support PKCE when authenticathing through a remote OIDC provider
 * Validate group name uniqueness before group creation
+* Make the SAML WAYF login button configurable
+* Enhance user experience after client creation and secret rotation
 
 ## 1.14.1 (2026-06-10)
 

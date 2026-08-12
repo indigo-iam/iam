@@ -24,12 +24,12 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoProcessor;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 class ExternalAuthenticationInfoProcessorTests {

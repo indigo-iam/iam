@@ -27,11 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,8 +45,14 @@ import it.infn.mw.iam.audit.events.tokens.RegistrationTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.ResourceTokenIssuedEvent;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
+import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
-import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 
 @SuppressWarnings("deprecation")
@@ -65,39 +66,47 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
   private final IamProperties properties;
   private final JWTSigningAndValidationService jwtService;
   private final IamOAuthAccessTokenRepository tokenRepo;
-  private final IamAuthenticationHolderRepository authHolderRepo;
+  private final IamAuthenticationHolderService authHolderService;
   private final TokenRevocationService revocationService;
   private final ApplicationEventPublisher eventPublisher;
+  private final TokenUtils tokenUtils;
 
   public IamRegistrationTokenService(Clock clock, IamProperties properties,
       JWTSigningAndValidationService jwtService, IamOAuthAccessTokenRepository tokenRepo,
-      IamAuthenticationHolderRepository authHolderRepo, TokenRevocationService revocationService,
-      ApplicationEventPublisher eventPublisher) {
+      IamAuthenticationHolderService authHolderService, TokenRevocationService revocationService,
+      ApplicationEventPublisher eventPublisher, TokenUtils tokenUtils) {
     this.clock = clock;
     this.properties = properties;
     this.jwtService = jwtService;
     this.tokenRepo = tokenRepo;
-    this.authHolderRepo = authHolderRepo;
+    this.authHolderService = authHolderService;
     this.revocationService = revocationService;
     this.eventPublisher = eventPublisher;
+    this.tokenUtils = tokenUtils;
   }
 
   @Override
   public OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client) {
 
-    OAuth2AccessTokenEntity registrationToken = saveRegistrationToken(
-        buildRegistrationAccessToken(client, SystemScopeService.REGISTRATION_TOKEN_SCOPE));
-    String grantType = registrationToken.getAuthenticationHolder().getAuthentication().getOAuth2Request().getGrantType();
-    eventPublisher.publishEvent(new RegistrationTokenIssuedEvent(this, registrationToken, grantType));
+    OAuth2AccessTokenEntity registrationToken = createAndSaveRegistrationAccessToken(client);
+    String grantType = getGrantType(registrationToken);
+    eventPublisher
+      .publishEvent(new RegistrationTokenIssuedEvent(this, registrationToken, grantType));
     return registrationToken;
+  }
+
+  private String getGrantType(OAuth2AccessTokenEntity registrationToken) {
+    return registrationToken.getAuthenticationHolder()
+        .getAuthentication()
+        .getOAuth2Request()
+        .getGrantType();
   }
 
   @Override
   public OAuth2AccessTokenEntity createResourceAccessToken(ClientDetailsEntity client) {
 
-    OAuth2AccessTokenEntity resourceToken = saveRegistrationToken(
-        buildRegistrationAccessToken(client, SystemScopeService.RESOURCE_TOKEN_SCOPE));
-    String grantType = resourceToken.getAuthenticationHolder().getAuthentication().getOAuth2Request().getGrantType();    
+    OAuth2AccessTokenEntity resourceToken = createAndSaveResourceAccessToken(client);
+    String grantType = getGrantType(resourceToken);
     eventPublisher.publishEvent(new ResourceTokenIssuedEvent(this, resourceToken, grantType));
     return resourceToken;
   }
@@ -114,7 +123,15 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
     return rotatedToken;
   }
 
-  private OAuth2AccessTokenEntity buildRegistrationAccessToken(ClientDetailsEntity client,
+  private OAuth2AccessTokenEntity createAndSaveRegistrationAccessToken(ClientDetailsEntity client) {
+    return createAndSaveAccessToken(client, SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+  }
+
+  private OAuth2AccessTokenEntity createAndSaveResourceAccessToken(ClientDetailsEntity client) {
+    return createAndSaveAccessToken(client, SystemScopeService.RESOURCE_TOKEN_SCOPE);
+  }
+
+  private OAuth2AccessTokenEntity createAndSaveAccessToken(ClientDetailsEntity client,
       String scope) {
 
     Map<String, String> authorizationParameters = new HashMap<>();
@@ -127,8 +144,7 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
     token.setClient(client);
     token.setScope(Set.of(scope));
 
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(authentication);
+    AuthenticationHolderEntity authHolder = authHolderService.createAndSave(authentication, client);
     token.setAuthenticationHolder(authHolder);
     token.setExpiration(null); // infinite token
 
@@ -148,15 +164,8 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
     jwtService.signJwt(signed);
 
     token.setJwt(signed);
-    token.hashMe();
+    token.setTokenValueHash(tokenUtils.sha256(signed.serialize()));
 
-    return token;
-  }
-
-  private OAuth2AccessTokenEntity saveRegistrationToken(OAuth2AccessTokenEntity token) {
-
-    AuthenticationHolderEntity authHolder = authHolderRepo.save(token.getAuthenticationHolder());
-    token.setAuthenticationHolder(authHolder);
     return tokenRepo.save(token);
   }
 }

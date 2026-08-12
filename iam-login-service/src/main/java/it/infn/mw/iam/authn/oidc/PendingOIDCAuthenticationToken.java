@@ -19,7 +19,6 @@ import java.util.List;
 
 import com.nimbusds.jwt.JWT;
 
-@SuppressWarnings("java:S2160")
 public class PendingOIDCAuthenticationToken extends BaseOIDCAuthenticationToken {
 
   private static final long serialVersionUID = -3039943580483543553L;

@@ -23,8 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +38,8 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;

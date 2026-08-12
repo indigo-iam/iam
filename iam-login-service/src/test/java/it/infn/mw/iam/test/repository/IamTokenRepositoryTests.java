@@ -26,9 +26,6 @@ import java.util.Date;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;

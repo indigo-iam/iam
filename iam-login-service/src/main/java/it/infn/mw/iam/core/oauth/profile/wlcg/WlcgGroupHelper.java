@@ -24,13 +24,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @SuppressWarnings("deprecation")
 public class WlcgGroupHelper {

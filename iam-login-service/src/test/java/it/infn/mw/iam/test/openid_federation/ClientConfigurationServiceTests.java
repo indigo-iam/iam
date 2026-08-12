@@ -31,7 +31,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -44,6 +43,7 @@ import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oidc.FederationException;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,7 +86,7 @@ class ClientConfigurationServiceTests {
 
   private OidcClient mockClient(String clientId) {
 
-    return new OidcClient(clientId, "secret", "openid", null, null, AuthMethod.SECRET_BASIC);
+    return new OidcClient(clientId, "secret", "openid", null, null, ClientAuthMethod.SECRET_BASIC);
   }
 
   @Test

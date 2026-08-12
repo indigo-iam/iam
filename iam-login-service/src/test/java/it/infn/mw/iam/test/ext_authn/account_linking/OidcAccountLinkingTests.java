@@ -41,7 +41,6 @@ import java.util.Optional;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -57,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
@@ -342,8 +342,8 @@ class OidcAccountLinkingTests {
 
   private void mockUserInfoResponseForUser(String userName) {
 
-    DefaultUserInfo userInfo = new DefaultUserInfo();
-    userInfo.setSub(userName);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn(userName);
     Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
 

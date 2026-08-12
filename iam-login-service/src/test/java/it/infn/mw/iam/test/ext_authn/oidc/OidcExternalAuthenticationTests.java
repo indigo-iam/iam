@@ -32,7 +32,6 @@ import java.util.random.RandomGenerator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.DefaultUserInfo;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,6 +56,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
@@ -365,8 +365,8 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   private void mockUserInfoResponseForUser(String userName) {
 
-    DefaultUserInfo userInfo = new DefaultUserInfo();
-    userInfo.setSub(userName);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn(userName);
     Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
 

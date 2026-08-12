@@ -17,10 +17,9 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import java.util.Set;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
 
 public class AarcUserinfoHelper extends BaseUserinfoHelper {

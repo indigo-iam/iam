@@ -43,6 +43,7 @@ import it.infn.mw.iam.core.jwk.JWKUtils;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.core.web.wellknown.WellKnownConfiguration;
 
 @Component
 @Profile("openid-federation")
@@ -81,7 +82,7 @@ public class ExplicitRegistrationEntityStatementBuilder {
     }
     expirationSec = fedProperties.getEntityConfiguration().getExpirationSeconds();
 
-    Map<String, Object> wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
+    WellKnownConfiguration wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
     metadata = new HashMap<>();
     metadata.put("openid_relying_party", buildRpMetadata(wellKnownInfo, iamProperties));
 
@@ -114,14 +115,14 @@ public class ExplicitRegistrationEntityStatementBuilder {
     return jwt.serialize();
   }
 
-  private Map<String, Object> buildRpMetadata(Map<String, Object> wellKnownInfo,
+  private Map<String, Object> buildRpMetadata(WellKnownConfiguration wellKnownInfo,
       IamProperties iamProperties) {
     Map<String, Object> rpMetadata = new HashMap<>();
     rpMetadata.put("application_type", "web");
     rpMetadata.put("client_registration_types", List.of("explicit"));
     rpMetadata.put("redirect_uris",
         List.of(URI.create(iamProperties.getBaseUrl()).resolve("/openid_connect_login")));
-    rpMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    rpMetadata.put("jwks_uri", wellKnownInfo.jwksUri());
     rpMetadata.put("scope", "openid");
     return rpMetadata;
   }

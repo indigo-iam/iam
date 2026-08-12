@@ -15,12 +15,10 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import org.mitre.openid.connect.view.JsonEntityView;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class IamDiscoveryEndpoint {
 
   private static final String WELL_KNOWN_URL = ".well-known";
@@ -33,8 +31,7 @@ public class IamDiscoveryEndpoint {
   }
 
   @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL})
-  public String providerConfiguration(Model model) {
-    model.addAttribute(JsonEntityView.ENTITY, wellKnownInfoProvider.getWellKnownInfo());
-    return JsonEntityView.VIEWNAME;
+  public WellKnownConfiguration providerConfiguration() {
+    return wellKnownInfoProvider.getWellKnownInfo();
   }
 }

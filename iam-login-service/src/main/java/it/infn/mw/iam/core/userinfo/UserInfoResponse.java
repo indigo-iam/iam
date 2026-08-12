@@ -19,24 +19,25 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.S
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import it.infn.mw.iam.core.NameUtils;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserInfoResponse {
 
-  private String sub;
-
+  private final String sub;
   private final Map<String, Object> additionalFields = new HashMap<>();
 
   public UserInfoResponse(Map<String, Object> claims) {
 
-    if (!claims.containsKey(SUB)) {
-      throw new IllegalArgumentException("Missing sub key in UserInfoResponse claims");
-    }
-    setSub(String.valueOf(claims.get(SUB)));
+    this.sub = Objects.requireNonNull(claims.get(SUB), "Missing sub key in UserInfoResponse claims")
+      .toString();
     claims.forEach(this::addAdditionalField);
   }
 
@@ -44,8 +45,37 @@ public class UserInfoResponse {
     return sub;
   }
 
-  public void setSub(String sub) {
-    this.sub = sub;
+  @JsonIgnore
+  public String getGivenName() {
+    return getStringOrNull("given_name");
+  }
+
+  @JsonIgnore
+  public String getFamilyName() {
+    return getStringOrNull("family_name");
+  }
+
+  @JsonIgnore
+  public String getEmail() {
+    return getStringOrNull("email");
+  }
+
+  @JsonIgnore
+  public String getPreferredUsername() {
+    return getStringOrNull("preferred_username");
+  }
+
+  @JsonIgnore
+  public String getName() {
+    String givenName = getStringOrNull("given_name");
+    String middleName = getStringOrNull("middle_name");
+    String familyName = getStringOrNull("family_name");
+    return NameUtils.getFormatted(givenName, middleName, familyName);
+  }
+
+  private String getStringOrNull(String fieldName) {
+    Object obj = additionalFields.get(fieldName);
+    return obj != null ? String.valueOf(obj) : null;
   }
 
   @JsonAnyGetter

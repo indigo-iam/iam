@@ -15,13 +15,12 @@
  */
 package it.infn.mw.iam.registration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.common.LabelDTOConverter;
@@ -54,7 +53,7 @@ public class RegistrationConverter {
     dto.setAccountId(entity.getAccount().getUuid());
     dto.setNotes(entity.getNotes());
 
-    List<LabelDTO> labels = Lists.newArrayList();
+    List<LabelDTO> labels = new ArrayList<>();
 
     for (IamLabel label : entity.getLabels()) {
       labels.add(labelConverter.dtoFromEntity(label));

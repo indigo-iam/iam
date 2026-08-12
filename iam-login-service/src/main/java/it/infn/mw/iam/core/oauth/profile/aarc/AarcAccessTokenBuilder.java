@@ -18,25 +18,16 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ATTR;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ORGANISATION_NAME;
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
-import java.time.Instant;
-import java.util.Optional;
 import java.util.Set;
-
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
-import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")

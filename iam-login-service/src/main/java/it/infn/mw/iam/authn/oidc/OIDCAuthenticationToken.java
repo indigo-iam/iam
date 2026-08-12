@@ -17,19 +17,19 @@ package it.infn.mw.iam.authn.oidc;
 
 import java.util.Collection;
 
-import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.core.GrantedAuthority;
 
 import com.nimbusds.jwt.JWT;
 
-@SuppressWarnings("java:S2160")
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
+
 public class OIDCAuthenticationToken extends BaseOIDCAuthenticationToken {
 
   private static final long serialVersionUID = 8085760433250417654L;
 
-  private final UserInfo userInfo;
+  private final transient UserInfoResponse userInfo;
 
-  public OIDCAuthenticationToken(String subject, String issuer, UserInfo userInfo,
+  public OIDCAuthenticationToken(String subject, String issuer, UserInfoResponse userInfo,
       Collection<? extends GrantedAuthority> authorities, JWT idToken, String accessTokenValue) {
 
     super(subject, issuer, authorities, idToken, accessTokenValue);
@@ -38,8 +38,7 @@ public class OIDCAuthenticationToken extends BaseOIDCAuthenticationToken {
     setAuthenticated(true);
   }
 
-
-  public UserInfo getUserInfo() {
+  public UserInfoResponse getUserInfo() {
     return userInfo;
   }
 }

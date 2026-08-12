@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -36,6 +35,7 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
