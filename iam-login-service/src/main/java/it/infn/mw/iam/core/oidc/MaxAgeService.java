@@ -15,18 +15,16 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.MAX_AGE;
-
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
 import javax.servlet.http.HttpSession;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @Service
 public class MaxAgeService {
@@ -36,7 +34,7 @@ public class MaxAgeService {
 
     Integer max = client.map(ClientDetailsEntity::getDefaultMaxAge).orElse(null);
 
-    String maxAge = params.get(MAX_AGE);
+    String maxAge = params.get(ConnectRequestParameters.MAX_AGE);
 
     if (maxAge != null) {
       max = Integer.parseInt(maxAge);

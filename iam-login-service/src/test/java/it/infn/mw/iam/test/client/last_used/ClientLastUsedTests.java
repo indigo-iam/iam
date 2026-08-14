@@ -27,18 +27,18 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientLastUsedEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.persistence.model.ClientLastUsedEntity;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
@@ -46,7 +46,9 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SuppressWarnings("deprecation")
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class ClientLastUsedTests extends TokenGetterUtils {
@@ -58,10 +60,10 @@ class ClientLastUsedTests extends TokenGetterUtils {
   IamProperties iamProperties;
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  ClientService clientDetailsService;
 
   @Autowired
-  IamTokenService tokenService;
+  AuthorizationServerTokenServices tokenService;
 
   @Autowired
   SecurityContextUtils context;
@@ -122,7 +124,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
 
     iamProperties.getClient().setTrackLastUsed(false);
 
-    assertTrue(clientDetailsService.loadClientByClientId(LOOKUP_CLIENT_ID).isAllowRefresh());
+    assertTrue(clientDetailsService.findClientByClientId(LOOKUP_CLIENT_ID).get().isAllowRefresh());
 
     context.useLocalUser(LOOKUP_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
     // Initially, the last used date is null
@@ -146,7 +148,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
     iamProperties.getClient().setTrackLastUsed(false);
 
     // Get a client with a default last used date and able to generate refresh tokens
-    assertTrue(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID).isAllowRefresh());
+    assertTrue(clientDetailsService.findClientByClientId(LOOKUP_CLIENT_ID).get().isAllowRefresh());
     // Initially, the last used date is set to the default value
     assertLastUsedIs(TEST_CLIENT_ID, LocalDate.of(1994, 3, 21));
 
@@ -168,13 +170,13 @@ class ClientLastUsedTests extends TokenGetterUtils {
   private void assertLastUsedIs(String clientId, LocalDate expected) {
 
     ClientLastUsedEntity lastUsedEntity =
-        clientDetailsService.loadClientByClientId(clientId).getClientLastUsed();
+        clientDetailsService.findClientByClientId(clientId).get().getClientLastUsed();
     assertNotNull(lastUsedEntity);
     assertEquals(expected, lastUsedEntity.getLastUsed());
   }
 
   private void assertNotYetUsed(String clientId) {
 
-    assertNull(clientDetailsService.loadClientByClientId(clientId).getClientLastUsed());
+    assertNull(clientDetailsService.findClientByClientId(clientId).get().getClientLastUsed());
   }
 }

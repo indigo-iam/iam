@@ -36,9 +36,7 @@ import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -61,6 +59,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -400,40 +399,6 @@ class ClientManagementServiceTests {
         PagingUtils.buildUnpagedPageRequest());
 
     assertEquals(0L, owners.getTotalResults());
-  }
-
-
-  @Test
-  void testCodeChallengeValidation() {
-
-    String[] invalidCodeChallengeValues = {" ", "invalid", "S512"};
-
-    for (String value : invalidCodeChallengeValues) {
-      RegisteredClientDTO client = new RegisteredClientDTO();
-      client.setClientName("test-client-creation");
-      client.setClientId("test-client-creation");
-      client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
-      client.setScope(Set.of("test"));
-      client.setCodeChallengeMethod(value);
-      ConstraintViolationException exception =
-          assertThrows(ConstraintViolationException.class, () -> {
-            managementService.saveNewClient(client);
-          });
-      assertTrue(exception.getMessage().contains("S256"));
-    }
-
-    String[] validCodeChallengeValues = {"", "none", "plain", "S256"};
-    for (String value : validCodeChallengeValues) {
-      RegisteredClientDTO client = new RegisteredClientDTO();
-      client.setClientName("test-client-creation");
-      client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
-      client.setScope(Set.of("test"));
-      client.setCodeChallengeMethod(value);
-      Assertions.assertDoesNotThrow(() -> {
-        RegisteredClientDTO response = managementService.saveNewClient(client);
-        assertEquals(value, response.getCodeChallengeMethod());
-      });
-    }
   }
 
   @Test

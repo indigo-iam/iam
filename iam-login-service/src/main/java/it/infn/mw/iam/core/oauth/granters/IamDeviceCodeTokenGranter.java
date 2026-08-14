@@ -19,12 +19,9 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 
-import org.mitre.oauth2.exception.AuthorizationPendingException;
-import org.mitre.oauth2.exception.DeviceCodeExpiredException;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -32,6 +29,10 @@ import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exceptions.AuthorizationPendingException;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 
 @SuppressWarnings("deprecation")
 public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
@@ -49,42 +50,33 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
     this.deviceCodeService = deviceCodeService;
   }
 
-
-  // Revert back to mitre implementation as soon as they have fixed how
-  // they manage the granter creation (use proper constructor injection)
   @Override
   protected OAuth2Authentication getOAuth2Authentication(ClientDetails client,
       TokenRequest tokenRequest) {
 
     String deviceCode = tokenRequest.getRequestParameters().get("device_code");
 
-    // look up the device code and consume it
-    DeviceCode dc = deviceCodeService.findDeviceCode(deviceCode, client);
-
-    if (dc == null) {
-      throw new InvalidGrantException("Invalid device code: " + deviceCode);
-    }
+    DeviceCode dc = deviceCodeService.findByDeviceCodeAndClientId(deviceCode, client.getClientId())
+      .orElseThrow(() -> new InvalidGrantException("Invalid device code: " + deviceCode));
 
     final Date now = Date.from(clock.instant());
 
-    // dc expiration checks
     if (dc.getExpiration() != null && dc.getExpiration().before(now)) {
-      deviceCodeService.clearDeviceCode(deviceCode, client);
-      throw new DeviceCodeExpiredException("Device code has expired: " + deviceCode);
+      deviceCodeService.clearDeviceCode(dc);
+      throw new OAuth2Exception("Device code has expired: " + deviceCode);
     }
 
     if (!dc.isApproved()) {
       throw new AuthorizationPendingException("Authorization pending for code: " + deviceCode);
     }
 
-    // inherit the (approved) scopes from the original request
     tokenRequest.setScope(dc.getScope());
 
     OAuth2Authentication auth =
         new OAuth2Authentication(getRequestFactory().createOAuth2Request(client, tokenRequest),
             dc.getAuthenticationHolder().getUserAuth());
 
-    deviceCodeService.clearDeviceCode(deviceCode, client);
+    deviceCodeService.clearDeviceCode(dc);
 
     return auth;
   }

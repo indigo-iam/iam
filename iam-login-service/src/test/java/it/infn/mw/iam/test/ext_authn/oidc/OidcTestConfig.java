@@ -18,20 +18,9 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.Clock;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.mitre.openid.connect.client.UserInfoFetcher;
-import org.mitre.openid.connect.client.service.ClientConfigurationService;
-import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
-import org.mitre.openid.connect.client.service.impl.StaticSingleIssuerService;
-import org.mitre.openid.connect.config.ServerConfiguration;
+import javax.servlet.http.HttpServletRequest;
+
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,12 +28,18 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import com.nimbusds.jose.jwk.JWKSet;
 
+import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
+import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 import it.infn.mw.iam.util.JwkSetLoader;
@@ -57,14 +52,7 @@ public class OidcTestConfig {
   public static final String TEST_OIDC_AUTHORIZATION_ENDPOINT_URI = "http://oidc.test/authz";
   public static final String TEST_OIDC_TOKEN_ENDPOINT_URI = "http://oidc.test/token";
   public static final String TEST_OIDC_JWKS_URI = "http://oidc.test/jwk";
-
-  @Bean
-  @Primary
-  UserInfoFetcher userInfoFetcher() {
-
-    UserInfoFetcher fetcher = Mockito.mock(UserInfoFetcher.class);
-    return fetcher;
-  }
+  public static final String TEST_OIDC_USERINFO_URI = "http://oidc.test/userinfo";
 
   @Bean
   @Primary
@@ -76,63 +64,40 @@ public class OidcTestConfig {
   @Primary
   IssuerService oidcIssuerService() {
 
-    StaticSingleIssuerService issuerService = new StaticSingleIssuerService();
-    issuerService.setIssuer(TEST_OIDC_ISSUER);
-
-    return issuerService;
+    return new IssuerService() {
+      @Override
+      public IssuerServiceResponse getIssuer(HttpServletRequest request) {
+        return new IssuerServiceResponse(TEST_OIDC_ISSUER, null, null, null);
+      }
+    };
   }
-
 
   @Bean
   @Primary
-  ServerConfigurationService mockServerConfigurationService() {
+  OIDCProviderMetadataService mockOIDCProviderMetadata(DefaultOidcDiscoveryService discoveryService,
+      RestTemplateFactory restTemplateFactory) {
 
-    ServerConfiguration sc = new ServerConfiguration();
-    sc.setIssuer(TEST_OIDC_ISSUER);
-    sc.setAuthorizationEndpointUri(TEST_OIDC_AUTHORIZATION_ENDPOINT_URI);
-    sc.setTokenEndpointUri(TEST_OIDC_TOKEN_ENDPOINT_URI);
-    sc.setJwksUri(TEST_OIDC_JWKS_URI);
+    OIDCProviderMetadata op =
+        new OIDCProviderMetadata(TEST_OIDC_ISSUER, TEST_OIDC_AUTHORIZATION_ENDPOINT_URI,
+            TEST_OIDC_TOKEN_ENDPOINT_URI, TEST_OIDC_JWKS_URI, TEST_OIDC_USERINFO_URI);
 
-
-    ServerConfigurationService service = Mockito.mock(ServerConfigurationService.class);
-
-    Mockito.when(service.getServerConfiguration(Mockito.anyString())).thenReturn(sc);
+    OIDCProviderMetadataService service = Mockito.mock(OIDCProviderMetadataService.class);
+    Mockito.when(service.load(TEST_OIDC_ISSUER)).thenReturn(op);
 
     return service;
   }
 
   @Bean
   @Primary
-  ClientConfigurationService staticClientConfiguration() {
-
-    RegisteredClient rc = new RegisteredClient();
-    rc.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    rc.setScope(Sets.newHashSet("openid profile email"));
-    rc.setClientId(TEST_OIDC_CLIENT_ID);
-
-    Map<String, RegisteredClient> clients = new LinkedHashMap<String, RegisteredClient>();
-
-    clients.put(TEST_OIDC_ISSUER, rc);
-
-    StaticClientConfigurationService config = new StaticClientConfigurationService();
-    config.setClients(clients);
-
-    return config;
-  }
-
-  @Bean
-  @Primary
-  JWKSetCacheService mockjwkSetCacheService()
-      throws IOException, ParseException {
+  IamJWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
 
     JWTSigningAndValidationService signatureValidator =
         new IamJWTSigningService(mockOidcProviderKeyStore());
 
-    JWKSetCacheService mockCacheService = Mockito.mock(JWKSetCacheService.class);
+    IamJWKSetCacheService mockCacheService = Mockito.mock(IamJWKSetCacheService.class);
     Mockito.when(mockCacheService.getValidator(TEST_OIDC_JWKS_URI)).thenReturn(signatureValidator);
 
     return mockCacheService;
-
   }
 
   @Bean

@@ -19,7 +19,6 @@ import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +27,9 @@ import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 
-@SuppressWarnings("deprecation")
-public class TokenEvent extends IamAuditApplicationEvent {
+public abstract class TokenEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -1843180591267883819L;
 
@@ -41,13 +40,13 @@ public class TokenEvent extends IamAuditApplicationEvent {
   private final String grantType;
   private transient Map<String, Object> payload;
 
-  public TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
+  protected TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String grantType, String message) {
     super(IamEventCategory.TOKEN, source, message);
 
     // subject will contains user-name or client name
     this.subject = authenticationHolder.getAuthentication().getName();
     this.scopes = authenticationHolder.getScope();
-    this.grantType = authenticationHolder.getAuthentication().getOAuth2Request().getGrantType();
+    this.grantType = grantType;
 
     try {
       this.payload = token.getJWTClaimsSet().getClaims();

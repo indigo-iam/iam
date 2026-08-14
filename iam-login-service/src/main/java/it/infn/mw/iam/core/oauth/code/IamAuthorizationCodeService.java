@@ -21,15 +21,17 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -37,14 +39,17 @@ public class IamAuthorizationCodeService implements AuthorizationCodeServices {
 
   private final Clock clock;
   private final IamAuthorizationCodeRepository codeRepository;
-  private final AuthenticationHolderEntityService authenticationHolderService;
+  private final IamClientRepository clientRepository;
+  private final IamAuthenticationHolderService authenticationHolderService;
   private final SecureRandom random;
 
   public IamAuthorizationCodeService(Clock clock, IamAuthorizationCodeRepository codeRepository,
-      AuthenticationHolderEntityService authenticationHolderService, SecureRandom random) {
+      IamClientRepository clientRepository,
+      IamAuthenticationHolderService authenticationHolderService, SecureRandom random) {
 
     this.clock = clock;
     this.codeRepository = codeRepository;
+    this.clientRepository = clientRepository;
     this.authenticationHolderService = authenticationHolderService;
     this.random = random;
   }
@@ -59,8 +64,14 @@ public class IamAuthorizationCodeService implements AuthorizationCodeServices {
   @Override
   public String createAuthorizationCode(OAuth2Authentication authentication) {
 
+    ClientDetailsEntity client =
+        clientRepository.findByClientId(authentication.getOAuth2Request().getClientId())
+          .orElseThrow();
+
+    AuthenticationHolderEntity authHolder =
+        authenticationHolderService.createAndSave(authentication, client);
+
     String code = generateToken();
-    AuthenticationHolderEntity authHolder = authenticationHolderService.create(authentication);
     Date expiration = Date.from(clock.instant().plusSeconds(300));
     AuthorizationCodeEntity entity = new AuthorizationCodeEntity(code, authHolder, expiration);
 

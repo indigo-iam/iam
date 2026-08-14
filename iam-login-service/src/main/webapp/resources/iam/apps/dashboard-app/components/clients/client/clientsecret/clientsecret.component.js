@@ -18,16 +18,13 @@
 
     function ModalClientSecretController($rootScope, $scope, $uibModal, $uibModalInstance, ClientsService, toaster, client) {
         var self = this;
-        self.showSecret = false;
 
-        self.clipboardSuccess = clipboardSuccess;
-        self.clipboardError = clipboardError;
-        self.confirmation = true;
+        self.confirmed = false;
         self.clientId = client.client_id;
         self.clientName = client.client_name;
         self.isNewClient = !!self.clientId;
         self.parent = parent;
-        self.showSecret = false;
+        self.clientSecretCopied = false;
 
         self.closeModal = function() {
             self.isModalOpen = false;
@@ -39,43 +36,38 @@
             $uibModalInstance.close();
         };
 
-        self.toggleSecretVisibility = function() {
-            self.showSecret = !self.showSecret;
-        };
-
         self.confirmRequestNewSecret = function() {
-            self.confirmation = true;
+            self.confirmed = true;
             ClientsService.rotateClientSecret(client.client_id).then(res => {
                 self.newSecret = res.client_secret;
                 toaster.pop({
                     type: 'success',
-                    body: 'Registration access token rotated for client ' + self.clientName
+                    body: 'New secret generated for Client ' + self.clientName
                 });
             }).catch(error => {
                 console.error(error);
                 toaster.pop({
                     type: 'error',
-                    body: 'Could not rotate secret for client ' + self.clientName
+                    body: 'Could not generate new secret for Client ' + self.clientName
                 });
             });
         }
 
-        function clipboardError(event) {
+        self.clipboardError = function (event) {
             toaster.pop({
                 type: 'error',
-                body: 'Could not copy secret to clipboard!'
+                body: 'Could not copy Client Secret to clipboard!'
             });
         }
 
-        function clipboardSuccess(event, source) {
+        self.clipboardSuccess = function (event, source) {
+            self.clientSecretCopied = true;
+
             toaster.pop({
                 type: 'success',
-                body: 'Secret copied to clipboard!'
+                body: 'Client Secret copied to clipboard.'
             });
             event.clearSelection();
-            if (source === 'secret') {
-                self.toggleSecretVisibility();
-            }
         }
         self.confirmRequestNewSecret();
     }

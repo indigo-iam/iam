@@ -19,19 +19,17 @@ import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,13 +41,19 @@ import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 @RestController
 public class IamRevocationEndpoint {
+
+  public static final String URL = "/revoke";
 
   public static final Logger LOG = LoggerFactory.getLogger(IamRevocationEndpoint.class);
 
@@ -59,14 +63,17 @@ public class IamRevocationEndpoint {
       "Client %s is not allowed to revoke a not owned token";
 
   private final TokenRevocationService revocationService;
-  private final ClientDetailsEntityService clientService;
-  private final IamTokenService tokenService;
+  private final ClientService clientService;
+  private final ResourceServerTokenServices resourceServer;
+  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   public IamRevocationEndpoint(TokenRevocationService revocationService,
-      ClientDetailsEntityService clientService, IamTokenService tokenService) {
+      ClientService clientService, ResourceServerTokenServices resourceServer,
+      IamOAuthRefreshTokenRepository refreshTokenRepo) {
     this.revocationService = revocationService;
     this.clientService = clientService;
-    this.tokenService = tokenService;
+    this.resourceServer = resourceServer;
+    this.refreshTokenRepo = refreshTokenRepo;
   }
 
   @PostMapping(value = "/revoke", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -82,13 +89,15 @@ public class IamRevocationEndpoint {
      * Currently IAM issues access tokens as a Signed JWT while refresh tokens are Plain JWT
      */
     if (jwt instanceof PlainJWT) {
-      OAuth2RefreshTokenEntity refreshToken = tokenService.getRefreshToken(tokenValue);
+      OAuth2RefreshTokenEntity refreshToken = refreshTokenRepo.findByTokenValue(tokenValue)
+        .orElseThrow(() -> new InvalidTokenException("Refresh Token not found"));
       ClientDetailsEntity tokenClient = refreshToken.getClient();
       verifyClient(tokenClient, authenticatedClient);
       revocationService.revokeRefreshToken(refreshToken);
     }
     if (jwt instanceof SignedJWT) {
-      OAuth2AccessTokenEntity accessToken = tokenService.readAccessToken(tokenValue);
+      OAuth2AccessTokenEntity accessToken =
+          (OAuth2AccessTokenEntity) resourceServer.readAccessToken(tokenValue);
       ClientDetailsEntity tokenClient = accessToken.getClient();
       verifyClient(tokenClient, authenticatedClient);
       revocationService.revokeAccessToken(accessToken);
@@ -115,9 +124,12 @@ public class IamRevocationEndpoint {
 
   private ClientDetailsEntity loadClient(Authentication auth) {
 
-    return clientService.loadClientByClientId(
+    String clientId =
         auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
-            : auth.getName());
+            : auth.getName();
+    return clientService.findClientByClientId(clientId)
+      .orElseThrow(
+          () -> new InvalidClientException("Client with id " + clientId + " was not found"));
   }
 
   @ResponseStatus(value = HttpStatus.FORBIDDEN)

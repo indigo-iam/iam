@@ -15,20 +15,11 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Maps.newHashMap;
 import static java.util.stream.Collectors.toList;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.web.IntrospectionEndpoint;
-import org.mitre.oauth2.web.RevocationEndpoint;
-import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +30,14 @@ import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwk.JWTEncryptionAndDecryptionService;
 import it.infn.mw.iam.core.oauth.IamDeviceEndpointController;
+import it.infn.mw.iam.core.oauth.introspection.IamIntrospectionEndpoint;
+import it.infn.mw.iam.core.oauth.revocation.IamRevocationEndpoint;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.userinfo.IamUserInfoEndpoint;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 @Service
 public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
@@ -51,44 +48,40 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String TOKEN_ENDPOINT = "token";
   public static final String ABOUT_ENDPOINT = "about";
   public static final String SCIM_ENDPOINT = "scim";
+  public static final String LOGOUT_ENDPOINT = "logout";
 
-  private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = newArrayList(
-      "client_secret_basic", "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
+  private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = List.of("client_secret_basic",
+      "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
 
-  private static final List<String> RESPONSE_TYPES = newArrayList("code", "token");
+  private static final List<String> RESPONSE_TYPES = List.of("code", "token");
 
-  private static final List<String> SUBJECT_TYPES = newArrayList("public", "pairwise");
+  private static final List<String> SUBJECT_TYPES = List.of("public", "pairwise");
 
-  private static final List<String> CLAIM_TYPES = newArrayList("normal");
+  private static final List<String> CLAIM_TYPES = List.of("normal");
 
   private static final List<String> CLAIMS =
-      newArrayList("sub", "name", "preferred_username", "given_name", "family_name", "middle_name",
+      List.of("sub", "name", "preferred_username", "given_name", "family_name", "middle_name",
           "nickname", "profile", "picture", "zoneinfo", "locale", "updated_at", "email",
           "email_verified", "organisation_name", "groups", "wlcg.groups", "external_authn");
 
   private static final List<String> GRANT_TYPES =
-      newArrayList("authorization_code", "implicit", "refresh_token", "client_credentials",
-          "password", "urn:ietf:params:oauth:grant-type:token-exchange",
+      List.of("authorization_code", "implicit", "refresh_token", "client_credentials", "password",
+          "urn:ietf:params:oauth:grant-type:token-exchange",
           "urn:ietf:params:oauth:grant-type:device_code");
 
-  private static final List<String> SIGNING_ALGOS =
-      newArrayList(JWSAlgorithm.HS256, JWSAlgorithm.HS384, JWSAlgorithm.HS512, JWSAlgorithm.RS256,
-          JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256, JWSAlgorithm.ES384,
-          JWSAlgorithm.ES512, JWSAlgorithm.PS256, JWSAlgorithm.PS384, JWSAlgorithm.PS512).stream()
-            .map(JWSAlgorithm::getName)
-            .collect(toList());
+  public static final List<JWSAlgorithm> SIGNING_ALGOS = List.of(JWSAlgorithm.RS256,
+      JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256, JWSAlgorithm.ES384,
+      JWSAlgorithm.ES512, JWSAlgorithm.PS256, JWSAlgorithm.PS384, JWSAlgorithm.PS512);
 
-  private static final List<String> CODE_CHALLENGE_METHODS =
-      newArrayList(PKCEAlgorithm.plain.getName(), PKCEAlgorithm.S256.getName());
+  private static final List<PKCEAlgorithm> CODE_CHALLENGE_METHODS =
+      List.of(PKCEAlgorithm.PLAIN, PKCEAlgorithm.S256);
 
-  private static final List<String> USERINFO_JWS_ALGOS_SUPPORTED = SIGNING_ALGOS;
+  private static final List<JWSAlgorithm> USERINFO_JWS_ALGOS_SUPPORTED = SIGNING_ALGOS;
 
-  private static final List<String> ID_TOKEN_JWS_ALGOS_SUPPORTED;
-
-  static {
-    ID_TOKEN_JWS_ALGOS_SUPPORTED = newArrayList(SIGNING_ALGOS);
-    ID_TOKEN_JWS_ALGOS_SUPPORTED.add(Algorithm.NONE.getName());
-  }
+  private static final List<Algorithm> ID_TOKEN_JWS_ALGOS_SUPPORTED =
+      List.of(JWSAlgorithm.RS256, JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256,
+          JWSAlgorithm.ES384, JWSAlgorithm.ES512, JWSAlgorithm.PS256, JWSAlgorithm.PS384,
+          JWSAlgorithm.PS512, Algorithm.NONE);
 
   private final IamProperties properties;
   private final SystemScopeService systemScopeService;
@@ -106,6 +99,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String deviceAuthorizationEndpoint;
   private final String aboutEndpoint;
   private final String scimEndpoint;
+  private final String logoutEndpoint;
   private Set<String> supportedScopes;
 
 
@@ -126,14 +120,15 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     authorizeEndpoint = buildEndpointUrl(AUTHORIZE_ENDPOINT);
     tokenEndpoint = buildEndpointUrl(TOKEN_ENDPOINT);
-    userinfoEndpoint = buildEndpointUrl(UserInfoEndpoint.URL);
+    userinfoEndpoint = buildEndpointUrl(IamUserInfoEndpoint.URL);
     jwkEndpoint = buildEndpointUrl(IamJWKSetPublishingEndpoint.URL);
     clientRegistrationEndpoint = buildEndpointUrl(ClientRegistrationApiController.ENDPOINT);
-    introspectionEndpoint = buildEndpointUrl(IntrospectionEndpoint.URL);
-    revocationEndpoint = buildEndpointUrl(RevocationEndpoint.URL);
+    introspectionEndpoint = buildEndpointUrl(IamIntrospectionEndpoint.URL);
+    revocationEndpoint = buildEndpointUrl(IamRevocationEndpoint.URL);
     deviceAuthorizationEndpoint = buildEndpointUrl(IamDeviceEndpointController.DEVICE_CODE_URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
+    logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);
     updateSupportedScopes();
   }
 
@@ -149,79 +144,49 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     return String.format("%s/%s", properties.getBaseUrl(), e);
   }
 
-  /**
-   * FIXIME: This hack is mainly required to have the mitreid dashboard work as expected, and should
-   * be removed as soon as the mitre dashboard is dropped.
-   * 
-   * @return the issuer URI with a trailing slash
-   */
-  private String getIssuerWithTrailingSlash() {
-    if (properties.getIssuer().endsWith("/")) {
-      return properties.getIssuer();
-    } else {
-      return properties.getIssuer() + "/";
-    }
-  }
-
   @Override
   @Cacheable(value = CACHE_KEY)
-  public Map<String, Object> getWellKnownInfo() {
-
-    Map<String, Object> result = newHashMap();
-
-    result.put("issuer", getIssuerWithTrailingSlash());
-
-    result.put("authorization_endpoint", authorizeEndpoint);
-    result.put("token_endpoint", tokenEndpoint);
-
-    result.put("userinfo_endpoint", userinfoEndpoint);
-    result.put("jwks_uri", jwkEndpoint);
-    result.put("registration_endpoint", clientRegistrationEndpoint);
-
-    result.put("introspection_endpoint", introspectionEndpoint);
-    result.put("revocation_endpoint", revocationEndpoint);
-    result.put("device_authorization_endpoint", deviceAuthorizationEndpoint);
-
-    result.put("op_policy_uri", aboutEndpoint);
-    result.put("op_tos_uri", aboutEndpoint);
-
-    result.put("scim_endpoint", scimEndpoint);
-
-    result.put("response_types_supported", RESPONSE_TYPES);
-    result.put("grant_types_supported", GRANT_TYPES);
-
-    result.put("subject_types_supported", SUBJECT_TYPES);
-
-    result.put("userinfo_signing_alg_values_supported", USERINFO_JWS_ALGOS_SUPPORTED);
-    result.put("userinfo_encryption_alg_values_supported", allEncryptionAlgs);
-    result.put("userinfo_encryption_enc_values_supported", allEncryptionEncs);
-
-    result.put("id_token_signing_alg_values_supported", ID_TOKEN_JWS_ALGOS_SUPPORTED);
-    result.put("id_token_encryption_alg_values_supported", allEncryptionAlgs);
-    result.put("id_token_encryption_enc_values_supported", allEncryptionEncs);
-
-    result.put("request_object_signing_alg_values_supported", SIGNING_ALGOS);
-    result.put("request_object_encryption_alg_values_supported", allEncryptionAlgs);
-    result.put("request_object_encryption_enc_values_supported", allEncryptionEncs);
-
-    result.put("token_endpoint_auth_methods_supported", TOKEN_ENDPOINT_AUTH_METHODS);
-
-    result.put("token_endpoint_auth_signing_alg_values_supported", SIGNING_ALGOS);
-
-    result.put("claim_types_supported", CLAIM_TYPES);
-    result.put("claims_supported", CLAIMS);
-
-    result.put("claims_parameter_supported", true);
-    result.put("request_parameter_supported", true);
-    result.put("request_uri_parameter_supported", false);
-    result.put("require_request_uri_registration", false);
-
-    result.put("code_challenge_methods_supported", CODE_CHALLENGE_METHODS);
+  public WellKnownConfiguration getWellKnownInfo() {
 
     updateSupportedScopes();
-    result.put("scopes_supported", supportedScopes);
 
-    return result;
+    return WellKnownConfiguration.builder()
+      .issuer(properties.getIssuer())
+      .authorizationEndpoint(authorizeEndpoint)
+      .tokenEndpoint(tokenEndpoint)
+      .userinfoEndpoint(userinfoEndpoint)
+      .jwksUri(jwkEndpoint)
+      .registrationEndpoint(clientRegistrationEndpoint)
+      .introspectionEndpoint(introspectionEndpoint)
+      .revocationEndpoint(revocationEndpoint)
+      .deviceAuthorizationEndpoint(deviceAuthorizationEndpoint)
+      .opPolicyUri(aboutEndpoint)
+      .opTosUri(aboutEndpoint)
+      .scimEndpoint(scimEndpoint)
+      .responseTypesSupported(RESPONSE_TYPES)
+      .grantTypesSupported(GRANT_TYPES)
+      .subjectTypesSupported(SUBJECT_TYPES)
+      .userinfoSigningAlgValuesSupported(USERINFO_JWS_ALGOS_SUPPORTED)
+      .userinfoEncryptionAlgValuesSupported(allEncryptionAlgs)
+      .userinfoEncryptionEncValuesSupported(allEncryptionEncs)
+      .idTokenSigningAlgValuesSupported(ID_TOKEN_JWS_ALGOS_SUPPORTED)
+      .idTokenEncryptionAlgValuesSupported(allEncryptionAlgs)
+      .idTokenEncryptionEncValuesSupported(allEncryptionEncs)
+      .requestObjectSigningAlgValuesSupported(SIGNING_ALGOS)
+      .requestObjectEncryptionAlgValuesSupported(allEncryptionAlgs)
+      .requestObjectEncryptionEncValuesSupported(allEncryptionEncs)
+      .tokenEndpointAuthMethodsSupported(TOKEN_ENDPOINT_AUTH_METHODS)
+      .tokenEndpointAuthSigningAlgValuesSupported(SIGNING_ALGOS)
+      .claimTypesSupported(CLAIM_TYPES)
+      .claimsSupported(CLAIMS)
+      .claimsParameterSupported(true)
+      .requestParameterSupported(true)
+      .requestUriParameterSupported(false)
+      .requireRequestUriRegistration(false)
+      .codeChallengeMethodsSupported(CODE_CHALLENGE_METHODS)
+      .scopesSupported(supportedScopes)
+      .endSessionEndpoint(logoutEndpoint)
+      .build();
   }
 
 }

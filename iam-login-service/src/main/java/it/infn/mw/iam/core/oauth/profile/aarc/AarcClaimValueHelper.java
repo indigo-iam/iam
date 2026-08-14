@@ -19,22 +19,21 @@ import static java.lang.String.format;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class AarcClaimValueHelper extends IamClaimValueHelper {
@@ -79,44 +78,68 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         encodedGroupName);
   }
 
+  private String resolveScopeDomain() {
+    if (properties.getAarcProfile() != null) {
+      String configuredScopeDomain = properties.getAarcProfile().getAffiliationScope();
+      if (configuredScopeDomain != null && !configuredScopeDomain.isBlank()) {
+        return configuredScopeDomain;
+      }
+    }
+  
+    return properties.getIssuer();
+  }
+
   @Override
   public Object resolveClaim(String claimName, OAuth2Authentication auth,
       Optional<IamAccount> account) {
 
     final String SCOPED_FORMAT = "%s@%s";
+    String scopeDomain = resolveScopeDomain();
+
+    Optional<SavedUserAuthentication> userAuth =
+        (auth != null && auth.getUserAuthentication() != null)
+            ? AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication())
+            : Optional.empty();
 
     if (account.isPresent()) {
       switch (claimName) {
         case AarcExtraClaimNames.AARC_VER:
           return AARC_VERSION_URI;
         case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
+          if (userAuth.isPresent()) {
+            Set<String> loa = new HashSet<>(DEFAULT_LOA);
+            String remoteLoa = firstOf(userAuth.get().getAdditionalInfo(),
+                Set.of("eduPersonAssurance", "urn:oid:1.3.6.1.4.1.5923.1.1.1.11"));
+            if (remoteLoa != null) {
+              loa.add(remoteLoa);
+            }
+            return loa;
+          }
           return DEFAULT_LOA;
         case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
           return resolveGroups(account.get().getUserInfo());
         case AarcExtraClaimNames.VOPERSON_ID:
-          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(),
-              properties.getOrganisation().getName());
+          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(), scopeDomain);
         case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
-          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
-              properties.getOrganisation().getName());
+          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE, scopeDomain);
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
-          if (Objects.isNull(auth)) {
-            return null;
-          }
-          Optional<SavedUserAuthentication> userAuth =
-              AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
             if (account.get().getAffiliation() != null) {
               scopedAffiliations.add(format(SCOPED_FORMAT, account.get().getAffiliation(),
-                  properties.getOrganisation().getName()));
+                  scopeDomain));
             }
             String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
-                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+                Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));
             if (externalScopedAffiliation != null) {
               scopedAffiliations.add(externalScopedAffiliation);
             }
             return scopedAffiliations;
+          }
+          return null;
+        case AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION:
+          if (userAuth.isPresent()) {
+            return userAuth.get().getAdditionalInfo().get("urn:oid:1.3.6.1.4.1.25178.1.2.9");
           }
           return null;
         default:

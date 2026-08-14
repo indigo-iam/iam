@@ -28,29 +28,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
+@SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -73,7 +75,10 @@ class IntrospectionEndpointTests extends TokenGetterUtils {
   TokenRevocationService revokeService;
 
   @Autowired
-  IamTokenService tokenService;
+  ResourceServerTokenServices tokenService;
+
+  @Autowired
+  IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
   JWTSigningAndValidationService signService;
@@ -233,7 +238,7 @@ class IntrospectionEndpointTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    OAuth2AccessTokenEntity at = tokenService.readAccessToken(accessToken);
+    OAuth2AccessTokenEntity at = (OAuth2AccessTokenEntity) tokenService.readAccessToken(accessToken);
     revokeService.revokeAccessToken(at);
 
     // @formatter:off
@@ -259,7 +264,7 @@ class IntrospectionEndpointTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(refreshToken);
+    OAuth2RefreshTokenEntity rt = refreshTokenRepo.findByTokenValue(refreshToken).orElseThrow();
     revokeService.revokeRefreshToken(rt);
 
     // @formatter:off
@@ -299,7 +304,7 @@ class IntrospectionEndpointTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(refreshToken);
+    OAuth2RefreshTokenEntity rt = refreshTokenRepo.findByTokenValue(refreshToken).orElseThrow();
     revokeService.revokeRefreshToken(rt);
 
     // @formatter:off

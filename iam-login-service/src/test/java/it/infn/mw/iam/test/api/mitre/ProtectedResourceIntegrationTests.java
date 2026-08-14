@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.mitre;
 
+import static it.infn.mw.iam.api.client.registration.ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,7 +28,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.web.ProtectedResourceRegistrationEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,12 +37,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -60,30 +60,30 @@ class ProtectedResourceIntegrationTests {
 
   private ResultActions doCreateProtectedResource(String clientJson) throws Exception {
 
-    return mvc.perform(post("/" + ProtectedResourceRegistrationEndpoint.URL).content(clientJson)
-      .contentType(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        post(PROTECTED_RESOURCE_ENDPOINT).content(clientJson).contentType(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doGetProtectedResource(String clientId, String rat) throws Exception {
 
-    return mvc.perform(get("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
-      .header("Authorization", "Bearer " + rat)
-      .accept(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        get(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId).header("Authorization", "Bearer " + rat)
+          .accept(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doUpdateProtectedResource(String clientId, String clientJson, String rat)
       throws Exception {
 
-    return mvc.perform(put("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
-      .header("Authorization", "Bearer " + rat)
-      .content(clientJson)
-      .contentType(APPLICATION_JSON_VALUE)
-      .accept(APPLICATION_JSON_VALUE));
+    return mvc.perform(
+        put(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId).header("Authorization", "Bearer " + rat)
+          .content(clientJson)
+          .contentType(APPLICATION_JSON_VALUE)
+          .accept(APPLICATION_JSON_VALUE));
   }
 
   private ResultActions doDeleteProtectedResource(String clientId, String rat) throws Exception {
 
-    return mvc.perform(delete("/" + ProtectedResourceRegistrationEndpoint.URL + "/" + clientId)
+    return mvc.perform(delete(PROTECTED_RESOURCE_ENDPOINT + "/" + clientId)
       .header("Authorization", "Bearer " + rat)
       .accept(APPLICATION_JSON_VALUE));
   }
@@ -92,14 +92,18 @@ class ProtectedResourceIntegrationTests {
   void protectedResourceLifeCycle() throws Exception {
 
     final String NAME = "protected-resource";
-    String clientJson = ClientJsonStringBuilder.builder().name(NAME).scopes("openid").build();
+    final String SCOPES = "profile email";
+
+    JsonObject clientJson = new JsonObject();
+    clientJson.addProperty("client_name", NAME);
+    clientJson.addProperty("scope", SCOPES);
 
     // create protected resource
-    RegisteredClientDTO testedResource =
-        mapper.readValue(doCreateProtectedResource(clientJson).andExpect(status().isCreated())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(), RegisteredClientDTO.class);
+    RegisteredClientDTO testedResource = mapper
+      .readValue(doCreateProtectedResource(clientJson.toString()).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), RegisteredClientDTO.class);
 
     // verify registration access token exists and expiration is null
     assertNull(JWTParser.parse(testedResource.getRegistrationAccessToken())
@@ -117,12 +121,15 @@ class ProtectedResourceIntegrationTests {
     assertEquals(0, fromDb.getAccessTokenValiditySeconds());
     assertEquals(0, fromDb.getIdTokenValiditySeconds());
     assertEquals(0, fromDb.getRefreshTokenValiditySeconds());
+    assertEquals(0L, fromDb.getClientSecretExpiresAt());
     assertTrue(fromDb.isDynamicallyRegistered());
-    assertTrue(fromDb.isAllowIntrospection());
     assertFalse(fromDb.getScope().isEmpty());
-    assertEquals(1, fromDb.getScope().size());
-    assertTrue(fromDb.getScope().contains("openid"));
+    assertEquals(2, fromDb.getScope().size());
+    assertTrue(fromDb.getScope().contains("profile"));
+    assertTrue(fromDb.getScope().contains("email"));
 
+    doGetProtectedResource(testedResource.getClientId(), "invalid-token")
+      .andExpect(status().isUnauthorized());
 
     // retrieve protected resource from API
     RegisteredClientDTO fromAPI =
@@ -141,24 +148,26 @@ class ProtectedResourceIntegrationTests {
     assertNull(fromAPI.getAccessTokenValiditySeconds());
     assertNull(fromAPI.getIdTokenValiditySeconds());
     assertNull(fromAPI.getRefreshTokenValiditySeconds());
-    assertEquals(0, fromAPI.getClientSecretExpiresAt().toInstant().getEpochSecond());
+    assertEquals(0L, fromAPI.getClientSecretExpiresAt());
     assertFalse(fromAPI.getScope().isEmpty());
-    assertEquals(1, fromAPI.getScope().size());
-    assertTrue(fromAPI.getScope().contains("openid"));
+    assertEquals(2, fromAPI.getScope().size());
+    assertTrue(fromAPI.getScope().contains("profile"));
+    assertTrue(fromAPI.getScope().contains("email"));
 
-    // update protected resource from API
-    clientJson = ClientJsonStringBuilder.builder()
-      .clientId(testedResource.getClientId())
-      .name(NAME)
-      .scopes("openid email")
-      .build();
-    RegisteredClientDTO updated =
-        mapper.readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson,
-            testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString(),
-            RegisteredClientDTO.class);
+    clientJson = new JsonObject();
+    clientJson.addProperty("client_name", NAME);
+    clientJson.addProperty("scope", "openid email");
+
+    doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(), "invalid-token")
+      .andExpect(status().isUnauthorized());
+
+    RegisteredClientDTO updated = mapper
+      .readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(),
+          testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(),
+          RegisteredClientDTO.class);
 
     assertEquals(testedResource.getClientId(), updated.getClientId());
     assertEquals(NAME, updated.getClientName());
@@ -168,11 +177,14 @@ class ProtectedResourceIntegrationTests {
     assertNull(updated.getAccessTokenValiditySeconds());
     assertNull(updated.getIdTokenValiditySeconds());
     assertNull(updated.getRefreshTokenValiditySeconds());
-    assertEquals(0, updated.getClientSecretExpiresAt().toInstant().getEpochSecond());
+    assertEquals(0L, updated.getClientSecretExpiresAt());
     assertFalse(updated.getScope().isEmpty());
     assertEquals(2, updated.getScope().size());
     assertTrue(updated.getScope().contains("openid"));
     assertTrue(updated.getScope().contains("email"));
+
+    doDeleteProtectedResource(testedResource.getClientId(), "invalid-token")
+      .andExpect(status().isUnauthorized());
 
     doDeleteProtectedResource(testedResource.getClientId(),
         testedResource.getRegistrationAccessToken()).andExpect(status().isNoContent());

@@ -19,6 +19,7 @@ public enum IamRegistrationRequestStatus {
   NEW,
   CONFIRMED,
   APPROVED,
-  REJECTED
+  REJECTED,
+  TIMEOUT
 
 }

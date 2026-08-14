@@ -18,9 +18,6 @@ package it.infn.mw.iam.core.oauth.revocation;
 import java.text.ParseException;
 import java.time.Clock;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,8 +31,11 @@ import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
@@ -92,7 +92,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) {
 
-    return refreshTokenRepo.findByTokenValue(token.getJwt()).isEmpty();
+    return refreshTokenRepo.findByTokenValue(token.getValue()).isEmpty();
   }
 
   @Override
@@ -158,7 +158,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public void revokeRefreshToken(OAuth2RefreshTokenEntity rt) {
 
-    refreshTokenRepo.findByTokenValue(rt.getJwt()).ifPresent(token -> {
+    refreshTokenRepo.findByTokenValue(rt.getValue()).ifPresent(token -> {
       refreshTokenRepo.delete(token);
       clientService.useClient(token.getClient());
       String jwtId = getJwtId(token.getJwt());

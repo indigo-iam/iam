@@ -31,7 +31,6 @@ import javax.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -42,6 +41,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;

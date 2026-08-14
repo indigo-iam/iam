@@ -15,10 +15,9 @@
  */
 package it.infn.mw.iam.audit.events.scope;
 
-import org.mitre.oauth2.model.SystemScope;
-
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 public abstract class ScopeEvent extends IamAuditApplicationEvent {
 

@@ -35,25 +35,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Collection;
 import java.util.Date;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
-import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.consent.ConsentGrantController;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
+import it.infn.mw.iam.persistence.model.ConsentGrant;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
@@ -66,14 +67,24 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   IamClientRepository clientRepo;
 
   @Autowired
-  ConfigurationPropertiesBean config;
+  IamProperties config;
 
   @Autowired
-  ApprovedSiteService approvedSiteService;
+  ConsentGrantService consentGrantService;
+
+  private String originalIssuer;
+  private boolean originalAllowCompleteUri;
 
   @BeforeEach
-  void clearSecurityContext() {
-    SecurityContextHolder.clearContext();
+  void saveConfig() {
+    originalIssuer = config.getIssuer();
+    originalAllowCompleteUri = config.getDeviceCode().getAllowCompleteVerificationUri();
+  }
+
+  @AfterEach
+  void restoreConfig() {
+    config.setIssuer(originalIssuer);
+    config.getDeviceCode().setAllowCompleteVerificationUri(originalAllowCompleteUri);
   }
 
   @Test
@@ -83,9 +94,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", ""))
-      .andExpect(status().isBadRequest())
-      .andExpect(view().name("httpCodeView"));
-
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -104,7 +113,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   @Test
   void testDeviceCodeNotReturnCompleteUri() throws Exception {
 
-    config.setAllowCompleteDeviceCodeUri(false);
+    config.getDeviceCode().setAllowCompleteVerificationUri(false);
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -115,8 +124,6 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.device_code").isString())
       .andExpect(jsonPath("$.verification_uri_complete").doesNotExist())
       .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)));
-
-    config.setAllowCompleteDeviceCodeUri(true);
 
   }
 
@@ -129,11 +136,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", DEVICE_CODE_CLIENT_ID))
-      .andExpect(status().isInternalServerError())
-      .andExpect(view().name("httpCodeView"));
-
-    config.setIssuer("http://localhost:8080/");
-
+      .andExpect(status().isInternalServerError());
   }
 
   @Test
@@ -641,7 +644,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testRememberParameterAllowsToAddAnApprovedSite() throws Exception {
+  void testRememberParameterAllowsToAddAnConsentGrant() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -703,7 +706,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get("/api/approved").session(session))
+    mvc.perform(get(ConsentGrantController.URL).session(session))
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))))
@@ -711,7 +714,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testNoneRememberParameterDoesNotAddAnApprovedSite() throws Exception {
+  void testNoneRememberParameterDoesNotAddAConsentGrant() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -770,15 +773,15 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"));
 
-    Collection<ApprovedSite> approvedSites =
-        approvedSiteService.getByClientIdAndUserId(DEVICE_CODE_CLIENT_ID, TEST_USERNAME);
+    Collection<ConsentGrant> consentGrants =
+        consentGrantService.getByClientIdAndUserId(DEVICE_CODE_CLIENT_ID, TEST_USERNAME);
 
-    assertTrue(approvedSites.isEmpty());
+    assertTrue(consentGrants.isEmpty());
 
   }
 
   @Test
-  void testAddAnApprovedSiteFor1HourDoesntWork() throws Exception {
+  void testAddAConsentGrantFor1HourDoesntWork() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -840,7 +843,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get("/api/approved").session(session))
+    mvc.perform(get(ConsentGrantController.URL).session(session))
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))))
@@ -849,7 +852,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testAlreadyApprovedSiteDoesntSkipConsentPage() throws Exception {
+  void testAlreadyConsentGrantDoesntSkipConsentPage() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -933,7 +936,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testAlreadyApprovedSiteDoesntAllowIssuingAT() throws Exception {
+  void testAlreadyConsentGrantDoesntAllowIssuingAT() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -1100,7 +1103,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testApprovedSiteWithRememberNoneNotAllowsIssuingAtBeforeSecondApproval() throws Exception {
+  void testConsentGrantWithRememberNoneNotAllowsIssuingAtBeforeSecondApproval() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)

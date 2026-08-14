@@ -28,10 +28,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,15 +49,17 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerRemoved;
-import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
@@ -76,24 +74,21 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final ClientUtils clientUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
-  private final OIDCTokenService oidcTokenService;
-  private final IamTokenService tokenService;
+  private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory) {
+      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
-    this.oidcTokenService = oidcTokenService;
-    this.tokenService = tokenService;
+    this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
   }
@@ -106,12 +101,16 @@ public class DefaultClientManagementService implements ClientManagementService {
     ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
 
     return resultBuilder
-      .resources(pagedResults.getContent()
-        .stream()
-        .map(converter::registeredClientDtoFromEntity)
-        .collect(Collectors.toList()))
+      .resources(
+          pagedResults.getContent().stream().map(converter::registeredClientDtoFromEntity).toList())
       .fromPage(pagedResults, pageable)
       .build();
+  }
+
+  @Override
+  public List<RegisteredClientDTO> retrieveAllClients() {
+
+    return clientService.findAll().stream().map(converter::registeredClientDtoFromEntity).toList();
   }
 
   @Override
@@ -190,11 +189,12 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
-    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && Objects.isNull(oldClient.getClientSecret())) {
+    if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
+        && Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(clientUtils.generateClientSecret());
-    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(
-        newClient.getTokenEndpointAuthMethod()) && !Objects.isNull(oldClient.getClientSecret())) {
+    } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
+      .contains(newClient.getTokenEndpointAuthMethod())
+        && !Objects.isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(null);
     } else {
       newClient.setClientSecret(oldClient.getClientSecret());
@@ -285,33 +285,17 @@ public class DefaultClientManagementService implements ClientManagementService {
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
   }
 
-
-  private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
-      ClientDetailsEntity client) {
-
-    OAuth2AccessTokenEntity token = oidcTokenService.createRegistrationAccessToken(client);
-    return tokenService.saveAccessToken(token);
-
-  }
-
   @Override
   public RegisteredClientDTO rotateRegistrationAccessToken(@NotBlank String clientId) {
 
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    OAuth2AccessTokenEntity rat = oidcTokenService.rotateRegistrationAccessTokenForClient(client);
-    if (Objects.isNull(rat)) {
-      rat = createRegistrationAccessTokenForClient(client);
-    }
-
-    tokenService.saveAccessToken(rat);
-
-    eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, client));
+    OAuth2AccessTokenEntity rat =
+        registrationTokenService.rotateRegistrationAccessTokenForClient(client);
 
     RegisteredClientDTO response = converter.registeredClientDtoFromEntity(client);
     response.setRegistrationAccessToken(rat.getValue());
-
     return response;
   }
 

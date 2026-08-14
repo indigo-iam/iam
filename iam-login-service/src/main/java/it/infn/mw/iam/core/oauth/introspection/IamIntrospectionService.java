@@ -21,10 +21,6 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +29,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidGrantExcepti
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -51,6 +48,10 @@ import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -58,27 +59,27 @@ public class IamIntrospectionService implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
-  private static final String NOT_ALLOWED_CLIENT_ERROR =
-      "Client %s is not allowed to call introspection endpoint";
   private static final String SUSPENDED_CLIENT_ERROR =
       "Client %s has been suspended and is not allowed to call introspection endpoint";
 
   private final Clock clock;
   private final JWTProfileResolver profileResolver;
-  private final OAuth2TokenEntityService tokenService;
+  private final ResourceServerTokenServices tokenService;
+  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final ClientService clientService;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
   private final OpaqueTokenIntrospector introspector;
 
   public IamIntrospectionService(Clock clock, JWTProfileResolver profileResolver,
-      OAuth2TokenEntityService tokenService, ClientService clientService,
-      ApplicationEventPublisher eventPublisher, IamProperties iamProperties,
-      OpaqueTokenIntrospector introspector) {
+      ResourceServerTokenServices tokenService, IamOAuthRefreshTokenRepository refreshTokenRepo,
+      ClientService clientService, ApplicationEventPublisher eventPublisher,
+      IamProperties iamProperties, OpaqueTokenIntrospector introspector) {
 
     this.clock = clock;
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
+    this.refreshTokenRepo = refreshTokenRepo;
     this.clientService = clientService;
     this.eventPublisher = eventPublisher;
     this.iamProperties = iamProperties;
@@ -103,7 +104,8 @@ public class IamIntrospectionService implements IntrospectionService {
 
       switch (info.tokenType) {
         case REFRESH_TOKEN:
-          OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(tokenValue);
+          OAuth2RefreshTokenEntity rt = refreshTokenRepo.findByTokenValue(tokenValue)
+            .orElseThrow(() -> new InvalidTokenException("Invalid refresh token: token not found"));
           response = introspectRefreshToken(authenticatedClient, rt, info);
           break;
         case ACCESS_TOKEN:
@@ -111,7 +113,8 @@ public class IamIntrospectionService implements IntrospectionService {
           String issuer = info.claims.getIssuer();
 
           if (iamProperties.getIssuer().equals(issuer)) {
-            OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
+            OAuth2AccessTokenEntity at =
+                (OAuth2AccessTokenEntity) tokenService.readAccessToken(tokenValue);
             response = introspectAccessToken(authenticatedClient, at, info);
           } else {
             OAuth2AuthenticatedPrincipal introspectionResult = introspector.introspect(tokenValue);
@@ -177,12 +180,6 @@ public class IamIntrospectionService implements IntrospectionService {
 
     if (!c.isActive()) {
       String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
-      LOG.error(errorMsg);
-      throw new UnauthorizedClientException(errorMsg);
-    }
-
-    if (!c.isAllowIntrospection()) {
-      String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
     }

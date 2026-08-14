@@ -20,7 +20,6 @@ import static java.util.Objects.isNull;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -32,19 +31,17 @@ public class GroupNameAssignedValidator implements ConstraintValidator<GroupName
 
   final IamGroupRepository repo;
 
-  @Autowired
   public GroupNameAssignedValidator(IamGroupRepository repo) {
     this.repo = repo;
   }
-  
+
   @Override
   public void initialize(GroupNameAssigned constraintAnnotation) {
     // intenionally empty method
   }
 
   @Override
-  public boolean isValid(String value, ConstraintValidatorContext context) { 
+  public boolean isValid(String value, ConstraintValidatorContext context) {
     return !isNull(value) && !repo.findByName(value).isPresent();
   }
-
 }

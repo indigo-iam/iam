@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-
 public interface JWTProfile {
 
   String id();

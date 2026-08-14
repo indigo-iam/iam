@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public interface RegistrationRequestService {
 
@@ -44,4 +45,5 @@ public interface RegistrationRequestService {
 
   Boolean emailAvailable(String emailAddress);
 
+  RegistrationRequestDto timeoutRequest(IamRegistrationRequest request);
 }

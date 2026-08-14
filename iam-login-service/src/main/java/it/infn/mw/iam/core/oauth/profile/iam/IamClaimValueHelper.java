@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.EXTERNAL_AUTHN;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AFFILIATION;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ATTR;
-import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.EXTERNAL_AUTHN;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.GROUPS;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.LAST_LOGIN_AT;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ORGANISATION_NAME;
@@ -29,8 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
@@ -38,10 +36,12 @@ import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class IamClaimValueHelper extends BaseClaimValueHelper {

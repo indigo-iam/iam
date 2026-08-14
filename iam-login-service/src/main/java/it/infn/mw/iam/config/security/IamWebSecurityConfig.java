@@ -43,7 +43,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -67,8 +66,8 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -88,11 +87,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @Configuration
 @EnableWebSecurity
 public class IamWebSecurityConfig {
-
-  @Bean
-  SecurityEvaluationContextExtension contextExtension() {
-    return new SecurityEvaluationContextExtension();
-  }
 
   @Configuration
   @Order(100)
@@ -343,17 +337,17 @@ public class IamWebSecurityConfig {
     private AuthenticationManager oidcAuthManager;
 
     @Autowired
-    OidcAuthenticationProvider authProvider;
+    OIDCAuthenticationProvider authProvider;
 
     @Autowired
     private IamProperties iamProperties;
 
-    private OidcClientFilter oidcFilter;
+    private OIDCAuthenticationFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
 
     @Autowired
     public ExternalOidcLogin(
-        @Qualifier("OIDCAuthenticationFilter") OidcClientFilter oidcClientFilter,
+        @Qualifier("OIDCAuthenticationFilter") OIDCAuthenticationFilter oidcClientFilter,
         UserLoginConfig userLoginConfig) {
       this.oidcFilter = oidcClientFilter;
       this.userLoginConfig = userLoginConfig;

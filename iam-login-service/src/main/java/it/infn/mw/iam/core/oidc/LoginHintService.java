@@ -15,14 +15,10 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.LOGIN_HINT;
-
 import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
-import org.mitre.openid.connect.service.LoginHintExtracter;
-import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
@@ -30,16 +26,21 @@ import com.google.common.base.Strings;
 @Service
 public class LoginHintService {
 
-  private LoginHintExtracter loginHintExtracter = new RemoveLoginHintsWithHTTP();
+  private LoginHintExtracter loginHintExtracter;
+
+  public LoginHintService(LoginHintExtracter loginHintExtracter) {
+    this.loginHintExtracter = loginHintExtracter;
+  }
 
   public void handleLoginHint(Map<String, String> params, HttpSession session) {
 
-    String loginHint = loginHintExtracter.extractHint(params.get(LOGIN_HINT));
+    String loginHint =
+        loginHintExtracter.extractHint(params.get(ConnectRequestParameters.LOGIN_HINT));
 
     if (!Strings.isNullOrEmpty(loginHint)) {
-      session.setAttribute(LOGIN_HINT, loginHint);
+      session.setAttribute(ConnectRequestParameters.LOGIN_HINT, loginHint);
     } else {
-      session.removeAttribute(LOGIN_HINT);
+      session.removeAttribute(ConnectRequestParameters.LOGIN_HINT);
     }
   }
 }

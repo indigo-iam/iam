@@ -16,13 +16,13 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
-import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,10 +30,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -47,8 +51,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.DefaultRegistrationRequestService;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.ext_authn.oidc.FullyMockedOidcClientConfiguration;
@@ -58,8 +65,18 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-  FullyMockedOidcClientConfiguration.class}, webEnvironment = WebEnvironment.MOCK)
+//@formatter:on
+@SpringBootTest(
+    classes = {
+        IamLoginService.class, OidcTestConfig.class, FullyMockedOidcClientConfiguration.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"mfa.password-to-encrypt-and-decrypt=secret", "oidc.providers[0].name=provider",
+        "oidc.providers[0].issuer=urn:test-oidc-issuer", "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost/openid_connect_login",
+        "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"})
+//@formatter:on
 class OidcExtAuthRegistrationTests {
 
   @Autowired
@@ -73,6 +90,9 @@ class OidcExtAuthRegistrationTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
+
+  @MockBean
+  private UserInfoFetcher userInfoFetcher;
 
   @Autowired
   private MockMvc mvc;
@@ -126,6 +146,11 @@ class OidcExtAuthRegistrationTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn(TEST_100_USER);
+
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
+
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
     session = (MockHttpSession) mvc
@@ -146,7 +171,8 @@ class OidcExtAuthRegistrationTests {
         startsWith("Your registration request to indigo-dc was submitted successfully"));
 
     // the same happens after having confirmed the request
-    mvc.perform(post("/registration/verify").content("token=" + token)
+    mvc
+      .perform(post("/registration/verify").content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
@@ -183,7 +209,8 @@ class OidcExtAuthRegistrationTests {
 
     IamAccount account = iamAccountRepo.findByOidcId(OidcTestConfig.TEST_OIDC_ISSUER, TEST_100_USER)
       .orElseThrow(() -> new AssertionError("Expected account not found"));
-    assertTrue(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).isEmpty());
+    assertTrue(account.getAttributeByName(DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY)
+      .isEmpty());
 
     iamAccountRepo.delete(account);
   }

@@ -17,10 +17,6 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static java.lang.String.valueOf;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_CONSENT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.time.Clock;
@@ -33,16 +29,8 @@ import java.util.Set;
 
 import javax.servlet.http.HttpSession;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.ApprovedSite;
-import org.mitre.openid.connect.model.WhitelistedSite;
-import org.mitre.openid.connect.service.ApprovedSiteService;
-import org.mitre.openid.connect.service.StatsService;
-import org.mitre.openid.connect.service.WhitelistedSiteService;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.stereotype.Component;
@@ -55,6 +43,13 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
+import it.infn.mw.iam.core.oauth.consent.ConsentExemptionService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
+import it.infn.mw.iam.persistence.model.ConsentGrant;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -62,28 +57,23 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientDetailsService;
-  private final ApprovedSiteService approvedSiteService;
-  private final WhitelistedSiteService whitelistedSiteService;
+  private final ClientService clientService;
+  private final ConsentGrantService approvedSiteService;
+  private final ConsentExemptionService consentExceptionService;
   private final SystemScopeService systemScopeService;
   private final AccountUtils accountUtils;
-  private final ClientService clientService;
-  private final StatsService statsService;
 
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
-  public IamUserApprovalHandler(Clock clock, ClientDetailsEntityService clientDetailsService,
-      ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
-      SystemScopeService systemScopeService, AccountUtils accountUtils,
-      ClientService clientService, StatsService statsService) {
+  public IamUserApprovalHandler(Clock clock, ConsentGrantService approvedSiteService,
+      ConsentExemptionService consentExceptionService, SystemScopeService systemScopeService,
+      AccountUtils accountUtils, ClientService clientService) {
     this.clock = clock;
-    this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
-    this.whitelistedSiteService = whitelistedSiteService;
+    this.consentExceptionService = consentExceptionService;
     this.systemScopeService = systemScopeService;
     this.accountUtils = accountUtils;
     this.clientService = clientService;
-    this.statsService = statsService;
   }
 
   @Override
@@ -101,9 +91,11 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public AuthorizationRequest checkForPreApproval(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    String prompt = (String) authorizationRequest.getExtensions().get(PROMPT);
-    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
-    if (prompts.contains(PROMPT_CONSENT)) {
+    String prompt =
+        (String) authorizationRequest.getExtensions().get(ConnectRequestParameters.PROMPT);
+    List<String> prompts = Splitter.on(ConnectRequestParameters.PROMPT_SEPARATOR)
+      .splitToList(Strings.nullToEmpty(prompt));
+    if (prompts.contains(ConnectRequestParameters.PROMPT_CONSENT)) {
       return authorizationRequest;
     }
 
@@ -113,18 +105,19 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     boolean alreadyApproved = false;
 
-    Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
+    Collection<ConsentGrant> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
 
-    for (ApprovedSite ap : aps) {
+    for (ConsentGrant ap : aps) {
 
-      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
+      if (!approvedSiteService.isExpired(ap)
+          && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
 
 
         ap.setAccessDate(Date.from(clock.instant()));
         approvedSiteService.save(ap);
-        statsService.resetCache();
 
-        authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
+        authorizationRequest.getExtensions()
+          .put(ConnectRequestParameters.APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
         alreadyApproved = true;
 
@@ -133,12 +126,12 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     if (!alreadyApproved) {
-      WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
-      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), scopes)) {
-
-        authorizationRequest.setApproved(true);
-        setAuthTime(authorizationRequest);
-      }
+      consentExceptionService.findByClientId(clientId).ifPresent(ws -> {
+        if (systemScopeService.scopesMatch(ws.getAllowedScopes(), scopes)) {
+          authorizationRequest.setApproved(true);
+          setAuthTime(authorizationRequest);
+        }
+      });
     }
 
     return authorizationRequest;
@@ -148,9 +141,11 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public AuthorizationRequest updateAfterApproval(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    String userId = userAuthentication.getName();
+    String userName = userAuthentication.getName();
     String clientId = authorizationRequest.getClientId();
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(
+          () -> new InvalidClientException("Client with id " + clientId + " was not found"));
     Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
     if (!Boolean.parseBoolean(approvalParams.get(USER_OAUTH_APPROVAL))) {
@@ -182,11 +177,10 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
         timeout = Date.from(clock.instant().plusSeconds(3600));
       }
 
-      ApprovedSite newSite =
-          approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
-      statsService.resetCache();
+      ConsentGrant newSite =
+          approvedSiteService.createConsentGrant(client, userName, timeout, approvedScopes);
       String newSiteId = newSite.getId().toString();
-      authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
+      authorizationRequest.getExtensions().put(ConnectRequestParameters.APPROVED_SITE, newSiteId);
     }
 
     setAuthTime(authorizationRequest);

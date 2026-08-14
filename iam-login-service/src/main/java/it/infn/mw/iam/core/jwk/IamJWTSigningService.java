@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -147,9 +146,18 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
         LOG.warn(SIGNATURE_VERIFICATION_ERROR_MSG, e.getMessage(), e);
       }
     } else {
-      LOG.warn(VERIFIER_NOT_FOUND_MSG, signedJwt.getHeader().getKeyID());
+      /* RFC 7517 states that kid is optional */
+      for (JWSVerifier v : verifiers.values()) {
+        try {
+          if (signedJwt.verify(v)) {
+            return true;
+          }
+        } catch (JOSEException e) {
+          LOG.error("Failed to validate signature with {} error message: {}", v, e.getMessage());
+        }
+      }
     }
-
+    LOG.warn(VERIFIER_NOT_FOUND_MSG, signedJwt.getHeader().getKeyID());
     return false;
   }
 

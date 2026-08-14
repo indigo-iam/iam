@@ -19,8 +19,6 @@ import static java.lang.String.format;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
@@ -29,28 +27,35 @@ import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
-  private final OAuth2TokenEntityService tokenServices;
-  private AUPSignatureCheckService signatureCheckService;
+  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final AUPSignatureCheckService signatureCheckService;
   private AccountUtils accountUtils;
 
-  public IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices,
-      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
+  public IamRefreshTokenGranter(AuthorizationServerTokenServices tokenServices,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
+      OAuth2RequestFactory requestFactory, AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils) {
     super(tokenServices, clientDetailsService, requestFactory);
-    this.tokenServices = tokenServices;
+    this.refreshTokenRepo = refreshTokenRepo;
+    this.signatureCheckService = signatureCheckService;
+    this.accountUtils = accountUtils;
   }
 
   @Override
   protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
     String refreshTokenValue = tokenRequest.getRequestParameters().get("refresh_token");
-    OAuth2RefreshTokenEntity refreshToken = tokenServices.getRefreshToken(refreshTokenValue);
+    OAuth2RefreshTokenEntity refreshToken = refreshTokenRepo.findByTokenValue(refreshTokenValue)
+      .orElseThrow(() -> new InvalidGrantException("Invalid Refresh Token"));
 
     Optional<IamAccount> user = accountUtils
       .getAuthenticatedUserAccount(refreshToken.getAuthenticationHolder().getUserAuth());
@@ -65,15 +70,7 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
               user.get().getUsername()));
     }
 
-    return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
-  }
-
-  public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
-    this.signatureCheckService = signatureCheckService;
-  }
-
-  public void setAccountUtils(AccountUtils accountUtils) {
-    this.accountUtils = accountUtils;
+    return super.getAccessToken(client, tokenRequest);
   }
 
 }

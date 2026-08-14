@@ -20,7 +20,6 @@ import static it.infn.mw.iam.core.oidc.FederationException.invalidRequest;
 import java.text.ParseException;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -44,6 +43,7 @@ import it.infn.mw.iam.core.oidc.ExplicitClientRegistrationMapper;
 import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.FederationException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @RestController

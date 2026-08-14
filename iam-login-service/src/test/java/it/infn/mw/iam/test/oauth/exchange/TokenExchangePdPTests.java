@@ -41,7 +41,6 @@ import org.apache.velocity.exception.ParseErrorException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
@@ -49,18 +48,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
@@ -88,7 +88,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   DefaultTokenExchangePdp pdp;
 
   @Mock
-  IamTokenService tokenService;
+  ResourceServerTokenServices tokenService;
 
   private ListAppender<ILoggingEvent> logCaptor;
 
@@ -99,7 +99,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
     private final Set<ScopeMatcher> scopesToReturn;
 
     TestableDefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-        ScopeMatcherRegistry scopeMatcherRegistry, IamTokenService tokenService,
+        ScopeMatcherRegistry scopeMatcherRegistry, ResourceServerTokenServices tokenService,
         Set<ScopeMatcher> scopesToReturn) {
 
       super(repo, scopeMatcherRegistry, tokenService);

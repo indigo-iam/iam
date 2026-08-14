@@ -15,10 +15,13 @@
  */
 package it.infn.mw.iam.api.tokens.service.paging;
 
-public interface TokensPageRequest {
+public record TokensPageRequest(int count, int startIndex) {
 
-  public int getCount();
+  public static final int MAX_PAGE_SIZE = 20;
 
-  public int getStartIndex();
-
+  public static TokensPageRequest of(Integer count, Integer startIndex) {
+    int pageSize = (count == null || count < 0 || count > MAX_PAGE_SIZE) ? MAX_PAGE_SIZE : count;
+    int offset = (startIndex == null || startIndex < 1) ? 1 : startIndex;
+    return new TokensPageRequest(pageSize, offset);
+  }
 }

@@ -19,9 +19,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestTemplate;
@@ -34,7 +31,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 
-public class IamJWKSetCacheService extends JWKSetCacheService {
+@SuppressWarnings("deprecation")
+public class IamJWKSetCacheService {
 
   public static final String KEY_MATERIAL_ERROR_TEMPLATE =
       "Could not retrieve key material from {}";
@@ -57,8 +55,6 @@ public class IamJWKSetCacheService extends JWKSetCacheService {
       .build(new JWKSetEncryptorFetcher(rtf));
   }
 
-
-  @Override
   public JWTSigningAndValidationService getValidator(String jwksUri) {
 
     try {
@@ -72,7 +68,6 @@ public class IamJWKSetCacheService extends JWKSetCacheService {
     }
   }
 
-  @Override
   public JWTEncryptionAndDecryptionService getEncrypter(String jwksUri) {
     try {
       return encrypters.get(jwksUri);

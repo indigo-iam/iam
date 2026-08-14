@@ -36,10 +36,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -57,8 +53,12 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.assertion.JwtAssertionAuthenticationToken;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @ExtendWith(MockitoExtension.class)
 class TokenEndpointJwtClientAuthenticationProviderTests
@@ -129,11 +129,11 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
     lenient().when(authentication.getCredentials()).thenReturn(macSignJwt(JUST_SUB_JWT));
 
-    List<AuthMethod> authMethod = new ArrayList<>();
+    List<ClientAuthMethod> authMethod = new ArrayList<>();
     authMethod.add(null);
-    authMethod.addAll(List.of(AuthMethod.NONE, AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST));
+    authMethod.addAll(List.of(ClientAuthMethod.NONE, ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST));
 
-    for (AuthMethod am : authMethod) {
+    for (ClientAuthMethod am : authMethod) {
       lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(am);
 
       AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
@@ -145,7 +145,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
   @Test
   void testInvalidAsymmetricAlgo() {
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.SECRET_JWT);
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
@@ -153,14 +153,14 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
       AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
           () -> provider.authenticate(authentication));
-      assertTrue(e.getMessage().contains("Invalid signature algorithm: " + a.getName()));
+      assertTrue(e.getMessage().contains("SECRET_JWT has been deprecated"));
     });
   }
 
   @Test
   void testInvalidSymmetricAlgo() {
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.PRIVATE_KEY);
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
@@ -176,7 +176,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
   @Test
   void testInvalidAlgo() {
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.PRIVATE_KEY);
     lenient().when(client.getTokenEndpointAuthSigningAlg()).thenReturn(JWSAlgorithm.RS256);
 
     SignedJWT jws = new SignedJWT(new JWSHeader(JWSAlgorithm.RS384), JUST_SUB_JWT);
@@ -193,7 +193,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
         () -> provider.authenticate(authentication));
     assertTrue(e2.getMessage().contains("Invalid signature algorithm: HS256"));
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.SECRET_JWT);
     lenient().when(client.getTokenEndpointAuthSigningAlg()).thenReturn(JWSAlgorithm.HS256);
 
     jws = new SignedJWT(new JWSHeader(JWSAlgorithm.HS384), JUST_SUB_JWT);
@@ -216,7 +216,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(null);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
       lenient().when(authentication.getCredentials()).thenReturn(jws);
 
@@ -234,7 +234,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(false);
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.SECRET_JWT);
 
     JWSAlgorithm.Family.HMAC_SHA.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
@@ -242,10 +242,10 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
       AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
           () -> provider.authenticate(authentication));
-      assertTrue(e.getMessage().contains("invalid signature"));
+      assertTrue(e.getMessage().contains("SECRET_JWT has been deprecated"));
     });
 
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.PRIVATE_KEY);
 
     JWSAlgorithm.Family.SIGNATURE.forEach(a -> {
       SignedJWT jws = new SignedJWT(new JWSHeader(a), JUST_SUB_JWT);
@@ -263,7 +263,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
 
       JWSHeader header = new JWSHeader(a);
       SignedJWT jws = new SignedJWT(header, JUST_SUB_JWT);
@@ -291,7 +291,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet =
           new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME).subject(JWT_AUTH_NAME).build();
@@ -310,7 +310,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -331,7 +331,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -353,7 +353,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -375,7 +375,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -396,7 +396,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -418,7 +418,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -440,7 +440,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
 
-    testForAllAlgos(client, a -> {
+    testForAllSignatureAlgos(client, a -> {
       JWSHeader header = new JWSHeader(a);
       JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
         .subject(JWT_AUTH_NAME)
@@ -465,7 +465,7 @@ class TokenEndpointJwtClientAuthenticationProviderTests
 
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
     lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
-    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+    lenient().when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.PRIVATE_KEY);
 
     Date date = Date.from(clock.instant().plusSeconds(1800));
     String uuid = UUID.randomUUID().toString();

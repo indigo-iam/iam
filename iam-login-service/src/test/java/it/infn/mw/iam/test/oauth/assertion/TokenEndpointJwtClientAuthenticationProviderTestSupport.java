@@ -19,8 +19,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.function.Consumer;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -30,6 +28,9 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public interface TokenEndpointJwtClientAuthenticationProviderTestSupport {
 
@@ -58,12 +59,10 @@ public interface TokenEndpointJwtClientAuthenticationProviderTestSupport {
 
   }
 
-  default void testForAllAlgos(ClientDetailsEntity client,
+  default void testForAllSignatureAlgos(ClientDetailsEntity client,
       Consumer<JWSAlgorithm> test) {
-    
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.SECRET_JWT);
-    JWSAlgorithm.Family.HMAC_SHA.forEach(test);
-    when(client.getTokenEndpointAuthMethod()).thenReturn(AuthMethod.PRIVATE_KEY);
+
+    when(client.getTokenEndpointAuthMethod()).thenReturn(ClientAuthMethod.PRIVATE_KEY);
     JWSAlgorithm.Family.SIGNATURE.forEach(test);
   }
 

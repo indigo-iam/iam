@@ -26,14 +26,17 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -46,16 +49,34 @@ import com.nimbusds.jwt.JWT;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.common.Fail;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@IamRandomPortIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
-  OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+//@formatter:off
+@SpringBootTest(
+    classes = {
+        IamLoginService.class, OidcTestConfig.class, OidcValidatorIntegrationTests.Config.class},
+    webEnvironment = WebEnvironment.DEFINED_PORT,
+    properties = {
+        "server.port=8989",
+        "oidc.providers[0].name=provider",
+        "oidc.providers[0].issuer=urn:test-oidc-issuer",
+        "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
+        "oidc.providers[0].client.tokenEndpointAuthMethod=SECRET_BASIC"
+        })
+//@formatter:on
 class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
+
+  @MockBean
+  private UserInfoFetcher userInfoFetcher;
 
   @Configuration
   public static class Config {
@@ -73,8 +94,7 @@ class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSuppo
   }
 
   @Test
-  void testValidatorError()
-    throws JOSEException, JsonProcessingException, RestClientException {
+  void testValidatorError() throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -86,6 +106,11 @@ class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSuppo
     requestHeaders.add("Cookie", sessionCookie);
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn("unregistered");
+
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
 
     String tokenResponse =
         mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);

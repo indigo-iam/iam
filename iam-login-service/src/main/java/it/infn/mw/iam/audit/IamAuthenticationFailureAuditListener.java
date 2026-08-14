@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.audit;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,6 @@ public class IamAuthenticationFailureAuditListener
 
   private final AuditEventLogger logger;
   
-  @Autowired
   public IamAuthenticationFailureAuditListener(AuditEventLogger logger) {
     this.logger = logger;
   }

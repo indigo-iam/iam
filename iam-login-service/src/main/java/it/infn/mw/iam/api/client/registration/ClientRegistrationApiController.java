@@ -47,8 +47,7 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 
 @RestController
-@RequestMapping(
-    value = {ClientRegistrationApiController.ENDPOINT})
+@RequestMapping(value = {ClientRegistrationApiController.ENDPOINT})
 public class ClientRegistrationApiController {
 
   public static final String ENDPOINT = "/iam/api/client-registration";
@@ -90,7 +89,6 @@ public class ClientRegistrationApiController {
   public void deleteClient(@PathVariable String clientId, Authentication authentication) {
     service.deleteClient(clientId, authentication);
   }
-
 
   @PostMapping("/{clientId}/redeem")
   @JsonView({ClientViews.NoSecretDynamicRegistration.class})

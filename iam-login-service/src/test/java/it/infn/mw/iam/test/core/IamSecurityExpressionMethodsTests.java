@@ -22,8 +22,6 @@ import static org.mockito.Mockito.doReturn;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +39,7 @@ import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
@@ -49,7 +48,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 import it.infn.mw.iam.test.config.ClockConfig;
 
-@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
@@ -73,9 +73,6 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
 
   @Autowired
   ClientService clientService;
-
-  @Autowired
-  ClientDetailsEntityService clientDetailsService;
 
   @Autowired
   AccountUtils accountUtils;
@@ -153,7 +150,8 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   }
 
   private void mockLinkClientToAccount(String owner) {
-    ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    ClientDetailsEntity clientTest =
+        clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     Optional<IamAccount> account = accountRepo.findByUsername(owner);
     ClientDetailsEntity clientTestUpdate =
         clientService.linkClientToAccount(clientTest, account.get());

@@ -27,9 +27,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -40,6 +37,9 @@ import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,7 +69,7 @@ class DashboardConfigServiceTest {
     c.setScope(DashboardConfigService.DASHBOARD_SCOPES);
     c.setRedirectUris(Set.of("https://iam.example.org/ui/api/auth/oauth2/callback/indigo-iam"));
     c.setGrantTypes(Set.of("authorization_code", "refresh_token"));
-    c.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    c.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     c.setCodeChallengeMethod(PKCEAlgorithm.S256);
     c.setActive(true);
     return c;

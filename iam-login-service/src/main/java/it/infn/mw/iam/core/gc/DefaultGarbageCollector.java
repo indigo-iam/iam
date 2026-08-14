@@ -19,13 +19,6 @@ import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.openid.connect.model.ApprovedSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -34,8 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.persistence.model.ConsentGrant;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
-import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamConsentGrantRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
@@ -51,7 +51,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultGarbageCollector.class);
 
   private final Clock clock;
-  private final IamApprovedSiteRepository approvedSiteRepository;
+  private final IamConsentGrantRepository approvedSiteRepository;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final IamDeviceCodeRepository deviceCodeRepo;
@@ -61,7 +61,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
   private final IamClientRepository clientRepository;
   private final ClientService clientService;
 
-  public DefaultGarbageCollector(Clock clock, IamApprovedSiteRepository approvedSiteRepository,
+  public DefaultGarbageCollector(Clock clock, IamConsentGrantRepository approvedSiteRepository,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, IamDeviceCodeRepository deviceCodeRepo,
       IamAuthenticationHolderRepository authenticationHolderRepository,
@@ -84,9 +84,9 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Override
   @SchedulerLock(name = "deleteExpiredApprovedSites", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   @Transactional(value = "defaultTransactionManager")
-  public void clearExpiredApprovedSites(int count) {
+  public void clearExpiredConsentGrants(int count) {
 
-    Page<ApprovedSite> expiredSites = approvedSiteRepository
+    Page<ConsentGrant> expiredSites = approvedSiteRepository
       .getExpiredCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
     LOG.debug("Found {} expired approved sites", expiredSites.getTotalElements());
     approvedSiteRepository.deleteAll(expiredSites);
@@ -102,10 +102,10 @@ public class DefaultGarbageCollector implements GarbageCollector {
 
     Page<AuthorizationCodeEntity> expiredAuthzCodes = authzCodeRepo
       .getExpiredAuthorizationCodes(Date.from(clock.instant()), new OffsetPageable(0, count));
-    LOG.debug("Found {} expired authorization codes", expiredAuthzCodes.getTotalElements());
     authzCodeRepo.deleteAll(expiredAuthzCodes);
     if (expiredAuthzCodes.getTotalElements() > 0) {
-      LOG.info("Removed {} expired authorization codes", expiredAuthzCodes.getTotalElements());
+      LOG.info("Removed {} of {} expired authorization codes",
+          expiredAuthzCodes.getNumberOfElements(), expiredAuthzCodes.getTotalElements());
     }
   }
 
@@ -114,10 +114,9 @@ public class DefaultGarbageCollector implements GarbageCollector {
   @Transactional(value = "defaultTransactionManager")
   public void clearExpiredDeviceCodes(int count) {
 
-    List<DeviceCode> expiredDeviceCodes =
-        deviceCodeRepo.findExpired(Date.from(clock.instant()));
+    List<DeviceCode> expiredDeviceCodes = deviceCodeRepo.findExpired(Date.from(clock.instant()));
     deviceCodeRepo.deleteAll(expiredDeviceCodes);
-    if (expiredDeviceCodes.isEmpty()) {
+    if (!expiredDeviceCodes.isEmpty()) {
       LOG.info("Removed {} expired device codes", expiredDeviceCodes.size());
     }
   }
@@ -131,7 +130,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .findExpired(Date.from(clock.instant()), new OffsetPageable(0, count));
     revokedAccessTokenRepo.deleteAll(revokedTokens);
     if (revokedTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} revoked access tokens", revokedTokens.getTotalElements());
+      LOG.info("Removed {} of {} revoked access tokens", revokedTokens.getNumberOfElements(),
+          revokedTokens.getTotalElements());
     }
   }
 
@@ -144,7 +144,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
         accessTokenRepo.findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
     accessTokenRepo.deleteAll(expiredAccessTokens);
     if (expiredAccessTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} expired access tokens", expiredAccessTokens.getTotalElements());
+      LOG.info("Removed {} of {} expired access tokens", expiredAccessTokens.getNumberOfElements(),
+          expiredAccessTokens.getTotalElements());
     }
   }
 
@@ -157,7 +158,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
     refreshTokenRepo.deleteAll(expiredRefreshTokens);
     if (expiredRefreshTokens.getTotalElements() > 0) {
-      LOG.info("Removed {} expired refresh tokens", expiredRefreshTokens.getTotalElements());
+      LOG.info("Removed {} of {} expired refresh tokens",
+          expiredRefreshTokens.getNumberOfElements(), expiredRefreshTokens.getTotalElements());
     }
   }
 
@@ -170,7 +172,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
       .getOrphans(new OffsetPageable(0, count), Date.from(clock.instant()));
     authenticationHolderRepository.deleteAll(orphanedHolders);
     if (orphanedHolders.getTotalElements() > 0) {
-      LOG.info("Removed {} orphaned authentication holders", orphanedHolders.getTotalElements());
+      LOG.info("Removed {} of {} orphaned authentication holders",
+          orphanedHolders.getNumberOfElements(), orphanedHolders.getTotalElements());
     }
   }
 
@@ -184,7 +187,8 @@ public class DefaultGarbageCollector implements GarbageCollector {
     expiredClients.getContent()
       .forEach(client -> clientService.updateClientStatus(client, false, "expired_client_task"));
     if (expiredClients.getTotalElements() > 0) {
-      LOG.info("Suspended {} expired clients", expiredClients.getTotalElements());
+      LOG.info("Suspended {} of {} expired clients", expiredClients.getNumberOfElements(),
+          expiredClients.getTotalElements());
     }
   }
 

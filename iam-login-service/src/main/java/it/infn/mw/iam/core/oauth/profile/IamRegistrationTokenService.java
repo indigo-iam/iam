@@ -1,0 +1,171 @@
+/**
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package it.infn.mw.iam.core.oauth.profile;
+
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.CLIENT_ID;
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.SCOPE;
+
+import java.time.Clock;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
+import it.infn.mw.iam.audit.events.tokens.RegistrationTokenIssuedEvent;
+import it.infn.mw.iam.audit.events.tokens.ResourceTokenIssuedEvent;
+import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
+import it.infn.mw.iam.core.TokenUtils;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+
+@SuppressWarnings("deprecation")
+@Service
+@Transactional
+public class IamRegistrationTokenService implements RegistrationTokenService {
+
+  public static final Logger LOG = LoggerFactory.getLogger(IamRegistrationTokenService.class);
+
+  private final Clock clock;
+  private final IamProperties properties;
+  private final JWTSigningAndValidationService jwtService;
+  private final IamOAuthAccessTokenRepository tokenRepo;
+  private final IamAuthenticationHolderService authHolderService;
+  private final TokenRevocationService revocationService;
+  private final ApplicationEventPublisher eventPublisher;
+  private final TokenUtils tokenUtils;
+
+  public IamRegistrationTokenService(Clock clock, IamProperties properties,
+      JWTSigningAndValidationService jwtService, IamOAuthAccessTokenRepository tokenRepo,
+      IamAuthenticationHolderService authHolderService, TokenRevocationService revocationService,
+      ApplicationEventPublisher eventPublisher, TokenUtils tokenUtils) {
+    this.clock = clock;
+    this.properties = properties;
+    this.jwtService = jwtService;
+    this.tokenRepo = tokenRepo;
+    this.authHolderService = authHolderService;
+    this.revocationService = revocationService;
+    this.eventPublisher = eventPublisher;
+    this.tokenUtils = tokenUtils;
+  }
+
+  @Override
+  public OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client) {
+
+    OAuth2AccessTokenEntity registrationToken = createAndSaveRegistrationAccessToken(client);
+    String grantType = getGrantType(registrationToken);
+    eventPublisher
+      .publishEvent(new RegistrationTokenIssuedEvent(this, registrationToken, grantType));
+    return registrationToken;
+  }
+
+  private String getGrantType(OAuth2AccessTokenEntity registrationToken) {
+    return registrationToken.getAuthenticationHolder()
+        .getAuthentication()
+        .getOAuth2Request()
+        .getGrantType();
+  }
+
+  @Override
+  public OAuth2AccessTokenEntity createResourceAccessToken(ClientDetailsEntity client) {
+
+    OAuth2AccessTokenEntity resourceToken = createAndSaveResourceAccessToken(client);
+    String grantType = getGrantType(resourceToken);
+    eventPublisher.publishEvent(new ResourceTokenIssuedEvent(this, resourceToken, grantType));
+    return resourceToken;
+  }
+
+  @Override
+  public OAuth2AccessTokenEntity rotateRegistrationAccessTokenForClient(
+      ClientDetailsEntity client) {
+
+    Optional<OAuth2AccessTokenEntity> currentToken =
+        tokenRepo.findRegistrationToken(client.getId());
+    OAuth2AccessTokenEntity rotatedToken = createRegistrationAccessToken(client);
+    eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, client));
+    currentToken.ifPresent(revocationService::revokeRegistrationToken);
+    return rotatedToken;
+  }
+
+  private OAuth2AccessTokenEntity createAndSaveRegistrationAccessToken(ClientDetailsEntity client) {
+    return createAndSaveAccessToken(client, SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+  }
+
+  private OAuth2AccessTokenEntity createAndSaveResourceAccessToken(ClientDetailsEntity client) {
+    return createAndSaveAccessToken(client, SystemScopeService.RESOURCE_TOKEN_SCOPE);
+  }
+
+  private OAuth2AccessTokenEntity createAndSaveAccessToken(ClientDetailsEntity client,
+      String scope) {
+
+    Map<String, String> authorizationParameters = new HashMap<>();
+    OAuth2Request clientAuth = new OAuth2Request(authorizationParameters, client.getClientId(),
+        Set.of(Authorities.ROLE_CLIENT), true, Set.of(scope), null, null, null, null);
+
+    OAuth2Authentication authentication = new OAuth2Authentication(clientAuth, null);
+
+    OAuth2AccessTokenEntity token = new OAuth2AccessTokenEntity();
+    token.setClient(client);
+    token.setScope(Set.of(scope));
+
+    AuthenticationHolderEntity authHolder = authHolderService.createAndSave(authentication, client);
+    token.setAuthenticationHolder(authHolder);
+    token.setExpiration(null); // infinite token
+
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().audience(List.of(client.getClientId()))
+      .issuer(properties.getIssuer())
+      .issueTime(Date.from(clock.instant()))
+      .jwtID(UUID.randomUUID().toString())
+      .claim(CLIENT_ID, client.getClientId())
+      .claim(SCOPE, scope)
+      .build();
+
+    JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();
+    JWSHeader header =
+        new JWSHeader.Builder(signingAlg).keyID(jwtService.getDefaultSignerKeyId()).build();
+    SignedJWT signed = new SignedJWT(header, claims);
+
+    jwtService.signJwt(signed);
+
+    token.setJwt(signed);
+    token.setTokenValueHash(tokenUtils.sha256(signed.serialize()));
+
+    return tokenRepo.save(token);
+  }
+}

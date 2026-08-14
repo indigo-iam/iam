@@ -84,6 +84,9 @@ public interface IamAccountRepository
     @Query("select a from IamAccount a join a.groups ag where ag.group.uuid = :groupUuid order by a.username ASC")
     Page<IamAccount> findByGroupUuid(@Param("groupUuid") String uuid, Pageable op);
 
+    @Query("select count(a) from IamAccount a join a.groups ag where ag.group.uuid = :groupUuid")
+    long countGroupMembers(@Param("groupUuid") String uuid);
+
     @Query("select a from IamAccount a join a.groups ag join a.userInfo ui where ag.group.uuid = :groupUuid"
             + " and lower(ui.email) LIKE lower(concat('%', :filter, '%'))"
             + " or lower(a.username) LIKE lower(concat('%', :filter, '%'))"
@@ -207,4 +210,5 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
     List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
+
 }

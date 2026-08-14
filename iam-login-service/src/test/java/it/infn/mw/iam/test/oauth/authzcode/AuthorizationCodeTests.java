@@ -34,8 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -51,6 +49,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -73,37 +72,32 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   public static final String SCOPE = "openid profile";
 
   @Autowired
-  private IamAupRepository aupRepo;
+  IamAupRepository aupRepo;
 
   @Value("${iam.baseUrl}")
-  private String iamBaseUrl;
+  String iamBaseUrl;
 
   @Autowired
-  private ClientService clientService;
-
-  @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  ClientService clientService;
 
   @Autowired
   IamAccountRepository accountRepo;
 
   @Autowired
-  private IamClientRepository clientRepo;
+  IamClientRepository clientRepo;
 
   private void removeTestClientOwners() {
 
-    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername("test_199").get());
-    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername("test_200").get());
+    ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
+    clientService.unlinkClientFromAccount(client, accountRepo.findByUsername("test_199").get());
+    clientService.unlinkClientFromAccount(client, accountRepo.findByUsername("test_200").get());
   }
 
   private void setTestClientOwners() {
 
-    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername("test_199").get());
-    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername("test_200").get());
+    ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
+    clientService.linkClientToAccount(client, accountRepo.findByUsername("test_199").get());
+    clientService.linkClientToAccount(client, accountRepo.findByUsername("test_200").get());
   }
 
   @Test

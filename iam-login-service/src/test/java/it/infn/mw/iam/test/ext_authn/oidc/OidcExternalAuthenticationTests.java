@@ -26,19 +26,23 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.random.RandomGenerator;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -51,18 +55,35 @@ import com.nimbusds.jose.JOSEException;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+//@formatter:off
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class},
-  webEnvironment = WebEnvironment.RANDOM_PORT)
+    webEnvironment = WebEnvironment.DEFINED_PORT,
+    properties = {
+        "server.port=8989",
+        "oidc.providers[0].name=provider",
+        "oidc.providers[0].issuer=urn:test-oidc-issuer",
+        "oidc.providers[0].client.clientId=iam",
+        "oidc.providers[0].client.clientSecret=secret",
+        "oidc.providers[0].client.scope=openid profile email",
+        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login"
+        })
+//@formatter:on
 @Transactional
 class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSupport {
 
   @Autowired
-  private IamAupRepository aupRepo;  
+  private IamAupRepository aupRepo;
+
+  @MockBean
+  private UserInfoFetcher userInfoFetcher;
 
   @BeforeEach
   void setup() {
@@ -72,7 +93,7 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   @Test
   void testOidcUnregisteredUserRedirectedToRegisterPage()
-    throws JOSEException, JsonProcessingException, RestClientException {
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -84,6 +105,8 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     requestHeaders.add("Cookie", sessionCookie);
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    mockUserInfoResponseForUser("unregistered");
 
     String tokenResponse =
         mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
@@ -121,7 +144,7 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   @Test
   void testOidcRegisteredUserRedirectToHome() throws JOSEException, JsonProcessingException,
-    RestClientException, UnsupportedEncodingException {
+      RestClientException, UnsupportedEncodingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -133,6 +156,8 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     requestHeaders.add("Cookie", sessionCookie);
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    mockUserInfoResponseForUser("test-user");
 
     String tokenResponse =
         mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", ru.nonce);
@@ -150,7 +175,7 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   @Test
   void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa()
-    throws JOSEException, JsonProcessingException, RestClientException {
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -163,6 +188,8 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
     CodeRequestHolder ru =
         buildCodeRequest(sessionCookie, response, Map.of("claims", MFA_CLAIMS_JSON_VALUE));
+
+    mockUserInfoResponseForUser("test-user");
 
     String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER,
         TEST_OIDC_CLIENT_ID, "test-user", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
@@ -218,7 +245,7 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   @Test
   void testOidcUserRedirectToMfaVerifyPageIfMfaIsActive()
-    throws JOSEException, JsonProcessingException, RestClientException {
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -230,6 +257,8 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     requestHeaders.add("Cookie", sessionCookie);
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    mockUserInfoResponseForUser("test-with-mfa");
 
     String tokenResponse =
         mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
@@ -260,7 +289,10 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
+    mockUserInfoResponseForUser("test-with-mfa");
+
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -276,14 +308,45 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     followHeaders.add("Cookie", sessionCookie);
     HttpEntity<Void> followEntity = new HttpEntity<>(followHeaders);
 
-    ResponseEntity<String> redirectedResponse = rt.exchange(mfaVerifyPageURL(), HttpMethod.GET, followEntity,
-        String.class);
+    ResponseEntity<String> redirectedResponse =
+        rt.exchange(mfaVerifyPageURL(), HttpMethod.GET, followEntity, String.class);
 
     assertThat(redirectedResponse.getStatusCode(), equalTo(HttpStatus.OK));
     assertThat(redirectedResponse.getBody(),
         containsString("For your security, please enter a TOTP from your authenticator"));
 
-    aupRepo.deleteAll();    
+    aupRepo.deleteAll();
+  }
+
+  @Test
+  void testOidcUserRedirectToHomeIfMfaIsActiveAndAcrPresentInIdToken()
+      throws JOSEException, JsonProcessingException, RestClientException {
+
+    RestTemplate rt = noRedirectRestTemplate();
+    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+
+    checkAuthorizationEndpointRedirect(response);
+    HttpHeaders requestHeaders = new HttpHeaders();
+
+    String sessionCookie = extractSessionCookie(response);
+    requestHeaders.add("Cookie", sessionCookie);
+
+    CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    mockUserInfoResponseForUser("test-with-mfa");
+
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER,
+        TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
+
+    prepareSuccessResponse(tokenResponse);
+
+    response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
+    verifyMockServerCalls();
+
+    assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
+    assertNotNull(response.getHeaders().getLocation());
+
+    assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
   }
 
   private void createDefaultAup() {
@@ -300,32 +363,11 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     aupRepo.saveDefaultAup(aup);
   }
 
-  @Test
-  void testOidcUserRedirectToHomeIfMfaIsActiveAndAcrPresentInIdToken()
-    throws JOSEException, JsonProcessingException, RestClientException {
+  private void mockUserInfoResponseForUser(String userName) {
 
-    RestTemplate rt = noRedirectRestTemplate();
-    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
-
-    checkAuthorizationEndpointRedirect(response);
-    HttpHeaders requestHeaders = new HttpHeaders();
-
-    String sessionCookie = extractSessionCookie(response);
-    requestHeaders.add("Cookie", sessionCookie);
-
-    CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
-
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER,
-        TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
-
-    prepareSuccessResponse(tokenResponse);
-
-    response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
-    verifyMockServerCalls();
-
-    assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
-    assertNotNull(response.getHeaders().getLocation());
-
-    assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
+    Mockito.when(userInfo.getSub()).thenReturn(userName);
+    Mockito.when(userInfoFetcher.loadUserInfo(Mockito.any())).thenReturn(Optional.of(userInfo));
   }
+
 }

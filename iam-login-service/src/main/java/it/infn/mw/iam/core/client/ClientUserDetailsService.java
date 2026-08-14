@@ -15,9 +15,10 @@
  */
 package it.infn.mw.iam.core.client;
 
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import it.infn.mw.iam.api.client.service.ClientService;
+
 public interface ClientUserDetailsService extends UserDetailsService {
-  ClientDetailsEntityService getClientDetailsService();
+  ClientService getClientDetailsService();
 }

@@ -29,20 +29,20 @@ import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
@@ -56,10 +56,10 @@ public class MfaAcrClaimIntegrationTests extends TokenGetterUtils {
   public static final String TESTUSER_USERNAME = "test-with-mfa";
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  ClientService clientService;
 
   @Autowired
-  IamTokenService tokenService;
+  AuthorizationServerTokenServices tokenService;
 
   @Autowired
   SecurityContextUtils context;
@@ -78,14 +78,14 @@ public class MfaAcrClaimIntegrationTests extends TokenGetterUtils {
     savedAuth.setAuthorities(List.of(new SimpleGrantedAuthority("ROLE_USER")));
     savedAuth.getAdditionalInfo().put("acr", "https://refeds.org/profile/mfa");
 
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
 
     OAuth2Request req = new OAuth2Request(Map.of("grant_type", "authorization_code"),
         client.getClientId(), null, true, Set.of("openid"), null, null, null, null);
 
     OAuth2Authentication auth = new OAuth2Authentication(req, savedAuth);
 
-    OAuth2AccessTokenEntity token = tokenService.createAccessToken(auth);
+    OAuth2AccessToken token = tokenService.createAccessToken(auth);
 
     JWTClaimsSet atClaims = JWTParser.parse(token.getValue()).getJWTClaimsSet();
     assertThat(atClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");

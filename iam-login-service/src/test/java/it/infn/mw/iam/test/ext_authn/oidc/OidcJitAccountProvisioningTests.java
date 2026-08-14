@@ -30,16 +30,16 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -67,7 +67,7 @@ class OidcJitAccountProvisioningTests {
   @Test
   void provisionAccountWithValidTokenAndAvailableUsernameCreatesNewAccount() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
-    UserInfo userInfo = mock(UserInfo.class);
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
 
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -95,7 +95,7 @@ class OidcJitAccountProvisioningTests {
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
 
-    UserInfo userInfo = mock(UserInfo.class);
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
     when(token.getUserInfo()).thenReturn(userInfo);
 
     when(userInfo.getGivenName()).thenReturn("John");
@@ -120,7 +120,7 @@ class OidcJitAccountProvisioningTests {
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
 
-    UserInfo userInfo = mock(UserInfo.class);
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
     when(token.getUserInfo()).thenReturn(userInfo);
     when(userInfo.getGivenName()).thenReturn("John");
     when(userInfo.getFamilyName()).thenReturn("Doe");
@@ -148,7 +148,7 @@ class OidcJitAccountProvisioningTests {
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
 
-    UserInfo userInfo = mock(UserInfo.class);
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
     when(token.getUserInfo()).thenReturn(userInfo);
     when(userInfo.getGivenName()).thenReturn("John");
     when(userInfo.getFamilyName()).thenReturn("Doe");
@@ -175,7 +175,8 @@ class OidcJitAccountProvisioningTests {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 
   @Test
@@ -183,7 +184,7 @@ class OidcJitAccountProvisioningTests {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
-    UserInfo userInfo = mock(UserInfo.class);
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
     when(userInfo.getGivenName()).thenReturn("Already");
     when(userInfo.getFamilyName()).thenReturn("Bound");
     when(userInfo.getEmail()).thenReturn("test@iam.test");
@@ -191,7 +192,8 @@ class OidcJitAccountProvisioningTests {
 
     when(repo.findByEmail("test@iam.test")).thenReturn(Optional.of(mock(IamAccount.class)));
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 
   @Test
@@ -199,21 +201,25 @@ class OidcJitAccountProvisioningTests {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
-    when(token.getUserInfo()).thenReturn(mock(UserInfo.class));
 
-    UserInfo userInfo = token.getUserInfo();
+    UserInfoResponse userInfo = mock(UserInfoResponse.class);
     when(userInfo.getGivenName()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    when(token.getUserInfo()).thenReturn(userInfo);
+
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
 
     when(userInfo.getGivenName()).thenReturn("John");
     when(userInfo.getFamilyName()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
 
     when(userInfo.getFamilyName()).thenReturn("Doe");
     when(userInfo.getEmail()).thenReturn(null);
 
-    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class,
+        () -> service.provisionAccount(token));
   }
 }
