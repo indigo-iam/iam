@@ -196,7 +196,7 @@ public class TaskConfig implements SchedulingConfigurer {
   }
 
   public void scheduleInactiveAccountsTask(final ScheduledTaskRegistrar taskRegistrar) {
-    if (!lifecycleProperties.getAccount().getInactiveAccountsTask().isRemoveInactiveAccounts()) {
+    if (!lifecycleProperties.getAccount().getInactiveAccountsTask().isSuspendInactiveAccounts()) {
       LOG.debug("Inactive accounts task is disabled");
     } else {
       final String cronSchedule =

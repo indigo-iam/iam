@@ -45,6 +45,8 @@ public class FindAccountController {
   public static final String INVALID_FIND_ACCOUNT_REQUEST = "Invalid find account request";
   public static final String INACTIVE_ACCOUNTS_REPORT_DISABLED =
       "Inactive accounts report is disabled";
+  public static final String INVALID_INACTIVE_DAYS =
+      "days must be a positive integer";
 
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
@@ -147,12 +149,22 @@ public class FindAccountController {
       throw new InactiveAccountsReportDisabledError(INACTIVE_ACCOUNTS_REPORT_DISABLED);
     }
 
+    if (days < 1) {
+      throw new InvalidInactiveDaysError(INVALID_INACTIVE_DAYS);
+    }
+
     return service.findAccountsInactiveSince(days, buildPageRequest(count, startIndex, 10));
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(InactiveAccountsReportDisabledError.class)
   public ErrorDTO inactiveAccountsReportDisabled(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidInactiveDaysError.class)
+  public ErrorDTO invalidInactiveDays(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }

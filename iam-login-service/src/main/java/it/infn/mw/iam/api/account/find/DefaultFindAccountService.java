@@ -152,7 +152,7 @@ public class DefaultFindAccountService implements FindAccountService {
   public ScimListResponse<ScimUser> findAccountsInactiveSince(int days, Pageable pageable) {
 
     Date threshold = Date.from(clock.instant().minus(days, ChronoUnit.DAYS));
-    Page<IamAccount> results = repo.findAccountsInactiveSince(threshold, pageable);
+    Page<IamAccount> results = repo.findInactiveAccountsSince(threshold, pageable);
     return responseFromPage(results, converter, pageable);
   }
 }

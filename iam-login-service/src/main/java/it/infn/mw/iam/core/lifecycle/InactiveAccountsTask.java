@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,10 @@ import it.infn.mw.iam.config.lifecycle.LifecycleProperties.InactiveAccountsTaskP
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Component
 public class InactiveAccountsTask implements Runnable {
@@ -46,22 +49,22 @@ public class InactiveAccountsTask implements Runnable {
 
   public static final int PAGE_SIZE = 10;
 
+  public static final String INACTIVITY_WARNING_LABEL = "inactivity.warning-time";
+
   private final Clock clock;
   private final LifecycleProperties properties;
   private final IamAccountRepository accountRepo;
   private final IamAccountService accountService;
   private final NotificationFactory notificationFactory;
-  private final IamEmailNotificationRepository notificationRepo;
 
   public InactiveAccountsTask(Clock clock, LifecycleProperties properties,
       IamAccountRepository accountRepo, IamAccountService accountService,
-      NotificationFactory notificationFactory, IamEmailNotificationRepository notificationRepo) {
+      NotificationFactory notificationFactory) {
     this.clock = clock;
     this.properties = properties;
     this.accountRepo = accountRepo;
     this.accountService = accountService;
     this.notificationFactory = notificationFactory;
-    this.notificationRepo = notificationRepo;
   }
 
   private Date referenceDate(IamAccount account) {
@@ -70,22 +73,51 @@ public class InactiveAccountsTask implements Runnable {
         : account.getCreationTime();
   }
 
-  private boolean warningNotYetSentThisCycle(IamAccount account) {
-    Date since = referenceDate(account);
-    return notificationRepo.countInactivityWarningsPerAccount(
-        account.getUserInfo().getEmail(), since) == 0;
+  private Optional<Instant> warningTimeForCurrentCycle(IamAccount account) {
+    return account.getLabelByName(INACTIVITY_WARNING_LABEL)
+      .map(IamLabel::getValue)
+      .flatMap(value -> {
+        try {
+          return Optional.of(Instant.ofEpochSecond(Long.parseLong(value)));
+        } catch (NumberFormatException e) {
+          LOG.warn("Ignoring invalid {} label value for account {}: {}",
+              INACTIVITY_WARNING_LABEL, account.getUsername(), value);
+          return Optional.empty();
+        }
+      })
+      .filter(warningTime -> warningTime.isAfter(referenceDate(account).toInstant()));
+  }
+
+  private void sendWarning(IamAccount account, Instant now, long gracePeriodDays) {
+    IamEmailNotification notification =
+        notificationFactory.createInactivityWarningMessage(account, gracePeriodDays);
+
+    if (notification == null) {
+      LOG.error("Could not create inactivity warning message for account {}",
+          account.getUsername());
+      return;
+    }
+
+    accountService.addLabel(account,
+        IamLabel.builder()
+          .name(INACTIVITY_WARNING_LABEL)
+          .value(String.valueOf(now.getEpochSecond()))
+          .build());
+
+    LOG.info("Inactivity warning sent for account {}", account.getUsername());
   }
 
   public void handleInactiveAccounts() {
     InactiveAccountsTaskProperties taskProperties =
         properties.getAccount().getInactiveAccountsTask();
 
-    if (!taskProperties.isRemoveInactiveAccounts()) {
+    if (!taskProperties.isSuspendInactiveAccounts()) {
       return;
     }
 
     if (properties.getAccount().getInactiveAccountDays() == null) {
-      LOG.warn("Inactive accounts task is enabled but lifecycle.account.inactive-account-days is not set");
+      LOG.warn(
+          "Inactive accounts task is enabled but lifecycle.account.inactive-account-days is not set");
       return;
     }
 
@@ -96,8 +128,7 @@ public class InactiveAccountsTask implements Runnable {
     long gracePeriodDays = taskProperties.getSuspensionGracePeriodDays();
 
     Date inactivityThreshold = Date.from(now.minus(inactivityDays, ChronoUnit.DAYS));
-    Date suspensionThreshold =
-        Date.from(now.minus(inactivityDays + gracePeriodDays, ChronoUnit.DAYS));
+    Instant suspensionThreshold = now.minus(gracePeriodDays, ChronoUnit.DAYS);
 
     List<IamAccount> accountsToSuspend = new ArrayList<>();
 
@@ -107,15 +138,12 @@ public class InactiveAccountsTask implements Runnable {
       Page<IamAccount> page =
           accountRepo.findInactiveAccountsSince(inactivityThreshold, pageRequest);
 
-      if (page.hasContent()) {
-        for (IamAccount account : page.getContent()) {
-          Date ref = referenceDate(account);
-          if (ref.before(suspensionThreshold)) {
-            accountsToSuspend.add(account);
-          } else if (warningNotYetSentThisCycle(account)) {
-            notificationFactory.createInactivityWarningMessage(account, gracePeriodDays);
-            LOG.info("Inactivity warning sent for account {}", account.getUsername());
-          }
+      for (IamAccount account : page.getContent()) {
+        Optional<Instant> warningTime = warningTimeForCurrentCycle(account);
+        if (warningTime.isEmpty()) {
+          sendWarning(account, now, gracePeriodDays);
+        } else if (warningTime.get().isBefore(suspensionThreshold)) {
+          accountsToSuspend.add(account);
         }
       }
 
@@ -135,6 +163,7 @@ public class InactiveAccountsTask implements Runnable {
   }
 
   @Override
+  @SchedulerLock(name = "inactiveAccountsTask", lockAtLeastFor = "1m", lockAtMostFor = "15m")
   public void run() {
     handleInactiveAccounts();
   }

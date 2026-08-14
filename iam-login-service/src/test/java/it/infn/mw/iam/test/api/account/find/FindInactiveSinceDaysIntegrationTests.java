@@ -135,12 +135,35 @@ class FindInactiveSinceDaysIntegrationTests implements StructuredScopeTestSuppor
     IamAccount testAccount = accountRepo.findByUuid(TEST_UUID)
         .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
     testAccount.setLastLoginTime(null);
+    testAccount.setCreationTime(Date.from(clock.instant().minus(Duration.ofDays(200))));
     accountRepo.save(testAccount);
 
     mvc.perform(get(FIND_INACTIVE_SINCE_DAYS_RESOURCE).param("days", "90"))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults", is(1)))
       .andExpect(jsonPath("$.Resources[0].id", is(TEST_UUID)));
+  }
+
+  @Test
+  void findInactiveSinceDaysExcludesRecentNeverLoggedInWorks() throws Exception {
+    IamAccount testAccount = accountRepo.findByUuid(TEST_UUID)
+        .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    testAccount.setLastLoginTime(null);
+    testAccount.setCreationTime(Date.from(clock.instant().minus(Duration.ofDays(1))));
+    accountRepo.save(testAccount);
+
+    mvc.perform(get(FIND_INACTIVE_SINCE_DAYS_RESOURCE).param("days", "90"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(0)));
+  }
+
+  @Test
+  void findInactiveSinceDaysRejectsNonPositiveDays() throws Exception {
+    mvc.perform(get(FIND_INACTIVE_SINCE_DAYS_RESOURCE).param("days", "0"))
+      .andExpect(BAD_REQUEST);
+
+    mvc.perform(get(FIND_INACTIVE_SINCE_DAYS_RESOURCE).param("days", "-180"))
+      .andExpect(BAD_REQUEST);
   }
 
   @Test

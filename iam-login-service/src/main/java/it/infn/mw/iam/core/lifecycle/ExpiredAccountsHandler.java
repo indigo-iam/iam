@@ -148,7 +148,7 @@ public class ExpiredAccountsHandler implements Runnable {
     long daysSinceExpiry = ChronoUnit.DAYS.between(account.getEndTime().toInstant(), checkTime);
     long daysUntilSuspension = properties.getAccount().getExpiredAccountPolicy()
         .getSuspensionGracePeriodDays() - daysSinceExpiry;
-    notificationFactory.createInactivityWarningMessage(account, Math.max(0, daysUntilSuspension));
+    notificationFactory.createExpirationWarningMessage(account, Math.max(0, daysUntilSuspension));
     LOG.info("Pending suspension warning sent for account {}", account.getUsername());
   }
 

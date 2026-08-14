@@ -50,18 +50,18 @@ public class LifecycleProperties {
   }
 
   public static class InactiveAccountsTaskProperties {
-    boolean removeInactiveAccounts = false;
+    boolean suspendInactiveAccounts = false;
     String cronSchedule = "0 */5 * * * *";
 
     @Min(value = 0L)
     Integer suspensionGracePeriodDays = 30;
 
-    public boolean isRemoveInactiveAccounts() {
-      return removeInactiveAccounts;
+    public boolean isSuspendInactiveAccounts() {
+      return suspendInactiveAccounts;
     }
 
-    public void setRemoveInactiveAccounts(boolean removeInactiveAccounts) {
-      this.removeInactiveAccounts = removeInactiveAccounts;
+    public void setSuspendInactiveAccounts(boolean suspendInactiveAccounts) {
+      this.suspendInactiveAccounts = suspendInactiveAccounts;
     }
 
     public String getCronSchedule() {
@@ -131,7 +131,7 @@ public class LifecycleProperties {
     boolean inactiveAccountsReportEnabled = false;
 
     @Min(value = 0L)
-    Integer inactiveAccountDays = 180;
+    Integer inactiveAccountDays;
 
     InactiveAccountsTaskProperties inactiveAccountsTask = new InactiveAccountsTaskProperties();
 

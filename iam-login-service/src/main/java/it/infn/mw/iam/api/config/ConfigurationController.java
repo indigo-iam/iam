@@ -87,4 +87,9 @@ public class ConfigurationController {
   public boolean inactiveAccountsReportEnabled() {
     return lifecycleProperties.getAccount().isInactiveAccountsReportEnabled();
   }
+
+  @RequestMapping(method = GET, value = "/lifecycle/account/inactive-account-days")
+  public Integer inactiveAccountDays() {
+    return lifecycleProperties.getAccount().getInactiveAccountDays();
+  }
 }

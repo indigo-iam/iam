@@ -75,4 +75,7 @@ public interface NotificationFactory {
   IamEmailNotification createInactivityWarningMessage(IamAccount account,
       long gracePeriodDays);
 
+  IamEmailNotification createExpirationWarningMessage(IamAccount account,
+      long daysUntilSuspension);
+
 }

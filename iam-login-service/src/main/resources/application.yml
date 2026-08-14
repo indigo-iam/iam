@@ -299,7 +299,7 @@ lifecycle:
     inactive-accounts-report-enabled: ${IAM_LIFECYCLE_INACTIVE_ACCOUNTS_REPORT_ENABLED:false}
     inactive-account-days: ${IAM_LIFECYCLE_INACTIVE_ACCOUNT_DAYS:}
     inactive-accounts-task:
-      remove-inactive-accounts: ${IAM_LIFECYCLE_REMOVE_INACTIVE_ACCOUNTS:false}
+      suspend-inactive-accounts: ${IAM_LIFECYCLE_SUSPEND_INACTIVE_ACCOUNTS:false}
       cron-schedule: ${IAM_LIFECYCLE_INACTIVE_ACCOUNTS_TASK_CRON_SCHEDULE:0 */5 * * * *}
       suspension-grace-period-days: ${IAM_LIFECYCLE_INACTIVE_ACCOUNTS_SUSPENSION_GRACE_PERIOD_DAYS:30}
 

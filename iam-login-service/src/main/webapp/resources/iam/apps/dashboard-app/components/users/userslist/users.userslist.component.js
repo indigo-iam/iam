@@ -112,7 +112,7 @@
   }
 
   function UsersListController($q, $scope, $rootScope, $uibModal, ModalService,
-    UsersService, Utils, clipboardService, toaster, $http, AccountLifecycleService, FindService) {
+    UsersService, Utils, clipboardService, toaster, AccountLifecycleService, FindService) {
 
     var self = this;
 
@@ -125,22 +125,19 @@
       self.totalResults = self.total;
       self.sortByValue = "name";
       self.sortDirection = "asc";
-      self.suspendedUuids = [];
       self.showingInactive = false;
       self.inactiveDays = 180;
       self.inactiveReportEnabled = false;
 
-      $http.get('/iam/account/lockout/suspended').then(function (r) {
-        self.suspendedUuids = r.data;
-      });
-
       AccountLifecycleService.inactiveAccountsReportEnabled().then(function (enabled) {
         self.inactiveReportEnabled = enabled;
       });
-    };
 
-    self.isSuspended = function (user) {
-      return self.suspendedUuids.indexOf(user.id) !== -1;
+      AccountLifecycleService.inactiveAccountDays().then(function (days) {
+        if (days) {
+          self.inactiveDays = days;
+        }
+      });
     };
 
     $scope.$on('refreshUsersList', function (e) {
@@ -291,7 +288,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/users/userslist/users.userslist.component.html',
         controller: ['$q', '$scope', '$rootScope', '$uibModal', 'ModalService',
-          'UsersService', 'Utils', 'clipboardService', 'toaster', '$http',
+          'UsersService', 'Utils', 'clipboardService', 'toaster',
           'AccountLifecycleService', 'FindService', UsersListController]
       });
 })();

@@ -45,9 +45,7 @@ public interface IamEmailNotificationRepository
 
   Integer countByDeliveryStatus(IamDeliveryStatus deliveryStatus);
 
-  @Query("select n from IamEmailNotification n where n.notificationType = :notificationType")
-  List<IamEmailNotification> findByNotificationType(
-      @Param("notificationType") IamNotificationType notificationType);
+  List<IamEmailNotification> findByNotificationType(IamNotificationType notificationType);
 
   @Query("select count(n) from IamEmailNotification n join n.receivers r where n.notificationType = it.infn.mw.iam.core.IamNotificationType.AUP_REMINDER"
       + " and CURRENT_DATE <= n.creationTime and n.creationTime < :tomorrow"
@@ -60,13 +58,5 @@ public interface IamEmailNotificationRepository
       + " and n.deliveryStatus <> it.infn.mw.iam.core.IamDeliveryStatus.DELIVERY_ERROR"
       + " and r.emailAddress = :email_address")
   Integer countAupExpirationMessPerAccount(@Param("email_address") String emailAddress);
-
-  @Query("select count(n) from IamEmailNotification n join n.receivers r"
-      + " where n.notificationType = it.infn.mw.iam.core.IamNotificationType.ACCOUNT_INACTIVITY_WARNING"
-      + " and n.deliveryStatus <> it.infn.mw.iam.core.IamDeliveryStatus.DELIVERY_ERROR"
-      + " and r.emailAddress = :email_address"
-      + " and n.creationTime > :since")
-  Integer countInactivityWarningsPerAccount(@Param("email_address") String emailAddress,
-      @Param("since") Date since);
 
 }
