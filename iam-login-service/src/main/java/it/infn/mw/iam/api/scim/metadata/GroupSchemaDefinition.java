@@ -23,29 +23,40 @@ import org.springframework.stereotype.Component;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimSchema;
 import it.infn.mw.iam.api.scim.model.ScimSchema.SchemaAttribute;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimAttributeType;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimMutability;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimReturned;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimUniqueness;
 
 /**
- * Definition of the core SCIM Group schema
- * ({@code urn:ietf:params:scim:schemas:core:2.0:Group}).
+ * Definition of the core SCIM Group schema ({@code urn:ietf:params:scim:schemas:core:2.0:Group}).
  */
 @Component
 public class GroupSchemaDefinition extends ScimSchemaDefinition {
 
   @Override
   public ScimSchema asScimSchema() {
-    SchemaAttribute memberValue = attr("value", "string", false, "Member identifier", false,
-        false, MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute memberDisplay = attr("display", "string", false, "Member display name", false,
-        false, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
-    SchemaAttribute memberRef = attr("$ref", "reference", false, "Resource reference", false,
-        false, MUTABILITY_READ_ONLY, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null);
+
+    SchemaAttribute memberValue =
+        attr("value", ScimAttributeType.STRING, SchemaAttribute.SINGLE_VALUE, "Member identifier",
+            SchemaAttribute.NOT_REQUIRED, SchemaAttribute.IGNORE_CASE, ScimMutability.READ_WRITE,
+            ScimReturned.DEFAULT, ScimUniqueness.NONE, null, null);
+    SchemaAttribute memberDisplay =
+        attr("display", ScimAttributeType.STRING, SchemaAttribute.SINGLE_VALUE,
+            "Member display name", SchemaAttribute.NOT_REQUIRED, SchemaAttribute.IGNORE_CASE,
+            ScimMutability.READ_ONLY, ScimReturned.DEFAULT, ScimUniqueness.NONE, null, null);
+    SchemaAttribute memberRef =
+        attr("$ref", ScimAttributeType.REFERENCE, SchemaAttribute.SINGLE_VALUE,
+            "Resource reference", SchemaAttribute.NOT_REQUIRED, SchemaAttribute.IGNORE_CASE,
+            ScimMutability.READ_ONLY, ScimReturned.DEFAULT, ScimUniqueness.NONE, null, null);
 
     List<SchemaAttribute> attributes = Arrays.asList(
-        attr("displayName", "string", false, "Group display name", true, false,
-            MUTABILITY_READ_WRITE, RETURNED_DEFAULT, UNIQUENESS_NONE, null, null),
-        attr("members", "complex", true, "Group members", false, null, MUTABILITY_READ_WRITE,
-            RETURNED_DEFAULT, UNIQUENESS_NONE, null,
-            Arrays.asList(memberValue, memberDisplay, memberRef)));
+        attr("displayName", ScimAttributeType.STRING, SchemaAttribute.SINGLE_VALUE,
+            "Group display name", SchemaAttribute.REQUIRED, SchemaAttribute.IGNORE_CASE,
+            ScimMutability.READ_WRITE, ScimReturned.DEFAULT, ScimUniqueness.NONE, null, null),
+        attr("members", ScimAttributeType.COMPLEX, SchemaAttribute.MULTI_VALUED, "Group members",
+            SchemaAttribute.NOT_REQUIRED, null, ScimMutability.READ_WRITE, ScimReturned.DEFAULT,
+            ScimUniqueness.NONE, null, Arrays.asList(memberValue, memberDisplay, memberRef)));
 
     return new ScimSchema(ScimGroup.GROUP_SCHEMA, ScimGroup.RESOURCE_TYPE, "Group schema",
         attributes, schemaMeta(ScimGroup.GROUP_SCHEMA));

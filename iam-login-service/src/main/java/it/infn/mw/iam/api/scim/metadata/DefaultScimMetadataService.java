@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
@@ -55,7 +55,6 @@ public class DefaultScimMetadataService implements ScimMetadataService {
   private final IndigoUserSchemaDefinition indigoUserSchema;
   private final IndigoGroupSchemaDefinition indigoGroupSchema;
 
-  @Autowired
   public DefaultScimMetadataService(UserSchemaDefinition userSchema,
       GroupSchemaDefinition groupSchema, IndigoUserSchemaDefinition indigoUserSchema,
       IndigoGroupSchemaDefinition indigoGroupSchema) {
@@ -65,6 +64,7 @@ public class DefaultScimMetadataService implements ScimMetadataService {
     this.indigoGroupSchema = indigoGroupSchema;
   }
 
+  @Cacheable(value = "scimServiceProviderConfig", sync = true)
   @Override
   public ScimServiceProviderConfig serviceProviderConfig() {
     ScimCapability patch = new ScimCapability(true);
@@ -74,20 +74,22 @@ public class DefaultScimMetadataService implements ScimMetadataService {
     ScimCapability changePassword = new ScimCapability(true);
     ScimCapability sort = new ScimCapability(false);
     ScimCapability etag = new ScimCapability(false);
-    List<ScimAuthenticationScheme> authenticationSchemes = Collections.singletonList(
-        new ScimAuthenticationScheme("oauthbearertoken", "OAuth Bearer Token",
-            "Authentication scheme using OAuth 2.0 Bearer Tokens",
+    List<ScimAuthenticationScheme> authenticationSchemes =
+        Collections.singletonList(new ScimAuthenticationScheme("oauthbearertoken",
+            "OAuth Bearer Token", "Authentication scheme using OAuth 2.0 Bearer Tokens",
             "https://www.rfc-editor.org/info/rfc6750", null, true));
 
     return new ScimServiceProviderConfig(patch, bulk, filter, changePassword, sort, etag,
         authenticationSchemes);
   }
 
+  @Cacheable(value = "scimResourceTypes", sync = true)
   @Override
   public List<ScimResourceType> resourceTypes() {
     return Arrays.asList(userResourceType(), groupResourceType());
   }
 
+  @Cacheable(value = "scimSchemas", sync = true)
   @Override
   public List<ScimSchema> schemas() {
     return Arrays.asList(userSchema.asScimSchema(), groupSchema.asScimSchema(),

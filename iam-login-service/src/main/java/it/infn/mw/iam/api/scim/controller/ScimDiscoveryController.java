@@ -17,8 +17,6 @@ package it.infn.mw.iam.api.scim.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,18 +46,15 @@ public class ScimDiscoveryController {
 
   private final ScimMetadataService metadataService;
 
-  @Autowired
   public ScimDiscoveryController(ScimMetadataService metadataService) {
     this.metadataService = metadataService;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = SERVICE_PROVIDER_CONFIG_ENDPOINT, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimServiceProviderConfig serviceProviderConfig() {
     return metadataService.serviceProviderConfig();
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = RESOURCE_TYPES_ENDPOINT, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimResourceType> resourceTypes(
       @RequestParam(required = false) String filter) {
@@ -68,18 +63,16 @@ public class ScimDiscoveryController {
     return buildListResponse(metadataService.resourceTypes());
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = RESOURCE_TYPES_ENDPOINT + "/{id}",
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimResourceType resourceType(@PathVariable String id) {
     return metadataService.resourceTypes().stream()
-      .filter(resourceType -> resourceType.getId().equals(id))
+      .filter(resourceType -> resourceType.id().equals(id))
       .findFirst()
       .orElseThrow(() -> new ScimResourceNotFoundException(
           String.format("No ResourceType found for '%s'", id)));
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = SCHEMAS_ENDPOINT, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimSchema> schemas(@RequestParam(required = false) String filter) {
 
@@ -87,11 +80,10 @@ public class ScimDiscoveryController {
     return buildListResponse(metadataService.schemas());
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
-  @GetMapping(value = SCHEMAS_ENDPOINT + "/{id:.+}", produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = SCHEMAS_ENDPOINT + "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimSchema schema(@PathVariable String id) {
     return metadataService.schemas().stream()
-      .filter(schema -> schema.getId().equals(id))
+      .filter(schema -> schema.id().equals(id))
       .findFirst()
       .orElseThrow(
           () -> new ScimResourceNotFoundException(String.format("No Schema found for '%s'", id)));

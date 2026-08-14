@@ -22,6 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.api.scim.model.ScimSchema;
 import it.infn.mw.iam.api.scim.model.ScimSchema.SchemaAttribute;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimAttributeType;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimMutability;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimReturned;
+import it.infn.mw.iam.api.scim.model.ScimSchema.ScimUniqueness;
 
 /**
  * Base class for the SCIM schema definitions exposed by the {@code /scim/Schemas} endpoint.
@@ -33,17 +37,6 @@ import it.infn.mw.iam.api.scim.model.ScimSchema.SchemaAttribute;
  */
 public abstract class ScimSchemaDefinition {
 
-  protected static final String MUTABILITY_IMMUTABLE = "immutable";
-  protected static final String MUTABILITY_READ_ONLY = "readOnly";
-  protected static final String MUTABILITY_READ_WRITE = "readWrite";
-  protected static final String MUTABILITY_WRITE_ONLY = "writeOnly";
-  protected static final String RETURNED_DEFAULT = "default";
-  protected static final String RETURNED_NEVER = "never";
-
-  protected static final String UNIQUENESS_NONE = "none";
-  protected static final String UNIQUENESS_SERVER = "server";
-  protected static final String UNIQUENESS_GLOBAL = "global";
-
   private static final String SCIM_SCHEMAS_LOCATION = "/scim/Schemas";
 
   @Value("${iam.baseUrl}")
@@ -54,11 +47,31 @@ public abstract class ScimSchemaDefinition {
    */
   public abstract ScimSchema asScimSchema();
 
-  protected SchemaAttribute attr(String name, String type, boolean multiValued, String description,
-      boolean required, Boolean caseExact, String mutability, String returned, String uniqueness,
-      List<String> canonicalValues, List<SchemaAttribute> subAttributes) {
-    return new SchemaAttribute(name, type, multiValued, description, required, caseExact,
-        mutability, returned, uniqueness, canonicalValues, subAttributes);
+  protected SchemaAttribute attr(
+      String name,
+      ScimAttributeType type,
+      boolean multiValued,
+      String description,
+      boolean required,
+      Boolean caseExact,
+      ScimMutability mutability,
+      ScimReturned returned,
+      ScimUniqueness uniqueness,
+      List<String> canonicalValues,
+      List<SchemaAttribute> subAttributes) {
+
+    return new SchemaAttribute(
+        name,
+        type,
+        multiValued,
+        description,
+        required,
+        caseExact,
+        mutability,
+        returned,
+        uniqueness,
+        canonicalValues,
+        subAttributes);
   }
 
   protected ScimMeta schemaMeta(String id) {

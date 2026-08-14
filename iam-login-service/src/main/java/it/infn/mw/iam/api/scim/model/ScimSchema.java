@@ -15,131 +15,126 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 @JsonInclude(Include.NON_EMPTY)
-public class ScimSchema {
+public record ScimSchema(Set<String> schemas, String id, String name, String description,
+    List<SchemaAttribute> attributes, ScimMeta meta) {
 
   public static final String SCHEMA_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:Schema";
 
-  private final Set<String> schemas = Collections.singleton(SCHEMA_SCHEMA);
-  private final String id;
-  private final String name;
-  private final String description;
-  private final List<SchemaAttribute> attributes;
-  private final ScimMeta meta;
-
   public ScimSchema(String id, String name, String description, List<SchemaAttribute> attributes,
       ScimMeta meta) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-    this.attributes = attributes;
-    this.meta = meta;
-  }
 
-  public Set<String> getSchemas() {
-    return schemas;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public List<SchemaAttribute> getAttributes() {
-    return attributes;
-  }
-
-  public ScimMeta getMeta() {
-    return meta;
+    this(Set.of(SCHEMA_SCHEMA), id, name, description, attributes, meta);
   }
 
   @JsonInclude(Include.NON_NULL)
-  public static class SchemaAttribute {
+  public record SchemaAttribute(String name, ScimAttributeType type, boolean multiValued, String description,
+      boolean required, Boolean caseExact, ScimMutability mutability, ScimReturned returned,
+      ScimUniqueness uniqueness, List<String> canonicalValues,
+      List<SchemaAttribute> subAttributes) {
 
-    private final String name;
-    private final String type;
-    private final boolean multiValued;
-    private final String description;
-    private final boolean required;
-    private final Boolean caseExact;
-    private final String mutability;
-    private final String returned;
-    private final String uniqueness;
-    private final List<String> canonicalValues;
-    private final List<SchemaAttribute> subAttributes;
+    public static final boolean REQUIRED = true;
+    public static final boolean NOT_REQUIRED = false;
 
-    public SchemaAttribute(String name, String type, boolean multiValued, String description,
-        boolean required, Boolean caseExact, String mutability, String returned, String uniqueness,
-        List<String> canonicalValues, List<SchemaAttribute> subAttributes) {
-      this.name = name;
-      this.type = type;
-      this.multiValued = multiValued;
-      this.description = description;
-      this.required = required;
-      this.caseExact = caseExact;
-      this.mutability = mutability;
-      this.returned = returned;
-      this.uniqueness = uniqueness;
-      this.canonicalValues = canonicalValues;
-      this.subAttributes = subAttributes;
+    public static final boolean MULTI_VALUED = true;
+    public static final boolean SINGLE_VALUE = false;
+
+    public static final boolean CASE_SENSITIVE = true;
+    public static final boolean IGNORE_CASE = false;
+
+  }
+
+  public enum ScimAttributeType {
+
+    // @formatter:off
+    STRING("string"),
+    BOOLEAN("boolean"),
+    DECIMAL("decimal"),
+    INTEGER("integer"),
+    DATE_TIME("dateTime"),
+    REFERENCE("reference"),
+    COMPLEX("complex"),
+    BINARY("binary");
+    // @formatter:on
+
+    private final String value;
+
+    ScimAttributeType(String value) {
+      this.value = value;
     }
 
-    public String getName() {
-      return name;
+    @JsonValue
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum ScimUniqueness {
+
+    // @formatter:off
+    NONE("none"),
+    SERVER("server"),
+    GLOBAL("global");
+    // @formatter:on
+
+    private final String value;
+
+    ScimUniqueness(String value) {
+      this.value = value;
     }
 
-    public String getType() {
-      return type;
+    @JsonValue
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum ScimReturned {
+
+    // @formatter:off
+    ALWAYS("always"),
+    NEVER("never"),
+    DEFAULT("default"),
+    REQUEST("request");
+    // @formatter:on
+
+    private final String value;
+
+    ScimReturned(String value) {
+      this.value = value;
     }
 
-    public boolean isMultiValued() {
-      return multiValued;
+    @JsonValue
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum ScimMutability {
+
+    // @formatter:off
+    IMMUTABLE("immutable"),
+    READ_ONLY("readOnly"),
+    READ_WRITE("readWrite"),
+    WRITE_ONLY("writeOnly");
+    // @formatter:on
+
+    private final String value;
+
+    ScimMutability(String value) {
+      this.value = value;
     }
 
-    public String getDescription() {
-      return description;
-    }
-
-    public boolean isRequired() {
-      return required;
-    }
-
-    public Boolean isCaseExact() {
-      return caseExact;
-    }
-
-    public String getMutability() {
-      return mutability;
-    }
-
-    public String getReturned() {
-      return returned;
-    }
-
-    public String getUniqueness() {
-      return uniqueness;
-    }
-
-    public List<String> getCanonicalValues() {
-      return canonicalValues;
-    }
-
-    public List<SchemaAttribute> getSubAttributes() {
-      return subAttributes;
+    @JsonValue
+    public String value() {
+      return value;
     }
   }
 }
