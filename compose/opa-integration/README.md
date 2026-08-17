@@ -67,3 +67,11 @@ $ docker compose up -d opa-dev
 ```
 
 Now, if you login trough iam-test-client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
+
+Here you can also test that if the OPA server is not available, a fallback to the IAM Scope policy engine is applied. Please shut down the docker compose
+
+```bash
+$ docker compose down -v
+```
+
+and repeat the login through iam-test-client. Now you will see that no call to OPA is present in the IAM log, and that both Admin and Test users are allowed to obtain all the requested scopes, meaning the default IAM scope policy engine is applied.
