@@ -3,7 +3,7 @@ services:
     url: https://ghcr.io
     type: oci
   nginx:
-    url: http://nginx-opa/
+    url: http://nginx/
 
 bundles:
   scope-policy-engine:

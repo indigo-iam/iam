@@ -4,14 +4,28 @@ This folder allows to demonstrate the integration of INDIGO IAM with OPA.
 
 The [docker-compose](./docker-compose.yml) file allows to instantiate the following services:
 
-- `iam`: is the INDIGO IAM service, available at `http://localhost:8080`
+- `trust`: it's a sidecar container, which generates a Test CA issuing a test x509 certificate for `nginx`
+- `iam-be`: is the INDIGO IAM application, running behind the `nginx` service. It has been configured to retrieve scope policies by OPA
 - `client`: is the iam-test-client service, which we can use for testing (e.g. retrieving an access token with filtered scopes)
-- `nginx-opa`: is an NGINX service which exposes the scope policies at `http://nginx-opa/bundles/iam-policies.tar.gz`. Those policies have to be built before to run the docker compose (see below). The resulting policy bundle may be also exposed locally (i.e. without NGINX) but in this case we do not have the possibility of live reloading the policies
-- `opa`: it is the OPA server which pulls the scope policy engine (i.e. _Rego_ files).
+- `nginx`: is an NGINX service available at https://iam.local.io for `iam-be` and https://iam.local.io/iam-test-client for `client`. It also exposes the OPA scope policies within the docker network
+- `opa`: it is the OPA server which pulls the scope policy engine (i.e. _Rego_ files) from the [GitHib registry](https://github.com/indigo-iam/opa-iam/pkgs/container/opa-iam) and the static scope policies (i.e. _data.json_ file) from `nginx`
+- `opa-dev`: same as `opa`, but useful for development. It is locally available at http://localhost:8181.
 
-## Setup policies
+## Setup
 
-The file [policies](./opa/policies/data.json) already contains a list of scope policies as an example. Here we can modify that list in order to test different policies. Those policies are exposed by the NGINX service present in the [docker-compose](./docker-compose.yml) file as a bundle, but some setup is required.
+### Host machine
+
+For a full docker compose deployment, we need to resolve the `iam.local.io` hostname for IAM: please add to your `/etc/hosts` file the following line
+
+```bash
+127.0.0.1   iam.local.io
+```
+
+### Policies
+
+The file [policies](./opa/policies/data.json) already contains a list of scope policies as an example. Here we can modify that list in order to test different policies.
+
+In a full docker compose deployment, those policies are exposed by the NGINX service present in the [docker-compose](./docker-compose.yml) file as a bundle, which allows OPA to reload the policies if they are changed (based on the ETag). For local tests the policies are sourced as a local bundle, but in both cases some setup is required.
 
 Download the latest OPA version to date for Linux (see [here](https://www.openpolicyagent.org/docs/latest/#1-download-opa) for other distributions) with
 
@@ -28,26 +42,28 @@ $ ./opa-cli build -b opa/policies -o iam-policies.tar.gz
 
 ## Testing
 
-In order to test the INDIGO IAM integration with OPA we can both use a local iam-login-service and iam-test-client applications (running e.g. on Eclipse or Visual studio code), or fully rely on the docker compose file.
-
-### Using an IDE
-
-Please remember to run iam-login-service setting the property `iam.opa.enabled=true`.
-
-Run the docker compose which enables OPA and NGINX with
-
-```bash
-$ docker compose up -d opa
-```
-
-Now, if you login trough iam-test-client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
+In order to test the INDIGO IAM integration with OPA we can both use the docker compose or a local iam-login-service/iam-test-client application running e.g. on Eclipse or Visual studio code (useful for debugging).
 
 ### Using docker-compose
 
 Run the docker compose with
 
 ```bash
-$ docker compose up -d
+$ docker compose up -d nginx
 ```
 
-Now, if you login trough iam-test-client at http://localhost:9090/iam_test_client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
+(restart `nginx` in case the `iam-be` health check takes long).
+
+Now, if you login trough iam-test-client at https://iam.local.io/iam_test_client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered. Cross-check also the `iam-be` and `opa` logs to properly understand which scope is filtered.
+
+### Using an IDE (debug)
+
+Please remember to run iam-login-service by setting the property `iam.opa.enabled=true`.
+
+Run the docker compose which enables OPA running on http://localhost:8181 with
+
+```bash
+$ docker compose up -d opa-dev
+```
+
+Now, if you login trough iam-test-client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
