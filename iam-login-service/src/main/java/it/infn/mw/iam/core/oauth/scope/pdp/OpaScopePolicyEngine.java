@@ -38,8 +38,8 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   private RestTemplate restTemplate;
   private OpaProperties opaProperties;
 
-  public OpaScopePolicyEngine(IamScopePolicyRepository policyRepo, RestTemplateFactory restTemplateFactory,
-      OpaProperties opaProperties) {
+  public OpaScopePolicyEngine(IamScopePolicyRepository policyRepo,
+      RestTemplateFactory restTemplateFactory, OpaProperties opaProperties) {
     super(policyRepo);
     this.restTemplate = restTemplateFactory.newRestTemplate();
     this.opaProperties = opaProperties;
@@ -47,16 +47,14 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
 
   @Override
   public Set<String> apply(Set<String> requestedScopes, IamAccount account) {
-    // creare OpaRequest
-    Set<String> userGroups = account.getGroups().stream().map(ag -> ag.getGroup().getName())
-        .collect(Collectors.toSet());
+
+    Set<String> userGroups =
+        account.getGroups().stream().map(ag -> ag.getGroup().getName()).collect(Collectors.toSet());
     OpaRequest.User user = new OpaRequest.User(account.getUuid(), userGroups);
     OpaRequest request = new OpaRequest(user, requestedScopes);
 
-    // chiamare evaluatePolicy
     Optional<OpaResponse> response = evaluatePolicy(request);
     if (response.isPresent()) {
-      // estrarre da opaResponse i filtered_scopes e restituirli
       OpaResponse opaResponse = response.get();
       return opaResponse.filtered_scopes();
     } else {
@@ -67,16 +65,22 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   public Optional<OpaResponse> evaluatePolicy(@RequestBody OpaRequest payload) {
     try {
       String opaUrl = opaProperties.getUrl();
-      ResponseEntity<OpaResponse> response = restTemplate.postForEntity(opaUrl, payload, OpaResponse.class);
-      System.out.println(response);
+      ResponseEntity<OpaResponse> response =
+          restTemplate.postForEntity(opaUrl, payload, OpaResponse.class);
 
+      LOG.info("OPA response status code: {}", response.getStatusCode());
       if (response.getStatusCode() == HttpStatus.OK) {
-        return Optional.ofNullable(response.getBody());
+
+        Optional<OpaResponse> body = Optional.ofNullable(response.getBody());
+        LOG.debug("OPA response body: {}", response.getBody());
+
+        return body;
       }
 
       return Optional.empty();
     } catch (RestClientException e) {
-      // messaggi di log da mettere
+
+      LOG.info("Error retrieving OPA response: {}", e.getMessage());
       return Optional.empty();
     }
   }
