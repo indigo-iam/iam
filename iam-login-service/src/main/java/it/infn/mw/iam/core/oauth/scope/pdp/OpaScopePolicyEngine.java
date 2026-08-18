@@ -55,8 +55,7 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
 
     Optional<OpaResponse> response = evaluatePolicy(request);
     if (response.isPresent()) {
-      OpaResponse opaResponse = response.get();
-      return opaResponse.filtered_scopes();
+      return response.get().filtered_scopes();
     } else {
       return super.apply(requestedScopes, account);
     }
