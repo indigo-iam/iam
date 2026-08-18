@@ -32,5 +32,4 @@ public interface ScopeFilter {
 
   public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
 
-  public OAuth2Authentication filterScopes(OAuth2Authentication authn);
 }
