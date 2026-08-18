@@ -88,10 +88,12 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   public AuthorizationRequest createAuthorizationRequest(Map<String, String> inputParams) {
 
     Authentication authn = SecurityContextHolder.getContext().getAuthentication();
-    AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);
 
-    authorizationRequestBuilder.filterRequestedScopes(inputParams, authn, authzRequest);
+    authorizationRequestBuilder.filterRequestedScopes(inputParams, authn,
+        inputParams.get(OAuth2Utils.CLIENT_ID));
     audienceRequestValidator.validateAndUpdateAudienceRequest(inputParams);
+
+    AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);
 
     authorizationRequestBuilder.addExtensions(inputParams, authzRequest);
     authorizationRequestBuilder.applyClientDefaults(authzRequest);
