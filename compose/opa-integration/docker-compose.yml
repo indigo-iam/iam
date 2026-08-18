@@ -54,7 +54,7 @@ services:
       IAM_CLIENT_FORWARD_HEADERS_STRATEGY: native
       IAM_CLIENT_TLS_USE_GRID_TRUST_ANCHORS: "true"
       IAM_CLIENT_ISSUER: https://iam.local.io/
-      IAM_CLIENT_SCOPES: openid profile email offline_access
+      IAM_CLIENT_SCOPES: openid profile email offline_access phone
       IAM_CLIENT_HIDE_TOKENS: false
 
     volumes:

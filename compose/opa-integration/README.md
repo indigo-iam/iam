@@ -54,7 +54,7 @@ $ docker compose up -d nginx
 
 (restart `nginx` in case the `iam-be` health check takes long).
 
-Now, if you login trough iam-test-client at https://iam.local.io/iam_test_client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered. Cross-check also the `iam-be` and `opa` logs to properly understand which scope is filtered.
+Now, if you login trough iam-test-client at https://iam.local.io/iam_test_client with the Admin user you should see that the `offline_access` and `phone` scopes are filtered by OPA; if you login with the Test user you will have the `email` and `phone` scopes filtered; if you login with the Test-100 user (test_100/password) only the `phone` scope is filtered, due to a DENY policy applied to iam-test-client. Cross-check also the `iam-be` and `opa` logs to properly understand which scope is filtered.
 
 ### Using an IDE (debug)
 
@@ -66,7 +66,7 @@ Run the docker compose which enables OPA running on http://localhost:8181 with
 $ docker compose up -d opa-dev
 ```
 
-Now, if you login trough iam-test-client with the Admin user you should see that the `offline_access` scope is filtered by OPA, while if you login with the Test user you will have the `email` scope filtered.
+Now, if you login trough iam-test-client at https://iam.local.io/iam_test_client with the Admin user you should see that the `offline_access` and `phone` scopes are filtered by OPA; if you login with the Test user you will have the `email` and `phone` scopes filtered; if you login with the Test-100 user (test_100/password) only the `phone` scope is filtered, due to a DENY policy applied to iam-test-client.
 
 Here you can also test that if the OPA server is not available, a fallback to the IAM Scope policy engine is applied. Please shut down the docker compose
 
