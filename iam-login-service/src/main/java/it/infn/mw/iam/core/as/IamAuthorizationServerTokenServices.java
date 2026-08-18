@@ -193,7 +193,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
         authenticationHolderService.create(authentication, client);
     OAuth2AccessTokenEntity accessToken = new OAuth2AccessTokenEntity();
     accessToken.setClient(client);
-    accessToken.setScope(computeScopes(request, authentication));
+    accessToken.setScope(computeScopes(request));
     accessToken.setExpiration(computeExpiration(request.getRequestParameters(), client, iat));
     accessToken.setAuthenticationHolder(authHolder);
 
@@ -315,7 +315,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
   }
 
-  private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
+  private Set<String> computeScopes(OAuth2Request request) {
 
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(request.getScope());

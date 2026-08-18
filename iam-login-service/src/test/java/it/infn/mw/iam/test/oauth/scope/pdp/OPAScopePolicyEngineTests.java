@@ -48,7 +48,7 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-public class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
+class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
 
   @Mock
   private IamScopePolicyRepository policyRepo;
@@ -92,7 +92,7 @@ public class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     OpaResponse opaResponse = new OpaResponse(Set.of("email"), Set.of("openid", "profile"));
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
-    when(restTemplate.postForEntity(eq(OPA_URL), eq(request), eq(OpaResponse.class)))
+    when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(opaResponse, HttpStatus.OK));
 
     Optional<OpaResponse> result = engine.evaluatePolicy(request);
@@ -104,7 +104,7 @@ public class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
   void testEvaluatePolicySuccessWithEmptyResponse() {
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
-    when(restTemplate.postForEntity(eq(OPA_URL), eq(request), eq(OpaResponse.class)))
+    when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
     Optional<OpaResponse> result = engine.evaluatePolicy(request);
@@ -116,7 +116,7 @@ public class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
   void testEvaluatePolicyWithServerError() {
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
-    when(restTemplate.postForEntity(eq(OPA_URL), eq(request), eq(OpaResponse.class)))
+    when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR));
 
     Optional<OpaResponse> result = engine.evaluatePolicy(request);
@@ -128,7 +128,7 @@ public class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
   void testEvaluatePolicyWithRestClientException() {
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
-    when(restTemplate.postForEntity(eq(OPA_URL), eq(request), eq(OpaResponse.class)))
+    when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenThrow(new RestClientException("OPA unavailable"));
 
     Optional<OpaResponse> result = engine.evaluatePolicy(request);
