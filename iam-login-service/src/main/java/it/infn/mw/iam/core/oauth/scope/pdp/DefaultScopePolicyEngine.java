@@ -44,7 +44,6 @@ public class DefaultScopePolicyEngine implements ScopePolicyEngine {
   public Set<String> apply(Set<String> requestedScopes, IamAccount account) {
     DecisionContext dc = new DecisionContext(matchersCache, requestedScopes);
 
-    // Apply user policies
     for (IamScopePolicy p : account.getScopePolicies()) {
       dc.applyPolicy(p, account);
     }
@@ -60,7 +59,6 @@ public class DefaultScopePolicyEngine implements ScopePolicyEngine {
     // Apply group policies only on unprocessed scopes
     dc.forgetProcessedEntries();
 
-    // Group policies are naturally composed with the deny overrides behavior
     for (IamScopePolicy p : groupPolicies) {
       dc.applyPolicy(p, account);
     }
