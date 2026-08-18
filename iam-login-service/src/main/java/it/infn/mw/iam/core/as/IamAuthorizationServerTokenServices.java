@@ -577,7 +577,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     if (account.isPresent()) {
-      return scopeFilter.filterScopes(scopesToFilter, account.get());
+      return scopeFilter.filterScopes(scopesToFilter, account.get(),
+          authHolder.getClient().getClientId());
     }
     return scopeFilter.filterScopes(authHolder).getScope();
   }

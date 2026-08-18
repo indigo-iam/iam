@@ -63,7 +63,8 @@ public class AuthorizationRequestBuilder {
     this.requestObjectProcessor = requestObjectProcessor;
   }
 
-  void filterRequestedScopes(Map<String, String> inputParams, Authentication authn) {
+  void filterRequestedScopes(Map<String, String> inputParams, Authentication authn,
+      AuthorizationRequest authzRequest) {
     if (authn == null || authn instanceof AnonymousAuthenticationToken) {
       return;
     }
@@ -73,7 +74,7 @@ public class AuthorizationRequestBuilder {
 
     // scopes are filtered also here to avoid authorizing them on the consent page
     inputParams.put(OAuth2Utils.SCOPE,
-        joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
+        joiner.join(scopeFilter.filterScopes(requestedScopes, authn, authzRequest.getClientId())));
   }
 
   AuthorizationRequest build(Map<String, String> inputParams) {

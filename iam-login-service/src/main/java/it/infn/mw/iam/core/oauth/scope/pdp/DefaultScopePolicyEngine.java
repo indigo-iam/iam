@@ -33,7 +33,8 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
 public class DefaultScopePolicyEngine implements ScopePolicyEngine {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopePolicyEngine.class);
-  private Cache<String, ScopeMatcher> matchersCache = CacheBuilder.newBuilder().maximumSize(30).build();
+  private Cache<String, ScopeMatcher> matchersCache =
+      CacheBuilder.newBuilder().maximumSize(30).build();
   private final IamScopePolicyRepository policyRepo;
 
   public DefaultScopePolicyEngine(IamScopePolicyRepository policyRepo) {
@@ -41,7 +42,11 @@ public class DefaultScopePolicyEngine implements ScopePolicyEngine {
   }
 
   @Override
-  public Set<String> apply(Set<String> requestedScopes, IamAccount account) {
+  public Set<String> apply(Set<String> requestedScopes, IamAccount account, String clientId) {
+    return apply(requestedScopes, account);
+  }
+
+  private Set<String> apply(Set<String> requestedScopes, IamAccount account) {
     DecisionContext dc = new DecisionContext(matchersCache, requestedScopes);
 
     for (IamScopePolicy p : account.getScopePolicies()) {

@@ -17,7 +17,15 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Set;
 
-public record OpaRequest(User user, Set<String> scopes) {
-  public record User(String id, Set<String> groups) {}
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+public record OpaRequest(User user, @JsonInclude(JsonInclude.Include.NON_NULL) Client client,
+    Set<String> scopes) {
+
+  public record User(String id, Set<String> groups) {
+  }
+
+  public record Client(String id) {
+  }
 
 }

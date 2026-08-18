@@ -25,9 +25,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 @SuppressWarnings("deprecation")
 public interface ScopeFilter {
 
-  public Set<String> filterScopes(Set<String> scopes, Authentication authn);
+  public Set<String> filterScopes(Set<String> scopes, Authentication authn, String clientId);
 
-  public Set<String> filterScopes(Set<String> scopes, IamAccount account);
+  public Set<String> filterScopes(Set<String> scopes, IamAccount account, String clientId);
 
   public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
 

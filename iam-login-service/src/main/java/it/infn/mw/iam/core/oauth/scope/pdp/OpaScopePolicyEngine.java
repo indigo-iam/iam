@@ -29,6 +29,7 @@ import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.IamProperties.OpaProperties;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
@@ -47,18 +48,19 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   }
 
   @Override
-  public Set<String> apply(Set<String> requestedScopes, IamAccount account) {
+  public Set<String> apply(Set<String> requestedScopes, IamAccount account, String clientId) {
 
     Set<String> userGroups =
         account.getGroups().stream().map(ag -> ag.getGroup().getName()).collect(Collectors.toSet());
     OpaRequest request =
-        new OpaRequest(new User(account.getUuid(), userGroups), requestedScopes);
+        new OpaRequest(new User(account.getUuid(), userGroups),
+            new Client(clientId), requestedScopes);
 
     Optional<OpaResponse> response = evaluatePolicy(request);
     if (response.isPresent()) {
       return response.get().filtered_scopes();
     } else {
-      return super.apply(requestedScopes, account);
+      return super.apply(requestedScopes, account, clientId);
     }
   }
 

@@ -20,5 +20,5 @@ import java.util.Set;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface ScopePolicyEngine {
-    public Set<String> apply(Set<String> requestedScopes, IamAccount account);
+  public Set<String> apply(Set<String> requestedScopes, IamAccount account, String clientId);
 }
