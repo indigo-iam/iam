@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record OpaRequest(User user, @JsonInclude(JsonInclude.Include.NON_NULL) Client client,
     Set<String> scopes) {
 
-  public record User(String id, Set<String> groups) {
+  public record User(String id, @JsonInclude(JsonInclude.Include.NON_EMPTY) Set<String> groups) {
   }
 
   public record Client(String id) {
