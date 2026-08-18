@@ -44,7 +44,7 @@ import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
-public class IamAuthenticationHolderServiceTests {
+class IamAuthenticationHolderServiceTests {
 
   @InjectMocks
   private IamAuthenticationHolderService authnHolderService;
