@@ -50,22 +50,24 @@ public class DefaultScopeFilter implements ScopeFilter {
   }
 
   @Override
-  public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn) {
+  public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn,
+      String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
       return requestedScopes;
     }
-    return filterScopes(requestedScopes, account.get());
+    return filterScopes(requestedScopes, account.get(), clientId);
   }
 
   @Override
-  public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account) {
+  public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account,
+      String clientId) {
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
     filteredScopes.retainAll(adminPolicies(requestedScopes, account));
     if (config.isEnableScopeAuthz()) {
-      filteredScopes.retainAll(policyEngine.apply(filteredScopes, account));
+      filteredScopes.retainAll(policyEngine.apply(filteredScopes, account, clientId));
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
     return filteredScopes;
@@ -88,7 +90,8 @@ public class DefaultScopeFilter implements ScopeFilter {
   }
 
   public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {
-    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication()));
+    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication(),
+        authHolder.getClient().getClientId()));
     return authHolder;
   }
 

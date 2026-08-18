@@ -38,6 +38,8 @@ import org.springframework.web.client.RestTemplate;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaResponse;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -82,7 +84,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
 
     engine = new OpaScopePolicyEngine(policyRepo, restTemplateFactory, opaProperties);
-    request = new OpaRequest(new OpaRequest.User("1234", Set.of("Analysis")),
+    request = new OpaRequest(new User("1234", Set.of("Analysis")), new Client(null),
         Set.of("openid", "profile", "email"));
   }
 
@@ -151,7 +153,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     Set<String> requestedScopes = new HashSet<>(filteredScopes);
     requestedScopes.addAll(deniedScopes);
 
-    assertEquals(filteredScopes, engine.apply(requestedScopes, account));
+    assertEquals(filteredScopes, engine.apply(requestedScopes, account, CLIENT_ID));
   }
 
   @Test
@@ -168,7 +170,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     up.getScopes().add(PROFILE);
     when(account.getScopePolicies()).thenReturn(Set.of(up));
 
-    assertEquals(Set.of(), engine.apply(Set.of("openid", "profile"), account));
+    assertEquals(Set.of(), engine.apply(Set.of("openid", "profile"), account, CLIENT_ID));
   }
 
   private void setupAccountGroupMembership(IamAccount account, IamGroup group,
