@@ -31,6 +31,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
@@ -41,7 +42,6 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
-import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -85,7 +85,7 @@ public class MfaAcrClaimIntegrationTests extends TokenGetterUtils {
 
     OAuth2Authentication auth = new OAuth2Authentication(req, savedAuth);
 
-    OAuth2AccessTokenEntity token = (OAuth2AccessTokenEntity) tokenService.createAccessToken(auth);
+    OAuth2AccessToken token = tokenService.createAccessToken(auth);
 
     JWTClaimsSet atClaims = JWTParser.parse(token.getValue()).getJWTClaimsSet();
     assertThat(atClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");

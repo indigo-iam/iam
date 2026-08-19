@@ -166,7 +166,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   }
 
   @Override
-  public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication)
+  public OAuth2AccessToken createAccessToken(OAuth2Authentication authentication)
       throws AuthenticationException {
 
     validate(authentication);

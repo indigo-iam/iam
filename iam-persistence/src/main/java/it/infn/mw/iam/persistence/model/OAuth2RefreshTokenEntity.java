@@ -30,14 +30,14 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.Transient;
 
-import org.springframework.security.oauth2.common.OAuth2RefreshToken;
+import org.springframework.security.oauth2.common.ExpiringOAuth2RefreshToken;
 
 import com.nimbusds.jwt.PlainJWT;
 
 @SuppressWarnings("deprecation")
 @Entity
 @Table(name = "refresh_token")
-public class OAuth2RefreshTokenEntity implements OAuth2RefreshToken {
+public class OAuth2RefreshTokenEntity implements ExpiringOAuth2RefreshToken {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -88,6 +88,7 @@ public class OAuth2RefreshTokenEntity implements OAuth2RefreshToken {
     this.value = value;
   }
 
+  @Override
   public Date getExpiration() {
     return expiration;
   }
