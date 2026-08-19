@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -31,13 +32,15 @@ import it.infn.mw.iam.core.NameUtils;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserInfoResponse {
 
+  public static final String MISSING_SUB_ERROR = "Missing sub key in UserInfoResponse claims";
+
   private final String sub;
   private final Map<String, Object> additionalFields = new HashMap<>();
 
+  @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
   public UserInfoResponse(Map<String, Object> claims) {
 
-    this.sub = Objects.requireNonNull(claims.get(SUB), "Missing sub key in UserInfoResponse claims")
-      .toString();
+    this.sub = Objects.requireNonNull(claims.get(SUB), MISSING_SUB_ERROR).toString();
     claims.forEach(this::addAdditionalField);
   }
 
