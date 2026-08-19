@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
@@ -36,6 +37,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -97,6 +99,9 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
   IamAup aup;
 
+  @Value("${iam.dashboard.base-path}")
+  String dashboardBasePath;
+
   @BeforeEach
   void setup() {
     context.cleanupSecurityContext();
@@ -106,17 +111,20 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   void getAupSignatureRequiresAuthenticatedUser() throws Exception {
+
     mvc.perform(get("/iam/aup/signature")).andExpect(status().isUnauthorized());
   }
 
   @Test
   void signAupSignatureRequiresAuthenticatedUser() throws Exception {
+
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void getAupSignatureWithUndefinedAupReturns404() throws Exception {
+
     aupRepo.deleteAll();
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
@@ -126,6 +134,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void getAupSignatureWithNoSignatureRecordReturns404() throws Exception {
+
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
@@ -134,6 +143,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void signatureCreationReturns204() throws Exception {
+
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
 
     String sigString = mvc.perform(get("/iam/aup/signature"))
@@ -267,7 +277,6 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
     assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isPresent(),
         equalTo(true));
-
   }
 
   @Test
@@ -286,7 +295,6 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
-
   }
 
   @Test
@@ -357,9 +365,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(status().isOk());
     mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("test_100").roles("READER")))
       .andExpect(status().isOk());
-    mvc
-      .perform(
-          get("/iam/aup/signature/" + TEST_UUID).with(user("admin").roles("USER", "ADMIN")))
+    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("admin").roles("USER", "ADMIN")))
       .andExpect(status().isOk());
   }
 
@@ -385,9 +391,9 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     dto.setSignatureTime(Date.from(clock.instant().plus(Duration.ofHours(2))));
 
     AupSignatureDTO updatedSignature = mapper.readValue(mvc
-      .perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)
-        .content(mapper.writeValueAsString(dto))
-        .contentType(APPLICATION_JSON))
+      .perform(
+          patch("/iam/aup/signature/{accountId}", TEST_UUID).content(mapper.writeValueAsString(dto))
+            .contentType(APPLICATION_JSON))
       .andExpect(CREATED)
       .andReturn()
       .getResponse()
@@ -415,7 +421,6 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(jsonPath("$.signatureTime").exists());
 
     mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID)).andExpect(status().isOk());
-
   }
 
   @Test
@@ -429,4 +434,12 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     mvc.perform(post("/iam/aup/sign")).andExpect(status().isMethodNotAllowed());
   }
 
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void testSignAupRedirectsToDashboard() throws Exception {
+
+    mvc.perform(post("/iam/aup/sign"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(dashboardBasePath));
+  }
 }
