@@ -46,7 +46,8 @@ public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
     return Set.of(EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, ATTR,
         AarcExtraClaimNames.EDUPERSON_ASSURANCE, AarcExtraClaimNames.ENTITLEMENTS,
         AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
-        AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
+        AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION,
+        AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION);
   }
 
   @Override
