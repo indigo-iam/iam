@@ -49,6 +49,8 @@ public class UserInfoFetcher {
       return Optional.empty();
     }
 
+    LOG.info("UserInfo request to: {}", metadata.userInfoEndpoint());
+
     RestTemplate restTemplate = factory.newRestTemplate();
 
     restTemplate.getInterceptors().add(new BearerTokenInterceptor((String) token.getCredentials()));
@@ -59,6 +61,9 @@ public class UserInfoFetcher {
       LOG.warn("Received empty userinfo response from {}", metadata.userInfoEndpoint());
       return Optional.empty();
     }
+
+    LOG.info("UserInfo response: {}", response);
+
     return Optional.of(response);
 
   }

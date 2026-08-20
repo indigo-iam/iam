@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.audit.events.tokens.UserInfoEvent;
 import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
@@ -56,15 +58,18 @@ public class IamUserInfoEndpoint {
   private final IamAccountRepository accountRepo;
   private final IamClientRepository clientRepo;
   private final TokenUtils tokenUtils;
+  private final ApplicationEventPublisher eventPublisher;
 
   public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
       OAuth2AuthenticationScopeResolver scopeResolver, IamAccountRepository accountRepo,
-      IamClientRepository clientRepo, TokenUtils tokenUtils) {
+      IamClientRepository clientRepo, TokenUtils tokenUtils,
+      ApplicationEventPublisher eventPublisher) {
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
     this.accountRepo = accountRepo;
     this.clientRepo = clientRepo;
     this.tokenUtils = tokenUtils;
+    this.eventPublisher = eventPublisher;
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
@@ -87,7 +92,9 @@ public class IamUserInfoEndpoint {
         profile.getUserinfoHelper().resolveScopeClaims(scopes, account, auth);
 
     addExternalAuthN(auth, claims);
-    return new UserInfoResponse(claims);
+    UserInfoResponse response = new UserInfoResponse(claims);
+    eventPublisher.publishEvent(new UserInfoEvent(this, clientId, response));
+    return response;
   }
 
   private void addExternalAuthN(OAuth2Authentication auth, Map<String, Object> claims) {
