@@ -31,6 +31,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
@@ -42,6 +44,9 @@ class UserInfoFetcherTests {
 
   @Mock
   private RestTemplateFactory restTemplateFactory;
+
+  @Mock
+  private ObjectMapper objectMapper;
 
   @Mock
   private RestTemplate restTemplate;
@@ -58,7 +63,7 @@ class UserInfoFetcherTests {
   @BeforeEach
   void setup() {
 
-    userInfoFetcher = new UserInfoFetcher(restTemplateFactory);
+    userInfoFetcher = new UserInfoFetcher(restTemplateFactory, objectMapper);
   }
 
   @Test
@@ -72,8 +77,7 @@ class UserInfoFetcherTests {
     when(restTemplateFactory.newRestTemplate()).thenReturn(restTemplate);
 
     UserInfoResponse response = new UserInfoResponse(Map.of("sub", SUB));
-    when(restTemplate.getForObject(USERINFO_ENDPOINT, UserInfoResponse.class))
-      .thenReturn(response);
+    when(restTemplate.getForObject(USERINFO_ENDPOINT, UserInfoResponse.class)).thenReturn(response);
 
     Optional<UserInfoResponse> userInfo = userInfoFetcher.loadUserInfo(token);
 
