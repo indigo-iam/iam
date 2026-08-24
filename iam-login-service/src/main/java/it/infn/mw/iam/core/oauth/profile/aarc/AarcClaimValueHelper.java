@@ -17,7 +17,9 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -85,7 +87,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         return configuredScopeDomain;
       }
     }
-  
+
     return properties.getIssuer();
   }
 
@@ -108,10 +110,10 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
           if (userAuth.isPresent()) {
             Set<String> loa = new HashSet<>(DEFAULT_LOA);
-            String remoteLoa = firstOf(userAuth.get().getAdditionalInfo(),
+            List<String> remoteLoa = firstOfAsList(userAuth.get().getAdditionalInfo(),
                 Set.of("eduPersonAssurance", "urn:oid:1.3.6.1.4.1.5923.1.1.1.11"));
             if (remoteLoa != null) {
-              loa.add(remoteLoa);
+              loa.addAll(remoteLoa);
             }
             return loa;
           }
@@ -126,13 +128,14 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           if (userAuth.isPresent()) {
             Set<String> scopedAffiliations = new HashSet<>();
             if (account.get().getAffiliation() != null) {
-              scopedAffiliations.add(format(SCOPED_FORMAT, account.get().getAffiliation(),
-                  scopeDomain));
+              scopedAffiliations
+                .add(format(SCOPED_FORMAT, account.get().getAffiliation(), scopeDomain));
             }
-            String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
+            List<String> externalScopedAffiliations = firstOfAsList(
+                userAuth.get().getAdditionalInfo(),
                 Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));
-            if (externalScopedAffiliation != null) {
-              scopedAffiliations.add(externalScopedAffiliation);
+            if (externalScopedAffiliations != null) {
+              scopedAffiliations.addAll(externalScopedAffiliations);
             }
             return scopedAffiliations;
           }
@@ -150,12 +153,20 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
     }
   }
 
-  private String firstOf(Map<String, String> additionalInfo, Set<String> keys) {
+  private List<String> firstOfAsList(Map<String, Object> additionalInfo, Set<String> keys) {
+
     for (String key : keys) {
-      if (additionalInfo.containsKey(key)) {
-        return additionalInfo.get(key);
+      Object value = additionalInfo.get(key);
+
+      if (value instanceof Collection<?> values) {
+        return values.stream().map(String::valueOf).toList();
+      }
+
+      if (value instanceof String stringValue) {
+        return List.of(stringValue);
       }
     }
+
     return null;
   }
 }

@@ -195,7 +195,7 @@ class AarcClaimValueHelperTests {
   void testResolveScopedAffiliations() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("EPSA", "external@test.org");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
@@ -223,7 +223,7 @@ class AarcClaimValueHelperTests {
   void testResolveScopedAffiliationsWithNullAffiliation() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("EPSA", "external@test.org");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
@@ -248,7 +248,7 @@ class AarcClaimValueHelperTests {
   void testResolveAssuranceInfo() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("urn:oid:1.3.6.1.4.1.5923.1.1.1.11",
         "https://refeds.org/assurance/IAP/medium");
 
@@ -273,7 +273,7 @@ class AarcClaimValueHelperTests {
   void testResolveSchacHomeOrganization() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("urn:oid:1.3.6.1.4.1.25178.1.2.9", "infn.it");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();

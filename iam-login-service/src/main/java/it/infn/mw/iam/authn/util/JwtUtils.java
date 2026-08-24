@@ -42,6 +42,7 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 
 public class JwtUtils {
 
@@ -68,6 +69,7 @@ public class JwtUtils {
     }
 
     for (String claimName : claims.getClaims().keySet()) {
+
       Object claimValue = claims.getClaim(claimName);
 
       if (claimValue instanceof String) {
@@ -83,6 +85,14 @@ public class JwtUtils {
             claimValue.getClass().getName(), claimName);
       }
     }
+    return claimsMap;
+  }
+
+  public static Map<String, Object> getClaimsAsMap(UserInfoResponse userinfo) {
+
+    Map<String, Object> claimsMap = Maps.newHashMap();
+    claimsMap.putAll(userinfo.getAdditionalFields());
+
     return claimsMap;
   }
 
