@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
-import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -41,20 +40,12 @@ import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2AccessTokenJackson2Deserializer;
-import org.springframework.security.oauth2.common.OAuth2AccessTokenJackson2Serializer;
 
 import com.nimbusds.jwt.JWT;
-
-import it.infn.mw.iam.persistence.model.converter.JWTStringConverter;
 
 @SuppressWarnings("deprecation")
 @Entity
 @Table(name = "access_token")
-@com.fasterxml.jackson.databind.annotation.JsonSerialize(
-    using = OAuth2AccessTokenJackson2Serializer.class)
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(
-    using = OAuth2AccessTokenJackson2Deserializer.class)
 public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 
   public static final String ID_TOKEN_FIELD_NAME = "id_token";
@@ -72,8 +63,7 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
   @JoinColumn(name = "auth_holder_id")
   private AuthenticationHolderEntity authenticationHolder;
 
-  @Column(name = "token_value")
-  @Convert(converter = JWTStringConverter.class)
+  @Transient
   private JWT jwtValue;
 
   @Column(name = "token_value_hash", length = 64)
@@ -180,6 +170,7 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
     return expiration != null && expiration.toInstant().isBefore(Instant.now());
   }
 
+  @Transient
   public JWT getJwt() {
     return jwtValue;
   }
