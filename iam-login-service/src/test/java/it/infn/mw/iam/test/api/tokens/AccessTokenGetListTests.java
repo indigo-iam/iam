@@ -17,12 +17,17 @@ package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest.MAX_PAGE_SIZE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +39,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
+
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -75,6 +82,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Autowired
   MutableClock clock;
 
+  @PersistenceContext
+  EntityManager entityManager;
+
   @BeforeEach
   void initSecurityContext() {
     context.cleanupSecurityContext();
@@ -93,26 +103,26 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getEmptyAccessTokenList() throws Exception {
 
-    assertThat(accessTokenRepository.count(), equalTo(0L));
+    assertEquals(0L, accessTokenRepository.count());
 
     /* get list */
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
 
-    assertThat(atl.getTotalResults(), equalTo(0L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources().size(), equalTo(0));
+    assertEquals(0L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+    assertEquals(0, atl.getResources().size());
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
     /* get count */
     atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(0L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources().size(), equalTo(0));
+    assertEquals(0L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+    assertEquals(0, atl.getResources().size());
   }
 
   @Test
@@ -126,11 +136,11 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(accessTokenRepository.count(), equalTo(1L));
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources().size(), equalTo(0));
+    assertEquals(1L, accessTokenRepository.count());
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+    assertEquals(0, atl.getResources().size());
   }
 
   @Test
@@ -142,7 +152,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerClientToken();
     getClientCredentialsToken(DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(3L));
+    assertEquals(3L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
@@ -150,12 +160,12 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
-    assertThat(atl.getResources().size(), equalTo(2));
+    assertEquals(2L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(2, atl.getItemsPerPage());
+    assertEquals(2, atl.getResources().size());
 
-    atl.getResources().forEach(at -> assertThat(at.clientId(), equalTo(PASSWORD_CLIENT_ID)));
+    atl.getResources().forEach(at -> assertEquals(PASSWORD_CLIENT_ID, at.clientId()));
   }
 
   @Test
@@ -168,7 +178,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
         DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(3L));
+    assertEquals(3L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
@@ -176,14 +186,14 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
-    assertThat(atl.getResources().size(), equalTo(2));
+    assertEquals(2L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(2, atl.getItemsPerPage());
+    assertEquals(2, atl.getResources().size());
 
     atl.getResources().forEach(at -> {
-      assertThat(at.user().username(), equalTo(TEST_USERNAME));
-      assertThat(at.user().ref(), equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+      assertEquals(TEST_USERNAME, at.user().username());
+      assertEquals(scimResourceLocationProvider.userLocation(TEST_UUID), at.user().ref());
     });
   }
 
@@ -198,7 +208,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerClientToken();
     getClientCredentialsToken(DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(3L));
+    assertEquals(3L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
@@ -206,15 +216,15 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(1, atl.getItemsPerPage());
+    assertEquals(1, atl.getResources().size());
 
     atl.getResources().forEach(at -> {
-      assertThat(at.clientId(), equalTo(PASSWORD_CLIENT_ID));
-      assertThat(at.user().username(), equalTo(TEST_USERNAME));
-      assertThat(at.user().ref(), equalTo(scimResourceLocationProvider.userLocation(TEST_UUID)));
+      assertEquals(PASSWORD_CLIENT_ID, at.clientId());
+      assertEquals(TEST_USERNAME, at.user().username());
+      assertEquals(scimResourceLocationProvider.userLocation(TEST_UUID), at.user().ref());
     });
   }
 
@@ -227,17 +237,17 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
         DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(2L));
+    assertEquals(2L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().userId("tes").build();
 
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(0L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources().size(), equalTo(0));
+    assertEquals(0L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+    assertEquals(0, atl.getResources().size());
   }
 
   @Test
@@ -248,16 +258,16 @@ class AccessTokenGetListTests extends TokenGetterUtils {
       getPasswordToken(DEFAULT_SCOPES);
     }
 
-    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
+    assertEquals(Long.valueOf(MAX_PAGE_SIZE), accessTokenRepository.count());
 
     context.useBearerAdminToken();
     /* get first page */
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
 
-    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(MAX_PAGE_SIZE));
-    assertThat(atl.getResources().size(), equalTo(MAX_PAGE_SIZE));
+    assertEquals(Long.valueOf(MAX_PAGE_SIZE), atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(MAX_PAGE_SIZE, atl.getItemsPerPage());
+    assertEquals(MAX_PAGE_SIZE, atl.getResources().size());
   }
 
   @Test
@@ -268,7 +278,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
       getPasswordToken(DEFAULT_SCOPES);
     }
 
-    assertThat(accessTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
+    assertEquals(Long.valueOf(MAX_PAGE_SIZE), accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().startIndex(MAX_PAGE_SIZE).build();
@@ -277,10 +287,10 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     /* get second page */
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
-    assertThat(atl.getStartIndex(), equalTo(MAX_PAGE_SIZE));
-    assertThat(atl.getItemsPerPage(), equalTo(1));
-    assertThat(atl.getResources().size(), equalTo(1));
+    assertEquals(Long.valueOf(MAX_PAGE_SIZE), atl.getTotalResults());
+    assertEquals(MAX_PAGE_SIZE, atl.getStartIndex());
+    assertEquals(1, atl.getItemsPerPage());
+    assertEquals(1, atl.getResources().size());
   }
 
   @Test
@@ -289,7 +299,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useLocalTestUser();
     getPasswordToken(DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(1L));
+    assertEquals(1L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(INJECTION_QUERY).build();
@@ -297,10 +307,10 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(0L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
-    assertThat(atl.getResources().size(), equalTo(0));
+    assertEquals(0L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+    assertEquals(0, atl.getResources().size());
   }
 
   @Test
@@ -314,9 +324,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
 
-    assertThat(atl.getTotalResults(), equalTo(2L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(2));
+    assertEquals(2L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(2, atl.getItemsPerPage());
   }
 
   @Test
@@ -332,9 +342,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
   }
 
   @Test
@@ -348,18 +358,18 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
         DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(3L));
+    assertEquals(3L, accessTokenRepository.count());
 
     Page<OAuth2AccessTokenEntity> tokens =
         accessTokenRepository.findAllValidAccessTokens(clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(2L));
+    assertEquals(2L, tokens.getTotalElements());
 
     tokens =
         accessTokenRepository.findValidAccessTokensForUser(TEST_USERNAME, clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(1L));
+    assertEquals(1L, tokens.getTotalElements());
     tokens =
         accessTokenRepository.findValidAccessTokensForUser(ADMIN_USERNAME, clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(1L));
+    assertEquals(1L, tokens.getTotalElements());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().count(0).userId(TEST_USERNAME).build();
@@ -367,9 +377,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
   }
 
   @Test
@@ -380,15 +390,15 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     clock.advance(Duration.ofHours(6));
     getPasswordToken(DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(2L));
+    assertEquals(2L, accessTokenRepository.count());
 
     Page<OAuth2AccessTokenEntity> tokens =
         accessTokenRepository.findAllValidAccessTokens(clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(1L));
+    assertEquals(1L, tokens.getTotalElements());
 
     tokens = accessTokenRepository.findValidAccessTokensForClient(PASSWORD_CLIENT_ID, clock.now(),
         FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(1L));
+    assertEquals(1L, tokens.getTotalElements());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().count(0).clientId(PASSWORD_CLIENT_ID).build();
@@ -396,9 +406,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
   }
 
   @Test
@@ -421,15 +431,15 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerClientToken();
     getClientCredentialsToken(DEFAULT_SCOPES);
 
-    assertThat(accessTokenRepository.count(), equalTo(6L));
+    assertEquals(6L, accessTokenRepository.count());
 
     Page<OAuth2AccessTokenEntity> tokens =
         accessTokenRepository.findAllValidAccessTokens(clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(3L));
+    assertEquals(3L, tokens.getTotalElements());
 
     tokens = accessTokenRepository.findValidAccessTokensForUserAndClient(TEST_USERNAME,
         PASSWORD_CLIENT_ID, clock.now(), FIRST_10);
-    assertThat(tokens.getTotalElements(), equalTo(1L));
+    assertEquals(1L, tokens.getTotalElements());
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder()
       .count(0)
@@ -440,8 +450,29 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
 
-    assertThat(atl.getTotalResults(), equalTo(1L));
-    assertThat(atl.getStartIndex(), equalTo(1));
-    assertThat(atl.getItemsPerPage(), equalTo(0));
+    assertEquals(1L, atl.getTotalResults());
+    assertEquals(1, atl.getStartIndex());
+    assertEquals(0, atl.getItemsPerPage());
+  }
+
+  @Test
+  void getAccessTokenListAfterClearingPersistenceContext() throws Exception {
+
+    context.useLocalTestUser();
+    String jwt = getPasswordToken(DEFAULT_SCOPES).accessToken();
+    Set<String> expectedAudiences =
+        new HashSet<>(SignedJWT.parse(jwt).getJWTClaimsSet().getAudience());
+    org.junit.jupiter.api.Assertions.assertFalse(expectedAudiences.isEmpty());
+    entityManager.flush();
+    entityManager.clear();
+
+    OAuth2AccessTokenEntity reloaded = accessTokenRepository.findAll().get(0);
+    assertNull(reloaded.getJwt());
+    assertEquals(expectedAudiences, reloaded.getAudiences());
+
+    context.useBearerAdminToken();
+    ListResponseDTO<AccessToken> result = getAccessTokenList();
+    assertEquals(1, result.getResources().size());
+    assertEquals(expectedAudiences, result.getResources().get(0).audiences());
   }
 }

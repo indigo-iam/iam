@@ -41,20 +41,15 @@ import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2AccessTokenJackson2Deserializer;
-import org.springframework.security.oauth2.common.OAuth2AccessTokenJackson2Serializer;
 
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
-import it.infn.mw.iam.persistence.model.converter.JWTStringConverter;
+import it.infn.mw.iam.persistence.model.converter.JWTClaimsSetStringConverter;
 
 @SuppressWarnings("deprecation")
 @Entity
 @Table(name = "access_token")
-@com.fasterxml.jackson.databind.annotation.JsonSerialize(
-    using = OAuth2AccessTokenJackson2Serializer.class)
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(
-    using = OAuth2AccessTokenJackson2Deserializer.class)
 public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 
   public static final String ID_TOKEN_FIELD_NAME = "id_token";
@@ -72,9 +67,12 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
   @JoinColumn(name = "auth_holder_id")
   private AuthenticationHolderEntity authenticationHolder;
 
-  @Column(name = "token_value")
-  @Convert(converter = JWTStringConverter.class)
+  @Transient
   private JWT jwtValue;
+
+  @Column(name = "token_value", length = 4096)
+  @Convert(converter = JWTClaimsSetStringConverter.class)
+  private JWTClaimsSet payload;
 
   @Column(name = "token_value_hash", length = 64)
   private String tokenValueHash;
@@ -180,12 +178,22 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
     return expiration != null && expiration.toInstant().isBefore(Instant.now());
   }
 
+  @Transient
   public JWT getJwt() {
     return jwtValue;
   }
 
   public void setJwt(JWT jwt) {
-    this.jwtValue = jwt;
+    if (jwt == null) {
+      this.jwtValue = null;
+      return;
+    }
+    try {
+      this.payload = jwt.getJWTClaimsSet();
+      this.jwtValue = jwt;
+    } catch (ParseException e) {
+      throw new IllegalArgumentException("Invalid access token claims");
+    }
   }
 
   public String getTokenValueHash() {
@@ -214,13 +222,16 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
     }
   }
 
+  public JWTClaimsSet getPayload() {
+    return payload;
+  }
+
   @Transient
   public Set<String> getAudiences() {
-    try {
-      return jwtValue.getJWTClaimsSet().getAudience().stream().collect(Collectors.toSet());
-    } catch (ParseException e) {
+    if (payload == null) {
       return Set.of();
     }
+    return payload.getAudience().stream().collect(Collectors.toSet());
   }
 }
 
