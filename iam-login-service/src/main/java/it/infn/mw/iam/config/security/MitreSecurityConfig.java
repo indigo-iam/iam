@@ -23,17 +23,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
@@ -166,53 +161,6 @@ public class MitreSecurityConfig {
             .sessionCreationPolicy(STATELESS)
         .and()
           .csrf().disable();
-      // @formatter:on
-    }
-  }
-
-  @Configuration
-  @Order(16)
-  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
-    private UserDetailsService userDetailsService;
-
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
-    }
-
-    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
-        throws Exception {
-
-      ClientCredentialsTokenEndpointFilter filter =
-          new ClientCredentialsTokenEndpointFilter("/revoke");
-      filter.setAuthenticationManager(authenticationManager());
-      return filter;
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      // @formatter:off
-      http.antMatcher("/revoke**")
-        .httpBasic()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
-        .cors()
-        .and()
-        .exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .csrf().disable()
-          .sessionManagement().sessionCreationPolicy(STATELESS);
       // @formatter:on
     }
   }

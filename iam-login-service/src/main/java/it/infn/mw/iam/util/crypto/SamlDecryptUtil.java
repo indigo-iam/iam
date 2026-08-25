@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.util;
+package it.infn.mw.iam.util.crypto;
 
 import java.io.FileInputStream;
 import java.io.IOException;

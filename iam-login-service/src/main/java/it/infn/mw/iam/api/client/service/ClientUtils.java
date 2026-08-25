@@ -36,8 +36,8 @@ import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 @Service
 public class ClientUtils {
 
-  public static final Set<ClientAuthMethod> AUTH_METHODS_REQUIRING_SECRET =
-      Set.of(ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST, ClientAuthMethod.SECRET_JWT);
+  public static final Set<ClientAuthMethod> AUTH_METHODS_REQUIRING_SECRET = Set
+    .of(ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST, ClientAuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
   private static final int BCRYPT_MAX_SIZE = 72;

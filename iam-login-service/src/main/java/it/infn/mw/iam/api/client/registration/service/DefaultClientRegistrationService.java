@@ -58,6 +58,7 @@ import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
@@ -337,9 +338,14 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
 
+    String plainClientSecret = client.getClientSecret();
+    hashClientSecret(client, plainClientSecret);
+
     client = clientService.saveNewClient(client);
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+
+    response.setClientSecret(plainClientSecret);
 
     if (!hasRelyingParty(request) && isAnonymous(authentication)) {
 
@@ -362,6 +368,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return response;
   }
 
+  private void hashClientSecret(ClientDetailsEntity client, String secret) {
+
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode(secret);
+    client.setClientSecret(hashedClientSecret);
+  }
+
   @Override
   public RegisteredClientDTO registerProtectedResource(RegisteredClientDTO request,
       Authentication authentication) throws ParseException {
@@ -379,6 +391,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       client.getContacts().add(account.get().getUserInfo().getEmail());
     }
 
+    String plainClientSecret = client.getClientSecret();
+    hashClientSecret(client, plainClientSecret);
+
     client = clientService.saveNewClient(client);
     eventPublisher.publishEvent(new ClientRegistered(this, client));
 
@@ -387,6 +402,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+
+    response.setClientSecret(plainClientSecret);
 
     OAuth2AccessTokenEntity ratEntity = registrationTokenService.createResourceAccessToken(client);
     response.setRegistrationAccessToken(ratEntity.getValue());
@@ -462,6 +479,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
+      // We should add a pop-up window to the UI with the new secret and hash the
+      // client secret in db (the new secret is now available to the user only under
+      // secret regeneration)
       newClient.setClientSecret(clientUtils.generateClientSecret());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
@@ -514,6 +534,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setClientId(oldClient.getClientId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
+      // Same as for client update
       newClient.setClientSecret(clientUtils.generateClientSecret());
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
