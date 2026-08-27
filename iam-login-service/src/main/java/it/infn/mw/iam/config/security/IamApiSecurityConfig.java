@@ -36,11 +36,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 import it.infn.mw.iam.api.proxy.ProxyCertificatesApiController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.security.IamWebSecurityConfig.UserLoginConfig;
+import it.infn.mw.iam.config.security.filters.MtlsTokenBindingFilter;
 import it.infn.mw.iam.core.oauth.FormClientCredentialsAuthenticationFilter;
 
 @SuppressWarnings("deprecation")
@@ -149,6 +151,7 @@ public class IamApiSecurityConfig {
             .accessDeniedHandler(new OAuth2AccessDeniedHandler())
         .and()
           .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+          .addFilterAfter(new MtlsTokenBindingFilter(), ExceptionTranslationFilter.class)
         .cors()
         .and()
         .sessionManagement()
