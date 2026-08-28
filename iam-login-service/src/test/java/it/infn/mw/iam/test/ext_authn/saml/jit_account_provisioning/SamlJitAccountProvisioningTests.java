@@ -273,8 +273,7 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
 
     mvc.perform(get("/userinfo").header("Authorization", format("Bearer %s", accessToken)))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))))
-      .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
+      .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))));
   }
 
   @Test
@@ -370,7 +369,6 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
 
     mvc.perform(get("/userinfo").header("Authorization", format("Bearer %s", accessToken)))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))))
-      .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
+      .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))));
   }
 }

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.core;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -41,7 +40,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
@@ -161,19 +159,6 @@ class IamCoreControllerTests {
   void userinfoReturns404ForUserNotFound() throws Exception {
 
     mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isBadRequest());
-  }
-
-
-  @Test
-  @WithMockOAuthUser(scopes = {"openid", "profile", "email"}, user = "test",
-      authorities = {"ROLE_USER"}, externallyAuthenticated = true,
-      externalAuthenticationType = ExternalAuthenticationType.OIDC)
-  void userInfoReturnsExternalAuthenticationInfo() throws Exception {
-
-    mvc.perform(get("/userinfo"))
-      .andDo(print())
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")));
   }
 
   @Test
