@@ -53,7 +53,7 @@ public class UserInfoFetcher {
       return Optional.empty();
     }
 
-    LOG.info("UserInfo request to: {}", metadata.userInfoEndpoint());
+    LOG.debug("UserInfo request to: {}", metadata.userInfoEndpoint());
 
     RestTemplate restTemplate = factory.newRestTemplate();
 
@@ -68,13 +68,12 @@ public class UserInfoFetcher {
     }
 
     try {
-      LOG.info("UserInfo response: {}", objectMapper.writeValueAsString(response));
+      LOG.debug("UserInfo response: {}", objectMapper.writeValueAsString(response));
     } catch (JsonProcessingException e) {
       LOG.warn("Could not serialize UserInfo response", e);
     }
 
     return Optional.of(response);
-
   }
 }
 
