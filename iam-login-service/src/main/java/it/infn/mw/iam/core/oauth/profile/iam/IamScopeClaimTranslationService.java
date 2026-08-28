@@ -32,7 +32,6 @@ public class IamScopeClaimTranslationService extends BaseScopeClaimTranslationSe
       case OidcScopes.PROFILE:
         Set<String> claims = super.getClaimsForScope(scope);
         claims.add(IamExtraClaimNames.AFFILIATION);
-        claims.add(IamExtraClaimNames.EXTERNAL_AUTHN);
         claims.add(IamExtraClaimNames.GROUPS);
         claims.add(IamExtraClaimNames.LAST_LOGIN_AT);
         claims.add(IamExtraClaimNames.ORGANISATION_NAME);

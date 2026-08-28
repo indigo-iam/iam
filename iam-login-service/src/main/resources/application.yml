@@ -118,6 +118,9 @@ iam:
     # This is the registration access token lifetime
     lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}
 
+  token-enhancer:
+    include-external-authn: ${IAM_TOKEN_ENHANCER_INCLUDE_EXTERNAL_AUTHN:id_tokens}
+
   organisation:
     name: ${IAM_ORGANISATION_NAME:indigo-dc}
 
