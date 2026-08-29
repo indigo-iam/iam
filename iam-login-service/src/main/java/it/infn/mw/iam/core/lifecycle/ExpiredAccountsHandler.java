@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -61,6 +62,7 @@ public class ExpiredAccountsHandler implements Runnable {
   private final LifecycleProperties properties;
   private final IamAccountRepository accountRepo;
   private final IamAccountService accountService;
+  private final NotificationFactory notificationFactory;
   private final Clock clock;
 
   private Instant checkTime;
@@ -68,11 +70,13 @@ public class ExpiredAccountsHandler implements Runnable {
   private Set<IamAccount> accountsScheduledForRemoval = newHashSet();
 
   public ExpiredAccountsHandler(Clock clock, LifecycleProperties properties,
-      IamAccountRepository repo, IamAccountService service) {
+      IamAccountRepository repo, IamAccountService service,
+      NotificationFactory notificationFactory) {
     this.clock = clock;
     this.properties = properties;
     this.accountRepo = repo;
     this.accountService = service;
+    this.notificationFactory = notificationFactory;
   }
 
   private boolean pastGracePeriod(IamAccount expiredAccount, long gracePeriodDays) {
@@ -137,6 +141,15 @@ public class ExpiredAccountsHandler implements Runnable {
         expiredAccount.getUsername(), expiredAccount.getEndTime(),
         ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
     addStatusLabel(expiredAccount, PENDING_SUSPENSION);
+    sendPendingSuspensionWarning(expiredAccount);
+  }
+
+  private void sendPendingSuspensionWarning(IamAccount account) {
+    long daysSinceExpiry = ChronoUnit.DAYS.between(account.getEndTime().toInstant(), checkTime);
+    long daysUntilSuspension = properties.getAccount().getExpiredAccountPolicy()
+        .getSuspensionGracePeriodDays() - daysSinceExpiry;
+    notificationFactory.createExpirationWarningMessage(account, Math.max(0, daysUntilSuspension));
+    LOG.info("Pending suspension warning sent for account {}", account.getUsername());
   }
 
   private void markAsPendingRemoval(IamAccount expiredAccount) {
