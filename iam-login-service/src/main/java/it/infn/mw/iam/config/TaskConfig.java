@@ -48,6 +48,7 @@ import it.infn.mw.iam.registration.RegistrationRequestService;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
+import it.infn.mw.iam.core.web.group.GroupRequestReminderTask;
 
 @Configuration
 @EnableScheduling
@@ -74,6 +75,7 @@ public class TaskConfig implements SchedulingConfigurer {
   private AupReminderTask aupReminderTask;
   private ExecutorService taskScheduler;
   private GarbageCollector garbageCollector;
+  private GroupRequestReminderTask groupRequestReminderTask;
 
   @Value("${notification.disable}")
   boolean notificationDisabled;
@@ -95,7 +97,8 @@ public class TaskConfig implements SchedulingConfigurer {
       RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
-      ExecutorService taskScheduler, GarbageCollector garbageCollector) {
+      ExecutorService taskScheduler, GarbageCollector garbageCollector, GroupRequestReminderTask groupRequestReminderTask
+    ) {
 
     this.notificationStoreService = notificationStoreService;
     this.registrationRequestRepository = registrationRequestRepository;
@@ -106,6 +109,8 @@ public class TaskConfig implements SchedulingConfigurer {
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
     this.garbageCollector = garbageCollector;
+    this.groupRequestReminderTask = groupRequestReminderTask;
+
   }
 
   @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
@@ -148,6 +153,13 @@ public class TaskConfig implements SchedulingConfigurer {
   public void scheduledAupRemindersTask() {
 
     aupReminderTask.sendAupReminders();
+  }
+
+  @Scheduled(fixedRateString = "${task.groupRequestReminderPeriodSecs:86400}",
+      timeUnit = TimeUnit.SECONDS, initialDelay = TEN_MINUTES_MSEC)
+  public void scheduledGroupRequestRemindersTask() {
+
+    groupRequestReminderTask.sendReminders();
   }
 
   public void scheduledCleanUpExpireRegistrationTask(final ScheduledTaskRegistrar taskRegistrar) {
