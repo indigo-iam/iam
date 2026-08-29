@@ -25,7 +25,6 @@
     <module>iam-persistence</module>
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
-    <module>iam-test-client</module>
   </modules>
 
   <distributionManagement>

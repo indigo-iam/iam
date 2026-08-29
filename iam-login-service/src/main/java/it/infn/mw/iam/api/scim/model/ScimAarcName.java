@@ -15,11 +15,20 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
-public interface ScimConstants {
+public class ScimAarcName {
+  private final String givenName;
+  private final String familyName;
 
-  final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
-  final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
-  final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
-  final String AARC_USER_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:User";
-  final String AARC_GROUP_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:Group";
+  public ScimAarcName(ScimName name) {
+    this.givenName = name.getGivenName();
+    this.familyName = name.getFamilyName();
+  }
+
+  public String getGivenName() {
+    return givenName;
+  }
+
+  public String getFamilyName() {
+    return familyName;
+  }
 }

@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,12 +37,13 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.Organisation;
 import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @ExtendWith(MockitoExtension.class)
-class UserConverterTest {
+class UserConverterTests {
 
   @Mock
   private ScimResourceLocationProvider resourceLocationProvider;
@@ -56,6 +59,8 @@ class UserConverterTest {
   private X509CertificateConverter x509CertificateIamConverter;
   @Mock
   private AccountGroupManagerService groupManagerService;
+  @Mock
+  private Organisation org;
 
   private IamProperties iamProperties;
   private ScimProperties scimProperties;
@@ -65,7 +70,10 @@ class UserConverterTest {
   void setup() {
 
     lenient().when(resourceLocationProvider.userLocation(anyString())).thenReturn("User location");
+
     iamProperties = new IamProperties();
+    iamProperties.setOrganisation(org);
+    iamProperties.getOrganisation().setName("indigo-dc");
     scimProperties = new ScimProperties();
     userConverter = new UserConverter(iamProperties, scimProperties, resourceLocationProvider,
         addressConverter, oidcIdConverter, sshKeyConverter, samlIdConverter,
@@ -82,6 +90,9 @@ class UserConverterTest {
     iamAccount.setUsername("Test User");
     iamAccount.setUuid("UUID");
     iamAccount.setUserInfo(userInfo);
+    iamAccount.setGroups(Set.of());
+
+    userInfo.setIamAccount(iamAccount);
 
     ScimUser scimUser = userConverter.dtoFromEntity(iamAccount);
     assertEquals("Test user affiliation", scimUser.getIndigoUser().getAffiliation());
