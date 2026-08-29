@@ -256,21 +256,40 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   }
 
   @Override
-  public ScimGroup replace(String id, ScimGroup scimItemToBeReplaced) {
+  public ScimGroup replace(String id, ScimGroup oldScimGroup) {
 
-    IamGroup oldGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
+    IamGroup groupToUpdate = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
 
-    String displayName = scimItemToBeReplaced.getDisplayName();
-    displayNameSanityChecks(displayName);
+    String newDisplayName = oldScimGroup.getDisplayName();
+    displayNameSanityChecks(newDisplayName);
 
-    if (!isGroupNameAvailable(displayName, id)) {
-      throw new ScimResourceExistsException(displayName + " is already mapped to another group");
+    if (!isGroupNameAvailable(newDisplayName, id)) {
+      throw new ScimResourceExistsException(
+          String.format("%s is already mapped to another group", newDisplayName));
+    }
+    
+    if (!groupToUpdate.getChildrenGroups().isEmpty()) {
+      throw new IllegalArgumentException("The current group contains child group(s)");
     }
 
-    IamGroup newGroup = converter.entityFromDto(scimItemToBeReplaced);
-    groupService.updateGroup(oldGroup, newGroup);
+    if (groupToUpdate.getParentGroup() != null) {
 
-    return converter.dtoFromEntity(newGroup);
+      String fullName =
+          String.format("%s/%s", groupToUpdate.getParentGroup().getName(), newDisplayName);
+      fullNameSanityChecks(fullName);
+
+      groupToUpdate.setName(fullName);
+    } else {
+      groupToUpdate.setName(newDisplayName);
+    }
+
+    if (oldScimGroup.getIndigoGroup().getDescription() != null) {
+      groupToUpdate.setDescription(oldScimGroup.getIndigoGroup().getDescription());
+    }
+
+    groupService.updateGroup(groupToUpdate.getName(), groupToUpdate);
+
+    return converter.dtoFromEntity(groupToUpdate);
   }
 
   @Override
