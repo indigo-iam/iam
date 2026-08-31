@@ -49,7 +49,7 @@ In order to test the INDIGO IAM integration with OPA we can both use the docker 
 Run the docker compose with
 
 ```bash
-$ docker compose up -d nginx
+$ docker compose up -d nginx opa
 ```
 
 (restart `nginx` in case the `iam-be` health check takes long).

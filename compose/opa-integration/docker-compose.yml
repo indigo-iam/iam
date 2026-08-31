@@ -22,7 +22,7 @@ services:
       dockerfile: ./../../iam-login-service/docker/Dockerfile
 
     environment:
-      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=h2-test,dev
+      IAM_JAVA_OPTS: -Dlogging.level.it.infn.mw.iam.core.oauth.scope.pdp=DEBUG -Dspring-boot.run.profiles=h2-test,dev
       IAM_FORWARD_HEADERS_STRATEGY: native
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
@@ -89,10 +89,8 @@ services:
 
     healthcheck:
       test: ["CMD", "curl", "http://localhost/bundles/iam-policies.tar.gz"]
-
+    
     depends_on:
-      opa:
-        condition: service_healthy
       iam-be:
         condition: service_healthy
       client:
@@ -108,7 +106,7 @@ services:
 
     command: >
       run --server
-      --log-format text
+      --log-format json-pretty
       -c /etc/opa/conf/opa-conf.yaml
       --addr http://0.0.0.0:8181
 
@@ -127,7 +125,7 @@ services:
 
     command: >
       run --server
-      --log-format text
+      --log-format json-pretty
       -c /etc/opa/conf/local-conf.yaml
       --addr http://0.0.0.0:8181
 
