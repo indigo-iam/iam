@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
@@ -238,6 +239,28 @@ class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.detail", containsString("POST operations require a bulkId")));
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  void testBulkPayloadSizeLimitIsEnforced() throws Exception {
+
+    ScimUser user = buildUser("payload_limit_test_user", "test@email.test", "Payload", "Limit")
+      .displayName("x".repeat(ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE))
+      .build();
+
+    ScimUsersBulkRequest bulkRequest =
+        addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(),
+            objectMapper.valueToTree(user), "bulk_payload_test").build();
+
+    mvc
+      .perform(post(ScimUtils.getUsersBulkLocation())
+        .content(objectMapper.writeValueAsBytes(bulkRequest))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isPayloadTooLarge())
+      .andExpect(jsonPath("$.detail", containsString("Maximum payload size exceeded")))
+      .andExpect(jsonPath("$.detail",
+          containsString(String.valueOf(ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE))));
   }
 
 }

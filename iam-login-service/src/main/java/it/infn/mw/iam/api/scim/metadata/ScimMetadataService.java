@@ -13,14 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.scim.model;
+package it.infn.mw.iam.api.scim.metadata;
 
-public interface ScimConstants {
+import java.util.List;
 
-  final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
-  final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
-  final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
-  final int SCIM_BULK_MAX_OPERATIONS = 500;
-  final int SCIM_BULK_MAX_PAYLOAD_SIZE = 1048576;
+import it.infn.mw.iam.api.scim.model.ScimResourceType;
+import it.infn.mw.iam.api.scim.model.ScimSchema;
+import it.infn.mw.iam.api.scim.model.ScimServiceProviderConfig;
 
+/**
+ * Provides the SCIM discovery metadata (service provider configuration, resource types and
+ * schemas) advertised by the {@code /scim/ServiceProviderConfig}, {@code /scim/ResourceTypes} and
+ * {@code /scim/Schemas} endpoints.
+ */
+public interface ScimMetadataService {
+
+  ScimServiceProviderConfig serviceProviderConfig();
+
+  List<ScimResourceType> resourceTypes();
+
+  List<ScimSchema> schemas();
 }

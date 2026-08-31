@@ -28,6 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimBulkPayloadSizeExceeded;
 import it.infn.mw.iam.api.scim.exception.ScimException;
+import it.infn.mw.iam.api.scim.exception.ScimForbiddenException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -110,6 +111,14 @@ public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
   @ResponseBody
   public ScimErrorResponse handleInvalidGroupOperationException(InvalidGroupOperationError e) {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.FORBIDDEN)
+  @ExceptionHandler(ScimForbiddenException.class)
+  @ResponseBody
+  public ScimErrorResponse handleScimForbiddenException(ScimForbiddenException e) {
+
+    return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage());
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
