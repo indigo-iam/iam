@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-import java.util.Optional;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,40 +50,53 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   @Override
   public Set<String> apply(Set<String> requestedScopes, IamAccount account, String clientId) {
 
-    Set<String> userGroups =
-        account.getGroups().stream().map(ag -> ag.getGroup().getName()).collect(Collectors.toSet());
-    OpaRequest request =
-        new OpaRequest(new User(account.getUuid(), userGroups),
-            new Client(clientId), requestedScopes);
+    Set<String> userGroups = Collections.emptySet();
+    String userId = null;
+    User user = null;
 
-    Optional<OpaResponse> response = evaluatePolicy(request);
-    if (response.isPresent()) {
-      return response.get().filtered_scopes();
-    } else {
-      return super.apply(requestedScopes, account, clientId);
+    if (account != null) {
+
+      userId = account.getUuid();
+      userGroups = account.getGroups()
+        .stream()
+        .map(ag -> ag.getGroup().getUuid())
+        .collect(Collectors.toSet());
+
+      user = new User(userId, userGroups);
     }
+
+    OpaRequest request = new OpaRequest(user, new Client(clientId), requestedScopes);
+
+    return evaluatePolicy(request).filtered_scopes();
   }
 
-  public Optional<OpaResponse> evaluatePolicy(@RequestBody OpaRequest payload) {
+  public OpaResponse evaluatePolicy(@RequestBody OpaRequest payload) {
     try {
       String opaUrl = opaProperties.getUrl();
       ResponseEntity<OpaResponse> response =
           restTemplate.postForEntity(opaUrl, payload, OpaResponse.class);
 
       LOG.info("OPA response status code: {}", response.getStatusCode());
-      if (response.getStatusCode() == HttpStatus.OK) {
 
-        Optional<OpaResponse> body = Optional.ofNullable(response.getBody());
-        LOG.debug("OPA response body: {}", response.getBody());
-
-        return body;
+      if (response.getStatusCode() != HttpStatus.OK) {
+        throw new OpaServiceException(
+            String.format("OPA returned HTTP status %s", response.getStatusCode().toString()));
       }
 
-      return Optional.empty();
+      OpaResponse body = response.getBody();
+
+      if (body == null) {
+        throw new OpaServiceException("OPA returned an empty response");
+      }
+
+      LOG.debug("OPA response body: {}", response.getBody());
+
+      return body;
+
     } catch (RestClientException e) {
 
       LOG.info("Error retrieving OPA response: {}", e.getMessage());
-      return Optional.empty();
+      throw new OpaServiceException("Unable to contact OPA", e);
     }
   }
 }

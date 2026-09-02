@@ -41,12 +41,14 @@ public class DefaultScopeFilter implements ScopeFilter {
   private final IamProperties config;
   private final AccountUtils accountUtils;
   private final ScopePolicyEngine policyEngine;
+  private final IamProperties properties;
 
   public DefaultScopeFilter(IamProperties config, AccountUtils accountUtils,
-      ScopePolicyEngine policyEngine) {
+      ScopePolicyEngine policyEngine, IamProperties properties) {
     this.config = config;
     this.accountUtils = accountUtils;
     this.policyEngine = policyEngine;
+    this.properties = properties;
   }
 
   @Override
@@ -54,6 +56,9 @@ public class DefaultScopeFilter implements ScopeFilter {
       String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
+      if (properties.getOpa().isEnabled()) {
+        return filterScopes(requestedScopes, (IamAccount) null, clientId);
+      }
       return requestedScopes;
     }
     return filterScopes(requestedScopes, account.get(), clientId);

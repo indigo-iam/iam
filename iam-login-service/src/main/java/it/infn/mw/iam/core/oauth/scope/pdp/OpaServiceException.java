@@ -15,18 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-import java.util.Set;
+public class OpaServiceException extends RuntimeException {
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+  private static final long serialVersionUID = 1L;
 
-public record OpaRequest(@JsonInclude(JsonInclude.Include.NON_NULL) User user,
-    @JsonInclude(JsonInclude.Include.NON_NULL) Client client, Set<String> scopes) {
-
-  public record User(@JsonInclude(JsonInclude.Include.NON_NULL) String id,
-      @JsonInclude(JsonInclude.Include.NON_EMPTY) Set<String> groups) {
+  public OpaServiceException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  public record Client(String id) {
+  public OpaServiceException(String message) {
+    super(message);
   }
-
 }

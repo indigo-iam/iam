@@ -16,13 +16,12 @@
 package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -42,10 +41,10 @@ import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaResponse;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaServiceException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
-import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
@@ -97,21 +96,19 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(opaResponse, HttpStatus.OK));
 
-    Optional<OpaResponse> result = engine.evaluatePolicy(request);
+    OpaResponse result = engine.evaluatePolicy(request);
 
-    assertEquals(opaResponse, result.get());
+    assertEquals(opaResponse, result);
   }
 
   @Test
-  void testEvaluatePolicySuccessWithEmptyResponse() {
+  void testEvaluatePolicyWithEmptyResponse() {
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
-    Optional<OpaResponse> result = engine.evaluatePolicy(request);
-
-    assertTrue(result.isEmpty());
+    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -121,9 +118,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR));
 
-    Optional<OpaResponse> result = engine.evaluatePolicy(request);
-
-    assertTrue(result.isEmpty());
+    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -133,9 +128,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenThrow(new RestClientException("OPA unavailable"));
 
-    Optional<OpaResponse> result = engine.evaluatePolicy(request);
-
-    assertTrue(result.isEmpty());
+    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -157,28 +150,39 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  void testApplyDefaultScopePolicyEngine() {
+  void testApplyWithNullAccount() {
+
+    Set<String> filteredScopes = Set.of("openid", "profile");
+    OpaResponse opaResponse = new OpaResponse(Set.of("email"), filteredScopes);
+
+    when(opaProperties.getUrl()).thenReturn(OPA_URL);
+    when(restTemplate.postForEntity(eq(OPA_URL), any(OpaRequest.class), eq(OpaResponse.class)))
+      .thenReturn(new ResponseEntity<>(opaResponse, HttpStatus.OK));
+
+    Set<String> result = engine.apply(Set.of("openid", "profile", "email"), null, CLIENT_ID);
+
+    assertEquals(filteredScopes, result);
+  }
+
+  @Test
+  void testApplyThrowsExceptionWhenOpaIsUnavailable() {
 
     when(opaProperties.getUrl()).thenReturn(OPA_URL);
     when(restTemplate.postForEntity(eq(OPA_URL), any(OpaRequest.class), eq(OpaResponse.class)))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR));
 
     setupAccountGroupMembership(account, group, groupMembership);
-    IamScopePolicy up = initDenyScopePolicy();
-    up.linkAccount(account);
-    up.getScopes().add(OPENID);
-    up.getScopes().add(PROFILE);
-    when(account.getScopePolicies()).thenReturn(Set.of(up));
 
-    assertEquals(Set.of(), engine.apply(Set.of("openid", "profile"), account, CLIENT_ID));
+    assertThrows(OpaServiceException.class,
+        () -> engine.apply(Set.of("openid", "profile"), account, CLIENT_ID));
   }
 
   private void setupAccountGroupMembership(IamAccount account, IamGroup group,
       IamAccountGroupMembership groupMembership) {
 
-    when(account.getUuid()).thenReturn("1234");
+    when(account.getUuid()).thenReturn("a-1234");
     when(account.getGroups()).thenReturn(Set.of(groupMembership));
-    when(group.getName()).thenReturn("Analysis");
+    when(group.getUuid()).thenReturn("g-5678");
     when(groupMembership.getGroup()).thenReturn(group);
   }
 
