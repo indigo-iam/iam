@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,14 +49,13 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
   @Override
   public Set<String> apply(Set<String> requestedScopes, IamAccount account, String clientId) {
 
-    Set<String> userGroups = Collections.emptySet();
     String userId = null;
     User user = null;
 
     if (account != null) {
 
       userId = account.getUuid();
-      userGroups = account.getGroups()
+      Set<String> userGroups = account.getGroups()
         .stream()
         .map(ag -> ag.getGroup().getUuid())
         .collect(Collectors.toSet());

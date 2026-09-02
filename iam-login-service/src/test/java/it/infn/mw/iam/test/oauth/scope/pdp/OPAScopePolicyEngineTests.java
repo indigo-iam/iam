@@ -34,6 +34,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import com.google.common.collect.Sets;
+
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.IamProperties.OpaProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest;
@@ -173,8 +175,9 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
 
     setupAccountGroupMembership(account, group, groupMembership);
 
+    Set<String> requestedScopes = Sets.newHashSet("openid", "profile");
     assertThrows(OpaServiceException.class,
-        () -> engine.apply(Set.of("openid", "profile"), account, CLIENT_ID));
+        () -> engine.apply(requestedScopes, account, CLIENT_ID));
   }
 
   private void setupAccountGroupMembership(IamAccount account, IamGroup group,

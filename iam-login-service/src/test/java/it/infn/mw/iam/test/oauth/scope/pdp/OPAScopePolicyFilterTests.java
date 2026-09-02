@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(properties = {"iam.opa.enabled=true", "iam.opa.url=http://opa:8181"})
 @IamMockMvcIntegrationTest
-public class OPAScopePolicyFilterTests {
+class OPAScopePolicyFilterTests {
 
   @Autowired
   ScopeFilter pdp;
@@ -41,8 +43,9 @@ public class OPAScopePolicyFilterTests {
   @Test
   void testOPAFilterForClientCredentials() {
 
+    Set<String> requestedScopes = Sets.newHashSet("openid", "profile", "scim:read");
+
     assertThrows(OpaServiceException.class,
-        () -> pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:read"),
-            (Authentication) null, "client"));
+        () -> pdp.filterScopes(requestedScopes, (Authentication) null, "client"));
   }
 }
