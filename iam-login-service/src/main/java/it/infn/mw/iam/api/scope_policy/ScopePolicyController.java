@@ -29,6 +29,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -123,7 +124,7 @@ public class ScopePolicyController {
 
   }
 
-  @RequestMapping(value = "/iam/scope_policies/to_opa", method = RequestMethod.GET)
+  @GetMapping(value = "/iam/scope_policies/to_opa")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   public OpaScopePolicies convertToOpaPolicies() {
 

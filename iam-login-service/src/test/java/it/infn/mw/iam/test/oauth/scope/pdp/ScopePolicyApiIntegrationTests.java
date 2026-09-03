@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hamcrest.Matchers;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -117,6 +119,14 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     listPolicyWorks();
   }
 
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void testListOpaPolicyWorks() throws Exception {
+
+    listOpaPolicyWorks();
+  }
+
   public void listPolicyWorks() throws Exception {
     mvc.perform(get("/iam/scope_policies"))
       .andExpect(status().isOk())
@@ -124,6 +134,16 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(jsonPath("$").value(Matchers.hasSize(1)))
       .andExpect(jsonPath("$[0].description").exists())
       .andExpect(jsonPath("$[0].description").value("Default Permit ALL policy"));
+  }
+
+  public ResultActions listOpaPolicyWorks() throws Exception {
+
+    return mvc.perform(get("/iam/scope_policies/to_opa"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.policies").isArray())
+      .andExpect(jsonPath("$.policies[0].actor").doesNotExist())
+      .andExpect(jsonPath("$.policies[0].description").exists())
+      .andExpect(jsonPath("$.policies[0].description").value("Default Permit ALL policy"));
   }
 
   @Test
@@ -161,6 +181,29 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   }
 
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaUserPolicyTest() throws Exception {
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    IamScopePolicy p = initDenyScopePolicy();
+    p.setDescription("Deny all to test user");
+    p.setAccount(testAccount);
+
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks()
+      .andExpect(jsonPath("$.policies[1].actor.id").value(equalTo(testAccount.getUuid())))
+      .andExpect(jsonPath("$.policies[1].actor.username").value(equalTo(testAccount.getUsername())))
+      .andExpect(jsonPath("$.policies[1].actor.type").value(equalTo("account")))
+      .andExpect(jsonPath("$.policies[1].description").value("Deny all to test user"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())));
+  }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
@@ -195,6 +238,64 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
         .value(equalTo(locationProvider.groupLocation(prodGroup.getUuid()))))
       .andExpect(jsonPath("$[1].scopes").doesNotExist());
 
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaGroupPolicyTest() throws Exception {
+
+    IamGroup prodGroup = groupRepo.findByName("Production")
+      .orElseThrow(() -> new AssertionError("Expected production group not found"));
+
+    IamScopePolicy p = initDenyScopePolicy();
+    p.setDescription("Deny all to Production group members");
+    p.setGroup(prodGroup);
+
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks()
+      .andExpect(jsonPath("$.policies[1].actor.id").value(equalTo(prodGroup.getUuid())))
+      .andExpect(jsonPath("$.policies[1].actor.name").value(equalTo(prodGroup.getName())))
+      .andExpect(jsonPath("$.policies[1].actor.type").value(equalTo("group")))
+      .andExpect(
+          jsonPath("$.policies[1].description").value("Deny all to Production group members"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaDefaultPolicyTest() throws Exception {
+
+    IamScopePolicy p = initPermitScopePolicy();
+    p.setDescription("Allow openid scope to everybody");
+
+    p.setScopes(Set.of("openid", "profile"));
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks().andExpect(jsonPath("$.policies[1].actor").doesNotExist())
+      .andExpect(jsonPath("$.policies[1].description").value("Allow openid scope to everybody"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())))
+      .andExpect(jsonPath("$.policies[1].scopes")
+        .value(Matchers.containsInAnyOrder(p.getScopes().toArray())));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void regexpPolicyNotShownInOpa() throws Exception {
+
+    IamScopePolicy p = initPermitScopePolicy();
+    p.setDescription("Allow openid scope to everybody");
+    p.setMatchingPolicy(MatchingPolicy.REGEXP);
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks().andExpect(jsonPath("$.policies").value(Matchers.hasSize(1)));
   }
 
   @Test

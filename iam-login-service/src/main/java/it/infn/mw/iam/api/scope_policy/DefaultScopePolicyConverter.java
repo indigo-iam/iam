@@ -138,9 +138,7 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
       scopes.addAll(sp.getScopes());
     }
 
-    OpaPolicyDTO dto = new OpaPolicyDTO(actor, sp.getDescription(), matchingPolicy, rule, scopes);
-
-    return dto;
+    return new OpaPolicyDTO(actor, sp.getDescription(), matchingPolicy, rule, scopes);
   }
 
 }
