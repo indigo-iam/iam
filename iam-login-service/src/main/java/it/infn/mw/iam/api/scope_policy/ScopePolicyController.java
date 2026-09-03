@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.scope_policy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.validation.Valid;
 
@@ -35,8 +36,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
+import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
+import it.infn.mw.iam.persistence.model.PolicyRule;
 
 
 @RestController
@@ -66,8 +74,6 @@ public class ScopePolicyController {
     return dtos;
   }
 
-
-
   @RequestMapping(value = "/iam/scope_policies", method = RequestMethod.POST)
   @ResponseStatus(code = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -96,15 +102,15 @@ public class ScopePolicyController {
   @RequestMapping(value = "/iam/scope_policies/{id}", method = RequestMethod.PUT)
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void updateScopePolicy(@PathVariable Long id,
-      @Valid @RequestBody ScopePolicyDTO policy, BindingResult validationResult) {
+  public void updateScopePolicy(@PathVariable Long id, @Valid @RequestBody ScopePolicyDTO policy,
+      BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
       throw buildValidationError(validationResult);
     }
 
     policy.setId(id);
-    
+
     policyService.updateScopePolicy(policy);
   }
 
@@ -115,6 +121,48 @@ public class ScopePolicyController {
 
     policyService.deleteScopePolicyById(id);
 
+  }
+
+  @RequestMapping(value = "/iam/scope_policies/to_opa", method = RequestMethod.GET)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
+  public OpaScopePolicies convertToOpaPolicies() {
+
+    Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();
+    List<OpaScopePolicies.OpaPolicyDTO> dtos = new ArrayList<>();
+
+    policies.forEach(p -> {
+      if (!p.getMatchingPolicy().equals(MatchingPolicy.REGEXP)) {
+        dtos.add(converter.toOpaPolicyDTO(p));
+      }
+    });
+
+    return new OpaScopePolicies(dtos);
+  }
+
+  public record OpaScopePolicies(List<OpaPolicyDTO> policies) {
+
+    public record OpaPolicyDTO(@JsonInclude(JsonInclude.Include.NON_NULL) Actor actor,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) String description,
+        MatchingPolicy matchingPolicy, PolicyRule rule,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Set<String> scopes) {
+
+      @JsonPropertyOrder({ "id", "name", "username", "type" })
+      public record Actor(String id, @JsonIgnore String value, String type) {
+
+        @JsonProperty("username")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public String username() {
+          return "account".equals(type) ? value : null;
+        }
+
+        @JsonProperty("name")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public String name() {
+          return "group".equals(type) ? value : null;
+        }
+
+      }
+    }
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
@@ -128,7 +176,7 @@ public class ScopePolicyController {
   public ErrorDTO validationError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
-  
+
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(DuplicateScopePolicyError.class)
   public ErrorDTO duplicatePolicyError(Exception ex) {
