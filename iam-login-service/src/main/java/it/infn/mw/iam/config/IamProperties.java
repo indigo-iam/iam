@@ -711,6 +711,7 @@ public class IamProperties {
 
     private boolean enabled = true;
     private boolean earlyFail = false;
+    private OpaProperties opa = new OpaProperties();
 
     public boolean isEnabled() {
       return enabled;
@@ -727,27 +728,36 @@ public class IamProperties {
     public void setEarlyFail(boolean earlyFail) {
       this.earlyFail = earlyFail;
     }
-  }
 
-  public static class OpaProperties {
-    private boolean enabled = false;
-    private String url;
+    public static class OpaProperties {
+      private boolean enabled = false;
+      private String url;
 
-    public void setEnabled(boolean enabled) {
-      this.enabled = enabled;
+      public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+      }
+
+      public boolean isEnabled() {
+        return this.enabled;
+      }
+
+      public void setUrl(String url) {
+        this.url = url;
+      }
+
+      public String getUrl() {
+        return this.url;
+      }
     }
 
-    public boolean isEnabled() {
-      return this.enabled;
+    public OpaProperties getOpa() {
+      return opa;
     }
 
-    public void setUrl(String url) {
-      this.url = url;
+    public void setOpa(OpaProperties opa) {
+      this.opa = opa;
     }
 
-    public String getUrl() {
-      return this.url;
-    }
   }
 
   private String host;
@@ -761,8 +771,6 @@ public class IamProperties {
   private ScopeAuthz scopeAuthz = new ScopeAuthz();
 
   private boolean showSql = false;
-
-  private OpaProperties opa = new OpaProperties();
 
   private LocalResources localResources = new LocalResources();
 
@@ -882,14 +890,6 @@ public class IamProperties {
 
   public void setShowSql(boolean showSql) {
     this.showSql = showSql;
-  }
-
-  public OpaProperties getOpa() {
-    return opa;
-  }
-
-  public void setOpa(OpaProperties opa) {
-    this.opa = opa;
   }
 
   public LoginButtonProperties getLoginButton() {

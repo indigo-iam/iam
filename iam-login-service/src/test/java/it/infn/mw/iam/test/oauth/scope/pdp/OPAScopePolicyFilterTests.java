@@ -34,7 +34,8 @@ import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyException;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
-@TestPropertySource(properties = {"iam.opa.enabled=true", "iam.opa.url=http://opa:8181"})
+@TestPropertySource(
+    properties = {"iam.scope-authz.opa.enabled=true", "iam.scope-authz.opa.url=http://opa:8181"})
 @IamMockMvcIntegrationTest
 class OPAScopePolicyFilterTests {
 

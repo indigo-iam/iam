@@ -57,7 +57,7 @@ public class DefaultScopeFilter implements ScopeFilter {
       String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
-      if (properties.getOpa().isEnabled()) {
+      if (properties.getScopeAuthz().getOpa().isEnabled()) {
         return filterScopes(requestedScopes, (IamAccount) null, clientId);
       }
       return requestedScopes;

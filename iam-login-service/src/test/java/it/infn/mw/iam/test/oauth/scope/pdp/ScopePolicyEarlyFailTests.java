@@ -76,7 +76,7 @@ class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
   void tesScopesAreAllowed() {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found!"));;
+      .orElseThrow(() -> new AssertionError("Expected test account not found!"));
 
     IamScopePolicy up = initDenyScopePolicy();
     up.linkAccount(testAccount);

@@ -29,7 +29,8 @@ import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyEngine;
 
 @SpringBootTest(classes = {IamLoginService.class})
-@TestPropertySource(properties = {"iam.opa.enabled=true", "iam.opa.url=http://opa:8181"})
+@TestPropertySource(
+    properties = {"iam.scope-authz.opa.enabled=true", "iam.scope-authz.opa.url=http://opa:8181"})
 class OPAConfigTests {
 
   @Autowired
@@ -48,8 +49,8 @@ class OPAConfigTests {
   @Test
   void testCheckOpaProperties() {
 
-    assertEquals(true, properties.getOpa().isEnabled());
-    assertEquals("http://opa:8181", properties.getOpa().getUrl());
+    assertEquals(true, properties.getScopeAuthz().getOpa().isEnabled());
+    assertEquals("http://opa:8181", properties.getScopeAuthz().getOpa().getUrl());
 
   }
 

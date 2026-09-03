@@ -37,7 +37,7 @@ import org.springframework.web.client.RestTemplate;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.config.IamProperties.OpaProperties;
+import it.infn.mw.iam.config.IamProperties.ScopeAuthz.OpaProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;

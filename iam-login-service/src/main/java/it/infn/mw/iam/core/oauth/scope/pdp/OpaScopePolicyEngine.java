@@ -27,7 +27,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.config.IamProperties.OpaProperties;
+import it.infn.mw.iam.config.IamProperties.ScopeAuthz.OpaProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;
 import it.infn.mw.iam.persistence.model.IamAccount;
