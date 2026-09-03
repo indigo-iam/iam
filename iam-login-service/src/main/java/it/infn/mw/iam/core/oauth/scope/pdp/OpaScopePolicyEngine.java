@@ -77,14 +77,14 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
       LOG.info("OPA response status code: {}", response.getStatusCode());
 
       if (response.getStatusCode() != HttpStatus.OK) {
-        throw new OpaServiceException(
+        throw new ScopePolicyException(
             String.format("OPA returned HTTP status %s", response.getStatusCode().toString()));
       }
 
       OpaResponse body = response.getBody();
 
       if (body == null) {
-        throw new OpaServiceException("OPA returned an empty response");
+        throw new ScopePolicyException("OPA returned an empty response");
       }
 
       LOG.debug("OPA response body: {}", response.getBody());
@@ -93,8 +93,8 @@ public class OpaScopePolicyEngine extends DefaultScopePolicyEngine {
 
     } catch (RestClientException e) {
 
-      LOG.info("Error retrieving OPA response: {}", e.getMessage());
-      throw new OpaServiceException("Unable to contact OPA", e);
+      LOG.error("Error retrieving OPA response: {}", e.getMessage());
+      throw new ScopePolicyException("Unable to contact OPA", e);
     }
   }
 }

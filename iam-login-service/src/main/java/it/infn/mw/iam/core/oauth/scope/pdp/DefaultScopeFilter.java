@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -71,8 +72,15 @@ public class DefaultScopeFilter implements ScopeFilter {
     filteredScopes.addAll(requestedScopes);
 
     filteredScopes.retainAll(adminPolicies(requestedScopes, account));
-    if (config.isEnableScopeAuthz()) {
+    if (config.getScopeAuthz().isEnabled()) {
+
+      Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
       filteredScopes.retainAll(policyEngine.apply(filteredScopes, account, clientId));
+
+      if (config.getScopeAuthz().isEarlyFail() && !cleanedRequestedScopes.equals(filteredScopes)) {
+
+        throw new InvalidRequestException("Scopes not allowed by the scope policy");
+      }
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
     return filteredScopes;

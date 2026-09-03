@@ -43,7 +43,7 @@ import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.Client;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaRequest.User;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaResponse;
 import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
-import it.infn.mw.iam.core.oauth.scope.pdp.OpaServiceException;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -110,7 +110,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
-    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
+    assertThrows(ScopePolicyException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -120,7 +120,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenReturn(new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR));
 
-    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
+    assertThrows(ScopePolicyException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -130,7 +130,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     when(restTemplate.postForEntity(OPA_URL, request, OpaResponse.class))
       .thenThrow(new RestClientException("OPA unavailable"));
 
-    assertThrows(OpaServiceException.class, () -> engine.evaluatePolicy(request));
+    assertThrows(ScopePolicyException.class, () -> engine.evaluatePolicy(request));
   }
 
   @Test
@@ -176,7 +176,7 @@ class OPAScopePolicyEngineTests extends ScopePolicyTestUtils {
     setupAccountGroupMembership(account, group, groupMembership);
 
     Set<String> requestedScopes = Sets.newHashSet("openid", "profile");
-    assertThrows(OpaServiceException.class,
+    assertThrows(ScopePolicyException.class,
         () -> engine.apply(requestedScopes, account, CLIENT_ID));
   }
 

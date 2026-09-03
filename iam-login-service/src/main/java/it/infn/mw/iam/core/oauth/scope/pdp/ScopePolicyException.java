@@ -15,15 +15,27 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-public class OpaServiceException extends RuntimeException {
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
+
+public class ScopePolicyException extends OAuth2Exception {
 
   private static final long serialVersionUID = 1L;
 
-  public OpaServiceException(String message, Throwable cause) {
+  public ScopePolicyException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  public OpaServiceException(String message) {
+  public ScopePolicyException(String message) {
     super(message);
+  }
+
+  @Override
+  public String getOAuth2ErrorCode() {
+    return "server_error";
+  }
+
+  @Override
+  public int getHttpErrorCode() {
+    return 500;
   }
 }

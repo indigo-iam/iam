@@ -18,36 +18,52 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.Set;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyException;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamScopePolicy;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
+import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ExtendWith(SpringExtension.class)
-@TestPropertySource(properties = {"iam.opa.enabled=true", "iam.opa.url=http://opa:8181"})
+@TestPropertySource(properties = {"iam.scope-authz.early-fail=true"})
 @IamMockMvcIntegrationTest
-class OPAScopePolicyFilterTests {
+public class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
+
+  @Autowired
+  IamScopePolicyRepository policyScopeRepo;
+
+  @Autowired
+  IamAccountRepository accountRepo;
 
   @Autowired
   ScopeFilter pdp;
 
   @Test
-  void testOPAFilterForClientCredentials() {
+  void testEarlyFailWhenScopeIsNotAllowed() {
 
-    Set<String> requestedScopes = Sets.newHashSet("openid", "profile", "scim:read");
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found!"));;
 
-    ScopePolicyException exception = assertThrows(ScopePolicyException.class,
-        () -> pdp.filterScopes(requestedScopes, (Authentication) null, "client"));
-    assertEquals("Unable to contact OPA", exception.getMessage());
+    IamScopePolicy up = initDenyScopePolicy();
+    up.linkAccount(testAccount);
+    up.getScopes().add(PROFILE);
+    policyScopeRepo.save(up);
+
+    InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> pdp
+      .filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount, CLIENT_ID));
+    assertEquals("Scopes not allowed by the scope policy", exception.getMessage());
+
+    policyScopeRepo.delete(up);
   }
 }
