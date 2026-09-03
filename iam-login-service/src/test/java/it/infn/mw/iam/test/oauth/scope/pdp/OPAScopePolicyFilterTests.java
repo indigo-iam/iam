@@ -48,6 +48,9 @@ class OPAScopePolicyFilterTests {
 
     ScopePolicyException exception = assertThrows(ScopePolicyException.class,
         () -> pdp.filterScopes(requestedScopes, (Authentication) null, "client"));
+
     assertEquals("Unable to contact OPA", exception.getMessage());
+    assertEquals("server_error", exception.getOAuth2ErrorCode());
+    assertEquals(500, exception.getHttpErrorCode());
   }
 }

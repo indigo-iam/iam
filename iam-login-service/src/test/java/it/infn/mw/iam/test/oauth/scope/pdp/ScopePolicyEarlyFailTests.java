@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +37,11 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(properties = {"iam.scope-authz.early-fail=true"})
 @IamMockMvcIntegrationTest
-public class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
+class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
 
   @Autowired
   IamScopePolicyRepository policyScopeRepo;
@@ -53,16 +56,37 @@ public class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
   void testEarlyFailWhenScopeIsNotAllowed() {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
-      .orElseThrow(() -> new AssertionError("Expected test account not found!"));;
+      .orElseThrow(() -> new AssertionError("Expected test account not found!"));
 
     IamScopePolicy up = initDenyScopePolicy();
     up.linkAccount(testAccount);
     up.getScopes().add(PROFILE);
     policyScopeRepo.save(up);
 
-    InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> pdp
-      .filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount, CLIENT_ID));
+    Set<String> requestedScopes = Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE);
+
+    InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+        () -> pdp.filterScopes(requestedScopes, testAccount, CLIENT_ID));
     assertEquals("Scopes not allowed by the scope policy", exception.getMessage());
+
+    policyScopeRepo.delete(up);
+  }
+
+  @Test
+  void tesScopesAreAllowed() {
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found!"));;
+
+    IamScopePolicy up = initDenyScopePolicy();
+    up.linkAccount(testAccount);
+    up.getScopes().add(WHATEVER);
+    policyScopeRepo.save(up);
+
+    Set<String> requestedScopes = Sets.newHashSet(OPENID, PROFILE);
+    Set<String> filteredScopes = pdp.filterScopes(requestedScopes, testAccount, CLIENT_ID);
+
+    assertEquals(requestedScopes, filteredScopes);
 
     policyScopeRepo.delete(up);
   }

@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
+@SuppressWarnings("deprecation")
 public class ScopePolicyException extends OAuth2Exception {
 
   private static final long serialVersionUID = 1L;
