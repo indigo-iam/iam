@@ -17,18 +17,16 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Set;
 
-import org.springframework.security.core.Authentication;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
-import it.infn.mw.iam.persistence.model.IamAccount;
+public record OpaRequest(@JsonInclude(JsonInclude.Include.NON_NULL) User user,
+    @JsonInclude(JsonInclude.Include.NON_NULL) Client client, Set<String> scopes) {
 
-@SuppressWarnings("deprecation")
-public interface ScopeFilter {
+  public record User(@JsonInclude(JsonInclude.Include.NON_NULL) String id,
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) Set<String> groups) {
+  }
 
-  public Set<String> filterScopes(Set<String> scopes, Authentication authn, String clientId);
-
-  public Set<String> filterScopes(Set<String> scopes, IamAccount account, String clientId);
-
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
+  public record Client(String id) {
+  }
 
 }

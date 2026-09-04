@@ -35,3 +35,5 @@ iam-voms-aa/IAM_LOG_PATH:=
 
 # .factorypath files
 **/.factorypath
+opa-cli
+iam-policies.tar.gz

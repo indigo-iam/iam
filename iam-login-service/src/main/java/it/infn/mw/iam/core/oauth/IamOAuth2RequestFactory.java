@@ -89,7 +89,8 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     Authentication authn = SecurityContextHolder.getContext().getAuthentication();
 
-    authorizationRequestBuilder.filterRequestedScopes(inputParams, authn);
+    authorizationRequestBuilder.filterRequestedScopes(inputParams, authn,
+        inputParams.get(OAuth2Utils.CLIENT_ID));
     audienceRequestValidator.validateAndUpdateAudienceRequest(inputParams);
 
     AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);

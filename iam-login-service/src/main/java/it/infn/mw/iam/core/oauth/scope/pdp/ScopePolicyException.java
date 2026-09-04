@@ -15,20 +15,28 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
-import java.util.Set;
-
-import org.springframework.security.core.Authentication;
-
-import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
-import it.infn.mw.iam.persistence.model.IamAccount;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
 @SuppressWarnings("deprecation")
-public interface ScopeFilter {
+public class ScopePolicyException extends OAuth2Exception {
 
-  public Set<String> filterScopes(Set<String> scopes, Authentication authn, String clientId);
+  private static final long serialVersionUID = 1L;
 
-  public Set<String> filterScopes(Set<String> scopes, IamAccount account, String clientId);
+  public ScopePolicyException(String message, Throwable cause) {
+    super(message, cause);
+  }
 
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder);
+  public ScopePolicyException(String message) {
+    super(message);
+  }
 
+  @Override
+  public String getOAuth2ErrorCode() {
+    return "server_error";
+  }
+
+  @Override
+  public int getHttpErrorCode() {
+    return 500;
+  }
 }

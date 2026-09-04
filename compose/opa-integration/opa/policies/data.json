@@ -1,0 +1,43 @@
+{   "policies":
+    [
+        {
+            "actor": {
+                "id": "73f16d93-2441-4a50-88ff-85360d78c6b5",
+                "name": "Admin User",
+                "type": "account"
+            },
+            "description": "Deny offline_access scope to Admin User",
+            "matchingPolicy": "EQ",
+            "rule": "DENY",
+            "scopes": [
+                "offline_access"
+            ]
+        },
+        {
+            "actor": {
+                "id": "80e5fb8d-b7c8-451a-89ba-346ae278a66f",
+                "name": "Test User",
+                "type": "account"
+            },
+            "description": "Deny email scope to Test User",
+            "matchingPolicy": "EQ",
+            "rule": "DENY",
+            "scopes": [
+                "email"
+            ]
+        },
+        {
+            "actor": {
+                "id": "client",
+                "name": "Test Client",
+                "type": "client"
+            },
+            "description": "Deny phone scope to Test Client",
+            "matchingPolicy": "EQ",
+            "rule": "DENY",
+            "scopes": [
+                "phone"
+            ]
+        }
+    ]
+}
