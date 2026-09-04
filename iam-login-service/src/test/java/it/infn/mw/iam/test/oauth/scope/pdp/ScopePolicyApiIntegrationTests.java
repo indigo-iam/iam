@@ -138,7 +138,7 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   public ResultActions listOpaPolicyWorks() throws Exception {
 
-    return mvc.perform(get("/iam/scope_policies/to_opa"))
+    return mvc.perform(get("/iam/scope_policies/opa"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.policies").isArray())
       .andExpect(jsonPath("$.policies[0].actor").doesNotExist())

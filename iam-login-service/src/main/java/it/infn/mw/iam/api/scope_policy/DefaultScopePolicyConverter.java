@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaScopePolicies.OpaPolicyDTO;
-import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaScopePolicies.OpaPolicyDTO.Actor;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy.Actor;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
@@ -118,7 +118,7 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
     return scopePolicy;
   }
 
-  public OpaPolicyDTO toOpaPolicyDTO(IamScopePolicy sp) {
+  public OpaPolicy toOpaPolicyDTO(IamScopePolicy sp) {
 
     Actor actor = null;
 
@@ -130,15 +130,13 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
       actor = new Actor(sp.getGroup().getUuid(), sp.getGroup().getName(), "group");
     }
 
-    MatchingPolicy matchingPolicy = sp.getMatchingPolicy();
-    PolicyRule rule = sp.getRule();
-
     Set<String> scopes = Sets.newHashSet();
     if (!sp.getScopes().isEmpty()) {
       scopes.addAll(sp.getScopes());
     }
 
-    return new OpaPolicyDTO(actor, sp.getDescription(), matchingPolicy, rule, scopes);
+    return new OpaPolicy(actor, sp.getDescription(), sp.getMatchingPolicy(), sp.getRule(),
+        scopes);
   }
 
 }

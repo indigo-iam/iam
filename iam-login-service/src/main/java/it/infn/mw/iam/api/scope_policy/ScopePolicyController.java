@@ -124,12 +124,12 @@ public class ScopePolicyController {
 
   }
 
-  @GetMapping(value = "/iam/scope_policies/to_opa")
+  @GetMapping(value = "/iam/scope_policies/opa")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
-  public OpaScopePolicies convertToOpaPolicies() {
+  public OpaPolicies convertToOpaPolicies() {
 
     Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();
-    List<OpaScopePolicies.OpaPolicyDTO> dtos = new ArrayList<>();
+    List<OpaPolicies.OpaPolicy> dtos = new ArrayList<>();
 
     policies.forEach(p -> {
       if (!p.getMatchingPolicy().equals(MatchingPolicy.REGEXP)) {
@@ -137,12 +137,12 @@ public class ScopePolicyController {
       }
     });
 
-    return new OpaScopePolicies(dtos);
+    return new OpaPolicies(dtos);
   }
 
-  public record OpaScopePolicies(List<OpaPolicyDTO> policies) {
+  public record OpaPolicies(List<OpaPolicy> policies) {
 
-    public record OpaPolicyDTO(@JsonInclude(JsonInclude.Include.NON_NULL) Actor actor,
+    public record OpaPolicy(@JsonInclude(JsonInclude.Include.NON_NULL) Actor actor,
         @JsonInclude(JsonInclude.Include.NON_EMPTY) String description,
         MatchingPolicy matchingPolicy, PolicyRule rule,
         @JsonInclude(JsonInclude.Include.NON_EMPTY) Set<String> scopes) {
