@@ -110,8 +110,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
           if (userAuth.isPresent()) {
             Set<String> loa = new HashSet<>(DEFAULT_LOA);
-            List<String> remoteLoa = firstOfAsList(userAuth.get().getAdditionalInfo(),
-                Set.of("eduPersonAssurance", "urn:oid:1.3.6.1.4.1.5923.1.1.1.11"));
+            List<String> remoteLoa =
+                firstOfAsList(userAuth.get().getAdditionalInfo(), Set.of("eduPersonAssurance",
+                    "urn:oid:1.3.6.1.4.1.5923.1.1.1.11", "eduperson_assurance"));
             if (!remoteLoa.isEmpty()) {
               loa.addAll(remoteLoa);
             }
@@ -132,8 +133,8 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
                 .add(format(SCOPED_FORMAT, account.get().getAffiliation(), scopeDomain));
             }
             List<String> externalScopedAffiliations = firstOfAsList(
-                userAuth.get().getAdditionalInfo(),
-                Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));
+                userAuth.get().getAdditionalInfo(), Set.of("EPSA", "eduPersonScopedAffiliation",
+                    "urn:oid:1.3.6.1.4.1.5923.1.1.1.9", "eduperson_scoped_affiliation"));
             if (!externalScopedAffiliations.isEmpty()) {
               scopedAffiliations.addAll(externalScopedAffiliations);
             }
@@ -142,7 +143,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           return null;
         case AarcExtraClaimNames.SCHAC_HOME_ORGANIZATION:
           if (userAuth.isPresent()) {
-            return userAuth.get().getAdditionalInfo().get("urn:oid:1.3.6.1.4.1.25178.1.2.9");
+            return firstOfAsString(userAuth.get().getAdditionalInfo(),
+                Set.of("schacHomeOrganization", "urn:oid:1.3.6.1.4.1.25178.1.2.9",
+                    "schac_home_organization"));
           }
           return null;
         default:
@@ -154,7 +157,6 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
   }
 
   private List<String> firstOfAsList(Map<String, Object> additionalInfo, Set<String> keys) {
-
     for (String key : keys) {
       Object value = additionalInfo.get(key);
 
@@ -166,7 +168,16 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         return List.of(stringValue);
       }
     }
-
     return List.of();
+  }
+
+  private String firstOfAsString(Map<String, Object> additionalInfo, Set<String> keys) {
+    for (String key : keys) {
+      Object value = additionalInfo.get(key);
+      if (value != null) {
+        return String.valueOf(value);
+      }
+    }
+    return null;
   }
 }
