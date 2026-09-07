@@ -54,7 +54,7 @@ public class WithMockOAuth2SecurityContextFactory
     userAuth.setAuthenticated(true);
     userAuth.setAuthorities(AuthorityUtils.createAuthorityList(annotation.authorities()));
     userAuth.setName(annotation.user());
-    Map<String, String> additionalInfo = Maps.newHashMap();
+    Map<String, Object> additionalInfo = Maps.newHashMap();
 
     if (annotation.externalAuthenticationType().equals(ExternalAuthenticationType.OIDC)) {
       userAuth.setSourceClass(OidcExternalAuthenticationToken.class.getName());

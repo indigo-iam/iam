@@ -59,7 +59,7 @@ public class SamlExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
+  public Map<String, Object> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
 
     return visitor.buildInfoMap(this);
   }
@@ -93,7 +93,7 @@ public class SamlExternalAuthenticationToken
       ri.setSuggestedUsername(samlAttributes.get(EPPN));
     }
 
-    Map<String, String> additionalAttrs = Maps.newHashMap();
+    Map<String, Object> additionalAttrs = Maps.newHashMap();
     additionalAttrs.putAll(buildAuthnInfoMap());
 
     ri.setAdditionalAttributes(additionalAttrs);
@@ -107,9 +107,9 @@ public class SamlExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap() {
+  public Map<String, Object> buildAuthnInfoMap() {
 
-    Map<String, String> authnInfo = new HashMap<>();
+    Map<String, Object> authnInfo = new HashMap<>();
 
     authnInfo.put(TYPE_ATTR, SAML_TYPE);
 
