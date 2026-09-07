@@ -112,7 +112,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
             Set<String> loa = new HashSet<>(DEFAULT_LOA);
             List<String> remoteLoa = firstOfAsList(userAuth.get().getAdditionalInfo(),
                 Set.of("eduPersonAssurance", "urn:oid:1.3.6.1.4.1.5923.1.1.1.11"));
-            if (remoteLoa != null) {
+            if (!remoteLoa.isEmpty()) {
               loa.addAll(remoteLoa);
             }
             return loa;
@@ -134,7 +134,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
             List<String> externalScopedAffiliations = firstOfAsList(
                 userAuth.get().getAdditionalInfo(),
                 Set.of("EPSA", "eduPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.5923.1.1.1.9"));
-            if (externalScopedAffiliations != null) {
+            if (!externalScopedAffiliations.isEmpty()) {
               scopedAffiliations.addAll(externalScopedAffiliations);
             }
             return scopedAffiliations;
@@ -167,6 +167,6 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
       }
     }
 
-    return null;
+    return List.of();
   }
 }
