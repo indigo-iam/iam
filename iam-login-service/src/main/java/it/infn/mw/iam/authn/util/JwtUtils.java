@@ -17,8 +17,6 @@ package it.infn.mw.iam.authn.util;
 
 import static java.util.Collections.emptyMap;
 
-import java.net.URI;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -55,37 +53,13 @@ public class JwtUtils {
     // empty on purpose
   }
 
-  public static Map<String, String> getClaimsAsMap(JWT jwt) {
-
-    Map<String, String> claimsMap = Maps.newHashMap();
-
-    JWTClaimsSet claims;
-
+  public static Map<String, Object> getClaimsAsMap(JWT jwt) {
     try {
-      claims = jwt.getJWTClaimsSet();
+      return jwt.getJWTClaimsSet().getClaims();
     } catch (ParseException e) {
       LOG.warn("Error parsing jwt claims: {}", e.getMessage(), e);
       return emptyMap();
     }
-
-    for (String claimName : claims.getClaims().keySet()) {
-
-      Object claimValue = claims.getClaim(claimName);
-
-      if (claimValue instanceof String) {
-        claimsMap.put(claimName, (String) claimValue);
-      } else if (claimValue instanceof Number) {
-        claimsMap.put(claimName, String.valueOf(claimValue));
-      } else if (claimValue instanceof URI) {
-        claimsMap.put(claimName, ((URI) claimValue).toString());
-      } else if (claimValue instanceof URL) {
-        claimsMap.put(claimName, ((URL) claimValue).toString());
-      } else {
-        LOG.warn("Unsupported claim type '{}' for claim '{}'... skipping it",
-            claimValue.getClass().getName(), claimName);
-      }
-    }
-    return claimsMap;
   }
 
   public static Map<String, Object> getClaimsAsMap(UserInfoResponse userinfo) {
