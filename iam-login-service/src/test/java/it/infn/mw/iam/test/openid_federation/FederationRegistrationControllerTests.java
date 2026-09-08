@@ -73,7 +73,8 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @ActiveProfiles({"h2-test", "openid-federation"})
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
@@ -118,7 +119,8 @@ class FederationRegistrationControllerTests {
   @Test
   void testSuccessfullExplicitClientRegistration() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
 
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
@@ -272,7 +274,8 @@ class FederationRegistrationControllerTests {
   @Test
   void testRelyingPartyClientUpdateThroughApiClientsEndpointReturnsException() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -332,7 +335,8 @@ class FederationRegistrationControllerTests {
   @Transactional
   void testClientDisabledWhenExpired() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, REDIRECT_URI, null, null, clock);
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(null, null, REDIRECT_URI, null, null, clock);
     ClientDetailsEntity client = clientRepo.findByClientId("client-cred").orElseThrow();
 
     long oneDayInMillis = 24 * 60 * 60 * 1000;
@@ -369,7 +373,8 @@ class FederationRegistrationControllerTests {
   @Test
   void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 

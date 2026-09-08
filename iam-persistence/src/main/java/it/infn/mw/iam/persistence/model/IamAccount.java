@@ -365,8 +365,7 @@ public class IamAccount implements Serializable {
 
   private void sanitizePrimarySshKey() {
 
-    if (!sshKeys.isEmpty()
-        && sshKeys.stream().filter(IamSshKey::isPrimary).findAny().isEmpty()) {
+    if (!sshKeys.isEmpty() && sshKeys.stream().filter(IamSshKey::isPrimary).findAny().isEmpty()) {
       sshKeys.iterator().next().setPrimary(true);
     }
   }

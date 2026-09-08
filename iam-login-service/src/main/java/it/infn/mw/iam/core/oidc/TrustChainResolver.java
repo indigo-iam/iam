@@ -57,10 +57,9 @@ public class TrustChainResolver {
       if (!"https".equalsIgnoreCase(baseUrl.getProtocol())) {
         throw invalidTrustChain("Only HTTPS URLs are allowed: " + entityId);
       }
-      URL metadataUrl =
-          new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
-              : "/.well-known/openid-federation");
-
+      String normalizedEntityId =
+          entityId.endsWith("/") ? entityId.substring(0, entityId.length() - 1) : entityId;
+      URL metadataUrl = new URL(normalizedEntityId + "/.well-known/openid-federation");
       String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
       return EntityStatement.parse(jwt);
     } catch (MalformedURLException e) {

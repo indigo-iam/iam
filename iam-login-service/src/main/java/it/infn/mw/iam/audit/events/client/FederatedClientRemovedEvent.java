@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.scim.model;
+package it.infn.mw.iam.audit.events.client;
 
-public interface ScimConstants {
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 
-  final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
-  final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
-  final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
-  final String AARC_USER_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:User";
-  final String AARC_GROUP_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:Group";
+public class FederatedClientRemovedEvent extends FederatedClientEvent {
+
+  private static final long serialVersionUID = 1L;
+
+  public FederatedClientRemovedEvent(Object source, IamFederatedClientEntity client) {
+    super(source, client, "Federated client removed");
+  }
 }

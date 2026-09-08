@@ -18,12 +18,19 @@ package it.infn.mw.iam.api.scim.converter;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
+import it.infn.mw.iam.api.scim.model.ScimAarcName;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
+import it.infn.mw.iam.api.scim.model.ScimAffiliation;
+import it.infn.mw.iam.api.scim.model.ScimAssurance;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
+import it.infn.mw.iam.api.scim.model.ScimEntitlement;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
@@ -46,6 +53,12 @@ import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
 @Service
 public class UserConverter implements Converter<ScimUser, IamAccount> {
+
+  public static final String REFEDS_ASSURANCE_URI = "https://refeds.org/assurance";
+  public static final String REFEDS_ASSURANCE_IAP_LOW_URI = "https://refeds.org/assurance/IAP/low";
+
+  public static final Set<String> DEFAULT_LOA =
+      Set.of(REFEDS_ASSURANCE_URI, REFEDS_ASSURANCE_IAP_LOW_URI);
 
   private final ScimResourceLocationProvider resourceLocationProvider;
 
@@ -273,6 +286,29 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
     }
 
+    builder.enableAarc(scimProperties.isEnableAarc());
+
+    if (scimProperties.isEnableAarc()) {
+      builder.voPersonId(entity.getUuid() + "@" + iamProperties.getOrganisation().getName());
+      builder.organizationName(iamProperties.getOrganisation().getName());
+      builder.aarcDisplayName(entity.getUserInfo().getName());
+      builder.aarcName(new ScimAarcName(getScimName(entity)));
+      builder.addAarcEmail(entity.getUserInfo().getEmail());
+
+      if (entity.hasAffiliation()) {
+        builder.addVoPersonExternalAffiliation(new ScimAffiliation(
+            entity.getAffiliation() + "@" + iamProperties.getOrganisation().getName()));
+      } else {
+        builder.addVoPersonExternalAffiliation(
+            new ScimAffiliation("member" + "@" + iamProperties.getOrganisation().getName()));
+      }
+
+      DEFAULT_LOA.forEach(a -> builder.addAssurance(new ScimAssurance(a)));
+
+      resolveGroups(entity.getUserInfo())
+        .forEach(e -> builder.addEntitlements(new ScimEntitlement(e)));
+    }
+
     return builder.build();
   }
 
@@ -321,5 +357,30 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     return ScimPhoto.builder().value(entity.getUserInfo().getPicture()).build();
+  }
+
+  public Set<String> resolveGroups(IamUserInfo userInfo) {
+
+    Set<String> encodedGroups = new HashSet<>();
+    userInfo.getGroups().forEach(g -> encodedGroups.add(encodeGroup(g)));
+    return encodedGroups;
+  }
+
+  private String encodeGroup(IamGroup group) {
+
+    var aarcConfig = iamProperties.getAarcProfile();
+
+    String urnNid = aarcConfig.getUrnNid();
+    String urnDelegatedNamespace = aarcConfig.getUrnDelegatedNamespace();
+    String encodedGroupName = group.getName().replace("/", ":");
+
+    String encodedSubnamespace = "";
+    String urnSubnamespaces = aarcConfig.getUrnSubnamespaces();
+    if (urnSubnamespaces != null && !urnSubnamespaces.isBlank()) {
+      encodedSubnamespace = ":" + String.join(":", urnSubnamespaces.trim().split("\\s+"));
+    }
+
+    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace,
+        encodedGroupName);
   }
 }
