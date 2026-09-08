@@ -30,7 +30,7 @@
         ng-class="{'has-error': userCreationForm.name.$dirty && userCreationForm.name.$invalid, 'has-success': userCreationForm.name.$dirty && userCreationForm.name.$valid}">
         <div class="col-sm-10">
           <input class="form-control" name="name" id="name" type="text" ng-model="$ctrl.user.name"
-            placeholder="First name" required ng-minlength="3" />
+            placeholder="First name" required ng-minlength="2" />
           <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-remove': userCreationForm.name.$dirty && userCreationForm.name.$invalid, 'glyphicon-ok': userCreationForm.name.$dirty && userCreationForm.name.$valid}"
             style="right: 15px"></span>
@@ -49,7 +49,7 @@
         ng-class="{'has-error': userCreationForm.surname.$dirty && userCreationForm.surname.$invalid, 'has-success': userCreationForm.surname.$dirty && userCreationForm.surname.$valid}">
         <div class="col-sm-10">
           <input class="form-control" name="surname" id="surname" type="text" ng-model="$ctrl.user.surname"
-            placeholder="Surname" required ng-minlength="3" />
+            placeholder="Surname" required ng-minlength="2" />
           <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-remove': userCreationForm.surname.$dirty && userCreationForm.surname.$invalid, 'glyphicon-ok': userCreationForm.surname.$dirty && userCreationForm.surname.$valid}"
             style="right: 15px"></span>
