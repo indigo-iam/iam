@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Lists;
 import com.nimbusds.jose.JWEAlgorithm;
@@ -62,6 +63,7 @@ public class IamProperties {
     MANDATORY, OPTIONAL, HIDDEN
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class AccountLinkingProperties {
     boolean enable = true;
 
@@ -74,9 +76,13 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class ActuatorUserProperties {
 
+    @JsonIgnore
     String username;
+
+    @JsonIgnore
     String password;
 
     public String getUsername() {
@@ -97,6 +103,7 @@ public class IamProperties {
 
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class ExternalConnectivityProbeProperties {
 
     private boolean enabled = true;
@@ -129,6 +136,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class VersionedStaticResourcesProperties {
     boolean enableVersioning = true;
 
@@ -141,6 +149,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class CustomizationProperties {
     boolean includeCustomLoginPageContent = false;
 
@@ -163,6 +172,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class LocalAuthenticationProperties {
 
     LocalAuthenticationLoginPageMode loginPageVisibility;
@@ -324,6 +334,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class DeviceCodeProperties {
     boolean allowCompleteVerificationUri = true;
 
@@ -337,6 +348,7 @@ public class IamProperties {
 
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class JWKProperties {
     String keystoreLocation;
     String defaultKeyId = "rsa1";
@@ -396,6 +408,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class JWTProfile {
 
     public enum Profile {
@@ -413,6 +426,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class LoginLink {
     String url;
     String text;
@@ -434,6 +448,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class LoginPageLayout {
 
     public enum ExternalAuthnOptions {
@@ -472,6 +487,7 @@ public class IamProperties {
     }
   }
 
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class AccessToken {
 
     boolean includeAuthnInfo;
@@ -615,7 +631,9 @@ public class IamProperties {
   public static class DashboardProperties {
 
     private boolean enabled = false;
+    @JsonIgnore
     private String clientId;
+    @JsonIgnore
     private String clientSecret;
 
     public boolean isEnabled() {

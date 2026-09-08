@@ -15,11 +15,9 @@
  */
 package it.infn.mw.iam.api.config;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,7 +41,6 @@ public class ConfigurationController {
   private final IamProperties iamProperties;
   private final LifecycleProperties lifecycleProperties;
 
-  @Autowired
   public ConfigurationController(OidcValidatedProviders providers, IamSamlProperties samlProps,
       IamProperties iamProperties, LifecycleProperties lifecycleProperties) {
     this.providers = providers;
@@ -53,32 +50,32 @@ public class ConfigurationController {
     this.lifecycleProperties = lifecycleProperties;
   }
 
-  @RequestMapping(method = GET, value = "/oidc/providers")
+  @GetMapping(value = "/oidc/providers")
   public List<OidcProvider> listProviders() {
     return providers.getValidatedProviders();
   }
 
-  @RequestMapping(method = GET, value = "/saml/shortcuts")
+  @GetMapping(value = "/saml/shortcuts")
   public List<IamSamlLoginShortcut> listSamlLoginShortcuts() {
     return loginShortcuts;
   }
 
-  @RequestMapping(method = GET, value = "/saml/wayf-login-button")
+  @GetMapping(value = "/saml/wayf-login-button")
   public LoginButtonProperties listWayfLoginButton() {
     return wayfLoginButton;
   }
 
-  @RequestMapping(method = GET, value = "/privacy-policy")
+  @GetMapping(value = "/privacy-policy")
   public LoginLink privacyPolicyURL() {
     return iamProperties.getPrivacyPolicy();
   }
 
-  @RequestMapping(method = GET, value = "/profile")
+  @GetMapping(value = "/profile")
   public UserProfileProperties profileProperties() {
     return iamProperties.getUserProfile();
   }
 
-  @RequestMapping(method = GET, value = "/lifecycle/account/read-only-end-time")
+  @GetMapping(value = "/lifecycle/account/read-only-end-time")
   public boolean readOnlyAccountEndTime() {
     return lifecycleProperties.getAccount().isReadOnlyEndTime();
   }
