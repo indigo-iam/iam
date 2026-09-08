@@ -28,6 +28,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import it.infn.mw.iam.api.config.ActuatorConfigEndpoint;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
@@ -68,6 +69,8 @@ public class CacheConfig {
     cacheManager.registerCustomCache(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
         Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(3600)).build());
 
+    cacheManager.registerCustomCache(ActuatorConfigEndpoint.CACHE_NAME,
+        Caffeine.newBuilder().build());
     return cacheManager;
   }
 

@@ -13,31 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.config.oidc;
-
-import static java.util.stream.Collectors.toList;
+package it.infn.mw.iam.api.config;
 
 import java.util.List;
 
-import org.springframework.stereotype.Component;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.oidc.OidcProvider;
+import it.infn.mw.iam.config.saml.IamSamlLoginShortcut;
 
-import com.google.common.base.Strings;
-
-@Component
-public class OidcValidatedProviders {
-
-  final List<OidcProvider> validatedProviders;
-
-  public OidcValidatedProviders(OidcProviderProperties properties) {
-
-    validatedProviders = properties.getProviders()
-      .stream()
-      .filter(p -> !Strings.isNullOrEmpty(p.getClient().clientId()))
-      .collect(toList());
-  }
-
-  public List<OidcProvider> getValidatedProviders() {
-    return validatedProviders;
-  }
-  
+public record ActuatorConfigResponse(IamProperties iamProperties, List<OidcProvider> oidcProviders,
+    List<IamSamlLoginShortcut> samlProviders) {
 }
