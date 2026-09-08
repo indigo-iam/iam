@@ -19,7 +19,6 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -29,7 +28,6 @@ public class OidcValidatedProviders {
 
   final List<OidcProvider> validatedProviders;
 
-  @Autowired
   public OidcValidatedProviders(OidcProviderProperties properties) {
 
     validatedProviders = properties.getProviders()

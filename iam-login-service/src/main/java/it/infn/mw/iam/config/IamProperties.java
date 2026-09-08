@@ -426,7 +426,7 @@ public class IamProperties {
     }
   }
 
-  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  @JsonInclude(JsonInclude.Include.ALWAYS)
   public static class LoginLink {
     String url;
     String text;
