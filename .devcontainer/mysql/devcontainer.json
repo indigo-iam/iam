@@ -12,7 +12,7 @@
       "settings": {
         "java.configuration.updateBuildConfiguration": "automatic",
         "java.format.settings.url": "https://raw.githubusercontent.com/italiangrid/codestyle/master/eclipse-google-java-codestyle-formatter.xml",
-        "java.format.settings.profile": "GoogleStyle (CNAF)",
+        "java.format.settings.profile": "GoogleStyle (CNAF)"
       },
       "extensions": [
         "vmware.vscode-boot-dev-pack",
