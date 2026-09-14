@@ -46,5 +46,5 @@ iam:
 
 management:
   health:
-      mail:
-        enabled: false
+    mail:
+      enabled: false
