@@ -28,7 +28,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -36,8 +35,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.audit.events.tokens.UserInfoEvent;
-import it.infn.mw.iam.core.ParsedAccessToken;
-import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -57,18 +54,15 @@ public class IamUserInfoEndpoint {
   private final OAuth2AuthenticationScopeResolver scopeResolver;
   private final IamAccountRepository accountRepo;
   private final IamClientRepository clientRepo;
-  private final TokenUtils tokenUtils;
   private final ApplicationEventPublisher eventPublisher;
 
   public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
       OAuth2AuthenticationScopeResolver scopeResolver, IamAccountRepository accountRepo,
-      IamClientRepository clientRepo, TokenUtils tokenUtils,
-      ApplicationEventPublisher eventPublisher) {
+      IamClientRepository clientRepo, ApplicationEventPublisher eventPublisher) {
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
     this.accountRepo = accountRepo;
     this.clientRepo = clientRepo;
-    this.tokenUtils = tokenUtils;
     this.eventPublisher = eventPublisher;
   }
 
@@ -91,21 +85,9 @@ public class IamUserInfoEndpoint {
     Map<String, Object> claims =
         profile.getUserinfoHelper().resolveScopeClaims(scopes, account, auth);
 
-    addExternalAuthN(auth, claims);
     UserInfoResponse response = new UserInfoResponse(claims);
     eventPublisher.publishEvent(new UserInfoEvent(this, clientId, response));
     return response;
-  }
-
-  private void addExternalAuthN(OAuth2Authentication auth, Map<String, Object> claims) {
-
-    if (auth.getDetails() instanceof OAuth2AuthenticationDetails details
-        && details.getTokenValue() != null) {
-      ParsedAccessToken parsedToken = tokenUtils.parseAccessToken(details.getTokenValue());
-      if (parsedToken.external() != null) {
-        claims.put("external_authn", parsedToken.external());
-      }
-    }
   }
 
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)

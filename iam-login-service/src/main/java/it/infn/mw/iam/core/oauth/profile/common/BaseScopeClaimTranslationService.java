@@ -25,7 +25,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 
-public class BaseScopeClaimTranslationService implements ScopeClaimTranslationService {
+public abstract class BaseScopeClaimTranslationService implements ScopeClaimTranslationService {
 
   @Override
   public Set<String> getClaimsForScope(String scope) {
@@ -60,5 +60,4 @@ public class BaseScopeClaimTranslationService implements ScopeClaimTranslationSe
       .flatMap(Set::stream)
       .collect(Collectors.toSet());
   }
-
 }

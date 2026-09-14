@@ -153,9 +153,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       if (savedAuth.getAdditionalInfo().get(ACR) != null) {
         builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
       }
-      if (savedAuth.getSourceClass() != null && (savedAuth.getSourceClass()
-        .equals(SamlExternalAuthenticationToken.class.getName())
-          || savedAuth.getSourceClass().equals(OidcExternalAuthenticationToken.class.getName()))) {
+      if (isIncludeAuthnInfo() && isExternalAuthn(savedAuth)) {
         builder.claim(EXTERNAL_AUTHN,
             claimValueHelper.resolveClaim(EXTERNAL_AUTHN, authentication, account));
       }
@@ -185,6 +183,13 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     includeRequiredClaims(builder, authentication, account);
 
     return builder.build();
+  }
+
+  protected boolean isExternalAuthn(SavedUserAuthentication savedAuth) {
+    String sourceClass = savedAuth.getSourceClass();
+    return sourceClass != null
+        && (sourceClass.equals(SamlExternalAuthenticationToken.class.getName())
+            || sourceClass.equals(OidcExternalAuthenticationToken.class.getName()));
   }
 
   protected Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,

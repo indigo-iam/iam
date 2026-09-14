@@ -19,10 +19,13 @@ import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_T
 
 import java.util.Optional;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -32,6 +35,7 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
@@ -43,7 +47,7 @@ public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
 
   protected final void includeLabelsInIdToken(Builder idClaims, IamAccount account) {
 
-    for (IncludeLabelProperties includeLabel : getIamProperties().getTokenEnhancer()
+    for (IncludeLabelProperties includeLabel : getProperties().getTokenEnhancer()
       .getIncludeLabels()) {
       if (includeLabel.getContext().contains(ID_TOKEN)) {
         Optional<IamLabel> label = account.getLabelByPrefixAndName(
@@ -63,5 +67,30 @@ public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
     super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
 
     includeLabelsInIdToken(idClaims, account);
+    includeExternalAuthnInIdToken(idClaims, accessToken, account);
+  }
+
+  protected void includeExternalAuthnInIdToken(Builder idClaims,
+      OAuth2AccessTokenEntity accessToken, IamAccount account) {
+
+    Authentication oauth2auth =
+        accessToken.getAuthenticationHolder().getAuthentication().getUserAuthentication();
+
+    if (isExternalAuthn(oauth2auth)) {
+      idClaims.claim(IamExtraClaimNames.EXTERNAL_AUTHN,
+          getClaimValueHelper().resolveClaim(IamExtraClaimNames.EXTERNAL_AUTHN,
+              accessToken.getAuthenticationHolder().getAuthentication(), Optional.of(account)));
+    }
+  }
+
+  protected boolean isExternalAuthn(Authentication auth) {
+    if (auth instanceof SavedUserAuthentication savedAuth) {
+
+      String sourceClass = savedAuth.getSourceClass();
+      return sourceClass != null
+          && (sourceClass.equals(SamlExternalAuthenticationToken.class.getName())
+              || sourceClass.equals(OidcExternalAuthenticationToken.class.getName()));
+    }
+    return false;
   }
 }
