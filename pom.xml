@@ -27,20 +27,6 @@
     <module>iam-login-service</module>
   </modules>
 
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
-
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
   <properties>
     <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
 
@@ -354,16 +340,6 @@
     </dependencies>
 
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>infn-cnaf</id>
-      <url>https://repo.cloud.cnaf.infn.it/repository/maven-public/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>
