@@ -39,6 +39,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -56,11 +57,12 @@ public class AuthenticationSuccessHandlerHelper {
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final IamProperties iamProperties;
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
       IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaProperties iamTotpMfaProperties, IamProperties iamProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
@@ -69,6 +71,7 @@ public class AuthenticationSuccessHandlerHelper {
     this.accountRepo = accountRepo;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamProperties = iamProperties;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -126,7 +129,7 @@ public class AuthenticationSuccessHandlerHelper {
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache(), iamProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
         delegate, aupSignatureCheckService, accountUtils, accountRepo);

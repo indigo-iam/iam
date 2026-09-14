@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
-import static it.infn.mw.iam.authn.RootIsDashboardSuccessHandler.DASHBOARD_URL;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +32,7 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.config.IamProperties;
 
 public class RootIsDashboardSuccessHandlerTests {
 
@@ -86,16 +86,20 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
+    IamProperties iamProperties = new IamProperties();
+    iamProperties.getDashboard().setBasePath("/dashboard");
+
+    RootIsDashboardSuccessHandler handler =
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
-    verify(res).sendRedirect(DASHBOARD_URL);
+    verify(res).sendRedirect("/dashboard");
   }
 
   @Test
   void testSavedRequestToBaseUrlPlusSlashRedirectsToDashboard()
-    throws ServletException, IOException {
+      throws ServletException, IOException {
 
     SavedRequest savedRequest = Mockito.mock(SavedRequest.class);
     MockRequestCache cache = new MockRequestCache(savedRequest);
@@ -109,11 +113,15 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
+    IamProperties iamProperties = new IamProperties();
+    iamProperties.getDashboard().setBasePath("/dashboard");
+
+    RootIsDashboardSuccessHandler handler =
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
-    verify(res).sendRedirect(DASHBOARD_URL);
+    verify(res).sendRedirect("/dashboard");
   }
 
   @Test
@@ -131,7 +139,11 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
+    IamProperties iamProperties = new IamProperties();
+    iamProperties.getDashboard().setBasePath("/dashboard");
+
+    RootIsDashboardSuccessHandler handler =
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
@@ -150,9 +162,12 @@ public class RootIsDashboardSuccessHandlerTests {
 
     Authentication auth = Mockito.mock(Authentication.class);
 
-    RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
-    handler.onAuthenticationSuccess(req, res, auth);
-    verify(res).sendRedirect(DASHBOARD_URL);
-  }
+    IamProperties iamProperties = new IamProperties();
+    iamProperties.getDashboard().setBasePath("/dashboard");
 
+    RootIsDashboardSuccessHandler handler =
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
+    handler.onAuthenticationSuccess(req, res, auth);
+    verify(res).sendRedirect("/dashboard");
+  }
 }

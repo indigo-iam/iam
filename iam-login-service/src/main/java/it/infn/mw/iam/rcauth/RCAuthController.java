@@ -21,7 +21,6 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY;
 import static it.infn.mw.iam.authn.x509.X509CertificateVerificationResult.success;
 import static java.lang.String.format;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.security.Principal;
 import java.security.cert.X509Certificate;
@@ -31,11 +30,11 @@ import java.util.Date;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -58,12 +57,14 @@ public class RCAuthController {
   public static final String RCAUTH_SUCCESS_TEMPLATE =
       "Proxy certificate with subject '%s' linked succesfully";
 
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
+
   final Clock clock;
   final RCAuthRequestService requestService;
   final ProxyHelperService proxyHelper;
   final DefaultAccountLinkingService linkingService;
 
-  @Autowired
   public RCAuthController(Clock clock, RCAuthRequestService service, ProxyHelperService proxyHelper,
       DefaultAccountLinkingService ls) {
     this.clock = clock;
@@ -72,13 +73,12 @@ public class RCAuthController {
     this.linkingService = ls;
   }
 
-  @RequestMapping(method = GET, value = GETCERT_PATH)
+  @GetMapping(GETCERT_PATH)
   public RedirectView requestCert(HttpSession session) {
     return new RedirectView(requestService.buildAuthorizationRequest(session));
   }
 
-
-  @RequestMapping(method = GET, value = CALLBACK_PATH)
+  @GetMapping(CALLBACK_PATH)
   public String rcauthCallback(Principal authenticatedUser, HttpSession session,
       RedirectAttributes attributes, @Valid RCAuthAuthorizationResponse response,
       final BindingResult validationResult) {
@@ -118,8 +118,6 @@ public class RCAuthController {
             format(RCAUTH_ERROR_TEMPLATE, e.getMessage()));
       }
     }
-
-    return "redirect:/dashboard";
+    return "redirect:" + dashboardBasePath;
   }
-
 }

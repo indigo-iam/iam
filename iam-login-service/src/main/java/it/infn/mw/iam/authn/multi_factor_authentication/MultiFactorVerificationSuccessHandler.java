@@ -36,28 +36,32 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(MultiFactorVerificationSuccessHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(MultiFactorVerificationSuccessHandler.class);
 
   private final Clock clock;
   private final AccountUtils accountUtils;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
   private final String iamBaseUrl;
+  private final IamProperties iamProperties;
 
-  public MultiFactorVerificationSuccessHandler(Clock clock,AccountUtils accountUtils,
+  public MultiFactorVerificationSuccessHandler(Clock clock, AccountUtils accountUtils,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
-      String iamBaseUrl) {
+      String iamBaseUrl, IamProperties iamProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
     this.iamBaseUrl = iamBaseUrl;
+    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -72,18 +76,18 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else {
-        continueWithDefaultSuccessHandler(request, response, authentication);
-      }
+      continueWithDefaultSuccessHandler(request, response, authentication);
+    }
   }
 
   private void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache(), iamProperties);
 
-    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock, delegate,
-        aupSignatureCheckService, accountUtils, accountRepo);
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
+        delegate, aupSignatureCheckService, accountUtils, accountRepo);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 
@@ -96,4 +100,3 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     request.removeAttribute(TOTP_VERIFIED);
   }
 }
-
