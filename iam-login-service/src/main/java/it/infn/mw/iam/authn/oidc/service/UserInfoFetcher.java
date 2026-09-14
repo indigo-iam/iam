@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
@@ -35,9 +37,11 @@ public class UserInfoFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);
 
   private RestTemplateFactory factory;
+  private ObjectMapper objectMapper;
 
-  public UserInfoFetcher(RestTemplateFactory factory) {
+  public UserInfoFetcher(RestTemplateFactory factory, ObjectMapper objectMapper) {
     this.factory = factory;
+    this.objectMapper = objectMapper;
   }
 
   public Optional<UserInfoResponse> loadUserInfo(final PendingOIDCAuthenticationToken token) {
@@ -49,18 +53,27 @@ public class UserInfoFetcher {
       return Optional.empty();
     }
 
+    LOG.debug("UserInfo request to: {}", metadata.userInfoEndpoint());
+
     RestTemplate restTemplate = factory.newRestTemplate();
 
     restTemplate.getInterceptors().add(new BearerTokenInterceptor((String) token.getCredentials()));
 
-    UserInfoResponse response = restTemplate.getForObject(metadata.userInfoEndpoint(), UserInfoResponse.class);
+    UserInfoResponse response =
+        restTemplate.getForObject(metadata.userInfoEndpoint(), UserInfoResponse.class);
 
     if (response == null) {
       LOG.warn("Received empty userinfo response from {}", metadata.userInfoEndpoint());
       return Optional.empty();
     }
-    return Optional.of(response);
 
+    try {
+      LOG.debug("UserInfo response: {}", objectMapper.writeValueAsString(response));
+    } catch (JsonProcessingException e) {
+      LOG.warn("Could not serialize UserInfo response", e);
+    }
+
+    return Optional.of(response);
   }
 }
 

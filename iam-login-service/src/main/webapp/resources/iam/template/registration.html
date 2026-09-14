@@ -33,11 +33,11 @@
             <label class="control-label col-sm-2" for="name">Name</label>
             <div ng-class="{'has-error': registrationForm.name.$dirty && registrationForm.name.$invalid, 'has-success': registrationForm.name.$dirty && registrationForm.name.$valid}">
                 <div class="col-sm-10">
-                    <input class="form-control" name="name" id="name" type="text" ng-model="request.givenname" placeholder="First name" required ng-minlength="3"/>
+                    <input class="form-control" name="name" id="name" type="text" ng-model="request.givenname" placeholder="First name" required ng-minlength="2"/>
                     <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': registrationForm.name.$dirty && registrationForm.name.$invalid, 'glyphicon-ok': registrationForm.name.$dirty && registrationForm.name.$valid}" style="right: 15px"></span>
                     <span class="help-block" ng-show="registrationForm.name.$dirty && registrationForm.name.$error.required">
                         This is a required field</span>
-                    <span class="help-block" ng-show="registrationForm.name.$dirty && registrationForm.name.$error.minlength">Minimum length required is 3</span>
+                    <span class="help-block" ng-show="registrationForm.name.$dirty && registrationForm.name.$error.minlength">Minimum length required is 2</span>
                 </div>
             </div>
         </div>
@@ -46,14 +46,14 @@
             <label class="control-label col-sm-2" for="surname">Surname</label>
             <div ng-class="{'has-error': registrationForm.surname.$dirty && registrationForm.surname.$invalid, 'has-success': registrationForm.surname.$dirty && registrationForm.surname.$valid}">
                 <div class="col-sm-10">
-                    <input class="form-control" name="surname" id="surname" type="text" ng-model="request.familyname" placeholder="Family name" required ng-minlength="3"/>
+                    <input class="form-control" name="surname" id="surname" type="text" ng-model="request.familyname" placeholder="Family name" required ng-minlength="2"/>
                     <span
                         class="glyphicon form-control-feedback"
                         ng-class="{'glyphicon-remove': registrationForm.surname.$dirty && registrationForm.surname.$invalid, 'glyphicon-ok': registrationForm.surname.$dirty && registrationForm.surname.$valid}"
                         style="right: 15px"></span>
                     <span class="help-block" ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.required">
                         This is a required field</span>
-                    <span class="help-block" ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.minlength">Minimum length required is 3</span>
+                    <span class="help-block" ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.minlength">Minimum length required is 2</span>
                 </div>
             </div>
         </div>
@@ -83,7 +83,7 @@
             <div ng-class="{'has-error': registrationForm.username.$dirty && registrationForm.username.$invalid, 'has-success': registrationForm.username.$dirty && registrationForm.username.$valid}">
                 <div class="col-sm-10">
                     <input class="form-control" id="username" name="username" type="text" ng-model="request.username" placeholder="Username" required 
-                    ng-minlength="3" 
+                    ng-minlength="2" 
                     iam-username-available-validator ng-model-options="{ debounce : { 'default' : 500 } }"/>
                     <span
                         class="glyphicon form-control-feedback"
