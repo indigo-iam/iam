@@ -43,10 +43,9 @@ public class GroupConverter implements Converter<ScimGroup, IamGroup> {
 
   /**
    * <ul>
-   * <li>Mutable fields: name</li>
+   * <li>Mutable fields: name, description</li>
    * <li>Immutable fields: id, uuid, creationtime</li>
    * <li>Read-only fields: lastupdatetime, accounts</li>
-   * <li>Not managed via SCIM: description</li>
    * </ul>
    */
   @Override
