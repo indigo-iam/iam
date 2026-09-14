@@ -25,6 +25,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -41,10 +43,13 @@ import java.util.Random;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -54,15 +59,24 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class TokenExchangeTests extends EndpointsTestUtils {
 
-  private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
-  private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
+  private static final String GRANT_TYPE =
+      "urn:ietf:params:oauth:grant-type:token-exchange";
+
+  private static final String JWT_TOKEN_TYPE =
+      "urn:ietf:params:oauth:token-type:jwt";
+
+  private static final String ACCESS_TOKEN_TYPE =
+      "urn:ietf:params:oauth:token-type:access_token";
+
+  private static final String REFRESH_TOKEN_TYPE =
+      "urn:ietf:params:oauth:token-type:refresh_token";
 
   private static final String TEST_USER_USERNAME = "test";
   private static final String TEST_USER_PASSWORD = "password";
@@ -100,11 +114,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("grant_type", GRANT_TYPE)
         .param("audience", audClientId)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -166,7 +180,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid profile"))
       .andExpect(status().isOk());
 
@@ -186,7 +200,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "read-tasks openid profile"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
@@ -216,11 +230,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid profile"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid profile")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -288,7 +302,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("grant_type", GRANT_TYPE)
         .param("audience", audClientId)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "read-tasks"))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
@@ -297,7 +311,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
   }
 
   @Test
-  void testTokenExchangeWithRefreshToken() throws Exception {
+  void testTokenExchangeWithOfflineAccess() throws Exception {
 
     String clientId = "token-exchange-subject";
     String clientSecret = "secret";
@@ -321,11 +335,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("grant_type", GRANT_TYPE)
         .param("audience", audClientId)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid offline_access")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.id_token", notNullValue()))
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -417,9 +431,9 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("grant_type", GRANT_TYPE)
         .param("audience", audClientId)
         .param("subject_token", subjectToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("actor_token", actorToken)
-        .param("actor_token_type", TOKEN_TYPE)
+        .param("actor_token_type", JWT_TOKEN_TYPE)
         .param("want_composite", "true")
         .param("scope", "read-tasks"))
       .andExpect(status().isBadRequest())
@@ -441,7 +455,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "read-tasks"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")));
@@ -464,7 +478,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "read-tasks offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
@@ -514,7 +528,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
     mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid offline_access"))
       .andExpect(status().isForbidden());
 
@@ -523,7 +537,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid")))
@@ -557,11 +571,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("grant_type", GRANT_TYPE)
         .param("audience", audClientId)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid offline_access")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.id_token", notNullValue()))
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -626,11 +640,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .with(httpBasic(secondActorClient, "secret"))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", refreshedToken.getValue())
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid offline_access")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.id_token", notNullValue()))
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -680,11 +694,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("random_long_string", longString)
         .param("audience", audClientId)
         .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
         .param("scope", "openid"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
       .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.access_token", notNullValue()))
@@ -709,5 +723,181 @@ class TokenExchangeTests extends EndpointsTestUtils {
     }
 
     return stringBuilder.toString();
+  }
+
+  @Test
+  void shouldDefaultRequestedTokenTypeToAccessToken() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
+      .andExpect(jsonPath("$.token_type", equalTo("Bearer")));
+  }
+
+  @Test
+  void shouldIssueAccessTokenWhenRequestedTokenTypeIsAccessToken() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    String response = mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("requested_token_type", ACCESS_TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(ACCESS_TOKEN_TYPE)))
+      .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    DefaultOAuth2AccessToken responseToken =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    JWT jwt = JWTParser.parse(responseToken.getValue());
+
+    assertThat(jwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
+  }
+
+  @Test
+  void shouldIssueRefreshTokenWhenRequestedTokenTypeIsRefreshToken() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile offline_access")
+      .getAccessTokenValue();
+
+    String response = mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("audience", "client")
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("requested_token_type", REFRESH_TOKEN_TYPE)
+        .param("scope", "openid offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(REFRESH_TOKEN_TYPE)))
+      .andExpect(jsonPath("$.token_type", equalTo("N_A")))
+      .andExpect(jsonPath("$.refresh_token").doesNotExist())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode tokenResponse = mapper.readTree(response);
+
+    String refreshToken = tokenResponse.get("access_token").asText();
+
+    assertNotNull(refreshToken);
+    assertFalse(refreshToken.isEmpty());
+  }
+
+  @Test
+  void issuedRefreshTokenShouldBeUsableWithRefreshTokenGrant() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile offline_access")
+      .getAccessTokenValue();
+
+    String exchangeResponse = mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("requested_token_type", REFRESH_TOKEN_TYPE)
+        .param("scope", "openid offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.issued_token_type", equalTo(REFRESH_TOKEN_TYPE)))
+      .andExpect(jsonPath("$.token_type", equalTo("N_A")))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken =
+        mapper.readTree(exchangeResponse).get("access_token").asText();
+
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", "refresh_token")
+        .param("refresh_token", refreshToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andExpect(jsonPath("$.token_type", equalTo("Bearer")));
+  }
+
+  @Test
+  void shouldRejectUnsupportedRequestedTokenType() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid")
+      .getAccessTokenValue();
+
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("requested_token_type",
+            "urn:ietf:params:oauth:token-type:saml2")
+        .param("scope", "openid"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_request")))
+      .andExpect(jsonPath("$.error_description",
+          containsString("Unsupported requested_token_type")));
+  }
+
+  @Test
+  void shouldFailWhenRefreshTokenIsRequestedButCannotBeIssued() throws Exception {
+
+    String subjectToken = new AccessTokenGetter().grantType("password")
+      .clientId("token-exchange-subject")
+      .clientSecret("secret")
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid")
+      .getAccessTokenValue();
+
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic("token-exchange-actor", "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", subjectToken)
+        .param("subject_token_type", JWT_TOKEN_TYPE)
+        .param("requested_token_type", REFRESH_TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isForbidden());
   }
 }
