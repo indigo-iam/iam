@@ -22,6 +22,7 @@ import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.GIVEN_NAME;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.MAIL;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.SN;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -127,7 +128,16 @@ public class SamlExternalAuthenticationToken
         attrName = maybeKnownAttr.get().name();
       }
 
-      String attrVal = cred.getAttributeAsString(attr.getName());
+      Object attrVal;
+      int valueCount = attr.getAttributeValues().size();
+
+      if (valueCount == 0) {
+        attrVal = null;
+      } else if (valueCount == 1) {
+        attrVal = cred.getAttributeAsString(attr.getName());
+      } else {
+        attrVal = Arrays.asList(cred.getAttributeAsStringArray(attr.getName()));
+      }
 
       if (attrVal != null) {
         authnInfo.put(attrName, attrVal);
