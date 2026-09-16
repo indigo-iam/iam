@@ -39,6 +39,7 @@
 
     <modules>
       <module>iam-persistence-jakarta</module>
+      <module>iam-authorization-server</module>
     </modules>
 
     <build>
