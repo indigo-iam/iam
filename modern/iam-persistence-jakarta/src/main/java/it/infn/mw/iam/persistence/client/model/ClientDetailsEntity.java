@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.persistence.client.model;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -48,11 +48,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 
-@SuppressWarnings("deprecation")
 @Entity
 @Table(name = "client_details")
 public class ClientDetailsEntity {
@@ -182,9 +179,8 @@ public class ClientDetailsEntity {
   @Column(name = "id_token_validity_seconds")
   private Integer idTokenValiditySeconds;
 
-  @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "created_at")
-  private Date createdAt;
+  private Instant createdAt;
 
   @Column(name = "device_code_validity_seconds")
   private Integer deviceCodeValiditySeconds;
@@ -274,19 +270,6 @@ public class ClientDetailsEntity {
     this.dynamicallyRegistered = dynamicallyRegistered;
   }
 
-  @Transient
-  public boolean isSecretRequired() {
-    return tokenEndpointAuthMethod != null
-        && (tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_BASIC)
-            || tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_POST)
-            || tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_JWT));
-  }
-
-  @Transient
-  public boolean isScoped() {
-    return getScope() != null && !getScope().isEmpty();
-  }
-
   public String getClientId() {
     return clientId;
   }
@@ -354,23 +337,6 @@ public class ClientDetailsEntity {
 
   public void setRedirectUris(Set<String> redirectUris) {
     this.redirectUris = redirectUris;
-  }
-
-  @Transient
-  public Set<String> getRegisteredRedirectUri() {
-    return getRedirectUris();
-  }
-
-  public Set<String> getResourceIds() {
-    return resourceIds;
-  }
-
-  public void setResourceIds(Set<String> resourceIds) {
-    this.resourceIds = resourceIds;
-  }
-
-  public Map<String, Object> getAdditionalInformation() {
-    return Map.of();
   }
 
   public String getClientName() {
@@ -493,16 +459,12 @@ public class ClientDetailsEntity {
     this.requestUris = requestUris;
   }
 
-  public Date getCreatedAt() {
+  public Instant getCreatedAt() {
     return createdAt;
   }
 
-  public void setCreatedAt(Date createdAt) {
+  public void setCreatedAt(Instant createdAt) {
     this.createdAt = createdAt;
-  }
-
-  public boolean isAutoApprove(String scope) {
-    return false;
   }
 
   public ClientLastUsedEntity getClientLastUsed() {
