@@ -37,6 +37,10 @@
 
     <name>IAM Modern</name>
 
+    <modules>
+      <module>iam-persistence-jakarta</module>
+    </modules>
+
     <build>
       <plugins>
         <plugin>
