@@ -23,7 +23,6 @@ import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
 import java.text.ParseException;
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -82,12 +81,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   public static final String GRANT_TYPE_NOT_ALLOWED_ERROR_STR = "Grant type not allowed: %s";
 
-  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER =
-      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
-  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS =
-      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE,
-          AuthorizationGrantType.CLIENT_CREDENTIALS);
-
   private final ClientService clientService;
   private final AccountUtils accountUtils;
   private final ClientConverter converter;
@@ -142,13 +135,13 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
         .stream()
-        .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+        .filter(registrationProperties.getGrantTypes().forbiddenForUserClients()::contains)
         .findFirst()
         .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
         .stream()
-        .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+        .filter(registrationProperties.getGrantTypes().forbiddenForAnonymousClients()::contains)
         .findFirst()
         .ifPresent(this::throwGrantTypeNotAllowed);
     }
@@ -164,14 +157,14 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       request.getGrantTypes()
         .stream()
         .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-        .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+        .filter(registrationProperties.getGrantTypes().forbiddenForUserClients()::contains)
         .findFirst()
         .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
         .stream()
         .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-        .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+        .filter(registrationProperties.getGrantTypes().forbiddenForAnonymousClients()::contains)
         .findFirst()
         .ifPresent(this::throwGrantTypeNotAllowed);
     }
