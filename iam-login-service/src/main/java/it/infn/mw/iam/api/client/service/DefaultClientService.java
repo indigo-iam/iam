@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -108,6 +109,7 @@ public class DefaultClientService implements ClientService {
     return clientRepo.save(client);
   }
 
+  @Cacheable("Clients")
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
     return clientRepo.findByClientId(clientId);
