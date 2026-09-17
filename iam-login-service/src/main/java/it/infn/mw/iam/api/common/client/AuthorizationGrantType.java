@@ -15,9 +15,12 @@
  */
 package it.infn.mw.iam.api.common.client;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
@@ -36,6 +39,18 @@ public enum AuthorizationGrantType {
   private String grantType;
 
   private static final Map<String, AuthorizationGrantType> reverseLookupTable;
+  public static final Set<AuthorizationGrantType> DEFAULT_FORBIDDEN_FOR_USER_CLIENTS =
+          Collections.unmodifiableSet(EnumSet.of(
+                  AuthorizationGrantType.PASSWORD,
+                  AuthorizationGrantType.TOKEN_EXCHANGE
+          ));
+
+  public static final Set<AuthorizationGrantType> DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS =
+          Collections.unmodifiableSet(EnumSet.of(
+                  AuthorizationGrantType.PASSWORD,
+                  AuthorizationGrantType.TOKEN_EXCHANGE,
+                  AuthorizationGrantType.CLIENT_CREDENTIALS
+          ));
 
   static {
     reverseLookupTable = new HashMap<>();
