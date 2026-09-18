@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.scim.model;
+package it.infn.mw.iam.api.scim.exception;
 
-public interface ScimConstants {
+public class ScimForbiddenException extends ScimException {
 
-  final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
-  final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
-  final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
-  final int SCIM_BULK_MAX_OPERATIONS = 500;
-  final int SCIM_BULK_MAX_PAYLOAD_SIZE = 1048576;
+  private static final long serialVersionUID = 1L;
 
+  public ScimForbiddenException(String message) {
+    super(message);
+  }
+
+  public ScimForbiddenException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
