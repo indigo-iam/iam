@@ -249,7 +249,13 @@ public class TokenUtils {
       if (isExpired(accessTokenOnDb.get())) {
         throw invalidToken("The access token is expired");
       }
-      return accessTokenOnDb;
+      OAuth2AccessTokenEntity e = accessTokenOnDb.get();
+      try {
+        e.setJwt(SignedJWT.parse(accessTokenValue));
+      } catch (ParseException ex) {
+        throw invalidToken("Token parsing error: " + ex.getMessage());
+      }
+      return Optional.of(e);
     }
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {
       ParsedAccessToken token = parseAccessToken(accessTokenValue);
