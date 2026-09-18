@@ -36,11 +36,13 @@ import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
@@ -72,6 +74,9 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 class ClientManagementServiceTests {
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   ClientManagementService managementService;
 
   @Autowired
@@ -90,6 +95,11 @@ class ClientManagementServiceTests {
   MutableClock clock;
 
   Authentication userAuth;
+
+  @BeforeEach
+  void setup() {
+    cacheManager.getCache("Clients").clear();
+  }
 
   @Test
   void testPagedClientLookup() {

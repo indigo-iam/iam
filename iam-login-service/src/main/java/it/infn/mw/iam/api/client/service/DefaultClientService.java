@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -94,6 +95,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
+  @CachePut (cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
   @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
@@ -101,6 +103,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
+  @CachePut(cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
   public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
       String userId) {
     client.setActive(status);
@@ -109,7 +112,7 @@ public class DefaultClientService implements ClientService {
     return clientRepo.save(client);
   }
 
-  @Cacheable("Clients")
+  @Cacheable(cacheNames = "Clients", key = "#clientId")
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
     return clientRepo.findByClientId(clientId);
@@ -130,7 +133,7 @@ public class DefaultClientService implements ClientService {
     return Optional.empty();
   }
 
-
+  @CacheEvict(cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
   @Override
   public void deleteClient(ClientDetailsEntity client) {
     accountClientRepo.deleteByClientId(client.getId());
