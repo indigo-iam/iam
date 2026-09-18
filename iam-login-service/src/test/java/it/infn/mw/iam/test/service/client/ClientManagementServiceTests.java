@@ -59,6 +59,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -132,7 +133,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertEquals("client", client.getClientId());
-    assertEquals("secret", client.getClientSecret());
+    assertEquals(new IamSha256PasswordEncoder().encode("secret"), client.getClientSecret());
     assertTrue(
         client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN)));
     assertTrue(client.getScope()
@@ -283,7 +284,8 @@ class ClientManagementServiceTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.none, updatedClient.getTokenEndpointAuthMethod());
+    assertEquals(TokenEndpointAuthenticationMethod.none,
+        updatedClient.getTokenEndpointAuthMethod());
     assertNull(updatedClient.getClientSecret());
   }
 
@@ -308,7 +310,8 @@ class ClientManagementServiceTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic, updatedClient.getTokenEndpointAuthMethod());
+    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic,
+        updatedClient.getTokenEndpointAuthMethod());
     assertNotNull(updatedClient.getClientSecret());
   }
 

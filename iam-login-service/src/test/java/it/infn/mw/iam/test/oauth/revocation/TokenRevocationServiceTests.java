@@ -91,7 +91,7 @@ class TokenRevocationServiceTests extends EndpointsTestUtils {
 
     TokenEndpointResponse tokenResponse = parseTokens(new AccessTokenGetter().grantType("password")
       .clientId(client.getClientId())
-      .clientSecret(client.getClientSecret())
+      .clientSecret(registerResponse.getClientSecret())
       .username(TEST_USERNAME)
       .password(TEST_PASSWORD)
       .scope("openid profile offline_access")

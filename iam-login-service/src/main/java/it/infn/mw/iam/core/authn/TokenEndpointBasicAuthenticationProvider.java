@@ -25,11 +25,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
@@ -42,7 +42,7 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
   public TokenEndpointBasicAuthenticationProvider(
       @Qualifier("clientUserDetailsService") ClientUserDetailsService userDetailsService) {
 
-    this.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    this.setPasswordEncoder(new IamSha256PasswordEncoder());
     this.setUserDetailsService(userDetailsService);
     this.clientService = userDetailsService.getClientDetailsService();
   }
@@ -56,10 +56,18 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
       .orElseThrow(
           () -> new BadCredentialsException("Client with id " + clientId + " was not found"));
 
-    if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
-        && client.getClientSecret() != null) {
-      throw new AuthenticationServiceException("Public client requires no secret");
+    if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+      if (client.getClientSecret() != null) {
+
+        throw new AuthenticationServiceException("Public client requires no secret");
+      }
+      if (authentication.getCredentials() == null
+          || "".equals(String.valueOf(authentication.getCredentials()))) {
+        return new UsernamePasswordAuthenticationToken(client.getClientId(), null,
+            client.getAuthorities());
+      }
     }
+
     if (!supportsBasic(client)) {
       throw new BadCredentialsException("Client does not support basic authentication");
     }

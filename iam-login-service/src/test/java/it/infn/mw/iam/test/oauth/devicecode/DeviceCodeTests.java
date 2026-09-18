@@ -69,7 +69,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
@@ -545,7 +546,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
 
   @Test
   void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
-    throws UnsupportedEncodingException, Exception {
+      throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -585,7 +586,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
 
   @Test
   void deviceCodeWorksForDynamicallyRegisteredClient()
-    throws UnsupportedEncodingException, Exception {
+      throws UnsupportedEncodingException, Exception {
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
@@ -605,13 +606,11 @@ class DeviceCodeTests extends EndpointsTestUtils {
     RegisteredClientDTO registrationResponse =
         objectMapper.readValue(clientJson, RegisteredClientDTO.class);
 
-    ClientDetailsEntity newClient =
-        clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
+    assertNotNull(clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow());
 
-    assertNotNull(newClient);
-
-    String tokenResponse = getTokenResponse(newClient.getClientId(), newClient.getClientSecret(),
-        TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");
+    String tokenResponse =
+        getTokenResponse(registrationResponse.getClientId(), registrationResponse.getClientSecret(),
+            TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");
 
     JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
 
@@ -885,80 +884,81 @@ class DeviceCodeTests extends EndpointsTestUtils {
   void testExpiredDeviceCodeOnTokenEndpoint() throws Exception {
 
     String response = mvc
-        .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
-          .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-          .param("client_id", DEVICE_CODE_CLIENT_ID)
-          .param("scope", "openid profile"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.user_code").isString())
-        .andExpect(jsonPath("$.device_code").isString())
-        .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("scope", "openid profile"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
-      JsonNode responseJson = mapper.readTree(response);
+    JsonNode responseJson = mapper.readTree(response);
 
-      String userCode = responseJson.get("user_code").asText();
-      String deviceCode = responseJson.get("device_code").asText();
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
 
-      MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
-        .andExpect(status().is3xxRedirection())
-        .andExpect(redirectedUrl("http://localhost:8080/login"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("iam/login"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      session = (MockHttpSession) mvc
-        .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
-          .param("password", TEST_PASSWORD)
-          .param("submit", "Login")
-          .session(session))
-        .andExpect(status().is3xxRedirection())
-        .andExpect(redirectedUrl(DEVICE_USER_URL))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("requestUserCode"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      session = (MockHttpSession) mvc
-        .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("iam/approveDevice"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      session = (MockHttpSession) mvc
-        .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
-          .param("user_oauth_approval", "true")
-          .session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("deviceApproved"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      clock.advance(Duration.ofDays(1));
+    clock.advance(Duration.ofDays(1));
 
-      mvc
-        .perform(post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-          .param("grant_type", GrantType.DEVICE_CODE.getValue())
-          .param("device_code", deviceCode))
-        .andExpect(status().isBadRequest());
+    mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
+            .param("device_code", deviceCode))
+      .andExpect(status().isBadRequest());
   }
 
 }

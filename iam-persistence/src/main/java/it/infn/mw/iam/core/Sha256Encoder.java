@@ -13,30 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.startup;
+package it.infn.mw.iam.core;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeansException;
+public class Sha256Encoder {
 
-import it.infn.mw.iam.IamLoginService;
-
-class ApplicationStartupValidationTests {
-
-  @Test
-  void testFailureOnStatupDueToWrongEnum() {
-
-    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo"}));
+  private Sha256Encoder() {
+    // Nothing to do
   }
 
-  @Test
-  void testSuccessStatup() {
+  public static String encode(String secret) {
 
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] digest = md.digest(secret.getBytes(StandardCharsets.UTF_8));
+
+      return Base64.getEncoder().encodeToString(digest);
+
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("Unable to calculate SHA256", e);
+    }
+
   }
-
 }
