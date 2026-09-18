@@ -158,7 +158,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void updateClientStatus(String clientId, boolean status, String userId) {
 
-    ClientDetailsEntity client = clientService.findClientByClientIdFromDatabase(clientId)
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     client = clientService.updateClientStatus(client, status, userId);
     String message = "Client " + (status ? "enabled" : "disabled");
@@ -179,7 +179,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
 
-    ClientDetailsEntity oldClient = clientService.findClientByClientIdFromDatabase(clientId)
+    ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
@@ -237,7 +237,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public RegisteredClientDTO generateNewClientSecret(String clientId) {
-    ClientDetailsEntity client = clientService.findClientByClientIdFromDatabase(clientId)
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     client.setClientSecret(clientUtils.generateClientSecret());
