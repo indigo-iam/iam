@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: iam-sas
+
+  datasource:
+    url: jdbc:h2:mem:iam
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration/h2
