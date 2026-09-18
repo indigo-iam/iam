@@ -258,7 +258,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private boolean isRefreshTokenRequested(String grantType, Set<String> scopes) {
 
     return scopes.contains(SystemScopeService.OFFLINE_ACCESS_SCOPE)
-        && !grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.name());
+        && !grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType());
   }
 
   private OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
