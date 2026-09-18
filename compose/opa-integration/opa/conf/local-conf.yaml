@@ -1,0 +1,19 @@
+services:
+  gh:
+    url: https://ghcr.io
+    type: oci
+  local:
+    url: file:///etc/opa/policies.tar.gz
+
+bundles:
+  scope-policy-engine:
+    service: gh
+    resource: ghcr.io/indigo-iam/opa-iam:latest
+  policies:
+    service: local
+    resource: file:///etc/opa/policies.tar.gz
+
+decision_logs:
+  console: true
+
+default_decision: rules

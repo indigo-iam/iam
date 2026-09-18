@@ -132,7 +132,12 @@ iam:
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
 
-  enableScopeAuthz: ${IAM_ENABLE_SCOPE_AUTHZ:true}
+  scope-authz:
+    enabled: ${IAM_ENABLE_SCOPE_AUTHZ:true}
+    early-fail: ${IAM_EARLY_FAIL_SCOPE_AUTHZ:false}
+    opa:
+      enabled: ${IAM_OPA_ENABLED:false}
+      url: ${IAM_OPA_URL:http://localhost:8181/}
 
   access_token:
     include_authn_info: ${IAM_ACCESS_TOKEN_INCLUDE_AUTHN_INFO:false}

@@ -163,7 +163,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* update token scopes filtering the requested ones */
     Set<String> requestedScopes = getRequestedScopes(token, authentication);
-    token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
+    token.setScope(
+        scopeFilter.filterScopes(requestedScopes, authentication, token.getClient().getClientId()));
 
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
