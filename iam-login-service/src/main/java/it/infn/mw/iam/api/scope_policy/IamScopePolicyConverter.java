@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
-import it.infn.mw.iam.api.scope_policy.OpaPolicies.OpaPolicy;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 
 public interface IamScopePolicyConverter {

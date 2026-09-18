@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.scope_policy.OpaPolicies.OpaPolicy;
-import it.infn.mw.iam.api.scope_policy.OpaPolicies.OpaPolicy.Actor;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy.Actor;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
@@ -135,7 +135,8 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
       scopes.addAll(sp.getScopes());
     }
 
-    return new OpaPolicy(actor, sp.getDescription(), sp.getMatchingPolicy(), sp.getRule(), scopes);
+    return new OpaPolicy(actor, sp.getDescription(), sp.getMatchingPolicy(), sp.getRule(),
+        scopes);
   }
 
 }
