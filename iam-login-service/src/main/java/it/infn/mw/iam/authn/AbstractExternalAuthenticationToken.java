@@ -58,9 +58,9 @@ public abstract class AbstractExternalAuthenticationToken<T extends Serializable
     return wrappedAuthentication;
   }
 
-  public abstract Map<String, String> buildAuthnInfoMap();
+  public abstract Map<String, Object> buildAuthnInfoMap();
 
-  public abstract Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor);
+  public abstract Map<String, Object> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor);
 
   public abstract void linkToIamAccount(ExternalAccountLinker visitor, IamAccount account);
 

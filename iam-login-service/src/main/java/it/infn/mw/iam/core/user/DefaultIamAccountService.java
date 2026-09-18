@@ -172,11 +172,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       Supplier<String> externalGetter, Supplier<String> defaultGetter, Consumer<String> setter) {
 
     if (extAuthnInfo.isPresent() && isReadOnlyField(RegistrationField.NAME)) {
-      Map<String, String> attributes = extAuthnInfo.get().getAdditionalAttributes();
+      Map<String, Object> attributes = extAuthnInfo.get().getAdditionalAttributes();
       Optional<String> externalAuthAttribute = getExternalAuthAttribute(field);
       if (externalAuthAttribute.isPresent() && attributes.containsKey(externalAuthAttribute.get())
           && !defaultAttributeName.equals(externalAuthAttribute.get().toLowerCase())) {
-        setter.accept(attributes.get(externalAuthAttribute.get()));
+        setter.accept(attributes.get(externalAuthAttribute.get()).toString());
       } else {
         setter.accept(externalGetter.get());
       }

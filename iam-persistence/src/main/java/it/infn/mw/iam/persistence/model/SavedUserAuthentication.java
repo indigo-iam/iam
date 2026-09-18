@@ -37,6 +37,7 @@ import javax.persistence.Transient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
+import it.infn.mw.iam.persistence.model.converter.AdditionalInfoValueConverter;
 import it.infn.mw.iam.persistence.model.converter.SimpleGrantedAuthorityStringConverter;
 
 @Entity
@@ -67,9 +68,10 @@ public class SavedUserAuthentication implements Authentication {
 
   @ElementCollection(fetch = FetchType.EAGER)
   @MapKeyColumn(name = "info_key")
-  @Column(name = "info_val", length = 512)
+  @Column(name = "info_val", length = 4096)
   @CollectionTable(name = "saved_user_auth_info", joinColumns = @JoinColumn(name = "owner_id"))
-  private Map<String, String> additionalInfo = new HashMap<>();
+  @Convert(converter = AdditionalInfoValueConverter.class)
+  private Map<String, Object> additionalInfo = new HashMap<>();
 
   public SavedUserAuthentication(Authentication src) {
 
@@ -88,7 +90,7 @@ public class SavedUserAuthentication implements Authentication {
 
     }
 
-    if (src.getDetails() instanceof Map<?,?> details) {
+    if (src.getDetails() instanceof Map<?, ?> details) {
 
       Object acr = details.get("acr");
       if (acr != null) {
@@ -177,12 +179,12 @@ public class SavedUserAuthentication implements Authentication {
     this.authorities = authorities != null ? new HashSet<>(authorities) : null;
   }
 
-  public Map<String, String> getAdditionalInfo() {
+  public Map<String, Object> getAdditionalInfo() {
 
     return additionalInfo;
   }
 
-  public void setAdditionalInfo(Map<String, String> additionalInfo) {
+  public void setAdditionalInfo(Map<String, Object> additionalInfo) {
 
     this.additionalInfo = additionalInfo;
   }

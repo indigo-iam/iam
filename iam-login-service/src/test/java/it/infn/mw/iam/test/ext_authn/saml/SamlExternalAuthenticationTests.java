@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -53,7 +54,7 @@ class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
 
   @Autowired
   private IamAupRepository aupRepo;
-  
+
   private static final String URL_DASHBOARD = "/dashboard";
   private static final String URL_VERIFY = "/iam/verify";
   private static final String VIEW_VERIFY_MFA = "iam/verify-mfa";
@@ -88,7 +89,8 @@ class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
       .andExpect(jsonPath("$.type").value(equalTo(SAML.name())))
       .andExpect(jsonPath("$.issuer").value(equalTo(DEFAULT_IDP_ID)))
       .andExpect(jsonPath("$.subject").value(equalTo(T1_EPUID)))
-      .andExpect(jsonPath("$.suggested_username").value(equalTo(T1_EPPN)));
+      .andExpect(jsonPath("$.suggested_username").value(equalTo(T1_EPPN)))
+      .andExpect(jsonPath("$.additional_attributes.EPSA").value(equalTo(T1_EPSA)));
   }
 
   @Test
@@ -150,33 +152,33 @@ class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
     session = postMfaResponseAndExpectRedirect(response, authnRequest, session, URL_VERIFY);
 
     mvc.perform(get(URL_VERIFY).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name(VIEW_VERIFY_MFA));
-    
-    aupRepo.deleteAll();    
+      .andExpect(status().isOk())
+      .andExpect(view().name(VIEW_VERIFY_MFA));
+
+    aupRepo.deleteAll();
   }
 
   private MockHttpSession performInitialLogin() throws Exception {
     return (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
-        .andExpect(status().isOk())
-        .andReturn()
-        .getRequest()
-        .getSession();
+      .andExpect(status().isOk())
+      .andReturn()
+      .getRequest()
+      .getSession();
   }
 
-  private MockHttpSession postMfaResponseAndExpectRedirect(Response response, AuthnRequest authnRequest,
-      MockHttpSession session, String expectedUrl) throws Throwable {
+  private MockHttpSession postMfaResponseAndExpectRedirect(Response response,
+      AuthnRequest authnRequest, MockHttpSession session, String expectedUrl) throws Throwable {
     String encodedSaml = SamlUtils.signAndSerializeToBase64(response);
 
-    return (MockHttpSession) mvc.perform(
-        post(authnRequest.getAssertionConsumerServiceURL())
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .param("SAMLResponse", encodedSaml)
-            .session(session))
-        .andExpect(redirectedUrl(expectedUrl))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    return (MockHttpSession) mvc
+      .perform(post(authnRequest.getAssertionConsumerServiceURL())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("SAMLResponse", encodedSaml)
+        .session(session))
+      .andExpect(redirectedUrl(expectedUrl))
+      .andReturn()
+      .getRequest()
+      .getSession();
   }
 
   private void createDefaultAup() {

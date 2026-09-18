@@ -41,13 +41,13 @@ public class DefaultExternalAuthenticationInfoBuilder implements ExternalAuthent
     // Empty constructor required by Spring
   }
 
-  public Map<String, String> buildInfoMap(OidcExternalAuthenticationToken token) {
+  public Map<String, Object> buildInfoMap(OidcExternalAuthenticationToken token) {
     checkNotNull(token, "token cannot be null");
 
     return token.buildAuthnInfoMap();
   }
 
-  public Map<String, String> buildInfoMap(SamlExternalAuthenticationToken token) {
+  public Map<String, Object> buildInfoMap(SamlExternalAuthenticationToken token) {
     checkNotNull(token, "token cannot be null");
 
     return token.buildAuthnInfoMap();
