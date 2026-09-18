@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+             http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>it.infn.mw.iam.modern</groupId>
+        <artifactId>iam-modern</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>iam-persistence-jakarta</artifactId>
+    <packaging>jar</packaging>
+
+    <name>IAM Jakarta Persistence</name>
+
+    <dependencies>
+        <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+           <groupId>com.fasterxml.jackson.core</groupId>
+           <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+           <groupId>com.nimbusds</groupId>
+           <artifactId>nimbus-jose-jwt</artifactId>
+           <version>9.37.4</version>
+        </dependency>
+
+        <dependency>
+           <groupId>it.infn.mw.iam-db-migrations</groupId>
+           <artifactId>iam-db-migrations</artifactId>
+           <version>1.14.3</version>
+        </dependency>
+    </dependencies>
+
+</project>
