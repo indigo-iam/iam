@@ -33,12 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
@@ -47,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -70,6 +73,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   public static final String SIGN_AUP_URL_EXTENDED = "http://localhost/iam/aup/sign";
 
   public static final String SCOPE = "openid profile";
+
+  @Autowired
+  private CacheManager cacheManager;
 
   @Autowired
   IamAupRepository aupRepo;
@@ -98,6 +104,11 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
     ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     clientService.linkClientToAccount(client, accountRepo.findByUsername("test_199").get());
     clientService.linkClientToAccount(client, accountRepo.findByUsername("test_200").get());
+  }
+
+  @BeforeEach
+  void setup() {
+    cacheManager.getCache("Clients").clear();
   }
 
   @Test

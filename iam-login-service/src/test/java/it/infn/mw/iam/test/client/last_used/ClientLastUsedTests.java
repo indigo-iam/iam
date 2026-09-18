@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,9 @@ class ClientLastUsedTests extends TokenGetterUtils {
   static final String SCOPES = "offline_access";
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   IamProperties iamProperties;
 
   @Autowired
@@ -77,6 +81,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
   void init() {
     context.cleanupSecurityContext();
     now = LocalDate.ofInstant(clock.instant(), ZoneId.of("UTC"));
+    cacheManager.getCache("Clients").clear();
   }
 
   @Test

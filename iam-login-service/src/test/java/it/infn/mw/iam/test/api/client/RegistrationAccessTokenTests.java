@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
@@ -59,6 +60,9 @@ class RegistrationAccessTokenTests implements StructuredScopeTestSupportConstant
   Integer iamPort;
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   ClientManagementService managementService;
 
   @Autowired
@@ -78,6 +82,7 @@ class RegistrationAccessTokenTests implements StructuredScopeTestSupportConstant
   @BeforeEach
   void setup() {
     RestAssured.port = iamPort;
+    cacheManager.getCache("Clients").clear();
     registerUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/api/client-registration", iamPort);
     ownedClientsUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/account/me/clients", iamPort);
   }
