@@ -26,6 +26,8 @@
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
     <module>iam-test-client</module>
+    <module>iam-db-migrations</module>
+    <module>modern</module>
   </modules>
 
   <distributionManagement>
