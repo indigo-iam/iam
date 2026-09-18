@@ -148,7 +148,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void deleteClientByClientId(String clientId) {
 
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    ClientDetailsEntity client = clientService.findClientByClientIdFromDatabase(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     clientService.deleteClient(client);
@@ -158,7 +158,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void updateClientStatus(String clientId, boolean status, String userId) {
 
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    ClientDetailsEntity client = clientService.findClientByClientIdFromDatabase(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     client = clientService.updateClientStatus(client, status, userId);
     String message = "Client " + (status ? "enabled" : "disabled");
@@ -179,7 +179,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
 
-    ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
+    ClientDetailsEntity oldClient = clientService.findClientByClientIdFromDatabase(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
@@ -237,7 +237,7 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public RegisteredClientDTO generateNewClientSecret(String clientId) {
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    ClientDetailsEntity client = clientService.findClientByClientIdFromDatabase(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     client.setClientSecret(clientUtils.generateClientSecret());
@@ -267,7 +267,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public void assignClientOwner(String clientId, String accountId) {
 
     ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+        clientService.findClientByClientIdFromDatabase(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
     clientService.linkClientToAccount(client, account);
 
@@ -278,7 +278,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public void removeClientOwner(String clientId, String accountId) {
 
     ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+        clientService.findClientByClientIdFromDatabase(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
     clientService.unlinkClientFromAccount(client, account);
 

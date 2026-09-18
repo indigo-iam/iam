@@ -118,6 +118,10 @@ public class DefaultClientService implements ClientService {
     return clientRepo.findByClientId(clientId);
   }
 
+  @Override 
+  public Optional<ClientDetailsEntity> findClientByClientIdFromDatabase(String clientId) {
+    return clientRepo.findByClientId(clientId);
+  }
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientIdAndAccount(String clientId,
@@ -133,7 +137,7 @@ public class DefaultClientService implements ClientService {
     return Optional.empty();
   }
 
-  @CacheEvict(cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
+  @CacheEvict(cacheNames = "Clients", key = "#client.clientId", beforeInvocation = true, condition = "#client != null && #client.clientId != null")
   @Override
   public void deleteClient(ClientDetailsEntity client) {
     accountClientRepo.deleteByClientId(client.getId());
