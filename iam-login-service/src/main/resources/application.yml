@@ -157,7 +157,7 @@ iam:
     enabled-for: ${IAM_LOCAL_AUTHN_ENABLED_FOR:all}
 
   customization:
-    custom-login-page-content-url: ${IAM_CUSTOMIZATION_CUSTOM_LOGIN_PAGE_CONTENT_URL}
+    custom-login-page-content-url: ${IAM_CUSTOMIZATION_CUSTOM_LOGIN_PAGE_CONTENT_URL:}
     include-custom-login-page-content: ${IAM_CUSTOMIZATION_INCLUDE_CUSTOM_LOGIN_PAGE_CONTENT:false}
 
   user-profile:
@@ -247,10 +247,10 @@ client-registration:
 
 management:
   health:
-      redis:
-        enabled: ${IAM_HEALTH_REDIS_PROBE_ENABLED:false} 
-      mail:
-        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:false} 
+    redis:
+      enabled: ${IAM_HEALTH_REDIS_PROBE_ENABLED:false}
+    mail:
+      enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:false}
   endpoints:
     enabled-by-default: false
     web:
@@ -258,6 +258,7 @@ management:
         include:
         - info
         - health
+        - config
   endpoint:
     info:
       enabled: true
@@ -267,7 +268,7 @@ management:
       show-details: when-authorized
       roles:
       - ACTUATOR
-    metrics:
+    config:
       enabled: true
 
 rcauth:
