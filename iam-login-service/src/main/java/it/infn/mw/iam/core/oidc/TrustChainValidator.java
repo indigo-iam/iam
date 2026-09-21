@@ -144,8 +144,14 @@ public class TrustChainValidator {
   }
 
   private List<EntityStatement> stripIntermediateECs(List<EntityStatement> chain) {
-    if (chain.isEmpty())
+    if (chain.isEmpty()) {
       return chain;
+    }
+
+    // Only one entity
+    if (chain.size() == 1) {
+      return new ArrayList<>(chain);
+    }
 
     List<EntityStatement> cleaned = new ArrayList<>();
 
@@ -155,10 +161,12 @@ public class TrustChainValidator {
     }
 
     // ES only (skip intermediates ECs)
-    chain.subList(1, chain.size() - 1)
-      .stream()
-      .filter(es -> !es.getClaimsSet().isSelfStatement())
-      .forEach(cleaned::add);
+    if (chain.size() > 2) {
+      chain.subList(1, chain.size() - 1)
+        .stream()
+        .filter(es -> !es.getClaimsSet().isSelfStatement())
+        .forEach(cleaned::add);
+    }
 
     // TA EC
     EntityStatement last = chain.get(chain.size() - 1);

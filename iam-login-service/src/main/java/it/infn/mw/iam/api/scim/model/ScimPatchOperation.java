@@ -26,7 +26,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ScimPatchOperation<T> {
 
   public enum ScimPatchOperationType {
-    add, remove, replace
+    add, remove, replace;
+
+    @JsonCreator
+    public static ScimPatchOperationType fromValue(String value) {
+
+      if (value == null) {
+        return null;
+      }
+
+      for (ScimPatchOperationType type : values()) {
+        if (type.name().equalsIgnoreCase(value)) {
+          return type;
+        }
+      }
+
+      throw new IllegalArgumentException("Unsupported SCIM patch operation: " + value);
+    }
   }
 
   @NotNull

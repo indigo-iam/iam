@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.14.4 (2026-09-18)
+
+* Correct grant type comparison in refresh token validation
+
+## 1.14.3 (2026-09-14)
+
+* Fix the available values displayed in client cryptographic settings
+* Remove remaining MITREid dependencies from the login-service and persistence modules
+* Update refresh token persistence to use `ExpiringOAuth2RefreshToken`
+* Preserve external authentication information after MFA
+* Preserve the complete JSON UserInfo response when processing claims
+* Fix external OIDC provider client configuration properties
+* Include the `schac_home_organization` claim in access tokens
+* Add UserInfo audit events and improve logging during external OIDC authentication
+
 ## 1.14.2 (2026-07-24)
 
 * Fix broken client owners API calls

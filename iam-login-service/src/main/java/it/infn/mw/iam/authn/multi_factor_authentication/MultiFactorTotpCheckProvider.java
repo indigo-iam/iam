@@ -97,17 +97,20 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     Object principal;
     Object credentials;
     Set<GrantedAuthority> authorities;
+    AbstractExternalAuthenticationToken<?> externalAuthentication = null;
 
     if (authentication instanceof ExtendedAuthenticationToken token) {
       refs = token.getAuthenticationMethodReferences();
       principal = token.getPrincipal();
       credentials = token.getCredentials();
       authorities = token.getFullyAuthenticatedAuthorities();
+      externalAuthentication = token.getExternalAuthentication();
     } else if (authentication instanceof AbstractExternalAuthenticationToken<?> token) {
       refs = token.getAuthenticationMethodReferences();
       principal = token.getPrincipal();
       credentials = token.getCredentials();
       authorities = token.getFullyAuthenticatedAuthorities();
+      externalAuthentication = token;
     } else {
       throw new IllegalArgumentException(
           "Unsupported authentication type: " + authentication.getClass());
@@ -119,6 +122,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
         new ExtendedAuthenticationToken(principal, credentials, authorities);
     newToken.setAuthenticationMethodReferences(refs);
     newToken.setAuthenticated(true);
+    newToken.setExternalAuthentication(externalAuthentication);
 
     return newToken;
   }

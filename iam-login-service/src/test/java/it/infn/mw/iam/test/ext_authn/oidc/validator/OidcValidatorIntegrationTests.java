@@ -90,7 +90,7 @@ class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSuppo
   @BeforeEach
   void setup() {
     MockRestTemplateFactory tf = (MockRestTemplateFactory) restTemplateFactory;
-    tf.resetTemplate();
+    tf.resetServer();
   }
 
   @Test

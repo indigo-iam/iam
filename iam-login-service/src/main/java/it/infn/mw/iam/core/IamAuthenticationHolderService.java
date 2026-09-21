@@ -49,8 +49,17 @@ public class IamAuthenticationHolderService {
     Authentication userAuthentication = authn.getUserAuthentication();
     if (userAuthentication != null) {
       SavedUserAuthentication userAuth = new SavedUserAuthentication(userAuthentication);
+      AbstractExternalAuthenticationToken<?> externalToken = null;
+
       if (userAuthentication instanceof AbstractExternalAuthenticationToken<?> token) {
-        Map<String, String> info = token.buildAuthnInfoMap(mapBuilder);
+        externalToken = token;
+      } else if (userAuthentication instanceof ExtendedAuthenticationToken token) {
+        externalToken = token.getExternalAuthentication();
+      }
+      if (externalToken != null) {
+        userAuth.setSourceClass(externalToken.getClass().getName());
+
+        Map<String, String> info = externalToken.buildAuthnInfoMap(mapBuilder);
         userAuth.getAdditionalInfo().putAll(info);
       }
       holder.setUserAuth(userAuth);
@@ -62,7 +71,8 @@ public class IamAuthenticationHolderService {
     return repo.save(authHolder);
   }
 
-  public AuthenticationHolderEntity createAndSave(OAuth2Authentication authn, ClientDetailsEntity client) {
+  public AuthenticationHolderEntity createAndSave(OAuth2Authentication authn,
+      ClientDetailsEntity client) {
     return save(create(authn, client));
   }
 }

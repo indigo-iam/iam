@@ -191,7 +191,7 @@ public class OidcExternalAuthenticationTestsSupport {
   protected void verifyMockServerCalls() {
     MockRestTemplateFactory tf = (MockRestTemplateFactory) restTemplateFactory;
     tf.getMockServer().verify();
-    tf.resetTemplate();
+    tf.resetServer();
   }
 
 }

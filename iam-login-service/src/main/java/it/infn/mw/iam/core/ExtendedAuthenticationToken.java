@@ -23,6 +23,7 @@ import java.util.Set;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 
 /**
@@ -53,6 +54,7 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private String totp;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
   private boolean preAuthenticated;
+  private AbstractExternalAuthenticationToken<?> externalAuthentication;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -109,6 +111,15 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
   public void setPreAuthenticated(boolean preAuthenticated) {
     this.preAuthenticated = preAuthenticated;
+  }
+
+  public AbstractExternalAuthenticationToken<?> getExternalAuthentication() {
+    return externalAuthentication;
+  }
+
+  public void setExternalAuthentication(
+      AbstractExternalAuthenticationToken<?> externalAuthentication) {
+    this.externalAuthentication = externalAuthentication;
   }
 
   @Override

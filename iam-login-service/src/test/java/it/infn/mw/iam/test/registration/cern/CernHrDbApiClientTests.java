@@ -86,7 +86,7 @@ class CernHrDbApiClientTests extends CernTestSupport {
   @BeforeEach
   void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
-    mockRtf.resetTemplate();
+    mockRtf.resetServer();
   }
 
   @Test

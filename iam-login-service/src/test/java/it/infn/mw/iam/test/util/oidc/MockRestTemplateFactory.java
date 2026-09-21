@@ -28,11 +28,10 @@ public class MockRestTemplateFactory extends DefaultRestTemplateFactory {
 
   public MockRestTemplateFactory() {
     super(new HttpComponentsClientHttpRequestFactory());
-    resetTemplate();
+    template = new RestTemplate();
   }
 
-  public MockRestServiceServer resetTemplate() {
-    template = new RestTemplate();
+  public MockRestServiceServer resetServer() {
     mockServer = MockRestServiceServer.createServer(template);
     return mockServer;
   }
@@ -45,6 +44,4 @@ public class MockRestTemplateFactory extends DefaultRestTemplateFactory {
   public RestTemplate newRestTemplate() {
     return template;
   }
-
-
 }

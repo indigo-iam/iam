@@ -20,6 +20,8 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.StringUtils;
 
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
+import it.infn.mw.iam.api.scim.exception.ScimBulkPayloadSizeExceeded;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -80,9 +83,10 @@ public class ScimUsersBulkController extends ScimControllerSupport {
   @ResponseStatus(HttpStatus.OK)
   public MappingJacksonValue bulkPost(
       @RequestBody @Validated final ScimUsersBulkRequest bulkRequest,
-      final BindingResult validationResult) {
+      final BindingResult validationResult, HttpServletRequest request) {
 
     handleValidationError(INVALID_BULK_MSG, validationResult);
+    validateBulkPayloadSize(bulkRequest, request);
     Map<String, String> bulkIdMap = new HashMap<>();
     ScimUsersBulkResponse.Builder bulkResponse = ScimUsersBulkResponse.reponseBuilder();
 
@@ -115,6 +119,24 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     }
 
     return new MappingJacksonValue(bulkResponse.build());
+  }
+
+  private void validateBulkPayloadSize(ScimUsersBulkRequest bulkRequest,
+      HttpServletRequest request) {
+    long payloadSize = request.getContentLengthLong();
+
+    if (payloadSize < 0) {
+      try {
+        payloadSize = objectMapper.writeValueAsBytes(bulkRequest).length;
+      } catch (JsonProcessingException e) {
+        throw new ScimException("Failed to determine bulk payload size");
+      }
+    }
+
+    if (payloadSize > ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE) {
+      throw new ScimBulkPayloadSizeExceeded(
+          "Maximum payload size exceeded (" + ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE + " bytes)");
+    }
   }
 
   private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user,

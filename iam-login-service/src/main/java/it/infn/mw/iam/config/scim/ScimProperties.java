@@ -63,6 +63,7 @@ public class ScimProperties {
   List<AttributeDescriptor> includeAttributes = Lists.newArrayList();
   boolean includeAuthorities = false;
   boolean includeManagedGroups = false;
+  boolean enableAarc = false;
 
   public List<LabelDescriptor> getIncludeLabels() {
     return includeLabels;
@@ -94,5 +95,13 @@ public class ScimProperties {
 
   public void setIncludeManagedGroups(boolean includeManagedGroups) {
     this.includeManagedGroups = includeManagedGroups;
+  }
+
+  public boolean isEnableAarc() {
+    return enableAarc;
+  }
+
+  public void setEnableAarc(boolean enableAarc) {
+    this.enableAarc = enableAarc;
   }
 }
