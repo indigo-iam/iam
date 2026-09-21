@@ -1,0 +1,17 @@
+{
+    "user": {
+        "id": "30559491-17b8-4bc8-84b6-7825fb7c89e5",
+        "groups": [
+            "1234"
+        ]
+    },
+    "scopes": [
+        "openid",
+        "compute.read:/slash/pippo",
+        "storage.read:/slash/pippo",
+        "storage.read:/cms/pippo",
+        "storage.modify:/slash/",
+        "wlcg.groups:/pippo",
+        "storage.read:/30559491-17b8-4bc8-84b6-7825fb7c89e5/slash/pippo"
+    ]
+}

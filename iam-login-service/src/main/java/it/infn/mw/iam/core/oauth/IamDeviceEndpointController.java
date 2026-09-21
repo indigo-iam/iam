@@ -195,8 +195,8 @@ public class IamDeviceEndpointController {
 
     model.put("client", client);
 
-    Set<String> sortedAndFilteredScopes = userApprovalUtils.sortScopes(
-        scopeService.fromStrings(scopeFilter.filterScopes(authorizationRequest.getScope(), authn)));
+    Set<String> sortedAndFilteredScopes = userApprovalUtils.sortScopes(scopeService.fromStrings(
+        scopeFilter.filterScopes(authorizationRequest.getScope(), authn, client.getClientId())));
     dc.get().setScope(sortedAndFilteredScopes);
     deviceCodeRepository.save(dc.get());
 

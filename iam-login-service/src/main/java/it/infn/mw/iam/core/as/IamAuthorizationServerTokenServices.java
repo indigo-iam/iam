@@ -193,7 +193,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
         authenticationHolderService.create(authentication, client);
     OAuth2AccessTokenEntity accessToken = new OAuth2AccessTokenEntity();
     accessToken.setClient(client);
-    accessToken.setScope(computeScopes(request, authentication));
+    accessToken.setScope(computeScopes(request));
     accessToken.setExpiration(computeExpiration(request.getRequestParameters(), client, iat));
     accessToken.setAuthenticationHolder(authHolder);
 
@@ -284,7 +284,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     OAuth2RefreshTokenEntity refreshToken = new OAuth2RefreshTokenEntity();
     refreshToken.setExpiration(exp);
     refreshToken.setValue(refreshJwt.serialize());
-    refreshToken.setAuthenticationHolder(scopeFilter.filterScopes(authHolder));
+    refreshToken.setAuthenticationHolder(authHolder);
     refreshToken.setClient(client);
 
     refreshToken = saveRefreshToken(refreshToken);
@@ -315,12 +315,12 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
   }
 
-  private Set<String> computeScopes(OAuth2Request request, OAuth2Authentication authentication) {
+  private Set<String> computeScopes(OAuth2Request request) {
 
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(request.getScope());
     filteredScopes.removeAll(IamSystemScopeService.RESERVED_VALUES);
-    return scopeFilter.filterScopes(filteredScopes, authentication);
+    return filteredScopes;
   }
 
   private SignedJWT signClaims(JWTClaimsSet claims) {
@@ -577,7 +577,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     }
 
     if (account.isPresent()) {
-      return scopeFilter.filterScopes(scopesToFilter, account.get());
+      return scopeFilter.filterScopes(scopesToFilter, account.get(),
+          authHolder.getClient().getClientId());
     }
     return scopeFilter.filterScopes(authHolder).getScope();
   }
