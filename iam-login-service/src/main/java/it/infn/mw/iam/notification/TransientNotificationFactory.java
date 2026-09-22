@@ -18,10 +18,12 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +56,7 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -65,6 +68,9 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String MOTIVATION_FIELD = "motivation";
   private static final String AUP_PATH = "%s/iam/aup/sign";
   private static final String AUP_URL = "aupUrl";
+  private static final String NOTES_FIELD = "notes"; 
+  private static final String INDIGO_DASHBOARD_URL_FIELD = "indigoDashboardUrl";
+  private static final String INDIGO_DASHBOARD_PATH = "%s/dashboard#!/requests";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -162,9 +168,9 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(INDIGO_DASHBOARD_URL_FIELD, String.format(INDIGO_DASHBOARD_PATH, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
-    model.put("notes", request.getNotes());
+    model.put(NOTES_FIELD, request.getNotes());
 
     return createMessage("adminHandleRequest.ftl", model, IamNotificationType.CONFIRMATION,
         properties.getSubject().get("adminHandleRequest"),
@@ -202,8 +208,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", groupRequest.getAccount().getUserInfo().getName());
     model.put(USERNAME_FIELD, groupRequest.getAccount().getUsername());
     model.put(GROUPNAME_FIELD, groupName);
-    model.put("notes", groupRequest.getNotes());
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(NOTES_FIELD, groupRequest.getNotes());
+    model.put(INDIGO_DASHBOARD_URL_FIELD, String.format(INDIGO_DASHBOARD_PATH, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("New membership request for group %s", groupName);
@@ -259,6 +265,38 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
     return notification;
+  }
+
+  @Override
+  public IamEmailNotification createGroupMembershipReminderMessage(IamGroup group,
+      List<IamGroupRequest> pendingRequests, List<String> recipients) {
+    String groupName = group.getName();
+    SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy");
+
+    List<Map<String, Object>> pendingUsers = new ArrayList<>();
+    for (IamGroupRequest request : pendingRequests) {
+      Map<String, Object> entry = new HashMap<>();
+      entry.put("name", request.getAccount().getUserInfo().getName());
+      entry.put(USERNAME_FIELD, request.getAccount().getUsername());
+      entry.put(NOTES_FIELD, request.getNotes());
+      entry.put("requestDate", dateFormat.format(request.getCreationTime()));
+      pendingUsers.add(entry);
+    }
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(GROUPNAME_FIELD, groupName);
+    model.put("pendingUsers", pendingUsers);
+    model.put("requestCount", pendingRequests.size());
+    model.put(INDIGO_DASHBOARD_URL_FIELD, String.format(INDIGO_DASHBOARD_PATH, baseUrl));
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = String.format("Reminder: %d pending membership request(s) for group %s",
+        pendingRequests.size(), groupName);
+
+    LOG.debug("Create group membership reminder for group {} with {} pending request(s)",
+        groupName, pendingRequests.size());
+    return createMessage("groupMembershipReminder.ftl", model,
+        IamNotificationType.GROUP_MEMBERSHIP_REMINDER, subject, recipients);
   }
 
   @Override

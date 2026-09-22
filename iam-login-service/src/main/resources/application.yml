@@ -234,6 +234,13 @@ task:
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
   wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
+  groupRequestReminderPeriodSecs: ${IAM_GROUP_REQUEST_REMINDER_PERIOD_SECS:86400}
+
+group-request-reminder:
+  enabled: ${IAM_GROUP_REQUEST_REMINDER_ENABLED:false}
+  threshold-days: ${IAM_GROUP_REQUEST_REMINDER_THRESHOLD_DAYS:5}
+  repeat-interval-days: ${IAM_GROUP_REQUEST_REMINDER_REPEAT_INTERVAL_DAYS:2}
+  notify-admins: ${IAM_GROUP_REQUEST_REMINDER_NOTIFY_ADMINS:false}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
