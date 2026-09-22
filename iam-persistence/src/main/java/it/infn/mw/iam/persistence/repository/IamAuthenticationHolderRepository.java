@@ -31,7 +31,9 @@ public interface IamAuthenticationHolderRepository
   @Query("select a from AuthenticationHolderEntity a where "
       + "a.id not in (select t.authenticationHolder.id from OAuth2AccessTokenEntity t) and "
       + "a.id not in (select r.authenticationHolder.id from OAuth2RefreshTokenEntity r) and "
-      + "a.id not in (select c.authenticationHolder.id from AuthorizationCodeEntity c)")
+      + "a.id not in (select c.authenticationHolder.id from AuthorizationCodeEntity c) and "
+      + "a.id not in (select d.authenticationHolder.id from DeviceCode d "
+      + "where d.authenticationHolder is not null)")
   Page<AuthenticationHolderEntity> getOrphans(Pageable op, @Param("timestamp") Date timestamp);
 
 }
