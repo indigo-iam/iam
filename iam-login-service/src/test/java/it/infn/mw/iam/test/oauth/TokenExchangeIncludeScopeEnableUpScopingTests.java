@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,9 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
   private ListAppender<ILoggingEvent> logCaptor;
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   private ObjectMapper mapper;
 
   @BeforeEach
@@ -68,6 +72,7 @@ class TokenExchangeIncludeScopeEnableUpScopingTests extends EndpointsTestUtils {
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
       .scope("read-tasks")
       .getAccessTokenValue();
+    cacheManager.getCache("Clients").clear();
   }
 
   // Upscoping Enabled, Access token with scopes, no upscoping, No token introspection as there're

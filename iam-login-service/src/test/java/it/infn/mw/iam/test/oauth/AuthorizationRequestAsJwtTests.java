@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,6 +78,9 @@ class AuthorizationRequestAsJwtTests {
   @Autowired
   Clock clock;
 
+  @Autowired
+  private CacheManager cacheManager;
+
   private KeyPair rsaKeyPair;
 
   private static final String CLIENT_ID = "request-object-client";
@@ -93,6 +97,7 @@ class AuthorizationRequestAsJwtTests {
     client.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     client.setJwks(clientJwkSet);
     clientService.saveNewClient(client);
+    cacheManager.getCache("Clients").clear();
   }
 
   private ClientDetailsEntity prepareClient(String clientId) {
