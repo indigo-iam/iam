@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core;
 
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.ClientRegistrationException;
@@ -31,7 +33,8 @@ public class IamClientDetailsService implements ClientDetailsService {
   public IamClientDetailsService(IamClientRepository clientRepo) {
     this.clientRepo = clientRepo;
   }
-
+  
+  @Cacheable(cacheNames = "Clients", key = "#clientId")
   @Override
   public ClientDetails loadClientByClientId(String clientId) throws ClientRegistrationException {
 
