@@ -53,7 +53,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -82,7 +81,7 @@ class TokenExchangeTests extends EndpointsTestUtils {
   private CacheManager cacheManager;
 
   @BeforeEach
-  void setup() throws Exception {
+  void setup(){
     cacheManager.getCache("Clients").clear();
   }
 
