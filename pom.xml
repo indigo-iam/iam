@@ -40,8 +40,8 @@
     <mitreid.version>2.3.1.cnaf-20260728</mitreid.version>
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
-    <voms.version>3.3.8</voms.version>
-    <bc.version>1.84</bc.version>
+    <voms.version>3.4.0-SNAPSHOT</voms.version>
+    <bc.version>1.86</bc.version>
 
     <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
@@ -106,6 +106,17 @@
       </releases>
       <snapshots>
         <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <name>Central Portal Snapshots</name>
+      <id>central-portal-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
       </snapshots>
     </repository>
   </repositories>
