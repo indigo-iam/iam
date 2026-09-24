@@ -24,6 +24,7 @@ import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
+import static it.infn.mw.iam.core.lifecycle.InactiveAccountsTask.INACTIVITY_WARNING_LABEL;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
@@ -589,6 +590,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount disableAccount(IamAccount account) {
     account.setActive(false);
+    deleteLabel(account, IamLabel.builder().name(INACTIVITY_WARNING_LABEL).build());
     account.touch(clock.instant());
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));

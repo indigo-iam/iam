@@ -18,6 +18,9 @@ package it.infn.mw.iam.api.account.find;
 import static it.infn.mw.iam.api.utils.FindUtils.responseFromOptional;
 import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
 
+import java.time.Clock;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -42,12 +45,14 @@ public class DefaultFindAccountService implements FindAccountService {
   private final IamAccountRepository repo;
   private final IamGroupRepository groupRepo;
   private final UserConverter converter;
+  private final Clock clock;
 
   public DefaultFindAccountService(IamAccountRepository repo, IamGroupRepository groupRepo,
-      UserConverter converter) {
+      UserConverter converter, Clock clock) {
     this.repo = repo;
     this.groupRepo = groupRepo;
     this.converter = converter;
+    this.clock = clock;
   }
 
   @Override
@@ -141,5 +146,13 @@ public class DefaultFindAccountService implements FindAccountService {
   public ScimListResponse<ScimUser> findAccountByAuthority(String authority, Pageable pageable) {
     Page<IamAccount> account = repo.findByAuthority(authority, pageable);
     return responseFromPage(account, converter, pageable);
+  }
+
+  @Override
+  public ScimListResponse<ScimUser> findAccountsInactiveSince(int days, Pageable pageable) {
+
+    Date threshold = Date.from(clock.instant().minus(days, ChronoUnit.DAYS));
+    Page<IamAccount> results = repo.findInactiveAccountsSince(threshold, pageable);
+    return responseFromPage(results, converter, pageable);
   }
 }

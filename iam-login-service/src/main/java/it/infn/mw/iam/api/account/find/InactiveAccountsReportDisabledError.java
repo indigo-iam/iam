@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.api.account.find;
 
-public enum IamNotificationType {
+public class InactiveAccountsReportDisabledError extends RuntimeException {
 
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION,
-  AUP_SIGNATURE_REQUEST, ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, CLIENT_STATUS, CERTIFICATE_LINK,
-  CERTIFICATE_UNLINK, MFA_ENABLE, MFA_DISABLE, SET_SERVICE_ACCOUNT, REVOKE_SERVICE_ACCOUNT,
-  ACCOUNT_INACTIVITY_WARNING, ACCOUNT_EXPIRATION_WARNING;
+  private static final long serialVersionUID = 1L;
+
+  public InactiveAccountsReportDisabledError(String message) {
+    super(message);
+  }
+
 }
