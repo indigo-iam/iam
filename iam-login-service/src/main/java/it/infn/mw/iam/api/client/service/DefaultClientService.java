@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -46,9 +44,6 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Service
 @Transactional
 public class DefaultClientService implements ClientService {
-
-  private static final Logger logger =
-      LoggerFactory.getLogger(DefaultClientService.class);
 
   private final Clock clock;
 
@@ -120,7 +115,6 @@ public class DefaultClientService implements ClientService {
   @Cacheable(cacheNames = "Clients", key = "#clientId")
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
-    logger.info("CACHE MISS / METHOD EXECUTED: {}", clientId);
     return clientRepo.findByClientId(clientId);
   }
 
