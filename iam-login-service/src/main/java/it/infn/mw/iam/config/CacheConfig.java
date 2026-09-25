@@ -32,6 +32,7 @@ import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 
 @Configuration
 public class CacheConfig {
@@ -52,6 +53,7 @@ public class CacheConfig {
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
   CacheManager localCacheManager() {
     CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+    cacheManager.setAllowNullValues(false);
 
     cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
         Caffeine.newBuilder().build());
@@ -65,7 +67,7 @@ public class CacheConfig {
             .build());
 
     cacheManager.registerCustomCache(
-        "Clients",
+        DefaultClientService.CACHE_NAME,
         Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(1))
             .build());

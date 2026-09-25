@@ -23,8 +23,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +44,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Service
 @Transactional
 public class DefaultClientService implements ClientService {
+
+  public static final String CACHE_NAME = "clientDetailsEntities";
 
   private final Clock clock;
 
@@ -95,15 +97,18 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CachePut (cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
-  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
+  @Caching (evict = {
+    @CacheEvict(cacheNames = CACHE_NAME, key = "#client.clientId", condition = "#client != null && #client.clientId != null"),
+    @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
+    }
+  )  
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     return clientRepo.save(client);
   }
 
   @Override
-  @CachePut(cacheNames = "Clients", key = "#client.clientId", condition = "#client != null && #client.clientId != null")
+  @CacheEvict (cacheNames = CACHE_NAME, key = "#client.clientId", condition = "#client != null && #client.clientId != null")
   public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
       String userId) {
     client.setActive(status);
@@ -112,8 +117,8 @@ public class DefaultClientService implements ClientService {
     return clientRepo.save(client);
   }
 
-  @Cacheable(cacheNames = "Clients", key = "#clientId")
   @Override
+  @Cacheable(cacheNames = CACHE_NAME, key = "#clientId")
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
     return clientRepo.findByClientId(clientId);
   }
@@ -137,8 +142,8 @@ public class DefaultClientService implements ClientService {
     return Optional.empty();
   }
 
-  @CacheEvict(cacheNames = "Clients", key = "#client.clientId", beforeInvocation = true, condition = "#client != null && #client.clientId != null")
   @Override
+  @CacheEvict(cacheNames = CACHE_NAME, key = "#client.clientId", beforeInvocation = true, condition = "#client != null && #client.clientId != null")
   public void deleteClient(ClientDetailsEntity client) {
     accountClientRepo.deleteByClientId(client.getId());
     clientRepo.delete(client);
