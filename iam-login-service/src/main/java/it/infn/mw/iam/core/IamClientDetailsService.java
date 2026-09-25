@@ -15,12 +15,15 @@
  */
 package it.infn.mw.iam.core;
 
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.ClientRegistrationException;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -31,7 +34,8 @@ public class IamClientDetailsService implements ClientDetailsService {
   public IamClientDetailsService(IamClientRepository clientRepo) {
     this.clientRepo = clientRepo;
   }
-
+  
+  @Cacheable(cacheNames = DefaultClientService.CACHE_NAME, key = "#clientId")
   @Override
   public ClientDetails loadClientByClientId(String clientId) throws ClientRegistrationException {
 

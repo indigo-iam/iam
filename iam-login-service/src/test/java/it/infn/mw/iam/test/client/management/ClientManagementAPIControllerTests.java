@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -68,6 +69,9 @@ class ClientManagementAPIControllerTests {
   static final ResultMatcher FORBIDDEN = status().isForbidden();
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   MockMvc mvc;
 
   @Autowired
@@ -82,6 +86,7 @@ class ClientManagementAPIControllerTests {
   @BeforeEach
   void setup() {
     oauth2Filter.cleanupSecurityContext();
+    cacheManager.getCache("Clients").clear();
   }
 
   @AfterEach

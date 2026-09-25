@@ -32,6 +32,7 @@ import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 
 @Configuration
 public class CacheConfig {
@@ -52,6 +53,7 @@ public class CacheConfig {
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
   CacheManager localCacheManager() {
     CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+    cacheManager.setAllowNullValues(false);
 
     cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
         Caffeine.newBuilder().build());
@@ -61,8 +63,14 @@ public class CacheConfig {
 
     cacheManager.registerCustomCache(DefaultOidcDiscoveryService.CACHE_NAME,
         Caffeine.newBuilder()
-          .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
-          .build());
+            .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
+            .build());
+
+    cacheManager.registerCustomCache(
+        DefaultClientService.CACHE_NAME,
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .build());
 
     /* Access tokens by default expire in 1h */
     cacheManager.registerCustomCache(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
@@ -75,15 +83,14 @@ public class CacheConfig {
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
   RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
 
-    RedisCacheConfiguration config =
-        RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
+    RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
 
     return builder -> builder.withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY, config)
-      .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, config)
-      .withCacheConfiguration(DefaultOidcDiscoveryService.CACHE_NAME,
-          config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())))
-      .withCacheConfiguration(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
-          config.entryTtl(Duration.ofSeconds(3600)));
+        .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, config)
+        .withCacheConfiguration(DefaultOidcDiscoveryService.CACHE_NAME,
+            config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())))
+        .withCacheConfiguration(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
+            config.entryTtl(Duration.ofSeconds(3600)));
   }
 
 }

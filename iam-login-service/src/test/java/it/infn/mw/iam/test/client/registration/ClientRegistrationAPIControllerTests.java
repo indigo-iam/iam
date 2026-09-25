@@ -32,6 +32,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -50,6 +51,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 class ClientRegistrationAPIControllerTests {
+  
+  @Autowired
+  private CacheManager cacheManager;
 
   @Autowired
   MockMvc mvc;
@@ -76,6 +80,7 @@ class ClientRegistrationAPIControllerTests {
 
   @BeforeEach
   void setup() throws Exception {
+    cacheManager.getCache("Clients").clear();
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-upscoping");
@@ -107,6 +112,8 @@ class ClientRegistrationAPIControllerTests {
     mvc.perform(post(assingOwner).with(user("admin").roles("ADMIN"))).andExpect(CREATED);
 
     clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
+
+    
 
     assertEquals(false, clientUpscopingOff.isUpScopingEnabled());
   }
