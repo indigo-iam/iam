@@ -29,8 +29,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
- * Checks that every MySQL migration has a PostgreSQL counterpart with the same version and of
- * the same kind (SQL or Java), so that the two schemas do not diverge.
+ * Checks that every MySQL migration (and every test data migration) has a PostgreSQL counterpart
+ * with the same version and of the same kind (SQL or Java), so that they do not diverge.
  */
 class PostgresqlMigrationsParityTests {
 
@@ -59,5 +59,15 @@ class PostgresqlMigrationsParityTests {
 
     assertFalse(mysql.isEmpty());
     assertEquals(mysql, postgresql);
+  }
+
+  @Test
+  void postgresqlTestDataMigrationsMatchTheSharedOnes() throws IOException {
+
+    Map<String, String> test = migrations("test");
+    Map<String, String> postgresqlTest = migrations("postgresql_test");
+
+    assertFalse(test.isEmpty());
+    assertEquals(test, postgresqlTest);
   }
 }
