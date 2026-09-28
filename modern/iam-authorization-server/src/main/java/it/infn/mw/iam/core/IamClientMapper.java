@@ -21,13 +21,18 @@ import java.util.stream.Collectors;
 
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Component;
 
+import com.nimbusds.jose.JWSAlgorithm;
+
 import it.infn.mw.iam.persistence.client.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.client.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.client.model.PKCEAlgorithm;
 
 @Component
 public class IamClientMapper {
@@ -66,14 +71,13 @@ public class IamClientMapper {
       client.getPostLogoutRedirectUris().forEach(builder::postLogoutRedirectUri);
     }
 
-    ClientSettings.Builder clientSettingsBuilder =
-        ClientSettings.builder().requireProofKey(client.getCodeChallengeMethod() != null);
+    ClientSettings.Builder clientSettingsBuilder = ClientSettings.builder()
+      .requireProofKey(client.getCodeChallengeMethod() == PKCEAlgorithm.PLAIN
+          || client.getCodeChallengeMethod() == PKCEAlgorithm.S256);
 
     if (client.getJwksUri() != null && !client.getJwksUri().isBlank()) {
       clientSettingsBuilder.jwkSetUrl(client.getJwksUri());
     }
-
-    ClientSettings clientSettings = clientSettingsBuilder.build();
 
     TokenSettings.Builder tokenSettingsBuilder =
         TokenSettings.builder().reuseRefreshTokens(client.isReuseRefreshToken());
@@ -89,6 +93,13 @@ public class IamClientMapper {
       tokenSettingsBuilder
         .refreshTokenTimeToLive(Duration.ofSeconds(client.getRefreshTokenValiditySeconds()));
     }
+
+    if (client.getTokenEndpointAuthSigningAlg() != null) {
+      clientSettingsBuilder.tokenEndpointAuthenticationSigningAlgorithm(
+          toSpringJwsAlgorithm(client.getTokenEndpointAuthSigningAlg()));
+    }
+
+    ClientSettings clientSettings = clientSettingsBuilder.build();
 
     return builder.clientSettings(clientSettings)
       .tokenSettings(tokenSettingsBuilder.build())
@@ -114,6 +125,8 @@ public class IamClientMapper {
 
     client.setTokenEndpointAuthMethod(toClientAuthMethod(registeredClient));
 
+    client.setPostLogoutRedirectUris(registeredClient.getPostLogoutRedirectUris());
+
     /*
      * RegisteredClient -> ClientDetailsEntity is currently partial. Additional legacy/OIDC fields
      * can be mapped later.
@@ -134,6 +147,13 @@ public class IamClientMapper {
 
     client.setRefreshTokenValiditySeconds(Math
       .toIntExact(registeredClient.getTokenSettings().getRefreshTokenTimeToLive().getSeconds()));
+
+    JwsAlgorithm signingAlgorithm =
+        registeredClient.getClientSettings().getTokenEndpointAuthenticationSigningAlgorithm();
+
+    if (signingAlgorithm != null) {
+      client.setTokenEndpointAuthSigningAlg(toNimbusJwsAlgorithm(signingAlgorithm));
+    }
 
     return client;
   }
@@ -167,5 +187,32 @@ public class IamClientMapper {
     }
 
     throw new IllegalArgumentException("Unsupported client authentication method: " + method);
+  }
+
+  private JwsAlgorithm toSpringJwsAlgorithm(JWSAlgorithm algorithm) {
+    if (algorithm == null) {
+      return null;
+    }
+
+    return switch (algorithm.getName()) {
+      case "RS256" -> SignatureAlgorithm.RS256;
+      case "RS384" -> SignatureAlgorithm.RS384;
+      case "RS512" -> SignatureAlgorithm.RS512;
+      case "PS256" -> SignatureAlgorithm.PS256;
+      case "PS384" -> SignatureAlgorithm.PS384;
+      case "PS512" -> SignatureAlgorithm.PS512;
+      case "ES256" -> SignatureAlgorithm.ES256;
+      case "ES384" -> SignatureAlgorithm.ES384;
+      case "ES512" -> SignatureAlgorithm.ES512;
+      default -> throw new IllegalArgumentException(
+          "Unsupported JWS algorithm: " + algorithm.getName());
+    };
+  }
+
+  private JWSAlgorithm toNimbusJwsAlgorithm(JwsAlgorithm algorithm) {
+    if (algorithm == null) {
+      return null;
+    }
+    return JWSAlgorithm.parse(algorithm.getName());
   }
 }
