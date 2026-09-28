@@ -17,9 +17,11 @@ package it.infn.mw.iam.authn.oidc;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -52,12 +54,15 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
   private void basicAuthRequest(OidcClient oidcClientConfig, HttpHeaders headers) {
 
-    String auth = oidcClientConfig.clientId() + ":" + oidcClientConfig.clientSecret();
-    byte[] encodedAuth = org.apache.commons.codec.binary.Base64
-      .encodeBase64(auth.getBytes(StandardCharsets.US_ASCII));
-    String authHeader = "Basic " + new String(encodedAuth);
+    String encodedClientId = URLEncoder.encode(oidcClientConfig.clientId(), StandardCharsets.UTF_8);
 
-    headers.set("Authorization", authHeader);
+    String encodedClientSecret =
+        URLEncoder.encode(oidcClientConfig.clientSecret(), StandardCharsets.UTF_8);
+
+    String auth = encodedClientId + ":" + encodedClientSecret;
+    String authHeader = "Basic " + Base64.encodeBase64String(auth.getBytes(StandardCharsets.UTF_8));
+
+    headers.set(HttpHeaders.AUTHORIZATION, authHeader);
   }
 
   protected void formAuthRequest(OidcClient oidcClientConfig,
@@ -65,7 +70,6 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     requestParams.add("client_id", oidcClientConfig.clientId());
     requestParams.add("client_secret", oidcClientConfig.clientSecret());
-
   }
 
   protected HttpEntity<MultiValueMap<String, String>> prepareTokenRequest(

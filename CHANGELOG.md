@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.4 (2026-09-18)
+
+* Correct grant type comparison in refresh token validation
+
 ## 1.14.3 (2026-09-14)
 
 * Fix the available values displayed in client cryptographic settings
