@@ -7,7 +7,6 @@ In this guide you will get an overview of the contribution workflow from opening
 ## Development environment
 
 The INDIGO IAM service is a [Maven][maven] project built with Java 17.  
-To download the necessary dependencies from the [CNAF Repository platform][repo] (e.g. to include the patched version of [MitreID][mitre]), add the maven [settings file][mvn-settings] locally, at `~/.m2/settings.xml`.
 
 Run
 
@@ -142,9 +141,6 @@ Even tough we will squash all commits of a PR into an inclusive, long commit, we
 
 
 [maven]: https://maven.apache.org/
-[repo]: https://repo.cloud.cnaf.infn.it/
-[mitre]: https://github.com/indigo-iam/OpenID-Connect-Java-Spring-Server
-[mvn-settings]: https://github.com/italiangrid/build-settings/blob/master/maven/cnaf-mirror-settings.xml
 [formatter]: https://github.com/italiangrid/codestyle/blob/master/eclipse-google-java-codestyle-formatter.xml
 [sonar]: https://docs.sonarcloud.io/
 [git-commit]: https://cbea.ms/git-commit/
