@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.scim;
 
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
+import static it.infn.mw.iam.test.scim.ScimUtils.getGroupsLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getMeLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersBulkLocation;
@@ -115,6 +116,11 @@ public class ScimRestUtilsMvc extends RestUtils {
   public ResultActions getMe(HttpStatus expectedStatus) throws Exception {
 
     return doGet(getMeLocation(), SCIM_CONTENT_TYPE, expectedStatus);
+  }
+
+  public ResultActions getGroups() throws Exception {
+
+    return doGet(getGroupsLocation(), SCIM_CONTENT_TYPE, OK);
   }
 
   public ResultActions putUser(String uuid, ScimUser user, HttpStatus expectedStatus)
