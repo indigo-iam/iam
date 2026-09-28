@@ -44,7 +44,7 @@
         <dependency>
            <groupId>it.infn.mw.iam-db-migrations</groupId>
            <artifactId>iam-db-migrations</artifactId>
-           <version>1.14.3</version>
+           <version>1.14.4</version>
         </dependency>
     </dependencies>
 
