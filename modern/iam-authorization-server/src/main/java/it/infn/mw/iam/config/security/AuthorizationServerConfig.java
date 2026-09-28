@@ -31,7 +31,7 @@ public class AuthorizationServerConfig {
 
   @Bean
   @Order(1)
-  SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+  SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) {
 
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
         new OAuth2AuthorizationServerConfigurer();

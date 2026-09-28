@@ -99,10 +99,7 @@ public class IamClientMapper {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
 
-    if (registeredClient.getId() != null) {
-      client.setId(Long.valueOf(registeredClient.getId()));
-    }
-
+    client.setId(Long.valueOf(registeredClient.getId()));
     client.setClientId(registeredClient.getClientId());
     client.setClientSecret(registeredClient.getClientSecret());
     client.setClientName(registeredClient.getClientName());

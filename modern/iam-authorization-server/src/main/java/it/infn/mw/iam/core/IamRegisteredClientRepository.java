@@ -45,6 +45,6 @@ public class IamRegisteredClientRepository implements RegisteredClientRepository
 
   @Override
   public void save(RegisteredClient registeredClient) {
-    System.out.println("Dynamic Client Registration not supported yet");
+    // Dynamic Client Registration not supported yet
   }
 }
