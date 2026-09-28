@@ -51,6 +51,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -107,7 +108,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
 
   @BeforeEach
   void setup() {
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test

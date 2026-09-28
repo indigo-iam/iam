@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.ClientLastUsedEntity;
 import it.infn.mw.iam.test.config.ClockConfig;
@@ -81,7 +82,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
   void init() {
     context.cleanupSecurityContext();
     now = LocalDate.ofInstant(clock.instant(), ZoneId.of("UTC"));
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test

@@ -44,6 +44,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 
 @SuppressWarnings("deprecation")
@@ -71,7 +72,7 @@ class TokenExchangeExcludeScopeEnableUpScopingTests extends EndpointsTestUtils {
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
       .scope("read-tasks")
       .getAccessTokenValue();
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test

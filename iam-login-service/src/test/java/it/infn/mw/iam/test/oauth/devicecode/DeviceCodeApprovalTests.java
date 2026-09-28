@@ -50,6 +50,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.consent.ConsentGrantController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
@@ -81,7 +82,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
 
   @BeforeEach
   void saveConfig() {
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
     originalIssuer = config.getIssuer();
     originalAllowCompleteUri = config.getDeviceCode().getAllowCompleteVerificationUri();
   }

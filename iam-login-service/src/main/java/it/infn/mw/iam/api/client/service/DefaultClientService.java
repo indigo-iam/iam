@@ -118,7 +118,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @Cacheable(cacheNames = CACHE_NAME, key = "#clientId")
+  @Cacheable(cacheNames = CACHE_NAME, key = "#clientId", unless = "#result == null")
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
     return clientRepo.findByClientId(clientId);
   }

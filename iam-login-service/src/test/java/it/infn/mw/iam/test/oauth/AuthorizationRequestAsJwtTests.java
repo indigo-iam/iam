@@ -61,6 +61,7 @@ import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
@@ -97,7 +98,7 @@ class AuthorizationRequestAsJwtTests {
     client.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     client.setJwks(clientJwkSet);
     clientService.saveNewClient(client);
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   private ClientDetailsEntity prepareClient(String clientId) {

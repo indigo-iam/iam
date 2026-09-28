@@ -63,6 +63,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
@@ -115,7 +116,7 @@ class AutomaticClientRegistrationTests {
     JWTSigningAndValidationService validator = new IamJWTSigningService(keyStore);
 
     when(jwkService.getValidator(anyString())).thenReturn(validator);
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   private String generateRequestJWT(String entityId, String redirectUri, List<String> trustChain)

@@ -47,6 +47,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
@@ -86,7 +87,7 @@ class ClientManagementAPIControllerTests {
   @BeforeEach
   void setup() {
     oauth2Filter.cleanupSecurityContext();
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @AfterEach

@@ -35,7 +35,7 @@ public class IamClientDetailsService implements ClientDetailsService {
     this.clientRepo = clientRepo;
   }
   
-  @Cacheable(cacheNames = DefaultClientService.CACHE_NAME, key = "#clientId")
+  @Cacheable(cacheNames = DefaultClientService.CACHE_NAME, key = "#clientId", unless = "#result == null")
   @Override
   public ClientDetails loadClientByClientId(String clientId) throws ClientRegistrationException {
 

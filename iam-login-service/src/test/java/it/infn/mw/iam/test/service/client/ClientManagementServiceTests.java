@@ -54,6 +54,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
@@ -98,7 +99,7 @@ class ClientManagementServiceTests {
 
   @BeforeEach
   void setup() {
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test

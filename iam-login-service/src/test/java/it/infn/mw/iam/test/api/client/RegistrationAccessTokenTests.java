@@ -44,6 +44,7 @@ import com.nimbusds.jwt.JWTParser;
 import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -82,7 +83,7 @@ class RegistrationAccessTokenTests implements StructuredScopeTestSupportConstant
   @BeforeEach
   void setup() {
     RestAssured.port = iamPort;
-    cacheManager.getCache("Clients").clear();
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
     registerUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/api/client-registration", iamPort);
     ownedClientsUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/account/me/clients", iamPort);
   }
