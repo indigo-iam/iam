@@ -69,6 +69,7 @@ public class CacheConfig {
     cacheManager.registerCustomCache(
         DefaultClientService.CACHE_NAME,
         Caffeine.newBuilder()
+            .maximumSize(4000)
             .expireAfterWrite(Duration.ofMinutes(1))
             .build());
 
