@@ -210,9 +210,9 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   @Test
   void expiredDeviceCodeHolderIsCollected() {
 
-    DeviceCode dc =
-        deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));
-    codeService.approveDeviceCode(dc, getOAuth2Authentication());
+    DeviceCode dc = createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid"));
+    dc.setExpiration(Date.from(clock.now().toInstant().minus(Duration.ofMinutes(1))));
+    codeService.approveDeviceCode(deviceCodeRepository.save(dc), getOAuth2Authentication());
     assertThat(authenticationHolderRepository.count(), equalTo(1L));
     gc.clearOrphanedAuthenticationHolder(10);
     assertThat(authenticationHolderRepository.count(), equalTo(0L));
