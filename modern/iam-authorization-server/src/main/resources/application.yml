@@ -7,6 +7,11 @@ spring:
     username: sa
     password:
 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -16,3 +21,4 @@ spring:
     enabled: true
     locations:
       - classpath:db/migration/h2
+      - classpath:db/migration/test
