@@ -23,21 +23,21 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 @Service
 public class ClientUtils {
 
-  public static final Set<AuthMethod> AUTH_METHODS_REQUIRING_SECRET =
-      Set.of(AuthMethod.SECRET_BASIC, AuthMethod.SECRET_POST, AuthMethod.SECRET_JWT);
+  public static final Set<ClientAuthMethod> AUTH_METHODS_REQUIRING_SECRET =
+      Set.of(ClientAuthMethod.SECRET_BASIC, ClientAuthMethod.SECRET_POST, ClientAuthMethod.SECRET_JWT);
 
   private static final int SECRET_SIZE = 512;
   private static final int BCRYPT_MAX_SIZE = 72;
@@ -77,10 +77,8 @@ public class ClientUtils {
           properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
     }
 
-    client.setAllowIntrospection(true);
-
     if (isNull(client.getTokenEndpointAuthMethod())) {
-      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+      client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     }
 
     if (isNull(client.getClientSecret())
@@ -89,8 +87,7 @@ public class ClientUtils {
     }
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
-    client.setClearAccessTokensOnRefresh(false);
-    client.setCodeChallengeMethod(PKCEAlgorithm.optional);
+    client.setCodeChallengeMethod(PKCEAlgorithm.OPTIONAL);
     return client;
   }
 
@@ -105,7 +102,6 @@ public class ClientUtils {
     client.setRefreshTokenValiditySeconds(0);
     client.setIdTokenValiditySeconds(0);
     client.setDeviceCodeValiditySeconds(0);
-    client.setAllowIntrospection(true);
     client.setGrantTypes(Set.of());
     client.setResponseTypes(Set.of());
     client.setRedirectUris(Set.of());
@@ -113,24 +109,15 @@ public class ClientUtils {
     client.setActive(true);
     client.setDefaultACRvalues(Set.of());
     client.setDefaultMaxAge(null);
-    client.setIdTokenEncryptedResponseAlg(null);
-    client.setIdTokenEncryptedResponseEnc(null);
-    client.setIdTokenSignedResponseAlg(null);
     client.setInitiateLoginUri(null);
     client.setRequestObjectSigningAlg(null);
     client.setRequireAuthTime(null);
     client.setReuseRefreshToken(false);
-    client.setSectorIdentifierUri(null);
-    client.setSubjectType(null);
-    client.setUserInfoEncryptedResponseAlg(null);
-    client.setUserInfoEncryptedResponseEnc(null);
-    client.setUserInfoSignedResponseAlg(null);
     client.setDynamicallyRegistered(true);
-    client.setAllowIntrospection(true);
     client.setUpScopingEnabled(false);
-    client.setCodeChallengeMethod(PKCEAlgorithm.none);
+    client.setCodeChallengeMethod(PKCEAlgorithm.NONE);
     if (isNull(client.getTokenEndpointAuthMethod())) {
-      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+      client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     }
     if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
       client.setClientSecret(generateClientSecret());
@@ -138,7 +125,6 @@ public class ClientUtils {
       client.setClientSecret(null);
     }
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
-    client.setClearAccessTokensOnRefresh(false);
     return client;
   }
 }

@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.time.Clock;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,7 +33,9 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
@@ -94,12 +94,12 @@ public class OidcMultiProviderTestConfig {
 
   @Bean
   @Primary
-  JWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
+  IamJWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
 
     JWTSigningAndValidationService signatureValidator =
         new IamJWTSigningService(mockOidcProviderKeyStore());
 
-    JWKSetCacheService mockCacheService = Mockito.mock(JWKSetCacheService.class);
+    IamJWKSetCacheService mockCacheService = Mockito.mock(IamJWKSetCacheService.class);
     Mockito.when(mockCacheService.getValidator(TEST_OIDC_01_JWKS_URI))
       .thenReturn(signatureValidator);
     Mockito.when(mockCacheService.getValidator(TEST_OIDC_02_JWKS_URI))

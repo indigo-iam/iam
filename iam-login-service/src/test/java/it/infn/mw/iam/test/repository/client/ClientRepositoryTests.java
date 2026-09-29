@@ -35,7 +35,6 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,6 +48,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;

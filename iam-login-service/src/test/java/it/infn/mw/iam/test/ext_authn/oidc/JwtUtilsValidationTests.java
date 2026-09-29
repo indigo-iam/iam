@@ -32,7 +32,6 @@ import javax.servlet.http.HttpSession;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mockito.Mock;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
@@ -50,6 +49,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.authn.util.JwtUtils;
 import it.infn.mw.iam.authn.util.SessionUtils;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 
 class JwtUtilsValidationTests {
 

@@ -42,7 +42,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -59,8 +58,9 @@ import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.consent.ApprovedSiteController;
+import it.infn.mw.iam.api.consent.ConsentGrantController;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
@@ -480,7 +480,7 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get(ApprovedSiteController.URL).session(session))
+    mvc.perform(get(ConsentGrantController.URL).session(session))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[*].clientId", not(hasItem(DEVICE_CODE_CLIENT_ID))))
       .andExpect(jsonPath("$[*].userId", not(hasItem(TEST_USERNAME))));

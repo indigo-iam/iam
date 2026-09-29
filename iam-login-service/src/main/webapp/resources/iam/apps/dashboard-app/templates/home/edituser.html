@@ -28,11 +28,11 @@
             <label class="control-label col-sm-2" for="name">Name</label>
             <div ng-class="{'has-error': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'has-success': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}">
                 <div class="col-sm-10">
-                    <input class="form-control" name="name" id="name" type="text" ng-model="editMeCtrl.eUser.name" placeholder="First name" required ng-minlength="3"/>
+                    <input class="form-control" name="name" id="name" type="text" ng-model="editMeCtrl.eUser.name" placeholder="First name" required ng-minlength="2"/>
                     <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'glyphicon-ok': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}" style="right: 15px"></span>
                     <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.required">
                         This is a required field</span>
-                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.minlength">Minimum length required is 3</span>
+                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.minlength">Minimum length required is 2</span>
                 </div>
             </div>
         </div>
@@ -41,11 +41,11 @@
             <label class="control-label col-sm-2" for="surname">Surname</label>
             <div ng-class="{'has-error': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'has-success': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}">
                 <div class="col-sm-10">
-                    <input class="form-control" name="surname" id="surname" type="text" ng-model="editMeCtrl.eUser.surname" placeholder="Family name" required ng-minlength="3"/>
+                    <input class="form-control" name="surname" id="surname" type="text" ng-model="editMeCtrl.eUser.surname" placeholder="Family name" required ng-minlength="2"/>
                     <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'glyphicon-ok': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}" style="right: 15px"></span>
                     <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.required">
                         This is a required field</span>
-                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.minlength">Minimum length required is 3</span>
+                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.minlength">Minimum length required is 2</span>
                 </div>
             </div>
         </div>

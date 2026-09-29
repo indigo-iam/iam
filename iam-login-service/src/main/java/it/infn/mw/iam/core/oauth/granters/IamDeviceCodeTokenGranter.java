@@ -19,10 +19,9 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.Date;
 
-import org.mitre.oauth2.exception.AuthorizationPendingException;
-import org.mitre.oauth2.model.DeviceCode;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -31,8 +30,9 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
-import it.infn.mw.iam.core.oauth.device.DeviceCodeExpiredException;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exceptions.AuthorizationPendingException;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 
 @SuppressWarnings("deprecation")
 public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
@@ -56,14 +56,14 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
 
     String deviceCode = tokenRequest.getRequestParameters().get("device_code");
 
-    DeviceCode dc = deviceCodeService.findByDeviceCodeAndClient(deviceCode, client)
+    DeviceCode dc = deviceCodeService.findByDeviceCodeAndClientId(deviceCode, client.getClientId())
       .orElseThrow(() -> new InvalidGrantException("Invalid device code: " + deviceCode));
 
     final Date now = Date.from(clock.instant());
 
     if (dc.getExpiration() != null && dc.getExpiration().before(now)) {
       deviceCodeService.clearDeviceCode(dc);
-      throw new DeviceCodeExpiredException("Device code has expired: " + deviceCode);
+      throw new OAuth2Exception("Device code has expired: " + deviceCode);
     }
 
     if (!dc.isApproved()) {

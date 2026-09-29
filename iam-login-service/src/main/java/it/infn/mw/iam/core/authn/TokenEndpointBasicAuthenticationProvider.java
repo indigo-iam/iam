@@ -15,11 +15,13 @@
  */
 package it.infn.mw.iam.core.authn;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @SuppressWarnings("deprecation")
 @Component
@@ -46,12 +50,13 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-    String clientId = authentication.getName();
+    String clientId = URLDecoder.decode(authentication.getName(), StandardCharsets.UTF_8);
+
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(
           () -> new BadCredentialsException("Client with id " + clientId + " was not found"));
 
-    if (AuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
+    if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
         && client.getClientSecret() != null) {
       throw new AuthenticationServiceException("Public client requires no secret");
     }
@@ -59,11 +64,18 @@ public class TokenEndpointBasicAuthenticationProvider extends DaoAuthenticationP
       throw new BadCredentialsException("Client does not support basic authentication");
     }
 
+    if (ClientAuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod())) {
+      String clientSecret =
+          URLDecoder.decode(authentication.getCredentials().toString(), StandardCharsets.UTF_8);
+
+      return super.authenticate(new UsernamePasswordAuthenticationToken(clientId, clientSecret));
+    }
+
     return super.authenticate(authentication);
   }
 
   private boolean supportsBasic(ClientDetailsEntity c) {
-    return AuthMethod.SECRET_BASIC.equals(c.getTokenEndpointAuthMethod())
-        || AuthMethod.NONE.equals(c.getTokenEndpointAuthMethod());
+    return ClientAuthMethod.SECRET_BASIC.equals(c.getTokenEndpointAuthMethod())
+        || ClientAuthMethod.NONE.equals(c.getTokenEndpointAuthMethod());
   }
 }

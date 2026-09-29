@@ -32,10 +32,6 @@ import java.util.function.Supplier;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -64,9 +60,13 @@ import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @Service
 @ConditionalOnProperty(name = "client-registration.enable", havingValue = "true",
@@ -475,7 +475,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
     newClient.setDeviceCodeValiditySeconds(oldClient.getDeviceCodeValiditySeconds());
     newClient.setDynamicallyRegistered(true);
-    newClient.setAllowIntrospection(oldClient.isAllowIntrospection());
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());

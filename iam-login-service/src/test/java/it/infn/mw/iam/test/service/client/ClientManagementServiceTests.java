@@ -37,7 +37,6 @@ import java.util.Set;
 import javax.validation.ConstraintViolationException;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -60,6 +59,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;

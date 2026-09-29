@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.CLIENT_ID;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,10 +28,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
+
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class AuthorizationRequestFilter extends GenericFilterBean {
 
@@ -74,7 +73,7 @@ public class AuthorizationRequestFilter extends GenericFilterBean {
     HttpSession session = request.getSession();
     Map<String,String> params = createRequestMap(request.getParameterMap());
 
-    String clientId = params.get(CLIENT_ID);
+    String clientId = params.get(ConnectRequestParameters.CLIENT_ID);
 
     Optional<ClientDetailsEntity> client =
         clientResolver.resolveClient(clientId, params, response);

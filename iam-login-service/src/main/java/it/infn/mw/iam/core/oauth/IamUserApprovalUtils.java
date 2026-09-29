@@ -25,9 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -35,10 +32,13 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
-import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 @Component
 public class IamUserApprovalUtils {
@@ -47,16 +47,16 @@ public class IamUserApprovalUtils {
   private final SystemScopeService scopeService;
   private final IamAccountService accountService;
   private final JWTProfileResolver profileResolver;
-  private final ApprovedSiteService approvedSiteService;
+  private final ConsentGrantService consentGrantService;
 
   public IamUserApprovalUtils(Clock clock, SystemScopeService scopeService,
       IamAccountService accountService, JWTProfileResolver profileResolver,
-      ApprovedSiteService approvedSiteService) {
+      ConsentGrantService consentGrantService) {
     this.clock = clock;
     this.scopeService = scopeService;
     this.accountService = accountService;
     this.profileResolver = profileResolver;
-    this.approvedSiteService = approvedSiteService;
+    this.consentGrantService = consentGrantService;
   }
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
@@ -103,9 +103,9 @@ public class IamUserApprovalUtils {
     return claimsForScopes;
   }
 
-  public Integer approvedSiteCount(String clientId) {
+  public Integer consentGrantCount(String clientId) {
 
-    return approvedSiteService.getByClientId(clientId).size();
+    return consentGrantService.getByClientId(clientId).size();
   }
 
   public Boolean isSafeClient(Integer count, Date clientCreatedAt) {

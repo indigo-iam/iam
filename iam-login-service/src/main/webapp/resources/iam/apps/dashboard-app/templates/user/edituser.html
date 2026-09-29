@@ -35,12 +35,12 @@
                         placeholder="First name"
                         required
                         type="text"
-                        ng-minlength="3"
+                        ng-minlength="2"
                         ng-maxlength="64"
                         ng-model="editUserCtrl.eUser.name"
                         ng-pattern="editUserCtrl.pattern" />
                     <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.required"> This is a required field </span>
-                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.minlength"> Minimum length required is 3 </span>
+                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.minlength"> Minimum length required is 2 </span>
                     <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.maxlength"> Maximum length is 64 </span>
                     <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.pattern"> Invalid characters </span>
                 </div>
@@ -58,13 +58,13 @@
                         placeholder="Family name"
                         required
                         type="text"
-                        ng-minlength="3"
+                        ng-minlength="2"
                         ng-maxlength="64"
                         ng-model="editUserCtrl.eUser.surname"
                         ng-pattern="editUserCtrl.pattern" />
                     <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'glyphicon-ok': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}" style="right: 15px"></span>
                     <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.required"> This is a required field </span>
-                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.minlength"> Minimum length required is 3 </span>
+                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.minlength"> Minimum length required is 2 </span>
                     <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.maxlength"> Maximum length is 64 </span>
                     <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.pattern"> Invalid characters </span>
                 </div>
@@ -107,7 +107,7 @@
                         ng-model="editUserCtrl.eUser.username"
                         placeholder="Username"
                         required
-                        ng-minlength="3"
+                        ng-minlength="2"
                         ng-maxlength="128"
                         iam-username-available-validator
                         ng-pattern="editUserCtrl.pattern" />
@@ -117,7 +117,7 @@
                         style="right: 15px"></span>
                     <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.required">
                         This is a required field</span>
-                    <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.minlength"> Minimum length required is 3 </span>
+                    <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.minlength"> Minimum length required is 2 </span>
                     <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.maxlength"> Maximum length required is 128 </span>
                     <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.usernameAvailable"> Username already in use </span>
                     <span class="help-block" ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.pattern"> Invalid characters </span>

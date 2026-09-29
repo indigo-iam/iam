@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationE
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -33,8 +34,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.AttributeDTO;
 import it.infn.mw.iam.api.common.AttributeDTOConverter;
@@ -74,7 +73,7 @@ public class AccountAttributesController {
     IamAccount account =
         accountService.findByUuid(id).orElseThrow(() -> NoSuchAccountError.forUuid(id));
 
-    List<AttributeDTO> results = Lists.newArrayList();
+    List<AttributeDTO> results = new ArrayList<>();
     account.getAttributes().forEach(a -> results.add(converter.dtoFromEntity(a)));
 
     return results;

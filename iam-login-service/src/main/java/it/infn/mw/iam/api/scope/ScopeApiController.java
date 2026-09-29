@@ -18,8 +18,6 @@ package it.infn.mw.iam.api.scope;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,6 +30,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 @RestController
 @RequestMapping(value = {"/api/scopes", "/iam/api/scopes"})

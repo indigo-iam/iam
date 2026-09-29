@@ -41,10 +41,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.mitre.openid.connect.model.DefaultUserInfo;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -61,7 +57,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.JsonObject;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -88,7 +83,10 @@ import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.core.client.IssuerService;
 import it.infn.mw.iam.core.client.IssuerServiceResponse;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
@@ -103,7 +101,7 @@ class OIDCAuthenticationFilterTests {
   IamProperties properties;
 
   @Mock
-  JWKSetCacheService validationServices;
+  IamJWKSetCacheService validationServices;
 
   @Mock
   IssuerService issuerService;
@@ -225,8 +223,7 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp =
-        new IssuerServiceResponse(ISSUER, null, null, null);
+    IssuerServiceResponse issResp = new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
 
@@ -246,8 +243,7 @@ class OIDCAuthenticationFilterTests {
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    IssuerServiceResponse issResp =
-        new IssuerServiceResponse(ISSUER, null, null, null);
+    IssuerServiceResponse issResp = new IssuerServiceResponse(ISSUER, null, null, null);
 
     when(issuerService.getIssuer(request)).thenReturn(issResp);
 
@@ -501,7 +497,7 @@ class OIDCAuthenticationFilterTests {
     PendingOIDCAuthenticationToken pendingToken =
         Mockito.mock(PendingOIDCAuthenticationToken.class);
 
-    UserInfo userInfo = Mockito.mock(UserInfo.class);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
 
     when(pendingToken.getSub()).thenReturn("token-sub");
     when(userInfo.getSub()).thenReturn("userinfo-sub");
@@ -515,7 +511,7 @@ class OIDCAuthenticationFilterTests {
   void testJitProvisioningCreatesNewAccount() throws ParseException {
 
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
-    UserInfo userInfo = buildUserInfo();
+    UserInfoResponse userInfo = buildUserInfo();
 
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
@@ -537,7 +533,7 @@ class OIDCAuthenticationFilterTests {
   void testUnregisteredAuthenticationWhenJitDisabled() throws ParseException {
 
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
-    UserInfo userInfo = Mockito.mock(UserInfo.class);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
     when(userInfo.getSub()).thenReturn("1234");
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
@@ -555,7 +551,7 @@ class OIDCAuthenticationFilterTests {
   void testUnregisteredAuthenticationFailsWhenUserInfoIsInvalid() throws ParseException {
 
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
-    UserInfo userInfo = Mockito.mock(UserInfo.class);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
     when(userInfo.getSub()).thenReturn(null);
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
 
@@ -584,7 +580,7 @@ class OIDCAuthenticationFilterTests {
 
     PendingOIDCAuthenticationToken pendingToken = buildPendingToken("1234");
 
-    UserInfo userInfo = Mockito.mock(UserInfo.class);
+    UserInfoResponse userInfo = Mockito.mock(UserInfoResponse.class);
     when(userInfo.getSub()).thenReturn("1234");
 
     when(userInfoFetcher.loadUserInfo(pendingToken)).thenReturn(Optional.of(userInfo));
@@ -646,12 +642,11 @@ class OIDCAuthenticationFilterTests {
     return request;
   }
 
-  private UserInfo buildUserInfo() {
+  private UserInfoResponse buildUserInfo() {
 
-    JsonObject json = new JsonObject();
-    json.addProperty("sub", "1234");
-    json.addProperty("name", "Test");
-
-    return DefaultUserInfo.fromJson(json);
+    UserInfoResponse response = Mockito.mock(UserInfoResponse.class);
+    lenient().when(response.getSub()).thenReturn("1234");
+    lenient().when(response.getName()).thenReturn("Test");
+    return response;
   }
 }

@@ -18,7 +18,6 @@ package it.infn.mw.iam.config.oidc;
 import java.time.Clock;
 import java.util.Arrays;
 
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,6 +35,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -50,6 +50,7 @@ import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
+import it.infn.mw.iam.authn.oidc.OpenIdFederationClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.PlainAuthRequestUrlBuilder;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
@@ -60,7 +61,9 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
@@ -82,13 +85,23 @@ public class OidcConfig {
   }
 
   @Bean
+  @Profile("!openid-federation")
   ClientConfigurationService clientConfigurationService(OidcProviderProperties oidcProperties) {
     return new DefaultClientConfigurationService(oidcProperties);
   }
 
+  @Bean
+  @Profile("openid-federation")
+  ClientConfigurationService openIdFedclientConfigurationService(
+      OidcProviderProperties oidcProperties, Clock clock, IamFederatedClientRepository clientRepo,
+      FederatedOpRegistrationService federationRegistrationService) {
+    return new OpenIdFederationClientConfigurationService(oidcProperties, clock, clientRepo,
+        federationRegistrationService);
+  }
+
   @Bean(name = "OIDCAuthenticationFilter")
   OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(IamProperties properties,
-      JWKSetCacheService validationServices, IssuerService issuerService,
+      IamJWKSetCacheService validationServices, IssuerService issuerService,
       OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper,

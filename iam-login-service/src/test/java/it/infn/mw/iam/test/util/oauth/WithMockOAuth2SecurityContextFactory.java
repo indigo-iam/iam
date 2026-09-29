@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.util.oauth;
 
 import java.util.Map;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +33,7 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 
 @SuppressWarnings("deprecation")

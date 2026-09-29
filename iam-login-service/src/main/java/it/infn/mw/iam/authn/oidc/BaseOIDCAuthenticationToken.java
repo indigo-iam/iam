@@ -23,7 +23,6 @@ import org.springframework.security.core.GrantedAuthority;
 
 import com.nimbusds.jwt.JWT;
 
-@SuppressWarnings("java:S2160")
 public abstract class BaseOIDCAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 4401589569842096551L;

@@ -31,9 +31,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +43,9 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -152,7 +152,7 @@ class DashboardConfigServiceTest {
     client.setGrantTypes(grantTypes);
     client.setRedirectUris(Set.of(redirectUris));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
-    client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setActive(isActive);
     return client;
   }

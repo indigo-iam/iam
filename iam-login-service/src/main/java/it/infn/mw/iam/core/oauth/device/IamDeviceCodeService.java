@@ -24,13 +24,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 
 @SuppressWarnings("deprecation")
@@ -40,12 +40,14 @@ public class IamDeviceCodeService implements DeviceCodeService {
   private final Clock clock;
   private final IamDeviceCodeRepository codeRepository;
   private final SecureRandom random;
+  private final IamAuthenticationHolderService authHolderService;
 
   public IamDeviceCodeService(Clock clock, IamDeviceCodeRepository codeRepository,
-      SecureRandom random) {
+      SecureRandom random, IamAuthenticationHolderService authHolderService) {
     this.clock = clock;
     this.codeRepository = codeRepository;
     this.random = random;
+    this.authHolderService = authHolderService;
   }
 
   @Override
@@ -58,16 +60,15 @@ public class IamDeviceCodeService implements DeviceCodeService {
   public DeviceCode approveDeviceCode(DeviceCode dc, OAuth2Authentication o2Auth) {
 
     dc.setApproved(true);
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    authHolder.setAuthentication(o2Auth);
+    AuthenticationHolderEntity authHolder = authHolderService.createAndSave(o2Auth, dc.getClient());
     dc.setAuthenticationHolder(authHolder);
     return codeRepository.save(dc);
   }
 
   @Override
-  public Optional<DeviceCode> findByDeviceCodeAndClient(String deviceCode, ClientDetails client) {
+  public Optional<DeviceCode> findByDeviceCodeAndClientId(String deviceCode, String clientId) {
 
-    return codeRepository.findByDeviceCodeAndClientId(deviceCode, client.getClientId());
+    return codeRepository.findByDeviceCodeAndClient_ClientId(deviceCode, clientId);
   }
 
   @Override
@@ -89,8 +90,7 @@ public class IamDeviceCodeService implements DeviceCodeService {
 
     String deviceCode = UUID.randomUUID().toString();
     String userCode = generateToken().toUpperCase();
-    DeviceCode dc =
-        new DeviceCode(deviceCode, userCode, requestedScopes, client.getClientId(), parameters);
+    DeviceCode dc = new DeviceCode(deviceCode, userCode, requestedScopes, client, parameters);
 
     if (client.getDeviceCodeValiditySeconds() != null) {
       Date expiration =

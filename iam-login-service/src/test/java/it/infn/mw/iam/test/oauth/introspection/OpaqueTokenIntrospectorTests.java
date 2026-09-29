@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
@@ -46,6 +45,7 @@ import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcProviderProperties;
 import it.infn.mw.iam.core.oauth.discovery.OidcDiscoveryService;
 import it.infn.mw.iam.core.oauth.introspection.model.DelegatingOpaqueTokenIntrospector;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @SuppressWarnings("deprecation")
@@ -79,7 +79,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
   void introspectAllowedWhenFlagIsTrue() {
     String issuer = "https://example.com";
 
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider enabled = new OidcProvider();
     enabled.setIssuer(issuer);
@@ -100,7 +100,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
   void introspectThrowsExceptionWhenFlagIsFalse() {
     String issuer = "https://example.com";
 
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider disabled = new OidcProvider();
     disabled.setIssuer(issuer);
@@ -121,7 +121,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
   void introspectThrowsExceptionWhenFlagIsNull() {
     String issuer = "https://example.com";
 
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider nullValue = new OidcProvider();
     nullValue.setIssuer(issuer);
@@ -148,7 +148,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
     String token =
         buildPlainJwt(issuer, "external-subject-123", clientId, "penid profile", clock.instant());
 
-    OidcClient client = new OidcClient(clientId, "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient(clientId, "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
@@ -189,7 +189,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
 
     String issuer = "https://einstein.example.com";
     String token = buildPlainJwt(issuer, "1234", "unknown", "openid", clock.instant());
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);
@@ -221,7 +221,7 @@ class OpaqueTokenIntrospectorTests extends TokenGetterUtils {
 
     String issuer = "https://einstein.example.com";
     String token = buildPlainJwt(issuer, "1234", "client", "openid", clock.instant());
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_BASIC);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_BASIC);
 
     OidcProvider provider = new OidcProvider();
     provider.setIssuer(issuer);

@@ -127,7 +127,7 @@ public class TaskConfig implements SchedulingConfigurer {
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredSites() {
 
-    garbageCollector.clearExpiredApprovedSites(100);
+    garbageCollector.clearExpiredConsentGrants(100);
   }
 
   @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)

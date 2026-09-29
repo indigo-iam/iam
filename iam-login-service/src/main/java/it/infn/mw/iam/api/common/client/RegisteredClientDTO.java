@@ -27,7 +27,6 @@ import javax.validation.constraints.Null;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -48,6 +47,7 @@ import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -138,14 +138,6 @@ public class RegisteredClientDTO {
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<OAuthResponseType> responseTypes;
 
-  @Size(max = 2048,
-      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-          OnClientCreation.class, OnClientUpdate.class})
-  @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-      OnClientCreation.class, OnClientUpdate.class})
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private String policyUri;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
@@ -207,14 +199,6 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private boolean dynamicallyRegistered;
-
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretManagementRegistration.class})
-  private boolean allowIntrospection;
-
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private boolean clearAccessTokensOnRefresh;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -372,14 +356,6 @@ public class RegisteredClientDTO {
     this.responseTypes = responseTypes;
   }
 
-  public String getPolicyUri() {
-    return policyUri;
-  }
-
-  public void setPolicyUri(String policyUri) {
-    this.policyUri = policyUri;
-  }
-
   public String getJwksUri() {
     return jwksUri;
   }
@@ -451,22 +427,6 @@ public class RegisteredClientDTO {
 
   public void setDynamicallyRegistered(boolean dynamicallyRegistered) {
     this.dynamicallyRegistered = dynamicallyRegistered;
-  }
-
-  public boolean isAllowIntrospection() {
-    return allowIntrospection;
-  }
-
-  public void setAllowIntrospection(boolean allowIntrospection) {
-    this.allowIntrospection = allowIntrospection;
-  }
-
-  public boolean isClearAccessTokensOnRefresh() {
-    return clearAccessTokensOnRefresh;
-  }
-
-  public void setClearAccessTokensOnRefresh(boolean clearAccessTokensOnRefresh) {
-    this.clearAccessTokensOnRefresh = clearAccessTokensOnRefresh;
   }
 
   public boolean isRequireAuthTime() {

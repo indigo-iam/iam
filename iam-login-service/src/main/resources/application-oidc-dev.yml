@@ -19,8 +19,8 @@ oidc:
   - name: iam-remote
     issuer: https://iam-remote.local.io/
     client:
-      clientId: client
-      clientSecret: secret
+      client-id: client
+      client-secret: secret
       scope: openid,profile,email
     allow-proxied-introspection: true
     loginButton:

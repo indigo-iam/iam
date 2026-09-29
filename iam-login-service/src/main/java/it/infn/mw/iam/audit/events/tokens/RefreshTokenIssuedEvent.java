@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 
 public class RefreshTokenIssuedEvent extends TokenEvent {
 

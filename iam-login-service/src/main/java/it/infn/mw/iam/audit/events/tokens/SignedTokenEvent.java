@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWT;
+
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 
 public abstract class SignedTokenEvent extends TokenEvent {
 
