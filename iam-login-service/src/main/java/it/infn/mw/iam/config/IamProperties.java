@@ -707,6 +707,59 @@ public class IamProperties {
     }
   }
 
+  public static class ScopeAuthz {
+
+    private boolean enabled = true;
+    private boolean earlyFail = false;
+    private OpaProperties opa = new OpaProperties();
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isEarlyFail() {
+      return earlyFail;
+    }
+
+    public void setEarlyFail(boolean earlyFail) {
+      this.earlyFail = earlyFail;
+    }
+
+    public static class OpaProperties {
+      private boolean enabled = false;
+      private String url;
+
+      public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+      }
+
+      public boolean isEnabled() {
+        return this.enabled;
+      }
+
+      public void setUrl(String url) {
+        this.url = url;
+      }
+
+      public String getUrl() {
+        return this.url;
+      }
+    }
+
+    public OpaProperties getOpa() {
+      return opa;
+    }
+
+    public void setOpa(OpaProperties opa) {
+      this.opa = opa;
+    }
+
+  }
+
   private String host;
 
   private String issuer;
@@ -715,7 +768,7 @@ public class IamProperties {
 
   private String topbarTitle;
 
-  private boolean enableScopeAuthz = true;
+  private ScopeAuthz scopeAuthz = new ScopeAuthz();
 
   private boolean showSql = false;
 
@@ -823,12 +876,12 @@ public class IamProperties {
     this.accessToken = accessToken;
   }
 
-  public boolean isEnableScopeAuthz() {
-    return enableScopeAuthz;
+  public ScopeAuthz getScopeAuthz() {
+    return scopeAuthz;
   }
 
-  public void setEnableScopeAuthz(boolean enableScopeAuthz) {
-    this.enableScopeAuthz = enableScopeAuthz;
+  public void setScopeAuthz(ScopeAuthz scopeAuthz) {
+    this.scopeAuthz = scopeAuthz;
   }
 
   public boolean isShowSql() {

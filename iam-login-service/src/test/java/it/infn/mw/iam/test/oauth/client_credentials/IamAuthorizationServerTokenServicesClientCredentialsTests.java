@@ -139,9 +139,6 @@ class IamAuthorizationServerTokenServicesClientCredentialsTests {
 
     when(authenticationHolderService.create(any(), eq(client))).thenReturn(authenticationHolder);
 
-    when(scopeFilter.filterScopes(anySet(), any(OAuth2Authentication.class)))
-      .thenAnswer(invocation -> invocation.getArgument(0));
-
     when(profileResolver.resolveProfile(anySet())).thenReturn(jwtProfile);
 
     when(jwtProfile.getAccessTokenBuilder()).thenReturn(accessTokenBuilder);

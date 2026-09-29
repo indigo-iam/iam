@@ -83,13 +83,13 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     IamAccount testAccount = findTestAccount();
     Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:read"), testAccount);
+        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:read"), testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
 
-    filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+    filteredScopes = pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"),
+        testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
@@ -105,8 +105,8 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+    Set<String> filteredScopes = pdp
+      .filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount, CLIENT_ID);
     assertThat(filteredScopes, hasSize(1));
     assertThat(filteredScopes, hasItems("openid"));
   }
@@ -124,7 +124,7 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     policyScopeRepo.save(up);
 
     Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount);
+        pdp.filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount, CLIENT_ID);
     assertThat(filteredScopes, hasSize(1));
     assertThat(filteredScopes, hasItem(OPENID));
 
@@ -145,8 +145,8 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+    Set<String> filteredScopes = pdp
+      .filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount, CLIENT_ID);
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
@@ -168,7 +168,7 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     policyScopeRepo.save(gp);
 
     Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile"), testAccount);
+        pdp.filterScopes(Sets.newHashSet("openid", "profile"), testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
@@ -195,8 +195,8 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(ap);
 
-    Set<String> filteredScopes = pdp
-      .filterScopes(Sets.newHashSet("openid", "profile", "scim:write", "scim:read"), testAccount);
+    Set<String> filteredScopes = pdp.filterScopes(
+        Sets.newHashSet("openid", "profile", "scim:write", "scim:read"), testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
@@ -224,8 +224,8 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     up.setDescription(secondGroup.getName());
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+    Set<String> filteredScopes = pdp
+      .filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount, CLIENT_ID);
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
@@ -252,8 +252,8 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     up.setDescription(secondGroup.getName());
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+    Set<String> filteredScopes = pdp
+      .filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount, CLIENT_ID);
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
@@ -271,8 +271,9 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes = pdp.filterScopes(
-        Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
+    Set<String> filteredScopes =
+        pdp.filterScopes(Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"),
+            testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(3));
     assertThat(filteredScopes, hasItems("openid", "profile", "write"));
@@ -290,8 +291,9 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes = pdp.filterScopes(
-        Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
+    Set<String> filteredScopes =
+        pdp.filterScopes(Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"),
+            testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(5));
     assertThat(filteredScopes, hasItems("openid", "profile", "write", "read:/", "read:/sub/path"));
@@ -315,8 +317,9 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes = pdp.filterScopes(Sets.newHashSet("openid", "profile",
-        "storage.write:/", "storage.write:/path", "storage.write:/path/sub"), testAccount);
+    Set<String> filteredScopes =
+        pdp.filterScopes(Sets.newHashSet("openid", "profile", "storage.write:/",
+            "storage.write:/path", "storage.write:/path/sub"), testAccount, CLIENT_ID);
 
     assertThat(filteredScopes, hasSize(4));
     assertThat(filteredScopes,
