@@ -23,7 +23,6 @@ import static it.infn.mw.iam.util.x509.X509Utils.getCertificateThumbprint;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -45,59 +44,51 @@ public class MtlsTokenBindingFilter extends OncePerRequestFilter {
       FilterChain chain) throws ServletException, IOException {
 
     try {
-      String auth = request.getHeader(AUTH_HEADER);
-
-      if (auth == null || !auth.startsWith("Bearer ")) {
-        chain.doFilter(request, response);
-        return;
-      }
-
-      String tokenValue = auth.substring("Bearer ".length()).trim();
-
-      try {
-        SignedJWT jwt = SignedJWT.parse(tokenValue);
-        JWTClaimsSet claims = jwt.getJWTClaimsSet();
-
-        Map<String, Object> cnf = claims.getJSONObjectClaim(CNF);
-
-        if (cnf == null || !cnf.containsKey(CERT_HASH_FIELD_NAME)) {
-          chain.doFilter(request, response);
-          return;
-        }
-
-        Object expected = cnf.get(CERT_HASH_FIELD_NAME);
-
-        if (expected == null) {
-          throw new InsufficientAuthenticationException(
-              "Missing mTLS certificate thumbprint claim");
-        }
-
-        String expectedThumbprint = expected.toString();
-
-        String presentedCert = request.getHeader(CLIENT_CERT_HEADER);
-
-        if (presentedCert == null || presentedCert.isBlank()) {
-          throw new InsufficientAuthenticationException("Missing mTLS certificate");
-        }
-
-        Optional<String> presentedThumbprint = getCertificateThumbprint(presentedCert);
-
-        if (presentedThumbprint.isEmpty()) {
-          throw new InsufficientAuthenticationException("Missing mTLS certificate thumbprint");
-        }
-
-        if (!expectedThumbprint.equals(presentedThumbprint.get())) {
-          throw new InsufficientAuthenticationException("mTLS certificate thumbprint mismatch");
-        }
-
-        chain.doFilter(request, response);
-
-      } catch (ParseException e) {
-        throw new InsufficientAuthenticationException("Invalid access token format");
-      }
-
+      validateTokenBinding(request);
+    } catch (ParseException e) {
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid access token format");
+      return;
     } catch (InsufficientAuthenticationException e) {
       response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+      return;
+    }
+
+    chain.doFilter(request, response);
+  }
+
+  private void validateTokenBinding(HttpServletRequest request) throws ParseException {
+
+    String authorization = request.getHeader(AUTH_HEADER);
+
+    if (authorization == null || !authorization.startsWith("Bearer ")) {
+      return;
+    }
+
+    String tokenValue = authorization.substring("Bearer ".length()).trim();
+    JWTClaimsSet claims = SignedJWT.parse(tokenValue).getJWTClaimsSet();
+    Map<String, Object> cnf = claims.getJSONObjectClaim(CNF);
+
+    if (cnf == null || !cnf.containsKey(CERT_HASH_FIELD_NAME)) {
+      return;
+    }
+
+    Object expectedThumbprint = cnf.get(CERT_HASH_FIELD_NAME);
+
+    if (expectedThumbprint == null) {
+      throw new InsufficientAuthenticationException("Missing mTLS certificate thumbprint claim");
+    }
+
+    String certificate = request.getHeader(CLIENT_CERT_HEADER);
+
+    if (certificate == null || certificate.isBlank()) {
+      throw new InsufficientAuthenticationException("Missing mTLS certificate");
+    }
+
+    String presentedThumbprint = getCertificateThumbprint(certificate).orElseThrow(
+        () -> new InsufficientAuthenticationException("Missing mTLS certificate thumbprint"));
+
+    if (!expectedThumbprint.toString().equals(presentedThumbprint)) {
+      throw new InsufficientAuthenticationException("mTLS certificate thumbprint mismatch");
     }
   }
 }

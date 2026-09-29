@@ -72,7 +72,7 @@ class MtlsTokenBindingFilterTests {
           new String(input.readAllBytes(), StandardCharsets.US_ASCII);
     }
 
-    // Compute the expected value independently of X509Utils.
+    // Compute thumb-print. See X509Utils.getCertificateThumbprint()
     try (var input = resource.getInputStream()) {
       byte[] der = CertificateFactory.getInstance("X.509")
           .generateCertificate(input)
@@ -201,7 +201,7 @@ class MtlsTokenBindingFilterTests {
     SignedJWT jwt = new SignedJWT(
         new JWSHeader(JWSAlgorithm.HS256), claims.build());
 
-    // Test-only key: this filter parses JWTs but does not verify signatures.
+    // Test-only key: the tested filter does not verify signatures.
     jwt.sign(new MACSigner(new byte[32]));
 
     request.addHeader("Authorization", "Bearer " + jwt.serialize());
