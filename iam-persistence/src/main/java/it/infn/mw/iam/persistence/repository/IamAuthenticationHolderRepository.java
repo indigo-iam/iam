@@ -33,7 +33,7 @@ public interface IamAuthenticationHolderRepository
       + "a.id not in (select r.authenticationHolder.id from OAuth2RefreshTokenEntity r) and "
       + "a.id not in (select c.authenticationHolder.id from AuthorizationCodeEntity c) and "
       + "a.id not in (select d.authenticationHolder.id from DeviceCode d "
-      + "where d.authenticationHolder is not null)")
+      + "where d.authenticationHolder is not null and d.expiration > :timestamp)")
   Page<AuthenticationHolderEntity> getOrphans(Pageable op, @Param("timestamp") Date timestamp);
 
 }
