@@ -274,6 +274,10 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     }
 
     if (updaters.isEmpty()) {
+      if (op.getPath() != null && !op.getPath().isBlank()) {
+        throw new ScimPatchOperationNotSupported(
+            "path value " + op.getPath() + " is not currently supported");
+      }
       throw new ScimPatchOperationNotSupported(op.getOp() + " operation not supported");
     }
 

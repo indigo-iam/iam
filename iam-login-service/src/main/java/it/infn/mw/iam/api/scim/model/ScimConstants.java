@@ -22,4 +22,7 @@ public interface ScimConstants {
   final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
   final String AARC_USER_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:User";
   final String AARC_GROUP_SCHEMA = "urn:geant:aarc-community:scim:schemas:core:1.0:Group";
+  final int SCIM_BULK_MAX_OPERATIONS = 500;
+  final int SCIM_BULK_MAX_PAYLOAD_SIZE = 1048576;
+
 }
