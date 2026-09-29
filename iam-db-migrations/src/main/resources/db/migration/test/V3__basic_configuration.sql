@@ -3,6 +3,9 @@ INSERT INTO iam_authority(ID, AUTH) VALUES
 (1, 'ROLE_ADMIN'),
 (2, 'ROLE_USER');
 
+-- Keep the identity generator in sync with the explicit test IDs
+ALTER TABLE iam_authority ALTER COLUMN ID RESTART WITH 3;
+
 -- Administrator account 
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, PICTURE, GENDER) VALUES
 (1, 'Admin', 'User', 'admin@iam.test', true, '1950-01-01', null, 'M');
