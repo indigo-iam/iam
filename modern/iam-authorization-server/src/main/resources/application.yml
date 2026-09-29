@@ -3,7 +3,7 @@ spring:
     name: iam-sas
 
   datasource:
-    url: jdbc:h2:mem:iam
+    url: jdbc:h2:mem:iam;MODE=LEGACY
     username: sa
     password:
 
