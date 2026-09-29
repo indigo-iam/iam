@@ -72,6 +72,7 @@ public class X509Utils {
   }
 
   public static Optional<String> getCertificateThumbprint(String cert) {
+
     String sanitized = cert.replace("-----BEGIN CERTIFICATE-----", "")
       .replace("-----END CERTIFICATE-----", "")
       .replaceAll("\\s", "");
@@ -80,7 +81,7 @@ public class X509Utils {
       byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(der);
       String hash = Base64.getUrlEncoder().withoutPadding().encodeToString(sha256);
       return Optional.of(hash);
-    } catch (NoSuchAlgorithmException e) {
+    } catch (NoSuchAlgorithmException | IllegalArgumentException e) {
       return Optional.empty();
     }
   }
