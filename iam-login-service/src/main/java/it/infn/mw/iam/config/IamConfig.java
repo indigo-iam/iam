@@ -86,6 +86,9 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
+import it.infn.mw.iam.authn.lockout.DefaultLoginLockoutService;
+import it.infn.mw.iam.authn.lockout.DisabledLoginLockoutService;
+import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamClientDetailsService;
@@ -158,6 +161,7 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -167,6 +171,8 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminAddressStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
+import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -669,5 +675,16 @@ public class IamConfig {
     }
 
     return new DefaultScopePolicyEngine(policyRepo);
+  }
+
+  @Bean
+  LoginLockoutService loginLockoutService(IamAccountLoginLockoutRepository lockoutRepo,
+      IamAccountRepository accountRepo, NotificationFactory notificationFactory,
+      IamProperties iamProperties) {
+    if (iamProperties.getLoginLockout().isEnabled()) {
+      return new DefaultLoginLockoutService(lockoutRepo, accountRepo, notificationFactory,
+          iamProperties);
+    }
+    return new DisabledLoginLockoutService();
   }
 }

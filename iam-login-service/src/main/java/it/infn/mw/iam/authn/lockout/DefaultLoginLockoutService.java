@@ -25,18 +25,16 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.config.IamProperties.LoginLockoutProperties;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@Service
 public class DefaultLoginLockoutService implements LoginLockoutService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultLoginLockoutService.class);
@@ -57,10 +55,6 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
 
   @PostConstruct
   public void validateConfiguration() {
-    if (!lockoutProperties.isEnabled()) {
-      LOG.info("[LOGIN-LOCKOUT] Iam Account Login lockout feature is disabled");
-      return;
-    }
 
     if (lockoutProperties.getMaxFailedAttemptsBeforeSuspension() < 1) {
       throw new IllegalStateException(
@@ -69,61 +63,34 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
     }
 
     if (lockoutProperties.getSuspensionDurationMinutes() < 1) {
-      throw new IllegalStateException(
-          "iam.login-lockout.suspension-duration-minutes must be >= 1. "
-              + "Please provide the suspension duration in minutes.");
+      throw new IllegalStateException("iam.login-lockout.suspension-duration-minutes must be >= 1. "
+          + "Please provide the suspension duration in minutes.");
     }
 
     if (lockoutProperties.isDisableAfterMaxSuspensionRounds()
         && lockoutProperties.getMaxSuspensionRounds() < 1) {
-      throw new IllegalStateException(
-          "iam.login-lockout.max-suspension-rounds must be >= 1 when "
-              + "iam.login-lockout.disable-after-max-suspension-rounds is true. "
-              + "Please provide the maximum number of suspension rounds allowed before the account is permanently disabled.");
+      throw new IllegalStateException("iam.login-lockout.max-suspension-rounds must be >= 1 when "
+          + "iam.login-lockout.disable-after-max-suspension-rounds is true. "
+          + "Please provide the maximum number of suspension rounds allowed before the account is permanently disabled.");
     }
 
     LOG.info("[LOGIN-LOCKOUT] IAM Account Login lockout enabled");
   }
 
   @Override
-  @Transactional
+  @Transactional(readOnly = true)
   public void checkIamAccountLockout(String username) {
 
-    if (!lockoutProperties.isEnabled()) {
-      return;
-    }
-
-    Optional<IamAccountLoginLockout> lockoutOpt = lockoutRepo.findByAccountUsername(username);
-
-    if (lockoutOpt.isEmpty()) {
-      return;
-    }
-
-    IamAccountLoginLockout lockout = lockoutOpt.get();
-
-    if (isSuspended(lockout)) {
-      LOG.info("[LOGIN-LOCKOUT] Login blocked: account '{}' is suspended until {}", username,
-          lockout.getSuspendedUntil());
-      throw new LockedException("Bad credentials");
-    }
-
-    // Previous suspension has expired; reset the attempt counter for a fresh round
-    if (lockout.getSuspendedUntil() != null) {
-      LOG.debug("[LOGIN-LOCKOUT] Suspension for '{}' has expired, starting fresh round", username);
-      lockout.setFailedAttempts(0);
-      lockout.setFirstFailureTime(null);
-      lockout.setSuspendedUntil(null);
-      lockoutRepo.save(lockout);
-    }
+    lockoutRepo.findByAccountUsername(username).ifPresent(lockout -> {
+      if (isSuspended(lockout)) {
+        throw new LockedException("Bad credentials");
+      }
+    });
   }
 
   @Override
   @Transactional
   public void recordFailedAttempt(String username) {
-
-    if (!lockoutProperties.isEnabled()) {
-      return;
-    }
 
     Optional<IamAccount> accountOpt = accountRepo.findByUsernameForUpdate(username);
 
@@ -138,7 +105,7 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
     }
 
     IamAccountLoginLockout lockout = lockoutRepo.findByAccountUsername(username)
-        .orElseGet(() -> new IamAccountLoginLockout(account));
+      .orElseGet(() -> new IamAccountLoginLockout(account));
 
     if (isSuspended(lockout)) {
       return;
@@ -160,8 +127,9 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
 
     lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);
 
-    LOG.info("[LOGIN-LOCKOUT] Failed login attempt {} of {} for account '{}'", lockout.getFailedAttempts(),
-        lockoutProperties.getMaxFailedAttemptsBeforeSuspension(), username);
+    LOG.info("[LOGIN-LOCKOUT] Failed login attempt {} of {} for account '{}'",
+        lockout.getFailedAttempts(), lockoutProperties.getMaxFailedAttemptsBeforeSuspension(),
+        username);
 
     if (lockout.getFailedAttempts() >= lockoutProperties.getMaxFailedAttemptsBeforeSuspension()) {
 
@@ -199,13 +167,12 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
   @Transactional
   public void resetFailedAttempts(String username) {
 
-    if (!lockoutProperties.isEnabled()) {
-      return;
-    }
-
-    lockoutRepo.findByAccountUsername(username).ifPresent(lockout -> {
-      lockoutRepo.delete(lockout);
-      LOG.debug("[LOGIN-LOCKOUT] Lockout record deleted for account '{}'", username);
+    accountRepo.findByUsernameForUpdate(username).ifPresent(account -> {
+      lockoutRepo.findByAccountId(account.getId()).ifPresent(lockout -> {
+        lockoutRepo.delete(lockout);
+        LOG.debug("[LOGIN-LOCKOUT] Lockout record deleted for account '{}'",
+            account.getUsername());
+      });
     });
   }
 
@@ -215,13 +182,11 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
 
     lockoutRepo.findByAccountUuid(accountUuid).ifPresent(lockout -> {
       lockoutRepo.delete(lockout);
-      LOG.info("[LOGIN-LOCKOUT] Admin revoked suspension for account '{}'", lockout.getAccount().getUsername());
+      LOG.info("[LOGIN-LOCKOUT] Admin revoked suspension for account '{}'",
+          lockout.getAccount().getUsername());
     });
   }
 
-  /**
-   * Notification failures must not break the authentication flow.
-   */
   private void notifyQuietly(Runnable notification) {
     try {
       notification.run();
