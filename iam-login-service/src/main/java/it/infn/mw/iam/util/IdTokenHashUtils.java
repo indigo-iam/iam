@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.util.Base64URL;
 
-import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
-
 public class IdTokenHashUtils {
 
   private static final Set<JWSAlgorithm> SHA_256_ALGORITHMS =
@@ -62,9 +60,9 @@ public class IdTokenHashUtils {
    * @return
    */
   public static Base64URL getAccessTokenHash(JWSAlgorithm signingAlg,
-      OAuth2AccessTokenEntity token) {
+      String accessTokenValue) {
 
-    byte[] tokenBytes = token.getJwt().serialize().getBytes();
+    byte[] tokenBytes = accessTokenValue.getBytes();
 
     return getHash(signingAlg, tokenBytes);
 
