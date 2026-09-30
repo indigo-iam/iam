@@ -70,10 +70,7 @@ public class DefaultIamResourceServerTokenServices implements ResourceServerToke
     Optional<OAuth2AccessTokenEntity> accessTokenOnDb =
         tokenUtils.loadFromDatabase(accessTokenValue);
     if (accessTokenOnDb.isPresent()) {
-      OAuth2AccessTokenEntity entity = accessTokenOnDb.get();
-      ParsedAccessToken parsedToken = tokenUtils.parseAccessToken(accessTokenValue);
-      entity.setJwt(parsedToken.jwt());
-      return entity;
+      return accessTokenOnDb.get();
     }
     if (revocationService.isAccessTokenRevoked(accessTokenValue)) {
       throw new InvalidTokenException("The access token has been revoked");

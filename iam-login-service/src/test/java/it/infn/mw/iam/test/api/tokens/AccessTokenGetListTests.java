@@ -23,6 +23,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +39,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
+
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -74,6 +81,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
 
   @Autowired
   MutableClock clock;
+
+  @PersistenceContext
+  EntityManager entityManager;
 
   @BeforeEach
   void initSecurityContext() {
@@ -443,5 +453,26 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     assertThat(atl.getTotalResults(), equalTo(1L));
     assertThat(atl.getStartIndex(), equalTo(1));
     assertThat(atl.getItemsPerPage(), equalTo(0));
+  }
+
+  @Test
+  void getAccessTokenListAfterClearingPersistenceContext() throws Exception {
+
+    context.useLocalTestUser();
+    String jwt = getPasswordToken(DEFAULT_SCOPES).accessToken();
+    Set<String> expectedAudiences =
+        new HashSet<>(SignedJWT.parse(jwt).getJWTClaimsSet().getAudience());
+    org.junit.jupiter.api.Assertions.assertFalse(expectedAudiences.isEmpty());
+    entityManager.flush();
+    entityManager.clear();
+
+    OAuth2AccessTokenEntity reloaded = accessTokenRepository.findAll().get(0);
+    org.junit.jupiter.api.Assertions.assertNull(reloaded.getJwt());
+    assertThat(reloaded.getAudiences(), equalTo(expectedAudiences));
+
+    context.useBearerAdminToken();
+    ListResponseDTO<AccessToken> result = getAccessTokenList();
+    assertThat(result.getResources().size(), equalTo(1));
+    assertThat(result.getResources().get(0).audiences(), equalTo(expectedAudiences));
   }
 }

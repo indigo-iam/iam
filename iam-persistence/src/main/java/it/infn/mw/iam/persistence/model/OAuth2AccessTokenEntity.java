@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -42,6 +43,9 @@ import javax.persistence.Transient;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
+
+import it.infn.mw.iam.persistence.model.converter.JsonObjectStringConverter;
 
 @SuppressWarnings("deprecation")
 @Entity
@@ -65,6 +69,10 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 
   @Transient
   private JWT jwtValue;
+
+  @Column(name = "token_value", length = 4096)
+  @Convert(converter = JsonObjectStringConverter.class)
+  private Map<String, Object> payload;
 
   @Column(name = "token_value_hash", length = 64)
   private String tokenValueHash;
@@ -176,7 +184,16 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
   }
 
   public void setJwt(JWT jwt) {
-    this.jwtValue = jwt;
+    if (jwt == null) {
+      this.jwtValue = null;
+      return;
+    }
+    try {
+      this.payload = new HashMap<>(jwt.getJWTClaimsSet().toJSONObject());
+      this.jwtValue = jwt;
+    } catch (ParseException e) {
+      throw new IllegalArgumentException("Invalid access token claims");
+    }
   }
 
   public String getTokenValueHash() {
@@ -207,10 +224,13 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 
   @Transient
   public Set<String> getAudiences() {
-    try {
-      return jwtValue.getJWTClaimsSet().getAudience().stream().collect(Collectors.toSet());
-    } catch (ParseException e) {
+    if (payload == null) {
       return Set.of();
+    }
+    try {
+      return JWTClaimsSet.parse(payload).getAudience().stream().collect(Collectors.toSet());
+    } catch (ParseException e) {
+      throw new IllegalStateException("Invalid stored access token claims");
     }
   }
 }
