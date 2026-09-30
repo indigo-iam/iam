@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -35,8 +39,17 @@ class AuthorizationServerIntegrationTests {
   @Autowired
   private MockMvc mockMvc;
 
+  @Autowired
+  private RegisteredClientRepository registeredClientRepository;
+
   @Test
   void shouldResolveClientAndRedirectToLogin() throws Exception {
+
+    RegisteredClient registeredClient = registeredClientRepository.findByClientId("client");
+
+    assertNotNull(registeredClient);
+    assertEquals("client", registeredClient.getClientId());
+    assertEquals("Test Client", registeredClient.getClientName());
 
     URI authorizationRequest = UriComponentsBuilder.fromPath("/oauth2/authorize")
       .queryParam("response_type", "code")
