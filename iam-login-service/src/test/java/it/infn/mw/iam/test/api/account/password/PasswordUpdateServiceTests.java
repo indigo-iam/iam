@@ -121,9 +121,7 @@ class PasswordUpdateServiceTests {
   void testBadUserPassword() {
 
     final String USERNAME = "active_user";
-    final String OLD_PASSWORD = "password";
     final String BAD_OLD_PASSWORD = "bad_password";
-    final String NEW_PASSWORD = "new_password";
 
     IamAccount account = newAccount(USERNAME);
     account.setActive(true);
@@ -141,8 +139,6 @@ class PasswordUpdateServiceTests {
   void testUpdatePasswordWorks() {
 
     final String USERNAME = "active_user";
-    final String OLD_PASSWORD = "password";
-    final String NEW_PASSWORD = "new_password";
 
     IamAccount account = newAccount(USERNAME);
     account.setActive(true);
@@ -162,7 +158,6 @@ class PasswordUpdateServiceTests {
 
     final String USERNAME = "locked_user";
     final String RESET_KEY = "reset-key";
-    final String NEW_PASSWORD = "new_password";
 
     IamAccount account = newAccount(USERNAME);
     account.setActive(true);
