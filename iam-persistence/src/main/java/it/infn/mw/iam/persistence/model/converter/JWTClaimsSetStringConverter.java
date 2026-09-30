@@ -16,34 +16,29 @@
 package it.infn.mw.iam.persistence.model.converter;
 
 import java.text.ParseException;
-import java.util.Map;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
-import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 @Converter
-public class JsonObjectStringConverter implements AttributeConverter<Map<String, Object>, String> {
+public class JWTClaimsSetStringConverter implements AttributeConverter<JWTClaimsSet, String> {
 
   @Override
-  public String convertToDatabaseColumn(Map<String, Object> value) {
-    return value == null ? null : JSONObjectUtils.toJSONString(value);
+  public String convertToDatabaseColumn(JWTClaimsSet claims) {
+    return claims == null ? null : claims.toString();
   }
 
   @Override
-  public Map<String, Object> convertToEntityAttribute(String value) {
+  public JWTClaimsSet convertToEntityAttribute(String value) {
     if (value == null) {
       return null;
     }
     try {
-      Map<String, Object> result = JSONObjectUtils.parse(value);
-      if (result == null) {
-        throw new IllegalArgumentException("Invalid stored access token JSON payload");
-      }
-      return result;
+      return JWTClaimsSet.parse(value);
     } catch (ParseException e) {
-      throw new IllegalArgumentException("Invalid stored access token JSON payload");
+      throw new IllegalArgumentException("Invalid stored access token claims");
     }
   }
 }

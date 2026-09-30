@@ -619,7 +619,8 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
 
     if (responseTypes.contains("token")) {
-      Base64URL atHash = IdTokenHashUtils.getAccessTokenHash(signingAlg, accessToken);
+      Base64URL atHash =
+          IdTokenHashUtils.getAccessTokenHash(signingAlg, accessToken.getJwt().serialize());
       idClaims.claim("at_hash", atHash);
     }
 
