@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +49,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -68,8 +70,12 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
   @Autowired
   private IamClientRepository clientRepository;
 
+  @Autowired
+  private CacheManager cacheManager;
+
   @BeforeEach
   void setup() throws Exception {
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
 
     logCaptor = attachLogCaptor(DefaultTokenExchangePdp.class);
 
