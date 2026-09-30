@@ -1,9 +1,0 @@
--- Use address table under our control
-DROP TABLE address;
-
-CREATE TABLE iam_address (ID BIGINT IDENTITY NOT NULL, COUNTRY VARCHAR(2), 
-  FORMATTED VARCHAR(128), LOCALITY VARCHAR(128), POSTALCODE VARCHAR(16), REGION VARCHAR(128), 
-  STREETADDRESS VARCHAR(128), PRIMARY KEY (ID));
-  
-ALTER TABLE iam_user_info 
-  ADD CONSTRAINT FK_iam_user_info_address_id FOREIGN KEY (address_id) REFERENCES iam_address (ID);
