@@ -175,7 +175,7 @@ class DefaultLoginLockoutServiceTests {
 
   @Test
   void firstFailureSetsFirstFailureTime() {
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(accountRepo.findByUsernameForUpdate(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
 
     service.recordFailedAttempt(USERNAME);
@@ -192,7 +192,7 @@ class DefaultLoginLockoutServiceTests {
 
   @Test
   void secondFailureKeepsOriginalFirstFailureTime() {
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(accountRepo.findByUsernameForUpdate(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
     lockoutProps.setMaxFailedAttemptsBeforeSuspension(5);
 
@@ -211,7 +211,7 @@ class DefaultLoginLockoutServiceTests {
 
   @Test
   void reachingThresholdSuspendsAccount() {
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(accountRepo.findByUsernameForUpdate(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
 
     service.recordFailedAttempt(USERNAME);
@@ -245,7 +245,7 @@ class DefaultLoginLockoutServiceTests {
 
   @Test
   void disableAccountAfterMaxSuspensionRounds() {
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(accountRepo.findByUsernameForUpdate(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
 
     // ROUND 1: 2 failures => suspended
@@ -281,7 +281,7 @@ class DefaultLoginLockoutServiceTests {
   void keepsSuspendingIndefinitelyWhenDisableIsFalse() {
     lockoutProps.setDisableAfterMaxSuspensionRounds(false);
 
-    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    when(accountRepo.findByUsernameForUpdate(USERNAME)).thenReturn(Optional.of(account));
     when(lockoutRepo.findByAccountUsername(USERNAME)).thenReturn(Optional.empty());
 
     // ROUND 1

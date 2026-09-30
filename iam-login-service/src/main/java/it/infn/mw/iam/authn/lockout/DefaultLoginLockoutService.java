@@ -125,7 +125,7 @@ public class DefaultLoginLockoutService implements LoginLockoutService {
       return;
     }
 
-    Optional<IamAccount> accountOpt = accountRepo.findByUsername(username);
+    Optional<IamAccount> accountOpt = accountRepo.findByUsernameForUpdate(username);
 
     if (accountOpt.isEmpty()) {
       return;

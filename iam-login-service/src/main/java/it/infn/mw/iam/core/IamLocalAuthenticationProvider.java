@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -84,6 +85,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+
     boolean isPreAuthenticated = false;
     if (authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
@@ -91,29 +93,37 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     String username = authentication.getName();
 
-    // If not preauthenticated then the first step is to validate the default login credentials.
-    // Therefore, we convert the
-    // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
-    // default manner
+    /*
+     * If not preAuthenticated then the first step is to validate the default login credentials.
+     * Therefore, we convert the authentication to a UsernamePasswordAuthenticationToken and
+     * super(authenticate) in the default manner
+     */
     if (!isPreAuthenticated) {
 
-      lockoutService.checkIamAccountLockout(username);
+      try {
+        lockoutService.checkIamAccountLockout(username);
+      } catch (LockedException e) {
+        throw badCredentials();
+      }
 
       try {
-        UsernamePasswordAuthenticationToken userpassToken =
-            new UsernamePasswordAuthenticationToken(
-                authentication.getPrincipal(), authentication.getCredentials());
+        UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
+            authentication.getPrincipal(), authentication.getCredentials());
         authentication = super.authenticate(userpassToken);
       } catch (InternalAuthenticationServiceException e) {
-        // DaoAuthenticationProvider wraps the DisabledException raised for inactive accounts
-        // while loading user details; mask it and rethrow genuine internal errors
+        /*
+         * DaoAuthenticationProvider wraps the DisabledException raised for inactive accounts while
+         * loading user details; mask it and re-throw genuine internal errors
+         */
         if (e.getCause() instanceof DisabledException) {
           lockoutService.recordFailedAttempt(username);
           throw badCredentials();
         }
         throw e;
       } catch (DisabledException e) {
-        // keep the intentional configuration message, mask account state
+        /*
+         * keep the intentional configuration message, mask account state
+         */
         if (DISABLED_AUTH_MESSAGE.equals(e.getMessage())) {
           throw e;
         }
@@ -130,18 +140,25 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     ExtendedAuthenticationToken token;
 
-    // We have just completed an authentication with the user's password. Therefore, we add "pwd" to
-    // the list of authentication method references.
+    /*
+     * We have just completed an authentication with the user's password. Therefore, we add "pwd" to
+     * the list of authentication method references.
+     */
     IamAuthenticationMethodReference pwd =
         new IamAuthenticationMethodReference(PASSWORD.getValue());
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     refs.add(pwd);
 
-    // Checking to see if we can find an active MFA secret attached to the user's account. If so,
-    // MFA is enabled on the account
-    if (iamTotpMfaService.isAuthenticatorAppActive(account) || iamTotpMfaProperties.isMultiFactorMandatory()) {
+    /*
+     * Checking to see if we can find an active MFA secret attached to the user's account. If so,
+     * MFA is enabled on the account
+     */
+    if (iamTotpMfaService.isAuthenticatorAppActive(account)
+        || iamTotpMfaProperties.isMultiFactorMandatory()) {
       List<GrantedAuthority> currentAuthorities = new ArrayList<>();
-      // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
+      /*
+       * Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
+       */
       currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);
 
       // Retrieve the authorities that are assigned to this user when they are fully authenticated
@@ -161,9 +178,11 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
-      // MFA is not enabled on this account, construct a new authentication object for the FULLY
-      // AUTHENTICATED user, granting their normal authorities.
-      // Full auth clear any lockout state.
+      /*
+       * MFA is not enabled on this account, construct a new authentication object for the FULLY
+       * AUTHENTICATED user, granting their normal authorities. Full authentication clears any
+       * lockout state.
+       */
       lockoutService.resetFailedAttempts(authentication.getName());
 
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
