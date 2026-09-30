@@ -27,7 +27,8 @@
 
         var service = {
             findUnsubscribedGroupsForAccount: findUnsubscribedGroupsForAccount,
-            findAccountByUuid: findAccountByUuid
+            findAccountByUuid: findAccountByUuid,
+            findAccountsInactiveSince: findAccountsInactiveSince
         };
 
         return service;
@@ -54,6 +55,21 @@
                 return result.data.Resources[0];
             }).catch(function (error) {
                 console.error("Error loading account details: ", error);
+                return $q.reject(error);
+            });
+        }
+
+        function findAccountsInactiveSince(days, startIndex, count) {
+            return $http.get("/iam/account/find/inactivesincedays", {
+                params: {
+                    'days': days,
+                    'startIndex': startIndex,
+                    'count': count
+                }
+            }).then(function (result) {
+                return result.data;
+            }).catch(function (error) {
+                console.error("Error loading inactive accounts: ", error);
                 return $q.reject(error);
             });
         }

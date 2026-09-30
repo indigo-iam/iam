@@ -47,6 +47,10 @@ public class PersistentNotificationFactory extends TransientNotificationFactory 
     IamEmailNotification message =
         super.createMessage(template, model, messageType, subject, receiverAddresses);
 
+    if (message == null) {
+      return null;
+    }
+
     return repo.save(message);
   }
 

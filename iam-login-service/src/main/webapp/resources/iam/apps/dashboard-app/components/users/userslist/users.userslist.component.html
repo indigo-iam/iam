@@ -20,13 +20,25 @@
     <div class="box-header with-border">
         <div class="input-group">
             <input placeholder="Search.." ng-model="$ctrl.filter" class="form-control" ng-change="$ctrl.searchUsers(1)"
-                ng-model-options="{debounce: 250}" />
+                ng-model-options="{debounce: 250}" ng-disabled="$ctrl.showingInactive" />
             <div class="input-group-btn">
                 <button type="button" class="btn btn-default" ng-click="$ctrl.resetFilter()">Show all</button>
+                <button type="button" class="btn btn-warning" id="show-inactive-btn"
+                    ng-if="$ctrl.inactiveReportEnabled"
+                    ng-click="$ctrl.showInactiveAccounts()"
+                    ng-class="{'active': $ctrl.showingInactive}">
+                    <i class="fa fa-clock-o"></i> Show inactive
+                </button>
             </div>
         </div>
     </div>
     <div class="box-body">
+
+        <div class="alert alert-warning" ng-if="$ctrl.showingInactive">
+            <i class="fa fa-exclamation-triangle"></i>
+            Showing active accounts with no login activity in the last <strong>{{$ctrl.inactiveDays}} days</strong>.
+            <a href="" ng-click="$ctrl.resetFilter()">Show all users</a>
+        </div>
 
         <div class="text-center" ng-if="$ctrl.filter">
             <p>Found <span id="users_filtered"><strong>{{$ctrl.totalResults}}</strong></span> users matching filter (out

@@ -25,7 +25,9 @@
 
         var service = {
             setAccountEndTime: setAccountEndTime,
-            readOnlyAccountEndTime: readOnlyAccountEndTime
+            readOnlyAccountEndTime: readOnlyAccountEndTime,
+            inactiveAccountsReportEnabled: inactiveAccountsReportEnabled,
+            inactiveAccountDays: inactiveAccountDays
         };
 
         return service;
@@ -41,6 +43,20 @@
         function readOnlyAccountEndTime() {
 
             return $http.get("/iam/config/lifecycle/account/read-only-end-time", {
+                cache: true
+            }).then(handleSuccess, handleError);
+        }
+
+        function inactiveAccountsReportEnabled() {
+
+            return $http.get("/iam/config/lifecycle/account/inactive-accounts-report-enabled", {
+                cache: true
+            }).then(handleSuccess, handleError);
+        }
+
+        function inactiveAccountDays() {
+
+            return $http.get("/iam/config/lifecycle/account/inactive-account-days", {
                 cache: true
             }).then(handleSuccess, handleError);
         }

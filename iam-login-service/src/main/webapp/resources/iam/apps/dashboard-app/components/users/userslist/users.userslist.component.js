@@ -112,7 +112,7 @@
   }
 
   function UsersListController($q, $scope, $rootScope, $uibModal, ModalService,
-    UsersService, Utils, clipboardService, toaster) {
+    UsersService, Utils, clipboardService, toaster, AccountLifecycleService, FindService) {
 
     var self = this;
 
@@ -125,6 +125,19 @@
       self.totalResults = self.total;
       self.sortByValue = "name";
       self.sortDirection = "asc";
+      self.showingInactive = false;
+      self.inactiveDays = 180;
+      self.inactiveReportEnabled = false;
+
+      AccountLifecycleService.inactiveAccountsReportEnabled().then(function (enabled) {
+        self.inactiveReportEnabled = enabled;
+      });
+
+      AccountLifecycleService.inactiveAccountDays().then(function (days) {
+        if (days) {
+          self.inactiveDays = days;
+        }
+      });
     };
 
     $scope.$on('refreshUsersList', function (e) {
@@ -144,7 +157,15 @@
 
     self.resetFilter = function () {
       self.filter = undefined;
+      self.showingInactive = false;
       self.searchUsers(1);
+    };
+
+    self.showInactiveAccounts = function () {
+      self.filter = undefined;
+      self.showingInactive = true;
+      self.currentPage = 1;
+      self.searchUsers();
     };
 
     self.searchUsers = function () {
@@ -185,6 +206,12 @@
     };
 
     self.getUsersList = function (startIndex, count, filter, sortByValue, sortDirection) {
+      if (self.showingInactive) {
+        return FindService.findAccountsInactiveSince(self.inactiveDays, startIndex, count)
+          .then(function (data) {
+            return { data: data };
+          });
+      }
       if (filter === undefined) {
         return UsersService.getUsersSortedBy(startIndex, count, sortByValue, sortDirection);
       }
@@ -261,6 +288,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/users/userslist/users.userslist.component.html',
         controller: ['$q', '$scope', '$rootScope', '$uibModal', 'ModalService',
-          'UsersService', 'Utils', 'clipboardService', 'toaster', UsersListController]
+          'UsersService', 'Utils', 'clipboardService', 'toaster',
+          'AccountLifecycleService', 'FindService', UsersListController]
       });
 })();
