@@ -27,10 +27,18 @@ import java.util.List;
 import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWTParser;
 
-/** Converts JWT values to JSON claims using bounded, primary-key ordered batches. */
+/**
+ * Converts JWT values to JSON claims using bounded, primary-key ordered batches.
+ */
 public final class ExtractAccessTokenPayload {
 
   private static final int BATCH_SIZE = 1000;
+
+  private static final String SELECT_BATCH =
+      "SELECT id, token_value FROM access_token WHERE id > ? ORDER BY id LIMIT ?";
+
+  private static final String UPDATE_PAYLOAD =
+      "UPDATE access_token SET token_value = ? WHERE id = ?";
 
   private record Row(long id, String value) {
   }
@@ -38,55 +46,78 @@ public final class ExtractAccessTokenPayload {
   private ExtractAccessTokenPayload() {}
 
   public static void migrate(Connection connection) throws SQLException {
+    try (PreparedStatement select = connection.prepareStatement(SELECT_BATCH);
+        PreparedStatement update = connection.prepareStatement(UPDATE_PAYLOAD)) {
 
-    long lastId = Long.MIN_VALUE;
-    try (
-        PreparedStatement select = connection.prepareStatement(
-            "SELECT id, token_value FROM access_token WHERE id > ? ORDER BY id LIMIT ?");
-        PreparedStatement update =
-            connection.prepareStatement("UPDATE access_token SET token_value = ? WHERE id = ?")) {
-      while (true) {
-        select.setLong(1, lastId);
-        select.setInt(2, BATCH_SIZE);
-        List<Row> rows = new ArrayList<>(BATCH_SIZE);
-        try (ResultSet result = select.executeQuery()) {
-          while (result.next()) {
-            rows.add(new Row(result.getLong(1), result.getString(2)));
-          }
-        }
-        if (rows.isEmpty()) {
-          return;
-        }
-        int pending = 0;
-        for (Row row : rows) {
-          String value = row.value();
-          if (value != null) {
-            try {
-              if (value.stripLeading().startsWith("{")) {
-                // Allow a retry after a partially completed non-transactional run.
-                if (JSONObjectUtils.parse(value) == null) {
-                  throw new ParseException("Invalid JSON object", 0);
-                }
-              } else {
-                String payload = JSONObjectUtils
-                  .toJSONString(JWTParser.parse(value).getJWTClaimsSet().toJSONObject());
-                update.setString(1, payload);
-                update.setLong(2, row.id());
-                update.addBatch();
-                pending++;
-              }
-            } catch (ParseException e) {
-              // Never include the token, claims, or parser exception in the error.
-              throw new SQLException("Invalid access token payload at access_token.id=" + row.id());
-            }
-          }
-        }
-        if (pending > 0) {
-          update.executeBatch();
-          update.clearBatch();
-        }
-        lastId = rows.get(rows.size() - 1).id();
+      select.setInt(2, BATCH_SIZE);
+
+      List<Row> rows = readBatch(select, Long.MIN_VALUE);
+
+      while (!rows.isEmpty()) {
+        updateBatch(update, rows);
+        long lastId = rows.get(rows.size() - 1).id();
+        rows = readBatch(select, lastId);
       }
     }
   }
+
+  private static List<Row> readBatch(PreparedStatement select, long lastId) throws SQLException {
+
+    select.setLong(1, lastId);
+
+    List<Row> rows = new ArrayList<>(BATCH_SIZE);
+    try (ResultSet result = select.executeQuery()) {
+      while (result.next()) {
+        rows.add(new Row(result.getLong(1), result.getString(2)));
+      }
+    }
+    return rows;
+  }
+
+  private static void updateBatch(PreparedStatement update, List<Row> rows) throws SQLException {
+
+    int pending = 0;
+
+    for (Row row : rows) {
+      String payload = payloadToUpdate(row);
+      if (payload != null) {
+        update.setString(1, payload);
+        update.setLong(2, row.id());
+        update.addBatch();
+        pending++;
+      }
+    }
+
+    if (pending > 0) {
+      update.executeBatch();
+      update.clearBatch();
+    }
+  }
+
+  private static String payloadToUpdate(Row row) throws SQLException {
+    String value = row.value();
+    if (value == null) {
+      return null;
+    }
+    try {
+      return convertValue(value);
+    } catch (ParseException e) {
+      throw new SQLException("Invalid access token payload at access_token.id=" + row.id());
+    }
+  }
+
+  private static String convertValue(String value) throws ParseException {
+    if (value.stripLeading().startsWith("{")) {
+      validateJsonObject(value);
+      return null;
+    }
+    return JSONObjectUtils.toJSONString(JWTParser.parse(value).getJWTClaimsSet().toJSONObject());
+  }
+
+  private static void validateJsonObject(String value) throws ParseException {
+    if (JSONObjectUtils.parse(value) == null) {
+      throw new ParseException("Invalid JSON object", 0);
+    }
+  }
+
 }
