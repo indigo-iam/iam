@@ -25,6 +25,7 @@
     <module>iam-persistence</module>
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
+    <module>iam-db-migrations</module>
   </modules>
 
   <properties>
