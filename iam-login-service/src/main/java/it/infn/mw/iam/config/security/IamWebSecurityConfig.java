@@ -66,8 +66,8 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -226,7 +226,8 @@ public class IamWebSecurityConfig {
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
+          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties,
+          iamProperties);
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {

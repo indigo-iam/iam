@@ -55,10 +55,12 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
 
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
+
   public AccountLinkingController(AccountLinkingService s) {
     linkingService = s;
   }
-
 
   @PreAuthorize("hasRole('USER')")
   @DeleteMapping(value = "/X509")
@@ -91,7 +93,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
       saveAccountLinkingError(ex, attributes);
     }
 
-    return "redirect:/dashboard";
+    return "redirect:" + dashboardBasePath;
   }
 
 
@@ -158,7 +160,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
       clearAccountLinkingSessionAttributes(session);
     }
 
-    return "redirect:/dashboard";
+    return "redirect:" + dashboardBasePath;
 
   }
 
@@ -177,12 +179,12 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(IllegalArgumentException.class)
   public String handleIllegalArgumentException(HttpServletRequest request, Exception ex) {
-    return "iam/dashboard";
+    return "redirect:" + dashboardBasePath;
   }
 
   @ResponseStatus(value = HttpStatus.FORBIDDEN)
   @ExceptionHandler(AccountLinkingDisabledException.class)
   public String handleAccountLinkingDisabledException(HttpServletRequest request, Exception ex) {
-    return "iam/dashboard";
+    return "redirect:" + dashboardBasePath;
   }
 }
