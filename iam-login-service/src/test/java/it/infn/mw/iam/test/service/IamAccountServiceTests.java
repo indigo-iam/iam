@@ -77,6 +77,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
@@ -106,6 +107,9 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
   @Mock
   IamAupSignatureRepository aupSignatureRepo;
+
+  @Mock
+  IamAccountLoginLockoutRepository lockoutRepo;
 
   @Mock
   PasswordEncoder passwordEncoder;
@@ -182,7 +186,7 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
     lenient().when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo,
+        lockoutRepo, passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo,
         notificationFactory, iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo,
         iamTotpMfaRepository);
   }

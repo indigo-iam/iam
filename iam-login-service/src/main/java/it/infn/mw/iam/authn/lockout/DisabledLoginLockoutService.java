@@ -13,11 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.authn.lockout;
 
-public enum IamNotificationType {
+public class DisabledLoginLockoutService implements LoginLockoutService {
 
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION,
-  AUP_SIGNATURE_REQUEST, ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, ACCOUNT_LOCKED, CLIENT_STATUS, CERTIFICATE_LINK,
-  CERTIFICATE_UNLINK, MFA_ENABLE, MFA_DISABLE, SET_SERVICE_ACCOUNT, REVOKE_SERVICE_ACCOUNT;
+  @Override
+  public void checkIamAccountLockout(String username) {
+    // Nothing to do
+  }
+
+  @Override
+  public void recordFailedAttempt(String username) {
+    // Nothing to do
+  }
+
+  @Override
+  public void resetFailedAttempts(String username) {
+    // Nothing to do
+  }
+
+  @Override
+  public void adminRevokeLockout(String accountUuid) {
+    // Nothing to do    
+  }
+
 }
