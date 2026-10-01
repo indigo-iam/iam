@@ -200,10 +200,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      // We should add a pop-up window to the UI with the new secret and hash the
-      // client secret in db (the new secret is now available to the user only under
-      // secret regeneration)
-      newClient.setClientSecret(clientUtils.generateClientSecret());
+      // We should add a pop-up window to the UI with the new secret --
+      // it is now available to the user only under secret regeneration
+      String plainClientSecret = clientUtils.generateClientSecret();
+      newClient.setClientSecret(new IamSha256PasswordEncoder().encode(plainClientSecret));
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
