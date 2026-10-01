@@ -161,7 +161,6 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
-import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -172,7 +171,6 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -669,6 +667,7 @@ public class IamConfig {
   @Bean
   ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
       RestTemplateFactory restTemplateFactory, IamProperties iamProperties) {
+
     if (iamProperties.getScopeAuthz().getOpa().isEnabled()) {
       return new OpaScopePolicyEngine(policyRepo, restTemplateFactory,
           iamProperties.getScopeAuthz().getOpa());
@@ -678,12 +677,11 @@ public class IamConfig {
   }
 
   @Bean
-  LoginLockoutService loginLockoutService(IamAccountLoginLockoutRepository lockoutRepo,
-      IamAccountRepository accountRepo, NotificationFactory notificationFactory,
-      IamProperties iamProperties) {
+  LoginLockoutService loginLockoutService(Clock clock, IamAccountLoginLockoutRepository lockoutRepo,
+      IamAccountService accountService, IamProperties iamProperties) {
+
     if (iamProperties.getLoginLockout().isEnabled()) {
-      return new DefaultLoginLockoutService(lockoutRepo, accountRepo, notificationFactory,
-          iamProperties);
+      return new DefaultLoginLockoutService(clock, accountService, lockoutRepo, iamProperties);
     }
     return new DisabledLoginLockoutService();
   }
