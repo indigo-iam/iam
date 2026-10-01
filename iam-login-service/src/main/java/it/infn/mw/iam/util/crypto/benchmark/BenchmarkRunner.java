@@ -13,30 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.startup;
+package it.infn.mw.iam.util.crypto.benchmark;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.openjdk.jmh.Main;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeansException;
+public class BenchmarkRunner {
 
-import it.infn.mw.iam.IamLoginService;
-
-class ApplicationStartupValidationTests {
-
-  @Test
-  void testFailureOnStatupDueToWrongEnum() {
-
-    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo"}));
-  }
-
-  @Test
-  void testSuccessStatup() {
-
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
+  public static void main(String[] args) throws Exception {
+    Main.main(args);
   }
 
 }
