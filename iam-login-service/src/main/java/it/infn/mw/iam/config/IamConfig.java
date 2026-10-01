@@ -41,6 +41,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -139,6 +140,7 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgUserinfoHelper;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -167,7 +169,6 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -380,11 +381,10 @@ public class IamConfig {
   }
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
-      IamScopeRepository scopeRepo) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, @Lazy IamSystemScopeService scopeService) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
     return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
-        scopeRepo);
+        scopeService);
   }
 
   @Bean

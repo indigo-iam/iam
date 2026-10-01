@@ -30,9 +30,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 
 @Configuration
 public class CacheConfig {
@@ -67,9 +67,9 @@ public class CacheConfig {
             .build());
 
     cacheManager.registerCustomCache(
-        DefaultClientService.CACHE_NAME,
+        IamSystemScopeService.CACHE_NAME,
         Caffeine.newBuilder()
-            .maximumSize(4000)
+            .maximumSize(2)
             .expireAfterWrite(Duration.ofMinutes(1))
             .build());
 
