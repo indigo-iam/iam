@@ -59,4 +59,12 @@ public interface IamEmailNotificationRepository
       + " and r.emailAddress = :email_address")
   Integer countAupExpirationMessPerAccount(@Param("email_address") String emailAddress);
 
+  @Query("select count(n) from IamEmailNotification n"
+      + " where n.notificationType = it.infn.mw.iam.core.IamNotificationType.GROUP_MEMBERSHIP_REMINDER"
+      + " and n.subject like :subjectPattern"
+      + " and n.creationTime >= :since"
+      + " and n.deliveryStatus <> it.infn.mw.iam.core.IamDeliveryStatus.DELIVERY_ERROR")
+  Integer countGroupMembershipReminders(@Param("subjectPattern") String subjectPattern,
+      @Param("since") Date since);
+
 }

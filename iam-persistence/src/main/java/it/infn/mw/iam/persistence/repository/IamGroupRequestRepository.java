@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,4 +37,7 @@ public interface IamGroupRequestRepository
       @Param("groupName") String groupName);
 
   Optional<IamGroupRequest> findByGroupIdAndAccountIdAndStatus(Long groupID, Long accountID, IamGroupRequestStatus status);
+
+  @Query("select r from IamGroupRequest r where r.status = :status and r.creationTime < :cutoffDate order by r.creationTime asc")
+  List<IamGroupRequest> findPendingRequestsOlderThan(@Param("status") IamGroupRequestStatus status, @Param("cutoffDate") Date cutoffDate);
 }
