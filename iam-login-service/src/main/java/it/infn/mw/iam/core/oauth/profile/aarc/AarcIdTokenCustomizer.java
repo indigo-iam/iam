@@ -24,13 +24,13 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
-import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @SuppressWarnings("deprecation")
-public class AarcIdTokenCustomizer extends BaseIdTokenCustomizer {
+public class AarcIdTokenCustomizer extends IamIdTokenCustomizer {
 
   public AarcIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {

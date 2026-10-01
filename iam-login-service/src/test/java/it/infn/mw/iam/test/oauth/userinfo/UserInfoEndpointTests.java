@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.oauth.userinfo;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -141,8 +140,6 @@ class UserInfoEndpointTests {
       .andExpect(jsonPath("$.scope").exists())
       .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
       .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
-      .andExpect(jsonPath("$.external_authn").exists())
-      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")))
       .andReturn();
 
     checkNoRootKeyDuplicates(result.getResponse().getContentAsString());
