@@ -1,4 +1,4 @@
-package db.migration.h2;
+package db.migration.mysql;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -7,7 +7,7 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import it.infn.mw.iam.core.Sha256Encoder;
 import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 
-public class V123__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
+public class V125__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
 
   @Override
   public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
@@ -21,8 +21,8 @@ public class V123__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       String clientSecretHash = Sha256Encoder.encode(clientSecret);
 
       Long id = clientList.getLong("id");
-      jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?",
-          clientSecretHash, id);
+      jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", clientSecretHash,
+          id);
     }
   }
 
