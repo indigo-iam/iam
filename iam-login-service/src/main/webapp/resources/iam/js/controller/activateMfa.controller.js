@@ -88,7 +88,10 @@ function ActivateMfaController($scope, $window, ActivateMfaService) {
 
     ActivateMfaService.enableAuthenticatorApp(authAppCtrl.user.code)
       .then(function () {
-        $window.location.href = '/logout';
+        // Not '/logout': the session is still pre-authenticated here, and
+        // logging out would lose the saved request. /iam/verify completes
+        // authentication without losing it.
+        $window.location.href = '/iam/verify';
       })
       .catch(handleError)
       .finally(function () { setPending(false); });
