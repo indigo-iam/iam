@@ -66,8 +66,9 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -139,6 +140,9 @@ public class IamWebSecurityConfig {
     private IamProperties iamProperties;
 
     @Autowired
+    private OidcLogoutSuccessHandler oidcLogoutSuccessHandler;
+
+    @Autowired
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
@@ -175,7 +179,6 @@ public class IamWebSecurityConfig {
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
-
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
@@ -210,6 +213,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(oidcLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()

@@ -35,9 +35,9 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 
 @Component
 public class ClientConverter {
@@ -90,8 +90,8 @@ public class ClientConverter {
     }
 
     if (dto.getTokenEndpointAuthMethod() != null) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
@@ -117,6 +117,7 @@ public class ClientConverter {
 
     clientDTO.setJwksUri(entity.getJwksUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
+    clientDTO.setPostLogoutRedirectUris(entity.getPostLogoutRedirectUris());
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
       .valueOf(Optional.ofNullable(entity.getTokenEndpointAuthMethod())
@@ -198,6 +199,8 @@ public class ClientConverter {
 
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
+    client.setPostLogoutRedirectUris(dto.getPostLogoutRedirectUris());
+
     client.setScope(cloneSet(dto.getScope()));
 
     client.setGrantTypes(new HashSet<>());
@@ -221,8 +224,8 @@ public class ClientConverter {
     client.setContacts(cloneSet(dto.getContacts()));
 
     if (!isNull(dto.getTokenEndpointAuthMethod())) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     if (dto.getCodeChallengeMethod() != null) {
