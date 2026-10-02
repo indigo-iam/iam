@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn;
+package it.infn.mw.iam.authn.oidc;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -23,8 +23,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -32,10 +30,11 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.authn.oidc.validator.OidcIdTokenHintValidator;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Component
@@ -43,11 +42,11 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcLogoutSuccessHandler.class);
 
-  private IamClientRepository clientRepo;
-  private SelfAssertionValidator validator;
+  private final IamClientRepository clientRepo;
+  private final OidcIdTokenHintValidator validator;
 
   public OidcLogoutSuccessHandler(IamClientRepository clientRepo,
-      SelfAssertionValidator validator) {
+      OidcIdTokenHintValidator validator) {
     this.clientRepo = clientRepo;
     this.validator = validator;
   }
@@ -69,7 +68,7 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
     }
 
     try {
-      JWT idToken = JWTParser.parse(idTokenHint);
+      SignedJWT idToken = SignedJWT.parse(idTokenHint);
 
       if (!validator.isValid(idToken)) {
         LOG.debug("OIDC logout: id_token_hint validation failed");

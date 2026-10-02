@@ -19,23 +19,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Base64;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.nimbusds.jwt.JWT;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.authn.OidcLogoutSuccessHandler;
+import it.infn.mw.iam.authn.oidc.OidcLogoutSuccessHandler;
+import it.infn.mw.iam.authn.oidc.validator.OidcIdTokenHintValidator;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +49,7 @@ class OidcLogoutSuccessHanlderTests {
   private IamClientRepository clientRepo;
 
   @Mock
-  private SelfAssertionValidator validator;
+  private OidcIdTokenHintValidator validator;
 
   private OidcLogoutSuccessHandler handler;
 
@@ -67,10 +71,17 @@ class OidcLogoutSuccessHanlderTests {
     when(clientRepo.findByClientId(clientId)).thenReturn(Optional.of(client));
   }
 
-  private String validJwtForClient(String clientId) {
-    return "eyJhbGciOiJub25lIn0." + Base64.getUrlEncoder()
-      .withoutPadding()
-      .encodeToString(("{\"aud\":[\"" + clientId + "\"]}").getBytes()) + ".";
+  private String validJwtForClient(String clientId) throws JOSEException {
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().audience(clientId)
+      .issuer("https://iam.example.org")
+      .subject("subject")
+      .build();
+
+    SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+
+    jwt.sign(new MACSigner("01234567890123456789012345678901"));
+
+    return jwt.serialize();
   }
 
   @Test
@@ -92,12 +103,12 @@ class OidcLogoutSuccessHanlderTests {
 
   @Test
   void tokenValidationFailsRedirectsToFallback() throws Exception {
-    String jwt = "eyJhbGciOiJub25lIn0.eyJhdWQiOlsiY2xpZW50Il19.";
+    String jwt = validJwtForClient("client");
 
     request.setParameter("id_token_hint", jwt);
     request.setParameter("post_logout_redirect_uri", "https://rp.example.org");
 
-    when(validator.isValid(any(JWT.class))).thenReturn(false);
+    when(validator.isValid(any(SignedJWT.class))).thenReturn(false);
 
     handler.onLogoutSuccess(request, response, null);
 
@@ -111,7 +122,7 @@ class OidcLogoutSuccessHanlderTests {
     request.setParameter("id_token_hint", jwt);
     request.setParameter("post_logout_redirect_uri", "https://evil.example.org");
 
-    when(validator.isValid(any(JWT.class))).thenReturn(true);
+    when(validator.isValid(any(SignedJWT.class))).thenReturn(true);
     mockClient("client", Set.of("https://rp.example.org/logout"));
 
     handler.onLogoutSuccess(request, response, null);
@@ -127,7 +138,7 @@ class OidcLogoutSuccessHanlderTests {
     request.setParameter("post_logout_redirect_uri", "https://rp.example.org/logout");
     request.setParameter("state", "xyz");
 
-    when(validator.isValid(any(JWT.class))).thenReturn(true);
+    when(validator.isValid(any(SignedJWT.class))).thenReturn(true);
     mockClient("client", Set.of("https://rp.example.org/logout"));
 
     handler.onLogoutSuccess(request, response, null);
