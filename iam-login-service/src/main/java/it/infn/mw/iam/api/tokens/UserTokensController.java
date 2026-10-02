@@ -18,26 +18,27 @@ package it.infn.mw.iam.api.tokens;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.view.TokenApiView;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonEntityView;
-import org.mitre.openid.connect.view.JsonErrorView;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
+import org.springframework.security.oauth2.common.exceptions.UnauthorizedUserException;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.service.TokenService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@Controller
+@SuppressWarnings("deprecation")
+@RestController
 public class UserTokensController {
 
   private final AccountUtils accountUtils;
@@ -54,70 +55,67 @@ public class UserTokensController {
 
   @PreAuthorize("hasRole('USER')")
   @GetMapping(value = {"/api/tokens/access", "/iam/api/tokens/access"})
-  public String getUserAccessTokens(Authentication auth, ModelMap m) {
+  public List<AccessToken> getUserAccessTokens(Authentication auth) {
 
     IamAccount authenticatedUser = getAuthenticatedUserOrFail(auth);
-    List<AccessToken> tokens =
-        accessTokenService.getAllTokensForUser(authenticatedUser.getUsername());
-    m.put(JsonEntityView.ENTITY, tokens);
-    return TokenApiView.VIEWNAME;
+    return accessTokenService.getAllTokensForUser(authenticatedUser.getUsername());
   }
 
   @PreAuthorize("hasRole('USER')")
   @GetMapping(value = {"/api/tokens/refresh", "/iam/api/tokens/refresh"})
-  public String getUserRefreshTokens(Authentication auth, ModelMap m) {
+  public List<RefreshToken> getUserRefreshTokens(Authentication auth) {
 
     IamAccount authenticatedUser = getAuthenticatedUserOrFail(auth);
-    List<RefreshToken> tokens =
-        refreshTokenService.getAllTokensForUser(authenticatedUser.getUsername());
-    m.put(JsonEntityView.ENTITY, tokens);
-    return TokenApiView.VIEWNAME;
+    return refreshTokenService.getAllTokensForUser(authenticatedUser.getUsername());
   }
 
   @PreAuthorize("hasRole('USER')")
   @DeleteMapping(value = {"/api/tokens/access/{id}", "/iam/api/tokens/access/{id}"})
-  public String deleteAccessToken(@PathVariable Long id, Authentication auth, ModelMap m) {
+  public void deleteAccessToken(@PathVariable Long id, Authentication auth) {
 
     IamAccount authenticatedUser = getAuthenticatedUserOrFail(auth);
     Optional<AccessToken> token = accessTokenService.getToken(id);
     if (token.isEmpty()) {
-      m.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-      m.put(JsonErrorView.ERROR_MESSAGE,
-          "The requested token with id " + id + " could not be found.");
-      return JsonErrorView.VIEWNAME;
+      throw new TokenNotFoundException("The requested token with id " + id + " could not be found.");
     }
     if (!token.get().user().username().equals(authenticatedUser.getUsername())) {
-      m.put(HttpCodeView.CODE, HttpStatus.FORBIDDEN);
-      m.put(JsonErrorView.ERROR_MESSAGE, "You do not have permission to view this token");
-      return JsonErrorView.VIEWNAME;
+      throw new UnauthorizedUserException("You do not have permission to view this token");
     }
     accessTokenService.revoke(id);
-    return HttpCodeView.VIEWNAME;
   }
 
   @PreAuthorize("hasRole('USER')")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping(value = {"/api/tokens/refresh/{id}", "/iam/api/tokens/refresh/{id}"})
-  public String deleteRefreshToken(@PathVariable Long id, Authentication auth, ModelMap m) {
+  public void deleteRefreshToken(@PathVariable Long id, Authentication auth) {
 
     IamAccount authenticatedUser = getAuthenticatedUserOrFail(auth);
     Optional<RefreshToken> token = refreshTokenService.getToken(id);
     if (token.isEmpty()) {
-      m.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-      m.put(JsonErrorView.ERROR_MESSAGE,
-          "The requested token with id " + id + " could not be found.");
-      return JsonErrorView.VIEWNAME;
+      throw new TokenNotFoundException("The requested token with id " + id + " could not be found.");
     }
     if (!token.get().user().username().equals(authenticatedUser.getUsername())) {
-      m.put(HttpCodeView.CODE, HttpStatus.FORBIDDEN);
-      m.put(JsonErrorView.ERROR_MESSAGE, "You do not have permission to view this token");
-      return JsonErrorView.VIEWNAME;
+      throw new UnauthorizedUserException("You do not have permission to view this token");
     }
     refreshTokenService.revoke(id);
-    return HttpCodeView.VIEWNAME;
   }
 
   private IamAccount getAuthenticatedUserOrFail(Authentication auth) {
     return accountUtils.getAuthenticatedUserAccount(auth)
-        .orElseThrow(() -> new IllegalStateException("Invalid authenticated account"));
+      .orElseThrow(() -> new IllegalStateException("Invalid authenticated account"));
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(TokenNotFoundException.class)
+  public ErrorDTO tokenNotFoundError(Exception ex) {
+
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.FORBIDDEN)
+  @ExceptionHandler(UnauthorizedUserException.class)
+  public ErrorDTO unauthorizedUserError(Exception ex) {
+
+    return ErrorDTO.fromString(ex.getMessage());
   }
 }

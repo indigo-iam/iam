@@ -19,8 +19,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.constraints.Pattern;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -327,13 +325,13 @@ public class IamProperties {
   }
 
   public static class DeviceCodeProperties {
-    Boolean allowCompleteVerificationUri = true;
+    boolean allowCompleteVerificationUri = true;
 
-    public Boolean getAllowCompleteVerificationUri() {
+    public boolean getAllowCompleteVerificationUri() {
       return allowCompleteVerificationUri;
     }
 
-    public void setAllowCompleteVerificationUri(Boolean allowCompleteVerificationUri) {
+    public void setAllowCompleteVerificationUri(boolean allowCompleteVerificationUri) {
       this.allowCompleteVerificationUri = allowCompleteVerificationUri;
     }
 
@@ -709,19 +707,68 @@ public class IamProperties {
     }
   }
 
+  public static class ScopeAuthz {
+
+    private boolean enabled = true;
+    private boolean earlyFail = false;
+    private OpaProperties opa = new OpaProperties();
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isEarlyFail() {
+      return earlyFail;
+    }
+
+    public void setEarlyFail(boolean earlyFail) {
+      this.earlyFail = earlyFail;
+    }
+
+    public static class OpaProperties {
+      private boolean enabled = false;
+      private String url;
+
+      public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+      }
+
+      public boolean isEnabled() {
+        return this.enabled;
+      }
+
+      public void setUrl(String url) {
+        this.url = url;
+      }
+
+      public String getUrl() {
+        return this.url;
+      }
+    }
+
+    public OpaProperties getOpa() {
+      return opa;
+    }
+
+    public void setOpa(OpaProperties opa) {
+      this.opa = opa;
+    }
+
+  }
+
   private String host;
 
-  @Pattern(
-      regexp = ".*/",
-      message = "issuer must end with '/'"
-  )
   private String issuer;
 
   private String baseUrl;
 
   private String topbarTitle;
 
-  private boolean enableScopeAuthz = true;
+  private ScopeAuthz scopeAuthz = new ScopeAuthz();
 
   private boolean showSql = false;
 
@@ -777,6 +824,8 @@ public class IamProperties {
 
   private AarcProfile aarcProfile = new AarcProfile();
 
+  private List<String> languageNamespaces = List.of("messages");
+
   private DashboardProperties dashboard = new DashboardProperties();
 
   public String getBaseUrl() {
@@ -808,7 +857,7 @@ public class IamProperties {
   }
 
   public void setIssuer(String issuer) {
-    this.issuer = issuer;
+    this.issuer = issuer.endsWith("/") ? issuer : issuer + "/";
   }
 
   public Organisation getOrganisation() {
@@ -827,12 +876,12 @@ public class IamProperties {
     this.accessToken = accessToken;
   }
 
-  public boolean isEnableScopeAuthz() {
-    return enableScopeAuthz;
+  public ScopeAuthz getScopeAuthz() {
+    return scopeAuthz;
   }
 
-  public void setEnableScopeAuthz(boolean enableScopeAuthz) {
-    this.enableScopeAuthz = enableScopeAuthz;
+  public void setScopeAuthz(ScopeAuthz scopeAuthz) {
+    this.scopeAuthz = scopeAuthz;
   }
 
   public boolean isShowSql() {
@@ -1028,7 +1077,7 @@ public class IamProperties {
   public void setDashboard(DashboardProperties dashboard) {
     this.dashboard = dashboard;
   }
-  
+
   public Boolean isDashboardPropertiesEnable() {
     return dashboard != null;
   }
@@ -1041,4 +1090,7 @@ public class IamProperties {
     this.aarcProfile = aarcProfile;
   }
 
+  public List<String> getLanguageNamespaces() {
+    return languageNamespaces;
+  }
 }

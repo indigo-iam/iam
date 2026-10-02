@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +33,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 

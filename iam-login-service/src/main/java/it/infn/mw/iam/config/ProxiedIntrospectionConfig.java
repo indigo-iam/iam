@@ -39,7 +39,7 @@ public class ProxiedIntrospectionConfig {
     RestTemplate restTemplate = factory.newRestTemplate();
 
     restTemplate.getInterceptors()
-      .add(new BasicAuthenticationInterceptor(client.getClientId(), client.getClientSecret()));
+      .add(new BasicAuthenticationInterceptor(client.clientId(), client.clientSecret()));
 
     return restTemplate;
   }

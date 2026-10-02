@@ -25,12 +25,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,9 +35,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
-import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
+import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.repository.IamConsentGrantRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
@@ -68,16 +68,16 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   GarbageCollector gc;
 
   @Autowired
-  ApprovedSiteService approvedSiteService;
+  ConsentGrantService consentGrantService;
 
   @Autowired
-  IamApprovedSiteRepository siteRepository;
+  IamConsentGrantRepository consentGrantRepository;
 
   @Autowired
   IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
-  IamAuthenticationHolderEntityService authenticationHolderService;
+  IamAuthenticationHolderService authenticationHolderService;
 
   @Autowired
   IamAuthenticationHolderRepository authenticationHolderRepository;
@@ -103,15 +103,15 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   @Autowired
   MutableClock clock;
 
-  private AuthorizationCodeEntity createAuthorizationCode() {
+  private AuthorizationCodeEntity createAuthorizationCode(String clientId) {
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId).orElseThrow();
     OAuth2Authentication auth = getOAuth2Authentication();
     RandomValueStringGenerator generator = new RandomValueStringGenerator(22);
-    AuthenticationHolderEntity authHolder = authenticationHolderService.create(auth);
+    AuthenticationHolderEntity authHolder = authenticationHolderService.createAndSave(auth, client);
     return new AuthorizationCodeEntity(generator.generate(), authHolder, clock.now());
   }
 
-  private DeviceCode createDeviceCode(String clientId, Set<String> scopes)
-      throws DeviceCodeCreationException {
+  private DeviceCode createDeviceCode(String clientId, Set<String> scopes) {
     DeviceCode dc = codeService.createNewDeviceCode(scopes,
         clientService.findClientByClientId(clientId).orElseThrow(), Map.of());
     dc.setExpiration(clock.now());
@@ -131,7 +131,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   @BeforeEach
   void cleanAll() {
     sc.cleanupSecurityContext();
-    siteRepository.deleteAll();
+    consentGrantRepository.deleteAll();
     codeRepository.deleteAll();
     accessTokenRepository.deleteAll();
     refreshTokenRepository.deleteAll();
@@ -140,23 +140,24 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  void clearExpiredApprovedSites() {
+  void clearExpiredConsentGrants() {
 
-    assertThat(siteRepository.count(), equalTo(0L));
-    approvedSiteService.createApprovedSite(PASSWORD_CLIENT_ID, TEST_USERNAME,
+    assertThat(consentGrantRepository.count(), equalTo(0L));
+    consentGrantService.createConsentGrant(
+        clientService.findClientByClientId(PASSWORD_CLIENT_ID).orElseThrow(), TEST_USERNAME,
         Date.from(clock.daysBefore(2)), Set.of("openid"));
-    assertThat(siteRepository.count(), equalTo(1L));
+    assertThat(consentGrantRepository.count(), equalTo(1L));
     clock.advance(Duration.ofDays(1));
-    gc.clearExpiredApprovedSites(1);
-    assertThat(siteRepository.count(), equalTo(0L));
+    gc.clearExpiredConsentGrants(1);
+    assertThat(consentGrantRepository.count(), equalTo(0L));
   }
 
   @Test
   void clearExpiredAuthorizationCodes() {
 
     assertThat(codeRepository.count(), equalTo(0L));
-    // Mitre's Authorization Code service is not using clock
-    AuthorizationCodeEntity entity = codeRepository.save(createAuthorizationCode());
+    AuthorizationCodeEntity entity =
+        codeRepository.save(createAuthorizationCode(PASSWORD_CLIENT_ID));
     entity.setExpiration(Date.from(clock.daysBefore(200)));
     codeRepository.save(entity);
     assertThat(codeRepository.count(), equalTo(1L));
@@ -189,7 +190,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  void clearExpiredDeviceCodes() throws DeviceCodeCreationException {
+  void clearExpiredDeviceCodes() {
 
     assertThat(deviceCodeRepository.count(), equalTo(0L));
     deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));

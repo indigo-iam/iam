@@ -21,7 +21,7 @@ var ApprovedSiteModel = Backbone.Model.extend({
 	initialize: function() {
 	},
 
-	urlRoot: 'api/approved'
+	urlRoot: 'iam/api/approved'
 
 });
 
@@ -30,7 +30,7 @@ var ApprovedSiteCollection = Backbone.Collection.extend({
 	},
 
 	model: ApprovedSiteModel,
-	url: 'api/approved'
+	url: 'iam/api/approved'
 });
 
 var ApprovedSiteListView = Backbone.View.extend({

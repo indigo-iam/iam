@@ -25,11 +25,11 @@ import java.util.Set;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.oauth.consent.BlockedUriService;
 
 @Component
 @Scope("prototype")
@@ -41,9 +41,9 @@ public class ValidRedirectURIsValidator
       Set.of("localhost", "127.0.0.1", "[::1]", "[0:0:0:0:0:0:0:1]");
   private static final Set<String> ALLOWED_REDIRECT_URIS =
       Set.of("edu.kit.data.oidc-agent:/redirect");
-  private final BlacklistedSiteService denyListService;
+  private final BlockedUriService denyListService;
 
-  public ValidRedirectURIsValidator(BlacklistedSiteService denyListService) {
+  public ValidRedirectURIsValidator(BlockedUriService denyListService) {
     this.denyListService = denyListService;
   }
 
@@ -63,6 +63,7 @@ public class ValidRedirectURIsValidator
         }
       }
     }
+
     if (!Objects.isNull(value.getPostLogoutRedirectUris())) {
       for (String uri : value.getPostLogoutRedirectUris()) {
         if (!isValid(uri, context)) {
@@ -98,7 +99,7 @@ public class ValidRedirectURIsValidator
       return invalid(context, "Invalid redirect URI: contains a fragment");
     }
 
-    if (denyListService.isBlacklisted(uri)) {
+    if (denyListService.isBlockedUri(uri)) {
       return invalid(context, format("Invalid redirect URI: %s is not allowed", uri));
     }
     return true;

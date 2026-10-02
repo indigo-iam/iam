@@ -15,14 +15,18 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,8 +35,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
@@ -143,5 +151,51 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
     when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
 
     assertNotNull(multiFactorTotpCheckProvider.authenticate(samlToken));
+  }
+
+  @Test
+  void preserveExternalAuthnAfterMfa() {
+    OidcExternalAuthenticationToken externalToken = mock(OidcExternalAuthenticationToken.class);
+
+    Set<IamAuthenticationMethodReference> refs = new HashSet<>();
+    Set<GrantedAuthority> authorities = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
+
+    when(externalToken.getTotp()).thenReturn("123456");
+    when(externalToken.getAuthenticationMethodReferences()).thenReturn(refs);
+    when(externalToken.getFullyAuthenticatedAuthorities()).thenReturn(new HashSet<>(authorities));
+    when(externalToken.getName()).thenReturn("test-user");
+    when(externalToken.getPrincipal()).thenReturn("test-user");
+    when(externalToken.getCredentials()).thenReturn("credentials");
+
+    IamAccount account = getAccount(clock.instant());
+    when(accountRepo.findByUsername("test-user")).thenReturn(Optional.of(account));
+    when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
+
+    Authentication result = multiFactorTotpCheckProvider.authenticate(externalToken);
+    assertThat(result).isInstanceOf(ExtendedAuthenticationToken.class);
+
+    ExtendedAuthenticationToken extended = (ExtendedAuthenticationToken) result;
+    assertThat(extended.getExternalAuthentication()).isSameAs(externalToken);
+  }
+
+  @Test
+  void externalAuthnIsNullWhenLocalUserWithMfa() {
+    Set<GrantedAuthority> authorities = Set.of(new SimpleGrantedAuthority("ROLE_USER"));
+
+    ExtendedAuthenticationToken authentication =
+        new ExtendedAuthenticationToken("test-user", "credentials", authorities);
+
+    authentication.setTotp("123456");
+    authentication.setFullyAuthenticatedAuthorities(authorities);
+
+    IamAccount account = getAccount(clock.instant());
+    when(accountRepo.findByUsername("test-user")).thenReturn(Optional.of(account));
+    when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
+
+    Authentication result = multiFactorTotpCheckProvider.authenticate(authentication);
+    assertThat(result).isInstanceOf(ExtendedAuthenticationToken.class);
+
+    ExtendedAuthenticationToken extended = (ExtendedAuthenticationToken) result;
+    assertThat(extended.getExternalAuthentication()).isNull();
   }
 }

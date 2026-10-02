@@ -24,7 +24,6 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Null;
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
@@ -48,6 +47,7 @@ import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -143,14 +143,6 @@ public class RegisteredClientDTO {
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<OAuthResponseType> responseTypes;
 
-  @Size(max = 2048,
-      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-          OnClientCreation.class, OnClientUpdate.class})
-  @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-      OnClientCreation.class, OnClientUpdate.class})
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private String policyUri;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
@@ -214,14 +206,6 @@ public class RegisteredClientDTO {
   private boolean dynamicallyRegistered;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretManagementRegistration.class})
-  private boolean allowIntrospection;
-
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  private boolean clearAccessTokensOnRefresh;
-
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private boolean requireAuthTime;
 
@@ -267,11 +251,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  @Pattern(regexp = "^$|none|plain|S256",
-      message = "must be either an empty string, none, plain or S256",
-      groups = {OnClientCreation.class, OnClientUpdate.class, OnDynamicClientRegistration.class,
-          OnDynamicClientUpdate.class})
-  private String codeChallengeMethod;
+  private PKCEAlgorithm codeChallengeMethod;
 
   @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
@@ -389,14 +369,6 @@ public class RegisteredClientDTO {
     this.responseTypes = responseTypes;
   }
 
-  public String getPolicyUri() {
-    return policyUri;
-  }
-
-  public void setPolicyUri(String policyUri) {
-    this.policyUri = policyUri;
-  }
-
   public String getJwksUri() {
     return jwksUri;
   }
@@ -468,22 +440,6 @@ public class RegisteredClientDTO {
 
   public void setDynamicallyRegistered(boolean dynamicallyRegistered) {
     this.dynamicallyRegistered = dynamicallyRegistered;
-  }
-
-  public boolean isAllowIntrospection() {
-    return allowIntrospection;
-  }
-
-  public void setAllowIntrospection(boolean allowIntrospection) {
-    this.allowIntrospection = allowIntrospection;
-  }
-
-  public boolean isClearAccessTokensOnRefresh() {
-    return clearAccessTokensOnRefresh;
-  }
-
-  public void setClearAccessTokensOnRefresh(boolean clearAccessTokensOnRefresh) {
-    this.clearAccessTokensOnRefresh = clearAccessTokensOnRefresh;
   }
 
   public boolean isRequireAuthTime() {
@@ -562,11 +518,11 @@ public class RegisteredClientDTO {
     this.jwk = jwk;
   }
 
-  public String getCodeChallengeMethod() {
+  public PKCEAlgorithm getCodeChallengeMethod() {
     return codeChallengeMethod;
   }
 
-  public void setCodeChallengeMethod(String codeChallengeMethod) {
+  public void setCodeChallengeMethod(PKCEAlgorithm codeChallengeMethod) {
     this.codeChallengeMethod = codeChallengeMethod;
   }
 

@@ -17,8 +17,6 @@ package it.infn.mw.iam.authn;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -29,6 +27,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class ClientBasicAuthenticationProvider implements AuthenticationProvider {
 
@@ -55,9 +55,9 @@ public class ClientBasicAuthenticationProvider implements AuthenticationProvider
       throw new BadCredentialsException("Bad client credentials");
     }
 
-    AuthMethod tokenAuthnMethod = client.get().getTokenEndpointAuthMethod();
+    ClientAuthMethod tokenAuthnMethod = client.get().getTokenEndpointAuthMethod();
 
-    if (tokenAuthnMethod == AuthMethod.NONE) {
+    if (tokenAuthnMethod == ClientAuthMethod.NONE) {
       if (client.get().getClientSecret() != null) {
 
         LOG.debug("Public client with id {} has a not-null secret", client.get().getClientId());
@@ -71,8 +71,8 @@ public class ClientBasicAuthenticationProvider implements AuthenticationProvider
       throw new AuthenticationServiceException("Public client requires no secret");
     }
 
-    if (!(tokenAuthnMethod == AuthMethod.SECRET_BASIC
-        || tokenAuthnMethod == AuthMethod.SECRET_POST)) {
+    if (!(tokenAuthnMethod == ClientAuthMethod.SECRET_BASIC
+        || tokenAuthnMethod == ClientAuthMethod.SECRET_POST)) {
 
       LOG.debug("Client with id {} does not support basic authentication",
           client.get().getClientId());

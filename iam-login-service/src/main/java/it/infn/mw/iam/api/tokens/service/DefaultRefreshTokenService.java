@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +29,7 @@ import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @Service

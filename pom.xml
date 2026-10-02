@@ -15,7 +15,7 @@
 
   <groupId>it.infn.mw.iam-parent</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.14.1</version>
+  <version>1.14.4</version>
   <packaging>pom</packaging>
 
   <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
@@ -25,22 +25,7 @@
     <module>iam-persistence</module>
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
-    <module>iam-test-client</module>
   </modules>
-
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
-
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 
   <properties>
     <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
@@ -52,7 +37,7 @@
 
     <junit.version>5.14.1</junit.version>
 
-    <mitreid.version>2.1.0.cnaf-20260701</mitreid.version>
+    <mitreid.version>2.3.1.cnaf-20260728</mitreid.version>
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
     <voms.version>3.3.8</voms.version>
@@ -79,6 +64,7 @@
 
     <rest-assured.version>5.2.0</rest-assured.version>
     <json-path.version>2.9.0</json-path.version>
+    <google-guava.version>33.6.0-jre</google-guava.version>
 
     <flyway.version>7.15.0</flyway.version>
 
@@ -91,6 +77,8 @@
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
     <shedlock-spring.version>4.48.0</shedlock-spring.version>
+
+    <nimbus-jose-jwt.version>9.37.4</nimbus-jose-jwt.version>
 
     <resource.delimiter>@</resource.delimiter>
 
@@ -107,6 +95,20 @@
     <sonar.coverage.exclusions>
       iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>shibboleth-releases</id>
+      <name>Shibboleth Releases</name>
+      <url>https://build.shibboleth.net/maven/releases/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <dependencyManagement>
     <dependencies>
@@ -259,31 +261,16 @@
         </exclusions>
       </dependency>
 
-      <!-- Mitre -->
       <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-common</artifactId>
-        <version>${mitreid.version}</version>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${nimbus-jose-jwt.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-server</artifactId>
-        <version>${mitreid.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-ext-jdk15on</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-          </exclusion>
-        </exclusions>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${google-guava.version}</version>
       </dependency>
 
       <dependency>
@@ -367,16 +354,6 @@
     </dependencies>
 
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>infn-cnaf</id>
-      <url>https://repo.cloud.cnaf.infn.it/repository/maven-public/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>

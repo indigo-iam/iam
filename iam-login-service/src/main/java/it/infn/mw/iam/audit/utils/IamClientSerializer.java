@@ -21,12 +21,12 @@ import static it.infn.mw.iam.audit.utils.JsonSerializerUtils.serializeStringArra
 import java.io.IOException;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class IamClientSerializer extends JsonSerializer<ClientDetailsEntity> {
 
@@ -38,14 +38,13 @@ public class IamClientSerializer extends JsonSerializer<ClientDetailsEntity> {
     gen.writeStringField("clientId", value.getClientId());
     gen.writeStringField("clientName", value.getClientName());
     gen.writeBooleanField("dynamically_registered", value.isDynamicallyRegistered());
-    gen.writeBooleanField("allow_introspection", value.isAllowIntrospection());
 
     serializeStringArray(gen, "redirect_uris", value.getRedirectUris());
     serializeStringArray(gen, "scope", value.getScope());
     serializeStringArray(gen, "grant_types", value.getGrantTypes());
 
     String authMethod = Optional.ofNullable(value.getTokenEndpointAuthMethod())
-      .map(AuthMethod::getValue)
+      .map(ClientAuthMethod::getValue)
       .orElseGet(() -> "none");
 
     gen.writeStringField("token_endpoint_auth_method", authMethod);
@@ -60,8 +59,6 @@ public class IamClientSerializer extends JsonSerializer<ClientDetailsEntity> {
 
     nullSafeWriteNumberField(gen, "device_code_validity_seconds",
         value.getDeviceCodeValiditySeconds());
-
-    gen.writeBooleanField("clear_access_token_on_refresh", value.isClearAccessTokensOnRefresh());
 
     gen.writeEndObject();
   }

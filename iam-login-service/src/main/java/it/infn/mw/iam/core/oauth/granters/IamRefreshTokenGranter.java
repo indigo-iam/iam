@@ -19,7 +19,6 @@ import static java.lang.String.format;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
@@ -32,6 +31,7 @@ import org.springframework.security.oauth2.provider.token.AuthorizationServerTok
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 

@@ -86,7 +86,7 @@ class UserInfoEndpointTests {
   void testUserInfoResponseCreationWithoutSub() {
 
     Map<String, Object> claims = Map.of("iss", "https://iam-example.org/");
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrows(NullPointerException.class, () -> {
       new UserInfoResponse(claims);
     });
   }

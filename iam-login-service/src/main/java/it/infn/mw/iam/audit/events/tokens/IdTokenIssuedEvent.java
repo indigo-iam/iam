@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.nimbusds.jwt.JWT;
+
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 
 @JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "subject",
     "grantType", "header", "payload", "source"})
@@ -27,8 +27,8 @@ public class IdTokenIssuedEvent extends SignedTokenEvent {
   private static final long serialVersionUID = 1L;
 
   public IdTokenIssuedEvent(Object source, JWT token,
-      AuthenticationHolderEntity authenticationHolder) {
-    super(source, token, authenticationHolder, "Issue id token");
+      AuthenticationHolderEntity authenticationHolder, String grantType) {
+    super(source, token, authenticationHolder, grantType, "Issue id token");
   }
 
 }

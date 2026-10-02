@@ -34,7 +34,7 @@ public class OidcValidatedProviders {
 
     validatedProviders = properties.getProviders()
       .stream()
-      .filter(p -> !Strings.isNullOrEmpty(p.getClient().getClientId()))
+      .filter(p -> !Strings.isNullOrEmpty(p.getClient().clientId()))
       .collect(toList());
   }
 

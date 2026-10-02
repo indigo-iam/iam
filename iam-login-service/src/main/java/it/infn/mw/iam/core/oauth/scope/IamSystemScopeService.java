@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.scope;
 
+import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.LinkedHashSet;
@@ -23,8 +24,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -39,6 +38,7 @@ import it.infn.mw.iam.audit.events.scope.ScopeRemovedEvent;
 import it.infn.mw.iam.audit.events.scope.ScopeUpdatedEvent;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.persistence.model.SystemScope;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SuppressWarnings("deprecation")
@@ -187,11 +187,15 @@ public class IamSystemScopeService implements SystemScopeService {
   protected void scopeValueValidation(SystemScope scope) {
 
     if (isReserved(scope.getValue())) {
-      LOG.error("Invalid reserved scope value '{}'", scope.getValue());
+      if (LOG.isErrorEnabled()) {
+        LOG.error("Invalid reserved scope value '{}'", sanitize(scope.getValue()));
+      }
       throw new InvalidRequestException("Invalid reserved scope");
     }
     if (isProtected(scope.getValue())) {
-      LOG.error("Invalid protected scope value '{}'", scope.getValue());
+      if (LOG.isErrorEnabled()) {
+        LOG.error("Invalid protected scope value '{}'", sanitize(scope.getValue()));
+      }
       throw new InvalidRequestException("Invalid protected scope");
     }
   }

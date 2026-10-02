@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.14.4 (2026-09-18)
+
+* Correct grant type comparison in refresh token validation
+
+## 1.14.3 (2026-09-14)
+
+* Fix the available values displayed in client cryptographic settings
+* Remove remaining MITREid dependencies from the login-service and persistence modules
+* Update refresh token persistence to use `ExpiringOAuth2RefreshToken`
+* Preserve external authentication information after MFA
+* Preserve the complete JSON UserInfo response when processing claims
+* Fix external OIDC provider client configuration properties
+* Include the `schac_home_organization` claim in access tokens
+* Add UserInfo audit events and improve logging during external OIDC authentication
+
+## 1.14.2 (2026-07-24)
+
+* Fix broken client owners API calls
+* Handle count zero for group member API calls properly
+* Fix AARC claims
+    * Fix voperson_external_affiliation according to AARC-G056
+    * Fill in the eduPersonAssurance attribute with the value from the remote IdP, if available
+    * Add support for schac_home_organization according to AARC-GO56
+* Fix voperson_id and eduPersonScopedAffiliation generation logic
+    * Use `aarc-profile.affiliation-scope` instead of `iam_organisation_name` as the scope. Issuer is the fallback value.
+* Enforce Dashboard required behaviours when enabled
+    * Include scopes in access tokens
+    * Include authorities in ScimUser object
+* Fix wrong numbers logged by garbage collector
+* Enhance AUDIT events: RegistrationTokenIssuedEvent, ResourceTokenIssuedEvent and IdTokenIssuedEvent
+* Clean up expired registrations and associated accounts
+* Add grantType parameter for token events
+* Enforce client-specific PKCE configuration and improve PKCE handling
+* Enhance IAM-native ApprovedSite service and improve consent management API
+* Add iam-voms-aa RPM (and refactor RPM build)
+* Import OIDCAuth* from MitreID and related deps
+    * Fix broken support PKCE when authenticathing through a remote OIDC provider
+* Validate group name uniqueness before group creation
+* Make the SAML WAYF login button configurable
+* Enhance user experience after client creation and secret rotation
+
 ## 1.14.1 (2026-06-10)
 
 ### What's Changed

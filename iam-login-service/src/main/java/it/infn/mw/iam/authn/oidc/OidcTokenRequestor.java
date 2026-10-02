@@ -17,11 +17,12 @@ package it.infn.mw.iam.authn.oidc;
 
 import org.springframework.util.MultiValueMap;
 
-import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
+import it.infn.mw.iam.config.oidc.OidcClient;
+
 @FunctionalInterface
 public interface OidcTokenRequestor {
 
-  String requestTokens(OidcProviderConfiguration conf,
+  String requestTokens(String tokenEndpoint, OidcClient client,
       MultiValueMap<String, String> tokenRequestParams) throws OidcClientError;
 
 }

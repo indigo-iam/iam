@@ -49,9 +49,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -81,8 +78,11 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.core.oauth.consent.BlockedUriService;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -123,7 +123,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   MutableClock clock;
 
   @MockBean
-  BlacklistedSiteService blsService;
+  BlockedUriService blsService;
 
   @SpyBean
   AccountUtils accountUtils;
@@ -354,7 +354,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testBlacklistedUriValidation() {
-    lenient().when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
+    lenient().when(blsService.isBlockedUri("https://deny.example/cb")).thenReturn(true);
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {

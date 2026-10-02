@@ -17,7 +17,6 @@ package it.infn.mw.iam.authn.oidc.validator;
 
 import java.util.Optional;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +29,10 @@ import it.infn.mw.iam.authn.common.ValidatorError;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.authn.common.ValidatorResult;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 
 @Service
-public class DefaultOidcTokenValidator
-    implements AuthenticationValidator<OIDCAuthenticationToken> {
+public class DefaultOidcTokenValidator implements AuthenticationValidator<OIDCAuthenticationToken> {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultOidcTokenValidator.class);
 

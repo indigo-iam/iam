@@ -21,9 +21,6 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -51,6 +48,9 @@ import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
@@ -59,8 +59,6 @@ public class IamIntrospectionService implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
-  private static final String NOT_ALLOWED_CLIENT_ERROR =
-      "Client %s is not allowed to call introspection endpoint";
   private static final String SUSPENDED_CLIENT_ERROR =
       "Client %s has been suspended and is not allowed to call introspection endpoint";
 
@@ -182,12 +180,6 @@ public class IamIntrospectionService implements IntrospectionService {
 
     if (!c.isActive()) {
       String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
-      LOG.error(errorMsg);
-      throw new UnauthorizedClientException(errorMsg);
-    }
-
-    if (!c.isAllowIntrospection()) {
-      String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
     }

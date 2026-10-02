@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.REJECTED;
+import static it.infn.mw.iam.core.IamRegistrationRequestStatus.TIMEOUT;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
@@ -122,6 +123,8 @@ public class DefaultRegistrationRequestService
 
   private ApplicationEventPublisher eventPublisher;
 
+  private  static final String BAD_STATUS_TRANSITION_MSG = "Bad status transition from [%s] to [%s]";
+
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
   public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
@@ -141,6 +144,7 @@ public class DefaultRegistrationRequestService
         .put(NEW, CONFIRMED, true)
         .put(NEW, APPROVED, true)
         .put(NEW, REJECTED, true)
+        .put(NEW, TIMEOUT, true)
         .put(CONFIRMED, APPROVED, true)
         .put(CONFIRMED, REJECTED, true)
         .put(APPROVED, CONFIRMED, true)
@@ -407,7 +411,7 @@ public class DefaultRegistrationRequestService
 
     if (!checkStatusTransition(request.getStatus(), REJECTED)) {
       throw new IllegalArgumentException(
-          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), APPROVED));
     }
 
     return handleReject(request, motivation, doNotSendEmail);
@@ -420,9 +424,18 @@ public class DefaultRegistrationRequestService
 
     if (!checkStatusTransition(request.getStatus(), APPROVED)) {
       throw new IllegalArgumentException(
-          String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), APPROVED));
     }
 
     return handleApprove(request);
+  }
+
+  @Override
+  public RegistrationRequestDto timeoutRequest(IamRegistrationRequest request) {
+    if (!checkStatusTransition(request.getStatus(), TIMEOUT)) {
+      throw new IllegalArgumentException(
+          String.format(BAD_STATUS_TRANSITION_MSG, request.getStatus(), TIMEOUT));
+    }
+    return handleReject(request, Optional.of("Expired timeout"), true);
   }
 }

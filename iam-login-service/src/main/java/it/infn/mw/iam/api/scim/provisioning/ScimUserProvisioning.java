@@ -140,7 +140,7 @@ public class ScimUserProvisioning
 
     StringBuilder regex = new StringBuilder();
 
-    regex.append("(");
+    regex.append("^\\s*(");
 
     // Ensuring that the attribute given is defined within the ScimFilterAttributes
     for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
@@ -149,7 +149,7 @@ public class ScimUserProvisioning
 
     regex.deleteCharAt(regex.length() - 1);
 
-    regex.append(")\\s(");
+    regex.append(")\\s+(");
 
     // Ensuring that the operator given is defined within the ScimFilterOperators
     for (ScimFilterOperators operator : ScimFilterOperators.values()) {
@@ -158,19 +158,19 @@ public class ScimUserProvisioning
 
     regex.deleteCharAt(regex.length() - 1);
 
-    regex.append(")\\s([\\w@\\.]+)");
+    regex.append(")\\s+(?:\"([^\"]*)\"|(\\S+))\\s*$");
 
     // Case insensitive according to the RFC rules
     Pattern pattern = Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE);
     Matcher matcher = pattern.matcher(filtersParameter);
 
-    if (!matcher.matches() || matcher.groupCount() != 3) {
+    if (!matcher.matches() || matcher.groupCount() != 4) {
       throw invalidFilter(filtersParameter);
     }
 
     String attributeStr = matcher.group(1);
     String operatorStr = matcher.group(2);
-    String value = matcher.group(3);
+    String value = matcher.group(3) != null ? matcher.group(3) : matcher.group(4);
 
     ScimFilterAttributes attribute =
         ScimFilterAttributes.parseAttribute(attributeStr.toLowerCase());
@@ -237,9 +237,7 @@ public class ScimUserProvisioning
       }
     }
 
-    if (result != null && result.getContent().isEmpty()) {
-      throw noUsersMappedToValue(parsedFilters);
-    } else if (result == null) {
+    if (result == null) {
       throw missingSupport(parsedFilters);
     }
     return result;
@@ -300,13 +298,14 @@ public class ScimUserProvisioning
       }
     }
 
-    // Throwing a noUsersMapped error if the result is present, but
-    // the contents is not
-    if (result != null && (result.isEmpty() || result.get(0) == null)) {
-      throw noUsersMappedToValue(parsedFilters);
-    } else if (result == null) {
+    if (result == null) {
       throw missingSupport(parsedFilters);
     }
+
+    if (result.isEmpty() || result.get(0) == null) {
+      return 0L;
+    }
+
     return (long) result.size();
   }
 
@@ -327,12 +326,6 @@ public class ScimUserProvisioning
 
   private ScimResourceNotFoundException noUserMappedToId(String id) {
     return new ScimResourceNotFoundException(String.format("No user mapped to id '%s'", id));
-  }
-
-  private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
-    return new ScimResourceNotFoundException(String.format(
-        "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
-        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
   }
 
   private IllegalArgumentException invalidValue(String value) {

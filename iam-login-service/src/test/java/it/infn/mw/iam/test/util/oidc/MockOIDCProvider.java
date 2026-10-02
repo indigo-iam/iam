@@ -29,9 +29,9 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.authn.oidc.OidcClientError;
-import it.infn.mw.iam.authn.oidc.OidcClientFilter.OidcProviderConfiguration;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
+import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 
@@ -52,13 +52,12 @@ public class MockOIDCProvider implements OidcTokenRequestor {
     this.mapper = mapper;
   }
 
-  public String buildIdToken(String clientId, String sub, String nonce)
-      throws JOSEException {
+  public String buildIdToken(String clientId, String sub, String nonce) throws JOSEException {
     return buildIdToken(OidcTestConfig.TEST_OIDC_ISSUER, clientId, sub, nonce, Map.of());
   }
 
-  public String buildIdToken(String issuer, String clientId, String sub, String nonce, Map<String, String> customStringClaims)
-      throws JOSEException {
+  public String buildIdToken(String issuer, String clientId, String sub, String nonce,
+      Map<String, String> customStringClaims) throws JOSEException {
     IdTokenBuilder builder = new IdTokenBuilder(clock, keyStore, signingAlgo).issuer(issuer)
       .sub(sub)
       .audience(clientId)
@@ -102,7 +101,7 @@ public class MockOIDCProvider implements OidcTokenRequestor {
   }
 
   @Override
-  public String requestTokens(OidcProviderConfiguration conf,
+  public String requestTokens(String tokenEndpoint, OidcClient client,
       MultiValueMap<String, String> tokenRequestParams) throws OidcClientError {
 
     if (clientError != null) {

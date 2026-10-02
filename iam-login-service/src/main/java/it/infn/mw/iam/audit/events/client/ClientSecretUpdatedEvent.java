@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class ClientSecretUpdatedEvent extends ClientUpdatedEvent {
 

@@ -15,14 +15,12 @@
  */
 package it.infn.mw.iam.persistence.repository.client;
 
-
-
 import static javax.persistence.criteria.JoinType.LEFT;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import it.infn.mw.iam.api.client.search.ClientSearchForm;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public class ClientSpecs {
   static final String CLIENT_ID = "clientId";

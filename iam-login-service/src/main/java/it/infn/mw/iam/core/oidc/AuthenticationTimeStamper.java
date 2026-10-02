@@ -51,9 +51,9 @@ public class AuthenticationTimeStamper extends SavedRequestAwareAuthenticationSu
 
     session.setAttribute(AUTH_TIMESTAMP, authTimestamp);
 
-    if (session.getAttribute(PromptService.PROMPT_REQUESTED) != null) {
-      session.setAttribute(PromptService.PROMPTED, Boolean.TRUE);
-      session.removeAttribute(PromptService.PROMPT_REQUESTED);
+    if (session.getAttribute(ConnectRequestParameters.PROMPT_REQUESTED) != null) {
+      session.setAttribute(ConnectRequestParameters.PROMPTED, Boolean.TRUE);
+      session.removeAttribute(ConnectRequestParameters.PROMPT_REQUESTED);
     }
 
     LOG.info("Successful Authentication of {} at {}", authentication.getName(), authTimestamp);

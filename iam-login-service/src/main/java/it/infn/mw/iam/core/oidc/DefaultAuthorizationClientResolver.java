@@ -20,10 +20,10 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Component

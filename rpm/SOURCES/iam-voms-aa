@@ -1,0 +1,26 @@
+# Java VM arguments
+IAM_JAVA_OPTS=-Dspring.profiles.active=mysql,voms
+
+# Generic options
+#VOMS_AA_BINDING_ADDRESS=0.0.0.0
+#VOMS_AA_PORT=8080
+#VOMS_AA_FORWARD_HEADERS_STRATEGY=none
+VOMS_AA_TLS_CERTIFICATE_PATH=/etc/grid-security/hostcert.pem
+VOMS_AA_TLS_PRIVATE_KEY_PATH=/etc/grid-security/hostkey.pem
+VOMS_AA_TLS_TRUST_ANCHORS_DIR=/etc/grid-security/certificates
+#VOMS_AA_TLS_TRUST_ANCHORS_REFRESH_INTERVAL_SECS=14400
+#VOMS_AA_VONAME=test
+#VOMS_AA_OPTIONAL_GROUP_LABEL=wlcg.optional-group
+#VOMS_AA_VOMS_ROLE_LABEL=voms.role
+#VOMS_AA_USE_LEGACY_FQAN_ENCODING=false
+
+# Database connection settings
+#IAM_DB_HOST=localhost
+#IAM_DB_PORT=3306
+#IAM_DB_NAME=iam
+#IAM_DB_URL_PARAMS=?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#IAM_DB_USERNAME=iam
+#IAM_DB_PASSWORD=pwd
+#IAM_DB_MAX_ACTIVE=50
+#IAM_DB_MIN_IDLE=8
+#IAM_DB_VALIDATION_QUERY=SELECT 1

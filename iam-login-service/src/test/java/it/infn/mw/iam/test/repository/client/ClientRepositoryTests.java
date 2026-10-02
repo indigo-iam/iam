@@ -35,8 +35,6 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.repository.OAuth2ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,8 +45,10 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -82,13 +82,13 @@ class ClientRepositoryTests extends TokenGetterUtils {
   IamAccountService accountService;
 
   @Autowired
-  OAuth2ClientRepository mitreClientRepo;
-
-  @Autowired
   MutableClock clock;
 
   @Autowired
   ClientUtils clientUtils;
+
+  @Autowired
+  ClientService clientService;
 
   @Autowired
   EntityManager em;
@@ -269,7 +269,7 @@ class ClientRepositoryTests extends TokenGetterUtils {
     assertThat(test001Clients.getSize(), is(1));
     assertThat(test001Clients.getContent(), hasItem(testClient));
 
-    mitreClientRepo.deleteClient(testClient);
+    clientService.deleteClient(testClient);
 
     assertThat(accountClientRepo.findClientByAccount(testAccount, Pageable.unpaged()).isEmpty(),
         is(true));

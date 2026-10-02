@@ -46,6 +46,7 @@ public class RCAuthTestSupport extends X509TestSupport {
   public static final String AUTHORIZATION_URI = "https://rcauth.example/oauth2/authorize";
   public static final String TOKEN_URI = "https://rcauth.example/oauth2/token";
   public static final String GET_CERT_URI = "https://rcauth.example/oauth2/getcert";
+  public static final String USERINFO_URI = "https://rcauth.example/userinfo";
 
   public static final String JWK_URI = "https://rcauth.example/oauth2/jwk";
 

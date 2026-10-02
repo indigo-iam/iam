@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -61,7 +60,6 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
 
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultIamGroupService(IamGroupRepository groupRepo, IamAuthoritiesRepository authRepo,
       IamAccountRepository accountRepo, Clock clock) {
     this.groupRepo = groupRepo;
@@ -78,7 +76,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
     if (isNull(g.getUuid())) {
       g.setUuid(UUID.randomUUID().toString());
     }
-    
+
     g.setCreationTime(creationTime);
     g.setLastUpdateTime(creationTime);
 
@@ -186,11 +184,11 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   private void labelSetEvent(IamGroup group, IamLabel label) {
     eventPublisher.publishEvent(new GroupLabelSetEvent(this, group, label));
   }
-  
+
   private void labelRemovedEvent(IamGroup group, IamLabel label) {
     eventPublisher.publishEvent(new GroupLabelRemovedEvent(this, group, label));
   }
-  
+
   private Supplier<NoSuchGroupError> noSuchGroupException(String message) {
     return () -> new NoSuchGroupError(message);
   }
@@ -254,14 +252,14 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
 
   @Override
   public IamGroup addLabel(IamGroup g, IamLabel l) {
-    
+
     g.getLabels().remove(l);
     g.getLabels().add(l);
-    
+
     touchGroup(g);
 
     groupRepo.save(g);
-    
+
     labelSetEvent(g, l);
     return g;
   }
@@ -269,7 +267,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   @Override
   public IamGroup deleteLabel(IamGroup g, IamLabel l) {
     g.getLabels().remove(l);
-    
+
     labelRemovedEvent(g, l);
     touchGroup(g);
     groupRepo.save(g);

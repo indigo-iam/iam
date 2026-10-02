@@ -18,11 +18,11 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 

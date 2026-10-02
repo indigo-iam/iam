@@ -1,0 +1,134 @@
+volumes:
+  trust:
+  cabundle:
+  hostcerts:
+  
+services:
+
+  trust:
+    build:
+      context: ./../trust-anchors
+    volumes:
+      - trust:/trust-anchors
+      - cabundle:/etc/pki
+      - hostcerts:/hostcerts
+    environment:
+      FORCE_TRUST_ANCHORS_UPDATE: "true"
+
+  iam-be:
+    container_name: iam-be
+    build:
+      context: .
+      dockerfile: ./../../iam-login-service/docker/Dockerfile
+
+    environment:
+      IAM_JAVA_OPTS: -Dlogging.level.it.infn.mw.iam.core.oauth.scope.pdp=DEBUG -Dspring-boot.run.profiles=h2-test,dev
+      IAM_FORWARD_HEADERS_STRATEGY: native
+      IAM_BASE_URL: https://iam.local.io
+      IAM_ISSUER: https://iam.local.io/
+      IAM_ORGANISATION_NAME: iam-opa
+      IAM_JWT_DEFAULT_PROFILE: wlcg
+      IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
+      IAM_OPA_ENABLED: true
+      IAM_OPA_URL: http://opa:8181
+
+    volumes:
+      - /dev/urandom:/dev/random
+      - ./../../:/indigo-iam:ro
+      - ./../../target:/indigo-iam/target:rw
+      - ./../../iam-common/target:/indigo-iam/iam-common/target:rw
+      - ./../../iam-login-service/target:/indigo-iam/iam-login-service/target:rw
+      - ./../../iam-persistence/target:/indigo-iam/iam-persistence/target:rw
+      - ./../../iam-test-client/target:/indigo-iam/iam-test-client/target:rw
+      - ./../../iam-voms-aa/target:/indigo-iam/iam-voms-aa/target:rw
+
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080/.well-known/openid-configuration"]
+
+  client:
+    image: indigoiam/iam-test-client:v1.13.3
+
+    container_name: client
+
+    environment:
+      IAM_CLIENT_FORWARD_HEADERS_STRATEGY: native
+      IAM_CLIENT_TLS_USE_GRID_TRUST_ANCHORS: "true"
+      IAM_CLIENT_ISSUER: https://iam.local.io/
+      IAM_CLIENT_SCOPES: openid profile email offline_access phone
+      IAM_CLIENT_HIDE_TOKENS: false
+
+    volumes:
+      - trust:/etc/grid-security/certificates
+
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:9090/iam-test-client/actuator/health"]
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+
+    logging:
+      driver: "syslog"
+
+    volumes:
+      - cabundle:/etc/pki
+      - hostcerts:/certs
+      - ./iam-policies.tar.gz:/usr/share/nginx/html/bundles/iam-policies.tar.gz
+      - ./nginx/iam-opa.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    ports:
+      - "443:443"
+
+    dns_search: local.io
+
+    networks:
+      default:
+        aliases:
+          - iam.local.io
+
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost/bundles/iam-policies.tar.gz"]
+    
+    depends_on:
+      iam-be:
+        condition: service_healthy
+      client:
+        condition: service_healthy
+      trust:
+        condition: service_completed_successfully
+
+  opa:
+    image: openpolicyagent/opa:latest-debug
+
+    volumes:
+      - ./opa/conf:/etc/opa/conf
+
+    command: >
+      run --server
+      --log-format json-pretty
+      -c /etc/opa/conf/opa-conf.yaml
+      --addr http://0.0.0.0:8181
+
+    networks:
+      default:
+
+    healthcheck:
+      test: ["CMD", "wget", "http://localhost:8181/health", "-O", "/tmp/health"]
+
+  opa-dev:
+    image: openpolicyagent/opa:latest-debug
+
+    volumes:
+      - ./opa/conf:/etc/opa/conf
+      - ./iam-policies.tar.gz:/etc/opa/policies.tar.gz
+
+    command: >
+      run --server
+      --log-format json-pretty
+      -c /etc/opa/conf/local-conf.yaml
+      --addr http://0.0.0.0:8181
+
+    ports:
+      - "8181:8181"
+

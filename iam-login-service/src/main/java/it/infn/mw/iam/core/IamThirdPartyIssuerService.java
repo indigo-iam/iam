@@ -20,13 +20,14 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.openid.connect.client.model.IssuerServiceResponse;
-import org.mitre.openid.connect.client.service.IssuerService;
 import org.springframework.security.authentication.AuthenticationServiceException;
+
+import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.client.IssuerServiceResponse;
 
 public class IamThirdPartyIssuerService implements IssuerService {
 
-  private Set<String> blacklist = new HashSet<>();
+  private Set<String> blockedList = new HashSet<>();
   private Set<String> whitelist = new HashSet<>();
 
   @Override
@@ -39,20 +40,12 @@ public class IamThirdPartyIssuerService implements IssuerService {
           "Whitelist was nonempty, issuer was not in whitelist: " + iss);
     }
 
-    if (blacklist.contains(iss)) {
-      throw new AuthenticationServiceException("Issuer was in blacklist: " + iss);
+    if (blockedList.contains(iss)) {
+      throw new AuthenticationServiceException("Issuer was in blockedList: " + iss);
     }
 
     return new IssuerServiceResponse(iss, request.getParameter("login_hint"),
-        request.getParameter("target_link_uri"));
-  }
-
-  public Set<String> getBlacklist() {
-    return blacklist;
-  }
-
-  public void setBlacklist(Set<String> blacklist) {
-    this.blacklist = blacklist;
+        request.getParameter("target_link_uri"), null);
   }
 
   public Set<String> getWhitelist() {

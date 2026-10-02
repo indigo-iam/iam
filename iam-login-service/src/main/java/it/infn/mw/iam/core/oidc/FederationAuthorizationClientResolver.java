@@ -16,8 +16,6 @@
 package it.infn.mw.iam.core.oidc;
 
 import static it.infn.mw.iam.core.oidc.FederationException.invalidTrustChain;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.REDIRECT_URI;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -29,7 +27,6 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +50,7 @@ import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Component
@@ -107,8 +105,10 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
       if (!"https".equalsIgnoreCase(url.getProtocol()) || url.getHost() == null
           || url.getHost().isEmpty() || url.getQuery() != null || url.getRef() != null) {
 
-        OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-            INVALID_REQUEST_ERROR, "Entity ID URL is not compliant");
+        OAuthError.sendAuthenticationError(response,
+            params.get(ConnectRequestParameters.REDIRECT_URI),
+            params.get(ConnectRequestParameters.STATE), INVALID_REQUEST_ERROR,
+            "Entity ID URL is not compliant");
 
         return false;
       }
@@ -117,8 +117,10 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
     } catch (MalformedURLException e) {
 
-      OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          INVALID_REQUEST_ERROR, "Malformed Entity ID URL");
+      OAuthError.sendAuthenticationError(response,
+          params.get(ConnectRequestParameters.REDIRECT_URI),
+          params.get(ConnectRequestParameters.STATE), INVALID_REQUEST_ERROR,
+          "Malformed Entity ID URL");
 
       return false;
     }
@@ -131,8 +133,10 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
 
     if (requestObj == null) {
 
-      OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          INVALID_REQUEST_ERROR, "Missing request object");
+      OAuthError.sendAuthenticationError(response,
+          params.get(ConnectRequestParameters.REDIRECT_URI),
+          params.get(ConnectRequestParameters.STATE), INVALID_REQUEST_ERROR,
+          "Missing request object");
 
       return Optional.empty();
     }
@@ -266,8 +270,9 @@ public class FederationAuthorizationClientResolver implements AuthorizationClien
       }
     }
 
-    OAuthError.sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-        INVALID_REQUEST_OBJECT_ERROR, "Invalid signature on request object");
+    OAuthError.sendAuthenticationError(response, params.get(ConnectRequestParameters.REDIRECT_URI),
+        params.get(ConnectRequestParameters.STATE), INVALID_REQUEST_OBJECT_ERROR,
+        "Invalid signature on request object");
 
     return false;
   }
