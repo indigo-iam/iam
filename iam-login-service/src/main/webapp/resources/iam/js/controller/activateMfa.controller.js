@@ -87,8 +87,10 @@ function ActivateMfaController($scope, $window, ActivateMfaService) {
       setPending(true);
 
     ActivateMfaService.enableAuthenticatorApp(authAppCtrl.user.code)
-      .then(function () {
-        $window.location.href = '/logout';
+      .then(function (response) {
+        // Not '/logout': the server already decided where to go next, usually
+        // straight back to wherever enrollment was started from.
+        $window.location.href = response.data.redirectUrl;
       })
       .catch(handleError)
       .finally(function () { setPending(false); });
