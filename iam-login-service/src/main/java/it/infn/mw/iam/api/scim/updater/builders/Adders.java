@@ -38,6 +38,7 @@ import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.DefaultAccountUpdater;
 import it.infn.mw.iam.api.scim.updater.util.AccountFinder;
 import it.infn.mw.iam.api.scim.updater.util.IdNotBoundChecker;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.account.oidc.OidcAccountAddedEvent;
 import it.infn.mw.iam.audit.events.account.saml.SamlAccountAddedEvent;
 import it.infn.mw.iam.audit.events.account.ssh.SshKeyAddedEvent;
@@ -69,9 +70,9 @@ public class Adders extends Replacers {
 
   public Adders(Clock clock, IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator, CachedRefreshTokenStore refreshTokenStore) {
     super(clock, repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
-        usernameValidator);
+        usernameValidator, refreshTokenStore);
 
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
     findBySamlId = repo::findBySamlId;

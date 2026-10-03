@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.TokenUtils;
@@ -54,12 +55,13 @@ public class IamTokenRevocationService implements TokenRevocationService {
   private final ClientService clientService;
   private final ApplicationEventPublisher eventPublisher;
   private final TokenUtils tokenUtils;
+  private final CachedRefreshTokenStore refreshTokenStore;
 
   public IamTokenRevocationService(Clock clock, IamProperties iamProperties,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo,
       IamRevokedAccessTokenRepository revokedAccessTokenRepo, ClientService clientService,
-      ApplicationEventPublisher eventPublisher, TokenUtils tokenUtils) {
+      ApplicationEventPublisher eventPublisher, TokenUtils tokenUtils, CachedRefreshTokenStore refreshTokenStore) {
 
     this.clock = clock;
     this.iamProperties = iamProperties;
@@ -69,6 +71,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
     this.clientService = clientService;
     this.eventPublisher = eventPublisher;
     this.tokenUtils = tokenUtils;
+    this.refreshTokenStore = refreshTokenStore;
   }
 
   @Override
@@ -159,7 +162,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
   public void revokeRefreshToken(OAuth2RefreshTokenEntity rt) {
 
     refreshTokenRepo.findByTokenValue(rt.getValue()).ifPresent(token -> {
-      refreshTokenRepo.delete(token);
+      refreshTokenStore.delete(token);
       clientService.useClient(token.getClient());
       String jwtId = getJwtId(token.getJwt());
       eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.REFRESH_TOKEN));
