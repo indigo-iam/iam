@@ -105,7 +105,7 @@ class OidcIdTokenHintValidatorTests {
 
   @ParameterizedTest
   @NullAndEmptySource
-  void missingOrEmptyAudienceReturnFalse(List<String> aud) throws JOSEException {
+  void missingOrEmptyAudienceReturnFalse(List<String> aud) {
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(ISSUER).audience(aud).build();
 
     SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);

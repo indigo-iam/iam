@@ -18,6 +18,8 @@ package it.infn.mw.iam.authn.oidc.validator;
 import java.text.ParseException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +30,8 @@ import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 
 @Component
 public class OidcIdTokenHintValidator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OidcIdTokenHintValidator.class);
 
   private final JWTSigningAndValidationService jwtService;
   private final String issuer;
@@ -49,21 +53,20 @@ public class OidcIdTokenHintValidator {
       String tokenIssuer = claims.getIssuer();
 
       if (tokenIssuer == null || tokenIssuer.isBlank()) {
+        LOG.debug("No ID token issuer found");
         return false;
       }
 
       if (!issuer.equals(tokenIssuer)) {
+        LOG.debug("ID token issuer is not the same as this server");
         return false;
       }
 
       List<String> audience = claims.getAudience();
-      if (audience == null || audience.isEmpty()) {
-        return false;
-      }
-
-      return true;
+      return audience != null && !audience.isEmpty();
 
     } catch (ParseException e) {
+      LOG.debug("Invalid ID token claims");
       return false;
     }
   }
