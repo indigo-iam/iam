@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.consent.ConsentGrantController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
@@ -64,6 +66,9 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 class DeviceCodeApprovalTests extends EndpointsTestUtils {
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   IamClientRepository clientRepo;
 
   @Autowired
@@ -77,6 +82,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
 
   @BeforeEach
   void saveConfig() {
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
     originalIssuer = config.getIssuer();
     originalAllowCompleteUri = config.getDeviceCode().getAllowCompleteVerificationUri();
   }

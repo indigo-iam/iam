@@ -40,6 +40,7 @@ import com.google.common.hash.Hashing;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
@@ -50,7 +51,6 @@ import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Component
@@ -62,22 +62,21 @@ public class TokenUtils {
   private final IamProperties iamProperties;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamAccountRepository accountRepository;
-  private final IamClientRepository clientRepository;
   private final JWTSigningAndValidationService jwtSigningService;
   private final ScopeFilter scopeFilter;
+  private final ClientService clientService;
 
   public TokenUtils(Clock clock, IamProperties iamProperties,
-      IamOAuthAccessTokenRepository accessTokenRepo, IamAccountRepository accountRepository,
-      IamClientRepository clientRepository, JWTSigningAndValidationService jwtSigningService,
-      ScopeFilter scopeFilter) {
+      IamOAuthAccessTokenRepository accessTokenRepo, IamAccountRepository accountRepository, JWTSigningAndValidationService jwtSigningService,
+      ScopeFilter scopeFilter, ClientService clientService) {
 
     this.clock = clock;
     this.iamProperties = iamProperties;
     this.accessTokenRepo = accessTokenRepo;
     this.accountRepository = accountRepository;
-    this.clientRepository = clientRepository;
     this.jwtSigningService = jwtSigningService;
     this.scopeFilter = scopeFilter;
+    this.clientService = clientService;
   }
 
   public ParsedAccessToken parseAccessToken(String accessToken) {
@@ -134,7 +133,7 @@ public class TokenUtils {
     if (Objects.isNull(token.clientId())) {
       throw invalidToken("client_id claim not found on token");
     }
-    ClientDetailsEntity client = clientRepository.findByClientId(token.clientId()).orElseThrow();
+    ClientDetailsEntity client = clientService.findClientByClientId(token.clientId()).orElseThrow();
     if (!client.isActive()) {
       throw invalidToken("Client with id " + token.clientId() + " is not active");
     }

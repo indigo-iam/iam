@@ -30,31 +30,31 @@ import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
-  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final AUPSignatureCheckService signatureCheckService;
+  private final CachedRefreshTokenStore refreshTokenStore;
   private AccountUtils accountUtils;
 
   public IamRefreshTokenGranter(AuthorizationServerTokenServices tokenServices,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
-      OAuth2RequestFactory requestFactory, AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils) {
+      ClientDetailsService clientDetailsService,
+      OAuth2RequestFactory requestFactory, AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils, CachedRefreshTokenStore refreshTokenStore) {
     super(tokenServices, clientDetailsService, requestFactory);
-    this.refreshTokenRepo = refreshTokenRepo;
     this.signatureCheckService = signatureCheckService;
     this.accountUtils = accountUtils;
+    this.refreshTokenStore = refreshTokenStore;
   }
 
   @Override
   protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
     String refreshTokenValue = tokenRequest.getRequestParameters().get("refresh_token");
-    OAuth2RefreshTokenEntity refreshToken = refreshTokenRepo.findByTokenValue(refreshTokenValue)
+    OAuth2RefreshTokenEntity refreshToken = refreshTokenStore.getToken(refreshTokenValue)
       .orElseThrow(() -> new InvalidGrantException("Invalid Refresh Token"));
 
     Optional<IamAccount> user = accountUtils

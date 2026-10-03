@@ -32,6 +32,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -39,6 +40,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
@@ -50,6 +52,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 class ClientRegistrationAPIControllerTests {
+  
+  @Autowired
+  private CacheManager cacheManager;
 
   @Autowired
   MockMvc mvc;
@@ -76,6 +81,7 @@ class ClientRegistrationAPIControllerTests {
 
   @BeforeEach
   void setup() throws Exception {
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-upscoping");
@@ -107,6 +113,8 @@ class ClientRegistrationAPIControllerTests {
     mvc.perform(post(assingOwner).with(user("admin").roles("ADMIN"))).andExpect(CREATED);
 
     clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
+
+    
 
     assertEquals(false, clientUpscopingOff.isUpScopingEnabled());
   }

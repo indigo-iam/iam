@@ -41,6 +41,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -85,6 +86,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -139,6 +141,7 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgUserinfoHelper;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -169,9 +172,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
-import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -384,11 +385,10 @@ public class IamConfig {
   }
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
-      IamScopeRepository scopeRepo) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, @Lazy IamSystemScopeService scopeService) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
     return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
-        scopeRepo);
+        scopeService);
   }
 
   @Bean
@@ -504,10 +504,10 @@ public class IamConfig {
       OAuth2RequestFactory requestFactory,
       @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService,
       AUPSignatureCheckService signatureCheckService,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, AccountUtils accountUtils) {
+      AccountUtils accountUtils, CachedRefreshTokenStore refreshTokenStore) {
 
-    return new IamRefreshTokenGranter(tokenServices, refreshTokenRepo, clientDetailsService,
-        requestFactory, signatureCheckService, accountUtils);
+    return new IamRefreshTokenGranter(tokenServices, clientDetailsService,
+        requestFactory, signatureCheckService, accountUtils, refreshTokenStore);
   }
 
   @Bean
@@ -648,10 +648,10 @@ public class IamConfig {
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators) {
+      ClientDetailsService clientDetailsService,
+      ClientKeyCacheService validators, CachedRefreshTokenStore refreshTokenStore) {
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators);
+        deviceCodeService, authzCodeRepository, validators, refreshTokenStore);
   }
 
   @Bean

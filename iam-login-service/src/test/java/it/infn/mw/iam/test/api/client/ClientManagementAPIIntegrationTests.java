@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -86,6 +87,9 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       AccessTokensController.ACCESS_TOKENS_ENDPOINT;
 
   @Autowired
+  private CacheManager cacheManager;
+
+  @Autowired
   private MockMvc mvc;
 
   @Autowired
@@ -112,6 +116,7 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   void setup() {
     context.cleanupSecurityContext();
     mockOAuth2Filter.cleanupSecurityContext();
+    cacheManager.getCache("Clients").clear();
     numClients = clientRepo.count();
     refreshRepo.deleteAll();
   }

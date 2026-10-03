@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,7 @@ import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
@@ -77,6 +79,9 @@ class AuthorizationRequestAsJwtTests {
   @Autowired
   Clock clock;
 
+  @Autowired
+  private CacheManager cacheManager;
+
   private KeyPair rsaKeyPair;
 
   private static final String CLIENT_ID = "request-object-client";
@@ -93,6 +98,7 @@ class AuthorizationRequestAsJwtTests {
     client.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     client.setJwks(clientJwkSet);
     clientService.saveNewClient(client);
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   private ClientDetailsEntity prepareClient(String clientId) {
