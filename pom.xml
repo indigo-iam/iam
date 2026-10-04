@@ -68,7 +68,7 @@
 
     <flyway.version>7.15.0</flyway.version>
     <postgresql.version>42.7.7</postgresql.version>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
 
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
     <jacoco-plugin.version>0.8.7</jacoco-plugin.version>

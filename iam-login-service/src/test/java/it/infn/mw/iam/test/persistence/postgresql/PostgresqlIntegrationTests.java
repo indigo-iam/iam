@@ -28,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Date;
 import java.util.UUID;
 
+import javax.persistence.EntityManager;
+
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationState;
@@ -95,6 +97,9 @@ class PostgresqlIntegrationTests {
   private IamAupRepository aupRepo;
 
   @Autowired
+  private EntityManager entityManager;
+
+  @Autowired
   private MockMvc mvc;
 
   @Autowired
@@ -118,11 +123,11 @@ class PostgresqlIntegrationTests {
   @Transactional
   void testDataIsLoaded() {
 
-    IamAccount admin = accountRepo.findByUsername("admin")
-      .orElseThrow(() -> new AssertionError("Expected admin account not found"));
+    IamAccount test = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-    assertThat(admin.isActive(), is(true));
-    assertThat(admin.getUserInfo().getEmail(), equalTo("admin@iam.test"));
+    assertThat(test.isActive(), is(true));
+    assertThat(test.getUserInfo().getEmail(), equalTo("test@iam.test"));
     assertThat(groupRepo.findByName("Production").isPresent(), is(true));
   }
 
@@ -140,6 +145,7 @@ class PostgresqlIntegrationTests {
     group.setLastUpdateTime(now);
 
     group = groupRepo.save(group);
+    entityManager.flush();
 
     assertThat(group.getId(), greaterThan(maxId));
   }

@@ -1,10 +1,48 @@
 name: Token not in database tests
 
-on: [push] 
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      database:
+        description: Database used by the tests
+        type: choice
+        options:
+          - default
+          - mysql
+          - postgresql
+        default: default
 
 jobs:
   build-and-test-token-not-in-db:
     runs-on: ubuntu-latest
+
+    # Same database selection as the "Build & Test" workflow
+    strategy:
+      fail-fast: false
+      matrix:
+        db: ${{ fromJSON(
+          (inputs.database == 'mysql' && '["mysql"]') ||
+          (inputs.database == 'postgresql' && '["postgresql"]') ||
+          vars.TEST_DATABASES ||
+          '["mysql","postgresql"]') }}
+
+    name: build-and-test-token-not-in-db (${{ matrix.db }})
+
+    services:
+      postgres:
+        image: ${{ matrix.db == 'postgresql' && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_DB: iam
+          POSTGRES_USER: iam
+          POSTGRES_PASSWORD: pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iam -d iam"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
 
@@ -20,13 +58,17 @@ jobs:
         cache: maven
         java-version: 17
 
-    - name: Run tests when ATs are not stored in the db
-      env:
-        IAM_DB_HOST: localhost
+    - name: Start MySQL
+      if: matrix.db == 'mysql'
       run: |
         sudo systemctl start mysql
         mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test -Diam.access_token.store_on_database=false -q package
+
+    - name: Run tests when ATs are not stored in the db (${{ matrix.db }})
+      env:
+        IAM_DB_HOST: localhost
+      run: |
+        mvn -Dspring.profiles.active=${{ matrix.db }}-test -Diam.access_token.store_on_database=false -q package
