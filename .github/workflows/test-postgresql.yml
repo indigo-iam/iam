@@ -1,0 +1,46 @@
+name: PostgreSQL tests
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test-postgresql:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: iam
+          POSTGRES_USER: iam
+          POSTGRES_PASSWORD: pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iam -d iam"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        cache: maven
+        java-version: 17
+
+    - name: Build & PostgreSQL tests
+      env:
+        IAM_DB_HOST: localhost
+        IAM_DB_PORT: 5432
+        IAM_DB_NAME: iam
+        IAM_DB_USERNAME: iam
+        IAM_DB_PASSWORD: pwd
+      run: |
+        mvn -B -Dspring.profiles.active=postgresql-test -q package
