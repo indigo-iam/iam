@@ -1,0 +1,28 @@
+services:
+  devcontainer:
+    container_name: iam-devcontainer
+    build:
+      context: ../
+    volumes:
+      - ../..:/workspaces/iam
+    network_mode: service:db
+    depends_on:
+      - db
+    environment:
+      IAM_DB_HOST: db
+      IAM_DB_PORT: 5432
+      IAM_DB_NAME: iam
+      IAM_DB_USERNAME: iam
+      IAM_DB_PASSWORD: pwd
+      SPRING_PROFILES_ACTIVE: postgresql-test,dev
+    command: sleep infinity
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: iam
+      POSTGRES_USER: iam
+      POSTGRES_PASSWORD: pwd
