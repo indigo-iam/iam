@@ -17,6 +17,7 @@ package it.infn.mw.iam.config;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.sql.DataSource;
 
@@ -69,6 +70,7 @@ public class JpaConfig extends JpaBaseConfiguration {
     map.put(ECLIPSELINK_LOGGING_LEVEL, "WARNING");
     map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "OFF");
     map.put("eclipselink.cache.shared.default", "false");
+    map.put("eclipselink.session-name", "iam-" + UUID.randomUUID());
 
     if (iamProperties.isShowSql()) {
       map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");

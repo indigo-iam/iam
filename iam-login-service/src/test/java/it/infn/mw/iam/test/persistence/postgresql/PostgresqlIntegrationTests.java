@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.persistence.EntityManager;
@@ -121,6 +123,15 @@ class PostgresqlIntegrationTests {
 
   @Test
   @Transactional
+  void jpaUsesTheSameDatabase() {
+
+    String version =
+        String.valueOf(entityManager.createNativeQuery("SELECT version()").getSingleResult());
+    assertThat(version.startsWith("PostgreSQL"), is(true));
+  }
+
+  @Test
+  @Transactional
   void testDataIsLoaded() {
 
     IamAccount test = accountRepo.findByUsername("test")
@@ -187,12 +198,11 @@ class PostgresqlIntegrationTests {
     String accessToken = json.get("access_token").asText();
     assertThat(accessToken, notNullValue());
 
-    // The hash computed by the application must match the one computed by the
-    // migrations (see V93 and V98)
-    Integer matching = jdbcTemplate.queryForObject(
-        "SELECT COUNT(*) FROM access_token WHERE token_value = ? "
-            + "AND token_value_hash = encode(sha256(convert_to(token_value, 'UTF8')), 'hex')",
-        Integer.class, accessToken);
-    assertThat(matching, is(1));
+    List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+        "SELECT token_value_hash, encode(sha256(convert_to(token_value, 'UTF8')), 'hex') AS db_hash "
+            + "FROM access_token WHERE token_value = ?",
+        accessToken);
+    assertThat(rows.size(), is(1));
+    assertThat(rows.get(0).get("token_value_hash"), equalTo(rows.get(0).get("db_hash")));
   }
 }
