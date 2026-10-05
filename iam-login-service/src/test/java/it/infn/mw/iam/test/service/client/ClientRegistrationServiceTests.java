@@ -104,6 +104,10 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
       "http://127.0.0.1:8080/redirect", "http://[::1]:61023/oauth2redirect",
       "http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect", "edu.kit.data.oidc-agent:/redirect");
 
+  public static final List<String> VALID_POST_LOGOUT_REDIRECT_URIS =
+      List.of("http://localhost/redirect", "http://127.0.0.1:8080/redirect",
+          "http://[::1]:61023/oauth2redirect", "http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect");
+
   @Autowired
   IamClientRepository clientRepo;
 
@@ -322,13 +326,13 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
         ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
 
     assertThat(exception.getMessage(),
-        containsString("Invalid redirect URI scheme: " + expectedScheme));
+        containsString("Invalid post logout redirect URI scheme: " + expectedScheme));
   }
 
   @ParameterizedTest
-  @CsvSource({"' ', 'Invalid redirect URI'",
-      "'http://example/redirect', 'Plain http redirect URIs are only allowed for loopback'",
-      "'https://example.com/callback#token=abc123', 'Invalid redirect URI: contains a fragment'"})
+  @CsvSource({"' ', 'Invalid post logout redirect URI'",
+      "'http://example/redirect', 'Plain http post logout redirect URIs are only allowed for loopback'",
+      "'https://example.com/callback#token=abc123', 'Invalid post logout redirect URI: contains a fragment'"})
   void testInvalidPostLogoutRedirectUri(String postLogoutRedirectUri, String expectedMessage) {
 
     final String redirectUri = VALID_REDIRECT_URIS.get(0);
@@ -344,12 +348,27 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   void testValidPostLogoutRedirectUris() {
     String validRedirectUri = VALID_REDIRECT_URIS.get(0);
 
-    VALID_REDIRECT_URIS.forEach(postLogoutUri -> {
+    VALID_POST_LOGOUT_REDIRECT_URIS.forEach(postLogoutUri -> {
       Assertions.assertDoesNotThrow(() -> {
         RegisteredClientDTO request = createClientDTO(validRedirectUri, postLogoutUri);
         service.registerClient(request, userAuth);
       });
     });
+  }
+
+  @Test
+  void testRejectsHttpPostLogoutRedirectUriForPublicClient() throws ParseException {
+
+    String validRedirectUri = VALID_REDIRECT_URIS.get(0);
+    String postLogoutUri = VALID_POST_LOGOUT_REDIRECT_URIS.get(0);
+    RegisteredClientDTO request = createClientDTO(validRedirectUri, postLogoutUri);
+    request.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
+
+    assertThat(exception.getMessage(), containsString(
+        "Plain http post logout redirect URIs are only allowed for confidential clients"));
   }
 
   @Test

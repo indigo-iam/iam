@@ -76,10 +76,6 @@ public class ValidPostLogoutRedirectURIsValidator
       return invalid(context, "Invalid post logout redirect URI");
     }
 
-    if (!parsedUri.isAbsolute()) {
-      return invalid(context, "Post logout redirect URI must be absolute");
-    }
-
     String scheme = parsedUri.getScheme();
     if (scheme == null || !ALLOWED_SCHEMES.contains(scheme.toLowerCase())) {
       return invalid(context, format("Invalid post logout redirect URI scheme: %s", scheme));
@@ -101,7 +97,7 @@ public class ValidPostLogoutRedirectURIsValidator
     }
 
     if (parsedUri.getFragment() != null) {
-      return invalid(context, "Invalid redirect URI: contains a fragment");
+      return invalid(context, "Invalid post logout redirect URI: contains a fragment");
     }
 
     if (denyListService.isBlockedUri(uri)) {
