@@ -357,7 +357,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   }
 
   @Test
-  void testRejectsHttpPostLogoutRedirectUriForPublicClient() throws ParseException {
+  void testRejectsHttpPostLogoutRedirectUriForPublicClient() {
 
     String validRedirectUri = VALID_REDIRECT_URIS.get(0);
     String postLogoutUri = VALID_POST_LOGOUT_REDIRECT_URIS.get(0);
