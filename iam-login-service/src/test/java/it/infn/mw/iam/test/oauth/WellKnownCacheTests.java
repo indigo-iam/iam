@@ -28,6 +28,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
@@ -47,6 +48,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 @AutoConfigureMockMvc
 @TestPropertySource(properties = "cache.well-known-cleanup-period-secs=1")
 @EnableCaching
+@Transactional 
 public class WellKnownCacheTests {
 
     protected static final String REMOTE_ISSUER = "https://example.com";
