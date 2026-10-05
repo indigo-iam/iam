@@ -40,6 +40,8 @@ public class CacheProperties {
 
   private long oidcDiscoveryCleanupPeriodSecs = 86400;
 
+  private long wellKnownCleanupPeriodSecs = 300;
+
   private RedisProperties redis = new RedisProperties();
 
   public boolean isEnabled() {
@@ -56,6 +58,14 @@ public class CacheProperties {
 
   public void setOidcDiscoveryCleanupPeriodSecs(long oidcDiscoveryCleanupPeriodSecs) {
     this.oidcDiscoveryCleanupPeriodSecs = oidcDiscoveryCleanupPeriodSecs;
+  }
+
+  public long getwellKnownCleanupPeriodSecs() {
+    return wellKnownCleanupPeriodSecs;
+  }
+
+  public void setwellKnownCleanupPeriodSecs(long wellKnownCleanupPeriodSecs) {
+    this.wellKnownCleanupPeriodSecs = wellKnownCleanupPeriodSecs;
   }
 
   public RedisProperties getRedis() {

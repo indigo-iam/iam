@@ -58,7 +58,9 @@ public class CacheConfig {
     cacheManager.setAllowNullValues(false);
 
     cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
-        Caffeine.newBuilder().build());
+        Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofSeconds(cacheProps.getwellKnownCleanupPeriodSecs()))
+        .build());
 
     cacheManager.registerCustomCache(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
         Caffeine.newBuilder().build());
@@ -68,13 +70,15 @@ public class CacheConfig {
             .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
             .build());
 
+    // System scopes cache
     cacheManager.registerCustomCache(
         IamSystemScopeService.CACHE_NAME,
         Caffeine.newBuilder()
-            .maximumSize(2)
+            .maximumSize(1)
             .expireAfterWrite(Duration.ofMinutes(1))
             .build());
 
+    // Clients cache
     cacheManager.registerCustomCache(
         DefaultClientService.CACHE_NAME, 
         Caffeine.newBuilder()
@@ -82,6 +86,7 @@ public class CacheConfig {
             .expireAfterWrite(Duration.ofMinutes(1))
             .build());
 
+    // Refresh tokens cache
     cacheManager.registerCustomCache(
         CachedRefreshTokenStore.CACHE_NAME, 
         Caffeine.newBuilder()
