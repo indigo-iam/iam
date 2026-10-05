@@ -44,6 +44,7 @@ import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
+import it.infn.mw.iam.api.client.registration.validation.ValidPostLogoutRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
@@ -55,6 +56,8 @@ import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 @ValidGrantType(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
+    OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
+@ValidPostLogoutRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidTokenEndpointAuthMethod(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
