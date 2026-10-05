@@ -18,6 +18,9 @@ package it.infn.mw.iam.test.oauth;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +51,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 @AutoConfigureMockMvc
 @TestPropertySource(properties = "cache.well-known-cleanup-period-secs=1")
 @EnableCaching
-@Transactional 
+@Transactional
 public class WellKnownCacheTests {
 
     protected static final String REMOTE_ISSUER = "https://example.com";
@@ -75,6 +78,21 @@ public class WellKnownCacheTests {
     void clearCache() {
         cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
         assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+    }
+
+    private void waitForCacheExpiration() {
+        long timeoutNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+
+        while (System.nanoTime() < timeoutNanos) {
+            if (cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
+                    .get(SimpleKey.EMPTY) == null) {
+                return;
+            }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+        }
+        assertNull(
+                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
+                        .get(SimpleKey.EMPTY));
     }
 
     @Test
@@ -112,11 +130,7 @@ public class WellKnownCacheTests {
                 cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
 
         // Waiting for the cache to expire
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            // empty catch
-        }
+        waitForCacheExpiration();
 
         // Verifying the cache has expired
         assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
