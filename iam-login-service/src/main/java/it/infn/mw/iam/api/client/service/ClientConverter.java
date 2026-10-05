@@ -63,7 +63,6 @@ public class ClientConverter {
     return result;
   }
 
-
   public ClientDetailsEntity entityFromClientManagementRequest(RegisteredClientDTO dto)
       throws ParseException {
     ClientDetailsEntity client = entityFromRegistrationRequest(dto);
@@ -99,8 +98,6 @@ public class ClientConverter {
 
     return client;
   }
-
-
 
   public RegisteredClientDTO registeredClientDtoFromEntity(ClientDetailsEntity entity) {
     RegisteredClientDTO clientDTO = new RegisteredClientDTO();
@@ -212,7 +209,7 @@ public class ClientConverter {
           dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
-    if (dto.getScope().contains("offline_access")) {
+    if (client.getScope().contains("offline_access")) {
       client.getGrantTypes().add(AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
     }
 
