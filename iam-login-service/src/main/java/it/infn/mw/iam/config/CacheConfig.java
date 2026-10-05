@@ -57,16 +57,24 @@ public class CacheConfig {
     CaffeineCacheManager cacheManager = new CaffeineCacheManager();
     cacheManager.setAllowNullValues(false);
 
+    // Well-known info, single entry
     cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
         Caffeine.newBuilder()
+        .maximumSize(1)
         .expireAfterWrite(Duration.ofSeconds(cacheProps.getwellKnownCleanupPeriodSecs()))
         .build());
-
+    
+    // Scopes matchers for specific clients
     cacheManager.registerCustomCache(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
-        Caffeine.newBuilder().build());
+        Caffeine.newBuilder()
+            .maximumSize(cacheProps.getDefaultCacheSize())
+            .expireAfterWrite(Duration.ofSeconds(cacheProps.getDefaultCleanupPeriodSecs()))
+            .build());
 
+    // OIDC, few potential entries depending on amount of issuers
     cacheManager.registerCustomCache(DefaultOidcDiscoveryService.CACHE_NAME,
         Caffeine.newBuilder()
+            .maximumSize(cacheProps.getDefaultCacheSize())
             .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
             .build());
 
@@ -75,28 +83,30 @@ public class CacheConfig {
         IamSystemScopeService.CACHE_NAME,
         Caffeine.newBuilder()
             .maximumSize(1)
-            .expireAfterWrite(Duration.ofMinutes(1))
+            .expireAfterWrite(Duration.ofSeconds(cacheProps.getDefaultCleanupPeriodSecs()))
             .build());
 
     // Clients cache
     cacheManager.registerCustomCache(
         DefaultClientService.CACHE_NAME, 
         Caffeine.newBuilder()
-            .maximumSize(4000)
-            .expireAfterWrite(Duration.ofMinutes(1))
+            .maximumSize(cacheProps.getDefaultCacheSize())
+            .expireAfterWrite(Duration.ofSeconds(cacheProps.getDefaultCleanupPeriodSecs()))
             .build());
 
     // Refresh tokens cache
     cacheManager.registerCustomCache(
         CachedRefreshTokenStore.CACHE_NAME, 
         Caffeine.newBuilder()
-            .maximumSize(4000)
-            .expireAfterWrite(Duration.ofMinutes(1))
+            .maximumSize(cacheProps.getDefaultCacheSize())
+            .expireAfterWrite(Duration.ofSeconds(cacheProps.getDefaultCleanupPeriodSecs()))
             .build());
 
     /* Access tokens by default expire in 1h */
     cacheManager.registerCustomCache(IamJWTSigningService.SIGNATURE_VALIDATION_CACHE,
-        Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(3600)).build());
+        Caffeine.newBuilder()
+        .maximumSize(cacheProps.getDefaultCacheSize())
+        .expireAfterWrite(Duration.ofSeconds(3600)).build());
 
     return cacheManager;
   }

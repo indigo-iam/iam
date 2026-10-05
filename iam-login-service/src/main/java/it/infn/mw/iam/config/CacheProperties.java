@@ -42,6 +42,10 @@ public class CacheProperties {
 
   private long wellKnownCleanupPeriodSecs = 300;
 
+  private long defaultCleanupPeriodSecs = 60;
+
+  private long defaultCacheSize = 1000;
+
   private RedisProperties redis = new RedisProperties();
 
   public boolean isEnabled() {
@@ -68,6 +72,22 @@ public class CacheProperties {
     this.wellKnownCleanupPeriodSecs = wellKnownCleanupPeriodSecs;
   }
 
+  public long getDefaultCleanupPeriodSecs() {
+    return defaultCleanupPeriodSecs;
+  }
+
+  public void setDefaultCleanupPeriodSecs(long defaultCleanupPeriodSecs) {
+    this.defaultCleanupPeriodSecs = defaultCleanupPeriodSecs;
+  }
+
+  public long getDefaultCacheSize() {
+    return defaultCacheSize;
+  }
+
+  public void setDefaultCacheSize(long defaultCacheSize) {
+    this.defaultCacheSize = defaultCacheSize;
+  }
+
   public RedisProperties getRedis() {
     return redis;
   }
@@ -75,6 +95,5 @@ public class CacheProperties {
   public void setRedis(RedisProperties redis) {
     this.redis = redis;
   }
-
 
 }
