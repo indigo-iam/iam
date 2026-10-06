@@ -33,14 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.cache.CacheManager;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
@@ -51,12 +49,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
@@ -75,9 +71,6 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   public static final String SCOPE = "openid profile";
 
   @Autowired
-  private CacheManager cacheManager;
-
-  @Autowired
   IamAupRepository aupRepo;
 
   @Value("${iam.baseUrl}")
@@ -88,9 +81,6 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
 
   @Autowired
   IamAccountRepository accountRepo;
-
-  @Autowired
-  IamClientRepository clientRepo;
 
   private void removeTestClientOwners() {
 
@@ -104,11 +94,6 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
     ClientDetailsEntity client = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     clientService.linkClientToAccount(client, accountRepo.findByUsername("test_199").get());
     clientService.linkClientToAccount(client, accountRepo.findByUsername("test_200").get());
-  }
-
-  @BeforeEach
-  void setup() {
-    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test
@@ -272,9 +257,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
     removeTestClientOwners();
 
     User testUser =
@@ -311,7 +296,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources", is(empty())));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
     setTestClientOwners();
 
   }
@@ -319,9 +304,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     removeTestClientOwners();
 
@@ -361,7 +346,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources[0].client_id", is(TEST_CLIENT_ID)));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     setTestClientOwners();
 
@@ -370,9 +355,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     User testUser =
         new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
@@ -406,7 +391,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources", is(empty())));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
   }
 

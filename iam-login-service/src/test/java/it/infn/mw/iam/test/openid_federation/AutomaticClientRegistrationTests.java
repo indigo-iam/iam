@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.cache.CacheManager;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,7 +62,6 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
@@ -81,10 +79,6 @@ class AutomaticClientRegistrationTests {
 
   @Value("${iam.issuer}")
   private String issuer;
-
-  @Autowired
-  private CacheManager cacheManager;
-
 
   @Autowired
   private MockMvc mvc;
@@ -116,7 +110,6 @@ class AutomaticClientRegistrationTests {
     JWTSigningAndValidationService validator = new IamJWTSigningService(keyStore);
 
     when(jwkService.getValidator(anyString())).thenReturn(validator);
-    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   private String generateRequestJWT(String entityId, String redirectUri, List<String> trustChain)

@@ -98,6 +98,7 @@ class AuthorizationRequestAsJwtTests {
     client.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     client.setJwks(clientJwkSet);
     clientService.saveNewClient(client);
+    // Necessary as eviction does not pertain to new clients
     cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 

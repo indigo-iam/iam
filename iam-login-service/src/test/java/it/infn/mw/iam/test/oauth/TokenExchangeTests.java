@@ -39,12 +39,10 @@ import java.util.Map;
 import java.util.Random;
 
 import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +51,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -77,14 +74,6 @@ class TokenExchangeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamAupRepository aupRepo;
-
-  @Autowired
-  private CacheManager cacheManager;
-
-  @BeforeEach
-  void setup(){
-    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
-  }
 
   @Test
   void testImpersonationFlowWithAudience() throws Exception {

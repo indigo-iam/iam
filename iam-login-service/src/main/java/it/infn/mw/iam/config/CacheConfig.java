@@ -78,7 +78,7 @@ public class CacheConfig {
             .expireAfterWrite(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs()))
             .build());
 
-    // System scopes cache
+    // System scopes, single entry
     cacheManager.registerCustomCache(
         IamSystemScopeService.CACHE_NAME,
         Caffeine.newBuilder()

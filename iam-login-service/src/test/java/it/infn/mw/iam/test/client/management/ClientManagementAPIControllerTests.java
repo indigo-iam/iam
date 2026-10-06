@@ -40,14 +40,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
@@ -70,9 +68,6 @@ class ClientManagementAPIControllerTests {
   static final ResultMatcher FORBIDDEN = status().isForbidden();
 
   @Autowired
-  private CacheManager cacheManager;
-
-  @Autowired
   MockMvc mvc;
 
   @Autowired
@@ -87,7 +82,6 @@ class ClientManagementAPIControllerTests {
   @BeforeEach
   void setup() {
     oauth2Filter.cleanupSecurityContext();
-    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @AfterEach
