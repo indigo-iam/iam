@@ -398,6 +398,10 @@ body.skin-blue {
     margin-bottom: 1em;
 }
 
+.openid-federation-login {
+    margin-top: 25px;
+}
+
 .btn-social {
     padding-left: 0px;
     text-align: center !important;
