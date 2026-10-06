@@ -78,7 +78,6 @@ class RegistrationAccessTokenTests implements StructuredScopeTestSupportConstant
   @BeforeEach
   void setup() {
     RestAssured.port = iamPort;
-    //cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
     registerUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/api/client-registration", iamPort);
     ownedClientsUrl = String.format(LOCALHOST_URL_TEMPLATE + "/iam/account/me/clients", iamPort);
   }
