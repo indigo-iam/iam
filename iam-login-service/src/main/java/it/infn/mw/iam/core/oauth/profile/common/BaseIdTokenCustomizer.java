@@ -19,7 +19,6 @@ import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AMR;
 
-import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -90,13 +89,9 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       }
     }
 
-    try {
-      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim(ACR);
-      if (acrClaim != null) {
-        builder.claim(ACR, acrClaim);
-      }
-    } catch (ParseException e) {
-      LOG.error("Error parsing JWT claims: {}", e.getMessage());
+    Object acrClaim = accessToken.getPayload().getClaim(ACR);
+    if (acrClaim != null) {
+      builder.claim(ACR, acrClaim);
     }
   }
 
