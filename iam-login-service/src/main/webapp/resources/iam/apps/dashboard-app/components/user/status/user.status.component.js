@@ -16,7 +16,7 @@
 (function() {
   'use strict';
 
-  function UserStatusController(toaster, Utils, ModalService, scimFactory) {
+  function UserStatusController(toaster, Utils, ModalService, scimFactory, $http) {
     var self = this;
 
     self.$onInit = function() {
@@ -58,6 +58,20 @@
           .catch(self.handleError);
     };
 
+    self.unlockUser = function() {
+      self.enabled = false;
+      $http.delete('/iam/account/' + self.user.id + '/lockout')
+          .then(function() {
+            self.enabled = true;
+            self.userCtrl.loadUser().then(function(user) {
+              toaster.pop({
+                type: 'success',
+                body: `User '${user.name.formatted}' has been unlocked.`
+              });
+            });
+          })
+          .catch(self.handleError);
+    };
 
     self.openDialog = function() {
 
@@ -93,6 +107,19 @@
           });
     };
 
+    self.openUnlockDialog = function() {
+      var modalOptions = {
+        closeButtonText: 'Cancel',
+        actionButtonText: 'Unlock user',
+        headerText: 'Unlock ' + self.user.name.formatted,
+        bodyText:
+            `Are you sure you want to unlock user '${self.user.name.formatted}'? This will clear the lockout and allow them to log in again.`
+      };
+
+      ModalService.showModal({}, modalOptions)
+          .then(function() { self.unlockUser(); })
+          .catch(function() {});
+    };
 
     self.isMe = function() { return Utils.isMe(self.user.id); };
   }
@@ -103,7 +130,7 @@
     templateUrl:
         '/resources/iam/apps/dashboard-app/components/user/status/user.status.component.html',
     controller: [
-      'toaster', 'Utils', 'ModalService', 'scimFactory', UserStatusController
+      'toaster', 'Utils', 'ModalService', 'scimFactory', '$http', UserStatusController
     ]
   });
 

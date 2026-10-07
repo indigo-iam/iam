@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.audit.events.account;
 
-public enum IamNotificationType {
+import it.infn.mw.iam.persistence.model.IamAccount;
 
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION,
-  AUP_SIGNATURE_REQUEST, ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, ACCOUNT_LOCKED, CLIENT_STATUS, CERTIFICATE_LINK,
-  CERTIFICATE_UNLINK, MFA_ENABLE, MFA_DISABLE, SET_SERVICE_ACCOUNT, REVOKE_SERVICE_ACCOUNT;
+public class AccountUnsuspendedEvent extends AccountEvent {
+
+  public static final String TEMPLATE = "Account '%s' has been suspended";
+
+  private static final long serialVersionUID = 1L;
+
+  public AccountUnsuspendedEvent(Object source, IamAccount account) {
+    super(source, account, String.format(TEMPLATE, account.getUsername()));
+  }
+
 }

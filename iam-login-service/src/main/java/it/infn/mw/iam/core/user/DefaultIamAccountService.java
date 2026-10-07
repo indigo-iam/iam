@@ -28,6 +28,8 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -56,6 +58,8 @@ import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
+import it.infn.mw.iam.audit.events.account.AccountSuspendedEvent;
+import it.infn.mw.iam.audit.events.account.AccountUnsuspendedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -81,6 +85,7 @@ import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -91,6 +96,7 @@ import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
@@ -108,6 +114,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAccountRepository accountRepo;
   private final IamGroupRepository groupRepo;
   private final IamAuthoritiesRepository authoritiesRepo;
+  private final IamAccountLoginLockoutRepository lockoutRepo;
+
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
   private final TokenRevocationService tokenRevocationService;
@@ -121,16 +129,18 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
-      PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      TokenRevocationService tokenRevocationService, IamAccountClientRepository accountClientRepo,
-      NotificationFactory notificationFactory, IamProperties iamProperties,
-      DefaultIamGroupService iamGroupService, TokenGenerator tokenGenerator,
-      IamAupSignatureRepository iamAupSignatureRepo, IamTotpMfaRepository iamTotpMfaRepository) {
+      IamAccountLoginLockoutRepository lockoutRepo, PasswordEncoder passwordEncoder,
+      ApplicationEventPublisher eventPublisher, TokenRevocationService tokenRevocationService,
+      IamAccountClientRepository accountClientRepo, NotificationFactory notificationFactory,
+      IamProperties iamProperties, DefaultIamGroupService iamGroupService,
+      TokenGenerator tokenGenerator, IamAupSignatureRepository iamAupSignatureRepo,
+      IamTotpMfaRepository iamTotpMfaRepository) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
     this.groupRepo = groupRepo;
     this.authoritiesRepo = authoritiesRepo;
+    this.lockoutRepo = lockoutRepo;
     this.passwordEncoder = passwordEncoder;
     this.eventPublisher = eventPublisher;
     this.tokenRevocationService = tokenRevocationService;
@@ -347,7 +357,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     accountClientRepo.deleteByAccount(account);
   }
 
-
   protected void deleteTokensForAccount(IamAccount account) {
 
     tokenRevocationService.revokeAccessTokens(account);
@@ -499,6 +508,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
+  public Optional<IamAccount> findByUsernameForUpdate(String username) {
+    return accountRepo.findByUsernameForUpdate(username);
+  }
+
+  @Override
   public IamAccount addLabel(IamAccount account, IamLabel label) {
 
     if (account.hasLabelWithValue(label)) {
@@ -603,6 +617,50 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
     notificationFactory.createAccountRestoredMessage(account);
+    return account;
+  }
+
+  @Override
+  public IamAccount loginFailedAttempt(IamAccount account) {
+
+    IamAccountLoginLockout lockout = account.getLockoutInfo();
+    if (lockout == null) {
+      lockout = new IamAccountLoginLockout(account);
+    }
+    if (lockout.getFailedAttempts() == 0) {
+      lockout.setFirstFailureTime(Date.from(clock.instant()));
+    }
+    lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);
+    account.setLockoutInfo(lockoutRepo.save(lockout));
+    return account;
+  }
+
+  @Override
+  public IamAccount suspendAccount(IamAccount account) {
+    Instant now = clock.instant();
+    int duration = iamProperties.getLoginLockout().getSuspensionDurationMinutes();
+    Date suspendUntil = Date.from(now.plus(duration, ChronoUnit.MINUTES));
+    account.getLockoutInfo().setSuspendedUntil(suspendUntil);
+    account.setLockoutInfo(lockoutRepo.save(account.getLockoutInfo()));
+    account.touch(now);
+    accountRepo.save(account);
+    eventPublisher.publishEvent(new AccountSuspendedEvent(this, account));
+    notificationFactory.createAccountLockedMessage(account, duration);
+    return account;
+  }
+
+  @Override
+  public IamAccount unsuspendAccount(IamAccount account) {
+    IamAccountLoginLockout lockout = account.getLockoutInfo();
+    if (lockout != null) {
+      lockout.setFailedAttempts(0);
+      lockout.setFirstFailureTime(null);
+      lockout.setSuspendedUntil(null);
+      account.setLockoutInfo(lockoutRepo.save(lockout));
+      account.touch(clock.instant());
+      accountRepo.save(account);
+      eventPublisher.publishEvent(new AccountUnsuspendedEvent(this, account));
+    }
     return account;
   }
 
