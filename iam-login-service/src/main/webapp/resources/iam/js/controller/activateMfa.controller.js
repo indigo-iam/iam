@@ -90,7 +90,7 @@ function ActivateMfaController($scope, $window, ActivateMfaService) {
       .then(function (response) {
         // Not '/logout': the server already decided where to go next, usually
         // straight back to wherever enrollment was started from.
-        $window.location.href = response.data.redirectUrl;
+        $window.location.href = response.data.redirectUrl || '/dashboard';
       })
       .catch(handleError)
       .finally(function () { setPending(false); });
