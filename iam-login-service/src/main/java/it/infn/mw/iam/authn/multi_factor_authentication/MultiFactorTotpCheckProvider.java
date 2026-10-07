@@ -91,7 +91,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   /**
    * Builds the fully-authenticated token for a user who has just proven a TOTP code, without
-   * re-verifying it. Shared with {@code AuthenticatorAppSettingsController#enableAuthenticatorApp},
+   * re-verifying it. Shared with {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect},
    * which has already verified the code itself (to enable MFA in the first place) and upgrades the
    * session directly instead of sending the user through {@code /iam/verify} a second time.
    */

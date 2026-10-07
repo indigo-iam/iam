@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.api.account.multi_factor_authentication.authenticator_app;
+package it.infn.mw.iam.test.ext_authn;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,24 +53,18 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.BindingResult;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.CodeDTO;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.EnableMfaResponseDTO;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
+import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
-import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -79,67 +72,52 @@ import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 /**
- * Covers the session-upgrade decision in {@code enableAuthenticatorApp} added for
+ * Covers {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect}, added for
  * https://github.com/indigo-iam/iam/issues/1372: a genuinely pre-authenticated, first-time
  * enrollment should be upgraded to full authentication in place and resume whatever request
- * brought the user to enrollment, while every other caller of this endpoint (a fully authenticated
- * user enrolling voluntarily from the dashboard, an OAuth2 caller, or a pre-authenticated token
- * that is missing what the upgrade needs) must be left exactly as it was before that fix, or sent
- * to {@code /iam/verify} to finish properly instead.
- *
- * <p>
- * Exercises the controller directly rather than through MockMvc: {@code @PreAuthorize} is a proxy
- * concern unrelated to this decision, and (for a PRE_AUTHENTICATED mock token) would otherwise
- * trigger Spring Security's own re-authentication-on-unauthenticated-token behaviour, which is not
- * what is under test here.
+ * brought the user to enrollment, while every other caller (a fully authenticated user enrolling
+ * voluntarily from the dashboard, an OAuth2 caller, or a pre-authenticated token missing what the
+ * upgrade needs) must be left exactly as it was, or sent to {@code /iam/verify} to finish
+ * properly instead.
  */
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
-class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
+class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFactorTestSupport {
 
   private static final String AUTHORIZE_PATH = "/authorize";
+  private static final String IAM_BASE_URL = "https://iam.example.org";
 
   @Mock
-  private IamTotpMfaService totpMfaService;
-  @Mock
-  private IamAccountRepository accountRepository;
-  @Mock
-  private IamTotpMfaProperties iamTotpMfaProperties;
-  @Mock
-  private NotificationFactory notificationFactory;
+  private AccountUtils accountUtils;
   @Mock
   private AUPSignatureCheckService aupSignatureCheckService;
   @Mock
+  private IamAccountRepository accountRepository;
+  @Mock
+  private IamTotpMfaService iamTotpMfaService;
+  @Mock
+  private IamTotpMfaProperties iamTotpMfaProperties;
+  @Mock
   private ApplicationEventPublisher eventPublisher;
 
-  private AuthenticatorAppSettingsController controller;
+  private AuthenticationSuccessHandlerHelper helper;
   private IamAccount mfaAccount;
   private MockHttpServletRequest request;
   private MockHttpServletResponse response;
   private HttpSession session;
-  private CodeDTO code;
-  private BindingResult validationResult;
 
   @BeforeEach
   void setup() {
     Clock clock = Clock.systemUTC();
     mfaAccount = getTotpMfaAccount(clock.instant());
 
-    controller = new AuthenticatorAppSettingsController(totpMfaService, accountRepository,
-        iamTotpMfaProperties, notificationFactory, aupSignatureCheckService, eventPublisher,
-        new AccountUtils(accountRepository), clock);
-    ReflectionTestUtils.setField(controller, "iamBaseUrl", "https://iam.example.org");
+    helper = new AuthenticationSuccessHandlerHelper(clock, accountUtils, IAM_BASE_URL,
+        aupSignatureCheckService, accountRepository, iamTotpMfaService, iamTotpMfaProperties,
+        eventPublisher);
 
     request = new MockHttpServletRequest();
     response = new MockHttpServletResponse();
     session = request.getSession();
-
-    code = new CodeDTO();
-    code.setCode("123456");
-    validationResult = new BeanPropertyBindingResult(code, "code");
-
-    when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(mfaAccount));
-    when(totpMfaService.verifyTotp(mfaAccount, "123456")).thenReturn(true);
   }
 
   @AfterEach
@@ -175,12 +153,11 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
 
     ExtendedAuthenticationToken current =
         localPendingMfaToken(new HashSet<>(AuthorityUtils.createAuthorityList("ROLE_USER")));
-    SecurityContextHolder.getContext().setAuthentication(current);
 
     when(aupSignatureCheckService.needsAupSignature(mfaAccount)).thenReturn(false);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
     Authentication upgraded = SecurityContextHolder.getContext().getAuthentication();
     assertTrue(upgraded.isAuthenticated());
@@ -198,7 +175,7 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
     verify(eventPublisher).publishEvent(any(InteractiveAuthenticationSuccessEvent.class));
 
     // The whole point of #1372: resumes the client app's own request, not IAM's dashboard.
-    assertEquals(expectedRedirect, result.getRedirectUrl());
+    assertEquals(expectedRedirect, redirectUrl);
   }
 
   @Test
@@ -208,15 +185,14 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
 
     ExtendedAuthenticationToken current =
         localPendingMfaToken(new HashSet<>(AuthorityUtils.createAuthorityList("ROLE_USER")));
-    SecurityContextHolder.getContext().setAuthentication(current);
 
     when(aupSignatureCheckService.needsAupSignature(mfaAccount)).thenReturn(true);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
     assertTrue(SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
-    assertEquals(EnforceAupFilter.AUP_SIGN_PATH, result.getRedirectUrl());
+    assertEquals(EnforceAupFilter.AUP_SIGN_PATH, redirectUrl);
     assertEquals(Boolean.TRUE, session.getAttribute(EnforceAupFilter.REQUESTING_SIGNATURE));
 
     // The AUP page comes first, but the original request must still be there for
@@ -229,26 +205,24 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
 
     // Shaped exactly like OIDCAuthenticationProvider#preAuthenticated: built from the
     // authorities-taking constructor, so isAuthenticated() is true despite holding only
-    // ROLE_PRE_AUTHENTICATED -- this is the case the isAuthenticated()-based guard originally
-    // missed.
+    // ROLE_PRE_AUTHENTICATED -- this is the case an isAuthenticated()-based check would miss.
     OidcExternalAuthenticationToken current = new OidcExternalAuthenticationToken(null, null,
         TOTP_USERNAME, null, AuthorityUtils.createAuthorityList("ROLE_PRE_AUTHENTICATED"));
     assertTrue(current.isAuthenticated());
     current.setFullyAuthenticatedAuthorities(
         new HashSet<>(AuthorityUtils.createAuthorityList("ROLE_USER")));
-    SecurityContextHolder.getContext().setAuthentication(current);
 
     when(aupSignatureCheckService.needsAupSignature(mfaAccount)).thenReturn(false);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
     Authentication upgraded = SecurityContextHolder.getContext().getAuthentication();
     assertTrue(upgraded.isAuthenticated());
     assertTrue(upgraded.getAuthorities().stream()
       .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
     verify(accountRepository).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, result.getRedirectUrl());
+    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
   }
 
   @Test
@@ -261,14 +235,15 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
     ExtendedAuthenticationToken current = localPendingMfaToken(null);
     SecurityContextHolder.getContext().setAuthentication(current);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
+    // Left exactly as the caller had it -- nothing safe to upgrade to here.
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
     verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
     verify(aupSignatureCheckService, never()).needsAupSignature(any());
-    assertEquals(MfaVerifyController.MFA_VERIFY_URL, result.getRedirectUrl());
+    assertEquals(MfaVerifyController.MFA_VERIFY_URL, redirectUrl);
   }
 
   @Test
@@ -285,13 +260,13 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
         new PreAuthenticatedAuthenticationToken(principal, "", principal.getAuthorities());
     SecurityContextHolder.getContext().setAuthentication(current);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
     verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
-    assertEquals(MfaVerifyController.MFA_VERIFY_URL, result.getRedirectUrl());
+    assertEquals(MfaVerifyController.MFA_VERIFY_URL, redirectUrl);
   }
 
   @Test
@@ -305,19 +280,16 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
     // this is what issue 1372's "skip the page" fix originally got wrong.
     SecurityContextHolder.getContext().setAuthentication(current);
 
-    EnableMfaResponseDTO result =
-        controller.enableAuthenticatorApp(code, validationResult, session, request, response);
+    String redirectUrl =
+        helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
-    Authentication after = SecurityContextHolder.getContext().getAuthentication();
-    assertSame(current, after);
-    assertTrue(after.getAuthorities().stream()
-      .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
+    assertSame(current, SecurityContextHolder.getContext().getAuthentication());
 
     verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
     verify(aupSignatureCheckService, never()).needsAupSignature(any());
 
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, result.getRedirectUrl());
+    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
   }
 
   @Test
@@ -331,13 +303,12 @@ class EnableAuthenticatorAppSessionUpgradeTests extends MultiFactorTestSupport {
     current.setAuthenticated(true);
     SecurityContextHolder.getContext().setAuthentication(current);
 
-    EnableMfaResponseDTO result = assertDoesNotThrow(
-        () -> controller.enableAuthenticatorApp(code, validationResult, session, request,
-            response));
+    String redirectUrl = assertDoesNotThrow(
+        () -> helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response));
 
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
     verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, result.getRedirectUrl());
+    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
   }
 }

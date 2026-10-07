@@ -28,6 +28,7 @@ import javax.servlet.RequestDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -145,6 +146,9 @@ public class IamWebSecurityConfig {
     private Clock clock;
 
     @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
@@ -226,7 +230,8 @@ public class IamWebSecurityConfig {
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
+          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties,
+          eventPublisher);
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
