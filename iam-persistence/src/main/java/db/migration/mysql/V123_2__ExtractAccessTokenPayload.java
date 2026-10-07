@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package db.migration.h2;
+package db.migration.mysql;
 
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
 import it.infn.mw.iam.persistence.migrations.ExtractAccessTokenPayload;
 
-public class V123__ExtractAccessTokenPayload extends BaseJavaMigration {
+public class V123_2__ExtractAccessTokenPayload extends BaseJavaMigration {
 
   @Override
   public void migrate(Context context) throws Exception {
