@@ -116,7 +116,7 @@ public class IamSystemScopeService implements SystemScopeService {
     return scopeRepository.findByValue(value).orElse(null);
   }
 
-  @CacheEvict(CACHE_NAME) 
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true) 
   @Override
   public void remove(SystemScope entity) {
 
@@ -153,7 +153,7 @@ public class IamSystemScopeService implements SystemScopeService {
       .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
-  @CacheEvict(CACHE_NAME)
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true)
   @Override
   public SystemScope create(SystemScope entity) {
 
@@ -164,7 +164,7 @@ public class IamSystemScopeService implements SystemScopeService {
     return createdScope;
   }
 
-  @CacheEvict(CACHE_NAME)
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true)
   @Override
   public SystemScope update(SystemScope entity) {
 
