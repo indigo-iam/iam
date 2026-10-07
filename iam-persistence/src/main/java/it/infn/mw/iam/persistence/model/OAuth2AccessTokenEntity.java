@@ -133,7 +133,10 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
   @Override
   @Transient
   public String getValue() {
-    return jwtValue.serialize();
+    if (jwtValue != null) {
+      return jwtValue.serialize();
+    }
+    return payload != null ? payload.toString() : null;
   }
 
   @Override

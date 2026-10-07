@@ -96,19 +96,28 @@ public final class ExtractAccessTokenPayload {
 
   private static String payloadToUpdate(Row row) throws SQLException {
     String value = row.value();
-    if (value == null) {
+    if (value == null || value.isBlank()) {
       return null;
     }
+
+    String trimmed = value.trim();
+
+    // Check if the token value has been already migrated to JSON format
+    if (trimmed.startsWith("{")) {
+      try {
+        JSONObjectUtils.parse(trimmed);
+        return trimmed;
+      } catch (Exception e) {
+        throw new SQLException("Malformed JSON payload at access_token.id=" + row.id(), e);
+      }
+    }
+
+    // Not JSON; attempt to parse as JWT and extract claims
     try {
-      return convertValue(value);
+      return JSONObjectUtils
+        .toJSONString(JWTParser.parse(trimmed).getJWTClaimsSet().toJSONObject());
     } catch (ParseException e) {
-      throw new SQLException("Invalid access token payload at access_token.id=" + row.id());
+      throw new SQLException("Invalid access token payload at access_token.id=" + row.id(), e);
     }
   }
-
-  private static String convertValue(String value) throws ParseException {
-
-    return JSONObjectUtils.toJSONString(JWTParser.parse(value).getJWTClaimsSet().toJSONObject());
-  }
-
 }
