@@ -24,7 +24,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 /**
@@ -96,26 +96,25 @@ public final class ExtractAccessTokenPayload {
 
   private static String payloadToUpdate(Row row) throws SQLException {
     String value = row.value();
-    if (value == null || value.isBlank()) {
+
+    if (value == null) {
       return null;
+    }
+
+    if (value.isBlank()) {
+      throw new SQLException("Blank access token payload at access_token.id=" + row.id());
     }
 
     String trimmed = value.trim();
 
-    // Check if the token value has been already migrated to JSON format
-    if (trimmed.startsWith("{")) {
-      try {
-        JSONObjectUtils.parse(trimmed);
-        return trimmed;
-      } catch (Exception e) {
-        throw new SQLException("Malformed JSON payload at access_token.id=" + row.id(), e);
-      }
-    }
-
-    // Not JSON; attempt to parse as JWT and extract claims
     try {
-      return JSONObjectUtils
-        .toJSONString(JWTParser.parse(trimmed).getJWTClaimsSet().toJSONObject());
+      if (trimmed.startsWith("{")) {
+        // Validate using the same parser as the persistence converter.
+        JWTClaimsSet.parse(trimmed);
+        return null;
+      }
+
+      return JWTParser.parse(trimmed).getJWTClaimsSet().toString();
     } catch (ParseException e) {
       throw new SQLException("Invalid access token payload at access_token.id=" + row.id(), e);
     }
