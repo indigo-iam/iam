@@ -79,7 +79,7 @@ public class SystemScopesCacheTests {
     }
 
     @Test
-    void testSystemScopesCachePopulationAndEviction() throws Exception {
+    void testSystemScopesCachePopulationAndEviction() {
 
         // Before being populated
         assertNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
@@ -90,7 +90,7 @@ public class SystemScopesCacheTests {
         // Confirming cache is populated
         assertNotNull(
                 cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
-        assertEquals(systemScopes.size(), 28);
+        assertEquals(28, systemScopes.size());
 
         // Confirming time constraint eviction
         waitForCacheExpiration();
@@ -104,7 +104,7 @@ public class SystemScopesCacheTests {
         // Confirming cache is populated
         assertNotNull(
                 cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
-        assertEquals(systemScopes.size(), 28);
+        assertEquals(28, systemScopes.size());
 
         // Evicting the cache by creating a new scope
         SystemScope scope = new SystemScope(NEW_SCOPE);
@@ -117,7 +117,7 @@ public class SystemScopesCacheTests {
         systemScopes = scopeService.getAllUnSorted();
         assertNotNull(
                 cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
-        assertEquals(systemScopes.size(), 29);
+        assertEquals(29, systemScopes.size());
         assertTrue(systemScopes.contains(scope));
         assertNotEquals(systemScopes.get(systemScopes.indexOf(scope)).getDescription(), NEW_SCOPE_DESCRIPTION);
 
@@ -132,7 +132,7 @@ public class SystemScopesCacheTests {
         systemScopes = scopeService.getAllUnSorted();
         assertNotNull(
                 cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
-        assertEquals(systemScopes.size(), 29);
+        assertEquals(29, systemScopes.size());
         assertTrue(systemScopes.contains(scope));
         assertEquals(systemScopes.get(systemScopes.indexOf(scope)).getDescription(), NEW_SCOPE_DESCRIPTION);
 
