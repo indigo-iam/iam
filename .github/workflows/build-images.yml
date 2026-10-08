@@ -1,10 +1,54 @@
 name: Build & Test
 
-on: [push, pull_request] 
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      database:
+        description: Database used by the tests
+        type: choice
+        options:
+          - default
+          - mysql
+          - postgresql
+        default: default
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    # The databases used by the tests are chosen, in order of priority, by:
+    # - the "database" input, when the workflow is started manually;
+    # - the TEST_DATABASES repository variable, a JSON list (e.g. ["mysql"]);
+    # - otherwise, both MySQL and PostgreSQL.
+    strategy:
+      fail-fast: false
+      matrix:
+        db: ${{ fromJSON(
+          (inputs.database == 'mysql' && '["mysql"]') ||
+          (inputs.database == 'postgresql' && '["postgresql"]') ||
+          vars.TEST_DATABASES ||
+          '["mysql","postgresql"]') }}
+
+    name: build-and-test (${{ matrix.db }})
+
+    # MySQL is preinstalled on the runner, PostgreSQL runs as a service container
+    # (an empty image skips the service)
+    services:
+      postgres:
+        image: ${{ matrix.db == 'postgresql' && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_DB: iam
+          POSTGRES_USER: iam
+          POSTGRES_PASSWORD: pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iam -d iam"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
 
@@ -25,16 +69,20 @@ jobs:
         mvn -version
         mvn -B license:check
 
-    - name: Build & MySQL tests
-      env:
-        IAM_DB_HOST: localhost
+    - name: Start MySQL
+      if: matrix.db == 'mysql'
       run: |
         sudo systemctl start mysql
         mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test -q package install
+
+    - name: Build & ${{ matrix.db }} tests
+      env:
+        IAM_DB_HOST: localhost
+      run: |
+        mvn -Dspring.profiles.active=${{ matrix.db }}-test -q package install
 
   build-docker-images:
     needs: build-and-test
