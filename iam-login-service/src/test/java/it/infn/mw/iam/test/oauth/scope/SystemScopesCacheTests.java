@@ -30,9 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.SimpleKey;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
@@ -41,10 +39,8 @@ import it.infn.mw.iam.persistence.model.SystemScope;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
-@SpringBootTest(properties = { "cache.enabled=true", "cache.redis.enabled=false" })
+@SpringBootTest(properties = { "cache.enabled=true", "cache.redis.enabled=false", "cache.default-cleanup-period-secs=1" })
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "cache.default-cleanup-period-secs=1")
-@EnableCaching
 @Transactional
 public class SystemScopesCacheTests {
 

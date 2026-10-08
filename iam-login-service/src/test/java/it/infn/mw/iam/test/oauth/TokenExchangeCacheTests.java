@@ -112,6 +112,9 @@ public class TokenExchangeCacheTests extends OidcMockMvcTestSupport {
                 // After the client credentials request, the client used should be in the cache
                 assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
 
+                // And the system scopes should also be within the cache
+                assertNotNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
+
                 // Then use said accesstoken to do the token exchange
                 String tokenResponse = mvc
                                 .perform(post(TOKEN_ENDPOINT)

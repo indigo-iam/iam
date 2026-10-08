@@ -27,9 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.SimpleKey;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -47,100 +45,99 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
-@SpringBootTest(properties = { "cache.enabled=true", "cache.redis.enabled=false" })
+@SpringBootTest(properties = { "cache.enabled=true", "cache.redis.enabled=false",
+                "cache.well-known-cleanup-period-secs=1" })
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "cache.well-known-cleanup-period-secs=1")
-@EnableCaching
 @Transactional
 public class WellKnownCacheTests {
 
-    protected static final String REMOTE_ISSUER = "https://example.com";
-    protected static final String URL = REMOTE_ISSUER + "/.well-known/openid-configuration";
+        protected static final String REMOTE_ISSUER = "https://example.com";
+        protected static final String URL = REMOTE_ISSUER + "/.well-known/openid-configuration";
 
-    private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;
+        private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;
 
-    private static final String SYSTEM_SCOPE_0 = "new-scope0";
-    private static final String SYSTEM_SCOPE_1 = "new-scope1";
+        private static final String SYSTEM_SCOPE_0 = "new-scope0";
+        private static final String SYSTEM_SCOPE_1 = "new-scope1";
 
-    @Autowired
-    private MockMvc mvc;
+        @Autowired
+        private MockMvc mvc;
 
-    @Autowired
-    private SystemScopeService scopeService;
+        @Autowired
+        private SystemScopeService scopeService;
 
-    @MockBean
-    private RestTemplate restTemplate;
+        @MockBean
+        private RestTemplate restTemplate;
 
-    @Autowired
-    private CacheManager cacheManager;
+        @Autowired
+        private CacheManager cacheManager;
 
-    @BeforeEach
-    void clearCache() {
-        cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
-        assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
-    }
-
-    private void waitForCacheExpiration() {
-        long timeoutNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
-
-        while (System.nanoTime() < timeoutNanos) {
-            if (cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
-                    .get(SimpleKey.EMPTY) == null) {
-                return;
-            }
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+        @BeforeEach
+        void clearCache() {
+                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
+                assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
         }
-        assertNull(
-                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
-                        .get(SimpleKey.EMPTY));
-    }
 
-    @Test
-    void testWellKnownCachePopulationAndEviction() throws Exception {
+        private void waitForCacheExpiration() {
+                long timeoutNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
 
-        // Before being populated:
-        assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+                while (System.nanoTime() < timeoutNanos) {
+                        if (cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
+                                        .get(SimpleKey.EMPTY) == null) {
+                                return;
+                        }
+                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+                }
+                assertNull(
+                                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
+                                                .get(SimpleKey.EMPTY));
+        }
 
-        SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
-        scopeService.create(scope);
+        @Test
+        void testWellKnownCachePopulationAndEviction() throws Exception {
 
-        mvc.perform(get(endpoint))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.scopes_supported").exists())
-                .andExpect(jsonPath("$.scopes_supported").isArray())
-                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
+                // Before being populated:
+                assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
 
-        // After being populated:
-        assertNotNull(
-                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+                SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
+                scopeService.create(scope);
 
-        scope = new SystemScope(SYSTEM_SCOPE_1);
-        scopeService.create(scope);
+                mvc.perform(get(endpoint))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.scopes_supported").exists())
+                                .andExpect(jsonPath("$.scopes_supported").isArray())
+                                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
 
-        // Still getting the cached value, i.e. not updated
-        mvc.perform(get(endpoint))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.scopes_supported").exists())
-                .andExpect(jsonPath("$.scopes_supported").isArray())
-                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)))
-                .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
+                // After being populated:
+                assertNotNull(
+                                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
 
-        // Emphasizing it's the cached used
-        assertNotNull(
-                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+                scope = new SystemScope(SYSTEM_SCOPE_1);
+                scopeService.create(scope);
 
-        // Waiting for the cache to expire
-        waitForCacheExpiration();
+                // Still getting the cached value, i.e. not updated
+                mvc.perform(get(endpoint))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.scopes_supported").exists())
+                                .andExpect(jsonPath("$.scopes_supported").isArray())
+                                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)))
+                                .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
 
-        // Verifying the cache has expired
-        assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+                // Emphasizing it's the cached used
+                assertNotNull(
+                                cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
 
-        // Calling endpoint and verifying the values are updated
-        mvc.perform(get(endpoint))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.scopes_supported").exists())
-                .andExpect(jsonPath("$.scopes_supported").isArray())
-                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)))
-                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_1)));
-    }
+                // Waiting for the cache to expire
+                waitForCacheExpiration();
+
+                // Verifying the cache has expired
+                assertNull(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).get(SimpleKey.EMPTY));
+
+                // Calling endpoint and verifying the values are updated
+                mvc.perform(get(endpoint))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.scopes_supported").exists())
+                                .andExpect(jsonPath("$.scopes_supported").isArray())
+                                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)))
+                                .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_1)));
+        }
 }
