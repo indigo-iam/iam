@@ -69,7 +69,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       throw new BadCredentialsException("Bad TOTP");
     }
 
-    return createSuccessfulAuthentication(authentication);
+    return upgradeToFullyAuthenticated(authentication);
   }
 
   private String getTotp(Authentication authentication) {
@@ -89,7 +89,13 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     }
   }
 
-  private Authentication createSuccessfulAuthentication(Authentication authentication) {
+  /**
+   * Builds the fully-authenticated token for a user who has just proven a TOTP code, without
+   * re-verifying it. Shared with {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect},
+   * which has already verified the code itself (to enable MFA in the first place) and upgrades the
+   * session directly instead of sending the user through {@code /iam/verify} a second time.
+   */
+  public static Authentication upgradeToFullyAuthenticated(Authentication authentication) {
     IamAuthenticationMethodReference otp =
         new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
 
