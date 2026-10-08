@@ -52,6 +52,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -74,11 +75,11 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 /**
  * Covers {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect}, added for
  * https://github.com/indigo-iam/iam/issues/1372: a genuinely pre-authenticated, first-time
- * enrollment should be upgraded to full authentication in place and resume whatever request
- * brought the user to enrollment, while every other caller (a fully authenticated user enrolling
+ * enrollment should be upgraded to full authentication in place and resume whatever request brought
+ * the user to enrollment, while every other caller (a fully authenticated user enrolling
  * voluntarily from the dashboard, an OAuth2 caller, or a pre-authenticated token missing what the
- * upgrade needs) must be left exactly as it was, or sent to {@code /iam/verify} to finish
- * properly instead.
+ * upgrade needs) must be left exactly as it was, or sent to {@code /iam/verify} to finish properly
+ * instead.
  */
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
@@ -89,16 +90,24 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
   @Mock
   private AccountUtils accountUtils;
+
   @Mock
   private AUPSignatureCheckService aupSignatureCheckService;
+
   @Mock
   private IamAccountRepository accountRepository;
+
   @Mock
   private IamTotpMfaService iamTotpMfaService;
+
   @Mock
   private IamTotpMfaProperties iamTotpMfaProperties;
+
   @Mock
   private ApplicationEventPublisher eventPublisher;
+
+  @Mock
+  private SessionAuthenticationStrategy sessionAuthenticationStrategy;
 
   private AuthenticationSuccessHandlerHelper helper;
   private IamAccount mfaAccount;
@@ -113,7 +122,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     helper = new AuthenticationSuccessHandlerHelper(clock, accountUtils, IAM_BASE_URL,
         aupSignatureCheckService, accountRepository, iamTotpMfaService, iamTotpMfaProperties,
-        eventPublisher);
+        eventPublisher, sessionAuthenticationStrategy);
 
     request = new MockHttpServletRequest();
     response = new MockHttpServletResponse();
@@ -125,7 +134,9 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     SecurityContextHolder.clearContext();
   }
 
-  /** Mirrors how a saved request actually lands in the session, instead of asserting the fallback. */
+  /**
+   * Mirrors how a saved request actually lands in the session, instead of asserting the fallback.
+   */
   private String seedSavedAuthorizeRequest() {
     MockHttpServletRequest authorizeRequest = new MockHttpServletRequest("GET", AUTHORIZE_PATH);
     authorizeRequest.setQueryString("client_id=some-client&response_type=code");
@@ -161,7 +172,8 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     Authentication upgraded = SecurityContextHolder.getContext().getAuthentication();
     assertTrue(upgraded.isAuthenticated());
-    assertTrue(upgraded.getAuthorities().stream()
+    assertTrue(upgraded.getAuthorities()
+      .stream()
       .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
     Set<String> amr = ((ExtendedAuthenticationToken) upgraded).getAuthenticationMethodReferences()
       .stream()
@@ -219,7 +231,8 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     Authentication upgraded = SecurityContextHolder.getContext().getAuthentication();
     assertTrue(upgraded.isAuthenticated());
-    assertTrue(upgraded.getAuthorities().stream()
+    assertTrue(upgraded.getAuthorities()
+      .stream()
       .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
     verify(accountRepository).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
     assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
@@ -297,9 +310,8 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     Authentication userAuthentication = new UsernamePasswordAuthenticationToken(TOTP_USERNAME, "",
         AuthorityUtils.createAuthorityList("ROLE_USER"));
-    OAuth2Authentication current =
-        new OAuth2Authentication(new MockOAuth2Request("some-client", new String[0]),
-            userAuthentication);
+    OAuth2Authentication current = new OAuth2Authentication(
+        new MockOAuth2Request("some-client", new String[0]), userAuthentication);
     current.setAuthenticated(true);
     SecurityContextHolder.getContext().setAuthentication(current);
 

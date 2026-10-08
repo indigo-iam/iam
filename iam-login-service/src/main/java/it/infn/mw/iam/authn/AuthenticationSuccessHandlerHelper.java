@@ -34,9 +34,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
@@ -68,12 +70,14 @@ public class AuthenticationSuccessHandlerHelper {
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private final ApplicationEventPublisher eventPublisher;
+  private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
   private final RequestCache requestCache = new HttpSessionRequestCache();
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
       IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties, ApplicationEventPublisher eventPublisher) {
+      IamTotpMfaProperties iamTotpMfaProperties, ApplicationEventPublisher eventPublisher,
+      SessionAuthenticationStrategy sessionAuthenticationStrategy) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
@@ -83,6 +87,7 @@ public class AuthenticationSuccessHandlerHelper {
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.eventPublisher = eventPublisher;
+    this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -157,9 +162,9 @@ public class AuthenticationSuccessHandlerHelper {
 
   /**
    * Called once a user finishes first-time TOTP enrollment at
-   * {@code /iam/authenticator-app/enable}. Mirrors {@link #handle}/{@link
-   * #continueWithDefaultSuccessHandler} for that one case, but returns where to go instead of
-   * writing a redirect, since the caller answers with JSON rather than a 302.
+   * {@code /iam/authenticator-app/enable}. Mirrors
+   * {@link #handle}/{@link #continueWithDefaultSuccessHandler} for that one case, but returns where
+   * to go instead of writing a redirect, since the caller answers with JSON rather than a 302.
    *
    * @param current the authentication in place when enrollment completed
    * @param account the account that just enrolled
@@ -170,10 +175,17 @@ public class AuthenticationSuccessHandlerHelper {
 
     if (isPendingMfaUpgrade(current)) {
       Authentication upgraded = MultiFactorTotpCheckProvider.upgradeToFullyAuthenticated(current);
-      SecurityContextHolder.getContext().setAuthentication(upgraded);
+
+      sessionAuthenticationStrategy.onAuthentication(upgraded, request, response);
+
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      context.setAuthentication(upgraded);
+      SecurityContextHolder.setContext(context);
+
       clearAuthenticationAttributes(request);
 
       session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, Date.from(clock.instant()));
+
       IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(upgraded);
       accountRepo.touchLastLoginTimeForUserWithUsername(account.getUsername());
       eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(upgraded,
@@ -195,8 +207,8 @@ public class AuthenticationSuccessHandlerHelper {
 
   /**
    * True if pending MFA with {@code fullyAuthenticatedAuthorities} to upgrade with; checked by
-   * role, not {@code isAuthenticated()}, since external-IdP tokens report authenticated while
-   * still pre-auth.
+   * role, not {@code isAuthenticated()}, since external-IdP tokens report authenticated while still
+   * pre-auth.
    */
   private boolean isPendingMfaUpgrade(Authentication authentication) {
     if (!isPreAuthenticated(authentication)) {

@@ -18,6 +18,10 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,33 +49,22 @@ import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import dev.samstevens.totp.time.TimeProvider;
-
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
-/**
- * Proves https://github.com/indigo-iam/iam/issues/1372 end to end, through the real filter chain
- * and a real session, rather than by calling {@code AuthenticationSuccessHandlerHelper} directly
- * (see {@code AuthenticationSuccessHandlerHelperEnrollmentRedirectTests} for that): with mandatory
- * MFA on, a user who starts an OAuth2 authorization code flow, has no TOTP secret yet, and
- * enrolls one, lands back on the client's own {@code /authorize} request instead of on IAM's own
- * dashboard or login page.
- */
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
-@TestPropertySource(properties = "mfa.multi-factor-mandatory=true")
+@TestPropertySource(properties = {"mfa.multi-factor-mandatory=true",
+    "mfa.password-to-encrypt-and-decrypt=test-password"})
 class FirstTimeMfaEnrollmentIntegrationTests extends TokenGetterUtils {
 
   public static final String LOGIN_URL = "http://localhost/login";
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
   public static final String SCOPE = "openid profile";
 
-  // Mirrors the defaults of the CodeVerifier bean the server actually checks against
-  // (IamTotpMfaConfig#codeVerifier: SHA1, 6 digits, 30s period) so this generates a code the
-  // server will genuinely accept, rather than one only this test believes is valid.
   private String generateCurrentTotp(String secret) throws Exception {
     CodeGenerator codeGenerator = new DefaultCodeGenerator();
     TimeProvider timeProvider = new SystemTimeProvider();
@@ -80,7 +73,7 @@ class FirstTimeMfaEnrollmentIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  void firstTimeMfaEnrollmentResumesOriginalAuthorizeRequest() throws Exception {
+  void firstTimeMfaEnrollmentResumesOriginalAuthorizeRequestAndRotatesSessionId() throws Exception {
 
     UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
       .queryParam("response_type", "code")
@@ -93,49 +86,148 @@ class FirstTimeMfaEnrollmentIntegrationTests extends TokenGetterUtils {
 
     String authzEndpointUrl = uriComponents.toUriString();
 
-    // 1. Start the client's own login flow -- Spring Security saves this request.
-    MockHttpSession session = (MockHttpSession) mvc.perform(get(authzEndpointUrl))
+    // 1. Start the authorization request.
+    MvcResult authorizeResult = mvc.perform(get(authzEndpointUrl))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(LOGIN_URL))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andReturn();
 
-    // 2. Log in. Mandatory MFA + no TOTP secret yet -> sent to enroll, not back to the client.
-    session = (MockHttpSession) mvc
+    MockHttpSession session = (MockHttpSession) authorizeResult.getRequest().getSession();
+
+    // 2. Complete username/password authentication.
+    // The user is authenticated only with PRE_AUTHENTICATED because MFA is mandatory.
+    MvcResult loginResult = mvc
       .perform(post(LOGIN_URL).session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(MFA_ACTIVATE_URL))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andReturn();
+
+    session = (MockHttpSession) loginResult.getRequest().getSession();
 
     SecurityContext context = (SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT");
 
-    // 3. Enroll: get a secret, then prove it with a real TOTP code for it.
-    MvcResult addSecretResult = mvc
-      .perform(put(ADD_SECRET_URL).session(session).with(securityContext(context)))
-      .andExpect(status().isOk())
-      .andReturn();
+    assertNotNull(context);
+    assertNotNull(context.getAuthentication());
 
-    String secret =
-        JsonPath.read(addSecretResult.getResponse().getContentAsString(), "$.secret");
+    // 3. Generate the TOTP secret.
+    MvcResult addSecretResult =
+        mvc.perform(put(ADD_SECRET_URL).session(session).with(securityContext(context)))
+          .andExpect(status().isOk())
+          .andReturn();
+
+    String secret = JsonPath.read(addSecretResult.getResponse().getContentAsString(), "$.secret");
+
     String totp = generateCurrentTotp(secret);
 
-    // 4. This is the bug from #1372: the response must send the browser back to the client's
-    // own /authorize request, not to IAM's own dashboard or login page.
-    mvc.perform(post(ENABLE_URL).session(session).with(securityContext(context))
-        .param("code", totp))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.redirectUrl").value(uriComponents.encode().toUriString()));
+    // Capture the session ID immediately before the MFA upgrade.
+    String preMfaSessionId = session.getId();
 
-    // The redirectUrl alone doesn't prove the session itself was upgraded -- check the session's
-    // own stored SecurityContext directly, the same way step 2 above read it out.
+    // 4. Complete MFA enrollment.
+    // The session ID must be rotated, while the original saved /authorize request must still be
+    // available.
+    MvcResult enableResult = mvc
+      .perform(post(ENABLE_URL).session(session).with(securityContext(context)).param("code", totp))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.redirectUrl").value(uriComponents.encode().toUriString()))
+      .andReturn();
+
+    MockHttpSession upgradedSession = (MockHttpSession) enableResult.getRequest().getSession();
+
+    // Verify session fixation protection.
+    assertNotEquals(preMfaSessionId, upgradedSession.getId());
+
+    // Verify that the authentication has been upgraded.
     SecurityContext upgradedContext =
-        (SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT");
+        (SecurityContext) upgradedSession.getAttribute("SPRING_SECURITY_CONTEXT");
+
+    assertNotNull(upgradedContext);
+    assertNotNull(upgradedContext.getAuthentication());
     assertTrue(upgradedContext.getAuthentication().isAuthenticated());
+
+    // The original authorization request must be resumed.
+    assertEquals(uriComponents.encode().toUriString(),
+        JsonPath.read(enableResult.getResponse().getContentAsString(), "$.redirectUrl"));
+  }
+
+  @Test
+  void invalidTotpDoesNotRotateSessionIdOrUpgradeAuthentication() throws Exception {
+
+    UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
+      .queryParam("response_type", "code")
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .build();
+
+    String authzEndpointUrl = uriComponents.toUriString();
+
+    MvcResult authorizeResult = mvc.perform(get(authzEndpointUrl))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl(LOGIN_URL))
+      .andReturn();
+
+    MockHttpSession session = (MockHttpSession) authorizeResult.getRequest().getSession();
+
+    MvcResult loginResult = mvc
+      .perform(post(LOGIN_URL).session(session)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl(MFA_ACTIVATE_URL))
+      .andReturn();
+
+    session = (MockHttpSession) loginResult.getRequest().getSession();
+
+    SecurityContext context = (SecurityContext) session.getAttribute("SPRING_SECURITY_CONTEXT");
+
+    assertNotNull(context);
+    assertNotNull(context.getAuthentication());
+
+    MvcResult addSecretResult =
+        mvc.perform(put(ADD_SECRET_URL).session(session).with(securityContext(context)))
+          .andExpect(status().isOk())
+          .andReturn();
+
+    String secret = JsonPath.read(addSecretResult.getResponse().getContentAsString(), "$.secret");
+
+    // Make sure the secret is actually valid, but deliberately use an invalid TOTP code for the MFA
+    // verification.
+    String validTotp = generateCurrentTotp(secret);
+    String invalidTotp = validTotp.equals("000000") ? "000001" : "000000";
+
+    String preMfaSessionId = session.getId();
+
+    MvcResult enableResult = mvc.perform(
+        post(ENABLE_URL).session(session).with(securityContext(context)).param("code", invalidTotp))
+      .andReturn();
+
+    MockHttpSession afterFailedMfaSession =
+        (MockHttpSession) enableResult.getRequest().getSession();
+
+    assertEquals(preMfaSessionId, afterFailedMfaSession.getId());
+
+    // The authentication must not be upgraded to fully authenticated.
+    SecurityContext afterFailedMfaContext =
+        (SecurityContext) afterFailedMfaSession.getAttribute("SPRING_SECURITY_CONTEXT");
+
+    assertNotNull(afterFailedMfaContext);
+    assertNotNull(afterFailedMfaContext.getAuthentication());
+    assertFalse(afterFailedMfaContext.getAuthentication().isAuthenticated());
+
+    assertTrue(afterFailedMfaContext.getAuthentication()
+      .getAuthorities()
+      .stream()
+      .anyMatch(authority -> "ROLE_PRE_AUTHENTICATED".equals(authority.getAuthority())));
+
+    assertFalse(afterFailedMfaContext.getAuthentication()
+      .getAuthorities()
+      .stream()
+      .anyMatch(authority -> "ROLE_USER".equals(authority.getAuthority())));
   }
 }
