@@ -27,22 +27,21 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
+@SuppressWarnings("deprecation")
 @Transactional
 public class ClientCredentialsFlowCacheTests extends OidcMockMvcTestSupport {
 
@@ -57,6 +56,9 @@ public class ClientCredentialsFlowCacheTests extends OidcMockMvcTestSupport {
 
     @SpyBean
     private IamScopeRepository scopeRepository;
+
+    @SpyBean(name = "iamClientDetailsService")
+    private ClientDetailsService clientDetailsService;
 
     @Autowired
     private CacheManager cacheManager;
@@ -95,6 +97,11 @@ public class ClientCredentialsFlowCacheTests extends OidcMockMvcTestSupport {
 
         verify(systemScopeService, times(1))
                 .getAllUnSorted();
+
+        // and the the clientDetailsService has not been called
+        verify(clientDetailsService, times(0))
+                .loadClientByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
+
 
         // Also verifying that someone hasn't by passed the service
         // and just calls the repository directly

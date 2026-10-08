@@ -35,11 +35,9 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-
+@SuppressWarnings("deprecation")
 @SpringBootTest(properties = { "cache.enabled=true", "cache.redis.enabled=false",
                 "cache.default-cleanup-period-secs=1" })
-@AutoConfigureMockMvc
 @Transactional
 public class ClientServicesCacheTests {
 
@@ -63,18 +61,16 @@ public class ClientServicesCacheTests {
         }
 
         private void waitForCacheExpiration() {
+
                 long timeoutNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
 
                 while (System.nanoTime() < timeoutNanos) {
-                        if (cacheManager.getCache(DefaultClientService.CACHE_NAME)
-                                        .get(NEW_CLIENT_ID) == null) {
+                        if (cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID) == null) {
                                 return;
                         }
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
-                assertNull(
-                                cacheManager.getCache(DefaultClientService.CACHE_NAME)
-                                                .get(NEW_CLIENT_ID));
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
         }
 
         @Test
