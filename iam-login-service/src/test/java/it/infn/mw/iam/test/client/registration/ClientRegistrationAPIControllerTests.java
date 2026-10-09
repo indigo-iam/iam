@@ -50,7 +50,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 class ClientRegistrationAPIControllerTests {
-  
+
   @Autowired
   MockMvc mvc;
 
@@ -106,7 +106,7 @@ class ClientRegistrationAPIControllerTests {
 
     mvc.perform(post(assingOwner).with(user("admin").roles("ADMIN"))).andExpect(CREATED);
 
-    clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();    
+    clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
 
     assertEquals(false, clientUpscopingOff.isUpScopingEnabled());
   }

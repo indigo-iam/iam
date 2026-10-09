@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -144,7 +142,7 @@ public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
                 DefaultOAuth2AccessToken.class);
 
         JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(CLIENT_CREDENTIALS_CLIENT_ID));
+        assertEquals(exchangedToken.getJWTClaimsSet().getSubject(), CLIENT_CREDENTIALS_CLIENT_ID);
         assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
         String refreshToken = tokenResponseObject.getRefreshToken().getValue();
@@ -169,8 +167,11 @@ public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
                 .getResponse()
                 .getContentAsString();
 
+        tokenResponseObject = mapper.readValue(tokenResponse,
+                DefaultOAuth2AccessToken.class);
+
         exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(CLIENT_CREDENTIALS_CLIENT_ID));
+        assertEquals(exchangedToken.getJWTClaimsSet().getSubject(), CLIENT_CREDENTIALS_CLIENT_ID);
         assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
         // After using the refresh token it should be in the cache
