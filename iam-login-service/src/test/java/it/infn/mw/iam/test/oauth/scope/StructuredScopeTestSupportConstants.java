@@ -114,6 +114,7 @@ public interface StructuredScopeTestSupportConstants {
   static final String ORGANISATION_NAME = "indigo-dc";
 
   static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+  static final String REFRESH_TOKEN_GRANT_TYPE = "refresh_token";
   static final String TOKEN_TYPE_JWT = "urn:ietf:params:oauth:token-type:jwt";
 
   static final String[] USER_AUTHORITIES = new String[] { "ROLE_USER" };

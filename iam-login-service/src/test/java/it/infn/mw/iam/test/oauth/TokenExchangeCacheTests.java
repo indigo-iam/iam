@@ -90,7 +90,7 @@ public class TokenExchangeCacheTests extends OidcMockMvcTestSupport {
         }
 
         @Test
-        void clientCredentialsSuccess() throws Exception {
+        void TokenExchangeCacheTest() throws Exception {
 
                 // First we assume that both caches are clean
                 assertNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
