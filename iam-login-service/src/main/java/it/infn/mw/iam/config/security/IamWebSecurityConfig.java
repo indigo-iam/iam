@@ -28,6 +28,7 @@ import javax.servlet.RequestDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -52,6 +53,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -146,6 +149,9 @@ public class IamWebSecurityConfig {
     private Clock clock;
 
     @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
@@ -225,9 +231,15 @@ public class IamWebSecurityConfig {
     }
 
     @Bean
+    SessionAuthenticationStrategy mfaSessionAuthenticationStrategy() {
+      return new ChangeSessionIdAuthenticationStrategy();
+    }
+
+    @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
+          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties,
+          eventPublisher, mfaSessionAuthenticationStrategy());
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
