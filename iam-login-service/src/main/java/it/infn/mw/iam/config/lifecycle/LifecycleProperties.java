@@ -85,6 +85,12 @@ public class LifecycleProperties {
 
   public static class AccountLifecycleProperties {
 
+    private static TaskProperties defaultPendingSuspensionNotificationTask() {
+      TaskProperties task = new TaskProperties();
+      task.setCronSchedule("0 0 0 * * *");
+      return task;
+    }
+
     @Min(value = 0L)
     Integer accountLifetimeDays;
 
@@ -92,9 +98,11 @@ public class LifecycleProperties {
     ExpiredAccountPolicyProperties expiredAccountPolicy = new ExpiredAccountPolicyProperties();
     
     TaskProperties expiredAccountsTask = new TaskProperties();
-    
-    boolean readOnlyEndTime  = false;
-    
+
+    TaskProperties pendingSuspensionNotificationTask = defaultPendingSuspensionNotificationTask();
+
+    boolean readOnlyEndTime = false;
+
     public Integer getAccountLifetimeDays() {
       return accountLifetimeDays;
     }
@@ -117,6 +125,15 @@ public class LifecycleProperties {
     
     public void setExpiredAccountsTask(TaskProperties expiredAccountsTask) {
       this.expiredAccountsTask = expiredAccountsTask;
+    }
+
+    public TaskProperties getPendingSuspensionNotificationTask() {
+      return pendingSuspensionNotificationTask;
+    }
+
+    public void setPendingSuspensionNotificationTask(
+        TaskProperties pendingSuspensionNotificationTask) {
+      this.pendingSuspensionNotificationTask = pendingSuspensionNotificationTask;
     }
 
     public boolean isReadOnlyEndTime() {
