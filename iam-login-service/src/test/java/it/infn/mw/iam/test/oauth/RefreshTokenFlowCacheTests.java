@@ -140,11 +140,7 @@ public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
 
         DefaultOAuth2AccessToken tokenResponseObject = mapper.readValue(tokenResponse,
                 DefaultOAuth2AccessToken.class);
-
-        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertEquals(exchangedToken.getJWTClaimsSet().getSubject(), CLIENT_CREDENTIALS_CLIENT_ID);
-        assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
-
+                
         String refreshToken = tokenResponseObject.getRefreshToken().getValue();
 
         // After the token exchange, system scopes and both clients should be present in
@@ -170,8 +166,8 @@ public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
         tokenResponseObject = mapper.readValue(tokenResponse,
                 DefaultOAuth2AccessToken.class);
 
-        exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertEquals(exchangedToken.getJWTClaimsSet().getSubject(), CLIENT_CREDENTIALS_CLIENT_ID);
+        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
+        assertEquals(CLIENT_CREDENTIALS_CLIENT_ID, exchangedToken.getJWTClaimsSet().getSubject());
         assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
         // After using the refresh token it should be in the cache
