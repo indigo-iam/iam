@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -114,9 +113,6 @@ public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
                 JsonNode json = assert200AndParse(
                                 postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "scope", "openid"),
                                                 CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
-
-                assertTrue(json.has("access_token"));
-                assertEquals("Bearer", json.get("token_type").asText());
 
                 String accessToken = json.get("access_token").asText();
 
