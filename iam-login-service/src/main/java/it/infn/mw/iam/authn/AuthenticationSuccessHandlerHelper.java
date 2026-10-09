@@ -36,8 +36,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -219,6 +221,9 @@ public class AuthenticationSuccessHandlerHelper {
     }
     if (authentication instanceof AbstractExternalAuthenticationToken<?> token) {
       return token.getFullyAuthenticatedAuthorities() != null;
+    }
+    if (authentication instanceof PreAuthenticatedAuthenticationToken token) {
+      return token.isAuthenticated() && token.getPrincipal() instanceof User;
     }
     return false;
   }

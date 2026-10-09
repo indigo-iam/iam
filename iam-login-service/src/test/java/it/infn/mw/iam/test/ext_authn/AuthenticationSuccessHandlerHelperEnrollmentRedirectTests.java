@@ -17,8 +17,12 @@ package it.infn.mw.iam.test.ext_authn;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.X509;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,6 +66,7 @@ import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
@@ -72,15 +77,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
-/**
- * Covers {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect}, added for
- * https://github.com/indigo-iam/iam/issues/1372: a genuinely pre-authenticated, first-time
- * enrollment should be upgraded to full authentication in place and resume whatever request brought
- * the user to enrollment, while every other caller (a fully authenticated user enrolling
- * voluntarily from the dashboard, an OAuth2 caller, or a pre-authenticated token missing what the
- * upgrade needs) must be left exactly as it was, or sent to {@code /iam/verify} to finish properly
- * instead.
- */
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
 class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFactorTestSupport {
@@ -186,7 +182,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     verify(accountRepository).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
     verify(eventPublisher).publishEvent(any(InteractiveAuthenticationSuccessEvent.class));
 
-    // The whole point of #1372: resumes the client app's own request, not IAM's dashboard.
+    // Resume the client app's own request, not IAM dashboard.
     assertEquals(expectedRedirect, redirectUrl);
   }
 
@@ -215,9 +211,6 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
   @Test
   void externalPendingMfaAuthenticationIsUpgraded() {
 
-    // Shaped exactly like OIDCAuthenticationProvider#preAuthenticated: built from the
-    // authorities-taking constructor, so isAuthenticated() is true despite holding only
-    // ROLE_PRE_AUTHENTICATED -- this is the case an isAuthenticated()-based check would miss.
     OidcExternalAuthenticationToken current = new OidcExternalAuthenticationToken(null, null,
         TOTP_USERNAME, null, AuthorityUtils.createAuthorityList("ROLE_PRE_AUTHENTICATED"));
     assertTrue(current.isAuthenticated());
@@ -241,10 +234,6 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
   @Test
   void pendingMfaAuthenticationWithoutFullAuthoritiesFallsBackToVerify() {
 
-    // Shaped like the X.509 pre-auth token MfaVerifyController#setAuthentication builds: pending
-    // MFA, but nothing to upgrade with. Must not be upgraded (would null out authorities) and
-    // must not have the saved request resumed on its behalf either (it's still not fully
-    // authenticated) -- /iam/verify is the only safe answer.
     ExtendedAuthenticationToken current = localPendingMfaToken(null);
     SecurityContextHolder.getContext().setAuthentication(current);
 
@@ -260,13 +249,8 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
   }
 
   @Test
-  void rawX509PreAuthenticatedTokenFallsBackToVerify() {
+  void rawX509PreAuthenticatedTokenIsUpgradedToFullyAuthenticated() {
 
-    // Shaped like IamX509AuthenticationUserDetailService: before the user ever visits
-    // /iam/verify, the session holds Spring's own PreAuthenticatedAuthenticationToken (not an
-    // ExtendedAuthenticationToken), carrying the account's real roles and ROLE_PRE_AUTHENTICATED
-    // together on the same principal -- there is no fullyAuthenticatedAuthorities to upgrade
-    // with, and this type doesn't match upgradeToFullyAuthenticated anyway.
     User principal = new User(TOTP_USERNAME, "",
         AuthorityUtils.createAuthorityList("ROLE_USER", "ROLE_PRE_AUTHENTICATED"));
     PreAuthenticatedAuthenticationToken current =
@@ -276,10 +260,27 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     String redirectUrl =
         helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response);
 
-    assertSame(current, SecurityContextHolder.getContext().getAuthentication());
-    verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
-    verify(eventPublisher, never()).publishEvent(any());
-    assertEquals(MfaVerifyController.MFA_VERIFY_URL, redirectUrl);
+    Authentication updated = SecurityContextHolder.getContext().getAuthentication();
+
+    assertInstanceOf(ExtendedAuthenticationToken.class, updated);
+    assertTrue(updated.isAuthenticated());
+
+    assertFalse(updated.getAuthorities()
+      .stream()
+      .anyMatch(authority -> Authorities.ROLE_PRE_AUTHENTICATED.getAuthority()
+        .equals(authority.getAuthority())));
+
+    ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) updated;
+
+    assertTrue(token.getAuthenticationMethodReferences()
+      .stream()
+      .anyMatch(ref -> X509.getValue().equals(ref.getName())));
+
+    assertTrue(token.getAuthenticationMethodReferences()
+      .stream()
+      .anyMatch(ref -> ONE_TIME_PASSWORD.getValue().equals(ref.getName())));
+
+    assertNotEquals(MfaVerifyController.MFA_VERIFY_URL, redirectUrl);
   }
 
   @Test
@@ -288,9 +289,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     ExtendedAuthenticationToken current = new ExtendedAuthenticationToken(TOTP_USERNAME, "secret",
         AuthorityUtils.createAuthorityList("ROLE_USER"));
     current.setAuthenticated(true);
-    // fullyAuthenticatedAuthorities is deliberately left null here, exactly like a real token
-    // built for a user who was never PRE_AUTHENTICATED (see IamLocalAuthenticationProvider) --
-    // this is what issue 1372's "skip the page" fix originally got wrong.
+
     SecurityContextHolder.getContext().setAuthentication(current);
 
     String redirectUrl =
