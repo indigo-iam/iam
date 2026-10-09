@@ -233,6 +233,7 @@ notification:
     rejected: Your request for a ${iam.organisation.name} account has been rejected
     adminHandleRequest: New ${iam.organisation.name} account request
     resetPassword: Reset your ${iam.organisation.name} account password
+    pendingSuspension: Users pending account suspension
 
 task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
@@ -301,6 +302,9 @@ lifecycle:
     expired-accounts-task:
       cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
+    pending-suspension-notification-task:
+      cron-schedule: ${IAM_LIFECYCLE_PENDING_SUSPENSION_NOTIFICATION_TASK_CRON_SCHEDULE:0 0 0 * * *}
+      enabled: ${IAM_LIFECYCLE_PENDING_SUSPENSION_NOTIFICATION_TASK_ENABLED:true}
 
 scim:
   include_authorities: ${IAM_SCIM_INCLUDE_AUTHORITIES:false}
