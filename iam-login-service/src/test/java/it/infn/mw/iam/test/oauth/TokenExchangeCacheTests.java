@@ -39,6 +39,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -57,7 +58,7 @@ import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 @SuppressWarnings("deprecation")
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK, properties = {
-                "iam.access_token.include_scope=true"})
+                "iam.access_token.include_scope=true" })
 public class TokenExchangeCacheTests extends OidcMockMvcTestSupport {
 
         private static final String TOKEN_ENDPOINT = "/token";
@@ -70,6 +71,9 @@ public class TokenExchangeCacheTests extends OidcMockMvcTestSupport {
 
         @SpyBean
         private IamSystemScopeService systemScopeService;
+
+        @SpyBean(name = "iamClientDetailsService")
+        private ClientDetailsService clientDetailsService;
 
         @SpyBean
         private IamClientRepository clientRepository;
@@ -151,6 +155,13 @@ public class TokenExchangeCacheTests extends OidcMockMvcTestSupport {
 
                 verify(clientService, times(1))
                                 .findClientByClientId(EXCHANGE_CLIENT_ID);
+
+                // The clientDetailsService should not be called
+                verify(clientDetailsService, times(0))
+                                .loadClientByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
+
+                verify(clientDetailsService, times(0))
+                                .loadClientByClientId(EXCHANGE_CLIENT_ID);
 
                 verify(systemScopeService, times(1))
                                 .getAllUnSorted();

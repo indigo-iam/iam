@@ -37,6 +37,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -57,141 +58,151 @@ import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 @SuppressWarnings("deprecation")
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK, properties = {
-        "iam.access_token.include_scope=true" })
+                "iam.access_token.include_scope=true" })
 public class RefreshTokenFlowCacheTests extends OidcMockMvcTestSupport {
 
-    private static final String TOKEN_ENDPOINT = "/token";
+        private static final String TOKEN_ENDPOINT = "/token";
 
-    @Autowired
-    private ObjectMapper mapper;
+        @Autowired
+        private ObjectMapper mapper;
 
-    @SpyBean
-    private DefaultClientService clientService;
+        @SpyBean
+        private DefaultClientService clientService;
 
-    @SpyBean
-    private IamSystemScopeService systemScopeService;
+        @SpyBean
+        private IamSystemScopeService systemScopeService;
 
-    @SpyBean
-    private CachedRefreshTokenStore refreshTokenStore;
+        @SpyBean(name = "iamClientDetailsService")
+        private ClientDetailsService clientDetailsService;
 
-    @SpyBean
-    private IamClientRepository clientRepository;
+        @SpyBean
+        private CachedRefreshTokenStore refreshTokenStore;
 
-    @SpyBean
-    private IamScopeRepository scopeRepository;
+        @SpyBean
+        private IamClientRepository clientRepository;
 
-    @SpyBean
-    private IamOAuthRefreshTokenRepository refreshTokenRepository;
+        @SpyBean
+        private IamScopeRepository scopeRepository;
 
-    @Autowired
-    protected MockMvc mvc;
+        @SpyBean
+        private IamOAuthRefreshTokenRepository refreshTokenRepository;
 
-    @Autowired
-    private CacheManager cacheManager;
+        @Autowired
+        protected MockMvc mvc;
 
-    @BeforeEach
-    void init() {
-        cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
-        cacheManager.getCache(IamSystemScopeService.CACHE_NAME).clear();
-        cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).clear();
-    }
+        @Autowired
+        private CacheManager cacheManager;
 
-    @Test
-    void RefreshTokenFlowCacheTest() throws Exception {
+        @BeforeEach
+        void init() {
+                cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
+                cacheManager.getCache(IamSystemScopeService.CACHE_NAME).clear();
+                cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).clear();
+        }
 
-        // First we assume that all caches are clean
-        assertNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
+        @Test
+        void RefreshTokenFlowCacheTest() throws Exception {
 
-        // Have to check each client used
-        assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
-        assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(EXCHANGE_CLIENT_ID));
+                // First we assume that all caches are clean
+                assertNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
 
-        // Then fetch access token with client credentials
-        JsonNode json = assert200AndParse(
-                postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "scope", "openid"),
-                        CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
+                // Have to check each client used
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(EXCHANGE_CLIENT_ID));
 
-        assertTrue(json.has("access_token"));
-        assertEquals("Bearer", json.get("token_type").asText());
+                // Then fetch access token with client credentials
+                JsonNode json = assert200AndParse(
+                                postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials", "scope", "openid"),
+                                                CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET));
 
-        String accessToken = json.get("access_token").asText();
+                assertTrue(json.has("access_token"));
+                assertEquals("Bearer", json.get("token_type").asText());
 
-        // After the client credentials request, the client used should be in the cache
-        assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
+                String accessToken = json.get("access_token").asText();
 
-        // And the system scopes should also be within the cache
-        assertNotNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
+                // After the client credentials request, the client used should be in the cache
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
 
-        // Then use said accesstoken to do the token exchange
-        String tokenResponse = mvc
-                .perform(post(TOKEN_ENDPOINT)
-                        .with(httpBasic(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET))
-                        .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
-                        .param("subject_token", accessToken)
-                        .param("subject_token_type", TOKEN_TYPE_JWT)
-                        .param("scope", "offline_access"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.access_token").exists())
-                .andExpect(jsonPath("$.refresh_token").exists())
-                .andExpect(jsonPath("$.scope", containsString("offline_access")))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                // And the system scopes should also be within the cache
+                assertNotNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
 
-        DefaultOAuth2AccessToken tokenResponseObject = mapper.readValue(tokenResponse,
-                DefaultOAuth2AccessToken.class);
-                
-        String refreshToken = tokenResponseObject.getRefreshToken().getValue();
+                // Then use said accesstoken to do the token exchange
+                String tokenResponse = mvc
+                                .perform(post(TOKEN_ENDPOINT)
+                                                .with(httpBasic(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET))
+                                                .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
+                                                .param("subject_token", accessToken)
+                                                .param("subject_token_type", TOKEN_TYPE_JWT)
+                                                .param("scope", "offline_access"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.access_token").exists())
+                                .andExpect(jsonPath("$.refresh_token").exists())
+                                .andExpect(jsonPath("$.scope", containsString("offline_access")))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
 
-        // After the token exchange, system scopes and both clients should be present in
-        // the cache
-        assertNotNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
-        assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
-        assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(EXCHANGE_CLIENT_ID));
+                DefaultOAuth2AccessToken tokenResponseObject = mapper.readValue(tokenResponse,
+                                DefaultOAuth2AccessToken.class);
 
-        // Using the refresh token to get a new access and refresh token
-        tokenResponse = mvc
-                .perform(post(TOKEN_ENDPOINT)
-                        .with(httpBasic(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET))
-                        .param("grant_type", REFRESH_TOKEN_GRANT_TYPE)
-                        .param("refresh_token", refreshToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.access_token").exists())
-                .andExpect(jsonPath("$.refresh_token").exists())
-                .andExpect(jsonPath("$.scope", containsString("offline_access")))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                String refreshToken = tokenResponseObject.getRefreshToken().getValue();
 
-        tokenResponseObject = mapper.readValue(tokenResponse,
-                DefaultOAuth2AccessToken.class);
+                // After the token exchange, system scopes and both clients should be present in
+                // the cache
+                assertNotNull(cacheManager.getCache(IamSystemScopeService.CACHE_NAME).get(SimpleKey.EMPTY));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(CLIENT_CREDENTIALS_CLIENT_ID));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(EXCHANGE_CLIENT_ID));
 
-        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-        assertEquals(CLIENT_CREDENTIALS_CLIENT_ID, exchangedToken.getJWTClaimsSet().getSubject());
-        assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
+                // Using the refresh token to get a new access and refresh token
+                tokenResponse = mvc
+                                .perform(post(TOKEN_ENDPOINT)
+                                                .with(httpBasic(EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET))
+                                                .param("grant_type", REFRESH_TOKEN_GRANT_TYPE)
+                                                .param("refresh_token", refreshToken))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.access_token").exists())
+                                .andExpect(jsonPath("$.refresh_token").exists())
+                                .andExpect(jsonPath("$.scope", containsString("offline_access")))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
 
-        // After using the refresh token it should be in the cache
-        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(refreshToken));
+                tokenResponseObject = mapper.readValue(tokenResponse,
+                                DefaultOAuth2AccessToken.class);
 
-        // Verifying that each lookup is only called once
-        // Any more than 1 means that the cache is broken
-        verify(clientService, times(1))
-                .findClientByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
+                JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
+                assertEquals(CLIENT_CREDENTIALS_CLIENT_ID, exchangedToken.getJWTClaimsSet().getSubject());
+                assertEquals("offline_access", exchangedToken.getJWTClaimsSet().getClaim("scope"));
 
-        verify(clientService, times(1))
-                .findClientByClientId(EXCHANGE_CLIENT_ID);
+                // After using the refresh token it should be in the cache
+                assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(refreshToken));
 
-        verify(systemScopeService, times(1))
-                .getAllUnSorted();
+                // Verifying that each lookup is only called once
+                // Any more than 1 means that the cache is broken
+                verify(clientService, times(1))
+                                .findClientByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
 
-        verify(refreshTokenStore, times(1))
-                .getToken(refreshToken);
+                verify(clientService, times(1))
+                                .findClientByClientId(EXCHANGE_CLIENT_ID);
 
-        // Also verifying that someone hasn't by passed the service
-        // and just calls the repository directly
-        verify(clientRepository, times(1)).findByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
-        verify(clientRepository, times(1)).findByClientId(EXCHANGE_CLIENT_ID);
-        verify(scopeRepository, times(1)).findAll();
-        verify(refreshTokenRepository, times(1)).findByTokenValue(refreshToken);
-    }
+                // The clientDetailsService should not be called
+                verify(clientDetailsService, times(0))
+                                .loadClientByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
+
+                verify(clientDetailsService, times(0))
+                                .loadClientByClientId(EXCHANGE_CLIENT_ID);
+
+                verify(systemScopeService, times(1))
+                                .getAllUnSorted();
+
+                verify(refreshTokenStore, times(1))
+                                .getToken(refreshToken);
+
+                // Also verifying that someone hasn't by passed the service
+                // and just calls the repository directly
+                verify(clientRepository, times(1)).findByClientId(CLIENT_CREDENTIALS_CLIENT_ID);
+                verify(clientRepository, times(1)).findByClientId(EXCHANGE_CLIENT_ID);
+                verify(scopeRepository, times(1)).findAll();
+                verify(refreshTokenRepository, times(1)).findByTokenValue(refreshToken);
+        }
 }
