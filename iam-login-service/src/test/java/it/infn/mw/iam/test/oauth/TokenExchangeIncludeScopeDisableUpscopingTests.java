@@ -48,9 +48,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
@@ -65,8 +65,8 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
   @Autowired
   private ObjectMapper mapper;
 
-  @Autowired
-  private IamClientRepository clientRepository;
+  @Autowired 
+  private ClientService clientService;
 
   @BeforeEach
   void setup() throws Exception {
@@ -79,10 +79,10 @@ class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils 
       .scope("read-tasks")
       .getAccessTokenValue();
 
-    ClientDetailsEntity client = clientRepository.findByClientId(EXCHANGE_CLIENT_ID)
+    ClientDetailsEntity client = clientService.findClientByClientId(EXCHANGE_CLIENT_ID)
       .orElseThrow(NoSuchElementException::new);
     client.setUpScopingEnabled(false);
-    clientRepository.save(client);
+    clientService.updateClient(client);
   }
 
   // Upscoping disabled, Access token with scopes, same scopes, Scopes in token so no need for

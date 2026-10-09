@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.scope;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,5 +53,7 @@ public interface SystemScopeService {
   Optional<SystemScope> get(Long id);
 
   Set<SystemScope> getAllSorted();
+
+  List<SystemScope> getAllUnSorted();
 
 }

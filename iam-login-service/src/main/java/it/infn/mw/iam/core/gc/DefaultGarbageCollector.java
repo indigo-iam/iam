@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.persistence.model.ConsentGrant;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
@@ -60,6 +61,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
   private final IamAuthorizationCodeRepository authzCodeRepo;
   private final IamClientRepository clientRepository;
   private final ClientService clientService;
+  private final CachedRefreshTokenStore refreshTokenStore;
 
   public DefaultGarbageCollector(Clock clock, IamConsentGrantRepository approvedSiteRepository,
       IamOAuthAccessTokenRepository accessTokenRepo,
@@ -67,7 +69,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
       IamAuthenticationHolderRepository authenticationHolderRepository,
       IamRevokedAccessTokenRepository revokedAccessTokenRepo,
       IamAuthorizationCodeRepository authzCodeRepo, IamClientRepository clientRepository,
-      ClientService clientService) {
+      ClientService clientService, CachedRefreshTokenStore refreshTokenStore) {
 
     this.clock = clock;
     this.approvedSiteRepository = approvedSiteRepository;
@@ -79,6 +81,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
     this.authzCodeRepo = authzCodeRepo;
     this.clientRepository = clientRepository;
     this.clientService = clientService;
+    this.refreshTokenStore = refreshTokenStore;
   }
 
   @Override
@@ -157,6 +160,7 @@ public class DefaultGarbageCollector implements GarbageCollector {
     Page<OAuth2RefreshTokenEntity> expiredRefreshTokens = refreshTokenRepo
       .findExpiredTokens(new OffsetPageable(0, count), Date.from(clock.instant()));
     refreshTokenRepo.deleteAll(expiredRefreshTokens);
+    refreshTokenStore.evictAll(expiredRefreshTokens);
     if (expiredRefreshTokens.getTotalElements() > 0) {
       LOG.info("Removed {} of {} expired refresh tokens",
           expiredRefreshTokens.getNumberOfElements(), expiredRefreshTokens.getTotalElements());

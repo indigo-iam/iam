@@ -35,6 +35,8 @@ public interface ClientService {
 
   Optional<ClientDetailsEntity> findClientByClientId(String clientId);
 
+  Optional<ClientDetailsEntity> findClientByClientIdFromDatabase(String clientId);
+
   Optional<ClientDetailsEntity> findClientByClientIdAndAccount(String clientId,
       IamAccount acccount);
 

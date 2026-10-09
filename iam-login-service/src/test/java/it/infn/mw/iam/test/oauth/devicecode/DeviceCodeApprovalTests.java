@@ -49,6 +49,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.consent.ConsentGrantController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
@@ -65,6 +66,9 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
 
   @Autowired
   IamClientRepository clientRepo;
+
+  @Autowired
+  ClientService clientService; 
 
   @Autowired
   IamProperties config;
@@ -241,9 +245,9 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   @Test
   void testDeviceCodeWithExpiredCodeFails() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
     entity.setDeviceCodeValiditySeconds(-1);
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -293,7 +297,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(view().name("requestUserCode"));
 
     entity.setDeviceCodeValiditySeconds(600);
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
   }
 
@@ -569,9 +573,9 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
   @Test
   void testOidcAgentClientIsLinkedToUser() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:device-code-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -640,7 +644,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.Resources[0].client_id", is(DEVICE_CODE_CLIENT_ID)));
 
     entity.setClientName("Device code client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
   }
 
   @Test

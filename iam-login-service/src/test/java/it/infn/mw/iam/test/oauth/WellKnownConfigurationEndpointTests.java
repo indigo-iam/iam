@@ -51,7 +51,7 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.persistence.model.SystemScope;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = "task.wellKnownCacheCleanupPeriodSecs=1")
+    properties = "cache.well-known-cleanup-period-secs=1")
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles({"h2-test"})
@@ -172,7 +172,7 @@ class WellKnownConfigurationEndpointTests {
   }
 
   @Test
-  void testWellKnownCacheEviction() throws Exception {
+  void testWellKnownCachePopulation() throws Exception {
 
     SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
     scopeService.create(scope);

@@ -67,6 +67,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.IdTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
@@ -91,7 +92,6 @@ import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.util.IdTokenHashUtils;
 
 @SuppressWarnings("deprecation")
@@ -121,7 +121,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
   private final Clock clock;
   private final IamProperties iamProperties;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
-  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final CachedRefreshTokenStore refreshTokenStore;
   private final IamAuthenticationHolderService authenticationHolderService;
   private final ClientService clientService;
   private final IamAccountService accountService;
@@ -135,17 +135,15 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   public IamAuthorizationServerTokenServices(Clock clock, IamProperties iamProperties,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo,
       IamAuthenticationHolderService authenticationHolderService, ClientService clientService,
       IamAccountService accountService, JWTSigningAndValidationService jwtSigningService,
       TokenRevocationService revocationService, SystemScopeService scopeService,
       JWTProfileResolver profileResolver, ApplicationEventPublisher eventPublisher,
-      ScopeFilter scopeFilter, TokenUtils tokenUtils) {
+      ScopeFilter scopeFilter, TokenUtils tokenUtils, CachedRefreshTokenStore refreshTokenStore) {
 
     this.clock = clock;
     this.iamProperties = iamProperties;
     this.accessTokenRepo = accessTokenRepo;
-    this.refreshTokenRepo = refreshTokenRepo;
     this.authenticationHolderService = authenticationHolderService;
     this.clientService = clientService;
     this.accountService = accountService;
@@ -156,6 +154,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
     this.eventPublisher = eventPublisher;
     this.scopeFilter = scopeFilter;
     this.tokenUtils = tokenUtils;
+    this.refreshTokenStore = refreshTokenStore;
   }
 
   @Override
@@ -297,7 +296,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
     refreshToken.setAuthenticationHolder(
         authenticationHolderService.save(refreshToken.getAuthenticationHolder()));
-    return refreshTokenRepo.save(refreshToken);
+    return refreshTokenStore.save(refreshToken);
   }
 
   private void validate(OAuth2Authentication authentication) {
@@ -585,7 +584,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
 
   private OAuth2RefreshTokenEntity getRefreshToken(String refreshTokenValue) {
 
-    return refreshTokenRepo.findByTokenValue(refreshTokenValue)
+    return refreshTokenStore.getToken(refreshTokenValue)
       .orElseThrow(() -> new InvalidTokenException("Invalid refresh token: token not found"));
   }
 

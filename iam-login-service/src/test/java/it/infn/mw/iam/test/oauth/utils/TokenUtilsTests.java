@@ -46,13 +46,13 @@ import it.infn.mw.iam.core.ParsedAccessToken;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
@@ -74,11 +74,11 @@ class TokenUtilsTests {
   @Mock
   IamAccountRepository accountRepository;
   @Mock
-  IamClientRepository clientRepository;
-  @Mock
   JWTSigningAndValidationService jwtSigningService;
   @Mock
   ScopeFilter scopeFilter;
+  @Mock
+  ClientService clientService;
 
   @InjectMocks
   TokenUtils tokenUtils;
@@ -98,7 +98,7 @@ class TokenUtilsTests {
   private ClientDetailsEntity mockClient(String clientId, boolean isActive) {
     ClientDetailsEntity client = mock(ClientDetailsEntity.class);
     when(client.isActive()).thenReturn(isActive);
-    when(clientRepository.findByClientId(clientId)).thenReturn(Optional.of(client));
+    when(clientService.findClientByClientId(clientId)).thenReturn(Optional.of(client));
     return client;
   }
 
@@ -249,7 +249,7 @@ class TokenUtilsTests {
   @Test
   void validateTokenWithNotFoundClientThrowsException() {
 
-    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.empty());
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.empty());
 
     SignedJWT jwt = mockJwt();
     ParsedAccessToken token =
