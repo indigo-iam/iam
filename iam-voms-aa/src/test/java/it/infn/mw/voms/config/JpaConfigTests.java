@@ -13,26 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.util;
+package it.infn.mw.voms.config;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import static org.mockito.Mockito.inOrder;
 
-/**
- * A simple util to quickly get a password bcrypt-encoded
- *
- */
-public class IamBcryptUtil {
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.ActiveProfiles;
 
-  public static void main(String[] args) {
+@ActiveProfiles({"h2", "flyway-repair"})
+@SpringBootTest
+public class JpaConfigTests {
 
-    if (args.length == 0) {
-      System.err.println("Please provide the password to encode as an argument");
-      System.exit(1);
-    }
+  @SpyBean
+  private Flyway flyway;
 
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+  @Test
+  void testStartupWithFlywayRepair() {
+    InOrder ordered = inOrder(flyway);
 
-    System.out.println(encoder.encode(args[0]));
+    ordered.verify(flyway).repair();
+    ordered.verify(flyway).migrate();
   }
 
 }

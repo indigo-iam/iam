@@ -249,6 +249,7 @@ public class TokenUtils {
       if (isExpired(accessTokenOnDb.get())) {
         throw invalidToken("The access token is expired");
       }
+      accessTokenOnDb.get().setJwt(parseAccessToken(accessTokenValue).jwt());
       return accessTokenOnDb;
     }
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {

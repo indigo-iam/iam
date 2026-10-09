@@ -51,7 +51,7 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
     Map<String, Object> result =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
 
-    JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
+    JWTClaimsSet claims = accessToken.getPayload();
     String subject = claims.getSubject();
     String clientId = accessToken.getClient().getClientId();
     Optional<IamAccount> account;

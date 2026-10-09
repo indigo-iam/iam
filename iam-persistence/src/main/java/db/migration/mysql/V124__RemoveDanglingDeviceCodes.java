@@ -13,30 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.startup;
+package db.migration.mysql;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeansException;
+import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
+import it.infn.mw.iam.persistence.migrations.RemoveDanglingDeviceCodes;
 
-import it.infn.mw.iam.IamLoginService;
+public class V124__RemoveDanglingDeviceCodes extends BaseFlywayJavaMigrationAdapter {
 
-class ApplicationStartupValidationTests {
+  @Override
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
-  @Test
-  void testFailureOnStatupDueToWrongEnum() {
-
-    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo"}));
-  }
-
-  @Test
-  void testSuccessStatup() {
-
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
+    new RemoveDanglingDeviceCodes().migrate(jdbcTemplate);
   }
 
 }

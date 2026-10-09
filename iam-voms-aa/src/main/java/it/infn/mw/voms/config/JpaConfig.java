@@ -13,30 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.startup;
+package it.infn.mw.voms.config;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeansException;
+@Configuration
+public class JpaConfig {
 
-import it.infn.mw.iam.IamLoginService;
-
-class ApplicationStartupValidationTests {
-
-  @Test
-  void testFailureOnStatupDueToWrongEnum() {
-
-    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo"}));
+  @Bean
+  @Profile("flyway-repair")
+  FlywayMigrationStrategy flywayRepairStrategy() {
+    return f -> {
+      f.repair();
+      f.migrate();
+    };
   }
-
-  @Test
-  void testSuccessStatup() {
-
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
-  }
-
 }

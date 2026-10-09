@@ -41,8 +41,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -78,6 +78,7 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -499,8 +500,7 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
     }
 
     @Override
@@ -515,6 +515,52 @@ public class IamWebSecurityConfig {
         .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
         .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
         .authorizeRequests().anyRequest().fullyAuthenticated();
+      // @formatter:on
+    }
+  }
+
+  @Configuration
+  @Order(16)
+  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    @Qualifier("clientUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
+    }
+
+    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
+        throws Exception {
+
+      ClientCredentialsTokenEndpointFilter filter =
+          new ClientCredentialsTokenEndpointFilter("/revoke");
+      filter.setAuthenticationManager(authenticationManager());
+      return filter;
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/revoke**")
+        .httpBasic()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
+        .cors()
+        .and()
+        .exceptionHandling()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .csrf().disable()
+          .sessionManagement().sessionCreationPolicy(STATELESS);
       // @formatter:on
     }
   }

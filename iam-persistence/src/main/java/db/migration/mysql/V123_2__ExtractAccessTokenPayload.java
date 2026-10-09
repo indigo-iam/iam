@@ -13,30 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.startup;
+package db.migration.mysql;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.flywaydb.core.api.migration.BaseJavaMigration;
+import org.flywaydb.core.api.migration.Context;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeansException;
+import it.infn.mw.iam.persistence.migrations.ExtractAccessTokenPayload;
 
-import it.infn.mw.iam.IamLoginService;
+public class V123_2__ExtractAccessTokenPayload extends BaseJavaMigration {
 
-class ApplicationStartupValidationTests {
-
-  @Test
-  void testFailureOnStatupDueToWrongEnum() {
-
-    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
-        "--iam.jwt-profile.default-profile=pippo"}));
+  @Override
+  public void migrate(Context context) throws Exception {
+    ExtractAccessTokenPayload.migrate(context.getConnection());
   }
-
-  @Test
-  void testSuccessStatup() {
-
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
-  }
-
 }
