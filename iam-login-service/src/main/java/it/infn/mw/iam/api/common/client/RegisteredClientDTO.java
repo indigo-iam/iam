@@ -44,6 +44,7 @@ import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
+import it.infn.mw.iam.api.client.registration.validation.ValidPostLogoutRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
@@ -55,6 +56,8 @@ import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 @ValidGrantType(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
+    OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
+@ValidPostLogoutRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidTokenEndpointAuthMethod(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
@@ -114,6 +117,11 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientUri;
+
+  @Valid
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
+  private Set<String> postLogoutRedirectUris;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
@@ -322,6 +330,14 @@ public class RegisteredClientDTO {
 
   public void setClientUri(String clientUri) {
     this.clientUri = clientUri;
+  }
+
+  public Set<String> getPostLogoutRedirectUris() {
+    return postLogoutRedirectUris;
+  }
+
+  public void setPostLogoutRedirectUris(Set<String> postLogoutRedirectUris) {
+    this.postLogoutRedirectUris = postLogoutRedirectUris;
   }
 
   public String getTosUri() {
