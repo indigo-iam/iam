@@ -195,4 +195,73 @@ public class CachedRefreshTokenStoreTests {
         assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
 
     }
+
+    @Test
+    void testCachedRefreshTokenStorePopulationAndEviction() {
+
+        // Checking that the tokens aren't in the cache
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+
+        // Creating Token 1 and saving it
+        OAuth2RefreshTokenEntity refreshToken1 = new OAuth2RefreshTokenEntity();
+        refreshToken1.setValue(TOKEN_1);
+        refreshTokenStore.save(refreshToken1);
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+
+        // Then populating the cache with token 1
+        refreshToken1 = refreshTokenStore.getToken(TOKEN_1)
+                .orElseThrow(() -> new NotFoundException("Token should be present"));
+        assertEquals(TOKEN_1, refreshToken1.getValue());
+
+        // Confirming token 1 is in the cache
+        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+
+        waitForCacheExpiration();
+
+        // Confirming token 1 has been evicted
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+
+        // Creating Token 2 and saving it
+        OAuth2RefreshTokenEntity refreshToken2 = new OAuth2RefreshTokenEntity();
+        refreshToken2.setValue(TOKEN_2);
+        refreshTokenStore.save(refreshToken2);
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+
+        // Fetching both tokens to put them in the cache
+        refreshToken1 = refreshTokenStore.getToken(TOKEN_1)
+                .orElseThrow(() -> new NotFoundException("Token should be present"));
+        refreshToken2 = refreshTokenStore.getToken(TOKEN_2)
+                .orElseThrow(() -> new NotFoundException("Token should be present"));
+        assertEquals(TOKEN_1, refreshToken1.getValue());
+        assertEquals(TOKEN_2, refreshToken2.getValue());
+        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+
+        // Evicting all tokens
+        List<OAuth2RefreshTokenEntity> tokens = Arrays.asList(refreshToken1, refreshToken2);
+        refreshTokenStore.evictAll(tokens);
+
+        // Confirming both tokens are evicted
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+
+        // Fetching both tokens to put them in the cache
+        refreshToken1 = refreshTokenStore.getToken(TOKEN_1)
+                .orElseThrow(() -> new NotFoundException("Token should be present"));
+        refreshToken2 = refreshTokenStore.getToken(TOKEN_2)
+                .orElseThrow(() -> new NotFoundException("Token should be present"));
+        assertEquals(TOKEN_1, refreshToken1.getValue());
+        assertEquals(TOKEN_2, refreshToken2.getValue());
+        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+        assertNotNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+
+        // Evicting token 1 by saving it
+        refreshTokenStore.save(refreshToken1);
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_1));
+
+        // Evicting token 2 by deleting it
+        refreshTokenStore.delete(refreshToken2);
+        assertNull(cacheManager.getCache(CachedRefreshTokenStore.CACHE_NAME).get(TOKEN_2));
+    }
 }

@@ -74,6 +74,164 @@ public class ClientServicesCacheTests {
         }
 
         @Test
+        void loadClientByClientIdPopulationTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = (ClientDetailsEntity) clientDetailsService.loadClientByClientId(NEW_CLIENT_ID);
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+                assertEquals(NEW_CLIENT_DESCRIPTION, client.getClientDescription());
+        }
+
+        @Test
+        void updateClientEvictTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = clientService.findClientByClientId(NEW_CLIENT_ID)
+                                .orElseThrow(() -> new NotFoundException("Client should be present"));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+
+                // Updating the client
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.updateClient(client);
+
+                // This should have evicted the client
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+        }
+
+        @Test
+        void updateClientStatusEvictTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = (ClientDetailsEntity) clientDetailsService.loadClientByClientId(NEW_CLIENT_ID);
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+                assertEquals(NEW_CLIENT_DESCRIPTION, client.getClientDescription());
+
+                // Updating the client status
+                clientService.updateClientStatus(client, true, USER_ID);
+
+                // This should have evicted the client
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+        }
+
+        @Test
+        void findByClientIdPopulateTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = clientService.findClientByClientId(NEW_CLIENT_ID)
+                                .orElseThrow(() -> new NotFoundException("Client should be present"));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+                assertEquals(NEW_CLIENT_DESCRIPTION, client.getClientDescription());
+        }
+
+        @Test
+        void deleteClientEvictTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = clientService.findClientByClientId(NEW_CLIENT_ID)
+                                .orElseThrow(() -> new NotFoundException("Client should be present"));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+                assertEquals(NEW_CLIENT_DESCRIPTION, client.getClientDescription());
+
+                // Deleting the client
+                clientService.deleteClient(client);
+
+                // Confirming eviction
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+        }
+
+        @Test
+        void timeEvictTest() {
+
+                // Checking that the client isn't in the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Creating the new client in the repository through the service
+                ClientDetailsEntity client = new ClientDetailsEntity();
+                client.setClientId(NEW_CLIENT_ID);
+                client.setClientDescription(NEW_CLIENT_DESCRIPTION);
+                clientService.saveNewClient(client);
+
+                // This shouldn't have put it into the cache
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+
+                // Populating the cache
+                client = clientService.findClientByClientId(NEW_CLIENT_ID)
+                                .orElseThrow(() -> new NotFoundException("Client should be present"));
+                assertNotNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+                assertEquals(NEW_CLIENT_ID, client.getClientId());
+                assertEquals(NEW_CLIENT_DESCRIPTION, client.getClientDescription());
+
+                waitForCacheExpiration();
+
+                // Confirming eviction
+                assertNull(cacheManager.getCache(DefaultClientService.CACHE_NAME).get(NEW_CLIENT_ID));
+        }
+
+        @Test
         void testClientServiceCachePopulationAndEviction() {
 
                 // Checking that the client isn't in the cache
