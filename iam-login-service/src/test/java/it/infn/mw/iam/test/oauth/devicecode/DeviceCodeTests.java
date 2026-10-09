@@ -38,15 +38,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
+import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,16 +65,18 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.consent.ConsentGrantController;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
@@ -81,6 +87,9 @@ class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
   private MutableClock clock;
+
+  @Autowired
+  private IamDeviceCodeRepository deviceCodeRepository;
 
   private String getTokenResponse(String clientId, String clientSecret, String username,
       String password, String scopes) throws Exception {
@@ -961,4 +970,31 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .andExpect(status().isBadRequest());
   }
 
+  @Test
+  void testApprovedDeviceCodeWithoutAuthenticationHolderIsRejectedAndRemoved() throws Exception {
+
+    ClientDetailsEntity client = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+
+    DeviceCode dc = new DeviceCode("device-code-without-authentication-holder", "TEST-CODE",
+        Set.of("openid"), client, Map.of());
+
+    dc.setApproved(true);
+    dc.setExpiration(Date.from(clock.instant().plus(Duration.ofMinutes(5))));
+    dc.setAuthenticationHolder(null);
+
+    dc = deviceCodeRepository.saveAndFlush(dc);
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
+        .param("device_code", dc.getDeviceCode()))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
+      .andExpect(jsonPath("$.error_description",
+          equalTo("Device code is no longer valid: " + dc.getDeviceCode())))
+      .andExpect(jsonPath("$.access_token").doesNotExist());
+
+    assertFalse(deviceCodeRepository.existsById(dc.getId()));
+  }
 }
