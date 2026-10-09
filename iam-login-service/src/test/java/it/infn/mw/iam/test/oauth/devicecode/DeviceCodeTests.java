@@ -615,13 +615,11 @@ class DeviceCodeTests extends EndpointsTestUtils {
     RegisteredClientDTO registrationResponse =
         objectMapper.readValue(clientJson, RegisteredClientDTO.class);
 
-    ClientDetailsEntity newClient =
-        clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
+    assertNotNull(clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow());
 
-    assertNotNull(newClient);
-
-    String tokenResponse = getTokenResponse(newClient.getClientId(), newClient.getClientSecret(),
-        TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");
+    String tokenResponse =
+        getTokenResponse(registrationResponse.getClientId(), registrationResponse.getClientSecret(),
+            TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");
 
     JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
 

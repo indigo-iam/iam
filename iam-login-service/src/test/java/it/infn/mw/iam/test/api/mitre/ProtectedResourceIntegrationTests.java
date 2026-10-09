@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.mitre;
 import static it.infn.mw.iam.api.client.registration.ProtectedResourceRegistrationApiController.PROTECTED_RESOURCE_ENDPOINT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -157,6 +158,7 @@ class ProtectedResourceIntegrationTests {
     clientJson = new JsonObject();
     clientJson.addProperty("client_name", NAME);
     clientJson.addProperty("scope", "openid email");
+    clientJson.addProperty("token_endpoint_auth_method", "none");
 
     doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(), "invalid-token")
       .andExpect(status().isUnauthorized());
@@ -182,6 +184,21 @@ class ProtectedResourceIntegrationTests {
     assertEquals(2, updated.getScope().size());
     assertTrue(updated.getScope().contains("openid"));
     assertTrue(updated.getScope().contains("email"));
+
+    clientJson.addProperty("token_endpoint_auth_method", "client_secret_basic");
+
+    updated = mapper
+      .readValue(doUpdateProtectedResource(testedResource.getClientId(), clientJson.toString(),
+          testedResource.getRegistrationAccessToken()).andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(),
+          RegisteredClientDTO.class);
+
+    fromDb = managementService.retrieveClientByClientId(updated.getClientId()).get();
+
+    assertNull(updated.getClientSecret());
+    assertNotNull(fromDb.getClientSecret());
 
     doDeleteProtectedResource(testedResource.getClientId(), "invalid-token")
       .andExpect(status().isUnauthorized());
