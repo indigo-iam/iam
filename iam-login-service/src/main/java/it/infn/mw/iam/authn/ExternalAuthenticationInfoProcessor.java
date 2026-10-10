@@ -22,6 +22,6 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 @SuppressWarnings("deprecation")
 public interface ExternalAuthenticationInfoProcessor {
 
-  Map<String, String> process(OAuth2Authentication authentication);
+  Map<String, Object> process(OAuth2Authentication authentication);
 
 }

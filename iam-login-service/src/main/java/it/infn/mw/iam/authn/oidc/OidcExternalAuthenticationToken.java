@@ -67,7 +67,7 @@ public class OidcExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
+  public Map<String, Object> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
     return visitor.buildInfoMap(this);
   }
 
@@ -97,8 +97,8 @@ public class OidcExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap() {
-    Map<String, String> infoMap = new HashMap<>();
+  public Map<String, Object> buildAuthnInfoMap() {
+    Map<String, Object> infoMap = new HashMap<>();
 
     infoMap.put(TYPE_ATTR, OIDC_TYPE);
     infoMap.put("sub", getExternalAuthentication().getSub());
@@ -106,6 +106,10 @@ public class OidcExternalAuthenticationToken
 
     if (!isNull(getExternalAuthentication().getIdToken())) {
       infoMap.putAll(getClaimsAsMap(getExternalAuthentication().getIdToken()));
+    }
+
+    if (!isNull(getExternalAuthentication().getUserInfo())) {
+      infoMap.putAll(getClaimsAsMap(getExternalAuthentication().getUserInfo()));
     }
 
     return infoMap;

@@ -160,7 +160,7 @@ public class SamlAssertionBuilder {
 
     AudienceRestriction ar = arb.buildObject();
     Audience aud =
-	((AudienceBuilder) builderFactory.getBuilder(Audience.DEFAULT_ELEMENT_NAME)).buildObject();
+        ((AudienceBuilder) builderFactory.getBuilder(Audience.DEFAULT_ELEMENT_NAME)).buildObject();
 
     aud.setAudienceURI(audience);
     ar.getAudiences().add(aud);
@@ -170,7 +170,7 @@ public class SamlAssertionBuilder {
 
   private AuthnStatement buildAuthenticationStatement() {
     AuthnStatementBuilder asb =
-	(AuthnStatementBuilder) builderFactory.getBuilder(AuthnStatement.DEFAULT_ELEMENT_NAME);
+        (AuthnStatementBuilder) builderFactory.getBuilder(AuthnStatement.DEFAULT_ELEMENT_NAME);
 
     AuthnStatement as = asb.buildObject();
 
@@ -184,8 +184,8 @@ public class SamlAssertionBuilder {
     as.setSessionNotOnOrAfter(expirationTime);
 
     AuthnContext ac =
-	((AuthnContextBuilder) builderFactory.getBuilder(AuthnContext.DEFAULT_ELEMENT_NAME))
-	  .buildObject();
+        ((AuthnContextBuilder) builderFactory.getBuilder(AuthnContext.DEFAULT_ELEMENT_NAME))
+          .buildObject();
 
     AuthnContextClassRefBuilder accrb = (AuthnContextClassRefBuilder) builderFactory
       .getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
@@ -204,45 +204,64 @@ public class SamlAssertionBuilder {
     Attribute attr = attributeBuilder.buildObject();
     attr.setName(Saml2Attribute.EPTID.getAttributeName());
     attr.setNameFormat(Attribute.URI_REFERENCE);
-    
+
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<NameID> niBuilder =
-    (SAMLObjectBuilder<NameID>) builderFactory.getBuilder(NameID.DEFAULT_ELEMENT_NAME);
-    
-    
+        (SAMLObjectBuilder<NameID>) builderFactory.getBuilder(NameID.DEFAULT_ELEMENT_NAME);
+
+
     NameID nid = niBuilder.buildObject();
     nid.setValue(nameId);
     nid.setFormat(nameIdFormat);
-    
+
     XMLObjectBuilderFactory bf = Configuration.getBuilderFactory();
     XSAnyBuilder builder = (XSAnyBuilder) bf.getBuilder(XSAny.TYPE_NAME);
     XSAny attrVal = builder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME);
-    
-    
+
+
     attrVal.getUnknownXMLObjects().add(nid);
     attr.getAttributeValues().add(attrVal);
-    
+
     return attr;
   }
-  
-  
+
+
   private Attribute buildStringAttribute(String name, String value) {
     Attribute attr = attributeBuilder.buildObject();
     attr.setName(name);
     attr.setNameFormat(Attribute.URI_REFERENCE);
 
     XSStringBuilder attributeValueBuilder =
-	(XSStringBuilder) builderFactory.getBuilder(XSString.TYPE_NAME);
+        (XSStringBuilder) builderFactory.getBuilder(XSString.TYPE_NAME);
 
     XSString xsString =
-	attributeValueBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME, XSString.TYPE_NAME);
+        attributeValueBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME, XSString.TYPE_NAME);
 
     xsString.setValue(value);
 
     attr.getAttributeValues().add(xsString);
     return attr;
   }
-  
+
+  private Attribute buildMultiValuedAttribute(String name, List<String> values) {
+    Attribute attr = attributeBuilder.buildObject();
+    attr.setName(name);
+    attr.setNameFormat(Attribute.URI_REFERENCE);
+
+    XSStringBuilder attributeValueBuilder =
+        (XSStringBuilder) builderFactory.getBuilder(XSString.TYPE_NAME);
+
+    for (String value : values) {
+      XSString xsString = attributeValueBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME,
+          XSString.TYPE_NAME);
+
+      xsString.setValue(value);
+      attr.getAttributeValues().add(xsString);
+    }
+
+    return attr;
+  }
+
   public SamlAssertionBuilder eptid() {
     attributes.add(buildEPTIDAttribute());
     return this;
@@ -283,6 +302,13 @@ public class SamlAssertionBuilder {
 
   }
 
+  public SamlAssertionBuilder epsa(List<String> epsa) {
+
+    attributes.add(buildMultiValuedAttribute("urn:oid:1.3.6.1.4.1.5923.1.1.1.9", epsa));
+    return this;
+
+  }
+
   public SamlAssertionBuilder(Credential serviceCredential, String issuer) {
     this.issuer = issuer;
     this.builderFactory = Configuration.getBuilderFactory();
@@ -303,7 +329,7 @@ public class SamlAssertionBuilder {
   private Issuer buildIssuer() {
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<Issuer> builder =
-	(SAMLObjectBuilder<Issuer>) builderFactory.getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<Issuer>) builderFactory.getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
 
     Issuer iss = builder.buildObject();
     iss.setValue(issuer);
@@ -314,8 +340,8 @@ public class SamlAssertionBuilder {
   private SubjectConfirmation buildSubjectConfirmation() {
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<SubjectConfirmation> subjectConfirmationBuilder =
-	(SAMLObjectBuilder<SubjectConfirmation>) builderFactory
-	  .getBuilder(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<SubjectConfirmation>) builderFactory
+          .getBuilder(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
 
     SubjectConfirmation sc = subjectConfirmationBuilder.buildObject();
 
@@ -323,8 +349,8 @@ public class SamlAssertionBuilder {
 
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<SubjectConfirmationData> subjectConfirmationDataBuilder =
-	(SAMLObjectBuilder<SubjectConfirmationData>) builderFactory
-	  .getBuilder(SubjectConfirmationData.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<SubjectConfirmationData>) builderFactory
+          .getBuilder(SubjectConfirmationData.DEFAULT_ELEMENT_NAME);
 
     SubjectConfirmationData subjectConfirmationData = subjectConfirmationDataBuilder.buildObject();
     subjectConfirmationData.setRecipient(recipient);
@@ -344,20 +370,20 @@ public class SamlAssertionBuilder {
   private NameID buildNameID() {
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<NameID> niBuilder =
-    (SAMLObjectBuilder<NameID>) builderFactory.getBuilder(NameID.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<NameID>) builderFactory.getBuilder(NameID.DEFAULT_ELEMENT_NAME);
 
     NameID nid = niBuilder.buildObject();
     nid.setValue(nameId);
     nid.setFormat(nameIdFormat);
-    
+
     return nid;
   }
-  
+
   private Subject buildSubject() {
 
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<Subject> builder =
-	(SAMLObjectBuilder<Subject>) builderFactory.getBuilder(Subject.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<Subject>) builderFactory.getBuilder(Subject.DEFAULT_ELEMENT_NAME);
 
     Subject sub = builder.buildObject();
 
@@ -372,7 +398,7 @@ public class SamlAssertionBuilder {
 
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<Conditions> cb =
-	(SAMLObjectBuilder<Conditions>) builderFactory.getBuilder(Conditions.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<Conditions>) builderFactory.getBuilder(Conditions.DEFAULT_ELEMENT_NAME);
 
     Conditions conditions = cb.buildObject();
     conditions.setNotBefore(issueInstant);
@@ -385,8 +411,8 @@ public class SamlAssertionBuilder {
   private AttributeStatement buildAttributeStatement() {
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<AttributeStatement> asb =
-	(SAMLObjectBuilder<AttributeStatement>) builderFactory
-	  .getBuilder(AttributeStatement.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<AttributeStatement>) builderFactory
+          .getBuilder(AttributeStatement.DEFAULT_ELEMENT_NAME);
 
     AttributeStatement as = asb.buildObject();
     as.getAttributes().addAll(attributes);
@@ -402,7 +428,7 @@ public class SamlAssertionBuilder {
 
   private Signature buildSignature() throws SecurityException {
     SignatureBuilder signatureBuilder =
-	(SignatureBuilder) builderFactory.getBuilder(Signature.DEFAULT_ELEMENT_NAME);
+        (SignatureBuilder) builderFactory.getBuilder(Signature.DEFAULT_ELEMENT_NAME);
 
     Signature assertionSignature = signatureBuilder.buildObject();
     assertionSignature.setSigningCredential(serviceCredential);
@@ -420,7 +446,7 @@ public class SamlAssertionBuilder {
 
     @SuppressWarnings("unchecked")
     SAMLObjectBuilder<Assertion> builder =
-	(SAMLObjectBuilder<Assertion>) builderFactory.getBuilder(Assertion.DEFAULT_ELEMENT_NAME);
+        (SAMLObjectBuilder<Assertion>) builderFactory.getBuilder(Assertion.DEFAULT_ELEMENT_NAME);
 
     Assertion assertion = builder.buildObject();
 

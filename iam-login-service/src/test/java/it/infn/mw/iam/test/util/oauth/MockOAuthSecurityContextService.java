@@ -83,7 +83,7 @@ public class MockOAuthSecurityContextService {
     auth.setName(user);
     auth.setAuthorities(AuthorityUtils.createAuthorityList(authorities));
 
-    Map<String, String> info = new HashMap<>();
+    Map<String, Object> info = new HashMap<>();
     if (type == ExternalAuthenticationType.OIDC) {
       auth.setSourceClass(OidcExternalAuthenticationToken.class.getName());
       info.put("type", "oidc");
