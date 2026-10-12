@@ -100,7 +100,7 @@ class OidcIdTokenHintValidatorTests {
   void notNullClientIdReturnsFalse() throws Exception {
     SignedJWT jwt = createJwt(ISSUER, AUD, AUD);
 
-    when(jwtService.validateSignature(jwt)).thenReturn(false);
+    when(jwtService.validateSignature(jwt)).thenReturn(true);
 
     assertFalse(validator.isValid(jwt));
   }
