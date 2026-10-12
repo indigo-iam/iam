@@ -68,6 +68,10 @@ public class ValidPostLogoutRedirectURIsValidator
   private boolean isValid(String uri, RegisteredClientDTO value,
       ConstraintValidatorContext context) {
 
+    if (uri == null || uri.isBlank()) {
+      return invalid(context, "Invalid post logout redirect URI");
+    }
+
     URI parsedUri;
 
     try {
@@ -81,8 +85,14 @@ public class ValidPostLogoutRedirectURIsValidator
       return invalid(context, format("Invalid post logout redirect URI scheme: %s", scheme));
     }
 
+    String host = parsedUri.getHost();
+
+    if (host == null || host.isBlank()) {
+      return invalid(context, "Invalid post logout redirect URI: missing or invalid host");
+    }
+
     boolean isHttp = "http".equalsIgnoreCase(scheme);
-    boolean isLoopback = ALLOWED_HTTP_HOSTS.contains(parsedUri.getHost());
+    boolean isLoopback = ALLOWED_HTTP_HOSTS.contains(host);
     boolean isPublicClient =
         TokenEndpointAuthenticationMethod.none.equals(value.getTokenEndpointAuthMethod());
 

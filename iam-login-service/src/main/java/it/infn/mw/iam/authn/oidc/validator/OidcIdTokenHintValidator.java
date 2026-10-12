@@ -62,6 +62,11 @@ public class OidcIdTokenHintValidator {
         return false;
       }
 
+      if (claims.getClaim("client_id") != null) {
+        LOG.debug("ID token contains an unexpected client_id claim");
+        return false;
+      }
+
       List<String> audience = claims.getAudience();
       return audience != null && !audience.isEmpty();
 

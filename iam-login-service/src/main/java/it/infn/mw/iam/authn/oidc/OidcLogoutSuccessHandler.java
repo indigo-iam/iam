@@ -16,6 +16,8 @@
 package it.infn.mw.iam.authn.oidc;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -97,13 +100,13 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
         return;
       }
 
-      UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(redirectUri);
+      UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUri(URI.create(redirectUri));
 
       if (state != null) {
-        uriBuilder.queryParam("state", state);
+        uriBuilder.queryParam("state", UriUtils.encode(state, StandardCharsets.UTF_8));
       }
 
-      response.sendRedirect(uriBuilder.toUriString());
+      response.sendRedirect(uriBuilder.build(true).toUriString());
 
     } catch (ParseException e) {
       LOG.debug("OIDC logout: invalid id_token_hint format", e);
