@@ -117,7 +117,8 @@ public class CacheConfig {
 
     RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
 
-    return builder -> builder.withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY, config)
+    return builder -> builder.withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY, 
+        config.entryTtl(Duration.ofSeconds(cacheProps.getwellKnownCleanupPeriodSecs())))
         .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, config)
         .withCacheConfiguration(DefaultOidcDiscoveryService.CACHE_NAME,
             config.entryTtl(Duration.ofSeconds(cacheProps.getOidcDiscoveryCleanupPeriodSecs())))
