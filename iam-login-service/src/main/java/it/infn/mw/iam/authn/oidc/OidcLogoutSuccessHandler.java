@@ -100,7 +100,9 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
         return;
       }
 
-      UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUri(URI.create(redirectUri));
+      String asciiRedirectUri = URI.create(redirectUri).toASCIIString();
+
+      UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUri(URI.create(asciiRedirectUri));
 
       if (state != null) {
         uriBuilder.queryParam("state", UriUtils.encode(state, StandardCharsets.UTF_8));
@@ -108,8 +110,8 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
 
       response.sendRedirect(uriBuilder.build(true).toUriString());
 
-    } catch (ParseException e) {
-      LOG.debug("OIDC logout: invalid id_token_hint format", e);
+    } catch (ParseException | IllegalArgumentException e) {
+      LOG.debug("OIDC logout: invalid ID token hint or redirect URI", e);
       response.sendRedirect(fallback);
     }
   }

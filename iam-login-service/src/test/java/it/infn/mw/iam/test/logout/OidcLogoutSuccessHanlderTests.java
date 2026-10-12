@@ -25,6 +25,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -144,5 +146,26 @@ class OidcLogoutSuccessHanlderTests {
     handler.onLogoutSuccess(request, response, null);
 
     assertEquals("https://rp.example.org/logout?state=xyz", response.getRedirectedUrl());
+  }
+
+  @ParameterizedTest
+  @CsvSource({"https://rp.example.org/café, https://rp.example.org/caf%C3%A9",
+      "https://rp.example.org/caf%C3%A9, https://rp.example.org/caf%C3%A9",
+      "https://rp.example.org/logout?next=%2Fhome, https://rp.example.org/logout?next=%2Fhome"})
+  void preservesRedirectEncodingAndReturnsState(String registeredUri, String expectedUri)
+      throws Exception {
+
+    request.setParameter("id_token_hint", validJwtForClient("client"));
+    request.setParameter("post_logout_redirect_uri", registeredUri);
+    request.setParameter("state", "a+b &c=é%");
+
+    when(validator.isValid(any(SignedJWT.class))).thenReturn(true);
+    mockClient("client", Set.of(registeredUri));
+
+    handler.onLogoutSuccess(request, response, null);
+
+    String separator = expectedUri.contains("?") ? "&" : "?";
+    assertEquals(expectedUri + separator + "state=a%2Bb%20%26c%3D%C3%A9%25",
+        response.getRedirectedUrl());
   }
 }
