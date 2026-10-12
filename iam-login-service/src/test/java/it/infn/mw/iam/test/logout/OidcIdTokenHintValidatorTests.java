@@ -44,7 +44,7 @@ import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 class OidcIdTokenHintValidatorTests {
 
   private static final String ISSUER = "https://iam.example.org";
-  private static final String CLIENT_ID = "client";
+  private static final String AUD = "client";
 
   @Mock
   private JWTSigningAndValidationService jwtService;
@@ -56,15 +56,19 @@ class OidcIdTokenHintValidatorTests {
     validator = new OidcIdTokenHintValidator(jwtService, ISSUER);
   }
 
-  private SignedJWT createJwt(String issuer, String clientId) throws JOSEException {
+  private SignedJWT createJwt(String issuer, String clientId, String aud) throws JOSEException {
     JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder();
 
     if (issuer != null) {
       claims.issuer(issuer);
     }
 
+    if (aud != null) {
+      claims.audience(aud);
+    }
+
     if (clientId != null) {
-      claims.audience(clientId);
+      claims.claim("client_id", clientId);
     }
 
     SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims.build());
@@ -76,7 +80,7 @@ class OidcIdTokenHintValidatorTests {
 
   @Test
   void validTokenReturnsTrue() throws Exception {
-    SignedJWT jwt = createJwt(ISSUER, CLIENT_ID);
+    SignedJWT jwt = createJwt(ISSUER, null, AUD);
 
     when(jwtService.validateSignature(jwt)).thenReturn(true);
 
@@ -85,7 +89,16 @@ class OidcIdTokenHintValidatorTests {
 
   @Test
   void invalidSignatureReturnsFalse() throws Exception {
-    SignedJWT jwt = createJwt(ISSUER, CLIENT_ID);
+    SignedJWT jwt = createJwt(ISSUER, null, AUD);
+
+    when(jwtService.validateSignature(jwt)).thenReturn(false);
+
+    assertFalse(validator.isValid(jwt));
+  }
+
+  @Test
+  void notNullClientIdReturnsFalse() throws Exception {
+    SignedJWT jwt = createJwt(ISSUER, AUD, AUD);
 
     when(jwtService.validateSignature(jwt)).thenReturn(false);
 
@@ -96,7 +109,7 @@ class OidcIdTokenHintValidatorTests {
   @NullAndEmptySource
   @ValueSource(strings = {"https://other.example.org"})
   void missingOrWrongIssuerReturnFalse(String issuer) throws JOSEException {
-    SignedJWT jwt = createJwt(issuer, CLIENT_ID);
+    SignedJWT jwt = createJwt(issuer, null, AUD);
 
     when(jwtService.validateSignature(jwt)).thenReturn(true);
 
