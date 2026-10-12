@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -77,7 +78,6 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
-import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
@@ -107,9 +107,6 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
   @Mock
   IamAupSignatureRepository aupSignatureRepo;
-
-  @Mock
-  IamAccountLoginLockoutRepository lockoutRepo;
 
   @Mock
   PasswordEncoder passwordEncoder;
@@ -186,7 +183,7 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
     lenient().when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        lockoutRepo, passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo,
+        passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo,
         notificationFactory, iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo,
         iamTotpMfaRepository);
   }

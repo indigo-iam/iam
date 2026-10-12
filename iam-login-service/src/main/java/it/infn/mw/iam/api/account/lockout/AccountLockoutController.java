@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.account.lockout;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
 import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 
@@ -35,26 +37,29 @@ import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 public class AccountLockoutController {
 
   private final IamAccountLoginLockoutRepository lockoutRepo;
-  private final LoginLockoutService lockoutService;
+  private final IamAccountService accountService;
+  private final Clock clock;
 
-  public AccountLockoutController(IamAccountLoginLockoutRepository lockoutRepo,
-      LoginLockoutService lockoutService) {
+  public AccountLockoutController(Clock clock, IamAccountLoginLockoutRepository lockoutRepo,
+      IamAccountService accountService) {
+    this.clock = clock;
     this.lockoutRepo = lockoutRepo;
-    this.lockoutService = lockoutService;
+    this.accountService = accountService;
   }
 
   @GetMapping("/iam/account/{uuid}/lockout")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ResponseEntity<Map<String, Object>> getLockoutStatus(@PathVariable String uuid) {
-    Optional<IamAccountLoginLockout> lockout = lockoutRepo.findByAccountUuid(uuid);
 
-    if (lockout.isPresent() && lockout.get().getSuspendedUntil() != null
-        && Instant.now().isBefore(lockout.get().getSuspendedUntil().toInstant())) {
-      return ResponseEntity.ok(Map.of(
-          "suspended", true,
-          "suspendedUntil", lockout.get().getSuspendedUntil()));
+    Optional<IamAccount> account = accountService.findByUuid(uuid);
+    if (account.isPresent() && account.get().getLockoutInfo() != null) {
+      IamAccountLoginLockout lockout = account.get().getLockoutInfo();
+      if (lockout.isSuspended(clock.instant())) {
+        return ResponseEntity.ok(Map.of(
+            "suspended", true,
+            "suspendedUntil", lockout.getSuspendedUntil()));
+      }
     }
-
     return ResponseEntity.ok(Map.of("suspended", false));
   }
 
@@ -68,7 +73,7 @@ public class AccountLockoutController {
   @DeleteMapping("/iam/account/{uuid}/lockout")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ResponseEntity<Map<String, Object>> revokeLockout(@PathVariable String uuid) {
-    lockoutService.adminRevokeLockout(uuid);
+    accountService.resetLoginLockout(uuid, LoginLockoutResetReason.ADMIN_REVOKE);
     return ResponseEntity.ok(Map.of("unlocked", true));
   }
 }

@@ -19,6 +19,7 @@ import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -388,14 +389,13 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
-  public IamEmailNotification createAccountLockedMessage(IamAccount account,
-      int suspensionDurationMinutes) {
+  public IamEmailNotification createAccountLockedMessage(IamAccount account, Duration duration) {
     String recipient = account.getUserInfo().getName();
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
-    model.put("suspensionDurationMinutes", suspensionDurationMinutes);
+    model.put("suspensionDurationMinutes", duration.get(ChronoUnit.MINUTES));
     model.put("hasLocalPassword",
         account.getPassword() != null && !account.getPassword().isEmpty());
 

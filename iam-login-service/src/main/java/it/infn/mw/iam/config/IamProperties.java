@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -761,11 +762,10 @@ public class IamProperties {
 
   public static class LoginLockoutProperties {
 
-    private boolean enabled = false;
-    private int maxFailedAttemptsBeforeSuspension = 3;
-    private int suspensionDurationMinutes = 30;
-    private int maxSuspensionRounds = 2;
-    private boolean disableAfterMaxSuspensionRounds = false;
+    private boolean enabled;
+    private int maxFailedAttempts;
+    private Duration observationWindow;
+    private Duration lockDuration;
 
     public boolean isEnabled() {
       return enabled;
@@ -775,36 +775,28 @@ public class IamProperties {
       this.enabled = enabled;
     }
 
-    public int getMaxFailedAttemptsBeforeSuspension() {
-      return maxFailedAttemptsBeforeSuspension;
+    public int getMaxFailedAttempts() {
+      return maxFailedAttempts;
     }
 
-    public void setMaxFailedAttemptsBeforeSuspension(int maxFailedAttemptsBeforeSuspension) {
-      this.maxFailedAttemptsBeforeSuspension = maxFailedAttemptsBeforeSuspension;
+    public void setMaxFailedAttempts(int maxFailedAttempts) {
+      this.maxFailedAttempts = maxFailedAttempts;
     }
 
-    public int getSuspensionDurationMinutes() {
-      return suspensionDurationMinutes;
+    public Duration getLockDuration() {
+      return lockDuration;
     }
 
-    public void setSuspensionDurationMinutes(int suspensionDurationMinutes) {
-      this.suspensionDurationMinutes = suspensionDurationMinutes;
+    public void setLockDuration(Duration lockDuration) {
+      this.lockDuration = lockDuration;
     }
 
-    public int getMaxSuspensionRounds() {
-      return maxSuspensionRounds;
+    public Duration getObservationWindow() {
+      return observationWindow;
     }
 
-    public void setMaxSuspensionRounds(int maxSuspensionRounds) {
-      this.maxSuspensionRounds = maxSuspensionRounds;
-    }
-
-    public boolean isDisableAfterMaxSuspensionRounds() {
-      return disableAfterMaxSuspensionRounds;
-    }
-
-    public void setDisableAfterMaxSuspensionRounds(boolean disableAfterMaxSuspensionRounds) {
-      this.disableAfterMaxSuspensionRounds = disableAfterMaxSuspensionRounds;
+    public void setObservationWindow(Duration observationWindow) {
+      this.observationWindow = observationWindow;
     }
   }
 

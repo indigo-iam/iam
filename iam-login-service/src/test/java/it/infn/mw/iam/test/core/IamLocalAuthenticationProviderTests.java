@@ -17,15 +17,17 @@
 package it.infn.mw.iam.test.core;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,22 +39,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @ExtendWith(MockitoExtension.class)
 class IamLocalAuthenticationProviderTests {
@@ -67,30 +70,34 @@ class IamLocalAuthenticationProviderTests {
   IamProperties properties;
 
   @Mock
-  UserDetailsService uds;
+  UserDetailsService userDetailsService;
 
   @Mock
   PasswordEncoder passwordEncoder;
 
   @Mock
-  IamAccountRepository accountRepo;
+  IamAccountService accountService;
 
   @Mock
   LocalAuthenticationProperties localAuthn;
 
-  @Mock
-  LoginLockoutService lockoutService;
-
-  Clock clock;
   IamLocalAuthenticationProvider iamLocalAuthenticationProvider;
 
   @BeforeEach
   void setup() {
 
     when(properties.getLocalAuthn()).thenReturn(localAuthn);
-    iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds,
-        passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties, lockoutService));
-    clock = Clock.systemUTC();
+    when(localAuthn.getEnabledFor()).thenReturn(IamProperties.LocalAuthenticationAllowedUsers.ALL);
+    iamLocalAuthenticationProvider =
+        new IamLocalAuthenticationProvider(properties, userDetailsService, passwordEncoder,
+            accountService, iamTotpMfaService, iamTotpMfaProperties);
+  }
+
+  private IamAccount stubAccount(String username) {
+    IamAccount account = newAccount(username);
+    account.setActive(true);
+    when(accountService.findByUsername(username)).thenReturn(Optional.of(account));
+    return account;
   }
 
   private IamAccount newAccount(String username) {
@@ -102,71 +109,151 @@ class IamLocalAuthenticationProviderTests {
     return result;
   }
 
-  @Test
-  void testWhenPreAuthenticatedThenAuthenticateSetFalseToAuthenticated() {
+  private ExtendedAuthenticationToken loginRequest(String username) {
+    return new ExtendedAuthenticationToken(username, "cred");
+  }
 
-    ExtendedAuthenticationToken token =
-        new ExtendedAuthenticationToken("test-principal", "test-credentials");
-    token.setPreAuthenticated(true);
-    IamAccount account = newAccount("test-user");
-    when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
-    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
-
-    ExtendedAuthenticationToken newToken =
-        (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
-
-    assertFalse(newToken.isAuthenticated());
-    // Verify that super.authenticate was not called
-    verify(iamLocalAuthenticationProvider, never())
-      .authenticate(any(UsernamePasswordAuthenticationToken.class));
+  private void verifyNoLockoutMutation() {
+    verify(accountService, never()).loginFailedAttemptByUsername(anyString());
+    verify(accountService, never()).loginFailedAttempt(anyString());
+    verify(accountService, never()).resetLoginLockout(anyString(),
+        any(LoginLockoutResetReason.class));
   }
 
   @Test
-  void disabledAccountIsMaskedAsGenericBadCredentials() {
-    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("disabled", "cred");
-    when(uds.loadUserByUsername("disabled"))
+  void preauthenticatedLoginRequiringMfaSkipsPasswordAuthentication() {
+    ExtendedAuthenticationToken token =
+        new ExtendedAuthenticationToken("test-user", "test-credentials");
+    token.setPreAuthenticated(true);
+
+    IamAccount account = newAccount("test-user");
+
+    when(accountService.findByUsername("test-user")).thenReturn(Optional.of(account));
+    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+
+    ExtendedAuthenticationToken result =
+        (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
+
+    assertFalse(result.isAuthenticated());
+
+    verifyNoInteractions(userDetailsService, passwordEncoder);
+
+    verify(accountService, never()).resetLoginLockout(anyString(),
+        any(LoginLockoutResetReason.class));
+  }
+
+  @Test
+  void disabledAccountFromUserDetailsServiceIsMaskedAsBadCredentials() {
+    stubAccount("disabled");
+
+    when(userDetailsService.loadUserByUsername("disabled"))
       .thenThrow(new DisabledException("User 'disabled' is not active."));
 
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(token));
-    verify(lockoutService).recordFailedAttempt("disabled");
+        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("disabled")));
+
+    verifyNoLockoutMutation();
   }
 
   @Test
-  void lockoutIsMaskedAsGenericBadCredentials() {
-    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("inactive", "cred");
+  void disabledUserDetailsAreMaskedAsBadCredentials() {
+    stubAccount("inactive");
+
     UserDetails user = User.withUsername("inactive")
       .password("pwd")
       .authorities("ROLE_USER")
       .disabled(true)
       .build();
-    when(uds.loadUserByUsername("inactive")).thenReturn(user);
+
+    when(userDetailsService.loadUserByUsername("inactive")).thenReturn(user);
 
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(token));
-    verify(lockoutService).recordFailedAttempt("inactive");
+        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("inactive")));
+
+    verifyNoLockoutMutation();
+  }
+
+  @Test
+  void suspendedLoginIsMaskedAsBadCredentialsBeforePasswordVerification() {
+    IamAccount account = stubAccount("user");
+
+    doThrow(new LockedException("Login is suspended")).when(accountService)
+      .checkLoginAllowed(account.getUuid());
+
+    assertThrows(BadCredentialsException.class,
+        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+
+    verifyNoInteractions(userDetailsService, passwordEncoder);
+    verifyNoLockoutMutation();
+  }
+
+  @Test
+  void disabledAccountFromServiceIsMaskedAsBadCredentials() {
+    IamAccount account = stubAccount("user");
+
+    doThrow(new DisabledException("Account is disabled")).when(accountService)
+      .checkLoginAllowed(account.getUuid());
+
+    assertThrows(BadCredentialsException.class,
+        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+
+    verifyNoInteractions(userDetailsService, passwordEncoder);
+    verifyNoLockoutMutation();
   }
 
   @Test
   void internalErrorsAreNotMaskedAsBadCredentials() {
-    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("user", "cred");
-    when(uds.loadUserByUsername("user"))
-      .thenThrow(new IllegalStateException("database unavailable"));
+    stubAccount("user");
 
-    assertThrows(InternalAuthenticationServiceException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(token));
+    IllegalStateException cause = new IllegalStateException("database unavailable");
+
+    when(userDetailsService.loadUserByUsername("user")).thenThrow(cause);
+
+    InternalAuthenticationServiceException error =
+        assertThrows(InternalAuthenticationServiceException.class,
+            () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+
+    assertSame(cause, error.getCause());
+    verifyNoLockoutMutation();
   }
 
   @Test
-  void resetCalledOnNonMfaSuccess() {
-    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken("user", "cred");
-    token.setPreAuthenticated(true);
-    IamAccount account = newAccount("user");
-    when(accountRepo.findByUsername("user")).thenReturn(Optional.of(account));
-    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+  void successfulPasswordLoginWithoutMfaResetsLockout() {
+    IamAccount account = stubAccount("user");
 
-    iamLocalAuthenticationProvider.authenticate(token);
+    UserDetails user =
+        User.withUsername("user").password("encoded-password").authorities("ROLE_USER").build();
 
-    verify(lockoutService).resetFailedAttempts("user");
+    when(userDetailsService.loadUserByUsername("user")).thenReturn(user);
+    when(passwordEncoder.matches("cred", "encoded-password")).thenReturn(true);
+
+    // Both MFA mocks return false by default.
+    Authentication result = iamLocalAuthenticationProvider.authenticate(loginRequest("user"));
+
+    assertTrue(result.isAuthenticated());
+
+    verify(accountService).resetLoginLockout(account.getUuid(),
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
+
+    verify(accountService, never()).loginFailedAttemptByUsername(anyString());
+  }
+
+  @Test
+  void preauthenticatedLoginRequiringMfaDoesNotVerifyPasswordOrResetLockout() {
+    IamAccount account = stubAccount("user");
+    ExtendedAuthenticationToken request = loginRequest("user");
+    request.setPreAuthenticated(true);
+
+    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+
+    Authentication result = iamLocalAuthenticationProvider.authenticate(request);
+
+    assertFalse(result.isAuthenticated());
+    assertTrue(result.getAuthorities()
+      .stream()
+      .anyMatch(a -> "ROLE_PRE_AUTHENTICATED".equals(a.getAuthority())));
+
+    verifyNoInteractions(userDetailsService, passwordEncoder);
+    verifyNoLockoutMutation();
   }
 }

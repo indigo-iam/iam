@@ -41,11 +41,10 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 /**
@@ -58,7 +57,7 @@ public class IamTotpMfaConfig {
   private String iamBaseUrl;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  private IamAccountService accountService;
 
   @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
@@ -124,7 +123,7 @@ public class IamTotpMfaConfig {
 
   public AuthenticationSuccessHandler successHandler(Clock clock) {
     return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
-        accountRepo, iamBaseUrl);
+        accountService, iamBaseUrl);
   }
 
   /**
@@ -138,7 +137,7 @@ public class IamTotpMfaConfig {
   }
 
   @Bean
-  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService, LoginLockoutService lockoutService) {
-    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, lockoutService);
+  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
+    return new MultiFactorTotpCheckProvider(accountService, totpMfaService);
   }
 }

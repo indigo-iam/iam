@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,7 +30,8 @@ import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerifie
 import it.infn.mw.iam.api.account.password_reset.error.UserNotFoundError;
 import it.infn.mw.iam.audit.events.account.password.PasswordResetEvent;
 import it.infn.mw.iam.audit.events.account.password.PasswordUpdatedEvent;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -47,19 +47,18 @@ public class DefaultPasswordResetService
   private final NotificationFactory notificationFactory;
   private final TokenGenerator tokenGenerator;
   private final PasswordEncoder passwordEncoder;
-  private final LoginLockoutService lockoutService;
+  private final IamAccountService accountService;
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultPasswordResetService(IamAccountRepository accountRepository,
       NotificationFactory notificationFactory, TokenGenerator tokenGenerator,
-      PasswordEncoder passwordEncoder, LoginLockoutService lockoutService) {
+      PasswordEncoder passwordEncoder, IamAccountService accountService) {
 
     this.accountRepository = accountRepository;
     this.notificationFactory = notificationFactory;
     this.tokenGenerator = tokenGenerator;
     this.passwordEncoder = passwordEncoder;
-    this.lockoutService = lockoutService;
+    this.accountService = accountService;
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -95,7 +94,7 @@ public class DefaultPasswordResetService
     accountRepository.save(account);
 
     // completing the reset proves control of the linked email address
-    lockoutService.resetFailedAttempts(account.getUsername());
+    accountService.resetLoginLockout(account.getUuid(), LoginLockoutResetReason.PASSWORD_RESET);
 
     eventPublisher.publishEvent(new PasswordResetEvent(this, account,
         String.format("User %s reset its password", account.getUsername())));

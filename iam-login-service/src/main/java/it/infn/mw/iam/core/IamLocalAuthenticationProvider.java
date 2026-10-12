@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -35,91 +36,100 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public static final String DISABLED_AUTH_MESSAGE = "Local authentication is disabled";
 
   private final LocalAuthenticationAllowedUsers allowedUsers;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
-  private final LoginLockoutService lockoutService;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
   private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
-      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties,
-      LoginLockoutService lockoutService) {
+      PasswordEncoder passwordEncoder, IamAccountService accountService,
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
-    this.lockoutService = lockoutService;
   }
 
   /**
-   * Authenticates local credentials and creates an authentication token reflecting the required
+   * Checks login eligibility, verifies credentials when necessary, and creates a token for the next
    * authentication stage.
    *
    * <p>
-   * Unless the supplied token is already pre-authenticated, checks account lockout and validates
-   * the username and password. Invalid credentials and inactive accounts are recorded as failed
-   * attempts, while account lockout and inactive-account errors are masked as bad credentials.
+   * A trusted preauthenticated token skips password verification, but still undergoes
+   * account-status and lockout checks. Such tokens must originate from a trusted server-side
+   * authentication flow.
    *
    * <p>
-   * If an authenticator app is active for the account or MFA is mandatory, returns a
-   * pre-authenticated token granting only {@code ROLE_PRE_AUTHENTICATED}, retaining the user's
-   * authorities for completion of MFA. Failed attempts are not reset while MFA is pending.
-   * Otherwise, resets failed attempts and returns a fully authenticated token with the user's
-   * authorities.
+   * If MFA is required, the returned token grants only {@code ROLE_PRE_AUTHENTICATED} and retains
+   * the authorities needed after MFA. Otherwise, lockout state is reset with reason
+   * {@link LoginLockoutResetReason#SUCCESSFUL_AUTHENTICATION}.
    *
-   * <p>
-   * Both returned token types include the password authentication method reference ({@code pwd}).
-   *
-   * @param authentication the local credentials or an already pre-authenticated token
-   * @return a pre-authenticated token if MFA is required, or a fully authenticated token otherwise
-   * @throws AuthenticationException if authentication fails, local authentication is disallowed, or
-   *         the account cannot be found
+   * @param authentication local credentials or a trusted preauthenticated token
+   * @return an intermediate MFA token or a fully authenticated token
+   * @throws BadCredentialsException if credentials are invalid, the account is unknown, or login is
+   *         denied by account status
+   * @throws DisabledException if local authentication is disallowed by configuration
+   * @throws AuthenticationException if another authentication failure occurs
    */
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
+    Optional<IamAccount> account = accountService.findByUsername(authentication.getName());
+
+    account.ifPresent(a -> checkLoginAllowed(a.getUuid()));
+
     Authentication verifiedAuthentication =
         isPreAuthenticated(authentication) ? authentication : authenticatePassword(authentication);
 
-    IamAccount account = accountRepo.findByUsername(verifiedAuthentication.getName())
-      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+    IamAccount resolvedAccount = account.orElseThrow(this::badCredentials);
 
-    if (requiresMfa(account)) {
+    checkLoginAllowed(resolvedAccount.getUuid());
+
+    if (requiresMfa(resolvedAccount)) {
       return createPreAuthenticatedToken(verifiedAuthentication);
     }
 
-    lockoutService.resetFailedAttempts(verifiedAuthentication.getName());
+    resetLoginLockoutAfterSuccess(resolvedAccount.getUuid());
     return createFullyAuthenticatedToken(verifiedAuthentication);
   }
 
+  /**
+   * Verifies the password and enforces the configured local-authentication policy.
+   *
+   * @param userDetails the loaded user details
+   * @param authentication the supplied username and password
+   * @throws AuthenticationException if credential verification fails
+   * @throws DisabledException if local authentication is disallowed for this user
+   */
   @Override
   protected void additionalAuthenticationChecks(UserDetails userDetails,
       UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
 
     super.additionalAuthenticationChecks(userDetails, authentication);
+
     if (LocalAuthenticationAllowedUsers.NONE.equals(allowedUsers)
         || (LocalAuthenticationAllowedUsers.VO_ADMINS.equals(allowedUsers)
             && userDetails.getAuthorities().stream().noneMatch(ADMIN_MATCHER))) {
@@ -127,14 +137,15 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
     }
   }
 
-  private BadCredentialsException badCredentials() {
-    return new BadCredentialsException(messages
-      .getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
-  }
-
+  /**
+   * Accepts extended authentication tokens used by the local login flow.
+   *
+   * @param authentication the authentication token class
+   * @return whether the class is supported
+   */
   @Override
   public boolean supports(Class<?> authentication) {
-    return (ExtendedAuthenticationToken.class.isAssignableFrom(authentication));
+    return ExtendedAuthenticationToken.class.isAssignableFrom(authentication);
   }
 
   private boolean isPreAuthenticated(Authentication authentication) {
@@ -147,61 +158,81 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
         || iamTotpMfaProperties.isMultiFactorMandatory();
   }
 
+  /**
+   * Delegates password verification and records only bad-credentials failures.
+   *
+   * <p>
+   * Account-state errors are masked without recording another failed attempt. Genuine internal
+   * authentication errors are propagated unchanged.
+   */
   private Authentication authenticatePassword(Authentication authentication) {
-
     String username = authentication.getName();
-    checkAccountLockout(username);
 
     UsernamePasswordAuthenticationToken passwordToken = new UsernamePasswordAuthenticationToken(
         authentication.getPrincipal(), authentication.getCredentials());
 
+    passwordToken.setDetails(authentication.getDetails());
+
     try {
       return super.authenticate(passwordToken);
-    } catch (InternalAuthenticationServiceException e) {
-      throw handleInternalAuthenticationFailure(username, e);
-    } catch (DisabledException e) {
-      throw handleDisabledAccount(username, e);
-    } catch (BadCredentialsException e) {
-      lockoutService.recordFailedAttempt(username);
-      throw e;
-    }
-  }
 
-  private void checkAccountLockout(String username) {
-    try {
-      lockoutService.checkIamAccountLockout(username);
+    } catch (InternalAuthenticationServiceException e) {
+      // UserDetailsService exceptions can be wrapped by DaoAuthenticationProvider.
+      if (e.getCause() instanceof DisabledException || e.getCause() instanceof LockedException) {
+        throw badCredentials();
+      }
+      throw e;
+
+    } catch (DisabledException e) {
+      // Preserve the intentional local-authentication configuration error.
+      if (DISABLED_AUTH_MESSAGE.equals(e.getMessage())) {
+        throw e;
+      }
+      throw badCredentials();
+
     } catch (LockedException e) {
+      throw badCredentials();
+
+    } catch (BadCredentialsException e) {
+      accountService.loginFailedAttemptByUsername(username);
       throw badCredentials();
     }
   }
 
-  private AuthenticationException handleInternalAuthenticationFailure(String username,
-      InternalAuthenticationServiceException exception) {
-
-    // Mask inactive accounts, but preserve genuine internal errors.
-    if (exception.getCause() instanceof DisabledException) {
-      return recordFailedAttempt(username);
+  /**
+   * Checks account eligibility without modifying lockout state, masking account-state failures as
+   * generic bad credentials.
+   */
+  private void checkLoginAllowed(String accountUuid) {
+    try {
+      accountService.checkLoginAllowed(accountUuid);
+    } catch (DisabledException | LockedException | UsernameNotFoundException e) {
+      throw badCredentials();
     }
-
-    return exception;
   }
 
-  private AuthenticationException handleDisabledAccount(String username,
-      DisabledException exception) {
-
-    // Preserve the intentional configuration message.
-    if (DISABLED_AUTH_MESSAGE.equals(exception.getMessage())) {
-      return exception;
+  /**
+   * Requests an atomic eligibility recheck and full lockout reset after successful authentication.
+   * A concurrent suspension must cause the service to reject this operation.
+   */
+  private void resetLoginLockoutAfterSuccess(String accountUuid) {
+    try {
+      accountService.resetLoginLockout(accountUuid,
+          LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
+    } catch (DisabledException | LockedException | UsernameNotFoundException e) {
+      throw badCredentials();
     }
-
-    return recordFailedAttempt(username);
   }
 
-  private BadCredentialsException recordFailedAttempt(String username) {
-    lockoutService.recordFailedAttempt(username);
-    return badCredentials();
+  private BadCredentialsException badCredentials() {
+    return new BadCredentialsException(messages
+      .getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
   }
 
+  /**
+   * Creates an intermediate token that permits MFA completion while retaining the authorities to
+   * grant once MFA succeeds.
+   */
   private ExtendedAuthenticationToken createPreAuthenticatedToken(Authentication authentication) {
 
     ExtendedAuthenticationToken token =
@@ -221,6 +252,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
         createPasswordToken(authentication, authentication.getAuthorities());
 
     token.setAuthenticated(true);
+
     return token;
   }
 
@@ -232,7 +264,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     refs.add(new IamAuthenticationMethodReference(PASSWORD.getValue()));
+
     token.setAuthenticationMethodReferences(refs);
+    token.setDetails(authentication.getDetails());
 
     return token;
   }

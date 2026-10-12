@@ -47,9 +47,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -66,7 +66,7 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
   private MockMvc mvc;
 
   @MockBean
-  private IamAccountRepository accountRepository;
+  private IamAccountService accountService;
 
   @MockBean
   private IamTotpMfaRepository totpMfaRepository;
@@ -86,8 +86,8 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
     totp = getTotpMfaFor(mfaAccount, clock.instant());
     Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
 
-    Mockito.when(accountRepository.findByUsername(testAccount.getUsername())).thenReturn(Optional.of(testAccount));
-    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
+    Mockito.when(accountService.findByUsername(testAccount.getUsername())).thenReturn(Optional.of(testAccount));
+    Mockito.when(accountService.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
   }
 
   @Test
@@ -105,7 +105,7 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
   @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
   void testGetVerifyMfaViewThrowsNoSuchAccountError() throws Exception {
 
-    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenThrow(new NoSuchAccountError(
+    Mockito.when(accountService.findByUsername(mfaAccount.getUsername())).thenThrow(new NoSuchAccountError(
         String.format("Account not found for username '%s'", mfaAccount.getUsername())));
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isBadRequest());
 

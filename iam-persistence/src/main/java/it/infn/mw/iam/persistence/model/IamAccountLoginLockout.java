@@ -16,6 +16,8 @@
 package it.infn.mw.iam.persistence.model;
 
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -28,6 +30,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "iam_account_login_lockout")
@@ -113,10 +116,37 @@ public class IamAccountLoginLockout implements Serializable {
     this.suspendedUntil = suspendedUntil;
   }
 
+  @Transient
+  public void applySuspension(Instant now, Duration duration) {
+
+    if (duration == null || duration.isZero() || duration.isNegative()) {
+      throw new IllegalArgumentException("Duration must be positive");
+    }
+    suspendedUntil = Date.from(now.plus(duration));
+    lockoutCount = Math.incrementExact(lockoutCount);
+  }
+
+  @Transient
+  public void clearCurrentRound() {
+    failedAttempts = 0;
+    firstFailureTime = null;
+    suspendedUntil = null;
+  }
+
+  @Transient
+  public boolean isCurrentRoundEmpty() {
+    return failedAttempts == 0 && firstFailureTime == null && suspendedUntil == null;
+  }
+
+  @Transient
+  public boolean isSuspended(Instant now) {
+    return suspendedUntil != null && now.isBefore(suspendedUntil.toInstant());
+  }
+
   @Override
   public String toString() {
-    return "IamAccountLoginLockout [id=" + id + ", failedAttempts=" + failedAttempts + ", lockoutCount="
-        + lockoutCount + ", suspendedUntil=" + suspendedUntil + "]";
+    return "IamAccountLoginLockout [id=" + id + ", failedAttempts=" + failedAttempts
+        + ", lockoutCount=" + lockoutCount + ", suspendedUntil=" + suspendedUntil + "]";
   }
 
   @Override

@@ -86,9 +86,6 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
-import it.infn.mw.iam.authn.lockout.DefaultLoginLockoutService;
-import it.infn.mw.iam.authn.lockout.DisabledLoginLockoutService;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamClientDetailsService;
@@ -170,7 +167,6 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminAddressStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
-import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -674,15 +670,5 @@ public class IamConfig {
     }
 
     return new DefaultScopePolicyEngine(policyRepo);
-  }
-
-  @Bean
-  LoginLockoutService loginLockoutService(Clock clock, IamAccountLoginLockoutRepository lockoutRepo,
-      IamAccountService accountService, IamProperties iamProperties) {
-
-    if (iamProperties.getLoginLockout().isEnabled()) {
-      return new DefaultLoginLockoutService(clock, accountService, lockoutRepo, iamProperties);
-    }
-    return new DisabledLoginLockoutService();
   }
 }

@@ -13,28 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.lockout;
+package it.infn.mw.iam.core.user;
 
-public class DisabledLoginLockoutService implements LoginLockoutService {
-
-  @Override
-  public void checkIamAccountLockout(String username) {
-    // Nothing to do
-  }
-
-  @Override
-  public void recordFailedAttempt(String username) {
-    // Nothing to do
-  }
-
-  @Override
-  public void resetFailedAttempts(String username) {
-    // Nothing to do
-  }
-
-  @Override
-  public void adminRevokeLockout(String accountUuid) {
-    // Nothing to do    
-  }
-
+public enum LoginLockoutResetReason {
+  SUCCESSFUL_AUTHENTICATION, PASSWORD_RESET, ADMIN_REVOKE
 }

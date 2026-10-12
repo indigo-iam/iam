@@ -40,8 +40,8 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class AuthenticationSuccessHandlerHelper {
@@ -53,20 +53,20 @@ public class AuthenticationSuccessHandlerHelper {
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
-      IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
+      IamAccountService accountService, IamTotpMfaService iamTotpMfaService,
       IamTotpMfaProperties iamTotpMfaProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
@@ -88,7 +88,7 @@ public class AuthenticationSuccessHandlerHelper {
 
   private boolean isMfaActive(Authentication authentication) {
     final String username = authentication.getName();
-    IamAccount account = accountRepo.findByUsername(username)
+    IamAccount account = accountService.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     return iamTotpMfaService.isAuthenticatorAppActive(account);
@@ -129,7 +129,7 @@ public class AuthenticationSuccessHandlerHelper {
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
-        delegate, aupSignatureCheckService, accountUtils, accountRepo);
+        delegate, aupSignatureCheckService, accountUtils, accountService);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 

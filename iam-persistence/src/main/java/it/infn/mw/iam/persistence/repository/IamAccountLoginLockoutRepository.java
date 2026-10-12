@@ -23,16 +23,11 @@ import org.springframework.data.repository.CrudRepository;
 
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
 
-public interface IamAccountLoginLockoutRepository extends CrudRepository<IamAccountLoginLockout, Long> {
-
-  Optional<IamAccountLoginLockout> findByAccountId(Long id);
-
-  Optional<IamAccountLoginLockout> findByAccountUsername(String username);
+public interface IamAccountLoginLockoutRepository
+    extends CrudRepository<IamAccountLoginLockout, Long> {
 
   Optional<IamAccountLoginLockout> findByAccountUuid(String uuid);
 
-  @Query(
-    "SELECT l.account.uuid FROM IamAccountLoginLockout l WHERE l.suspendedUntil IS NOT NULL AND l.suspendedUntil > CURRENT_TIMESTAMP"
-  )
+  @Query("SELECT l.account.uuid FROM IamAccountLoginLockout l WHERE l.suspendedUntil IS NOT NULL AND l.suspendedUntil > CURRENT_TIMESTAMP")
   List<String> findAllSuspendedUsers();
 }

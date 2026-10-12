@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -33,27 +34,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import it.infn.mw.iam.api.account.lockout.AccountLockoutController;
-import it.infn.mw.iam.authn.lockout.LoginLockoutService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
 import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("unchecked")
 class AccountLockoutControllerTests {
 
   @Mock
   private IamAccountLoginLockoutRepository lockoutRepo;
 
   @Mock
-  private LoginLockoutService lockoutService;
+  private IamAccountService accountService;
+
+  private Clock clock;
 
   private AccountLockoutController lockoutController;
   private IamAccount account;
 
   @BeforeEach
   void setup() {
-    lockoutController = new AccountLockoutController(lockoutRepo, lockoutService);
+    clock = Clock.systemUTC();
+    lockoutController = new AccountLockoutController(clock, lockoutRepo, accountService);
     account = new IamAccount();
     account.setUuid("uuid-1");
     account.setUsername("testuser");
@@ -62,9 +66,11 @@ class AccountLockoutControllerTests {
   @Test
   void getLockoutStatusReturnsSuspended() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    Instant future = Instant.now().plusSeconds(60);
+    Instant now = clock.instant();
+    Instant future = now.plusSeconds(60);
     lockout.setSuspendedUntil(Date.from(future));
-    when(lockoutRepo.findByAccountUuid("uuid-1")).thenReturn(Optional.of(lockout));
+    account.setLockoutInfo(lockout);
+    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.of(account));
 
     ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
     assertEquals(true, r.getBody().get("suspended"));
@@ -73,7 +79,7 @@ class AccountLockoutControllerTests {
 
   @Test
   void getLockoutStatusReturnsNotSuspendedWhenEmpty() {
-    when(lockoutRepo.findByAccountUuid("uuid-1")).thenReturn(Optional.empty());
+    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.empty());
 
     ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
     assertEquals(false, r.getBody().get("suspended"));
@@ -82,8 +88,10 @@ class AccountLockoutControllerTests {
   @Test
   void getLockoutStatusReturnsNotSuspendedWhenExpired() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    lockout.setSuspendedUntil(Date.from(Instant.now().minusSeconds(1)));
-    when(lockoutRepo.findByAccountUuid("uuid-1")).thenReturn(Optional.of(lockout));
+    Instant now = clock.instant();
+    lockout.setSuspendedUntil(Date.from(now.minusSeconds(1)));
+    account.setLockoutInfo(lockout);
+    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.of(account));
 
     ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
     assertEquals(false, r.getBody().get("suspended"));
@@ -92,7 +100,8 @@ class AccountLockoutControllerTests {
   @Test
   void getLockoutStatusReturnsNotSuspendedWhenNullSuspendedUntil() {
     IamAccountLoginLockout lockout = new IamAccountLoginLockout(account);
-    when(lockoutRepo.findByAccountUuid("uuid-1")).thenReturn(Optional.of(lockout));
+    account.setLockoutInfo(lockout);
+    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.of(account));
 
     ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
     assertEquals(false, r.getBody().get("suspended"));
@@ -110,7 +119,7 @@ class AccountLockoutControllerTests {
   void revokeLockoutDelegatesToService() {
     ResponseEntity<Map<String, Object>> r = lockoutController.revokeLockout("uuid-1");
 
-    verify(lockoutService).adminRevokeLockout("uuid-1");
+    verify(accountService).resetLoginLockout("uuid-1", LoginLockoutResetReason.ADMIN_REVOKE);
     assertEquals(true, r.getBody().get("unlocked"));
   }
 }

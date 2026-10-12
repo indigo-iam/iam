@@ -215,4 +215,8 @@ public interface IamAccountRepository
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select a from IamAccount a where a.username = :username")
   Optional<IamAccount> findByUsernameForUpdate(@Param("username") String username);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select a from IamAccount a where a.uuid = :uuid")
+  Optional<IamAccount> findByUuidForUpdate(@Param("uuid") String uuid);
 }

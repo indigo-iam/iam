@@ -15,15 +15,16 @@
  */
 package it.infn.mw.iam.core.user;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.RegisteredGroupDTO;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -54,14 +55,6 @@ public interface IamAccountService {
    * @return an {@link Optional} IAM account
    */
   Optional<IamAccount> findByUsername(String username);
-
-  /**
-   * Finds an account by username with a pessimistic write lock
-   *
-   * @param account username
-   * @return an {@link Optional} IAM account
-   */
-  Optional<IamAccount> findByUsernameForUpdate(String username);
 
   /**
    * Creates a new {@link IamAccount} from a registration request.
@@ -169,21 +162,25 @@ public interface IamAccountService {
    */
   IamAccount disableAccount(IamAccount account);
 
+  void checkLoginAllowed(String accountUuid);
+
+  Optional<IamAccount> loginFailedAttemptByUsername(String username);
+
   /**
    * Track a failed login attempt
    * 
    * @param account
    * @return the updated account
    */
-  IamAccount loginFailedAttempt(IamAccount account);
+  IamAccount loginFailedAttempt(String accountUuid);
 
   /**
-   * Suspend account
+   * Suspend login for account
    * 
    * @param account
    * @return the updated account
    */
-  IamAccount suspendAccount(IamAccount account);
+  IamAccount suspendLogin(String accountUuid, Duration duration);
 
   /**
    * Un-suspend account
@@ -191,7 +188,17 @@ public interface IamAccountService {
    * @param account
    * @return the re-activated account
    */
-  IamAccount unsuspendAccount(IamAccount account);
+  IamAccount unlockLogin(String accountUuid);
+
+  /**
+   * Reset login lockout
+   * 
+   * @param account
+   * @param reason
+   * @return the account ready to login and with no locked count
+   */
+  IamAccount resetLoginLockout(String accountUuid, LoginLockoutResetReason reason);
+
 
   /**
    * Restores account
@@ -290,5 +297,7 @@ public interface IamAccountService {
    * @return the updated signer account
    */
   IamAccount signAup(IamAccount account, IamAup aup);
+
+  void touchLastLoginTimeForUserWithUsername(String username);
 
 }
