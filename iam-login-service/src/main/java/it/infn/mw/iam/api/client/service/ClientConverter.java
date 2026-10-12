@@ -89,8 +89,8 @@ public class ClientConverter {
     }
 
     if (dto.getTokenEndpointAuthMethod() != null) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
@@ -116,6 +116,7 @@ public class ClientConverter {
 
     clientDTO.setJwksUri(entity.getJwksUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
+    clientDTO.setPostLogoutRedirectUris(entity.getPostLogoutRedirectUris());
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
       .valueOf(Optional.ofNullable(entity.getTokenEndpointAuthMethod())
@@ -197,6 +198,8 @@ public class ClientConverter {
 
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
+    client.setPostLogoutRedirectUris(dto.getPostLogoutRedirectUris());
+
     client.setScope(cloneSet(dto.getScope()));
 
     client.setGrantTypes(new HashSet<>());
@@ -208,7 +211,7 @@ public class ClientConverter {
           dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
-    if (dto.getScope().contains("offline_access")) {
+    if (client.getScope().contains("offline_access")) {
       client.getGrantTypes().add(AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
     }
 
@@ -220,8 +223,8 @@ public class ClientConverter {
     client.setContacts(cloneSet(dto.getContacts()));
 
     if (!isNull(dto.getTokenEndpointAuthMethod())) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     if (dto.getCodeChallengeMethod() != null) {
