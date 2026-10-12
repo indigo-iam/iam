@@ -71,6 +71,7 @@ import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletReque
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -146,6 +147,9 @@ public class IamWebSecurityConfig {
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
+    private OidcLogoutSuccessHandler oidcLogoutSuccessHandler;
+
+    @Autowired
     private Clock clock;
 
     @Autowired
@@ -217,6 +221,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(oidcLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()
