@@ -701,49 +701,13 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     lockout.setFailedAttempts(Math.incrementExact(lockout.getFailedAttempts()));
 
     if (lockout.getFailedAttempts() >= iamProperties.getLoginLockout().getMaxFailedAttempts()) {
-      lockout.applySuspension(now, iamProperties.getLoginLockout().getLockDuration());
+      Duration lockDuration = iamProperties.getLoginLockout().getLockDuration();
+      lockout.applySuspension(now, lockDuration);
+      eventPublisher.publishEvent(new AccountSuspendedEvent(this, account));
+      notificationFactory.createAccountLockedMessage(account, lockDuration);
     }
 
     account.touch(now);
-    return accountRepo.save(account);
-  }
-
-  @Override
-  public IamAccount suspendLogin(String accountUuid, Duration duration) {
-
-    IamAccount account = loadAccountForUpdate(accountUuid);
-    Instant now = clock.instant();
-    IamAccountLoginLockout lockout = getOrCreateLoginLockout(account);
-
-    if (lockout.isSuspended(now)) {
-      return account;
-    }
-
-    // A new suspension after expiry belongs to a new round.
-    if (lockout.getSuspendedUntil() != null) {
-      lockout.clearCurrentRound();
-    }
-
-    lockout.applySuspension(now, duration);
-
-    eventPublisher.publishEvent(new AccountSuspendedEvent(this, account));
-    notificationFactory.createAccountLockedMessage(account, duration);
-
-    account.touch(now);
-    return accountRepo.save(account);
-  }
-
-  @Override
-  public IamAccount unlockLogin(String accountUuid) {
-    IamAccount account = loadAccountForUpdate(accountUuid);
-    IamAccountLoginLockout lockout = account.getLockoutInfo();
-
-    if (lockout == null || lockout.isCurrentRoundEmpty()) {
-      return account;
-    }
-
-    lockout.clearCurrentRound();
-    account.touch(clock.instant());
     return accountRepo.save(account);
   }
 

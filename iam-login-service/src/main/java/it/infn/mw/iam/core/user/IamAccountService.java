@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.user;
 
-import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
 
@@ -173,22 +172,6 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount loginFailedAttempt(String accountUuid);
-
-  /**
-   * Suspend login for account
-   * 
-   * @param account
-   * @return the updated account
-   */
-  IamAccount suspendLogin(String accountUuid, Duration duration);
-
-  /**
-   * Un-suspend account
-   * 
-   * @param account
-   * @return the re-activated account
-   */
-  IamAccount unlockLogin(String accountUuid);
 
   /**
    * Reset login lockout
