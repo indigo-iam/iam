@@ -31,7 +31,16 @@ public class PasskeyChallenge implements Serializable {
   public static final String SESSION_ATTRIBUTE = "iam.passkey.challenge";
 
   public enum Purpose {
-    REGISTRATION, AUTHENTICATION
+    /** navigator.credentials.create(), to register a new passkey */
+    REGISTRATION,
+    /** navigator.credentials.get(), to verify the second factor at login */
+    AUTHENTICATION,
+    /** navigator.credentials.get(), to prove possession of a passkey before removing one */
+    REMOVAL;
+
+    public boolean isAssertion() {
+      return this != REGISTRATION;
+    }
   }
 
   private final byte[] value;

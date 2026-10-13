@@ -24,7 +24,9 @@
 
   AddPasskeyController.$inject = ['$scope', '$uibModalInstance', 'PasskeyService'];
 
-  RemovePasskeyController.$inject = ['$scope', '$uibModalInstance', 'PasskeyService', 'passkey'];
+  RemovePasskeyController.$inject = [
+    '$scope', '$uibModalInstance', 'PasskeyService', 'passkey', 'proofOptions'
+  ];
 
   function AddPasskeyController($scope, $uibModalInstance, PasskeyService) {
     var passkeyCtrl = this;
@@ -58,22 +60,68 @@
     }
   }
 
-  function RemovePasskeyController($scope, $uibModalInstance, PasskeyService, passkey) {
+  /**
+   * Removing a passkey requires a proof of a second factor. The modal offers the proofs the
+   * account can give: an assertion with one of its passkeys (when the feature is enabled and the
+   * browser supports it) and a code of the authenticator app (when it is active). While passkeys
+   * are disabled the stored credentials are inert and the server needs no proof
+   */
+  function RemovePasskeyController($scope, $uibModalInstance, PasskeyService, passkey,
+      proofOptions) {
     var passkeyCtrl = this;
 
     passkeyCtrl.passkey = passkey;
+    passkeyCtrl.passkeyEnabled = !!proofOptions.passkeyEnabled;
+    passkeyCtrl.passkeyProofAvailable = passkeyCtrl.passkeyEnabled && PasskeyService.isSupported();
+    passkeyCtrl.totpProofAvailable = !!proofOptions.authenticatorAppActive;
+    passkeyCtrl.proofRequired = passkeyCtrl.passkeyEnabled;
+    passkeyCtrl.code = '';
+    passkeyCtrl.codeMinlength = 6;
     passkeyCtrl.requestPending = false;
     passkeyCtrl.dismiss = dismiss;
-    passkeyCtrl.submitRemove = submitRemove;
+    passkeyCtrl.clearError = clearError;
+    passkeyCtrl.removeWithPasskey = removeWithPasskey;
+    passkeyCtrl.removeWithTotp = removeWithTotp;
+    passkeyCtrl.removeWithoutProof = removeWithoutProof;
 
     function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
 
-    function submitRemove() {
+    function clearError() { $scope.operationResult = null; }
+
+    function removeWithPasskey() {
+      if (!passkeyCtrl.passkeyProofAvailable) {
+        return;
+      }
+      remove(function () { return PasskeyService.removePasskeyWithPasskey(passkey.uuid); });
+    }
+
+    function removeWithTotp() {
+      if (!passkeyCtrl.totpProofAvailable || !passkeyCtrl.code
+          || passkeyCtrl.code.length < passkeyCtrl.codeMinlength) {
+        return;
+      }
+      var code = passkeyCtrl.code;
+      // A code is single use: a refused one is cleared, whatever the reason
+      passkeyCtrl.code = '';
+      remove(function () {
+        return PasskeyService.removePasskeyWithTotp(passkey.uuid, code);
+      });
+    }
+
+    function removeWithoutProof() {
+      if (passkeyCtrl.proofRequired) {
+        return;
+      }
+      remove(function () { return PasskeyService.removePasskey(passkey.uuid); });
+    }
+
+    function remove(request) {
       if (passkeyCtrl.requestPending) {
         return;
       }
       passkeyCtrl.requestPending = true;
-      PasskeyService.removePasskey(passkey.uuid)
+      clearError();
+      request()
         .then(function () {
           passkeyCtrl.requestPending = false;
           $uibModalInstance.close('Passkey removed');

@@ -20,6 +20,7 @@ import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.Pas
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_OPTIONS_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REMOVAL_OPTIONS_URL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -43,6 +44,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DisabledIa
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -86,13 +88,39 @@ class PasskeyDisabledTests {
       .andExpect(jsonPath("$.error", is(DisabledIamPasskeyService.DISABLED_MESSAGE)));
     mvc.perform(post(REGISTRATION_URL).contentType(MediaType.APPLICATION_JSON).content("{}"))
       .andExpect(status().isBadRequest());
-    mvc.perform(get(BASE_URL)).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
-    mvc.perform(delete(BASE_URL + "/" + TEST_USER_UUID))
+    mvc.perform(post(REMOVAL_OPTIONS_URL))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", is(DisabledIamPasskeyService.DISABLED_MESSAGE)));
+    mvc.perform(get(BASE_URL)).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+    mvc.perform(delete(BASE_URL + "/" + TEST_USER_UUID))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", is(DisabledIamPasskeyService.PASSKEY_NOT_FOUND_MESSAGE)));
     mvc.perform(get(MULTI_FACTOR_SETTINGS_URL))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.passkeyActive", is(false)));
+  }
+
+  /**
+   * Credentials stored before the feature was switched off are not accepted at login, but their
+   * owner can still see them and remove them, without any proof of a second factor
+   */
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void storedPasskeysAreListedAndRemovableWhileDisabled() throws Exception {
+    IamAccount account = accountRepository.findByUuid(TEST_USER_UUID).orElseThrow();
+    IamPasskey stored =
+        passkeyRepository.save(PasskeyTestSupport.placeholderPasskey(account, clock.instant()));
+
+    mvc.perform(get(BASE_URL))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$", hasSize(1)))
+      .andExpect(jsonPath("$[0].uuid", is(stored.getUuid())));
+    mvc.perform(get(MULTI_FACTOR_SETTINGS_URL))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.passkeyActive", is(false)));
+
+    mvc.perform(delete(BASE_URL + "/" + stored.getUuid())).andExpect(status().isNoContent());
+    assertThat(passkeyRepository.findByAccountId(account.getId()), empty());
   }
 
   @Test

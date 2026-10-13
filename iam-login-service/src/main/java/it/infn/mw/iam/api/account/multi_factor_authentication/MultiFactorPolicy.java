@@ -16,11 +16,15 @@
 package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 /**
  * Answers the questions the login flow asks about the second factor of an account, whichever the
@@ -34,18 +38,27 @@ public class MultiFactorPolicy {
       "Multi-factor authentication is already active on this account: "
           + "verify your second factor before adding a new one";
 
+  public static final String LAST_FACTOR_MESSAGE =
+      "Multi-factor authentication is mandatory: register a passkey before disabling the "
+          + "authenticator app";
+  public static final String ONLY_FACTOR_MESSAGE =
+      "Multi-factor authentication is mandatory and the authenticator app is the only second "
+          + "factor available on this instance: it cannot be disabled";
+
   private final IamTotpMfaService totpMfaService;
   private final IamTotpMfaProperties totpMfaProperties;
   private final IamPasskeyService passkeyService;
   private final IamPasskeyProperties passkeyProperties;
+  private final IamAccountRepository accountRepository;
 
   public MultiFactorPolicy(IamTotpMfaService totpMfaService,
       IamTotpMfaProperties totpMfaProperties, IamPasskeyService passkeyService,
-      IamPasskeyProperties passkeyProperties) {
+      IamPasskeyProperties passkeyProperties, IamAccountRepository accountRepository) {
     this.totpMfaService = totpMfaService;
     this.totpMfaProperties = totpMfaProperties;
     this.passkeyService = passkeyService;
     this.passkeyProperties = passkeyProperties;
+    this.accountRepository = accountRepository;
   }
 
   /**
@@ -115,5 +128,28 @@ public class MultiFactorPolicy {
     if (preAuthenticated && isActive(account)) {
       throw new AccessDeniedException(MFA_ALREADY_ACTIVE_MESSAGE);
     }
+  }
+
+  /**
+   * Disables the authenticator app of the account, unless a second factor is mandatory and no
+   * passkey would be left. Under a mandatory policy the account row is locked for the whole
+   * operation, so that a concurrent passkey removal, which takes the same lock, cannot leave the
+   * account without any factor
+   *
+   * @param account the account whose authenticator app is disabled
+   * @return the disabled authenticator app settings
+   * @throws MandatoryFactorException if the authenticator app is the last mandatory factor
+   */
+  @Transactional
+  public IamTotpMfa disableAuthenticatorApp(IamAccount account) {
+    if (isMandatory()) {
+      accountRepository.findByIdForUpdate(account.getId())
+        .orElseThrow(() -> NoSuchAccountError.forUsername(account.getUsername()));
+      if (!passkeyService.isPasskeyActive(account)) {
+        throw new MandatoryFactorException(
+            passkeyService.isEnabled() ? LAST_FACTOR_MESSAGE : ONLY_FACTOR_MESSAGE);
+      }
+    }
+    return totpMfaService.disableTotpMfa(account);
   }
 }

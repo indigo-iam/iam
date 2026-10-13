@@ -42,7 +42,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -176,6 +179,29 @@ class MultiFactorPasskeyCheckProviderTests extends PasskeyTestSupport {
     BadCredentialsException e =
         assertThrows(BadCredentialsException.class, () -> provider.authenticate(token));
     assertThat(e.getMessage(), equalTo(MultiFactorPasskeyCheckProvider.BAD_PASSKEY_MESSAGE));
+  }
+
+  /**
+   * Only AuthenticationExceptions reach the failure handler of the verification filter: a
+   * database or an unexpected error must not surface as an error page
+   */
+  @Test
+  void unexpectedErrorsAreReportedAsAuthenticationServiceExceptions() throws Exception {
+    when(accountRepo.findByUsername(USERNAME)).thenReturn(Optional.of(account));
+    PasskeyAssertionAuthenticationToken token =
+        new PasskeyAssertionAuthenticationToken(preAuthenticatedToken(), assertionJson(), challenge);
+
+    when(passkeyService.verifyPasskey(eq(account), eq(challenge), any(PasskeyAssertionDTO.class)))
+      .thenThrow(new CannotAcquireLockException("lock wait timeout"));
+    AuthenticationServiceException e =
+        assertThrows(AuthenticationServiceException.class, () -> provider.authenticate(token));
+    assertThat(e.getMessage(),
+        equalTo(MultiFactorPasskeyCheckProvider.VERIFICATION_UNAVAILABLE_MESSAGE));
+    assertThat(e.getCause(), instanceOf(CannotAcquireLockException.class));
+
+    when(passkeyService.verifyPasskey(eq(account), eq(challenge), any(PasskeyAssertionDTO.class)))
+      .thenThrow(new IllegalStateException("corrupt credential data"));
+    assertThrows(InternalAuthenticationServiceException.class, () -> provider.authenticate(token));
   }
 
   @Test

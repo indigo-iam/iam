@@ -79,14 +79,14 @@ public interface IamPasskeyService {
       PasskeyRegistrationDTO registration);
 
   /**
-   * Builds the options for navigator.credentials.get()
+   * Builds the options for navigator.credentials.get(), listing every passkey of the account. The
+   * ceremony the assertion will be accepted for is fixed by the purpose of the challenge
    *
    * @param account
-   * @param challenge a challenge created for authentication
+   * @param challenge a challenge created for authentication or for removal
    * @return the request options
    */
-  PasskeyAssertionOptionsDTO getAuthenticationOptions(IamAccount account,
-      PasskeyChallenge challenge);
+  PasskeyAssertionOptionsDTO getAssertionOptions(IamAccount account, PasskeyChallenge challenge);
 
   /**
    * Verifies the response of navigator.credentials.get() against one of the account passkeys and
@@ -101,13 +101,20 @@ public interface IamPasskeyService {
       PasskeyAssertionDTO assertion);
 
   /**
-   * Removes one passkey from the account
+   * Removes one passkey from the account, after checking that the removal is allowed by the
+   * multi-factor policy and that the caller proves possession of a second factor: an assertion
+   * produced with any passkey of the account against a challenge issued for removal, or a code of
+   * the authenticator app when one is active. The proof is not required while the feature is
+   * disabled, since stored passkeys are not accepted at login then
    *
    * @param account
    * @param passkeyUuid the passkey identifier
+   * @param challenge the challenge issued for this removal, or null if none was issued
+   * @param proof the proof of possession, or null if none was given
    * @return the removed passkey
    */
-  IamPasskey removePasskey(IamAccount account, String passkeyUuid);
+  IamPasskey removePasskey(IamAccount account, String passkeyUuid, PasskeyChallenge challenge,
+      PasskeyRemovalDTO proof);
 
   /**
    * Removes every passkey from the account

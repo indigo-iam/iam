@@ -19,12 +19,14 @@ import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticat
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.DISABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.MFA_SECRET_NOT_FOUND_MESSAGE;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
@@ -44,6 +46,7 @@ import org.springframework.web.util.NestedServletException;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -299,6 +302,29 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
     Mockito.verify(totpMfaService, times(1)).disableTotpMfa(mfaAccount);
+  }
+
+  /**
+   * When a second factor is mandatory the authenticator app cannot be disabled unless a passkey
+   * remains on the account (passkeys are disabled here, so none does)
+   */
+  @Test
+  @WithMockMfaUser
+  void testDisableAuthenticatorAppRefusedWhenItIsTheLastMandatoryFactor() throws Exception {
+
+    String totp = "123456";
+
+    Mockito.when(iamTotpMfaProperties.isMultiFactorMandatory()).thenReturn(true);
+    Mockito.when(accountRepository.findByIdForUpdate(mfaAccount.getId()))
+      .thenReturn(Optional.of(mfaAccount));
+    Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp)).thenReturn(true);
+
+    mvc.perform(post(DISABLE_URL).param("code", totp))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", is(MultiFactorPolicy.ONLY_FACTOR_MESSAGE)));
+
+    Mockito.verify(accountRepository, times(1)).findByIdForUpdate(mfaAccount.getId());
+    Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
   @Test

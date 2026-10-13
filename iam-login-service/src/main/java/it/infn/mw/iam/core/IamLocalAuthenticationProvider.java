@@ -18,6 +18,7 @@ package it.infn.mw.iam.core;
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
@@ -106,6 +108,14 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     ExtendedAuthenticationToken token;
 
+    // The authorities the user holds once fully authenticated. A pre-authenticated token carries
+    // only the PRE_AUTHENTICATED role, and the authorities it was built with may have changed in
+    // the meantime (an administrator may have revoked a role), so they are read from the account
+    // on every re-validation rather than copied from the token
+    Collection<? extends GrantedAuthority> accountAuthorities = isPreAuthenticated
+        ? AuthenticationUtils.convertIamAccountAuthorities(account)
+        : authentication.getAuthorities();
+
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     if (isPreAuthenticated) {
       // The references describe how the first factor was verified: keep them
@@ -125,18 +135,8 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
       currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);
 
-      // Retrieve the authorities that are assigned to this user when they are fully authenticated.
-      // A token that was already pre-authenticated only carries the PRE_AUTHENTICATED role: the
-      // authorities to grant after the second factor are the ones it was built with
-      Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>();
-      if (isPreAuthenticated && preAuthenticatedToken.getFullyAuthenticatedAuthorities() != null) {
-        fullyAuthenticatedAuthorities
-          .addAll(preAuthenticatedToken.getFullyAuthenticatedAuthorities());
-      } else {
-        fullyAuthenticatedAuthorities.addAll(authentication.getAuthorities());
-      }
-
-      // Construct a new authentication object for the PRE_AUTHENTICATED user.
+      // Construct a new authentication object for the PRE_AUTHENTICATED user, keeping aside the
+      // authorities to grant once the second factor is verified
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), currentAuthorities);
       token.setAuthenticated(false);
@@ -144,17 +144,13 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       // this token through the pre-authenticated path above, without a second password check
       token.setPreAuthenticated(true);
       token.setAuthenticationMethodReferences(refs);
-      token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
+      token.setFullyAuthenticatedAuthorities(new HashSet<>(accountAuthorities));
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
       // MFA is not enabled on this account, construct a new authentication object for the FULLY
-      // AUTHENTICATED user, granting their normal authorities (a pre-authenticated token only
-      // carries the PRE_AUTHENTICATED role: its full authorities were kept aside)
+      // AUTHENTICATED user, granting their normal authorities
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
-          authentication.getCredentials(),
-          isPreAuthenticated && preAuthenticatedToken.getFullyAuthenticatedAuthorities() != null
-              ? preAuthenticatedToken.getFullyAuthenticatedAuthorities()
-              : authentication.getAuthorities());
+          authentication.getCredentials(), accountAuthorities);
       token.setAuthenticationMethodReferences(refs);
       token.setAuthenticated(true);
     }

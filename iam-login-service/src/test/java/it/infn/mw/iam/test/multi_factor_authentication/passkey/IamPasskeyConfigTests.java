@@ -32,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DisabledIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
@@ -39,6 +40,7 @@ import it.infn.mw.iam.config.IamPasskeyConfig;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.Organisation;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -68,8 +70,12 @@ class IamPasskeyConfigTests {
   @Mock
   ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  IamTotpMfaService totpMfaService;
+
   IamPasskeyConfig config = new IamPasskeyConfig();
   IamPasskeyProperties properties;
+  IamTotpMfaProperties totpMfaProperties = new IamTotpMfaProperties();
   Clock clock = Clock.systemUTC();
 
   @BeforeEach
@@ -81,8 +87,9 @@ class IamPasskeyConfigTests {
   }
 
   private IamPasskeyService service() {
-    return config.passkeyService(clock, properties, iamProperties, passkeyRepository,
-        accountRepository, accountService, notificationFactory, eventPublisher);
+    return config.passkeyService(clock, properties, totpMfaProperties, iamProperties,
+        passkeyRepository, accountRepository, accountService, totpMfaService,
+        notificationFactory, eventPublisher);
   }
 
   @Test
@@ -92,6 +99,7 @@ class IamPasskeyConfigTests {
 
   @Test
   void disabledWithRegisteredPasskeysStillBoots() {
+    when(passkeyRepository.count()).thenReturn(3L);
     assertThat(service(), instanceOf(DisabledIamPasskeyService.class));
   }
 

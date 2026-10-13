@@ -20,6 +20,7 @@ import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -67,8 +68,11 @@ public class PasskeyRegistrationDTO {
     }
   }
 
+  // The label is echoed in logs, audit records and e-mails, so control and format characters
+  // (C0/C1 controls, bidi overrides, zero-width characters) are refused
   @NotBlank
   @Size(max = 128)
+  @Pattern(regexp = "[^\\p{Cc}\\p{Cf}]*", message = "must not contain control characters")
   private String label;
 
   @NotBlank

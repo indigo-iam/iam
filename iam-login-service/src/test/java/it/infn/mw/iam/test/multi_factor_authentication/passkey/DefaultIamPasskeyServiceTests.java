@@ -56,6 +56,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.jpa.JpaSystemException;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MandatoryFactorException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionOptionsDTO;
@@ -64,6 +66,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyCha
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationOptionsDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRelyingParty;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRemovalDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyCeremonyException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyLimitExceededException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyNotFoundException;
@@ -71,7 +74,9 @@ import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyRe
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyRemovedEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyVerifiedEvent;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamPasskey;
@@ -102,7 +107,11 @@ class DefaultIamPasskeyServiceTests extends PasskeyTestSupport {
   @Mock
   ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  IamTotpMfaService totpMfaService;
+
   IamPasskeyProperties properties;
+  IamTotpMfaProperties totpMfaProperties;
   PasskeyRelyingParty relyingParty;
   Clock clock;
   DefaultIamPasskeyService service;
@@ -115,9 +124,11 @@ class DefaultIamPasskeyServiceTests extends PasskeyTestSupport {
     properties.setEnabled(true);
     properties.setMaxCredentialsPerAccount(2);
     properties.setChallengeTimeoutSeconds(60);
+    totpMfaProperties = new IamTotpMfaProperties();
     relyingParty = new PasskeyRelyingParty(Set.of(TEST_ORIGIN), TEST_RP_ID, TEST_RP_NAME, false);
-    service = new DefaultIamPasskeyService(clock, properties, relyingParty, passkeyRepository,
-        accountRepository, accountService, notificationFactory, eventPublisher);
+    service = new DefaultIamPasskeyService(clock, properties, totpMfaProperties, relyingParty,
+        passkeyRepository, accountRepository, accountService, totpMfaService, notificationFactory,
+        eventPublisher);
 
     account = IamAccount.newAccount();
     account.setId(42L);
@@ -407,7 +418,7 @@ class DefaultIamPasskeyServiceTests extends PasskeyTestSupport {
     when(passkeyRepository.findByAccountId(42L)).thenReturn(List.of(existing));
     PasskeyChallenge challenge = service.createChallenge(account, Purpose.AUTHENTICATION);
 
-    PasskeyAssertionOptionsDTO options = service.getAuthenticationOptions(account, challenge);
+    PasskeyAssertionOptionsDTO options = service.getAssertionOptions(account, challenge);
 
     assertThat(options.getChallenge(), equalTo(base64Url(challenge.getValue())));
     assertThat(options.getRpId(), equalTo(TEST_RP_ID));
@@ -531,44 +542,221 @@ class DefaultIamPasskeyServiceTests extends PasskeyTestSupport {
     assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.CHALLENGE_MISMATCH_MESSAGE));
   }
 
-  @Test
-  void removePasskeyDeletesAndNotifies() {
-    IamPasskey passkey = new IamPasskey(NOW, account);
-    passkey.setUuid("passkey-uuid");
-    passkey.setLabel("my key");
-    when(passkeyRepository.findByUuidAndAccountId("passkey-uuid", 42L))
+  /**
+   * A stored passkey the given authenticator can sign for, looked up by uuid and by credential id
+   */
+  private IamPasskey storedPasskey(PasskeyTestAuthenticator authenticator, String uuid) {
+    IamPasskey passkey = registeredPasskey(account, authenticator, NOW);
+    passkey.setUuid(uuid);
+    lenient().when(passkeyRepository.findByUuidAndAccountId(uuid, 42L))
       .thenReturn(Optional.of(passkey));
+    lenient().when(passkeyRepository.findByCredentialIdForUpdate(passkey.getCredentialId()))
+      .thenReturn(Optional.of(passkey));
+    return passkey;
+  }
 
-    IamPasskey removed = service.removePasskey(account, "passkey-uuid");
+  private PasskeyRemovalDTO assertionProof(PasskeyTestAuthenticator authenticator,
+      PasskeyChallenge challenge, long signCount) {
+    PasskeyRemovalDTO proof = new PasskeyRemovalDTO();
+    proof.setAssertion(assertionFor(authenticator, base64Url(challenge.getValue()), TEST_ORIGIN,
+        false, signCount, null));
+    return proof;
+  }
+
+  private PasskeyRemovalDTO totpProof(String totp) {
+    PasskeyRemovalDTO proof = new PasskeyRemovalDTO();
+    proof.setTotp(totp);
+    return proof;
+  }
+
+  @Test
+  void removePasskeyWithAssertionProofDeletesAndNotifies() {
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    IamPasskey passkey = storedPasskey(authenticator, "passkey-uuid");
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.REMOVAL);
+
+    IamPasskey removed = service.removePasskey(account, "passkey-uuid", challenge,
+        assertionProof(authenticator, challenge, 1));
 
     assertThat(removed, equalTo(passkey));
     verify(passkeyRepository).delete(passkey);
     verify(accountService).saveAccount(account);
     verify(notificationFactory).createPasskeyRemovedMessage(account, passkey);
-    ArgumentCaptor<ApplicationEvent> event = ArgumentCaptor.forClass(ApplicationEvent.class);
-    verify(eventPublisher).publishEvent(event.capture());
-    assertThat(event.getValue(), instanceOf(PasskeyRemovedEvent.class));
+    ArgumentCaptor<ApplicationEvent> events = ArgumentCaptor.forClass(ApplicationEvent.class);
+    verify(eventPublisher, times(2)).publishEvent(events.capture());
+    assertThat(events.getAllValues().get(0), instanceOf(PasskeyVerifiedEvent.class));
+    assertThat(events.getAllValues().get(1), instanceOf(PasskeyRemovedEvent.class));
+    // The account row is always locked first, ahead of the credential row of the proof
+    verify(accountRepository).findByIdForUpdate(42L);
+  }
+
+  @Test
+  void totpResetDuringRemovalIsReportedAsMissingProof() {
+    storedPasskey(new PasskeyTestAuthenticator(Algorithm.ES256), "passkey-uuid");
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+    when(totpMfaService.verifyTotp(account, "123456"))
+      .thenThrow(new MfaSecretNotFoundException("gone"));
+
+    PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", null, totpProof("123456")));
+    assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE));
+    verify(passkeyRepository, never()).delete(any());
+  }
+
+  @Test
+  void assertionWithANonBase64UrlCredentialIdIsRejectedBeforeTheDatabase() {
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    storedPasskey(authenticator, "passkey-uuid");
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.AUTHENTICATION);
+    PasskeyAssertionDTO assertion =
+        assertionFor(authenticator, base64Url(challenge.getValue()), TEST_ORIGIN, false, 1, null);
+    assertion.setId("not base64url é");
+
+    PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
+        () -> service.verifyPasskey(account, challenge, assertion));
+    assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.UNKNOWN_CREDENTIAL_MESSAGE));
+    verify(passkeyRepository, never()).findByCredentialIdForUpdate(any());
+  }
+
+  @Test
+  void removePasskeyAcceptsAnAssertionOfAnotherPasskeyOfTheAccount() {
+    PasskeyTestAuthenticator removedKey = new PasskeyTestAuthenticator(Algorithm.ES256);
+    PasskeyTestAuthenticator otherKey = new PasskeyTestAuthenticator(Algorithm.RS256);
+    IamPasskey passkey = storedPasskey(removedKey, "removed-uuid");
+    IamPasskey other = storedPasskey(otherKey, "other-uuid");
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.REMOVAL);
+
+    assertThat(service.removePasskey(account, "removed-uuid", challenge,
+        assertionProof(otherKey, challenge, 1)), equalTo(passkey));
+
+    verify(passkeyRepository).delete(passkey);
+    assertThat(other.getSignCount(), equalTo(1L));
+    assertThat(other.getLastUsedTime(), notNullValue());
+  }
+
+  @Test
+  void removePasskeyWithTotpProofDeletes() {
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    IamPasskey passkey = storedPasskey(authenticator, "passkey-uuid");
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+    when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
+
+    assertThat(service.removePasskey(account, "passkey-uuid", null, totpProof(" 123456 ")),
+        equalTo(passkey));
+
+    verify(passkeyRepository).delete(passkey);
+    verify(eventPublisher).publishEvent(any(PasskeyRemovedEvent.class));
+  }
+
+  @Test
+  void removePasskeyWithWrongTotpIsRejected() {
+    storedPasskey(new PasskeyTestAuthenticator(Algorithm.ES256), "passkey-uuid");
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+    when(totpMfaService.verifyTotp(account, "000000")).thenReturn(false);
+
+    PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", null, totpProof("000000")));
+    assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.BAD_REMOVAL_TOTP_MESSAGE));
+    verify(passkeyRepository, never()).delete(any());
+  }
+
+  @Test
+  void removePasskeyWithoutProofIsRejected() {
+    storedPasskey(new PasskeyTestAuthenticator(Algorithm.ES256), "passkey-uuid");
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.REMOVAL);
+
+    for (PasskeyRemovalDTO proof : new PasskeyRemovalDTO[] {null, new PasskeyRemovalDTO(),
+        totpProof(" ")}) {
+      PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
+          () -> service.removePasskey(account, "passkey-uuid", challenge, proof));
+      assertThat(e.getMessage(),
+          equalTo(DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE));
+    }
+    verify(passkeyRepository, never()).delete(any());
+    verify(totpMfaService, never()).verifyTotp(any(), any());
+  }
+
+  @Test
+  void totpIsNotAcceptedAsRemovalProofWhenTheAppIsInactiveOrPasskeysAreMandatory() {
+    storedPasskey(new PasskeyTestAuthenticator(Algorithm.ES256), "passkey-uuid");
+    when(passkeyRepository.countByAccountId(42L)).thenReturn(2L);
+
+    // The authenticator app is not active on the account
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+    assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", null, totpProof("123456")));
+
+    // Passkeys are mandatory: the authenticator app is not accepted at login, nor here
+    properties.setMandatory(true);
+    assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", null, totpProof("123456")));
+
+    verify(totpMfaService, never()).verifyTotp(any(), any());
+    verify(passkeyRepository, never()).delete(any());
+  }
+
+  @Test
+  void removalAssertionMustMatchARemovalChallenge() {
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    storedPasskey(authenticator, "passkey-uuid");
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.AUTHENTICATION);
+
+    PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", challenge,
+            assertionProof(authenticator, challenge, 1)));
+    assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.CHALLENGE_MISMATCH_MESSAGE));
+
+    assertThrows(PasskeyCeremonyException.class,
+        () -> service.removePasskey(account, "passkey-uuid", null,
+            assertionProof(authenticator, challenge, 1)));
+    verify(passkeyRepository, never()).delete(any());
   }
 
   @Test
   void lastPasskeyCannotBeRemovedWhenPasskeysAreMandatory() {
     properties.setMandatory(true);
-    IamPasskey passkey = new IamPasskey(NOW, account);
-    passkey.setUuid("passkey-uuid");
-    passkey.setLabel("my key");
-    when(passkeyRepository.findByUuidAndAccountId("passkey-uuid", 42L))
-      .thenReturn(Optional.of(passkey));
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    IamPasskey passkey = storedPasskey(authenticator, "passkey-uuid");
     when(passkeyRepository.countByAccountId(42L)).thenReturn(1L);
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.REMOVAL);
 
-    PasskeyCeremonyException e = assertThrows(PasskeyCeremonyException.class,
-        () -> service.removePasskey(account, "passkey-uuid"));
+    MandatoryFactorException e = assertThrows(MandatoryFactorException.class,
+        () -> service.removePasskey(account, "passkey-uuid", challenge,
+            assertionProof(authenticator, challenge, 1)));
     assertThat(e.getMessage(),
         equalTo(DefaultIamPasskeyService.LAST_PASSKEY_MANDATORY_MESSAGE));
     verify(passkeyRepository, never()).delete(any());
+    // The decision is taken under the account row lock
+    verify(accountRepository).findByIdForUpdate(42L);
 
     // With a second passkey registered the removal goes through
     when(passkeyRepository.countByAccountId(42L)).thenReturn(2L);
-    assertThat(service.removePasskey(account, "passkey-uuid"), equalTo(passkey));
+    assertThat(service.removePasskey(account, "passkey-uuid", challenge,
+        assertionProof(authenticator, challenge, 1)), equalTo(passkey));
+    verify(passkeyRepository).delete(passkey);
+  }
+
+  @Test
+  void lastFactorCannotBeRemovedWhenASecondFactorIsMandatory() {
+    totpMfaProperties.setMultiFactorMandatory(true);
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    IamPasskey passkey = storedPasskey(authenticator, "passkey-uuid");
+    when(passkeyRepository.countByAccountId(42L)).thenReturn(1L);
+    PasskeyChallenge challenge = service.createChallenge(account, Purpose.REMOVAL);
+
+    // The only passkey and no authenticator app: nothing would be left
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+    MandatoryFactorException e = assertThrows(MandatoryFactorException.class,
+        () -> service.removePasskey(account, "passkey-uuid", challenge,
+            assertionProof(authenticator, challenge, 1)));
+    assertThat(e.getMessage(), equalTo(DefaultIamPasskeyService.LAST_FACTOR_MANDATORY_MESSAGE));
+    verify(passkeyRepository, never()).delete(any());
+    verify(accountRepository).findByIdForUpdate(42L);
+
+    // The authenticator app remains: the passkey can go
+    when(totpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+    assertThat(service.removePasskey(account, "passkey-uuid", challenge,
+        assertionProof(authenticator, challenge, 1)), equalTo(passkey));
     verify(passkeyRepository).delete(passkey);
   }
 
@@ -577,7 +765,8 @@ class DefaultIamPasskeyServiceTests extends PasskeyTestSupport {
     when(passkeyRepository.findByUuidAndAccountId(anyString(), anyLong()))
       .thenReturn(Optional.empty());
 
-    assertThrows(PasskeyNotFoundException.class, () -> service.removePasskey(account, "nope"));
+    assertThrows(PasskeyNotFoundException.class,
+        () -> service.removePasskey(account, "nope", null, null));
     verify(passkeyRepository, never()).delete(any());
   }
 

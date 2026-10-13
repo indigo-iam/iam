@@ -27,6 +27,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DisabledIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
@@ -34,6 +35,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRel
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorPasskeyCheckProvider;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties.UserVerification;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -49,8 +51,9 @@ public class IamPasskeyConfig {
 
   @Bean
   public IamPasskeyService passkeyService(Clock clock, IamPasskeyProperties passkeyProperties,
-      IamProperties iamProperties, IamPasskeyRepository passkeyRepository,
-      IamAccountRepository accountRepository, IamAccountService accountService,
+      IamTotpMfaProperties totpMfaProperties, IamProperties iamProperties,
+      IamPasskeyRepository passkeyRepository, IamAccountRepository accountRepository,
+      IamAccountService accountService, IamTotpMfaService totpMfaService,
       NotificationFactory notificationFactory, ApplicationEventPublisher eventPublisher) {
 
     if (!passkeyProperties.isEnabled()) {
@@ -58,10 +61,17 @@ public class IamPasskeyConfig {
         throw new IllegalStateException(
             "mfa.passkey.mandatory requires mfa.passkey.enabled to be true");
       }
-      // Passkeys registered while the feature was on are ignored at login, and removed by an
-      // administrator reset, until it is switched on again
-      LOG.info("[PASSKEY] Passkey MFA is disabled");
-      return new DisabledIamPasskeyService(passkeyRepository);
+      // Passkeys registered while the feature was on are not accepted at login until it is
+      // switched on again; they stay visible and removable in the meantime
+      long stored = passkeyRepository.count();
+      if (stored > 0) {
+        LOG.warn("[PASSKEY] Passkey MFA is disabled, but {} passkey(s) are registered: they are "
+            + "not accepted as second factor until mfa.passkey.enabled is set to true", stored);
+      } else {
+        LOG.info("[PASSKEY] Passkey MFA is disabled");
+      }
+      return new DisabledIamPasskeyService(passkeyRepository, accountService,
+          notificationFactory, eventPublisher);
     }
 
     URI baseUrl = parseBaseUrl(iamProperties.getBaseUrl());
@@ -78,9 +88,9 @@ public class IamPasskeyConfig {
         + "mandatory={}", rpId, origins, passkeyProperties.getUserVerification().getValue(),
         passkeyProperties.isMandatory());
 
-    return new DefaultIamPasskeyService(clock, passkeyProperties, relyingParty,
-        passkeyRepository, accountRepository, accountService, notificationFactory,
-        eventPublisher);
+    return new DefaultIamPasskeyService(clock, passkeyProperties, totpMfaProperties,
+        relyingParty, passkeyRepository, accountRepository, accountService, totpMfaService,
+        notificationFactory, eventPublisher);
   }
 
   @Bean

@@ -47,7 +47,8 @@
             username: username,
             isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled,
             isMfaMandatory: isMfaMandatory,
-            isPasskeyEnabled: isPasskeyEnabled
+            isPasskeyEnabled: isPasskeyEnabled,
+            isPasskeyMandatory: isPasskeyMandatory
         };
 
         return service;
@@ -159,6 +160,10 @@
 
         function isPasskeyEnabled() {
             return getPasskeyEnabled();
+        }
+
+        function isPasskeyMandatory() {
+            return getPasskeyMandatory();
         }
 
         function buildErrorResult(errorString) {

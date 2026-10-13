@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.multi_factor_authentication.passkey;
 
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService.BAD_REMOVAL_TOTP_MESSAGE;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.AUTHENTICATION_OPTIONS_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_OPTIONS_URL;
@@ -79,6 +80,7 @@ public class PasskeyAndTotpAuthenticationTests extends PasskeyAuthenticationTest
   public static final String TOTP_ENABLED_SUBJECT = "Multi-factor authentication (MFA) enabled";
   public static final String PASSKEY_REGISTERED_SUBJECT = "Passkey registered";
   public static final String PASSKEYS_RESET_SUBJECT = "Passkeys reset";
+  public static final String PASSKEY_REMOVED_SUBJECT = "Passkey removed";
 
   private static final long TOTP_PERIOD_SECONDS = 30L;
   private static final int TOTP_MODULUS = 1_000_000;
@@ -333,5 +335,33 @@ public class PasskeyAndTotpAuthenticationTests extends PasskeyAuthenticationTest
       .when().get(BASE_URL)
       .then().statusCode(HttpStatus.OK.value()).body("", hasSize(0));
     // @formatter:on
+  }
+
+  @Test
+  void theAuthenticatorAppProvesTheRemovalOfAPasskey() throws Exception {
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+
+    Cookie session = loginWithoutSecondFactor(TEST_USERNAME, TEST_PASSWORD);
+    String secret = enrolAuthenticatorApp(session);
+    registerPasskey(session, authenticator);
+    String uuid = passkeyRepository.findByAccountUsername(TEST_USERNAME).get(0).getUuid();
+
+    // A wrong code is refused, a valid one removes the passkey
+    // @formatter:off
+    removePasskey(session, uuid, totpProof(wrongTotpFor(secret))).then()
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error", is(BAD_REMOVAL_TOTP_MESSAGE));
+    removePasskey(session, uuid, totpProof(totpFor(secret))).then()
+      .statusCode(HttpStatus.NO_CONTENT.value());
+    // @formatter:on
+    assertThat(passkeyRepository.findByAccountUsername(TEST_USERNAME), empty());
+    assertThat(subjectsOf(IamNotificationType.MFA_DISABLE),
+        hasItems(containsString(PASSKEY_REMOVED_SUBJECT)));
+
+    // The authenticator app is the only factor left
+    logout(session);
+    session = loginExpectingVerification(TEST_USERNAME, TEST_PASSWORD);
+    String csrf = csrfTokenFrom(verifyPage(session));
+    assertVerificationSucceeded(verifyWithTotp(session, csrf, totpFor(secret)), session);
   }
 }

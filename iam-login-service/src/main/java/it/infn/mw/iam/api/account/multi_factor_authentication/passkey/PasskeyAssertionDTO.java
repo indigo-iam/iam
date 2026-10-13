@@ -18,6 +18,8 @@ package it.infn.mw.iam.api.account.multi_factor_authentication.passkey;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -76,6 +78,8 @@ public class PasskeyAssertionDTO {
   }
 
   @NotBlank
+  @Size(max = 1400)
+  @Pattern(regexp = "[A-Za-z0-9_-]+=*", message = "must be base64url")
   private String id;
 
   private String rawId;

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication.passkey;
 
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.DISABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -36,6 +37,7 @@ import dev.samstevens.totp.code.DefaultCodeGenerator;
 import io.restassured.RestAssured;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -165,8 +167,24 @@ public class PasskeyMultiFactorMandatoryAuthenticationTests
     page = verifyPage(session);
     assertThat(page, containsString("id=\"totp\""));
     assertThat(page, containsString("passkey-verify-form"));
-    assertVerificationSucceeded(
+    session = assertVerificationSucceeded(
         verifyWithPasskey(session, csrfTokenFrom(page), assertion(session, authenticator, 1)),
         session);
+
+    // Multi-factor authentication is mandatory: the passkey can go while the authenticator app
+    // remains (the app itself proves the removal)...
+    String uuid = passkeyRepository.findByAccountUsername(TOTP_USERNAME).get(0).getUuid();
+    // @formatter:off
+    removePasskey(session, uuid, totpProof(currentTotp())).then()
+      .statusCode(HttpStatus.NO_CONTENT.value());
+    // ...but the authenticator app, now the last factor, cannot be disabled
+    RestAssured.given().cookie(session).formParam("code", currentTotp())
+      .when().post(DISABLE_URL)
+      .then()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .body("error", is(MultiFactorPolicy.LAST_FACTOR_MESSAGE));
+    // @formatter:on
+    assertThat(passkeyRepository.findByAccountUsername(TOTP_USERNAME), hasSize(0));
+    assertThat(totpMfaRepository.findByAccountId(TOTP_ACCOUNT_ID).isPresent(), is(true));
   }
 }

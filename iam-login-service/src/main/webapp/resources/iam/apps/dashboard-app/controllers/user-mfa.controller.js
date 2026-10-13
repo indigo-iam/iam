@@ -19,40 +19,68 @@ angular.module('dashboardApp')
 	.controller('UserMfaController', UserMfaController);
 
 UserMfaController.$inject = [
-	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster', 'PasskeyService'
+	'$http', '$q', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster',
+	'PasskeyService'
 ];
 
 function UserMfaController(
-	$http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster, PasskeyService) {
+	$http, $q, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster, PasskeyService) {
 	var userMfaCtrl = this;
 
 	userMfaCtrl.passkeyEnabled = Utils.isPasskeyEnabled();
+	userMfaCtrl.passkeyMandatory = Utils.isPasskeyMandatory();
 	userMfaCtrl.mfaMandatory = Utils.isMfaMandatory();
+	userMfaCtrl.authenticatorAppActive = false;
 	userMfaCtrl.passkeys = [];
+	// The factor buttons are decided on both the settings and the passkey list: they stay hidden
+	// until both have been loaded
+	userMfaCtrl.loaded = false;
 
-	// Under mandatory MFA the authenticator app can only be disabled when a passkey remains
+	// The same rules the server enforces: under a mandatory policy the last factor stays. When
+	// passkeys are mandatory only another passkey counts, otherwise the authenticator app does too.
+	// Stored passkeys count only while the feature is enabled: otherwise they are inert
 	userMfaCtrl.canDisableAuthenticatorApp = function() {
-		return !userMfaCtrl.mfaMandatory || userMfaCtrl.passkeys.length > 0;
+		return !(userMfaCtrl.mfaMandatory || userMfaCtrl.passkeyMandatory)
+			|| (userMfaCtrl.passkeyEnabled && userMfaCtrl.passkeys.length > 0);
+	};
+
+	userMfaCtrl.canRemovePasskey = function() {
+		if (!userMfaCtrl.passkeyEnabled) {
+			// An inert credential is not a factor: the server removes it without a policy check
+			return true;
+		}
+		if (userMfaCtrl.passkeyMandatory) {
+			return userMfaCtrl.passkeys.length > 1;
+		}
+		if (userMfaCtrl.mfaMandatory) {
+			return userMfaCtrl.passkeys.length > 1 || userMfaCtrl.authenticatorAppActive;
+		}
+		return true;
+	};
+
+	// Stored passkeys are shown even while the feature is disabled, so that they can be removed
+	userMfaCtrl.showPasskeys = function() {
+		return userMfaCtrl.passkeyEnabled || userMfaCtrl.passkeys.length > 0;
 	};
 
 	userMfaCtrl.$onInit = function() {
 		console.log('UserMfaController onInit');
-		getMfaSettings();
-		getPasskeys();
+		$q.all([getMfaSettings(), getPasskeys()]).finally(function() {
+			userMfaCtrl.loaded = true;
+		});
 	};
 
 	// TODO include this data in what is fetched from the /scim/me endpoint
 	function getMfaSettings() {
-		$http.get('/iam/multi-factor-settings').then(function(response) {
-			userMfaCtrl.authenticatorAppActive = response.data.authenticatorAppActive;
+		return $http.get('/iam/multi-factor-settings').then(function(response) {
+			userMfaCtrl.authenticatorAppActive = !!response.data.authenticatorAppActive;
+		}).catch(function(error) {
+			console.error('Error loading multi-factor settings', error);
 		});
 	}
 
 	function getPasskeys() {
-		if (!userMfaCtrl.passkeyEnabled) {
-			return;
-		}
-		PasskeyService.getPasskeys().then(function(response) {
+		return PasskeyService.getPasskeys().then(function(response) {
 			userMfaCtrl.passkeys = response.data;
 		}).catch(function(error) {
 			console.error('Error loading passkeys', error);
@@ -82,7 +110,17 @@ function UserMfaController(
 			templateUrl: '/resources/iam/apps/dashboard-app/templates/home/remove-passkey.html',
 			controller: 'RemovePasskeyController',
 			controllerAs: 'passkeyCtrl',
-			resolve: { passkey: function() { return passkey; } }
+			resolve: {
+				passkey: function() { return passkey; },
+				proofOptions: function() {
+					return {
+						passkeyEnabled: userMfaCtrl.passkeyEnabled,
+						// The authenticator app proves the removal only where it is accepted at login
+						authenticatorAppActive: userMfaCtrl.authenticatorAppActive
+							&& !userMfaCtrl.passkeyMandatory
+					};
+				}
+			}
 		});
 		modalInstance.result.then(function(msg) {
 			return $uibModalInstance.close(msg);

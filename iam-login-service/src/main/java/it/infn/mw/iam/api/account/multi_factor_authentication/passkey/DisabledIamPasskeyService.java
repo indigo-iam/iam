@@ -15,23 +15,30 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.passkey;
 
-import java.util.Collections;
-import java.util.List;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge.Purpose;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyDisabledException;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
 
-public class DisabledIamPasskeyService implements IamPasskeyService {
+/**
+ * The passkey service of an instance where the feature is switched off: no ceremony can run and
+ * no stored passkey counts as an active second factor, but stored passkeys remain visible and
+ * removable by their owner and by administrators
+ */
+public class DisabledIamPasskeyService extends AbstractIamPasskeyService {
 
   public static final String DISABLED_MESSAGE = "Passkeys are disabled on this IAM instance";
 
-  private final IamPasskeyRepository passkeyRepository;
-
-  public DisabledIamPasskeyService(IamPasskeyRepository passkeyRepository) {
-    this.passkeyRepository = passkeyRepository;
+  public DisabledIamPasskeyService(IamPasskeyRepository passkeyRepository,
+      IamAccountService accountService, NotificationFactory notificationFactory,
+      ApplicationEventPublisher eventPublisher) {
+    super(passkeyRepository, accountService, notificationFactory, eventPublisher);
   }
 
   @Override
@@ -42,11 +49,6 @@ public class DisabledIamPasskeyService implements IamPasskeyService {
   @Override
   public boolean isPasskeyActive(IamAccount account) {
     return false;
-  }
-
-  @Override
-  public List<IamPasskey> getPasskeys(IamAccount account) {
-    return Collections.emptyList();
   }
 
   @Override
@@ -67,7 +69,7 @@ public class DisabledIamPasskeyService implements IamPasskeyService {
   }
 
   @Override
-  public PasskeyAssertionOptionsDTO getAuthenticationOptions(IamAccount account,
+  public PasskeyAssertionOptionsDTO getAssertionOptions(IamAccount account,
       PasskeyChallenge challenge) {
     throw new PasskeyDisabledException(DISABLED_MESSAGE);
   }
@@ -78,20 +80,16 @@ public class DisabledIamPasskeyService implements IamPasskeyService {
     throw new PasskeyDisabledException(DISABLED_MESSAGE);
   }
 
-  @Override
-  public IamPasskey removePasskey(IamAccount account, String passkeyUuid) {
-    throw new PasskeyDisabledException(DISABLED_MESSAGE);
-  }
-
   /**
-   * Passkeys stored before the feature was disabled are still removed, so that an administrator
-   * resetting the second factors of an account does not leave behind credentials that would
-   * become active again once the feature is re-enabled
+   * A stored passkey is not accepted at login while the feature is disabled, so removing it does
+   * not weaken the account: no proof of a second factor is required
    */
   @Override
-  public List<IamPasskey> removeAllPasskeys(IamAccount account) {
-    List<IamPasskey> passkeys = passkeyRepository.findByAccountId(account.getId());
-    passkeyRepository.deleteAll(passkeys);
-    return passkeys;
+  @Transactional
+  public IamPasskey removePasskey(IamAccount account, String passkeyUuid,
+      PasskeyChallenge challenge, PasskeyRemovalDTO proof) {
+    IamPasskey passkey = findPasskey(account, passkeyUuid);
+    deletePasskey(account, passkey);
+    return passkey;
   }
 }

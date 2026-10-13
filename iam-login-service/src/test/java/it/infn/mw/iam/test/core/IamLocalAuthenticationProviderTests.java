@@ -16,8 +16,10 @@
 
 package it.infn.mw.iam.test.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -26,8 +28,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +43,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
@@ -44,6 +53,7 @@ import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -113,5 +123,40 @@ class IamLocalAuthenticationProviderTests {
     // Verify that super.authenticate was not called
     verify(iamLocalAuthenticationProvider, never())
       .authenticate(any(UsernamePasswordAuthenticationToken.class));
+  }
+
+  /**
+   * A pre-authenticated token is re-validated on every request: the authorities it will grant
+   * after the second factor must follow the account, not the ones it was built with, so that a
+   * role revoked while the user is parked at the verification page is not granted afterwards
+   */
+  @Test
+  void testPreAuthenticatedTokenAuthoritiesAreRefreshedFromTheAccount() {
+    ExtendedAuthenticationToken token =
+        new ExtendedAuthenticationToken("test-principal", "test-credentials");
+    token.setPreAuthenticated(true);
+    token.setFullyAuthenticatedAuthorities(new HashSet<>(
+        List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"))));
+    IamAccount account = newAccount("test-user");
+    account.getAuthorities().add(new IamAuthority("ROLE_USER"));
+    when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
+
+    // While the second factor is pending the revoked role is not kept aside...
+    when(multiFactorPolicy.isActive(account)).thenReturn(true);
+    ExtendedAuthenticationToken pending =
+        (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
+    assertFalse(pending.isAuthenticated());
+    assertEquals(Set.of("ROLE_USER"), authorityNames(pending.getFullyAuthenticatedAuthorities()));
+
+    // ...and when no second factor is needed any more, only the account roles are granted
+    when(multiFactorPolicy.isActive(account)).thenReturn(false);
+    ExtendedAuthenticationToken full =
+        (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);
+    assertTrue(full.isAuthenticated());
+    assertEquals(Set.of("ROLE_USER"), authorityNames(full.getAuthorities()));
+  }
+
+  private static Set<String> authorityNames(Collection<? extends GrantedAuthority> authorities) {
+    return authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
   }
 }

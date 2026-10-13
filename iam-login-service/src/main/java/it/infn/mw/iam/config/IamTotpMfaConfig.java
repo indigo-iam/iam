@@ -159,7 +159,7 @@ public class IamTotpMfaConfig {
       IamTotpMfaProperties totpMfaProperties, IamPasskeyService passkeyService,
       IamPasskeyProperties passkeyProperties) {
     return new MultiFactorPolicy(totpMfaService, totpMfaProperties, passkeyService,
-        passkeyProperties);
+        passkeyProperties, accountRepo);
   }
 
 }

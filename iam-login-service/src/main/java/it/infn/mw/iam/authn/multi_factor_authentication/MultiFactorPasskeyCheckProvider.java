@@ -21,8 +21,11 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
@@ -45,6 +48,8 @@ public class MultiFactorPasskeyCheckProvider implements AuthenticationProvider {
   private static final Logger LOG = LoggerFactory.getLogger(MultiFactorPasskeyCheckProvider.class);
 
   public static final String BAD_PASSKEY_MESSAGE = "Bad passkey";
+  public static final String VERIFICATION_UNAVAILABLE_MESSAGE =
+      "Passkey verification is temporarily unavailable";
 
   private final IamAccountRepository accountRepo;
   private final IamPasskeyService passkeyService;
@@ -74,12 +79,20 @@ public class MultiFactorPasskeyCheckProvider implements AuthenticationProvider {
 
     PasskeyAssertionDTO assertion = parseAssertion(token.getAssertion());
 
+    // Only AuthenticationExceptions reach the failure handler: anything else would surface as an
+    // error page, after the single-use challenge has already been consumed
     try {
       passkeyService.verifyPasskey(account, token.getChallenge(), assertion);
     } catch (PasskeyException e) {
       LOG.warn("Passkey verification failed for account '{}': {}", account.getUsername(),
           e.getMessage());
       throw new BadCredentialsException(BAD_PASSKEY_MESSAGE, e);
+    } catch (DataAccessException e) {
+      LOG.error("Passkey verification for account '{}' hit a database error",
+          account.getUsername(), e);
+      throw new AuthenticationServiceException(VERIFICATION_UNAVAILABLE_MESSAGE, e);
+    } catch (RuntimeException e) {
+      throw new InternalAuthenticationServiceException(VERIFICATION_UNAVAILABLE_MESSAGE, e);
     }
 
     return MultiFactorVerifiedTokenFactory.create(preAuthentication,

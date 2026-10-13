@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MandatoryFactorException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge.Purpose;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyCeremonyException;
@@ -58,7 +59,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  * Controller for managing the passkeys of a user account. Registration is a two step WebAuthn
  * ceremony: the options endpoint issues a challenge that is kept in the session, the registration
  * endpoint receives the credential created by the browser. The authentication options endpoint
- * issues the challenge for the step-up verification at /iam/verify
+ * issues the challenge for the step-up verification at /iam/verify, the removal options endpoint
+ * the challenge that proves possession of a passkey before one is removed
  */
 @SuppressWarnings("deprecation")
 @Controller
@@ -68,10 +70,12 @@ public class PasskeyController {
   public static final String REGISTRATION_OPTIONS_URL = BASE_URL + "/registration/options";
   public static final String REGISTRATION_URL = BASE_URL + "/registration";
   public static final String AUTHENTICATION_OPTIONS_URL = BASE_URL + "/authentication/options";
+  public static final String REMOVAL_OPTIONS_URL = BASE_URL + "/removal/options";
   public static final String PASSKEY_URL = BASE_URL + "/{passkeyId}";
   public static final String RESET_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
 
   public static final String INVALID_REGISTRATION_TEMPLATE = "Invalid passkey registration: %s";
+  public static final String INVALID_REMOVAL_TEMPLATE = "Invalid passkey removal: %s";
 
   private final IamPasskeyService service;
   private final IamAccountRepository accountRepository;
@@ -158,24 +162,49 @@ public class PasskeyController {
   @PostMapping(value = AUTHENTICATION_OPTIONS_URL, produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public PasskeyAssertionOptionsDTO getAuthenticationOptions(HttpSession session) {
-    IamAccount account = getAuthenticatedAccount();
-    PasskeyChallenge challenge = service.createChallenge(account, Purpose.AUTHENTICATION);
-    session.setAttribute(PasskeyChallenge.SESSION_ATTRIBUTE, challenge);
-    return service.getAuthenticationOptions(account, challenge);
+    return issueAssertionChallenge(session, Purpose.AUTHENTICATION);
   }
 
   /**
-   * Removes one passkey from the logged-in user account
+   * Issues a removal challenge and returns the options for navigator.credentials.get(): the
+   * assertion proves possession of a passkey of the account before one of them is removed
+   *
+   * @param session the user session the challenge is bound to
+   * @return the request options
+   */
+  @PreAuthorize("hasRole('USER')")
+  @PostMapping(value = REMOVAL_OPTIONS_URL, produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
+  public PasskeyAssertionOptionsDTO getRemovalOptions(HttpSession session) {
+    return issueAssertionChallenge(session, Purpose.REMOVAL);
+  }
+
+  /**
+   * Removes one passkey from the logged-in user account. The body carries the proof of a second
+   * factor: an assertion against the removal challenge, or a code of the authenticator app
    *
    * @param passkeyId the passkey identifier
+   * @param proof the proof of possession of a second factor, if any was sent
+   * @param validationResult result of validation checks on the proof
+   * @param session the user session holding the removal challenge
    */
   @PreAuthorize("hasRole('USER')")
   @DeleteMapping(value = PASSKEY_URL)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @ResponseBody
-  public void removePasskey(@PathVariable String passkeyId) {
+  public void removePasskey(@PathVariable String passkeyId,
+      @RequestBody(required = false) @Valid PasskeyRemovalDTO proof,
+      BindingResult validationResult, HttpSession session) {
+
     IamAccount account = getAuthenticatedAccount();
-    service.removePasskey(account, passkeyId);
+
+    if (validationResult.hasErrors()) {
+      throw new PasskeyCeremonyException(
+          String.format(INVALID_REMOVAL_TEMPLATE, stringifyValidationError(validationResult)));
+    }
+
+    PasskeyChallenge challenge = consumeChallenge(session);
+    service.removePasskey(account, passkeyId, challenge, proof);
   }
 
   /**
@@ -195,6 +224,14 @@ public class PasskeyController {
 
   private void checkEnrolmentAllowed(IamAccount account) {
     multiFactorPolicy.checkEnrolmentAllowed(accountUtils.isPreAuthenticated(), account);
+  }
+
+  private PasskeyAssertionOptionsDTO issueAssertionChallenge(HttpSession session,
+      Purpose purpose) {
+    IamAccount account = getAuthenticatedAccount();
+    PasskeyChallenge challenge = service.createChallenge(account, purpose);
+    session.setAttribute(PasskeyChallenge.SESSION_ATTRIBUTE, challenge);
+    return service.getAssertionOptions(account, challenge);
   }
 
   /**
@@ -219,6 +256,13 @@ public class PasskeyController {
       auth = oauth.getUserAuthentication();
     }
     return auth.getName();
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(MandatoryFactorException.class)
+  @ResponseBody
+  public ErrorDTO handleMandatoryFactorException(MandatoryFactorException e) {
+    return ErrorDTO.fromString(e.getMessage());
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)

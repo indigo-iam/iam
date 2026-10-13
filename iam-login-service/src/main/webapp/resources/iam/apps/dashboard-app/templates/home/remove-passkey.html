@@ -15,19 +15,81 @@
     limitations under the License.
 
 -->
-<div class="modal-header">
-  <h3 class="modal-title">Remove passkey</h3>
-</div>
+<form class="form-horizontal" ng-submit="passkeyCtrl.removeWithTotp()" name="removePasskeyForm">
 
-<div class="modal-body">
-  <div class="form-group">
-    Are you sure you want to remove the passkey <strong>{{passkeyCtrl.passkey.label}}</strong>?
-    It will no longer be accepted as a second factor when you log in.
+  <div class="modal-header">
+    <h3 class="modal-title">Remove passkey</h3>
   </div>
-  <span class="help-block" ng-show="operationResult" style="color: #a94442;">{{ operationResult.text }}</span>
-</div>
 
-<div class="modal-footer">
-  <button class="btn btn-danger" type="button" name="remove" id="modal-btn-remove" ng-click="passkeyCtrl.submitRemove()" ng-disabled="passkeyCtrl.requestPending">Remove</button>
-  <button class="btn btn-default" type="button" name="cancel" id="modal-btn-cancel" ng-click="passkeyCtrl.dismiss()">Cancel</button>
-</div>
+  <div class="modal-body">
+    <p>
+      Are you sure you want to remove the passkey <strong>{{passkeyCtrl.passkey.label}}</strong>?
+      It will no longer be accepted as a second factor when you log in.
+    </p>
+
+    <div ng-if="passkeyCtrl.proofRequired">
+      <p>To continue, confirm that you hold a second factor of this account.</p>
+
+      <div class="form-group" ng-if="passkeyCtrl.passkeyProofAvailable">
+        <div class="col-sm-12">
+          <button class="btn btn-danger btn-block" type="button" name="remove-with-passkey"
+            id="modal-btn-remove-with-passkey" ng-click="passkeyCtrl.removeWithPasskey()"
+            ng-disabled="passkeyCtrl.requestPending">
+            <i class="fa fa-key"></i> Confirm with a passkey
+          </button>
+        </div>
+      </div>
+
+      <p class="text-muted" ng-if="passkeyCtrl.passkeyEnabled && !passkeyCtrl.passkeyProofAvailable">
+        Passkeys are not supported by this browser.
+      </p>
+
+      <div ng-if="passkeyCtrl.totpProofAvailable">
+        <p ng-if="passkeyCtrl.passkeyProofAvailable" class="text-center text-muted">or</p>
+        <div class="form-group"
+          ng-class="{'has-error': removePasskeyForm.code.$dirty && removePasskeyForm.code.$invalid, 'has-success': removePasskeyForm.code.$dirty && removePasskeyForm.code.$valid}">
+          <div class="col-sm-4">
+            <label class="control-label" for="code">Authenticator app code</label>
+          </div>
+          <div class="col-sm-8">
+            <input type="text" inputmode="numeric" name="code" id="code" class="form-control"
+              ng-model="passkeyCtrl.code" ng-change="passkeyCtrl.clearError()"
+              ng-minlength="passkeyCtrl.codeMinlength" autocomplete="one-time-code" />
+            <span class="help-block" ng-show="removePasskeyForm.code.$dirty && removePasskeyForm.code.$error.minlength">
+              Minimum length required is {{passkeyCtrl.codeMinlength}}
+            </span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-12">
+            <button class="btn btn-danger btn-block" type="submit" name="remove-with-totp"
+              id="modal-btn-remove-with-totp"
+              ng-disabled="passkeyCtrl.requestPending || !passkeyCtrl.code || removePasskeyForm.code.$invalid">
+              Confirm with the authenticator app
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-muted" ng-if="!passkeyCtrl.passkeyProofAvailable && !passkeyCtrl.totpProofAvailable">
+        No second factor can be confirmed from this browser: ask an administrator to reset the
+        passkeys of your account.
+      </p>
+    </div>
+
+    <p class="text-muted" ng-if="!passkeyCtrl.proofRequired">
+      Passkeys are disabled on this server, so this credential is not accepted at login.
+    </p>
+
+    <span class="help-block" ng-show="operationResult" style="color: #a94442;">{{ operationResult.text }}</span>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-danger" type="button" name="remove" id="modal-btn-remove"
+      ng-if="!passkeyCtrl.proofRequired" ng-click="passkeyCtrl.removeWithoutProof()"
+      ng-disabled="passkeyCtrl.requestPending">Remove</button>
+    <button class="btn btn-default" type="button" name="cancel" id="modal-btn-cancel"
+      ng-click="passkeyCtrl.dismiss()">Cancel</button>
+  </div>
+
+</form>

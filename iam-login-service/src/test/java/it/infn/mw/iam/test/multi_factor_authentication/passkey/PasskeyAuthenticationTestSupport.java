@@ -16,8 +16,10 @@
 package it.infn.mw.iam.test.multi_factor_authentication.passkey;
 
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.AUTHENTICATION_OPTIONS_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_OPTIONS_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REMOVAL_OPTIONS_URL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,6 +46,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAss
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionOptionsDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationOptionsDTO;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRemovalDTO;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
@@ -305,6 +308,47 @@ public abstract class PasskeyAuthenticationTestSupport extends PasskeyTestSuppor
   protected Response verifyWithPasskey(Cookie session, String csrf, PasskeyAssertionDTO assertion)
       throws Exception {
     return verify(session, csrf, "passkey", mapper.writeValueAsString(assertion));
+  }
+
+  /**
+   * The proof of possession that accompanies a removal: an assertion of the given authenticator
+   * against a freshly issued removal challenge
+   */
+  protected PasskeyRemovalDTO removalProof(Cookie session, PasskeyTestAuthenticator authenticator,
+      long signCount) throws Exception {
+    // @formatter:off
+    String optionsJson = RestAssured.given()
+        .cookie(session)
+      .when()
+        .post(REMOVAL_OPTIONS_URL)
+      .then()
+        .statusCode(HttpStatus.OK.value())
+        .extract().asString();
+    // @formatter:on
+    PasskeyAssertionOptionsDTO options =
+        mapper.readValue(optionsJson, PasskeyAssertionOptionsDTO.class);
+    PasskeyRemovalDTO proof = new PasskeyRemovalDTO();
+    proof.setAssertion(
+        assertionFor(authenticator, options.getChallenge(), TEST_ORIGIN, false, signCount, null));
+    return proof;
+  }
+
+  protected PasskeyRemovalDTO totpProof(String totp) {
+    PasskeyRemovalDTO proof = new PasskeyRemovalDTO();
+    proof.setTotp(totp);
+    return proof;
+  }
+
+  /**
+   * Removes a passkey; a null proof sends no body at all
+   */
+  protected Response removePasskey(Cookie session, String uuid, PasskeyRemovalDTO proof)
+      throws Exception {
+    RequestSpecification request = RestAssured.given().cookie(session);
+    if (proof != null) {
+      request = request.contentType(ContentType.JSON).body(mapper.writeValueAsString(proof));
+    }
+    return request.when().delete(BASE_URL + "/" + uuid);
   }
 
   protected Response verifyWithTotp(Cookie session, String csrf, String totp) {

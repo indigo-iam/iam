@@ -23,6 +23,7 @@ import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.Pas
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_OPTIONS_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REMOVAL_OPTIONS_URL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -48,6 +49,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -57,6 +59,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyCha
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRegistrationOptionsDTO;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRemovalDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -133,6 +136,28 @@ class PasskeyControllerTests extends PasskeyTestSupport {
     assertThat(session.getAttribute(PasskeyChallenge.SESSION_ATTRIBUTE),
         nullValue());
     return mapper.readValue(body, PasskeyDTO.class);
+  }
+
+  private PasskeyRemovalDTO removalProof(MockHttpSession session,
+      PasskeyTestAuthenticator authenticator, long signCount) throws Exception {
+    String body = mvc.perform(post(REMOVAL_OPTIONS_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.challenge", notNullValue()))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    PasskeyAssertionOptionsDTO options = mapper.readValue(body, PasskeyAssertionOptionsDTO.class);
+    PasskeyRemovalDTO proof = new PasskeyRemovalDTO();
+    proof.setAssertion(
+        assertionFor(authenticator, options.getChallenge(), TEST_ORIGIN, false, signCount, null));
+    return proof;
+  }
+
+  private MockHttpServletRequestBuilder removal(MockHttpSession session, String uuid,
+      PasskeyRemovalDTO proof) throws Exception {
+    return delete(BASE_URL + "/" + uuid).session(session)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content(mapper.writeValueAsString(proof));
   }
 
   @Test
@@ -227,9 +252,62 @@ class PasskeyControllerTests extends PasskeyTestSupport {
     assertThat(options.getExcludeCredentials().get(0).getId(),
         equalTo(authenticator.getCredentialIdBase64Url()));
 
-    mvc.perform(delete(BASE_URL + "/" + passkey.getUuid())).andExpect(status().isNoContent());
+    // The removal needs a proof of possession: none, an empty one, or a code of an authenticator
+    // app that is not active are refused
+    mvc.perform(delete(BASE_URL + "/" + passkey.getUuid()).session(session))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", is(DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE)));
+    mvc.perform(removal(session, passkey.getUuid(), new PasskeyRemovalDTO()))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", is(DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE)));
+    PasskeyRemovalDTO totp = new PasskeyRemovalDTO();
+    totp.setTotp("123456");
+    mvc.perform(removal(session, passkey.getUuid(), totp))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", is(DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE)));
+    assertThat(passkeyRepository.findByAccountUsername(TEST_USER), hasSize(1));
+
+    // An assertion of the passkey proves it; the removal challenge is consumed with it
+    mvc.perform(removal(session, passkey.getUuid(), removalProof(session, authenticator, 1)))
+      .andExpect(status().isNoContent());
+    assertThat(session.getAttribute(PasskeyChallenge.SESSION_ATTRIBUTE), nullValue());
     mvc.perform(get(BASE_URL)).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
     assertThat(passkeyRepository.findByAccountUsername(TEST_USER), empty());
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USER, roles = {"USER"})
+  void removalProofIsSingleUseAndBoundToTheRemovalChallenge() throws Exception {
+    MockHttpSession session = new MockHttpSession();
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    PasskeyDTO passkey = register(session, authenticator, "my key");
+
+    // A tampered assertion fails and consumes the challenge: the same proof is then refused for
+    // want of a challenge, and only a fresh one goes through
+    PasskeyRemovalDTO proof = removalProof(session, authenticator, 1);
+    proof.getAssertion().getResponse().setSignature(
+        PasskeyTestAuthenticator.base64Url(PasskeyTestAuthenticator.randomBytes(64)));
+    mvc.perform(removal(session, passkey.getUuid(), proof))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", containsString("Passkey verification failed")));
+    assertThat(session.getAttribute(PasskeyChallenge.SESSION_ATTRIBUTE), nullValue());
+
+    mvc.perform(removal(session, passkey.getUuid(), removalProof(session, authenticator, 1)))
+      .andExpect(status().isNoContent());
+    mvc.perform(removal(session, passkey.getUuid(), proof))
+      .andExpect(status().isNotFound());
+    assertThat(passkeyRepository.findByAccountUsername(TEST_USER), empty());
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USER, roles = {"PRE_AUTHENTICATED"})
+  void removalIsNotAvailableToPreAuthenticatedUsers() throws Exception {
+    IamPasskey stored =
+        storedPasskeyFor(TEST_USER, new PasskeyTestAuthenticator(Algorithm.ES256));
+
+    mvc.perform(post(REMOVAL_OPTIONS_URL)).andExpect(status().isForbidden());
+    mvc.perform(delete(BASE_URL + "/" + stored.getUuid())).andExpect(status().isForbidden());
+    assertThat(passkeyRepository.findByUuid(stored.getUuid()).isPresent(), is(true));
   }
 
   @Test

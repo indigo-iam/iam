@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.multi_factor_authentication.passkey;
 
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService.CREDENTIAL_ALREADY_REGISTERED_MESSAGE;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService.LIMIT_EXCEEDED_MESSAGE;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DefaultIamPasskeyService.REMOVAL_PROOF_REQUIRED_MESSAGE;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,6 +48,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAss
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionOptionsDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyCredentialDescriptorDTO;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyDTO;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRemovalDTO;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamPasskey;
@@ -98,10 +100,6 @@ public class PasskeyMultiCredentialTests extends PasskeyAuthenticationTestSuppor
       .map(PasskeyDTO::getUuid)
       .findFirst()
       .orElseThrow();
-  }
-
-  private Response removePasskey(Cookie session, String uuid) {
-    return RestAssured.given().cookie(session).when().delete(BASE_URL + "/" + uuid);
   }
 
   private List<String> allowedCredentialIds(PasskeyAssertionOptionsDTO options) {
@@ -160,10 +158,19 @@ public class PasskeyMultiCredentialTests extends PasskeyAuthenticationTestSuppor
       assertThat(stored.getLastUsedTime(), notNullValue());
     }
 
-    // The fully authenticated user removes the first passkey
+    // The fully authenticated user removes the first passkey, proving possession of it: a removal
+    // without proof is refused, and the proof is consumed with the removal
     String uuidA = uuidOf(session, LABEL_A);
-    assertThat(removePasskey(session, uuidA).getStatusCode(), is(HttpStatus.NO_CONTENT.value()));
-    assertThat(removePasskey(session, uuidA).getStatusCode(), is(HttpStatus.NOT_FOUND.value()));
+    // @formatter:off
+    removePasskey(session, uuidA, null).then()
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error", is(REMOVAL_PROOF_REQUIRED_MESSAGE));
+    // @formatter:on
+    PasskeyRemovalDTO proof = removalProof(session, keyA, 2);
+    assertThat(removePasskey(session, uuidA, proof).getStatusCode(),
+        is(HttpStatus.NO_CONTENT.value()));
+    assertThat(removePasskey(session, uuidA, proof).getStatusCode(),
+        is(HttpStatus.NOT_FOUND.value()));
     assertThat(listPasskeys(session), hasSize(1));
     assertThat(listPasskeys(session).get(0).getLabel(), is(LABEL_B));
     assertThat(subjectsOf(IamNotificationType.MFA_DISABLE),
@@ -211,7 +218,8 @@ public class PasskeyMultiCredentialTests extends PasskeyAuthenticationTestSuppor
     // Once a passkey is removed there is room for a new one, but not for a credential that is
     // already registered
     String uuidB = uuidOf(session, LABEL_B);
-    assertThat(removePasskey(session, uuidB).getStatusCode(), is(HttpStatus.NO_CONTENT.value()));
+    assertThat(removePasskey(session, uuidB, removalProof(session, keyB, 1)).getStatusCode(),
+        is(HttpStatus.NO_CONTENT.value()));
     registrationResponse(session, keyA, false, "Again").then()
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body("error", is(CREDENTIAL_ALREADY_REGISTERED_MESSAGE));

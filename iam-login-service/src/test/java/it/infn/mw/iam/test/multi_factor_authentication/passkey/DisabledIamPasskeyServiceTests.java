@@ -18,23 +18,32 @@ package it.infn.mw.iam.test.multi_factor_authentication.passkey;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.DisabledIamPasskeyService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge.Purpose;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyDisabledException;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyNotFoundException;
+import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyRemovedEvent;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
@@ -45,29 +54,73 @@ class DisabledIamPasskeyServiceTests {
   @Mock
   IamPasskeyRepository passkeyRepository;
 
+  @Mock
+  IamAccountService accountService;
+
+  @Mock
+  NotificationFactory notificationFactory;
+
+  @Mock
+  ApplicationEventPublisher eventPublisher;
+
   private DisabledIamPasskeyService service;
   private final IamAccount account = IamAccount.newAccount();
 
   @BeforeEach
   void setup() {
-    service = new DisabledIamPasskeyService(passkeyRepository);
+    account.setId(42L);
+    service = new DisabledIamPasskeyService(passkeyRepository, accountService,
+        notificationFactory, eventPublisher);
   }
 
   @Test
-  void disabledServiceReportsNoPasskeys() {
+  void disabledServiceReportsNoActivePasskeyButListsStoredOnes() {
+    IamPasskey stored = new IamPasskey();
+    when(passkeyRepository.findByAccountId(42L)).thenReturn(List.of(stored));
+
     assertThat(service.isEnabled(), is(false));
     assertThat(service.isPasskeyActive(account), is(false));
-    assertThat(service.getPasskeys(account), empty());
-    assertThat(service.removeAllPasskeys(account), empty());
+    assertThat(service.getPasskeys(account), contains(stored));
+    verify(passkeyRepository, never()).countByAccountId(any());
   }
 
   @Test
-  void disabledServiceStillRemovesStoredPasskeys() {
+  void disabledServiceRemovesAllStoredPasskeysWithAuditAndNotification() {
     IamPasskey stored = new IamPasskey();
-    when(passkeyRepository.findByAccountId(any())).thenReturn(List.of(stored));
+    when(passkeyRepository.findByAccountId(42L)).thenReturn(List.of(stored));
 
     assertThat(service.removeAllPasskeys(account), contains(stored));
+
     verify(passkeyRepository).deleteAll(List.of(stored));
+    verify(accountService).saveAccount(account);
+    verify(eventPublisher, times(1)).publishEvent(any(PasskeyRemovedEvent.class));
+    verify(notificationFactory).createPasskeysResetMessage(account);
+  }
+
+  @Test
+  void disabledServiceResetOnEmptyAccountIsNoOp() {
+    when(passkeyRepository.findByAccountId(42L)).thenReturn(List.of());
+
+    assertThat(service.removeAllPasskeys(account), empty());
+    verify(passkeyRepository, never()).deleteAll(any());
+    verify(notificationFactory, never()).createPasskeysResetMessage(any());
+  }
+
+  @Test
+  void disabledServiceRemovesAStoredPasskeyWithoutProof() {
+    IamPasskey stored = new IamPasskey();
+    stored.setUuid("uuid");
+    when(passkeyRepository.findByUuidAndAccountId("uuid", 42L)).thenReturn(Optional.of(stored));
+
+    assertThat(service.removePasskey(account, "uuid", null, null), equalTo(stored));
+
+    verify(passkeyRepository).delete(stored);
+    verify(eventPublisher).publishEvent(any(PasskeyRemovedEvent.class));
+    verify(notificationFactory).createPasskeyRemovedMessage(account, stored);
+
+    when(passkeyRepository.findByUuidAndAccountId("other", 42L)).thenReturn(Optional.empty());
+    assertThrows(PasskeyNotFoundException.class,
+        () -> service.removePasskey(account, "other", null, null));
   }
 
   @Test
@@ -79,9 +132,8 @@ class DisabledIamPasskeyServiceTests {
     assertThrows(PasskeyDisabledException.class,
         () -> service.registerPasskey(account, null, null));
     assertThrows(PasskeyDisabledException.class,
-        () -> service.getAuthenticationOptions(account, null));
+        () -> service.getAssertionOptions(account, null));
     assertThrows(PasskeyDisabledException.class,
         () -> service.verifyPasskey(account, null, null));
-    assertThrows(PasskeyDisabledException.class, () -> service.removePasskey(account, "uuid"));
   }
 }

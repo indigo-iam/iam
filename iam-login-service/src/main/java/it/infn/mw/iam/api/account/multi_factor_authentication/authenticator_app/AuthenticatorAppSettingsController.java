@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MandatoryFactorException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
@@ -190,7 +191,8 @@ public class AuthenticatorAppSettingsController {
       throw new BadMfaCodeError(BAD_CODE);
     }
 
-    service.disableTotpMfa(account);
+    // The policy refuses to drop the last factor of the account when one is mandatory
+    multiFactorPolicy.disableAuthenticatorApp(account);
     notificationFactory.createMfaDisableMessage(account);
   }
 
@@ -227,8 +229,22 @@ public class AuthenticatorAppSettingsController {
 
 
   /**
+   * Exception handler for when disabling the authenticator app would leave the account without
+   * the factor the policy requires
+   *
+   * @param e MandatoryFactorException
+   * @return DTO containing error details
+   */
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(MandatoryFactorException.class)
+  @ResponseBody
+  public ErrorDTO handleMandatoryFactorException(MandatoryFactorException e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  /**
    * Exception handler for when an TOTP secret is unexpectedly missing
-   * 
+   *
    * @param e MfaSecretNotFoundException
    * @return DTO containing error details
    */

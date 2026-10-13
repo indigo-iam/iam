@@ -25,6 +25,8 @@ function PasskeyService($http, $q) {
 		isSupported: isSupported,
 		getPasskeys: getPasskeys,
 		registerPasskey: registerPasskey,
+		removePasskeyWithPasskey: removePasskeyWithPasskey,
+		removePasskeyWithTotp: removePasskeyWithTotp,
 		removePasskey: removePasskey,
 		resetPasskeysForUser: resetPasskeysForUser,
 		describeError: describeError
@@ -44,8 +46,26 @@ function PasskeyService($http, $q) {
 		return $q.when(IamWebAuthn.register(label));
 	}
 
-	function removePasskey(passkeyId) {
-		return $http.delete('/iam/passkey/' + passkeyId);
+	// Removing a passkey requires a proof of a second factor: an assertion made with any of the
+	// registered passkeys, or a code of the authenticator app when it is active
+	function removePasskeyWithPasskey(passkeyId) {
+		return $q.when(IamWebAuthn.proveForRemoval()).then(function(assertion) {
+			return removePasskey(passkeyId, { assertion: assertion });
+		});
+	}
+
+	function removePasskeyWithTotp(passkeyId, totp) {
+		return removePasskey(passkeyId, { totp: totp });
+	}
+
+	// Without a proof the server only accepts the removal while passkeys are disabled
+	function removePasskey(passkeyId, proof) {
+		return $http({
+			method: 'DELETE',
+			url: '/iam/passkey/' + passkeyId,
+			data: proof || {},
+			headers: { 'Content-Type': 'application/json' }
+		});
 	}
 
 	function resetPasskeysForUser(userId) {
@@ -55,6 +75,10 @@ function PasskeyService($http, $q) {
 	function describeError(error) {
 		if (error && error.data && error.data.error) {
 			return error.data.error;
+		}
+		// An $http rejection carries a numeric status (0 when the request never reached the server)
+		if (error && typeof error.status === 'number') {
+			return error.status ? 'Request failed (' + error.status + ')' : 'The server cannot be reached';
 		}
 		return IamWebAuthn.describeError(error);
 	}

@@ -24,6 +24,7 @@
  */
 var IamWebAuthn = (function () {
 
+  var REMOVAL_OPTIONS_URL = '/iam/passkey/removal/options';
   var REGISTRATION_OPTIONS_URL = '/iam/passkey/registration/options';
   var REGISTRATION_URL = '/iam/passkey/registration';
   var AUTHENTICATION_OPTIONS_URL = '/iam/passkey/authentication/options';
@@ -214,16 +215,11 @@ var IamWebAuthn = (function () {
     });
   }
 
-  /**
-   * Runs the authentication ceremony for the pre-authenticated user.
-   *
-   * @returns a Promise resolving to the serialized assertion, to be posted to /iam/verify
-   */
-  function authenticate() {
+  function assert(optionsUrl) {
     if (!isSupported()) {
       return Promise.reject(new Error('Passkeys are not supported by this browser'));
     }
-    return requestJson(AUTHENTICATION_OPTIONS_URL).then(function (options) {
+    return requestJson(optionsUrl).then(function (options) {
       return navigator.credentials.get({ publicKey: toRequestOptions(options) });
     }).then(function (credential) {
       if (!credential) {
@@ -231,6 +227,24 @@ var IamWebAuthn = (function () {
       }
       return serializeAssertion(credential);
     });
+  }
+
+  /**
+   * Runs the authentication ceremony for the pre-authenticated user.
+   *
+   * @returns a Promise resolving to the serialized assertion, to be posted to /iam/verify
+   */
+  function authenticate() {
+    return assert(AUTHENTICATION_OPTIONS_URL);
+  }
+
+  /**
+   * Runs the ceremony that proves possession of a passkey before one is removed.
+   *
+   * @returns a Promise resolving to the serialized assertion, to be sent with the removal
+   */
+  function proveForRemoval() {
+    return assert(REMOVAL_OPTIONS_URL);
   }
 
   return {
@@ -243,6 +257,7 @@ var IamWebAuthn = (function () {
     serializeAssertion: serializeAssertion,
     describeError: describeError,
     register: register,
-    authenticate: authenticate
+    authenticate: authenticate,
+    proveForRemoval: proveForRemoval
   };
 })();

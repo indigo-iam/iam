@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -32,30 +33,35 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MandatoryFactorException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge.Purpose;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyRelyingParty.RegistrationResult;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyCeremonyException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyLimitExceededException;
-import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.error.PasskeyNotFoundException;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyRegisteredEvent;
-import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyRemovedEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.PasskeyVerifiedEvent;
 import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
 
-public class DefaultIamPasskeyService implements IamPasskeyService {
+/**
+ * Passkey service of an instance where the feature is enabled: runs the WebAuthn ceremonies
+ * through the relying party and keeps the credentials in the database
+ */
+public class DefaultIamPasskeyService extends AbstractIamPasskeyService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultIamPasskeyService.class);
 
   public static final int CHALLENGE_SIZE = 32;
   public static final String ATTESTATION_NONE = "none";
   public static final String RESIDENT_KEY_DISCOURAGED = "discouraged";
-  public static final String PASSKEY_NOT_FOUND_MESSAGE = "Passkey not found";
   public static final String CHALLENGE_MISSING_MESSAGE =
       "No passkey challenge was issued for this session";
   public static final String CHALLENGE_EXPIRED_MESSAGE = "The passkey challenge has expired";
@@ -70,34 +76,42 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
   public static final String LIMIT_EXCEEDED_MESSAGE =
       "The maximum number of passkeys for this account has been reached";
   public static final String UNKNOWN_ACCOUNT_MESSAGE = "Account not found";
+  public static final String LAST_PASSKEY_MANDATORY_MESSAGE =
+      "Passkeys are mandatory: register another passkey before removing this one";
+  public static final String LAST_FACTOR_MANDATORY_MESSAGE =
+      "Multi-factor authentication is mandatory: enable another second factor before removing "
+          + "this passkey";
+  public static final String REMOVAL_PROOF_REQUIRED_MESSAGE =
+      "Removing a passkey requires a passkey assertion or, when the authenticator app is active, "
+          + "a code from the authenticator app";
+  public static final String BAD_REMOVAL_TOTP_MESSAGE =
+      "The authenticator app code is not valid";
+
   private static final long BROWSER_TIMEOUT_MARGIN_SECONDS = 30L;
   private static final long MIN_BROWSER_TIMEOUT_SECONDS = 30L;
 
-  public static final String LAST_PASSKEY_MANDATORY_MESSAGE =
-      "Passkeys are mandatory: register another passkey before removing this one";
+  private static final Pattern BASE64URL = Pattern.compile("[A-Za-z0-9_-]+=*");
 
   private final Clock clock;
   private final SecureRandom secureRandom = new SecureRandom();
   private final IamPasskeyProperties properties;
+  private final IamTotpMfaProperties totpMfaProperties;
   private final PasskeyRelyingParty relyingParty;
-  private final IamPasskeyRepository passkeyRepository;
   private final IamAccountRepository accountRepository;
-  private final IamAccountService accountService;
-  private final NotificationFactory notificationFactory;
-  private final ApplicationEventPublisher eventPublisher;
+  private final IamTotpMfaService totpMfaService;
 
   public DefaultIamPasskeyService(Clock clock, IamPasskeyProperties properties,
-      PasskeyRelyingParty relyingParty, IamPasskeyRepository passkeyRepository,
-      IamAccountRepository accountRepository, IamAccountService accountService,
+      IamTotpMfaProperties totpMfaProperties, PasskeyRelyingParty relyingParty,
+      IamPasskeyRepository passkeyRepository, IamAccountRepository accountRepository,
+      IamAccountService accountService, IamTotpMfaService totpMfaService,
       NotificationFactory notificationFactory, ApplicationEventPublisher eventPublisher) {
+    super(passkeyRepository, accountService, notificationFactory, eventPublisher);
     this.clock = clock;
     this.properties = properties;
+    this.totpMfaProperties = totpMfaProperties;
     this.relyingParty = relyingParty;
-    this.passkeyRepository = passkeyRepository;
     this.accountRepository = accountRepository;
-    this.accountService = accountService;
-    this.notificationFactory = notificationFactory;
-    this.eventPublisher = eventPublisher;
+    this.totpMfaService = totpMfaService;
   }
 
   @Override
@@ -109,13 +123,6 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
   @Transactional(readOnly = true)
   public boolean isPasskeyActive(IamAccount account) {
     return passkeyRepository.countByAccountId(account.getId()) > 0;
-  }
-
-
-  @Override
-  @Transactional(readOnly = true)
-  public List<IamPasskey> getPasskeys(IamAccount account) {
-    return passkeyRepository.findByAccountId(account.getId());
   }
 
   @Override
@@ -161,8 +168,7 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
 
     // The account row is locked so that concurrent registrations for the same account are
     // serialised and the per-account limit cannot be exceeded
-    IamAccount lockedAccount = accountRepository.findByIdForUpdate(account.getId())
-      .orElseThrow(() -> new PasskeyCeremonyException(UNKNOWN_ACCOUNT_MESSAGE));
+    IamAccount lockedAccount = lockAccount(account);
 
     if (passkeyRepository.countByAccountId(lockedAccount.getId()) >= properties
       .getMaxCredentialsPerAccount()) {
@@ -195,7 +201,7 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
       throw e;
     }
 
-    accountService.saveAccount(lockedAccount);
+    saveAccount(lockedAccount);
     eventPublisher.publishEvent(new PasskeyRegisteredEvent(this, lockedAccount, passkey));
     notificationFactory.createPasskeyRegisteredMessage(lockedAccount, passkey);
 
@@ -206,10 +212,13 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
 
   @Override
   @Transactional(readOnly = true)
-  public PasskeyAssertionOptionsDTO getAuthenticationOptions(IamAccount account,
+  public PasskeyAssertionOptionsDTO getAssertionOptions(IamAccount account,
       PasskeyChallenge challenge) {
 
-    checkChallenge(challenge, Purpose.AUTHENTICATION, account);
+    checkChallenge(challenge, account);
+    if (!challenge.getPurpose().isAssertion()) {
+      throw new PasskeyCeremonyException(CHALLENGE_MISMATCH_MESSAGE);
+    }
 
     PasskeyAssertionOptionsDTO options = new PasskeyAssertionOptionsDTO();
     options.setChallenge(PasskeyRelyingParty.encode(challenge.getValue()));
@@ -224,8 +233,78 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
   @Transactional
   public IamPasskey verifyPasskey(IamAccount account, PasskeyChallenge challenge,
       PasskeyAssertionDTO assertion) {
+    return verifyAssertion(account, challenge, Purpose.AUTHENTICATION, assertion);
+  }
 
-    checkChallenge(challenge, Purpose.AUTHENTICATION, account);
+  @Override
+  @Transactional
+  public IamPasskey removePasskey(IamAccount account, String passkeyUuid,
+      PasskeyChallenge challenge, PasskeyRemovalDTO proof) {
+
+    // The account row is locked before anything is read: under a mandatory policy two concurrent
+    // removals (or a removal and a disabling of the authenticator app) must not both see a
+    // surviving factor, and in general every writer takes the account lock before a credential
+    // row lock, so that two removals proving each other cannot deadlock
+    lockAccount(account);
+
+    IamPasskey passkey = findPasskey(account, passkeyUuid);
+    checkNotLastMandatoryFactor(account);
+    checkRemovalProof(account, challenge, proof);
+    deletePasskey(account, passkey);
+    return passkey;
+  }
+
+  /**
+   * When passkeys are mandatory the user must keep one; when a second factor of any kind is
+   * mandatory the user must keep one factor, and the authenticator app counts
+   */
+  private void checkNotLastMandatoryFactor(IamAccount account) {
+    if (properties.isMandatory()) {
+      if (passkeyRepository.countByAccountId(account.getId()) <= 1) {
+        throw new MandatoryFactorException(LAST_PASSKEY_MANDATORY_MESSAGE);
+      }
+    } else if (totpMfaProperties.isMultiFactorMandatory()
+        && passkeyRepository.countByAccountId(account.getId()) <= 1
+        && !totpMfaService.isAuthenticatorAppActive(account)) {
+      throw new MandatoryFactorException(LAST_FACTOR_MANDATORY_MESSAGE);
+    }
+  }
+
+  /**
+   * A passkey can only be removed by someone holding a second factor of the account: a stolen
+   * session must not be enough to downgrade the account to the password alone. The assertion may
+   * come from any registered passkey, including the one being removed. The authenticator app is
+   * accepted as proof only where it is accepted at login, i.e. unless passkeys are mandatory
+   */
+  private void checkRemovalProof(IamAccount account, PasskeyChallenge challenge,
+      PasskeyRemovalDTO proof) {
+    if (proof != null && proof.hasAssertion()) {
+      verifyAssertion(account, challenge, Purpose.REMOVAL, proof.getAssertion());
+      return;
+    }
+    if (proof != null && proof.hasTotp() && !properties.isMandatory()
+        && totpMfaService.isAuthenticatorAppActive(account)) {
+      if (!verifyTotp(account, proof.getTotp().trim())) {
+        throw new PasskeyCeremonyException(BAD_REMOVAL_TOTP_MESSAGE);
+      }
+      return;
+    }
+    throw new PasskeyCeremonyException(REMOVAL_PROOF_REQUIRED_MESSAGE);
+  }
+
+  private boolean verifyTotp(IamAccount account, String totp) {
+    try {
+      return totpMfaService.verifyTotp(account, totp);
+    } catch (MfaSecretNotFoundException e) {
+      // The authenticator app was reset between the check above and the verification
+      throw new PasskeyCeremonyException(REMOVAL_PROOF_REQUIRED_MESSAGE, e);
+    }
+  }
+
+  private IamPasskey verifyAssertion(IamAccount account, PasskeyChallenge challenge,
+      Purpose purpose, PasskeyAssertionDTO assertion) {
+
+    checkChallenge(challenge, purpose, account);
 
     // The credential row is locked for the whole verification so that concurrent assertions
     // for the same credential see each other's signature counter update
@@ -251,60 +330,23 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
     return passkey;
   }
 
-  @Override
-  @Transactional
-  public IamPasskey removePasskey(IamAccount account, String passkeyUuid) {
-
-    // When passkeys are mandatory the user must register a replacement before removing the last
-    // one, otherwise the next login would simply force a new enrolment. The account row is locked
-    // before anything is read, so that two concurrent removals cannot both see a surviving
-    // passkey (a read taken before the lock would be served from a stale snapshot)
-    if (properties.isMandatory()) {
-      accountRepository.findByIdForUpdate(account.getId())
-        .orElseThrow(() -> new PasskeyCeremonyException(UNKNOWN_ACCOUNT_MESSAGE));
-    }
-
-    IamPasskey passkey = passkeyRepository.findByUuidAndAccountId(passkeyUuid, account.getId())
-      .orElseThrow(() -> new PasskeyNotFoundException(PASSKEY_NOT_FOUND_MESSAGE));
-
-    if (properties.isMandatory() && passkeyRepository.countByAccountId(account.getId()) <= 1) {
-      throw new PasskeyCeremonyException(LAST_PASSKEY_MANDATORY_MESSAGE);
-    }
-
-    passkeyRepository.delete(passkey);
-    accountService.saveAccount(account);
-    eventPublisher.publishEvent(new PasskeyRemovedEvent(this, account, passkey));
-    notificationFactory.createPasskeyRemovedMessage(account, passkey);
-
-    LOG.info("Passkey '{}' removed from account '{}'", passkey.getLabel(), account.getUsername());
-    return passkey;
-  }
-
-  @Override
-  @Transactional
-  public List<IamPasskey> removeAllPasskeys(IamAccount account) {
-
-    List<IamPasskey> passkeys = passkeyRepository.findByAccountId(account.getId());
-
-    if (passkeys.isEmpty()) {
-      return passkeys;
-    }
-
-    passkeyRepository.deleteAll(passkeys);
-    accountService.saveAccount(account);
-    passkeys.forEach(p -> eventPublisher.publishEvent(new PasskeyRemovedEvent(this, account, p)));
-    notificationFactory.createPasskeysResetMessage(account);
-
-    LOG.info("All passkeys ({}) removed from account '{}'", passkeys.size(),
-        account.getUsername());
-    return passkeys;
+  private IamAccount lockAccount(IamAccount account) {
+    return accountRepository.findByIdForUpdate(account.getId())
+      .orElseThrow(() -> new PasskeyCeremonyException(UNKNOWN_ACCOUNT_MESSAGE));
   }
 
   private void checkChallenge(PasskeyChallenge challenge, Purpose purpose, IamAccount account) {
+    checkChallenge(challenge, account);
+    if (challenge.getPurpose() != purpose) {
+      throw new PasskeyCeremonyException(CHALLENGE_MISMATCH_MESSAGE);
+    }
+  }
+
+  private void checkChallenge(PasskeyChallenge challenge, IamAccount account) {
     if (challenge == null) {
       throw new PasskeyCeremonyException(CHALLENGE_MISSING_MESSAGE);
     }
-    if (!challenge.matches(purpose, account.getUsername())) {
+    if (!challenge.getUsername().equals(account.getUsername())) {
       throw new PasskeyCeremonyException(CHALLENGE_MISMATCH_MESSAGE);
     }
     if (challenge.isExpired(clock.instant())) {
@@ -322,9 +364,12 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
 
   private long timeoutMillis() {
     // The browser is given less than the challenge lifetime, so that an assertion produced at the
-    // very end of the prompt still finds its challenge valid on the server
-    return Math.max(MIN_BROWSER_TIMEOUT_SECONDS,
-        properties.getChallengeTimeoutSeconds() - BROWSER_TIMEOUT_MARGIN_SECONDS) * 1000L;
+    // very end of the prompt still finds its challenge valid on the server; a lifetime too short
+    // to leave the full margin is split instead
+    long lifetime = properties.getChallengeTimeoutSeconds();
+    long browserTimeout = Math.max(MIN_BROWSER_TIMEOUT_SECONDS,
+        lifetime - BROWSER_TIMEOUT_MARGIN_SECONDS);
+    return Math.min(lifetime, browserTimeout) * 1000L;
   }
 
   /**
@@ -349,11 +394,12 @@ public class DefaultIamPasskeyService implements IamPasskeyService {
   }
 
   /**
-   * Credential ids are stored unpadded; tolerate padded base64url from non-browser clients
+   * Credential ids are stored unpadded; tolerate padded base64url from non-browser clients. The
+   * column is ASCII, so anything else is refused before it reaches the database
    */
   private static String normaliseCredentialId(String credentialId) {
-    if (credentialId == null) {
-      return null;
+    if (credentialId == null || !BASE64URL.matcher(credentialId).matches()) {
+      throw new PasskeyCeremonyException(UNKNOWN_CREDENTIAL_MESSAGE);
     }
     int end = credentialId.length();
     while (end > 0 && credentialId.charAt(end - 1) == '=') {
