@@ -1,0 +1,26 @@
+{
+  "name": "IAM Dev Container - PostgreSQL",
+  "dockerComposeFile": "compose.yaml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/iam",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [
+    8080
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.format.settings.url": "https://raw.githubusercontent.com/italiangrid/codestyle/master/eclipse-google-java-codestyle-formatter.xml",
+        "java.format.settings.profile": "GoogleStyle (CNAF)",
+        "maven.settingsFile": ".mvn/cnaf-mirror-settings.xml",
+        "java.configuration.maven.userSettings": ".mvn/cnaf-mirror-settings.xml"
+      },
+      "extensions": [
+        "vmware.vscode-boot-dev-pack",
+        "vscjava.vscode-java-pack"
+      ]
+    }
+  },
+  "remoteUser": "ubuntu"
+}

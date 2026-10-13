@@ -47,6 +47,7 @@ import java.util.regex.Pattern;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -90,6 +91,10 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 @Service
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
+
+  // A stable order is needed for paging: without it, databases like PostgreSQL may return
+  // rows in any order
+  private static final Sort SORT_BY_ID = Sort.by("id");
 
   protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
       EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
@@ -428,7 +433,7 @@ public class ScimUserProvisioning
         return builder.build();
 
       } else {
-        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+        op = new OffsetPageable(params.getStartIndex(), params.getCount(), SORT_BY_ID);
 
         results = filterSearch(op, parsedFilters);
       }
@@ -444,7 +449,7 @@ public class ScimUserProvisioning
         return builder.build();
 
       } else {
-        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+        op = new OffsetPageable(params.getStartIndex(), params.getCount(), SORT_BY_ID);
         results = accountRepository.findAll(op);
       }
 

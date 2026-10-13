@@ -1,0 +1,1 @@
+ALTER TABLE iam_aup ADD COLUMN aup_reminders_days VARCHAR(128) NOT NULL DEFAULT '30,15,1';

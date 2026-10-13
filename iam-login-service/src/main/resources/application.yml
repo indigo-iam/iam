@@ -58,6 +58,7 @@ spring:
      "dev": "registration"
      "h2-test": "h2,saml,registration"
      "mysql-test": "saml,registration"
+     "postgresql-test": "saml,registration"
      "prod": "mysql,flyway-repair"
 
   jpa:
