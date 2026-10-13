@@ -19,16 +19,26 @@ angular.module('dashboardApp')
 	.controller('UserMfaController', UserMfaController);
 
 UserMfaController.$inject = [
-	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster'
+	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster', 'PasskeyService'
 ];
 
 function UserMfaController(
-	$http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
+	$http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster, PasskeyService) {
 	var userMfaCtrl = this;
+
+	userMfaCtrl.passkeyEnabled = Utils.isPasskeyEnabled();
+	userMfaCtrl.mfaMandatory = Utils.isMfaMandatory();
+	userMfaCtrl.passkeys = [];
+
+	// Under mandatory MFA the authenticator app can only be disabled when a passkey remains
+	userMfaCtrl.canDisableAuthenticatorApp = function() {
+		return !userMfaCtrl.mfaMandatory || userMfaCtrl.passkeys.length > 0;
+	};
 
 	userMfaCtrl.$onInit = function() {
 		console.log('UserMfaController onInit');
 		getMfaSettings();
+		getPasskeys();
 	};
 
 	// TODO include this data in what is fetched from the /scim/me endpoint
@@ -38,10 +48,46 @@ function UserMfaController(
 		});
 	}
 
+	function getPasskeys() {
+		if (!userMfaCtrl.passkeyEnabled) {
+			return;
+		}
+		PasskeyService.getPasskeys().then(function(response) {
+			userMfaCtrl.passkeys = response.data;
+		}).catch(function(error) {
+			console.error('Error loading passkeys', error);
+		});
+	}
+
 	userMfaCtrl.userToEdit = user;
 
 	userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
 	userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
+	userMfaCtrl.addPasskey = addPasskey;
+	userMfaCtrl.removePasskey = removePasskey;
+
+	function addPasskey() {
+		var modalInstance = $uibModal.open({
+			templateUrl: '/resources/iam/apps/dashboard-app/templates/home/add-passkey.html',
+			controller: 'AddPasskeyController',
+			controllerAs: 'passkeyCtrl'
+		});
+		modalInstance.result.then(function(msg) {
+			return $uibModalInstance.close(msg);
+		});
+	}
+
+	function removePasskey(passkey) {
+		var modalInstance = $uibModal.open({
+			templateUrl: '/resources/iam/apps/dashboard-app/templates/home/remove-passkey.html',
+			controller: 'RemovePasskeyController',
+			controllerAs: 'passkeyCtrl',
+			resolve: { passkey: function() { return passkey; } }
+		});
+		modalInstance.result.then(function(msg) {
+			return $uibModalInstance.close(msg);
+		});
+	}
 
 	function enableAuthenticatorApp() {
 		var modalInstance = $uibModal.open({

@@ -109,6 +109,14 @@
 	function getOrganisationName() {
 		return '${iamOrganisationName}';
 	}
+
+	function getPasskeyEnabled() {
+		return ${passkeyEnabled == true};
+	}
+
+	function getPasskeyMandatory() {
+		return ${passkeyMandatory == true};
+	}
 </script>
 
 <body>

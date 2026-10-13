@@ -25,6 +25,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.core.web.loginpage.LoginPageConfiguration;
@@ -48,6 +49,8 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
   public static final String CLIENT_DEFAULTS_PROPERTIES_KEY = "clientDefaultsProperties";
   public static final String CLIENT_TRACK_LAST_USED_KEY = "clientTrackLastUsed";
   public static final String MULTI_FACTOR_MANDATORY_KEY = "mfaMandatory";
+  public static final String PASSKEY_ENABLED_KEY = "passkeyEnabled";
+  public static final String PASSKEY_MANDATORY_KEY = "passkeyMandatory";
 
   @Value("${iam.version}")
   String iamVersion;
@@ -79,6 +82,9 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
   @Autowired
   IamTotpMfaProperties iamTotpMfaProperties;
 
+  @Autowired
+  IamPasskeyProperties iamPasskeyProperties;
+
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws Exception {
@@ -101,6 +107,10 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
     request.setAttribute(CLIENT_TRACK_LAST_USED_KEY, iamProperties.getClient().isTrackLastUsed());
 
     request.setAttribute(MULTI_FACTOR_MANDATORY_KEY, iamTotpMfaProperties.isMultiFactorMandatory());
+
+    request.setAttribute(PASSKEY_ENABLED_KEY, iamPasskeyProperties.isEnabled());
+    request.setAttribute(PASSKEY_MANDATORY_KEY,
+        iamPasskeyProperties.isEnabled() && iamPasskeyProperties.isMandatory());
 
     if (iamProperties.getVersionedStaticResources().isEnableVersioning()) {
       request.setAttribute(RESOURCES_PATH_KEY, String.format("/resources/%s", gitCommitId));

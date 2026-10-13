@@ -15,7 +15,7 @@
     limitations under the License.
 
 -->
-<form class="form-horizontal" ng-submit="activateMfaCtrl.submitEnable()" name="activateMfaForm">
+<form class="form-horizontal" ng-submit="activateMfaCtrl.submitEnable()" name="activateMfaForm" ng-show="!activateMfaCtrl.passkeyRequired">
 <div style="text-align: center;">
   <div>
     <h3>Enable authenticator</h3>
@@ -50,3 +50,36 @@
   </div>
 </div>
 </form>
+
+<div ng-if="activateMfaCtrl.passkeyEnabled" style="text-align: center; margin-top: 20px;">
+  <hr ng-if="!activateMfaCtrl.passkeyRequired">
+  <h3 ng-if="!activateMfaCtrl.passkeyRequired">Or register a passkey</h3>
+  <h3 ng-if="activateMfaCtrl.passkeyRequired">Register a passkey</h3>
+  <p ng-if="activateMfaCtrl.passkeyRequired" class="text-warning">
+    Your organisation requires a passkey as second factor. If you signed in with an authenticator app,
+    this was the last time it could be used: from now on only a passkey will be accepted.
+  </p>
+  <p>Use a security key, your device biometrics or a password manager as your second factor.</p>
+  <form class="form-horizontal" name="activatePasskeyForm" ng-submit="activateMfaCtrl.registerPasskey()">
+    <div class="form-group">
+      <div class="col-sm-4" style="text-align: end;">
+        <label class="control-label" for="passkeyLabel">Passkey name</label>
+      </div>
+      <div class="col-sm-4">
+        <input type="text" name="passkeyLabel" id="passkeyLabel" class="form-control" placeholder="e.g. My security key"
+          ng-model="activateMfaCtrl.passkeyLabel" ng-change="activateMfaCtrl.clearPasskeyError()" required ng-maxlength="128" />
+        <span class="help-block" ng-show="activateMfaCtrl.passkeyError" style="color: #a94442;">{{ activateMfaCtrl.passkeyError }}</span>
+      </div>
+    </div>
+    <div>
+      <button class="btn btn-primary" type="submit" name="register-passkey" id="register-passkey-btn"
+        ng-disabled="activatePasskeyForm.$invalid || activateMfaCtrl.requestPending || !activateMfaCtrl.passkeySupported">
+        <i class="fa fa-key"></i> Register passkey
+      </button>
+    </div>
+    <p class="text-muted" ng-if="!activateMfaCtrl.passkeySupported" style="margin-top: 10px;">
+      Passkeys are not supported by this browser.
+      <span ng-if="activateMfaCtrl.passkeyRequired">A passkey is required to sign in: please use a browser that supports passkeys, or contact your administrator.</span>
+    </p>
+  </form>
+</div>

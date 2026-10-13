@@ -23,7 +23,8 @@ function ActivateMfaService($http, $httpParamSerializerJQLike) {
 
 	var service = {
 		addMfaSecretToUser: addMfaSecretToUser,
-		enableAuthenticatorApp: enableAuthenticatorApp
+		enableAuthenticatorApp: enableAuthenticatorApp,
+		registerPasskey: registerPasskey
 	};
 
 	return service;
@@ -46,4 +47,8 @@ function ActivateMfaService($http, $httpParamSerializerJQLike) {
 
 		return $http.post('/iam/authenticator-app/enable', data, config);
 	};
+
+	function registerPasskey(label) {
+		return IamWebAuthn.register(label);
+	}
 }

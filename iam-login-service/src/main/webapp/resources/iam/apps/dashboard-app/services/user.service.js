@@ -52,7 +52,8 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                     user.aupSignature = null;
                 }
                 if (result[2] !== null) {
-                    user.isMfaActive = result[2];
+                    user.isMfaActive = result[2].authenticatorAppActive;
+                    user.isPasskeyActive = result[2].passkeyActive;
                 }
                 return user;
             }).catch(function (error) {
@@ -80,7 +81,8 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 }
 
                 if (result[3] !== null) {
-                    user.isMfaActive = result[3];
+                    user.isMfaActive = result[3].authenticatorAppActive;
+                    user.isPasskeyActive = result[3].passkeyActive;
                 }
                 return user;
             })

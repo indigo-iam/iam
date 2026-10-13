@@ -30,7 +30,13 @@
 
     self.isMfaActive = function() { return self.userCtrl.user.isMfaActive; };
 
+    self.isPasskeyActive = function() { return self.userCtrl.user.isPasskeyActive; };
+
     self.isMfaMandatory = function() { return Utils.isMfaMandatory(); };
+
+    // With passkeys enabled the settings stay reachable under mandatory MFA, so that passkeys can
+    // be added or replaced; the modal itself prevents dropping the last factor
+    self.isPasskeyEnabled = function() { return Utils.isPasskeyEnabled(); };
 
     self.openUserMfaModal = function() {
       var modalInstance = $uibModal.open({

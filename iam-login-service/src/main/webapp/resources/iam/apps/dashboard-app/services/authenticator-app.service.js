@@ -71,7 +71,7 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 	}
 
 	function handleSuccess(res) {
-		return res.data.authenticatorAppActive;
+		return res.data;
 	}
 
 	function handleError(res) {

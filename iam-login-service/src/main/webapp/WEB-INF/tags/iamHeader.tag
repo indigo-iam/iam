@@ -131,4 +131,12 @@ function getMfaSettingsBtnEnabled() {
 function getMfaMandatory() {
   return ${mfaMandatory};
 }
+
+function getPasskeyEnabled() {
+  return ${passkeyEnabled == true};
+}
+
+function getPasskeyMandatory() {
+  return ${passkeyMandatory == true};
+}
 </script>

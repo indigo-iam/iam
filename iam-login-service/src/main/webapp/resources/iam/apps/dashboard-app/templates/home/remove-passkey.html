@@ -1,0 +1,33 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="modal-header">
+  <h3 class="modal-title">Remove passkey</h3>
+</div>
+
+<div class="modal-body">
+  <div class="form-group">
+    Are you sure you want to remove the passkey <strong>{{passkeyCtrl.passkey.label}}</strong>?
+    It will no longer be accepted as a second factor when you log in.
+  </div>
+  <span class="help-block" ng-show="operationResult" style="color: #a94442;">{{ operationResult.text }}</span>
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-danger" type="button" name="remove" id="modal-btn-remove" ng-click="passkeyCtrl.submitRemove()" ng-disabled="passkeyCtrl.requestPending">Remove</button>
+  <button class="btn btn-default" type="button" name="cancel" id="modal-btn-cancel" ng-click="passkeyCtrl.dismiss()">Cancel</button>
+</div>

@@ -117,6 +117,8 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scopes.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/trusts.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/js/passkey/webauthn.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/passkey.service.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/authenticator-app.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
@@ -125,6 +127,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/edit-password.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/user-mfa.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/disable-mfa.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/passkey.controller.js"></script>
 
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/header/header.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/result.component.js"></script>

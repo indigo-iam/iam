@@ -67,8 +67,8 @@
                     MFA
                 </td>
                 <td class="text-right">
-                    <i class="fa fa-check" style="color:green" ng-show="$ctrl.user.isMfaActive"></i>
-                    <i class="fa fa-times" style="color:red" ng-show="!$ctrl.user.isMfaActive"></i>
+                    <i class="fa fa-check" style="color:green" ng-show="$ctrl.user.isMfaActive || $ctrl.user.isPasskeyActive"></i>
+                    <i class="fa fa-times" style="color:red" ng-show="!$ctrl.user.isMfaActive && !$ctrl.user.isPasskeyActive"></i>
                 </td>
             </tr>
             <tr>

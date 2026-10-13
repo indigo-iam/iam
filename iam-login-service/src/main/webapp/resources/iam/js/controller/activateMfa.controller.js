@@ -33,18 +33,20 @@ function ActivateMfaController($scope, $window, ActivateMfaService) {
   
   authAppCtrl.codeMinlength = 6;
   authAppCtrl.requestPending = false;
+  authAppCtrl.passkeyEnabled = getPasskeyEnabled();
+  // When passkeys are mandatory only a passkey can be enrolled here
+  authAppCtrl.passkeyRequired = authAppCtrl.passkeyEnabled && getPasskeyMandatory();
+  authAppCtrl.passkeySupported = authAppCtrl.passkeyEnabled && IamWebAuthn.isSupported();
+  authAppCtrl.passkeyLabel = '';
+  authAppCtrl.passkeyError = null;
   $scope.operationResult = null;
   authAppCtrl.reset = reset;
 
   authAppCtrl.$onInit = function () {
-    ActivateMfaService.addMfaSecretToUser().then(function (response) {
-      authAppCtrl.secret = response.data.secret;
-      authAppCtrl.dataUri = response.data.dataUri;
-    });
-  }
-
-  
-  authAppCtrl.$onInit = function () {
+    if (authAppCtrl.passkeyRequired) {
+      authAppCtrl.reset();
+      return;
+    }
     setPending(true);
     ActivateMfaService.addMfaSecretToUser()
       .then(function (response) {
@@ -95,6 +97,31 @@ function ActivateMfaController($scope, $window, ActivateMfaService) {
   };
 
   
+  authAppCtrl.clearPasskeyError = function () {
+    authAppCtrl.passkeyError = null;
+  };
+
+  authAppCtrl.registerPasskey = function () {
+    if (authAppCtrl.requestPending || !authAppCtrl.passkeySupported) { return; }
+    if (!authAppCtrl.passkeyLabel) { return; }
+    setPending(true);
+    authAppCtrl.passkeyError = null;
+    ActivateMfaService.registerPasskey(authAppCtrl.passkeyLabel)
+      .then(function () {
+        // A pre-authenticated user verifies the new passkey straight away and resumes the
+        // original request; a fully authenticated user (authenticator app verified, passkey
+        // now mandatory) simply continues
+        var fullyAuthenticated = getUserAuthorities().indexOf('ROLE_USER') > -1;
+        $window.location.href = fullyAuthenticated ? '/dashboard' : '/iam/verify';
+      })
+      .catch(function (error) {
+        $scope.$applyAsync(function () {
+          authAppCtrl.passkeyError = IamWebAuthn.describeError(error);
+          setPending(false);
+        });
+      });
+  };
+
   function setPending(val) {
     authAppCtrl.requestPending = !!val;
   }

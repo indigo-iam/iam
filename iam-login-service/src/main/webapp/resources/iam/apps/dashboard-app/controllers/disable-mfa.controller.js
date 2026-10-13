@@ -19,18 +19,30 @@ angular.module('dashboardApp')
 	.controller('DisableMfaController', DisableMfaController);
 
 DisableMfaController.$inject = [
-	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user', '$uibModal', 'toaster'
+	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user', '$uibModal', 'toaster', '$q', 'PasskeyService'
 ];
 
 function DisableMfaController(
-	$http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user, $uibModal, toaster) {
+	$http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user, $uibModal, toaster, $q, PasskeyService) {
 	var disableMfaCtrl = this;
 
 	disableMfaCtrl.userToEdit = user;
 
 	disableMfaCtrl.disableMfa = function () {
-		AuthenticatorAppService.disableAuthenticatorAppForUser(user.id).then(function(result) {
-			if (result != null && result.status === 200) {
+		var requests = [];
+		if (user.isMfaActive) {
+			requests.push(AuthenticatorAppService.disableAuthenticatorAppForUser(user.id));
+		}
+		// Passkeys are reset whenever any factor is active: credentials stored while the passkey
+		// feature is switched off are not reported as active, but must not survive a reset
+		if (user.isMfaActive || user.isPasskeyActive) {
+			requests.push(PasskeyService.resetPasskeysForUser(user.id));
+		}
+		$q.all(requests).then(function(results) {
+			var failed = results.some(function(result) {
+				return result == null || (result.status !== 200 && result.status !== 204);
+			});
+			if (!failed) {
 			  $uibModalInstance.close('Multi-factor authentication disabled');
 			} else {
 			  var message = "Unable to disable multi-factor authentication";
@@ -39,7 +51,7 @@ function DisableMfaController(
 			}
 		  }).catch(function(error) { 
 			console.error(error);
-			toaster.pop({ type: 'error', body: error.data.error });
+			toaster.pop({ type: 'error', body: (error && error.data && error.data.error) || 'Unable to disable multi-factor authentication' });
 			$uibModalInstance.dismiss();
 		  });
 	};

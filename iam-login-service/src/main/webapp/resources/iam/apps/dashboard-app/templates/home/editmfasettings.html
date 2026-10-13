@@ -37,7 +37,7 @@
 					<button class="btn btn-danger" type="button"
 						name="disable-authenticator-app"
 						id="disable-authenticator-app-btn"
-						ng-show="userMfaCtrl.authenticatorAppActive"
+						ng-show="userMfaCtrl.authenticatorAppActive && userMfaCtrl.canDisableAuthenticatorApp()"
 						ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
 					<span class="label label-danger"
 					ng-show="!userMfaCtrl.authenticatorAppActive"> <i
@@ -49,6 +49,27 @@
 						ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
 				</td>
 			</tr>
+		</div>
+
+		<div class="form-group" ng-if="userMfaCtrl.passkeyEnabled">
+			<label class="control-label col-sm-2" for="passkeys">Passkeys</label>
+			<div class="col-sm-10">
+				<table class="table table-condensed" ng-if="userMfaCtrl.passkeys.length">
+					<tr ng-repeat="passkey in userMfaCtrl.passkeys">
+						<td><i class="fa fa-key"></i> {{passkey.label}}</td>
+						<td class="text-muted">added {{passkey.creationTime | relativeDate}}<span ng-if="passkey.lastUsedTime">, last used {{passkey.lastUsedTime | relativeDate}}</span></td>
+						<td class="text-right">
+							<button class="btn btn-danger btn-xs" type="button" name="remove-passkey"
+								ng-click="userMfaCtrl.removePasskey(passkey)">Remove</button>
+						</td>
+					</tr>
+				</table>
+				<span class="label label-danger" ng-if="!userMfaCtrl.passkeys.length"> <i
+					class="fa fa-check"></i> No passkeys
+				</span>&nbsp;
+				<button class="btn btn-success" type="button" name="add-passkey"
+					id="add-passkey-btn" ng-click="userMfaCtrl.addPasskey()">Add passkey</button>
+			</div>
 		</div>
 	</div>
 

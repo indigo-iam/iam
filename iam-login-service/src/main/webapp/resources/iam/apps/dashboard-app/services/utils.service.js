@@ -46,7 +46,8 @@
             isGroupMember: isGroupMember,
             username: username,
             isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled,
-            isMfaMandatory: isMfaMandatory
+            isMfaMandatory: isMfaMandatory,
+            isPasskeyEnabled: isPasskeyEnabled
         };
 
         return service;
@@ -154,6 +155,10 @@
 
         function isMfaMandatory() {
             return getMfaMandatory();
+        }
+
+        function isPasskeyEnabled() {
+            return getPasskeyEnabled();
         }
 
         function buildErrorResult(errorString) {
