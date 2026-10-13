@@ -23,6 +23,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
@@ -61,6 +62,12 @@ public interface NotificationFactory {
   IamEmailNotification createMfaDisableMessage(IamAccount account);
 
   IamEmailNotification createMfaEnableMessage(IamAccount account);
+
+  IamEmailNotification createPasskeyRegisteredMessage(IamAccount account, IamPasskey passkey);
+
+  IamEmailNotification createPasskeyRemovedMessage(IamAccount account, IamPasskey passkey);
+
+  IamEmailNotification createPasskeysResetMessage(IamAccount account);
 
   IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
 

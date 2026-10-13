@@ -424,6 +424,13 @@
       <version>${openjdk-jmh.version}</version>
     </dependency>
 
+    <!-- WebAuthn (passkey) server side library for multi-factor authentication -->
+    <dependency>
+      <groupId>com.webauthn4j</groupId>
+      <artifactId>webauthn4j-core</artifactId>
+      <version>0.22.1.RELEASE</version>
+    </dependency>
+
   </dependencies>
 
   <build>

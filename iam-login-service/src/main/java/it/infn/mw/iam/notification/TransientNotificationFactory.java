@@ -51,6 +51,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.model.IamPasskey;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
@@ -481,6 +482,60 @@ public class TransientNotificationFactory implements NotificationFactory {
         account.getUuid());
 
     return notification;
+  }
+
+  @Override
+  public IamEmailNotification createPasskeyRegisteredMessage(IamAccount account,
+      IamPasskey passkey) {
+    Map<String, Object> model = passkeyModel(account, passkey);
+
+    String subject = "Passkey registered";
+
+    IamEmailNotification notification = createMessage("passkeyRegistered.ftl", model,
+        IamNotificationType.MFA_ENABLE, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created passkey registered message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createPasskeyRemovedMessage(IamAccount account,
+      IamPasskey passkey) {
+    Map<String, Object> model = passkeyModel(account, passkey);
+
+    String subject = "Passkey removed";
+
+    IamEmailNotification notification = createMessage("passkeyRemoved.ftl", model,
+        IamNotificationType.MFA_DISABLE, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created passkey removed message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createPasskeysResetMessage(IamAccount account) {
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, account.getUserInfo().getName());
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Passkeys reset";
+
+    IamEmailNotification notification = createMessage("passkeysReset.ftl", model,
+        IamNotificationType.MFA_DISABLE, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created passkeys reset message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  private Map<String, Object> passkeyModel(IamAccount account, IamPasskey passkey) {
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, account.getUserInfo().getName());
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("passkeyLabel", passkey.getLabel());
+    return model;
   }
 
   private Map<String, Object> generateCertificateModel(String name, String username, String email,

@@ -22,3 +22,16 @@ mfa:
   # Leave this blank if no KEY rotation is happening.
   old-password-to-decrypt: ${IAM_TOTP_MFA_OLD_PASSWORD_TO_DECRYPT:}
   multi-factor-mandatory:  ${IAM_MULTI_FACTOR_MANDATORY:false}
+  passkey:
+    enabled: ${IAM_MFA_PASSKEY_ENABLED:false}
+    mandatory: ${IAM_MFA_PASSKEY_MANDATORY:false}
+    # Relying Party ID (a registrable domain suffix of the IAM host). Defaults to the host of iam.baseUrl
+    rp-id: ${IAM_MFA_PASSKEY_RP_ID:}
+    # Human readable Relying Party name shown by browsers. Defaults to the organisation name
+    rp-name: ${IAM_MFA_PASSKEY_RP_NAME:}
+    # Comma-separated list of allowed origins. Defaults to the origin of iam.baseUrl
+    allowed-origins: ${IAM_MFA_PASSKEY_ALLOWED_ORIGINS:}
+    # One of: required, preferred, discouraged
+    user-verification: ${IAM_MFA_PASSKEY_USER_VERIFICATION:preferred}
+    max-credentials-per-account: ${IAM_MFA_PASSKEY_MAX_CREDENTIALS_PER_ACCOUNT:5}
+    challenge-timeout-seconds: ${IAM_MFA_PASSKEY_CHALLENGE_TIMEOUT_SECONDS:300}

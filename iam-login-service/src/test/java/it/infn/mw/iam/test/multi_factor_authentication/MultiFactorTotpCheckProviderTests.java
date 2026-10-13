@@ -40,6 +40,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
@@ -61,6 +62,9 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   private IamTotpMfaService totpMfaService;
 
   @Mock
+  private MultiFactorPolicy multiFactorPolicy;
+
+  @Mock
   private ExtendedAuthenticationToken token;
 
   @Mock
@@ -76,7 +80,21 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
     clock = Clock.systemUTC();
     MockitoAnnotations.openMocks(this);
-    multiFactorTotpCheckProvider = new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+    multiFactorTotpCheckProvider =
+        new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, multiFactorPolicy);
+  }
+
+  @Test
+  void authenticateRejectsTotpWhenPasskeyIsMandatoryAndRegistered() {
+    IamAccount account = getAccount(clock.instant());
+    when(token.getName()).thenReturn("totp");
+    when(token.getTotp()).thenReturn("123456");
+    when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
+    when(multiFactorPolicy.onlyPasskeyAccepted(account)).thenReturn(true);
+
+    BadCredentialsException e = assertThrows(BadCredentialsException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+    assertThat(e.getMessage()).isEqualTo(MultiFactorTotpCheckProvider.PASSKEY_REQUIRED_MESSAGE);
   }
 
   @Test

@@ -29,6 +29,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
 import dev.samstevens.totp.code.CodeVerifier;
@@ -41,6 +42,11 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
+import it.infn.mw.iam.config.mfa.IamPasskeyProperties;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorPasskeyCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
@@ -106,19 +112,25 @@ public class IamTotpMfaConfig {
       @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
       Clock clock) {
 
-    return new MultiFactorVerificationFilter(authenticationManager, successHandler(clock),
-        failureHandler());
+    MultiFactorVerificationFilter filter = new MultiFactorVerificationFilter(
+        authenticationManager, successHandler(clock), failureHandler());
+    // The session id is renewed when the second factor upgrades the authentication, as it is at
+    // the first factor, so that a session fixed before the step-up is useless afterwards
+    filter.setSessionAuthenticationStrategy(new ChangeSessionIdAuthenticationStrategy());
+    return filter;
   }
 
   /**
    * Authentication manager for the MFA verification process
    * 
    * @param totpCheckProvider checks a provided TOTP
+   * @param passkeyCheckProvider checks a provided passkey assertion
    * @return a new provider manager
    */
   @Bean(name = "MultiFactorVerificationAuthenticationManager")
-  AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
-    return new ProviderManager(Arrays.asList(totpCheckProvider));
+  AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider,
+      MultiFactorPasskeyCheckProvider passkeyCheckProvider) {
+    return new ProviderManager(Arrays.asList(totpCheckProvider, passkeyCheckProvider));
   }
 
   public AuthenticationSuccessHandler successHandler(Clock clock) {
@@ -137,8 +149,17 @@ public class IamTotpMfaConfig {
   }
 
   @Bean
-  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
-    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService,
+      MultiFactorPolicy multiFactorPolicy) {
+    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService, multiFactorPolicy);
+  }
+
+  @Bean
+  MultiFactorPolicy multiFactorPolicy(IamTotpMfaService totpMfaService,
+      IamTotpMfaProperties totpMfaProperties, IamPasskeyService passkeyService,
+      IamPasskeyProperties passkeyProperties) {
+    return new MultiFactorPolicy(totpMfaService, totpMfaProperties, passkeyService,
+        passkeyProperties);
   }
 
 }

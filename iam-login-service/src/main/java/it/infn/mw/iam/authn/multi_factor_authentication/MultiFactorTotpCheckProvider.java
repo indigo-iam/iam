@@ -17,15 +17,13 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 
-import java.util.Set;
-
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -38,13 +36,18 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  */
 public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
+  public static final String PASSKEY_REQUIRED_MESSAGE =
+      "A passkey is required as second factor on this account";
+
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService totpMfaService;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo,
-      IamTotpMfaService totpMfaService) {
+      IamTotpMfaService totpMfaService, MultiFactorPolicy multiFactorPolicy) {
     this.accountRepo = accountRepo;
     this.totpMfaService = totpMfaService;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   @Override
@@ -64,6 +67,12 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+
+    // When passkeys are mandatory the authenticator app is accepted only until a passkey is
+    // registered, so that the user can get to the enrolment page one last time
+    if (multiFactorPolicy.onlyPasskeyAccepted(account)) {
+      throw new BadCredentialsException(PASSKEY_REQUIRED_MESSAGE);
+    }
 
     if (!isValidTotp(account, totp)) {
       throw new BadCredentialsException("Bad TOTP");
@@ -90,41 +99,8 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   }
 
   private Authentication createSuccessfulAuthentication(Authentication authentication) {
-    IamAuthenticationMethodReference otp =
-        new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
-
-    Set<IamAuthenticationMethodReference> refs;
-    Object principal;
-    Object credentials;
-    Set<GrantedAuthority> authorities;
-    AbstractExternalAuthenticationToken<?> externalAuthentication = null;
-
-    if (authentication instanceof ExtendedAuthenticationToken token) {
-      refs = token.getAuthenticationMethodReferences();
-      principal = token.getPrincipal();
-      credentials = token.getCredentials();
-      authorities = token.getFullyAuthenticatedAuthorities();
-      externalAuthentication = token.getExternalAuthentication();
-    } else if (authentication instanceof AbstractExternalAuthenticationToken<?> token) {
-      refs = token.getAuthenticationMethodReferences();
-      principal = token.getPrincipal();
-      credentials = token.getCredentials();
-      authorities = token.getFullyAuthenticatedAuthorities();
-      externalAuthentication = token;
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported authentication type: " + authentication.getClass());
-    }
-
-    refs.add(otp);
-
-    ExtendedAuthenticationToken newToken =
-        new ExtendedAuthenticationToken(principal, credentials, authorities);
-    newToken.setAuthenticationMethodReferences(refs);
-    newToken.setAuthenticated(true);
-    newToken.setExternalAuthentication(externalAuthentication);
-
-    return newToken;
+    return MultiFactorVerifiedTokenFactory.create(authentication,
+        new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue()));
   }
 
   @Override
