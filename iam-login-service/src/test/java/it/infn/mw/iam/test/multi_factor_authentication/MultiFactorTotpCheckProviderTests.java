@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -148,8 +147,8 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
     assertNotNull(multiFactorTotpCheckProvider.authenticate(token));
 
     verify(accountService).checkLoginAllowed(account.getUuid());
-    verify(accountService).resetLoginLockout(eq(account.getUuid()),
-        eq(LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION));
+    verify(accountService).resetLoginLockout(account.getUuid(),
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
     verify(accountService, never()).loginFailedAttempt(anyString());
   }
 
@@ -164,7 +163,7 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
     BadCredentialsException e = assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
     assertEquals("Bad TOTP", e.getMessage());
-    verify(accountService).loginFailedAttempt(eq(account.getUuid()));
+    verify(accountService).loginFailedAttempt(account.getUuid());
   }
 
   @Test
@@ -177,10 +176,10 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
     doThrow(new LockedException("Bad credentials")).when(accountService)
       .checkLoginAllowed(account.getUuid());
 
-    LockedException e = assertThrows(LockedException.class,
-        () -> multiFactorTotpCheckProvider.authenticate(token));
+    LockedException e =
+        assertThrows(LockedException.class, () -> multiFactorTotpCheckProvider.authenticate(token));
     assertEquals("Bad credentials", e.getMessage());
-    verify(accountService, never()).loginFailedAttempt(eq("locked"));
+    verify(accountService, never()).loginFailedAttempt("locked");
   }
 
   @Test
