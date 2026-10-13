@@ -27,11 +27,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +63,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 class ClientManagementAPIControllerTests {
 
   static final String IAM_CLIENTS_API_URL = "/iam/api/clients/";
+  static final String JSON_PATCH_CONTENT_TYPE = "application/json-patch+json";
 
   static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
   static final ResultMatcher BAD_REQUEST = status().isBadRequest();
@@ -423,5 +427,147 @@ class ClientManagementAPIControllerTests {
 
     RegisteredClientDTO clientDto = mapper.readValue(responseJson, RegisteredClientDTO.class);
     assertNull(clientDto.getClientSecret());
+  }
+
+  private static Map<String, Object> replaceOp(String path, String value) {
+    return Map.of("op", "replace", "path", path, "value", value);
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientNameAndDescription() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-patch");
+    client.setClientId("test-client-patch");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED);
+
+    String patchBody = mapper.writeValueAsString(List.of(
+        replaceOp("/client_name", "patched-client-name"),
+        replaceOp("/client_description", "patched client description")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "test-client-patch").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.client_name", is("patched-client-name")))
+      .andExpect(jsonPath("$.client_description", is("patched client description")));
+
+    ClientDetailsEntity clientEntity = clientRepository.findByClientId("test-client-patch").get();
+    assertEquals("patched-client-name", clientEntity.getClientName());
+    assertEquals("patched client description", clientEntity.getClientDescription());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void patchClientWithUserIsForbidden() throws Exception {
+
+    String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", "new-name")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(FORBIDDEN);
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsUnsupportedPath() throws Exception {
+
+    String patchBody =
+        mapper.writeValueAsString(List.of(replaceOp("/client_id", "another-client-id")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", startsWith("Unsupported patch path")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsUnsupportedOperation() throws Exception {
+
+    String patchBody =
+        mapper.writeValueAsString(List.of(Map.of("op", "remove", "path", "/client_name")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", startsWith("Unsupported patch operation")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsNonStringValue() throws Exception {
+
+    String patchBody =
+        mapper.writeValueAsString(List.of(Map.of("op", "replace", "path", "/client_name", "value", 42)));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", is("Patch operation for path '/client_name' requires a string value")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsInvalidSize() throws Exception {
+
+    String tooLongName = "n".repeat(300);
+    String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", tooLongName)));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(BAD_REQUEST);
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsPlainJsonContentType() throws Exception {
+
+    String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", "new-name")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(APPLICATION_JSON)
+        .content(patchBody))
+      .andExpect(status().isUnsupportedMediaType());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientRejectsMissingValue() throws Exception {
+
+    String patchBody =
+        mapper.writeValueAsString(List.of(Map.of("op", "replace", "path", "/client_name")));
+
+    mvc
+      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+        .content(patchBody))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error",
+          is("Patch operation 'replace' for path '/client_name' requires a 'value' member")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void patchClientNotFound() throws Exception {
+
+    String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", "new-name")));
+
+    mvc
+      .perform(
+          patch(IAM_CLIENTS_API_URL + "does-not-exist").contentType(JSON_PATCH_CONTENT_TYPE)
+            .content(patchBody))
+      .andExpect(status().isNotFound());
   }
 }

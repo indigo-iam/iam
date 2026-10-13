@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -96,6 +97,24 @@ class ClientEventTests {
     assertNotNull(event.getMessage());
     assertThat(event.getMessage(),
         containsString("Client updated"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void testClientPatch() throws Exception {
+
+    String patchBody =
+        "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"patched-name\"}]";
+
+    mvc.perform(patch("/iam/api/clients/client")
+            .contentType("application/json-patch+json")
+            .content(patchBody))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.client_name", is("patched-name")));
+
+    IamAuditApplicationEvent event = logger.getLastEvent();
+    assertThat(event, instanceOf(ClientUpdatedEvent.class));
+    assertThat(event.getMessage(), containsString("Client updated"));
   }
 
   @Test
