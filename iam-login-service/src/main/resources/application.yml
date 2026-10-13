@@ -209,8 +209,8 @@ iam:
   login-lockout:
     enabled: ${IAM_LOGIN_LOCKOUT_ENABLED:true}
     max-failed-attempts: ${IAM_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS:5}
-    observation-window: ${IAM_LOGIN_LOCKOUT_OBSERVATION_WINDOW:15m}
-    lock-duration: ${IAM_LOGIN_LOCKOUT_LOCK_DURATION:15m}
+    observation-window: ${IAM_LOGIN_LOCKOUT_OBSERVATION_WINDOW:5m}
+    lock-duration: ${IAM_LOGIN_LOCKOUT_LOCK_DURATION:30m}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}

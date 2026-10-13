@@ -395,7 +395,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
-    model.put("suspensionDurationMinutes", duration.get(ChronoUnit.MINUTES));
+    model.put("durationInMinutes", duration.toMinutes());
     model.put("hasLocalPassword",
         account.getPassword() != null && !account.getPassword().isEmpty());
 
