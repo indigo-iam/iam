@@ -28,7 +28,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import dev.samstevens.totp.exceptions.QrGenerationException;
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
@@ -66,14 +68,23 @@ public class AuthenticatorAppSettingsController {
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private final NotificationFactory notificationFactory;
+  private final AccountUtils accountUtils;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, IamTotpMfaProperties iamTotpMfaProperties,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory, AccountUtils accountUtils,
+      MultiFactorPolicy multiFactorPolicy) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.notificationFactory = notificationFactory;
+    this.accountUtils = accountUtils;
+    this.multiFactorPolicy = multiFactorPolicy;
+  }
+
+  private void checkEnrolmentAllowed(IamAccount account) {
+    multiFactorPolicy.checkEnrolmentAllowed(accountUtils.isPreAuthenticated(), account);
   }
 
   /**
@@ -89,6 +100,7 @@ public class AuthenticatorAppSettingsController {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+    checkEnrolmentAllowed(account);
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(totpMfa.getSecret(),
@@ -126,6 +138,7 @@ public class AuthenticatorAppSettingsController {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+    checkEnrolmentAllowed(account);
 
     boolean valid = false;
 

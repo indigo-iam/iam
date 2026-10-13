@@ -25,6 +25,8 @@ public class MultiFactorSettingsDTO {
   @NotEmpty
   private boolean authenticatorAppActive;
 
+  private boolean passkeyActive;
+
   // add further factors if/when implemented
 
   public MultiFactorSettingsDTO() {}
@@ -47,5 +49,19 @@ public class MultiFactorSettingsDTO {
    */
   public void setAuthenticatorAppActive(final boolean authenticatorAppActive) {
     this.authenticatorAppActive = authenticatorAppActive;
+  }
+
+  /**
+   * @return true if at least one passkey is registered
+   */
+  public boolean getPasskeyActive() {
+    return passkeyActive;
+  }
+
+  /**
+   * @param passkeyActive new status of passkeys
+   */
+  public void setPasskeyActive(final boolean passkeyActive) {
+    this.passkeyActive = passkeyActive;
   }
 }

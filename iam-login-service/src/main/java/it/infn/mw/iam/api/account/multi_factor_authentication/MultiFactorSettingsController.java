@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.IamPasskeyService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -45,11 +46,13 @@ public class MultiFactorSettingsController {
       "/iam/multi-factor-settings/{accountId}";
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
+  private final IamPasskeyService passkeyService;
 
   public MultiFactorSettingsController(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, IamPasskeyService passkeyService) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
+    this.passkeyService = passkeyService;
   }
 
   /**
@@ -70,6 +73,7 @@ public class MultiFactorSettingsController {
 
     MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
     dto.setAuthenticatorAppActive(isActive);
+    dto.setPasskeyActive(passkeyService.isPasskeyActive(account));
     return dto;
   }
 
@@ -95,6 +99,8 @@ public class MultiFactorSettingsController {
     } else {
       dto.setAuthenticatorAppActive(false);
     }
+
+    dto.setPasskeyActive(passkeyService.isPasskeyActive(account));
 
     // add further factors if/when implemented
 
