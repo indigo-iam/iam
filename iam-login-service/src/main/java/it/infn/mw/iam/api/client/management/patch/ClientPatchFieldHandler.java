@@ -21,6 +21,7 @@ import javax.validation.ConstraintViolation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public interface ClientPatchFieldHandler {
@@ -38,7 +39,7 @@ public interface ClientPatchFieldHandler {
    * @throws it.infn.mw.iam.api.client.error.InvalidClientPatchRequestException if the value has
    *         the wrong JSON type for this field
    */
-  Set<? extends ConstraintViolation<?>> validate(JsonNode value);
+  Set<ConstraintViolation<RegisteredClientDTO>> validate(JsonNode value);
 
   /** Writes a value that has already passed {@link #validate(JsonNode)} onto the entity. */
   void apply(ClientDetailsEntity entity, JsonNode value);

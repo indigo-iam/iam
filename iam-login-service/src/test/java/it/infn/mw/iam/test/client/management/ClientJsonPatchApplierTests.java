@@ -20,11 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.stream.Stream;
+
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,8 +57,8 @@ class ClientJsonPatchApplierTests {
   void replacesClientName() throws Exception {
     JsonNode patch = mapper
       .readTree("[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"new-name\"}]");
-
     ClientDetailsEntity entity = clientWith("current-name", "current description");
+
     ClientDetailsEntity patched = applier.apply(entity, patch);
 
     assertEquals("new-name", patched.getClientName());
@@ -64,8 +69,8 @@ class ClientJsonPatchApplierTests {
   void replacesClientDescriptionAndEmptyBecomesNull() throws Exception {
     JsonNode patch =
         mapper.readTree("[{\"op\":\"replace\",\"path\":\"/client_description\",\"value\":\"\"}]");
-
     ClientDetailsEntity entity = clientWith("current-name", "current description");
+
     ClientDetailsEntity patched = applier.apply(entity, patch);
 
     assertEquals("current-name", patched.getClientName());
@@ -77,61 +82,37 @@ class ClientJsonPatchApplierTests {
     JsonNode patch = mapper.readTree(
         "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"new-name\"},"
             + "{\"op\":\"replace\",\"path\":\"/client_description\",\"value\":\"new description\"}]");
-
     ClientDetailsEntity entity = clientWith("current-name", "current description");
+
     ClientDetailsEntity patched = applier.apply(entity, patch);
 
     assertEquals("new-name", patched.getClientName());
     assertEquals("new description", patched.getClientDescription());
   }
 
-  @Test
-  void rejectsEmptyPatch() throws Exception {
-    JsonNode patch = mapper.readTree("[]");
-
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
-
-    assertTrue(e.getMessage().contains("non-empty"));
+  static Stream<Arguments> invalidPatchRequests() {
+    return Stream.of(
+        Arguments.of("[]", "non-empty"),
+        Arguments.of("{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"x\"}", "non-empty"),
+        Arguments.of("[{\"op\":\"add\",\"path\":\"/client_name\",\"value\":\"x\"}]",
+            "Unsupported patch operation"),
+        Arguments.of("[{\"op\":\"replace\",\"path\":\"/client_id\",\"value\":\"x\"}]",
+            "Unsupported patch path"),
+        Arguments.of("[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":42}]",
+            "requires a string value"));
   }
 
-  @Test
-  void rejectsNonArrayPatch() throws Exception {
-    JsonNode patch = mapper.readTree("{\"op\":\"replace\"}");
+  @ParameterizedTest
+  @MethodSource("invalidPatchRequests")
+  void rejectsInvalidPatchRequests(String patchJson, String expectedMessageFragment)
+      throws Exception {
+    JsonNode patch = mapper.readTree(patchJson);
+    ClientDetailsEntity entity = clientWith("name", "desc");
 
-    assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
-  }
+    InvalidClientPatchRequestException e =
+        assertThrows(InvalidClientPatchRequestException.class, () -> applier.apply(entity, patch));
 
-  @Test
-  void rejectsUnsupportedOperation() throws Exception {
-    JsonNode patch = mapper.readTree("[{\"op\":\"add\",\"path\":\"/client_name\",\"value\":\"x\"}]");
-
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
-
-    assertTrue(e.getMessage().contains("Unsupported patch operation"));
-  }
-
-  @Test
-  void rejectsUnsupportedPath() throws Exception {
-    JsonNode patch =
-        mapper.readTree("[{\"op\":\"replace\",\"path\":\"/client_id\",\"value\":\"x\"}]");
-
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
-
-    assertTrue(e.getMessage().contains("Unsupported patch path"));
-  }
-
-  @Test
-  void rejectsNonStringValue() throws Exception {
-    JsonNode patch = mapper.readTree("[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":42}]");
-
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
-
-    assertTrue(e.getMessage().contains("requires a string value"));
+    assertTrue(e.getMessage().contains(expectedMessageFragment));
   }
 
   @Test
@@ -140,9 +121,9 @@ class ClientJsonPatchApplierTests {
     JsonNode patch = mapper.readTree(
         String.format("[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"%s\"}]",
             tooLongName));
+    ClientDetailsEntity entity = clientWith("name", "desc");
 
-    assertThrows(ConstraintViolationException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
+    assertThrows(ConstraintViolationException.class, () -> applier.apply(entity, patch));
   }
 
   @Test
@@ -151,7 +132,6 @@ class ClientJsonPatchApplierTests {
         "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"valid-new-name\"},"
             + "{\"op\":\"replace\",\"path\":\"/client_description\",\"value\":\"%s\"}]",
         "d".repeat(2000)));
-
     ClientDetailsEntity entity = clientWith("current-name", "current description");
 
     assertThrows(ConstraintViolationException.class, () -> applier.apply(entity, patch));
@@ -166,9 +146,10 @@ class ClientJsonPatchApplierTests {
         "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"%s\"},"
             + "{\"op\":\"replace\",\"path\":\"/client_description\",\"value\":\"%s\"}]",
         "n".repeat(300), "d".repeat(2000)));
+    ClientDetailsEntity entity = clientWith("name", "desc");
 
-    ConstraintViolationException e = assertThrows(ConstraintViolationException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
+    ConstraintViolationException e =
+        assertThrows(ConstraintViolationException.class, () -> applier.apply(entity, patch));
 
     assertEquals(2, e.getConstraintViolations().size());
   }
@@ -176,9 +157,10 @@ class ClientJsonPatchApplierTests {
   @Test
   void rejectsReplaceWithoutValue() throws Exception {
     JsonNode patch = mapper.readTree("[{\"op\":\"replace\",\"path\":\"/client_name\"}]");
+    ClientDetailsEntity entity = clientWith("name", "desc");
 
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
+    InvalidClientPatchRequestException e =
+        assertThrows(InvalidClientPatchRequestException.class, () -> applier.apply(entity, patch));
 
     assertEquals("Patch operation 'replace' for path '/client_name' requires a 'value' member",
         e.getMessage());
@@ -187,9 +169,10 @@ class ClientJsonPatchApplierTests {
   @Test
   void rejectsNonObjectOperation() throws Exception {
     JsonNode patch = mapper.readTree("[\"replace\"]");
+    ClientDetailsEntity entity = clientWith("name", "desc");
 
-    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
-        () -> applier.apply(clientWith("name", "desc"), patch));
+    InvalidClientPatchRequestException e =
+        assertThrows(InvalidClientPatchRequestException.class, () -> applier.apply(entity, patch));
 
     assertTrue(e.getMessage().contains("must be a JSON object"));
   }

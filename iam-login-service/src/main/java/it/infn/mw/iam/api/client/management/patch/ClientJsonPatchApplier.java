@@ -32,6 +32,7 @@ import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
 
 import it.infn.mw.iam.api.client.error.InvalidClientPatchRequestException;
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @Component
@@ -72,7 +73,7 @@ public class ClientJsonPatchApplier {
     Set<String> touchedPaths = new LinkedHashSet<>();
     patchRequest.forEach(operation -> touchedPaths.add(operation.path("path").asText()));
 
-    Set<ConstraintViolation<?>> violations = new HashSet<>();
+    Set<ConstraintViolation<RegisteredClientDTO>> violations = new HashSet<>();
     for (String path : touchedPaths) {
       violations
         .addAll(registry.get(path).orElseThrow().validate(patchedFields.path(fieldName(path))));
