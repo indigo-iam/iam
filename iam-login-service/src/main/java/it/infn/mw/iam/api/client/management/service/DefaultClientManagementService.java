@@ -36,6 +36,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import it.infn.mw.iam.api.client.management.patch.ClientJsonPatchApplier;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -78,11 +81,13 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
+  private final ClientJsonPatchApplier patchApplier;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
       IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
-      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory,
+      ClientJsonPatchApplier patchApplier) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
@@ -92,6 +97,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
+    this.patchApplier = patchApplier;
   }
 
   @Override
@@ -154,6 +160,12 @@ public class DefaultClientManagementService implements ClientManagementService {
     return request.getEntityId() != null;
   }
 
+  private void assertClientIsUpdatable(ClientDetailsEntity client) {
+    if (client.getClientRelyingParty() != null && !client.getClientId().startsWith("https")) {
+      throw new InvalidRequestException("Federated clients cannot be updated");
+    }
+  }
+
   @Override
   public void deleteClientByClientId(String clientId) {
 
@@ -191,9 +203,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
-      throw new InvalidRequestException("Federated clients cannot be updated");
-    }
+    assertClientIsUpdatable(oldClient);
 
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
@@ -226,6 +236,22 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient = clientService.updateClient(newClient);
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, newClient));
     return converter.registeredClientDtoFromEntity(newClient);
+  }
+
+  @Override
+  public RegisteredClientDTO patchClient(String clientId, JsonNode patch) {
+
+    ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+
+    assertClientIsUpdatable(oldClient);
+
+    ClientDetailsEntity patchedClient = patchApplier.apply(oldClient, patch);
+
+    ClientDetailsEntity updatedClient = clientService.updateClient(patchedClient);
+    eventPublisher.publishEvent(new ClientUpdatedEvent(this, updatedClient));
+
+    return converter.registeredClientDtoFromEntity(updatedClient);
   }
 
   @Override

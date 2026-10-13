@@ -47,8 +47,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.error.InvalidClientPatchRequestException;
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -162,6 +164,14 @@ public class ClientManagementAPIController {
     return managementService.updateClient(clientId, client);
   }
 
+  @PatchMapping(value = "/{clientId}", consumes = "application/json-patch+json")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @JsonView({ClientViews.NoSecretManagementRegistration.class})
+  public RegisteredClientDTO patchClient(@PathVariable String clientId,
+      @RequestBody JsonNode patch) {
+    return managementService.patchClient(clientId, patch);
+  }
+
   @PatchMapping("/{clientId}/enable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void enableClient(@PathVariable String clientId) {
@@ -247,6 +257,12 @@ public class ClientManagementAPIController {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidRequestException.class)
   public ErrorDTO invalidRequestError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidClientPatchRequestException.class)
+  public ErrorDTO invalidClientPatchRequest(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }
