@@ -65,35 +65,36 @@ public class DefaultPasswordResetService
     this.eventPublisher = publisher;
   }
 
-  @Override
-  public void validateResetToken(String resetToken) {
+  private IamAccount findAndValidateAccount(String resetToken) {
 
     IamAccount account = accountRepository.findByResetKey(resetToken)
-        .orElseThrow(() -> new InvalidPasswordResetTokenError(
-            String.format("No account found for reset_key [%s]", resetToken)));
+      .orElseThrow(() -> new InvalidPasswordResetTokenError(
+          String.format("No account found for reset_key [%s]", resetToken)));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new InvalidPasswordResetTokenError(
           "The user account is not active or is linked to an email that has not been verified");
     }
+
+    return account;
+  }
+
+  @Override
+  public void validateResetToken(String resetToken) {
+
+    findAndValidateAccount(resetToken);
   }
 
   @Override
   public void resetPassword(String resetToken, String password) {
 
-    validateResetToken(resetToken);
-    // FIXME: we perform the lookup twice. if validateResetToken
-    // was modified to return the IamAccount we save one call to the DB
-    IamAccount account = accountRepository.findByResetKey(resetToken)
-        .orElseThrow(() -> new InvalidPasswordResetTokenError(
-            String.format("No account found for reset_key [%s]", resetToken)));
+    IamAccount account = findAndValidateAccount(resetToken);
 
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);
 
     accountRepository.save(account);
 
-    // completing the reset proves control of the linked email address
     accountService.resetLoginLockout(account.getUuid(), LoginLockoutResetReason.PASSWORD_RESET);
 
     eventPublisher.publishEvent(new PasswordResetEvent(this, account,
@@ -128,7 +129,7 @@ public class DefaultPasswordResetService
       throws UserNotActiveOrNotVerified, BadUserPasswordError {
 
     IamAccount account = accountRepository.findByUsername(username)
-        .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
+      .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new UserNotActiveOrNotVerified("Account is not active or email is not verified");
@@ -138,7 +139,6 @@ public class DefaultPasswordResetService
       throw new BadUserPasswordError("Wrong password provided");
     }
 
-    // set the new password
     account.setPassword(passwordEncoder.encode(newPassword));
     accountRepository.save(account);
 

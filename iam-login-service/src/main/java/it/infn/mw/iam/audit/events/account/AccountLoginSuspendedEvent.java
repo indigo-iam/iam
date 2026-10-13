@@ -17,13 +17,13 @@ package it.infn.mw.iam.audit.events.account;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-public class AccountSuspendedEvent extends AccountEvent {
+public class AccountLoginSuspendedEvent extends AccountEvent {
 
   public static final String TEMPLATE = "Account '%s' has been suspended";
 
   private static final long serialVersionUID = 1L;
 
-  public AccountSuspendedEvent(Object source, IamAccount account) {
+  public AccountLoginSuspendedEvent(Object source, IamAccount account) {
     super(source, account, String.format(TEMPLATE, account.getUsername()));
   }
 

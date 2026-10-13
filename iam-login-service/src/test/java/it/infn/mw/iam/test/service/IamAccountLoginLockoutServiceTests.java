@@ -56,7 +56,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.audit.events.account.AccountLoginLockoutResetEvent;
-import it.infn.mw.iam.audit.events.account.AccountSuspendedEvent;
+import it.infn.mw.iam.audit.events.account.AccountLoginSuspendedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
@@ -182,8 +182,8 @@ class IamAccountLoginLockoutServiceTests {
     assertEquals(3, lockout.getFailedAttempts());
     assertEquals(3, lockout.getLockoutCount());
     assertEquals(Date.from(NOW.plus(LOCK_DURATION)), lockout.getSuspendedUntil());
-    ArgumentCaptor<AccountSuspendedEvent> event =
-        ArgumentCaptor.forClass(AccountSuspendedEvent.class);
+    ArgumentCaptor<AccountLoginSuspendedEvent> event =
+        ArgumentCaptor.forClass(AccountLoginSuspendedEvent.class);
     verify(events).publishEvent(event.capture());
     assertSame(account, event.getValue().getAccount());
     verify(notifications).createAccountLockedMessage(account, LOCK_DURATION);

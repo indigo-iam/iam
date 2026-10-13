@@ -65,7 +65,7 @@ import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountLoginLockoutResetEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
-import it.infn.mw.iam.audit.events.account.AccountSuspendedEvent;
+import it.infn.mw.iam.audit.events.account.AccountLoginSuspendedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -703,7 +703,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     if (lockout.getFailedAttempts() >= iamProperties.getLoginLockout().getMaxFailedAttempts()) {
       Duration lockDuration = iamProperties.getLoginLockout().getLockDuration();
       lockout.applySuspension(now, lockDuration);
-      eventPublisher.publishEvent(new AccountSuspendedEvent(this, account));
+      eventPublisher.publishEvent(new AccountLoginSuspendedEvent(this, account));
       notificationFactory.createAccountLockedMessage(account, lockDuration);
     }
 
