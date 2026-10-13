@@ -81,6 +81,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.registration.TokenGenerator;
@@ -130,6 +131,9 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
   @Mock
   IamTotpMfaRepository iamTotpMfaRepository;
+
+  @Mock
+  IamPasskeyRepository passkeyRepository;
 
   @Mock
   IamProperties iamProperties;
@@ -184,7 +188,7 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
         passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo,
         notificationFactory, iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo,
-        iamTotpMfaRepository);
+        iamTotpMfaRepository, passkeyRepository);
   }
 
   @Test

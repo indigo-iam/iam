@@ -19,8 +19,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import javax.persistence.LockModeType;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -210,5 +213,9 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
     List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from IamAccount a where a.id = :id")
+    Optional<IamAccount> findByIdForUpdate(@Param("id") Long id);
 
 }
