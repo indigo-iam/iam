@@ -23,6 +23,7 @@ import java.nio.file.ProviderNotFoundException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -34,18 +35,22 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 /**
- * Used in the MFA verification flow. Receives either a TOTP and constructs the authentication
- * request with this parameter. The request is passed to dedicated authentication providers which
- * will create the full authentication or raise the appropriate exception
+ * Used in the MFA verification flow. Receives either a TOTP or a passkey assertion and constructs
+ * the authentication request with this parameter. The request is passed to dedicated
+ * authentication providers which will create the full authentication or raise the appropriate
+ * exception
  */
 public class MultiFactorVerificationFilter extends AbstractAuthenticationProcessingFilter {
 
   public static final String TOTP_MFA_CODE_KEY = "totp";
+  public static final String PASSKEY_ASSERTION_KEY = "passkey";
   public static final String TOTP_VERIFIED = "TOTP_VERIFIED";
+  public static final String PASSKEY_VERIFIED = "PASSKEY_VERIFIED";
 
   public static final AntPathRequestMatcher DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER =
       new AntPathRequestMatcher(MFA_VERIFY_URL, "POST");
@@ -53,6 +58,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   private static final boolean postOnly = true;
 
   private String totpParameter = TOTP_MFA_CODE_KEY;
+  private String passkeyParameter = PASSKEY_ASSERTION_KEY;
 
   public MultiFactorVerificationFilter(AuthenticationManager authenticationManager,
       AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
@@ -75,16 +81,23 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       throw new AuthenticationServiceException("Bad authentication");
     }
 
-    return processTotpAuthentication(auth, request);
+    String totp = parseTotp(request);
+
+    if (totp != null) {
+      return processTotpAuthentication(auth, request, totp);
+    }
+
+    String passkey = parsePasskey(request);
+
+    if (passkey != null) {
+      return processPasskeyAuthentication(auth, request, passkey);
+    }
+
+    throw new ProviderNotFoundException("No valid second factor was received");
   }
 
   private Authentication processTotpAuthentication(Authentication auth,
-      HttpServletRequest request) {
-    // Parse TOTP from request (only one should be set)
-    String totp = parseTotp(request);
-    if (totp == null) {
-      throw new ProviderNotFoundException("No valid TOTP code was received");
-    }
+      HttpServletRequest request, String totp) {
 
     if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       extendedAuthenticationToken.setTotp(totp);
@@ -98,6 +111,24 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
     }
 
     request.setAttribute(TOTP_VERIFIED, Boolean.TRUE);
+    return fullAuthentication;
+  }
+
+  private Authentication processPasskeyAuthentication(Authentication auth,
+      HttpServletRequest request, String passkey) {
+
+    // The challenge is single use: it is removed from the session before verification so that a
+    // failed or replayed assertion can never be verified against it again
+    PasskeyChallenge challenge = consumeChallenge(request.getSession(false));
+
+    Authentication fullAuthentication = getAuthenticationManager()
+      .authenticate(new PasskeyAssertionAuthenticationToken(auth, passkey, challenge));
+
+    if (fullAuthentication == null) {
+      throw new ProviderNotFoundException("No valid passkey assertion was received");
+    }
+
+    request.setAttribute(PASSKEY_VERIFIED, Boolean.TRUE);
     return fullAuthentication;
   }
 
@@ -118,6 +149,20 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   private String parseTotp(HttpServletRequest request) {
     String totp = request.getParameter(this.totpParameter);
     return totp != null ? totp.trim() : null;
+  }
+
+  private PasskeyChallenge consumeChallenge(HttpSession session) {
+    if (session == null) {
+      return null;
+    }
+    Object challenge = session.getAttribute(PasskeyChallenge.SESSION_ATTRIBUTE);
+    session.removeAttribute(PasskeyChallenge.SESSION_ATTRIBUTE);
+    return challenge instanceof PasskeyChallenge passkeyChallenge ? passkeyChallenge : null;
+  }
+
+  private String parsePasskey(HttpServletRequest request) {
+    String passkey = request.getParameter(this.passkeyParameter);
+    return passkey != null && !passkey.isBlank() ? passkey.trim() : null;
   }
 
 }

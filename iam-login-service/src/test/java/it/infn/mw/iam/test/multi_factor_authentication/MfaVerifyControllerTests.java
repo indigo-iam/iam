@@ -83,6 +83,7 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
 
     testAccount = getTestAccount(clock.instant());
     mfaAccount = getTotpMfaAccount(clock.instant());
+    mfaAccount.setActive(true);
     totp = getTotpMfaFor(mfaAccount, clock.instant());
     Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
 

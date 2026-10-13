@@ -57,11 +57,20 @@ class EnforceMfaFilterTests {
     private MockMvc mvc;
 
     @Test
-    @WithMockUser(username = "test", roles = "USER")
-    void testMfaActivateUrlNotAccessableWithUserRole() throws Exception {
+    @WithMockUser(username = "test-with-mfa", roles = "USER")
+    void testMfaActivateUrlNotAccessableWithUserRoleWhenNoEnrolmentIsRequired() throws Exception {
         mvc.perform(get(MFA_ACTIVATE_URL)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "test", roles = "USER")
+    void testMfaActivateUrlAccessibleWithUserRoleWhenEnrolmentIsRequired() throws Exception {
+        // The filter sends a fully authenticated user without a factor here: the page must open
+        mvc.perform(get(MFA_ACTIVATE_URL)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test

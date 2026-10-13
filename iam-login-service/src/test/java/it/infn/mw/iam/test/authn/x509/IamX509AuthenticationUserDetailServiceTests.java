@@ -16,6 +16,7 @@
 
 package it.infn.mw.iam.test.authn.x509;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -35,14 +36,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,11 +50,9 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
   @Mock
   IamAccountRepository accountRepository;
   @Mock
-  IamTotpMfaRepository totpMfaRepository;
-  @Mock
   InactiveAccountAuthenticationHander inactiveAccountHandler;
   @Mock
-  IamTotpMfaProperties iamTotpMfaProperties;
+  MultiFactorPolicy multiFactorPolicy;
 
   Clock clock;
   IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
@@ -65,7 +62,7 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
   void setup() {
     clock = Clock.systemUTC();
     iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
-        accountRepository, totpMfaRepository, inactiveAccountHandler, iamTotpMfaProperties);
+        accountRepository, inactiveAccountHandler, multiFactorPolicy);
     token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
   }
 
@@ -84,13 +81,13 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
     IamAccount account = newAccount("test-user");
     when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
 
-    IamTotpMfa iamTotpMfa = new IamTotpMfa(clock.instant());
-    iamTotpMfa.setActive(true);
-    when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+    when(multiFactorPolicy.isActive(account)).thenReturn(true);
 
     UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
 
     assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
+    // The account authorities are granted only once the second factor is verified
+    assertEquals(1, userDetails.getAuthorities().size());
     Map<?, ?> details = (Map<?, ?>) token.getDetails();
     assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
   }
@@ -101,13 +98,13 @@ class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
     IamAccount account = newAccount("test-user");
     when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
 
-    IamTotpMfa iamTotpMfa = new IamTotpMfa();
-    when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
-    when(iamTotpMfaProperties.isMultiFactorMandatory()).thenReturn(true);
+    when(multiFactorPolicy.isMandatory()).thenReturn(true);
 
     UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
 
     assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
+    // The account authorities are granted only once the second factor is verified
+    assertEquals(1, userDetails.getAuthorities().size());
     Map<?, ?> details = (Map<?, ?>) token.getDetails();
     assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
   }

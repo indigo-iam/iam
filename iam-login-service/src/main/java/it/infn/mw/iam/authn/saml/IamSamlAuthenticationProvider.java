@@ -42,19 +42,17 @@ import org.springframework.security.saml.SAMLCredential;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamSamlId;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
 
@@ -65,19 +63,17 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
   private final Joiner joiner = Joiner.on(",").skipNulls();
   private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaRepository totpMfaRepository;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   public IamSamlAuthenticationProvider(SamlUserIdentifierResolver resolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
-      IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
+      MultiFactorPolicy multiFactorPolicy) {
     this.userIdResolver = resolver;
     this.validator = validator;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
     this.accountRepo = accountRepo;
-    this.totpMfaRepository = totpMfaRepository;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   private Supplier<AuthenticationServiceException> handleResolutionFailure(
@@ -120,8 +116,6 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
       Set<IamAuthenticationMethodReference> refs = new HashSet<>();
       refs.add(pwd);
 
-      Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
-
       // Check if SAML assertion coming from remote IdP contains mfa signal in authnContextClassRef
       String authnContextClassRef = samlCredentials.getAuthenticationAssertion()
         .getAuthnStatements()
@@ -138,9 +132,8 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
 
         
       boolean authnMissing = authnContextClassRef == null;
-      boolean active = totpMfaOptional.map(IamTotpMfa::isActive).orElse(false);
-      boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
-
+      boolean active = multiFactorPolicy.isActive(account.get());
+      boolean mandatory = multiFactorPolicy.isMandatory();
 
       if ((active && authnMissing) || (!active && mandatory)) {
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);

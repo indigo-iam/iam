@@ -35,12 +35,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -50,8 +49,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   private final LocalAuthenticationAllowedUsers allowedUsers;
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaService iamTotpMfaService;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
@@ -59,13 +57,12 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
-      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+      MultiFactorPolicy multiFactorPolicy) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
-    this.iamTotpMfaService = iamTotpMfaService;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   /**
@@ -79,10 +76,14 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    boolean isPreAuthenticated = false;
-    if (authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
-      isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
+    // A token that was already pre-authenticated (by this provider on a previous request, or by
+    // another mechanism such as X.509) is only re-validated, never re-authenticated
+    ExtendedAuthenticationToken preAuthenticatedToken = null;
+    if (authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken
+        && extendedAuthenticationToken.isPreAuthenticated()) {
+      preAuthenticatedToken = extendedAuthenticationToken;
     }
+    boolean isPreAuthenticated = preAuthenticatedToken != null;
 
     // If not preauthenticated then the first step is to validate the default login credentials.
     // Therefore, we convert the
@@ -97,40 +98,63 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
+    // The password check performed this control on every request; a pre-authenticated token is
+    // re-validated without it, so an account disabled in the meantime must still be stopped here
+    if (isPreAuthenticated && !account.isActive()) {
+      throw new DisabledException("User '" + account.getUsername() + "' is not active.");
+    }
+
     ExtendedAuthenticationToken token;
 
-    // We have just completed an authentication with the user's password. Therefore, we add "pwd" to
-    // the list of authentication method references.
-    IamAuthenticationMethodReference pwd =
-        new IamAuthenticationMethodReference(PASSWORD.getValue());
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
-    refs.add(pwd);
+    if (isPreAuthenticated) {
+      // The references describe how the first factor was verified: keep them
+      if (preAuthenticatedToken.getAuthenticationMethodReferences() != null) {
+        refs.addAll(preAuthenticatedToken.getAuthenticationMethodReferences());
+      }
+    } else {
+      // We have just completed an authentication with the user's password. Therefore, we add "pwd"
+      // to the list of authentication method references.
+      refs.add(new IamAuthenticationMethodReference(PASSWORD.getValue()));
+    }
 
-    // Checking to see if we can find an active MFA secret attached to the user's account. If so,
-    // MFA is enabled on the account
-    if (iamTotpMfaService.isAuthenticatorAppActive(account) || iamTotpMfaProperties.isMultiFactorMandatory()) {
+    // A second factor is active on the account, or required by the policy: the user is only
+    // pre-authenticated until it is verified (or enrolled)
+    if (multiFactorPolicy.isMandatory() || multiFactorPolicy.isActive(account)) {
       List<GrantedAuthority> currentAuthorities = new ArrayList<>();
       // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
       currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);
 
-      // Retrieve the authorities that are assigned to this user when they are fully authenticated
+      // Retrieve the authorities that are assigned to this user when they are fully authenticated.
+      // A token that was already pre-authenticated only carries the PRE_AUTHENTICATED role: the
+      // authorities to grant after the second factor are the ones it was built with
       Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>();
-      for (GrantedAuthority a : authentication.getAuthorities()) {
-        fullyAuthenticatedAuthorities.add(a);
+      if (isPreAuthenticated && preAuthenticatedToken.getFullyAuthenticatedAuthorities() != null) {
+        fullyAuthenticatedAuthorities
+          .addAll(preAuthenticatedToken.getFullyAuthenticatedAuthorities());
+      } else {
+        fullyAuthenticatedAuthorities.addAll(authentication.getAuthorities());
       }
 
       // Construct a new authentication object for the PRE_AUTHENTICATED user.
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
           authentication.getCredentials(), currentAuthorities);
       token.setAuthenticated(false);
+      // The password has been verified: until the second factor is, every request re-validates
+      // this token through the pre-authenticated path above, without a second password check
+      token.setPreAuthenticated(true);
       token.setAuthenticationMethodReferences(refs);
       token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
       // MFA is not enabled on this account, construct a new authentication object for the FULLY
-      // AUTHENTICATED user, granting their normal authorities
+      // AUTHENTICATED user, granting their normal authorities (a pre-authenticated token only
+      // carries the PRE_AUTHENTICATED role: its full authorities were kept aside)
       token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
-          authentication.getCredentials(), authentication.getAuthorities());
+          authentication.getCredentials(),
+          isPreAuthenticated && preAuthenticatedToken.getFullyAuthenticatedAuthorities() != null
+              ? preAuthenticatedToken.getFullyAuthenticatedAuthorities()
+              : authentication.getAuthorities());
       token.setAuthenticationMethodReferences(refs);
       token.setAuthenticated(true);
     }

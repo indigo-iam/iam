@@ -24,12 +24,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.random.RandomGenerator;
 
@@ -41,18 +43,33 @@ import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
+import it.infn.mw.iam.test.multi_factor_authentication.passkey.PasskeyTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
+@TestPropertySource(properties = {"mfa.passkey.enabled=true"})
 class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
 
   @Autowired
   private IamAupRepository aupRepo;
+
+  @Autowired
+  private IamAccountRepository accountRepository;
+
+  @Autowired
+  private IamPasskeyRepository passkeyRepository;
+
+  @Autowired
+  private Clock clock;
   
   private static final String URL_DASHBOARD = "/dashboard";
   private static final String URL_VERIFY = "/iam/verify";
@@ -127,6 +144,24 @@ class SamlExternalAuthenticationTests extends SamlAuthenticationTestSupport {
     mvc.perform(get(URL_VERIFY).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name(VIEW_VERIFY_MFA));
+  }
+
+  @Test
+  void testRegisteredUserWithPasskeyGetsRedirectedToMfaVerify() throws Throwable {
+    IamAccount account = accountRepository.findByUsername("test").orElseThrow();
+    passkeyRepository.save(PasskeyTestSupport.placeholderPasskey(account, clock.instant()));
+
+    MockHttpSession session = performInitialLogin();
+
+    AuthnRequest authnRequest = getAuthnRequestFromSession(session);
+    Response response = buildTest2Response(authnRequest);
+    session = postMfaResponseAndExpectRedirect(response, authnRequest, session, URL_VERIFY);
+
+    mvc.perform(get(URL_VERIFY).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name(VIEW_VERIFY_MFA))
+      .andExpect(model().attribute("isPasskeyActive", true))
+      .andExpect(model().attribute("isAuthenticatorAppActive", false));
   }
 
   @Test

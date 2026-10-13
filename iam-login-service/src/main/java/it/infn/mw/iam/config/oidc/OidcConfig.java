@@ -35,6 +35,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.api.openid_federation.FederatedOpRegistrationService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
@@ -157,13 +158,13 @@ public class OidcConfig {
       AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
+      IamOidcJITAccountProvisioningProperties jitProperties,
       OidcAccountProvisioningService oidcProvisioningService,
-      IamTotpMfaProperties iamTotpMfaProperties, UserInfoFetcher userInfoFetcher) {
+      MultiFactorPolicy multiFactorPolicy, UserInfoFetcher userInfoFetcher) {
 
     return new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper, accountRepo,
-        inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService,
-        iamTotpMfaProperties, userInfoFetcher);
+        inactiveAccountHandler, jitProperties, oidcProvisioningService, multiFactorPolicy,
+        userInfoFetcher);
   }
 
   @Bean

@@ -26,7 +26,10 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -200,6 +203,21 @@ public class IamX509PreauthenticationProcessingFilter
   protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
 
     return extractCredential(request).orElse(null);
+  }
+
+  /**
+   * When the login was requested, the success handler answers the request itself (redirect to the
+   * dashboard or to the MFA verification page): the rest of the chain must not run against the
+   * committed response
+   */
+  @Override
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+      throws IOException, ServletException {
+    super.doFilter(request, response, (req, res) -> {
+      if (!res.isCommitted()) {
+        chain.doFilter(req, res);
+      }
+    });
   }
 
   @Override

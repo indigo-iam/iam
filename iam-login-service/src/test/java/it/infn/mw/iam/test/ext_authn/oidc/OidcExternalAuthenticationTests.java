@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.UnsupportedEncodingException;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -57,8 +59,13 @@ import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.core.userinfo.UserInfoResponse;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamPasskey;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
+import it.infn.mw.iam.test.multi_factor_authentication.passkey.PasskeyTestSupport;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
@@ -73,7 +80,8 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
         "oidc.providers[0].client.clientId=iam",
         "oidc.providers[0].client.clientSecret=secret",
         "oidc.providers[0].client.scope=openid profile email",
-        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login"
+        "oidc.providers[0].client.redirectUris=http://localhost:8989/openid_connect_login",
+        "mfa.passkey.enabled=true"
         })
 //@formatter:on
 @Transactional
@@ -81,6 +89,15 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
 
   @Autowired
   private IamAupRepository aupRepo;
+
+  @Autowired
+  private IamAccountRepository accountRepository;
+
+  @Autowired
+  private IamPasskeyRepository passkeyRepository;
+
+  @Autowired
+  private Clock clock;
 
   @MockBean
   private UserInfoFetcher userInfoFetcher;
@@ -241,6 +258,39 @@ class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSup
     assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
     assertNotNull(response.getHeaders().getLocation());
     assertThat(response.getHeaders().getLocation().toString(), Matchers.startsWith(loginPageURL()));
+  }
+
+  @Test
+  // The login is handled by the server on another thread: the passkey must be committed
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void testOidcUserRedirectToMfaVerifyPageIfPasskeyIsActive()
+      throws JOSEException, JsonProcessingException, RestClientException {
+    IamAccount account = accountRepository.findByUsername("test").orElseThrow();
+    IamPasskey passkey =
+        passkeyRepository.save(PasskeyTestSupport.placeholderPasskey(account, clock.instant()));
+
+    try {
+      RestTemplate rt = noRedirectRestTemplate();
+      ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+      checkAuthorizationEndpointRedirect(response);
+
+      String sessionCookie = extractSessionCookie(response);
+      CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+      mockUserInfoResponseForUser("test-user");
+      String tokenResponse =
+          mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", ru.nonce);
+      prepareSuccessResponse(tokenResponse);
+
+      response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
+      verifyMockServerCalls();
+
+      assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
+      assertNotNull(response.getHeaders().getLocation());
+      assertThat(response.getHeaders().getLocation().toString(), equalTo(mfaVerifyPageURL()));
+    } finally {
+      passkeyRepository.delete(passkey);
+    }
   }
 
   @Test

@@ -16,9 +16,13 @@
 package it.infn.mw.iam.core.web.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.AUTHENTICATION_OPTIONS_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_OPTIONS_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.REGISTRATION_URL;
 import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.AUP_SIGN_PATH;
 import java.io.IOException;
 import java.util.Optional;
@@ -37,17 +41,22 @@ import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class EnforceMfaFilter implements Filter {
 
   public static final Logger LOG = LoggerFactory.getLogger(EnforceMfaFilter.class);
 
+  // The verification endpoints are reachable by pre-authenticated external logins (OIDC, SAML,
+  // X.509), which must verify their current factor before being sent to enrol a missing one
   private static final Set<String> ALLOWLIST_EXACT = Set.of(
       ENABLE_URL,
       ADD_SECRET_URL,
+      REGISTRATION_OPTIONS_URL,
+      REGISTRATION_URL,
+      AUTHENTICATION_OPTIONS_URL,
+      MFA_VERIFY_URL,
       MFA_ACTIVATE_URL,
       AUP_SIGN_PATH);
 
@@ -57,17 +66,15 @@ public class EnforceMfaFilter implements Filter {
       "/css/",
       "/js/",
       "/images/",
+      "/resources/",
       "/webjars/");
 
   private final AccountUtils accountUtils;
-  private final IamTotpMfaService iamTotpMfaService;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
 
-  public EnforceMfaFilter(AccountUtils accountUtils,
-      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
+  public EnforceMfaFilter(AccountUtils accountUtils, MultiFactorPolicy multiFactorPolicy) {
     this.accountUtils = accountUtils;
-    this.iamTotpMfaService = iamTotpMfaService;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   @Override
@@ -98,8 +105,7 @@ public class EnforceMfaFilter implements Filter {
       return;
     }
 
-    final boolean mfaMandatory = iamTotpMfaProperties.isMultiFactorMandatory();
-    if (!mfaMandatory) {
+    if (!multiFactorPolicy.isMandatory()) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("[ENFORCE_MFA] Skipping enforcement (MFA not mandatory)");
       }
@@ -131,7 +137,14 @@ public class EnforceMfaFilter implements Filter {
     }
 
     final boolean requestingMfa = Boolean.TRUE.equals(session.getAttribute(REQUESTING_MFA));
-    if (requestingMfa) {
+    final boolean requiresEnrolment = requiresEnrolment(authenticatedUserOpt.get());
+    if (requestingMfa && !requiresEnrolment) {
+      // The factor was enrolled elsewhere (another session, an administrator): the activation
+      // flow is over for this session too
+      LOG.info("[ENFORCE_MFA] User '{}' no longer needs to enrol a factor -> leaving activation flow",
+          authenticatedUserOpt.get().getUsername());
+      session.removeAttribute(REQUESTING_MFA);
+    } else if (requestingMfa) {
       if (!res.isCommitted()) {
         LOG.info("[ENFORCE_MFA] User '{}' is already in MFA activation flow -> redirecting to {}",
             authenticatedUserOpt.get().getUsername(), MFA_ACTIVATE_URL);
@@ -142,8 +155,8 @@ public class EnforceMfaFilter implements Filter {
       return;
     }
 
-    if (!iamTotpMfaService.isAuthenticatorAppActive(authenticatedUserOpt.get())) {
-      LOG.info("[ENFORCE_MFA] User '{}' has MFA disabled -> starting MFA activation flow",
+    if (requiresEnrolment) {
+      LOG.info("[ENFORCE_MFA] User '{}' is missing a mandatory factor -> starting activation flow",
           authenticatedUserOpt.get().getUsername());
       session.setAttribute(REQUESTING_MFA, true);
 
@@ -161,6 +174,10 @@ public class EnforceMfaFilter implements Filter {
     }
 
     chain.doFilter(req, res);
+  }
+
+  private boolean requiresEnrolment(IamAccount account) {
+    return multiFactorPolicy.requiresEnrolment(account);
   }
 
   private boolean isAllowListed(String path) {

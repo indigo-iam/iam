@@ -43,6 +43,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
@@ -50,14 +51,11 @@ import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.oidc.service.UserInfoFetcher;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class OIDCAuthenticationProvider implements AuthenticationProvider {
 
@@ -69,28 +67,26 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
   private final SessionTimeoutHelper sessionTimeoutHelper;
   private final IamAccountRepository accountRepo;
   private final InactiveAccountAuthenticationHander inactiveAccountHandler;
-  private final IamTotpMfaRepository totpMfaRepository;
   private final IamOidcJITAccountProvisioningProperties jitProperties;
   private final OidcAccountProvisioningService oidcProvisioningService;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
   private final UserInfoFetcher userInfoFetcher;
 
   public OIDCAuthenticationProvider(
       AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService,
       SessionTimeoutHelper sessionTimeoutHelper, IamAccountRepository accountRepo,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository, IamOidcJITAccountProvisioningProperties jitProperties,
+      IamOidcJITAccountProvisioningProperties jitProperties,
       OidcAccountProvisioningService oidcProvisioningService,
-      IamTotpMfaProperties iamTotpMfaProperties, UserInfoFetcher userInfoFetcher) {
+      MultiFactorPolicy multiFactorPolicy, UserInfoFetcher userInfoFetcher) {
 
     this.tokenValidatorService = tokenValidatorService;
     this.sessionTimeoutHelper = sessionTimeoutHelper;
     this.accountRepo = accountRepo;
     this.inactiveAccountHandler = inactiveAccountHandler;
-    this.totpMfaRepository = totpMfaRepository;
     this.jitProperties = jitProperties;
     this.oidcProvisioningService = oidcProvisioningService;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
     this.userInfoFetcher = userInfoFetcher;
   }
 
@@ -144,12 +140,10 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       OIDCAuthenticationToken token) {
 
     String acrValue = computeAcrValue(token);
-    Optional<IamTotpMfa> mfaSettings = totpMfaRepository.findByAccount(account);
 
     boolean mfaMissing = mfaNotDone(acrValue);
-    boolean active = mfaSettings.map(IamTotpMfa::isActive).orElse(false);
-    boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
-
+    boolean active = multiFactorPolicy.isActive(account);
+    boolean mandatory = multiFactorPolicy.isMandatory();
 
     if ((active && mfaMissing) || (!active && mandatory)) {
       return preAuthenticated(account, token);

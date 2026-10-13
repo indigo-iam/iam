@@ -36,10 +36,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -54,21 +53,18 @@ public class AuthenticationSuccessHandlerHelper {
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaService iamTotpMfaService;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
-      IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamAccountRepository accountRepo, MultiFactorPolicy multiFactorPolicy) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
-    this.iamTotpMfaService = iamTotpMfaService;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -77,7 +73,10 @@ public class AuthenticationSuccessHandlerHelper {
 
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
-    } else if (iamTotpMfaProperties.isMultiFactorMandatory() && !isMfaActive(authentication)) {
+    } else if (multiFactorPolicy.isMandatory() && !isMfaActive(authentication)) {
+      // No factor at all: enrol one straight away. A user who still has to add a mandatory
+      // passkey but already owns an authenticator app verifies it first, and is then sent to the
+      // enrolment page by the EnforceMfaFilter
       response.sendRedirect(MFA_ACTIVATE_URL);
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
@@ -91,7 +90,7 @@ public class AuthenticationSuccessHandlerHelper {
     IamAccount account = accountRepo.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    return iamTotpMfaService.isAuthenticatorAppActive(account);
+    return multiFactorPolicy.isActive(account);
   }
 
   /**

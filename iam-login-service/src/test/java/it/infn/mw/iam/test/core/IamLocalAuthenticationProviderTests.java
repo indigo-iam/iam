@@ -17,6 +17,7 @@
 package it.infn.mw.iam.test.core;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -33,13 +34,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationProperties;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -50,9 +51,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 class IamLocalAuthenticationProviderTests {
 
   @Mock
-  IamTotpMfaService iamTotpMfaService;
-  @Mock
-  IamTotpMfaProperties iamTotpMfaProperties;
+  MultiFactorPolicy multiFactorPolicy;
   @Mock
   IamProperties properties;
   @Mock
@@ -72,7 +71,7 @@ class IamLocalAuthenticationProviderTests {
 
     when(properties.getLocalAuthn()).thenReturn(localAuthn);
     iamLocalAuthenticationProvider = spy(new IamLocalAuthenticationProvider(properties, uds,
-        passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
+        passwordEncoder, accountRepo, multiFactorPolicy));
     clock = Clock.systemUTC();
   }
 
@@ -82,7 +81,20 @@ class IamLocalAuthenticationProviderTests {
     result.setPassword("secret");
     result.setUsername(username);
     result.setUuid(UUID.randomUUID().toString());
+    result.setActive(true);
     return result;
+  }
+
+  @Test
+  void testWhenPreAuthenticatedAndAccountDisabledThenAuthenticationFails() {
+    ExtendedAuthenticationToken token =
+        new ExtendedAuthenticationToken("test-principal", "test-credentials");
+    token.setPreAuthenticated(true);
+    IamAccount account = newAccount("test-user");
+    account.setActive(false);
+    when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
+
+    assertThrows(DisabledException.class, () -> iamLocalAuthenticationProvider.authenticate(token));
   }
 
   @Test
@@ -92,7 +104,7 @@ class IamLocalAuthenticationProviderTests {
     token.setPreAuthenticated(true);
     IamAccount account = newAccount("test-user");
     when(accountRepo.findByUsername(anyString())).thenReturn(Optional.of(account));
-    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(true);
+    when(multiFactorPolicy.isActive(account)).thenReturn(true);
 
     ExtendedAuthenticationToken newToken =
         (ExtendedAuthenticationToken) iamLocalAuthenticationProvider.authenticate(token);

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.PASSKEY_VERIFIED;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.TOTP_VERIFIED;
 
 import java.io.IOException;
@@ -94,6 +95,7 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     }
     session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
     request.removeAttribute(TOTP_VERIFIED);
+    request.removeAttribute(PASSKEY_VERIFIED);
   }
 }
 

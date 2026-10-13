@@ -24,6 +24,10 @@
         <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
         <script type="text/javascript" src="/webjars/angularjs/angular-animate.js"></script>
         <script type="text/javascript" src="/webjars/angular-ui-bootstrap/ui-bootstrap-tpls.min.js"></script>
+        <c:if test="${isPasskeyActive}">
+          <script type="text/javascript" src="${resourcesPrefix}/iam/js/passkey/webauthn.js"></script>
+          <script type="text/javascript" src="${resourcesPrefix}/iam/js/passkey/passkey-verify.js"></script>
+        </c:if>
     </jsp:attribute>
   <jsp:body>
     <div id="verify-error">
@@ -37,11 +41,15 @@
       </c:if>
     </div>
 
-    <!-- Displays additional factors of authentication one after the other. For example, if hardwareKeyActive, show that form. As there is only one available right now, only that one is displayed. -->
-    <!-- If additional factors are implemented, we could improve this so that, instead of displaying each factor one after the other, display buttons which, when pressed, open up that factor -->
+    <!-- Displays the factors of authentication available on the account one after the other -->
     <c:if test="${isAuthenticatorAppActive}">
       <div id="auth-app">
         <jsp:include page="authenticator-app/verify-authenticator-app-form.jsp" />
+      </div>
+    </c:if>
+    <c:if test="${isPasskeyActive}">
+      <div id="passkey">
+        <jsp:include page="passkey/verify-passkey-form.jsp" />
       </div>
     </c:if>
   </jsp:body>

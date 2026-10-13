@@ -61,6 +61,7 @@ import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.oidc.ClientConfigurationService;
@@ -146,7 +147,7 @@ class OIDCAuthenticationFilterTests {
   OidcAccountProvisioningService oidcProvisioningService;
 
   @Mock
-  IamTotpMfaProperties iamTotpMfaProperties;
+  MultiFactorPolicy multiFactorPolicy;
 
   @Mock
   UserInfoFetcher userInfoFetcher;
@@ -158,8 +159,8 @@ class OIDCAuthenticationFilterTests {
   @BeforeEach
   void setUp() {
     authProvider = new OIDCAuthenticationProvider(tokenValidatorService, sessionTimeoutHelper,
-        accountRepo, inactiveAccountHandler, totpMfaRepository, jitProperties,
-        oidcProvisioningService, iamTotpMfaProperties, userInfoFetcher);
+        accountRepo, inactiveAccountHandler, jitProperties, oidcProvisioningService,
+        multiFactorPolicy, userInfoFetcher);
 
     filter = new OIDCAuthenticationFilter(properties, validationServices, issuerService, servers,
         clientConfigurationService, authRequestBuilder, clock, tokenRequestor, env,

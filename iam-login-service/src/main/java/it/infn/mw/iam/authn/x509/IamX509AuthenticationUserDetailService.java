@@ -15,27 +15,24 @@
  */
 package it.infn.mw.iam.authn.x509;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthority;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Service
 public class IamX509AuthenticationUserDetailService
@@ -47,17 +44,14 @@ public class IamX509AuthenticationUserDetailService
   private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
 
   IamAccountRepository accountRepository;
-  IamTotpMfaRepository totpMfaRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final MultiFactorPolicy multiFactorPolicy;
 
   public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, InactiveAccountAuthenticationHander handler,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      InactiveAccountAuthenticationHander handler, MultiFactorPolicy multiFactorPolicy) {
     this.accountRepository = accountRepository;
-    this.totpMfaRepository = totpMfaRepository;
     this.inactiveAccountHandler = handler;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.multiFactorPolicy = multiFactorPolicy;
   }
 
   protected UserDetails buildUserFromIamAccount(IamAccount account,
@@ -65,22 +59,22 @@ public class IamX509AuthenticationUserDetailService
 
     inactiveAccountHandler.handleInactiveAccount(account);
 
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    boolean active = totpMfaOptional.map(IamTotpMfa::isActive).orElse(false);
-    boolean mandatory = iamTotpMfaProperties.isMultiFactorMandatory();
-
-    if (active || mandatory) {
-      addPreAuthenticatedRole(account);
+    if (multiFactorPolicy.isMandatory() || multiFactorPolicy.isActive(account)) {
       token.setDetails(Map.of("acr", ACR_VALUE_MFA));
+      return withPreAuthenticatedRole(AuthenticationUtils.userFromIamAccount(account));
     }
 
     return AuthenticationUtils.userFromIamAccount(account);
   }
 
-  private void addPreAuthenticatedRole(IamAccount account) {
-    Set<IamAuthority> currentAuthorities = new HashSet<>(account.getAuthorities());
-    currentAuthorities.add(new IamAuthority("ROLE_PRE_AUTHENTICATED"));
-    account.setAuthorities(currentAuthorities);
+  /**
+   * Until the second factor is verified the user only holds the PRE_AUTHENTICATED role, which
+   * grants access to the /iam/verify endpoint: the account authorities are granted by the
+   * verification step (see MfaVerifyController), never added to the persistent account
+   */
+  private UserDetails withPreAuthenticatedRole(User user) {
+    return new User(user.getUsername(), user.getPassword(),
+        Set.of(Authorities.ROLE_PRE_AUTHENTICATED));
   }
 
   @Override

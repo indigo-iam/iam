@@ -125,6 +125,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.google.common.base.Strings;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorPolicy;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -152,11 +153,9 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
 @Order(value = Ordered.LOWEST_PRECEDENCE)
@@ -173,9 +172,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private IamAccountRepository accountRepo;
-
-  @Autowired
-  private IamTotpMfaRepository totpMfaRepository;
 
   @Autowired
   private ResourceLoader resourceLoader;
@@ -220,7 +216,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   private HttpFirewall firewall;
 
   @Autowired
-  private IamTotpMfaProperties iamTotpMfaProperties;
+  private MultiFactorPolicy multiFactorPolicy;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -409,11 +405,11 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
       IamAccountRepository accountRepo, IamAccountService accountService,
       InactiveAccountAuthenticationHander handler, MappingPropertiesResolver mpResolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
-      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository,
-      IamSamlJITAccountProvisioningProperties jitProperties) {
+      SessionTimeoutHelper helper, IamSamlJITAccountProvisioningProperties jitProperties,
+      MultiFactorPolicy multiFactorPolicy) {
 
     IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
-        resolver, validator, helper, accountRepo, totpMfaRepository, iamTotpMfaProperties);
+        resolver, validator, helper, accountRepo, multiFactorPolicy);
 
     samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo,
         accountService, handler, mpResolver, jitProperties));
@@ -886,7 +882,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
     auth.authenticationProvider(
         samlAuthenticationProvider(resolver, accountRepo, accountService, inactiveAccountHandler,
-            mappingResolver, validator, sessionTimeoutHelper, totpMfaRepository, jitProperties));
+            mappingResolver, validator, sessionTimeoutHelper, jitProperties, multiFactorPolicy));
   }
 
   @Override

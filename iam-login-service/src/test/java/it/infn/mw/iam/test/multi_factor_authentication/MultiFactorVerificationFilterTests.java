@@ -16,13 +16,16 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.ProviderNotFoundException;
+import java.time.Instant;
 import java.util.ArrayList;
 
 import javax.servlet.http.HttpServletRequest;
@@ -39,12 +42,16 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyChallenge.Purpose;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.PasskeyAssertionAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
@@ -213,6 +220,83 @@ class MultiFactorVerificationFilterTests {
 
     when(request.getMethod()).thenReturn("POST");
     when(request.getParameter("totp")).thenReturn(null);
+
+    assertThrows(ProviderNotFoundException.class,
+        () -> multiFactorVerificationFilter.attemptAuthentication(request, response));
+  }
+
+  @Test
+  void testPasskeyAuthenticationConsumesSessionChallenge() throws Exception {
+    Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    PasskeyChallenge challenge =
+        new PasskeyChallenge(new byte[32], Purpose.AUTHENTICATION, "username",
+            Instant.now().plusSeconds(60));
+    MockHttpSession session = new MockHttpSession();
+    session.setAttribute(PasskeyChallenge.SESSION_ATTRIBUTE, challenge);
+
+    Authentication mockAuthenticatedToken =
+        new ExtendedAuthenticationToken("username", null, new ArrayList<>());
+    when(authenticationManager.authenticate(argThat(a -> a instanceof PasskeyAssertionAuthenticationToken t
+        && t.getAssertion().equals("{\"id\":\"x\"}") && t.getChallenge() == challenge
+        && t.getPreAuthentication() == mockAuth))).thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("totp")).thenReturn(null);
+    when(request.getParameter("passkey")).thenReturn(" {\"id\":\"x\"} ");
+    when(request.getSession(false)).thenReturn(session);
+
+    Authentication result = multiFactorVerificationFilter.attemptAuthentication(request, response);
+
+    assertEquals(mockAuthenticatedToken, result);
+    assertNull(session.getAttribute(PasskeyChallenge.SESSION_ATTRIBUTE));
+  }
+
+  @Test
+  void testPasskeyAuthenticationWithoutSessionPassesNullChallenge() throws Exception {
+    Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    when(authenticationManager.authenticate(argThat(a -> a instanceof PasskeyAssertionAuthenticationToken t
+        && t.getChallenge() == null))).thenThrow(new BadCredentialsException("Bad passkey"));
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("passkey")).thenReturn("{}");
+    when(request.getSession(false)).thenReturn(null);
+
+    assertThrows(BadCredentialsException.class,
+        () -> multiFactorVerificationFilter.attemptAuthentication(request, response));
+  }
+
+  @Test
+  void testTotpTakesPrecedenceOverPasskey() throws Exception {
+    Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    Authentication mockAuthenticatedToken =
+        new ExtendedAuthenticationToken("username", null, new ArrayList<>());
+    when(authenticationManager.authenticate(mockAuth)).thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("totp")).thenReturn("123456");
+
+    assertEquals(mockAuthenticatedToken,
+        multiFactorVerificationFilter.attemptAuthentication(request, response));
+  }
+
+  @Test
+  void testAuthenticationFailureWhenBothParametersMissing() {
+    Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("totp")).thenReturn(null);
+    when(request.getParameter("passkey")).thenReturn("   ");
 
     assertThrows(ProviderNotFoundException.class,
         () -> multiFactorVerificationFilter.attemptAuthentication(request, response));

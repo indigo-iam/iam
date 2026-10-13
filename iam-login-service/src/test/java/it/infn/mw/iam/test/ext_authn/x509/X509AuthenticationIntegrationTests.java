@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.ext_authn.x509;
 
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.AUTHENTICATION_OPTIONS_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyController.BASE_URL;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_LINKING_DASHBOARD_ERROR_KEY;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY;
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_AUTHN_REQUESTED_PARAM;
@@ -26,6 +28,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -38,6 +41,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,23 +65,34 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionDTO;
+import it.infn.mw.iam.api.account.multi_factor_authentication.passkey.PasskeyAssertionOptionsDTO;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamPasskeyRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.multi_factor_authentication.passkey.PasskeyTestAuthenticator;
+import it.infn.mw.iam.test.multi_factor_authentication.passkey.PasskeyTestAuthenticator.Algorithm;
+import it.infn.mw.iam.test.multi_factor_authentication.passkey.PasskeyTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+    webEnvironment = WebEnvironment.MOCK, properties = {"mfa.passkey.enabled=true"})
 class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  private IamPasskeyRepository passkeyRepository;
 
   @Autowired
   private IamX509CertificateRepository iamX509CertificateRepo;
@@ -132,6 +148,55 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
     // Check that last login time is updated when login in with X.509 credentials
     assertThat(resolvedAccount.getLastLoginTime().toInstant(), greaterThan(now));
 
+  }
+
+  @Test
+  void testX509AuthenticationWithPasskeyLeadsToMfaVerifyPage() throws Exception {
+    IamAccount testAccount = iamAccountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    linkTest0CertificateToAccount(testAccount, clock.instant());
+    iamAccountRepo.save(testAccount);
+    PasskeyTestAuthenticator authenticator = new PasskeyTestAuthenticator(Algorithm.ES256);
+    passkeyRepository
+      .save(PasskeyTestSupport.registeredPasskey(testAccount, authenticator, clock.instant()));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get("/dashboard").param(X509_AUTHN_REQUESTED_PARAM, "true")
+        .headers(test0SSLHeadersVerificationSuccess()))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("/iam/verify"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    // The certificate alone does not grant the account authorities: the second factor is required
+    mvc.perform(get(BASE_URL).session(session)).andExpect(status().isForbidden());
+
+    mvc.perform(get("/iam/verify").session(session))
+      .andExpect(status().isOk())
+      .andExpect(model().attribute("isPasskeyActive", true));
+
+    String optionsJson = mvc.perform(post(AUTHENTICATION_OPTIONS_URL).session(session))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    PasskeyAssertionOptionsDTO options =
+        new ObjectMapper().readValue(optionsJson, PasskeyAssertionOptionsDTO.class);
+    PasskeyAssertionDTO assertion = PasskeyTestSupport.assertionFor(authenticator,
+        options.getChallenge(), PasskeyTestSupport.TEST_ORIGIN, false, 1, null);
+
+    mvc
+      .perform(post("/iam/verify").session(session)
+        .param("passkey", new ObjectMapper().writeValueAsString(assertion)))
+      .andExpect(status().isFound())
+      .andExpect(authenticated().withUsername("test").withRoles("USER"));
+
+    // Once verified, the account authorities are in place
+    mvc.perform(get(BASE_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$", hasSize(1)));
   }
 
   @Test
