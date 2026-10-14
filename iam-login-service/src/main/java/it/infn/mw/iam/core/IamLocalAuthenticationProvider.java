@@ -205,8 +205,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   private void checkLoginAllowed(String accountUuid) {
     AuthenticationStateMask.checkLoginAllowedOrThrowBadCredentials(accountService, accountUuid,
-        messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials",
-            "Bad credentials"));
+        getBadCredentialsMessage());
   }
 
   /**
@@ -215,13 +214,16 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   private void resetLoginLockoutAfterSuccess(String accountUuid) {
     AuthenticationStateMask.resetLoginLockoutOrThrowBadCredentials(accountService, accountUuid,
-        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, messages.getMessage(
-            "AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, getBadCredentialsMessage());
   }
 
   private BadCredentialsException badCredentials() {
-    return new BadCredentialsException(messages
-      .getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
+    return new BadCredentialsException(getBadCredentialsMessage());
+  }
+
+  private String getBadCredentialsMessage() {
+    return messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials",
+        "Bad credentials");
   }
 
   /**
