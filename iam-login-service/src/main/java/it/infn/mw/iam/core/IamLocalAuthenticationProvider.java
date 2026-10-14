@@ -36,11 +36,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.authn.util.AuthenticationStateMask;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
@@ -204,11 +204,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    * generic bad credentials.
    */
   private void checkLoginAllowed(String accountUuid) {
-    try {
-      accountService.checkLoginAllowed(accountUuid);
-    } catch (DisabledException | LockedException | UsernameNotFoundException e) {
-      throw badCredentials();
-    }
+    AuthenticationStateMask.checkLoginAllowedOrThrowBadCredentials(accountService, accountUuid,
+        messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials",
+            "Bad credentials"));
   }
 
   /**
@@ -216,12 +214,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    * A concurrent suspension must cause the service to reject this operation.
    */
   private void resetLoginLockoutAfterSuccess(String accountUuid) {
-    try {
-      accountService.resetLoginLockout(accountUuid,
-          LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
-    } catch (DisabledException | LockedException | UsernameNotFoundException e) {
-      throw badCredentials();
-    }
+    AuthenticationStateMask.resetLoginLockoutOrThrowBadCredentials(accountService, accountUuid,
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, messages.getMessage(
+            "AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
   }
 
   private BadCredentialsException badCredentials() {
