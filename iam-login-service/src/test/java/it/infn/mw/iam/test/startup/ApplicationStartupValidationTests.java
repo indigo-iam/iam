@@ -28,14 +28,15 @@ class ApplicationStartupValidationTests {
   @Test
   void testFailureOnStatupDueToWrongEnum() {
 
-    assertThrows(BeansException.class,
-        () -> IamLoginService.main(new String[] {"--iam.jwt-profile.default-profile=pippo"}));
+    assertThrows(BeansException.class, () -> IamLoginService.main(new String[] {
+        "--iam.jwt-profile.default-profile=pippo"}));
   }
 
   @Test
   void testSuccessStatup() {
 
-    assertDoesNotThrow(() -> IamLoginService.main(new String[] {}));
+    assertDoesNotThrow(() -> IamLoginService
+      .main(new String[] {}));
   }
 
 }

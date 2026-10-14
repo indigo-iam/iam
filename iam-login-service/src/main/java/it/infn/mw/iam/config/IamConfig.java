@@ -51,7 +51,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -92,6 +91,7 @@ import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
@@ -144,7 +144,10 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidato
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
+import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopePolicyEngine;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyEngine;
 import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.core.oidc.LoginHintService;
@@ -167,6 +170,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -571,7 +575,7 @@ public class IamConfig {
 
     DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
     dao.setUserDetailsService(userDetailsService);
-    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    dao.setPasswordEncoder(new IamSha256PasswordEncoder());
 
     ClientBasicAuthenticationProvider authProvider =
         new ClientBasicAuthenticationProvider(dao, clientService);
@@ -654,5 +658,16 @@ public class IamConfig {
   IamJWKSetCacheService defaultCacheService(RestTemplateFactory rtf) {
 
     return new IamJWKSetCacheService(rtf, 100, 1, TimeUnit.HOURS);
+  }
+
+  @Bean
+  ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
+      RestTemplateFactory restTemplateFactory, IamProperties iamProperties) {
+    if (iamProperties.getScopeAuthz().getOpa().isEnabled()) {
+      return new OpaScopePolicyEngine(policyRepo, restTemplateFactory,
+          iamProperties.getScopeAuthz().getOpa());
+    }
+
+    return new DefaultScopePolicyEngine(policyRepo);
   }
 }
