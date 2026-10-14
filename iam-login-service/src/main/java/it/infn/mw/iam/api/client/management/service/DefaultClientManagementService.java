@@ -53,6 +53,7 @@ import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -136,9 +137,17 @@ public class DefaultClientManagementService implements ClientManagementService {
     }
 
     clientUtils.setupClientDefaults(entity);
+
+    String plainClientSecret = entity.getClientSecret();
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode(plainClientSecret);
+    entity.setClientSecret(hashedClientSecret);
+
     entity = clientService.saveNewClient(entity);
 
-    return converter.registeredClientDtoFromEntity(entity);
+    RegisteredClientDTO newClient = converter.registeredClientDtoFromEntity(entity);
+    newClient.setClientSecret(plainClientSecret);
+
+    return newClient;
   }
 
   private boolean hasRelyingParty(RegisteredClientDTO request) {
@@ -191,7 +200,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      newClient.setClientSecret(clientUtils.generateClientSecret());
+      // We should add a pop-up window to the UI with the new secret --
+      // it is now available to the user only under secret regeneration
+      String plainClientSecret = clientUtils.generateClientSecret();
+      newClient.setClientSecret(new IamSha256PasswordEncoder().encode(plainClientSecret));
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET
       .contains(newClient.getTokenEndpointAuthMethod())
         && !Objects.isNull(oldClient.getClientSecret())) {
@@ -240,10 +252,16 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(clientUtils.generateClientSecret());
+    String plainClientSecret = clientUtils.generateClientSecret();
+    client.setClientSecret(new IamSha256PasswordEncoder().encode(plainClientSecret));
+
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
-    return converter.registeredClientDtoFromEntity(client);
+
+    RegisteredClientDTO updatedClient = converter.registeredClientDtoFromEntity(client);
+    updatedClient.setClientSecret(plainClientSecret);
+
+    return updatedClient;
   }
 
   @Override
