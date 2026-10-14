@@ -16,9 +16,12 @@
 package it.infn.mw.iam.test.api.account.lockout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -35,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import it.infn.mw.iam.api.account.lockout.AccountLockoutController;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -52,6 +57,8 @@ class AccountLockoutControllerTests {
   @Mock
   private IamAccountService accountService;
 
+  private MockMvc mvc;
+
   private Clock clock;
 
   private AccountLockoutController lockoutController;
@@ -64,6 +71,7 @@ class AccountLockoutControllerTests {
     account = new IamAccount();
     account.setUuid("uuid-1");
     account.setUsername("testuser");
+    mvc = MockMvcBuilders.standaloneSetup(lockoutController).build();
   }
 
   @Test
@@ -78,15 +86,6 @@ class AccountLockoutControllerTests {
     ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
     assertEquals(true, r.getBody().get("suspended"));
     assertEquals(Date.from(future), r.getBody().get("suspendedUntil"));
-  }
-
-  @Test
-  void getLockoutStatusReturnsNotFoundWhenEmpty() {
-    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.empty());
-
-    EntityNotFoundException e = assertThrows(EntityNotFoundException.class,
-        () -> lockoutController.getLockoutStatus("uuid-1"));
-    assertEquals("UUID uuid-1 not found!", e.getMessage());
   }
 
   @Test
@@ -128,12 +127,25 @@ class AccountLockoutControllerTests {
   }
 
   @Test
-  void revokeLockoutReturnsNotFoundWhenEmpty() {
+  void getLockoutStatusReturnsNotFoundWhenEmpty() throws Exception {
+    when(accountService.findByUuid("uuid-1")).thenReturn(Optional.empty());
+
+    mvc.perform(get("/iam/account/{uuid}/lockout", "uuid-1"))
+      .andExpect(status().isNotFound())
+      .andExpect(content().string("UUID uuid-1 not found!"));
+
+    verify(accountService).findByUuid("uuid-1");
+  }
+
+  @Test
+  void revokeLockoutReturnsNotFoundWhenEmpty() throws Exception {
     when(accountService.resetLoginLockout("uuid-1", LoginLockoutResetReason.ADMIN_REVOKE))
       .thenThrow(new EntityNotFoundException("UUID uuid-1 not found!"));
 
-    EntityNotFoundException e = assertThrows(EntityNotFoundException.class,
-        () -> lockoutController.revokeLockout("uuid-1"));
-    assertEquals("UUID uuid-1 not found!", e.getMessage());
+    mvc.perform(delete("/iam/account/{uuid}/lockout", "uuid-1"))
+      .andExpect(status().isNotFound())
+      .andExpect(content().string("UUID uuid-1 not found!"));
+
+    verify(accountService).resetLoginLockout("uuid-1", LoginLockoutResetReason.ADMIN_REVOKE);
   }
 }
