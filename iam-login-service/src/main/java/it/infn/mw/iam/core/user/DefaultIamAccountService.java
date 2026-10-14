@@ -692,8 +692,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     Date firstFailure = lockout.getFirstFailureTime();
 
     // Fixed observation window, starting with the first failed attempt.
-    if (firstFailure == null || !now
-      .isBefore(firstFailure.toInstant().plus(iamProperties.getLoginLockout().getObservationWindow()))) {
+    if (firstFailure == null || !now.isBefore(
+        firstFailure.toInstant().plus(iamProperties.getLoginLockout().getObservationWindow()))) {
       lockout.clearCurrentRound();
       lockout.setFirstFailureTime(Date.from(now));
     }
@@ -704,7 +704,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       Duration lockDuration = iamProperties.getLoginLockout().getLockDuration();
       lockout.applySuspension(now, lockDuration);
       eventPublisher.publishEvent(new AccountLoginSuspendedEvent(this, account));
-      notificationFactory.createAccountLockedMessage(account, lockDuration);
     }
 
     account.touch(now);
@@ -725,7 +724,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         throw new DisabledException("Account is disabled");
       }
 
-      if (lockout != null && lockout.isSuspended(now)) {
+      if (iamProperties.getLoginLockout().isEnabled() && lockout != null
+          && lockout.isSuspended(now)) {
         throw new LockedException("Login is suspended");
       }
     }
@@ -946,7 +946,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public void touchLastLoginTimeForUserWithUsername(String username) {
-    accountRepo.findByUsername(username).ifPresent( a -> {
+    accountRepo.findByUsername(username).ifPresent(a -> {
       Instant now = clock.instant();
       a.setLastLoginTime(Date.from(now));
       a.touch(now);

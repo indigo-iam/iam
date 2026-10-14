@@ -173,7 +173,7 @@ class IamAccountLoginLockoutServiceTests {
   }
 
   @Test
-  void thresholdSuspendsAndPublishesOneEventAndNotification() {
+  void thresholdSuspendsAndPublishesOneEvent() {
     loadForUpdate();
     saveAccount();
     IamAccountLoginLockout lockout = previousFailures(2, NOW.minusSeconds(30));
@@ -186,8 +186,8 @@ class IamAccountLoginLockoutServiceTests {
         ArgumentCaptor.forClass(AccountLoginSuspendedEvent.class);
     verify(events).publishEvent(event.capture());
     assertSame(account, event.getValue().getAccount());
-    verify(notifications).createAccountLockedMessage(account, LOCK_DURATION);
-    verifyNoMoreInteractions(events, notifications);
+    verifyNoInteractions(notifications);
+    verifyNoMoreInteractions(events);
   }
 
   @Test
@@ -392,5 +392,59 @@ class IamAccountLoginLockoutServiceTests {
   void nullResetReasonIsRejectedBeforeRepositoryAccess() {
     assertThrows(NullPointerException.class, () -> service.resetLoginLockout(UUID, null));
     verifyNoInteractions(accountRepo, events, notifications);
+  }
+
+  @Test
+  void successfulAuthenticationClearsSuspensionWhenFeatureDisabled() {
+    properties.getLoginLockout().setEnabled(false);
+    loadForUpdate();
+    saveAccount();
+
+    IamAccountLoginLockout lockout = previousFailures(3, NOW);
+    lockout.setSuspendedUntil(Date.from(NOW.plusSeconds(60)));
+    lockout.setLockoutCount(2);
+
+    IamAccount result = assertDoesNotThrow(
+        () -> service.resetLoginLockout(UUID, LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION));
+
+    assertSame(account, result);
+    assertTrue(account.isActive());
+    assertTrue(lockout.isCurrentRoundEmpty());
+    assertEquals(0, lockout.getLockoutCount());
+    assertEquals(Date.from(NOW), account.getLastUpdateTime());
+
+    verify(accountRepo).save(account);
+
+    ArgumentCaptor<AccountLoginLockoutResetEvent> event =
+        ArgumentCaptor.forClass(AccountLoginLockoutResetEvent.class);
+
+    verify(events).publishEvent(event.capture());
+    assertSame(account, event.getValue().getAccount());
+    assertEquals(LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, event.getValue().getReason());
+
+    verifyNoMoreInteractions(events);
+    verifyNoInteractions(notifications);
+  }
+
+  @Test
+  void successfulAuthenticationStillRejectsDisabledAccountWhenFeatureDisabled() {
+    properties.getLoginLockout().setEnabled(false);
+    loadForUpdate();
+    account.setActive(false);
+
+    IamAccountLoginLockout lockout = previousFailures(3, NOW);
+    Date suspendedUntil = Date.from(NOW.plusSeconds(60));
+    lockout.setSuspendedUntil(suspendedUntil);
+    lockout.setLockoutCount(2);
+
+    assertThrows(DisabledException.class,
+        () -> service.resetLoginLockout(UUID, LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION));
+
+    assertEquals(3, lockout.getFailedAttempts());
+    assertEquals(Date.from(NOW), lockout.getFirstFailureTime());
+    assertEquals(suspendedUntil, lockout.getSuspendedUntil());
+    assertEquals(2, lockout.getLockoutCount());
+
+    assertNoWriteOrNotification();
   }
 }
