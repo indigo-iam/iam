@@ -186,7 +186,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       account = accountService.findByUsername(username);
     }
 
-    handleCodeChallenge(request, client);
+    if (AuthorizationGrantType.CODE.getGrantType().equalsIgnoreCase(request.getGrantType())) {
+      handleCodeChallenge(request, client);
+    }
 
     Instant iat = clock.instant();
     AuthenticationHolderEntity authHolder =

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -37,7 +38,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -996,5 +1000,95 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.access_token").doesNotExist());
 
     assertFalse(deviceCodeRepository.existsById(dc.getId()));
+  }
+
+  @Test
+  void testDeviceCodeFlowIgnoresPKCECodeChallenge() throws Exception {
+    String codeVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+
+    String codeChallenge = Base64.getUrlEncoder()
+      .withoutPadding()
+      .encodeToString(MessageDigest.getInstance("SHA-256")
+        .digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)));
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(PKCE_S256_CLIENT_ID, PKCE_S256_CLIENT_SECRET))
+        .param("client_id", PKCE_S256_CLIENT_ID)
+        .param("scope", "openid profile")
+        .param("code_challenge", codeChallenge)
+        .param("code_challenge_method", "S256"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    DeviceCode storedDeviceCode = deviceCodeRepository.findByUserCode(userCode)
+      .orElseThrow(() -> new AssertionError("Device code not found"));
+
+    assertThat(storedDeviceCode.getRequestParameters())
+      .containsEntry("code_challenge", codeChallenge)
+      .containsEntry("code_challenge_method", "S256");
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"));
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(PKCE_S256_CLIENT_ID, PKCE_S256_CLIENT_SECRET))
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
+        .param("device_code", deviceCode)
+        .param("code_verifier", codeVerifier))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token").exists());
   }
 }
