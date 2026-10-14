@@ -44,7 +44,6 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
-import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -67,7 +66,7 @@ public class IamTotpMfaConfig {
   private AccountUtils accountUtils;
 
   @Autowired
-  private DashboardProperties dashboardProperties;
+  private IamProperties iamProperties;
 
   /**
    * Responsible for generating new TOTP secrets
@@ -127,7 +126,7 @@ public class IamTotpMfaConfig {
 
   public AuthenticationSuccessHandler successHandler(Clock clock) {
     return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
-        accountRepo, iamBaseUrl, dashboardProperties);
+        accountRepo, iamBaseUrl, iamProperties.getDashboard());
   }
 
   /**
