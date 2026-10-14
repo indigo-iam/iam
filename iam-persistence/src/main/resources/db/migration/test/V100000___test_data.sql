@@ -269,6 +269,7 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (22, 'authorization_code'),
   (23, 'client_credentials'),
   (24, 'authorization_code'),
+  (24, 'urn:ietf:params:oauth:grant-type:device_code'),
   (25, 'authorization_code'),
   (26, 'authorization_code'),
   (27, 'client_credentials');
