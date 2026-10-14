@@ -15,19 +15,11 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
-import java.util.Optional;
-
-import it.infn.mw.iam.api.account.password_reset.error.BadUserPasswordError;
-import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordResetTokenError;
-import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerified;
-import it.infn.mw.iam.persistence.model.IamAccount;
-
 /**
  * 
  * The IAM password reset service
  *
  */
-@SuppressWarnings("unused")
 public interface PasswordResetService {
 
 

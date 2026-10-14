@@ -149,8 +149,10 @@ class IamLocalAuthenticationProviderTests {
     when(userDetailsService.loadUserByUsername("disabled"))
       .thenThrow(new DisabledException("User 'disabled' is not active."));
 
+    ExtendedAuthenticationToken request = loginRequest("disabled");
+
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("disabled")));
+        () -> iamLocalAuthenticationProvider.authenticate(request));
 
     verifyNoLockoutMutation();
   }
@@ -167,8 +169,10 @@ class IamLocalAuthenticationProviderTests {
 
     when(userDetailsService.loadUserByUsername("inactive")).thenReturn(user);
 
+    ExtendedAuthenticationToken request = loginRequest("inactive");
+
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("inactive")));
+        () -> iamLocalAuthenticationProvider.authenticate(request));
 
     verifyNoLockoutMutation();
   }
@@ -180,8 +184,10 @@ class IamLocalAuthenticationProviderTests {
     doThrow(new LockedException("Login is suspended")).when(accountService)
       .checkLoginAllowed(account.getUuid());
 
+    ExtendedAuthenticationToken request = loginRequest("user");
+
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+        () -> iamLocalAuthenticationProvider.authenticate(request));
 
     verifyNoInteractions(userDetailsService, passwordEncoder);
     verifyNoLockoutMutation();
@@ -194,8 +200,10 @@ class IamLocalAuthenticationProviderTests {
     doThrow(new DisabledException("Account is disabled")).when(accountService)
       .checkLoginAllowed(account.getUuid());
 
+    ExtendedAuthenticationToken request = loginRequest("user");
+
     assertThrows(BadCredentialsException.class,
-        () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+        () -> iamLocalAuthenticationProvider.authenticate(request));
 
     verifyNoInteractions(userDetailsService, passwordEncoder);
     verifyNoLockoutMutation();
@@ -209,9 +217,11 @@ class IamLocalAuthenticationProviderTests {
 
     when(userDetailsService.loadUserByUsername("user")).thenThrow(cause);
 
+    ExtendedAuthenticationToken request = loginRequest("user");
+
     InternalAuthenticationServiceException error =
         assertThrows(InternalAuthenticationServiceException.class,
-            () -> iamLocalAuthenticationProvider.authenticate(loginRequest("user")));
+            () -> iamLocalAuthenticationProvider.authenticate(request));
 
     assertSame(cause, error.getCause());
     verifyNoLockoutMutation();
