@@ -23,10 +23,13 @@ import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -71,18 +74,23 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     String username = authentication.getName();
     IamAccount account = accountService.findByUsername(username)
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
-    accountService.checkLoginAllowed(account.getUuid());
 
-    if (!isValidTotp(account, totp)) {
-      accountService.loginFailedAttempt(account.getUuid());
+    try {
+      accountService.checkLoginAllowed(account.getUuid());
+
+      if (!isValidTotp(account, totp)) {
+        accountService.loginFailedAttempt(account.getUuid());
+        throw new BadCredentialsException("Bad TOTP");
+      }
+
+      accountService.resetLoginLockout(account.getUuid(),
+          LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
+
+      return upgradeToFullyAuthenticated(authentication);
+
+    } catch (DisabledException | LockedException | UsernameNotFoundException e) {
       throw new BadCredentialsException("Bad TOTP");
     }
-
-    // TOTP verified; full authentication achieved. Clear lockout state.
-    accountService.resetLoginLockout(account.getUuid(),
-        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
-
-    return upgradeToFullyAuthenticated(authentication);
   }
 
   private String getTotp(Authentication authentication) {

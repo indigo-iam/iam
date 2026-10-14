@@ -45,6 +45,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import org.springframework.security.authentication.DisabledException;
+
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
@@ -156,30 +160,44 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   void authenticateRejectsDisabledAccountWithGenericFailure() {
     IamAccount account = getAccount(clock.instant());
     account.setActive(false);
+
     when(token.getName()).thenReturn("totp");
-    when(token.getTotp()).thenReturn("999999");
+    when(token.getTotp()).thenReturn("123456");
     when(accountService.findByUsername("totp")).thenReturn(Optional.of(account));
 
-    BadCredentialsException e = assertThrows(BadCredentialsException.class,
+    doThrow(new DisabledException("Account is disabled")).when(accountService)
+      .checkLoginAllowed(account.getUuid());
+
+    BadCredentialsException error = assertThrows(BadCredentialsException.class,
         () -> multiFactorTotpCheckProvider.authenticate(token));
-    assertEquals("Bad TOTP", e.getMessage());
-    verify(accountService).loginFailedAttempt(account.getUuid());
+
+    assertEquals("Bad TOTP", error.getMessage());
+
+    verifyNoInteractions(totpMfaService);
+    verify(accountService, never()).loginFailedAttempt(anyString());
+    verify(accountService, never()).resetLoginLockout(anyString(), any());
   }
 
   @Test
   void authenticateMasksLockoutAsBadCredentialsWhenSuspended() {
-    when(token.getTotp()).thenReturn("123456");
-    when(token.getName()).thenReturn("locked");
     IamAccount account = getAccount(clock.instant());
     account.setActive(true);
+
+    when(token.getTotp()).thenReturn("123456");
+    when(token.getName()).thenReturn("locked");
     when(accountService.findByUsername("locked")).thenReturn(Optional.of(account));
-    doThrow(new LockedException("Bad credentials")).when(accountService)
+
+    doThrow(new LockedException("Login is suspended")).when(accountService)
       .checkLoginAllowed(account.getUuid());
 
-    LockedException e =
-        assertThrows(LockedException.class, () -> multiFactorTotpCheckProvider.authenticate(token));
-    assertEquals("Bad credentials", e.getMessage());
-    verify(accountService, never()).loginFailedAttempt("locked");
+    BadCredentialsException error = assertThrows(BadCredentialsException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+
+    assertEquals("Bad TOTP", error.getMessage());
+
+    verifyNoInteractions(totpMfaService);
+    verify(accountService, never()).loginFailedAttempt(anyString());
+    verify(accountService, never()).resetLoginLockout(anyString(), any());
   }
 
   @Test
@@ -250,5 +268,32 @@ class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
     ExtendedAuthenticationToken extended = (ExtendedAuthenticationToken) result;
     assertThat(extended.getExternalAuthentication()).isNull();
+  }
+
+  @Test
+  void authenticateMasksSuspensionDetectedDuringFinalReset() {
+    IamAccount account = getAccount(clock.instant());
+    account.setActive(true);
+
+    when(token.getName()).thenReturn("totp");
+    when(token.getTotp()).thenReturn("123456");
+    when(accountService.findByUsername("totp")).thenReturn(Optional.of(account));
+    when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
+
+    when(accountService.resetLoginLockout(account.getUuid(),
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION))
+          .thenThrow(new LockedException("Login is suspended"));
+
+    BadCredentialsException error = assertThrows(BadCredentialsException.class,
+        () -> multiFactorTotpCheckProvider.authenticate(token));
+
+    assertEquals("Bad TOTP", error.getMessage());
+
+    verify(accountService).checkLoginAllowed(account.getUuid());
+    verify(totpMfaService).verifyTotp(account, "123456");
+    verify(accountService).resetLoginLockout(account.getUuid(),
+        LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
+
+    verify(accountService, never()).loginFailedAttempt(anyString());
   }
 }
