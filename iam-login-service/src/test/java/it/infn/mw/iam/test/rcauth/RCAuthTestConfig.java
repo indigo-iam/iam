@@ -21,7 +21,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.text.ParseException;
 
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +29,7 @@ import org.springframework.context.annotation.Primary;
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.OIDCProviderMetadataService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.oauth.discovery.DefaultOidcDiscoveryService;
 
@@ -56,11 +56,11 @@ public class RCAuthTestConfig extends RCAuthTestSupport {
 
   @Bean
   @Primary
-  JWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
+  IamJWKSetCacheService mockjwkSetCacheService() throws IOException, ParseException {
 
     IamJWTSigningService signatureValidator = new IamJWTSigningService(rcAuthKeyStore());
 
-    JWKSetCacheService mockCacheService = mock(JWKSetCacheService.class);
+    IamJWKSetCacheService mockCacheService = mock(IamJWKSetCacheService.class);
     when(mockCacheService.getValidator(JWK_URI)).thenReturn(signatureValidator);
 
     return mockCacheService;

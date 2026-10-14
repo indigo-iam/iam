@@ -29,8 +29,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
 /**
  * 
  * This entity is the login-service component as it needs to "see" the ClientDetailsEntity mitreid

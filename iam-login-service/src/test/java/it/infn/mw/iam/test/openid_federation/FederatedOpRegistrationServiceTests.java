@@ -131,14 +131,12 @@ class FederatedOpRegistrationServiceTests {
   OIDCProviderMetadataService metadataService;
 
   @BeforeEach
-  void setup() throws JOSEException, FederationException {
+  void setup() {
 
     federatedClientRepo.deleteAll();
     mockRtf.resetServer();
     when(metadataService.load(ISS)).thenReturn(new OIDCProviderMetadata(ISS, ISS + "authorize",
         ISS + "token", ISS + "jwks", ISS + "userinfo"));
-
-    // initTrustChain(ISS, URI.create(ISS + "/jwk"), "https://ta1.example.com");
   }
 
   private Date initTrustChain(Clock clock, String iss, URI jwksUri, String ta)

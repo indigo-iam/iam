@@ -34,8 +34,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -62,6 +60,8 @@ import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -99,7 +99,7 @@ class AuthorizationRequestAsJwtTests {
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(clientId);
     client.setClientSecret("secret");
-    client.setTokenEndpointAuthMethod(AuthMethod.SECRET_POST);
+    client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_POST);
     client.setScope(Set.of("openid", "profile", "email"));
     client.setRedirectUris(Set.of(REDIRECT_URI));
     client.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE.getValue()));

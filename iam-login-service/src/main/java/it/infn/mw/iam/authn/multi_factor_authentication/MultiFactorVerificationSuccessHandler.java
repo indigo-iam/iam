@@ -36,7 +36,7 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
-import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -50,18 +50,18 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
   private final String iamBaseUrl;
-  private final IamProperties iamProperties;
+  private final DashboardProperties dashboardProperties;
 
   public MultiFactorVerificationSuccessHandler(Clock clock, AccountUtils accountUtils,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
-      String iamBaseUrl, IamProperties iamProperties) {
+      String iamBaseUrl, DashboardProperties dashboardProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
     this.iamBaseUrl = iamBaseUrl;
-    this.iamProperties = iamProperties;
+    this.dashboardProperties = dashboardProperties;
   }
 
   @Override
@@ -83,8 +83,8 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   private void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
-    AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache(), iamProperties);
+    AuthenticationSuccessHandler delegate = new RootIsDashboardSuccessHandler(iamBaseUrl,
+        new HttpSessionRequestCache(), dashboardProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
         delegate, aupSignatureCheckService, accountUtils, accountRepo);

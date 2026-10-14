@@ -19,7 +19,6 @@ import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AMR;
 
-import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -29,9 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -43,7 +39,10 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
@@ -90,13 +89,9 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       }
     }
 
-    try {
-      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim(ACR);
-      if (acrClaim != null) {
-        builder.claim(ACR, acrClaim);
-      }
-    } catch (ParseException e) {
-      LOG.error("Error parsing JWT claims: {}", e.getMessage());
+    Object acrClaim = accessToken.getPayload().getClaim(ACR);
+    if (acrClaim != null) {
+      builder.claim(ACR, acrClaim);
     }
   }
 

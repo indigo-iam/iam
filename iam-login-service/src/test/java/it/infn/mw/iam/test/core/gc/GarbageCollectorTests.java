@@ -28,14 +28,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientRelyingPartyEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.openid.connect.model.ApprovedSite;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
@@ -44,8 +36,16 @@ import org.springframework.data.domain.PageRequest;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.gc.DefaultGarbageCollector;
+import it.infn.mw.iam.persistence.model.ConsentGrant;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
-import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.repository.IamConsentGrantRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
@@ -57,7 +57,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 class GarbageCollectorTests {
 
   @Mock
-  private IamApprovedSiteRepository approvedSiteRepository;
+  private IamConsentGrantRepository consentGrantRepository;
   @Mock
   private IamOAuthAccessTokenRepository accessTokenRepo;
   @Mock
@@ -83,20 +83,20 @@ class GarbageCollectorTests {
   void setup() {
     MockitoAnnotations.openMocks(this);
 
-    gc = new DefaultGarbageCollector(clock, approvedSiteRepository, accessTokenRepo,
+    gc = new DefaultGarbageCollector(clock, consentGrantRepository, accessTokenRepo,
         refreshTokenRepo, deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo,
         authzCodeRepo, clientRepository, clientService);
   }
 
   @Test
-  void testClearExpiredApprovedSites() {
+  void testClearExpiredConsentGrants() {
 
-    ApprovedSite code = mock(ApprovedSite.class);
-    Page<ApprovedSite> response = new PageImpl<>(List.of(code), PageRequest.of(0, 1), 1);
+    ConsentGrant code = mock(ConsentGrant.class);
+    Page<ConsentGrant> response = new PageImpl<>(List.of(code), PageRequest.of(0, 1), 1);
     when(clock.instant()).thenReturn(Instant.now());
-    when(approvedSiteRepository.getExpiredCodes(any(), any())).thenReturn(response);
-    gc.clearExpiredApprovedSites(10);
-    verify(approvedSiteRepository).deleteAll(response);
+    when(consentGrantRepository.getExpiredCodes(any(), any())).thenReturn(response);
+    gc.clearExpiredConsentGrants(10);
+    verify(consentGrantRepository).deleteAll(response);
   }
 
   @Test

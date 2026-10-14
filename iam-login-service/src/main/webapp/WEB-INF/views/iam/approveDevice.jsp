@@ -69,11 +69,11 @@
 			</h2>
 
 			<c:if
-				test="${ (not empty client.clientDescription) || (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri) || (not empty contacts) }">
+				test="${ (not empty client.clientDescription) || (not empty client.clientUri) || (not empty contacts) }">
 				<div class="muted">
 					<c:out value="${client.clientDescription}" />
 					<c:if
-						test="${ (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri)  || (not empty contacts) }">
+						test="${ (not empty client.clientUri) || (not empty contacts) }">
 						<div id="toggleMoreInformation" style="cursor: pointer;">
 							<i class="icon-chevron-right"></i><spring:message code="More information" />
 						</div>
@@ -83,16 +83,6 @@
 									<li><spring:message code="approve.home_page" />: <a
 										href="<c:out value="${ client.clientUri }" />"><c:out
 												value="${ client.clientUri }" /></a></li>
-								</c:if>
-								<c:if test="${ not empty client.policyUri }">
-									<li><spring:message code="Policy" />: <a
-										href="<c:out value="${ client.policyUri }" />"><c:out
-												value="${ client.policyUri }" /></a></li>
-								</c:if>
-								<c:if test="${ not empty client.tosUri }">
-									<li><spring:message code="approve.terms" />: <a
-										href="<c:out value="${ client.tosUri }" />"><c:out
-												value="${ client.tosUri }" /></a></li>
 								</c:if>
 								<c:if test="${ (not empty contacts) }">
 									<li><spring:message code="approve.contacts" />: <c:forEach

@@ -18,7 +18,6 @@ package it.infn.mw.iam.config.oidc;
 import java.time.Clock;
 import java.util.Arrays;
 
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -62,6 +61,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.core.client.IssuerService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamFederatedClientRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -101,7 +101,7 @@ public class OidcConfig {
 
   @Bean(name = "OIDCAuthenticationFilter")
   OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(IamProperties properties,
-      JWKSetCacheService validationServices, IssuerService issuerService,
+      IamJWKSetCacheService validationServices, IssuerService issuerService,
       OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper,

@@ -25,7 +25,6 @@ import java.util.Base64;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +39,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
 
@@ -315,7 +315,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
 
     getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
         TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier,
-        codeVerifier, PKCEAlgorithm.plain).statusCode(HttpStatus.OK.value());
+        codeVerifier, PKCEAlgorithm.PLAIN).statusCode(HttpStatus.OK.value());
   }
 
   @Test
@@ -324,7 +324,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeVerifier = generateCodeVerifier();
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeVerifier, PKCEAlgorithm.plain)
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeVerifier, PKCEAlgorithm.PLAIN)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
@@ -347,7 +347,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
 
     getTokenResponseWithPkce(TEST_PKCE_PLAIN_CLIENT_ID, TEST_CLIENT_SECRET,
         TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, "wrong-verifier",
-        codeChallenge, PKCEAlgorithm.plain).statusCode(HttpStatus.BAD_REQUEST.value());
+        codeChallenge, PKCEAlgorithm.PLAIN).statusCode(HttpStatus.BAD_REQUEST.value());
   }
 
   @Test
@@ -368,7 +368,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     String codeChallenge = generateSha256CodeChallenge(codeVerifier);
 
     getTokenResponseWithPkce(TEST_PKCE_S256_CLIENT_ID, TEST_CLIENT_SECRET, TEST_CLIENT_REDIRECT_URI,
-        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.none)
+        SCOPE, TEST_USER_NAME, TEST_USER_PASSWORD, codeVerifier, codeChallenge, PKCEAlgorithm.NONE)
           .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 }

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.core.gc;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.time.Duration;
@@ -25,24 +26,27 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.AuthorizationCodeEntity;
-import org.mitre.oauth2.model.DeviceCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.core.IamAuthenticationHolderEntityService;
+import it.infn.mw.iam.core.IamAuthenticationHolderService;
 import it.infn.mw.iam.core.gc.GarbageCollector;
-import it.infn.mw.iam.core.oauth.consent.ApprovedSiteService;
+import it.infn.mw.iam.core.oauth.consent.ConsentGrantService;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
-import it.infn.mw.iam.persistence.repository.IamApprovedSiteRepository;
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.AuthorizationCodeEntity;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.migrations.RemoveDanglingDeviceCodes;
+import it.infn.mw.iam.persistence.model.DeviceCode;
+import it.infn.mw.iam.persistence.repository.IamConsentGrantRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthenticationHolderRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
@@ -67,16 +71,16 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   GarbageCollector gc;
 
   @Autowired
-  ApprovedSiteService approvedSiteService;
+  ConsentGrantService consentGrantService;
 
   @Autowired
-  IamApprovedSiteRepository siteRepository;
+  IamConsentGrantRepository consentGrantRepository;
 
   @Autowired
   IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
-  IamAuthenticationHolderEntityService authenticationHolderService;
+  IamAuthenticationHolderService authenticationHolderService;
 
   @Autowired
   IamAuthenticationHolderRepository authenticationHolderRepository;
@@ -102,10 +106,14 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   @Autowired
   MutableClock clock;
 
-  private AuthorizationCodeEntity createAuthorizationCode() {
+  @Autowired
+  JdbcTemplate jdbcTemplate;
+
+  private AuthorizationCodeEntity createAuthorizationCode(String clientId) {
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId).orElseThrow();
     OAuth2Authentication auth = getOAuth2Authentication();
     RandomValueStringGenerator generator = new RandomValueStringGenerator(22);
-    AuthenticationHolderEntity authHolder = authenticationHolderService.create(auth);
+    AuthenticationHolderEntity authHolder = authenticationHolderService.createAndSave(auth, client);
     return new AuthorizationCodeEntity(generator.generate(), authHolder, clock.now());
   }
 
@@ -129,7 +137,7 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   @BeforeEach
   void cleanAll() {
     sc.cleanupSecurityContext();
-    siteRepository.deleteAll();
+    consentGrantRepository.deleteAll();
     codeRepository.deleteAll();
     accessTokenRepository.deleteAll();
     refreshTokenRepository.deleteAll();
@@ -138,24 +146,24 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  void clearExpiredApprovedSites() {
+  void clearExpiredConsentGrants() {
 
-    assertThat(siteRepository.count(), equalTo(0L));
-    approvedSiteService.createApprovedSite(
+    assertThat(consentGrantRepository.count(), equalTo(0L));
+    consentGrantService.createConsentGrant(
         clientService.findClientByClientId(PASSWORD_CLIENT_ID).orElseThrow(), TEST_USERNAME,
         Date.from(clock.daysBefore(2)), Set.of("openid"));
-    assertThat(siteRepository.count(), equalTo(1L));
+    assertThat(consentGrantRepository.count(), equalTo(1L));
     clock.advance(Duration.ofDays(1));
-    gc.clearExpiredApprovedSites(1);
-    assertThat(siteRepository.count(), equalTo(0L));
+    gc.clearExpiredConsentGrants(1);
+    assertThat(consentGrantRepository.count(), equalTo(0L));
   }
 
   @Test
   void clearExpiredAuthorizationCodes() {
 
     assertThat(codeRepository.count(), equalTo(0L));
-    // Mitre's Authorization Code service is not using clock
-    AuthorizationCodeEntity entity = codeRepository.save(createAuthorizationCode());
+    AuthorizationCodeEntity entity =
+        codeRepository.save(createAuthorizationCode(PASSWORD_CLIENT_ID));
     entity.setExpiration(Date.from(clock.daysBefore(200)));
     codeRepository.save(entity);
     assertThat(codeRepository.count(), equalTo(1L));
@@ -185,6 +193,54 @@ class GarbageCollectorIntegrationTests extends TokenGetterUtils {
     assertThat(authenticationHolderRepository.count(), equalTo(1L));
     gc.clearOrphanedAuthenticationHolder(1);
     assertThat(authenticationHolderRepository.count(), equalTo(0L));
+  }
+
+  @Test
+  void approvedDeviceCodeHolderIsNotCollected() {
+
+    assertThat(authenticationHolderRepository.count(), equalTo(0L));
+    DeviceCode dc = createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid"));
+    dc.setExpiration(Date.from(clock.now().toInstant().plus(Duration.ofMinutes(5))));
+    codeService.approveDeviceCode(deviceCodeRepository.save(dc), getOAuth2Authentication());
+    assertThat(authenticationHolderRepository.count(), equalTo(1L));
+    gc.clearOrphanedAuthenticationHolder(10);
+    assertThat(authenticationHolderRepository.count(), equalTo(1L));
+  }
+
+  @Test
+  void expiredDeviceCodeHolderIsCollected() {
+
+    DeviceCode dc = createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid"));
+    dc.setExpiration(Date.from(clock.now().toInstant().minus(Duration.ofMinutes(1))));
+    codeService.approveDeviceCode(deviceCodeRepository.save(dc), getOAuth2Authentication());
+    assertThat(authenticationHolderRepository.count(), equalTo(1L));
+    gc.clearOrphanedAuthenticationHolder(10);
+    assertThat(authenticationHolderRepository.count(), equalTo(0L));
+  }
+
+  @Test
+  void danglingApprovedDeviceCodesAreRemovedByMigration() {
+
+    DeviceCode valid =
+        deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));
+    codeService.approveDeviceCode(valid, getOAuth2Authentication());
+    DeviceCode dangling =
+        deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));
+    codeService.approveDeviceCode(dangling, getOAuth2Authentication());
+    DeviceCode pending =
+        deviceCodeRepository.save(createDeviceCode(DEVICE_CODE_CLIENT_ID, Set.of("openid")));
+    deviceCodeRepository.flush();
+
+    jdbcTemplate.update("UPDATE device_code SET auth_holder_id = -1 WHERE id = ?",
+        dangling.getId());
+
+    new RemoveDanglingDeviceCodes().migrate(jdbcTemplate);
+
+    assertThat(jdbcTemplate.queryForList("SELECT id FROM device_code", Long.class),
+        containsInAnyOrder(valid.getId(), pending.getId()));
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM device_code_scope WHERE owner_id = ?", Long.class,
+        dangling.getId()), equalTo(0L));
   }
 
   @Test

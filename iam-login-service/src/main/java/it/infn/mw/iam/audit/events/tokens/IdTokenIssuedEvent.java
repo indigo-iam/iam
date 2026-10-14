@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.nimbusds.jwt.JWT;
+
+import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 
 @JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "subject",
     "grantType", "header", "payload", "source"})

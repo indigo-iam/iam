@@ -19,10 +19,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.DeviceCode;
 
 @SuppressWarnings("deprecation")
 public interface DeviceCodeService {
@@ -31,7 +31,7 @@ public interface DeviceCodeService {
 
   public DeviceCode approveDeviceCode(DeviceCode dc, OAuth2Authentication o2Auth);
 
-  public Optional<DeviceCode> findByDeviceCodeAndClient(String deviceCode, ClientDetails client);
+  public Optional<DeviceCode> findByDeviceCodeAndClientId(String deviceCode, String clientId);
 
   public void clearDeviceCode(DeviceCode deviceCode);
 

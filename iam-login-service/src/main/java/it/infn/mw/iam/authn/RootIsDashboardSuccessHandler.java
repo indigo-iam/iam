@@ -26,7 +26,7 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
-import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
 public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
@@ -34,11 +34,11 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
   private final String iamBaseUrl;
 
   public RootIsDashboardSuccessHandler(String iamBaseUrl, RequestCache cache,
-      IamProperties iamProperties) {
+      DashboardProperties dashboardProperties) {
     setRequestCache(cache);
     this.requestCache = cache;
     this.iamBaseUrl = iamBaseUrl;
-    setDefaultTargetUrl(iamProperties.getDashboard().getBasePath());
+    setDefaultTargetUrl(dashboardProperties.getBasePath());
   }
 
   @Override
@@ -52,13 +52,14 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
       return;
     }
 
-    if (savedRequest.getRedirectUrl().equals(iamBaseUrl)) {
-      requestCache.removeRequest(request, response);
-    }
-
-    if (savedRequest.getRedirectUrl().equals(iamBaseUrl + "/")) {
+    if (redirectsToIamRoot(savedRequest.getRedirectUrl(), iamBaseUrl)) {
       requestCache.removeRequest(request, response);
     }
     super.onAuthenticationSuccess(request, response, authentication);
+  }
+
+  /** True if redirectUrl points at IAM's own root &mdash; nothing useful to resume there. */
+  public static boolean redirectsToIamRoot(String redirectUrl, String iamBaseUrl) {
+    return redirectUrl.equals(iamBaseUrl) || redirectUrl.equals(iamBaseUrl + "/");
   }
 }

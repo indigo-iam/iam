@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam;
 
-import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.openid.connect.view.UserInfoView;
-import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -26,7 +23,6 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -48,21 +44,7 @@ import it.infn.mw.iam.core.util.IamBanner;
     "it.infn.mw.iam.audit",
     "it.infn.mw.iam.actuator",
     "it.infn.mw.iam.rcauth",
-    "it.infn.mw.iam.service.aup",
-    "org.mitre.oauth2.web",
-    "org.mitre.oauth2.view", 
-    "org.mitre.openid.connect.web", 
-    "org.mitre.openid.connect.view",
-    "org.mitre.discovery.web", 
-    "org.mitre.discovery.view"},
-excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=JWKSetPublishingEndpoint.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=CorsFilter.class),
-    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=UserInfoView.class)
-})
+    "it.infn.mw.iam.service.aup"})
 @EnableCaching
 @EnableAutoConfiguration(
     exclude = {

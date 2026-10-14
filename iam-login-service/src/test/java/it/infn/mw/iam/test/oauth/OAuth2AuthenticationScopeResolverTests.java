@@ -27,7 +27,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -41,6 +40,7 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.userinfo.DefaultOAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 

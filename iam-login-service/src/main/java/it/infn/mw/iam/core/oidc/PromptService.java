@@ -15,14 +15,6 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.LOGIN_REQUIRED;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_LOGIN;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_NONE;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.REDIRECT_URI;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
@@ -43,12 +34,11 @@ import org.springframework.stereotype.Service;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+
 @SuppressWarnings("deprecation")
 @Service
 public class PromptService {
-
-  public static final String PROMPTED = "PROMPT_FILTER_PROMPTED";
-  public static final String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
 
   private final RedirectResolver redirectResolver;
 
@@ -60,15 +50,16 @@ public class PromptService {
       HttpSession session, HttpServletRequest request, HttpServletResponse response,
       FilterChain chain) throws IOException, ServletException {
 
-    String prompt = params.get(PROMPT);
+    String prompt = params.get(ConnectRequestParameters.PROMPT);
 
     if (prompt == null) {
       return true;
     }
 
-    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
+    List<String> prompts = Splitter.on(ConnectRequestParameters.PROMPT_SEPARATOR)
+      .splitToList(Strings.nullToEmpty(prompt));
 
-    if (prompts.contains(PROMPT_NONE)) {
+    if (prompts.contains(ConnectRequestParameters.PROMPT_NONE)) {
 
       Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -77,11 +68,14 @@ public class PromptService {
         return false;
       }
 
-      if (client.isPresent() && params.get(REDIRECT_URI) != null) {
+      if (client.isPresent() && params.get(ConnectRequestParameters.REDIRECT_URI) != null) {
 
-        String url = redirectResolver.resolveRedirect(params.get(REDIRECT_URI), client.get());
+        String url = redirectResolver
+          .resolveRedirect(params.get(ConnectRequestParameters.REDIRECT_URI), client.get());
 
-        OAuthError.sendAuthenticationError(response, url, params.get(STATE), LOGIN_REQUIRED, null);
+        OAuthError.sendAuthenticationError(response, url,
+            params.get(ConnectRequestParameters.STATE), ConnectRequestParameters.LOGIN_REQUIRED,
+            null);
 
         return false;
       }
@@ -91,11 +85,11 @@ public class PromptService {
       return false;
     }
 
-    if (prompts.contains(PROMPT_LOGIN)) {
+    if (prompts.contains(ConnectRequestParameters.PROMPT_LOGIN)) {
 
-      if (session.getAttribute(PROMPTED) == null) {
+      if (session.getAttribute(ConnectRequestParameters.PROMPTED) == null) {
 
-        session.setAttribute(PROMPT_REQUESTED, Boolean.TRUE);
+        session.setAttribute(ConnectRequestParameters.PROMPT_REQUESTED, Boolean.TRUE);
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -104,7 +98,7 @@ public class PromptService {
         }
 
       } else {
-        session.removeAttribute(PROMPTED);
+        session.removeAttribute(ConnectRequestParameters.PROMPTED);
       }
 
       chain.doFilter(request, response);

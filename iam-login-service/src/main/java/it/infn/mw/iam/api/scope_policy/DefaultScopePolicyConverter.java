@@ -15,16 +15,21 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy;
+import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies.OpaPolicy.Actor;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
+import it.infn.mw.iam.persistence.model.IamScopePolicy.PolicyType;
 import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
@@ -103,13 +108,35 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
     }
 
     if (sp.getGroup() != null) {
-      IamGroup group = groupRepo.findByUuid(sp.getGroup().getUuid()).orElseThrow(
-          () -> new InvalidScopePolicyError("No group found for UUID: " + sp.getGroup().getUuid()));
+      IamGroup group = groupRepo.findByUuid(sp.getGroup().getUuid())
+        .orElseThrow(() -> new InvalidScopePolicyError(
+            "No group found for UUID: " + sp.getGroup().getUuid()));
 
       scopePolicy.setGroup(group);
     }
 
     return scopePolicy;
+  }
+
+  public OpaPolicy toOpaPolicyDTO(IamScopePolicy sp) {
+
+    Actor actor = null;
+
+    if (sp.getPolicyType().equals(PolicyType.ACCOUNT)) {
+      actor = new Actor(sp.getAccount().getUuid(), sp.getAccount().getUsername(), "account");
+    }
+
+    if (sp.getPolicyType().equals(PolicyType.GROUP)) {
+      actor = new Actor(sp.getGroup().getUuid(), sp.getGroup().getName(), "group");
+    }
+
+    Set<String> scopes = Sets.newHashSet();
+    if (!sp.getScopes().isEmpty()) {
+      scopes.addAll(sp.getScopes());
+    }
+
+    return new OpaPolicy(actor, sp.getDescription(), sp.getMatchingPolicy(), sp.getRule(),
+        scopes);
   }
 
 }

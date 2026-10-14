@@ -21,9 +21,6 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +29,8 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.rcauth.RCAuthError;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
 import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
@@ -40,13 +39,12 @@ import it.infn.mw.iam.rcauth.RCAuthTokenResponse;
 @ConditionalOnProperty(name = "rcauth.enabled", havingValue = "true")
 public class DefaultRCAuthTokenResponseVerifier implements RCAuthTokenResponseVerifier {
 
-  final JWKSetCacheService jwkService;
+  final IamJWKSetCacheService jwkService;
   final RCAuthProperties rcAuthProperties;
   final IamProperties iamProperties;
   final Clock clock;
 
-  @Autowired
-  public DefaultRCAuthTokenResponseVerifier(Clock clock, JWKSetCacheService jwkService,
+  public DefaultRCAuthTokenResponseVerifier(Clock clock, IamJWKSetCacheService jwkService,
       RCAuthProperties rcAuthProperties, IamProperties iamProperties) {
     this.clock = clock;
     this.jwkService = jwkService;

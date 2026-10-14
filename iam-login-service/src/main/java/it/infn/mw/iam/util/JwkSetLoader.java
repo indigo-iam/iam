@@ -16,13 +16,12 @@
 package it.infn.mw.iam.util;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import org.springframework.core.io.Resource;
 
-import com.google.common.io.CharStreams;
 import com.nimbusds.jose.jwk.JWKSet;
 
 public final class JwkSetLoader {
@@ -38,8 +37,9 @@ public final class JwkSetLoader {
     if (!location.exists() || !location.isReadable()) {
       throw new IOException("Location doesn't exist or is not readable: " + location.toString());
     }
-    try (var reader = new InputStreamReader(location.getInputStream(), StandardCharsets.UTF_8)) {
-      return JWKSet.parse(CharStreams.toString(reader));
+    try (InputStream in = location.getInputStream()) {
+      String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      return JWKSet.parse(json);
     }
   }
 }

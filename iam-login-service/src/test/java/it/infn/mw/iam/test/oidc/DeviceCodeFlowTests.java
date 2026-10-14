@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.core.oauth.OAuth2ErrorResponse;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
 class DeviceCodeFlowTests extends OidcMockMvcTestSupport {
@@ -48,6 +49,10 @@ class DeviceCodeFlowTests extends OidcMockMvcTestSupport {
 
     var result = postForm(DEVICE_CODE_ENDPOINT, Map.of("client_id", "unknown-client"));
 
-    assertEquals(404, result.getResponse().getStatus());
+    assertEquals(401, result.getResponse().getStatus());
+
+    OAuth2ErrorResponse response =
+        mapper.readValue(result.getResponse().getContentAsString(), OAuth2ErrorResponse.class);
+    assertEquals("invalid_client", response.error().value());
   }
 }

@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
@@ -46,6 +45,7 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgGroupHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)

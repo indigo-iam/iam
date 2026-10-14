@@ -15,25 +15,15 @@
  */
 package it.infn.mw.iam.test.oauth.client_registration;
 
-import static com.google.common.collect.Sets.newHashSet;
-import static org.mitre.oauth2.model.RegisteredClientFields.CLAIMS_REDIRECT_URIS;
-import static org.mitre.oauth2.model.RegisteredClientFields.CLIENT_ID;
-import static org.mitre.oauth2.model.RegisteredClientFields.CLIENT_NAME;
-import static org.mitre.oauth2.model.RegisteredClientFields.CONTACTS;
-import static org.mitre.oauth2.model.RegisteredClientFields.GRANT_TYPES;
-import static org.mitre.oauth2.model.RegisteredClientFields.REDIRECT_URIS;
-import static org.mitre.oauth2.model.RegisteredClientFields.REQUEST_URIS;
-import static org.mitre.oauth2.model.RegisteredClientFields.RESPONSE_TYPES;
-import static org.mitre.oauth2.model.RegisteredClientFields.SCOPE;
-import static org.mitre.util.JsonUtils.getAsArray;
-
 import java.util.Set;
-
-import org.mitre.oauth2.model.RegisteredClientFields;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
@@ -43,7 +33,7 @@ public class ClientRegistrationTestSupport extends TokenGetterUtils {
 
   public static class ClientJsonStringBuilder {
 
-    static final Joiner JOINER = Joiner.on(RegisteredClientFields.SCOPE_SEPARATOR);
+    static final Joiner JOINER = Joiner.on(" ");
 
     String clientId = null;
     String name = "test_client";
@@ -103,15 +93,15 @@ public class ClientRegistrationTestSupport extends TokenGetterUtils {
 
     public String build() {
       JsonObject json = new JsonObject();
-      json.addProperty(CLIENT_ID, clientId);
-      json.addProperty(CLIENT_NAME, name);
-      json.addProperty(SCOPE, JOINER.join(scopes));
-      json.add(REDIRECT_URIS, getAsArray(redirectUris));
-      json.add(GRANT_TYPES, getAsArray(grantTypes));
-      json.add(RESPONSE_TYPES, getAsArray(responseTypes, true));
-      json.add(CLAIMS_REDIRECT_URIS, getAsArray(newHashSet(), true));
-      json.add(REQUEST_URIS, getAsArray(newHashSet(), true));
-      json.add(CONTACTS, getAsArray(newHashSet("test@iam.test")));
+      json.addProperty("client_id", clientId);
+      json.addProperty("client_name", name);
+      json.addProperty("scope", JOINER.join(scopes));
+      json.add("redirect_uris", getAsArray(redirectUris));
+      json.add("grant_types", getAsArray(grantTypes));
+      json.add("response_types", getAsArray(responseTypes, true));
+      json.add("claims_redirect_uris", getAsArray(Sets.newHashSet(), true));
+      json.add("request_uris", getAsArray(Sets.newHashSet(), true));
+      json.add("contacts", getAsArray(Sets.newHashSet("test@iam.test")));
       json.addProperty("access_token_validity_seconds", accessTokenValiditySeconds);
       json.addProperty("refresh_token_validity_seconds", refreshTokenValiditySeconds);
       return json.toString();
@@ -120,8 +110,20 @@ public class ClientRegistrationTestSupport extends TokenGetterUtils {
   }
 
   protected String setToString(Set<String> scopes) {
-    Joiner joiner = Joiner.on(RegisteredClientFields.SCOPE_SEPARATOR);
+    Joiner joiner = Joiner.on(" ");
     return joiner.join(scopes);
+  }
+
+  public static JsonElement getAsArray(Set<String> value) {
+    return getAsArray(value, false);
+  }
+
+  public static JsonElement getAsArray(Set<String> value, boolean preserveEmpty) {
+    if (!preserveEmpty && value != null && value.isEmpty()) {
+      return JsonNull.INSTANCE;
+    }
+    Gson gson = new Gson();
+    return gson.toJsonTree(value, new TypeToken<Set<String>>() {}.getType());
   }
 
 }

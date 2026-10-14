@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.apache.commons.codec.binary.Base64;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -37,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 
 public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
@@ -77,7 +77,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
     HttpHeaders headers = new HttpHeaders();
 
-    AuthMethod tokenEndpointAuthMethod = oidcClientConfig.tokenEndpointAuthMethod();
+    ClientAuthMethod tokenEndpointAuthMethod = oidcClientConfig.tokenEndpointAuthMethod();
 
     switch (tokenEndpointAuthMethod) {
 

@@ -93,7 +93,7 @@ public class JpaConfig extends JpaBaseConfiguration {
       final EntityManagerFactoryBuilder factoryBuilder) {
 
     return factoryBuilder.dataSource(dataSource)
-      .packages("org.mitre", "it.infn.mw.iam.persistence")
+      .packages("it.infn.mw.iam.persistence")
       .persistenceUnit("defaultPersistenceUnit")
       .properties(getVendorProperties())
       .build();
@@ -101,14 +101,14 @@ public class JpaConfig extends JpaBaseConfiguration {
   }
 
   @Bean(name = {"defaultTransactionManager", "transactionManager"})
-  public PlatformTransactionManager defaultTransactionManager() {
+  PlatformTransactionManager defaultTransactionManager() {
 
     return new JpaTransactionManager();
   }
 
   @Bean
   @Profile("no-flyway")
-  public FlywayMigrationStrategy flywayMigrationStrategy() {
+  FlywayMigrationStrategy flywayMigrationStrategy() {
     return f -> {
       //  empty on purpose
     }; 
@@ -116,7 +116,7 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   @Bean
   @Profile("flyway-repair")
-  public FlywayMigrationStrategy flywayRepairStrategy() {
+  FlywayMigrationStrategy flywayRepairStrategy() {
     return f -> {
       f.repair();
       f.migrate();

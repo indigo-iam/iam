@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mitre.openid.connect.model.UserInfo;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.AttributeStatement;
@@ -50,6 +49,7 @@ import it.infn.mw.iam.authn.oidc.OIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
 import it.infn.mw.iam.test.ext_authn.saml.SamlTestConfig;
@@ -90,7 +90,7 @@ class ExternalAuthenticationRegistrationInfoTests extends SamlAuthenticationTest
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
 
-    UserInfo userinfo = mock(UserInfo.class);
+    UserInfoResponse userinfo = mock(UserInfoResponse.class);
 
     when(userinfo.getEmail()).thenReturn("test@test.org");
 

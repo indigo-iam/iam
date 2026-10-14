@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -53,6 +52,7 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -106,7 +106,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
       return null;
     }
 
-    UserInfo userInfo = userInfoFetcher.loadUserInfo(pendingToken)
+    UserInfoResponse userInfo = userInfoFetcher.loadUserInfo(pendingToken)
       .orElseThrow(
           () -> new AuthenticationServiceException("Authentication failed: no userinfo response"));
 
@@ -221,7 +221,7 @@ public class OIDCAuthenticationProvider implements AuthenticationProvider {
   }
 
   private OIDCAuthenticationToken createAuthenticationToken(PendingOIDCAuthenticationToken token,
-      Collection<GrantedAuthority> authorities, UserInfo userInfo) {
+      Collection<GrantedAuthority> authorities, UserInfoResponse userInfo) {
     return new OIDCAuthenticationToken(token.getSub(), token.getIssuer(), userInfo, authorities,
         token.getIdToken(), (String) token.getCredentials());
   }

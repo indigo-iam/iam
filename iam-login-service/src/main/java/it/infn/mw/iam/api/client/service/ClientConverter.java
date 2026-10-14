@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -38,6 +36,8 @@ import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @Component
 public class ClientConverter {
@@ -82,9 +82,7 @@ public class ClientConverter {
       client.setDeviceCodeValiditySeconds(dto.getDeviceCodeValiditySeconds());
     }
 
-    client.setAllowIntrospection(dto.isAllowIntrospection());
     client.setReuseRefreshToken(dto.isReuseRefreshToken());
-    client.setClearAccessTokensOnRefresh(dto.isClearAccessTokensOnRefresh());
 
     if (dto.getCodeChallengeMethod() != null) {
 
@@ -92,8 +90,8 @@ public class ClientConverter {
     }
 
     if (dto.getTokenEndpointAuthMethod() != null) {
-      client
-        .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
@@ -119,14 +117,14 @@ public class ClientConverter {
 
     clientDTO.setJwksUri(entity.getJwksUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
+    clientDTO.setPostLogoutRedirectUris(entity.getPostLogoutRedirectUris());
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
       .valueOf(Optional.ofNullable(entity.getTokenEndpointAuthMethod())
-        .orElse(AuthMethod.NONE)
+        .orElse(ClientAuthMethod.NONE)
         .getValue()));
 
     clientDTO.setScope(cloneSet(entity.getScope()));
-    clientDTO.setTosUri(entity.getTosUri());
 
     clientDTO.setCreatedAt(entity.getCreatedAt());
     if (entity.getClientLastUsed() != null) {
@@ -137,8 +135,6 @@ public class ClientConverter {
       clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
     }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
-    clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
-    clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());
     clientDTO.setClientDescription(entity.getClientDescription());
     clientDTO.setClientUri(entity.getClientUri());
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
@@ -146,7 +142,6 @@ public class ClientConverter {
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
-    clientDTO.setPolicyUri(entity.getPolicyUri());
     clientDTO.setRefreshTokenValiditySeconds(entity.getRefreshTokenValiditySeconds());
 
     Optional.ofNullable(entity.getResponseTypes())
@@ -202,9 +197,9 @@ public class ClientConverter {
       client.setJwks(JWKSet.parse(dto.getJwk()));
     }
 
-    client.setPolicyUri(dto.getPolicyUri());
-
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
+
+    client.setPostLogoutRedirectUris(dto.getPostLogoutRedirectUris());
 
     client.setScope(cloneSet(dto.getScope()));
 
@@ -217,7 +212,7 @@ public class ClientConverter {
           dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
-    if (dto.getScope().contains("offline_access")) {
+    if (client.getScope().contains("offline_access")) {
       client.getGrantTypes().add(AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
     }
 
@@ -229,8 +224,8 @@ public class ClientConverter {
     client.setContacts(cloneSet(dto.getContacts()));
 
     if (!isNull(dto.getTokenEndpointAuthMethod())) {
-      client
-        .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     if (dto.getCodeChallengeMethod() != null) {

@@ -21,9 +21,10 @@
             challenge method</label>
 
         <select id="pkce" class="form-control" ng-model="$ctrl.client.code_challenge_method">
-            <option value="">No code challenge</option>
-            <option value="plain">Plain code challenge</option>
-            <option value="S256">SHA-256 hash algorithm</option>
+            <option ng-value="'optional'">Code challenge is accepted but not required</option>
+            <option ng-value="'none'">No code challenge is allowed</option>
+            <option ng-value="'plain'">Plain code challenge required</option>
+            <option ng-value="'S256'">SHA-256 hash algorithm required</option>
         </select>
     </div>
 </div>

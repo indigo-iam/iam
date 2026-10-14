@@ -32,7 +32,7 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
-import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 
 public class RootIsDashboardSuccessHandlerTests {
 
@@ -86,11 +86,11 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    IamProperties iamProperties = new IamProperties();
-    iamProperties.getDashboard().setBasePath("/dashboard");
+    DashboardProperties dashboardProperties = new DashboardProperties();
+    dashboardProperties.setBasePath("/dashboard");
 
     RootIsDashboardSuccessHandler handler =
-        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, dashboardProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
@@ -113,11 +113,11 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    IamProperties iamProperties = new IamProperties();
-    iamProperties.getDashboard().setBasePath("/dashboard");
+    DashboardProperties dashboardProperties = new DashboardProperties();
+    dashboardProperties.setBasePath("/dashboard");
 
     RootIsDashboardSuccessHandler handler =
-        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, dashboardProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
@@ -139,11 +139,11 @@ public class RootIsDashboardSuccessHandlerTests {
     when(req.getContextPath()).thenReturn("");
     when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
-    IamProperties iamProperties = new IamProperties();
-    iamProperties.getDashboard().setBasePath("/dashboard");
+    DashboardProperties dashboardProperties = new DashboardProperties();
+    dashboardProperties.setBasePath("/dashboard");
 
     RootIsDashboardSuccessHandler handler =
-        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, dashboardProperties);
 
     handler.onAuthenticationSuccess(req, res, auth);
 
@@ -162,11 +162,11 @@ public class RootIsDashboardSuccessHandlerTests {
 
     Authentication auth = Mockito.mock(Authentication.class);
 
-    IamProperties iamProperties = new IamProperties();
-    iamProperties.getDashboard().setBasePath("/dashboard");
+    DashboardProperties dashboardProperties = new DashboardProperties();
+    dashboardProperties.setBasePath("/dashboard");
 
     RootIsDashboardSuccessHandler handler =
-        new RootIsDashboardSuccessHandler(BASE_URL, cache, iamProperties);
+        new RootIsDashboardSuccessHandler(BASE_URL, cache, dashboardProperties);
     handler.onAuthenticationSuccess(req, res, auth);
     verify(res).sendRedirect("/dashboard");
   }

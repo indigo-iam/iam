@@ -30,18 +30,14 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.view.TokenApiView;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonEntityView;
-import org.mitre.openid.connect.view.JsonErrorView;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.ui.ModelMap;
+import org.springframework.security.oauth2.common.exceptions.UnauthorizedUserException;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.tokens.UserTokensController;
+import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.ClientRef;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
@@ -49,6 +45,7 @@ import it.infn.mw.iam.api.tokens.model.UserRef;
 import it.infn.mw.iam.api.tokens.service.TokenService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
 class UserTokensControllerTests {
 
@@ -77,161 +74,128 @@ class UserTokensControllerTests {
   }
 
   @Test
-  void getUserAccessTokens_shouldReturnViewAndPopulateModel() {
+  void getUserAccessTokensShouldReturnAccessTokenList() {
 
     List<AccessToken> tokens = List.of(accessToken(1L, "john"));
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(accessTokenService.getAllTokensForUser("john")).thenReturn(tokens);
 
-    ModelMap model = new ModelMap();
+    List<AccessToken> result = controller.getUserAccessTokens(authentication);
 
-    String result = controller.getUserAccessTokens(authentication, model);
-
-    assertEquals(TokenApiView.VIEWNAME, result);
-    assertEquals(tokens, model.get(JsonEntityView.ENTITY));
+    assertEquals(1, result.size());
 
     verify(accessTokenService).getAllTokensForUser("john");
   }
 
   @Test
-  void getUserRefreshTokens_shouldReturnViewAndPopulateModel() {
+  void getUserRefreshTokensShouldReturnRefreshTokenList() {
 
     List<RefreshToken> tokens = List.of(refreshToken(1L, "john"));
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(refreshTokenService.getAllTokensForUser("john")).thenReturn(tokens);
 
-    ModelMap model = new ModelMap();
+    List<RefreshToken> result = controller.getUserRefreshTokens(authentication);
 
-    String result = controller.getUserRefreshTokens(authentication, model);
-
-    assertEquals(TokenApiView.VIEWNAME, result);
-    assertEquals(tokens, model.get(JsonEntityView.ENTITY));
+    assertEquals(1, result.size());
 
     verify(refreshTokenService).getAllTokensForUser("john");
   }
 
   @Test
-  void deleteAccessToken_shouldReturnNotFound_whenTokenDoesNotExist() {
+  void deleteAccessTokenShouldReturnTokenNotFoundExceptionWhenDoesNotExist() {
 
     Long id = 1L;
-    ModelMap model = new ModelMap();
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
 
-    String result = controller.deleteAccessToken(id, authentication, model);
-
-    assertEquals(JsonErrorView.VIEWNAME, result);
-    assertEquals(HttpStatus.NOT_FOUND, model.get(HttpCodeView.CODE));
-    assertEquals("The requested token with id 1 could not be found.",
-        model.get(JsonErrorView.ERROR_MESSAGE));
+    TokenNotFoundException e = assertThrows(TokenNotFoundException.class,
+        () -> controller.deleteAccessToken(id, authentication));
+    assertEquals("The requested token with id 1 could not be found.", e.getMessage());
 
     verify(accessTokenService, never()).revoke(anyLong());
   }
 
   @Test
-  void deleteAccessToken_shouldReturnForbidden_whenTokenBelongsToAnotherUser() {
+  void deleteAccessTokenShouldReturnForbiddenWhenTokenBelongsToAnotherUser() {
 
     Long id = 1L;
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(accessTokenService.getToken(id)).thenReturn(Optional.of(accessToken(id, "someoneElse")));
 
-    ModelMap model = new ModelMap();
-
-    String result = controller.deleteAccessToken(id, authentication, model);
-
-    assertEquals(JsonErrorView.VIEWNAME, result);
-    assertEquals(HttpStatus.FORBIDDEN, model.get(HttpCodeView.CODE));
-    assertEquals("You do not have permission to view this token",
-        model.get(JsonErrorView.ERROR_MESSAGE));
+    UnauthorizedUserException e = assertThrows(UnauthorizedUserException.class,
+        () -> controller.deleteAccessToken(id, authentication));
+    assertEquals("You do not have permission to view this token", e.getMessage());
 
     verify(accessTokenService, never()).revoke(anyLong());
   }
 
   @Test
-  void deleteAccessToken_shouldRevokeToken_whenOwnerMatches() {
+  void deleteAccessTokenShouldRevokeTokenWhenOwnerMatches() {
 
     Long id = 1L;
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(accessTokenService.getToken(id)).thenReturn(Optional.of(accessToken(id, "john")));
 
-    ModelMap model = new ModelMap();
-
-    String result = controller.deleteAccessToken(id, authentication, model);
-
-    assertEquals(HttpCodeView.VIEWNAME, result);
+    controller.deleteAccessToken(id, authentication);
 
     verify(accessTokenService).revoke(id);
   }
 
   @Test
-  void deleteRefreshToken_shouldReturnNotFound_whenTokenDoesNotExist() {
+  void deleteRefreshTokenShouldReturnTokenNotFoundExceptionWhenTokenDoesNotExist() {
 
     Long id = 1L;
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
 
-    ModelMap model = new ModelMap();
+    TokenNotFoundException e = assertThrows(TokenNotFoundException.class,
+        () -> controller.deleteRefreshToken(id, authentication));
 
-    String result = controller.deleteRefreshToken(id, authentication, model);
-
-    assertEquals(JsonErrorView.VIEWNAME, result);
-    assertEquals(HttpStatus.NOT_FOUND, model.get(HttpCodeView.CODE));
-    assertEquals("The requested token with id 1 could not be found.",
-        model.get(JsonErrorView.ERROR_MESSAGE));
+    assertEquals("The requested token with id 1 could not be found.", e.getMessage());
 
     verify(refreshTokenService, never()).revoke(anyLong());
   }
 
   @Test
-  void deleteRefreshToken_shouldReturnForbidden_whenTokenBelongsToAnotherUser() {
+  void deleteRefreshTokenShouldReturnForbiddenWhenTokenBelongsToAnotherUser() {
 
     Long id = 1L;
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(refreshTokenService.getToken(id)).thenReturn(Optional.of(refreshToken(id, "someoneElse")));
 
-    ModelMap model = new ModelMap();
+    UnauthorizedUserException e = assertThrows(UnauthorizedUserException.class,
+        () -> controller.deleteRefreshToken(id, authentication));
 
-    String result = controller.deleteRefreshToken(id, authentication, model);
-
-    assertEquals(JsonErrorView.VIEWNAME, result);
-    assertEquals(HttpStatus.FORBIDDEN, model.get(HttpCodeView.CODE));
-    assertEquals("You do not have permission to view this token",
-        model.get(JsonErrorView.ERROR_MESSAGE));
+    assertEquals("You do not have permission to view this token", e.getMessage());
 
     verify(refreshTokenService, never()).revoke(anyLong());
   }
 
   @Test
-  void deleteRefreshToken_shouldRevokeToken_whenOwnerMatches() {
+  void deleteRefreshTokenShouldRevokeTokenWhenOwnerMatches() {
 
     Long id = 1L;
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.of(account));
     when(refreshTokenService.getToken(id)).thenReturn(Optional.of(refreshToken(id, "john")));
 
-    ModelMap model = new ModelMap();
-
-    String result = controller.deleteRefreshToken(id, authentication, model);
-
-    assertEquals(HttpCodeView.VIEWNAME, result);
+    controller.deleteRefreshToken(id, authentication);
 
     verify(refreshTokenService).revoke(id);
   }
 
   @Test
-  void shouldThrowException_whenAuthenticatedUserIsMissing() {
+  void shouldThrowExceptionWhenAuthenticatedUserIsMissing() {
 
     when(accountUtils.getAuthenticatedUserAccount(authentication)).thenReturn(Optional.empty());
 
-    ModelMap model = new ModelMap();
-
     IllegalStateException ex = assertThrows(IllegalStateException.class,
-        () -> controller.getUserAccessTokens(authentication, model));
+        () -> controller.getUserAccessTokens(authentication));
 
     assertEquals("Invalid authenticated account", ex.getMessage());
   }

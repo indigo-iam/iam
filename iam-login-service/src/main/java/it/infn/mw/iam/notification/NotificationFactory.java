@@ -18,8 +18,7 @@ package it.infn.mw.iam.notification;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;

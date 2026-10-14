@@ -66,10 +66,20 @@
         <p id="dynRegUri" class="form-control-static">{{$ctrl.client.registration_client_uri}}</p>
     </div>
     <hr>
-    <inputlist id="redirectUri" model="$ctrl.client.redirect_uris" placeholder="https://app.example.org/cb"
-        label="Redirect URIs" helptext="List of Redirect URIs for this
-    client" emptylisttext="No Redirect URIs defined for
-    this client" validator="$ctrl.validRedirectURI()">
+    <inputlist id="redirectUri"
+        model="$ctrl.client.redirect_uris"
+        placeholder="https://app.example.org/cb"
+        label="Redirect URIs"
+        helptext="List of Redirect URIs for this client"
+        emptylisttext="No Redirect URIs defined for this client">
+    </inputlist>
+    <hr>
+    <inputlist id="postLogoutRedirectUri"
+        model="$ctrl.client.post_logout_redirect_uris"
+        placeholder="https://app.example.org"
+        label="Post Logout Redirect URIs"
+        helptext="List of Post Logout Redirect URIs for this client"
+        emptylisttext="No Post Logout Redirect URIs defined for this client">
     </inputlist>
     <hr>
     <inputlist id="contacts" model="$ctrl.client.contacts" placeholder="administrator@example.org" label="Contacts"

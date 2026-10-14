@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.test.util.oauth;
 
-import org.mitre.oauth2.service.SystemScopeService;
-
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
 public class SecurityContextUtils implements StructuredScopeTestSupportConstants {

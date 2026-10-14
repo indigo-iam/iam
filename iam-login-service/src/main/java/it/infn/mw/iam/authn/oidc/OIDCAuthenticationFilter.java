@@ -32,8 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -60,6 +58,8 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OidcClient;
 import it.infn.mw.iam.core.client.IssuerService;
 import it.infn.mw.iam.core.client.IssuerServiceResponse;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 
 public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -73,7 +73,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   protected static final String FILTER_PROCESSES_URL = "/openid_connect_login";
 
   private final IamProperties properties;
-  private final JWKSetCacheService validationServices;
+  private final IamJWKSetCacheService validationServices;
   private final IssuerService issuerService;
   private final OIDCProviderMetadataService servers;
   private final ClientConfigurationService clientConfigurationService;
@@ -84,9 +84,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
   private final ObjectMapper objectMapper;
   private final int timeSkewAllowance;
 
-  public OIDCAuthenticationFilter(IamProperties properties, JWKSetCacheService validationServices,
-      IssuerService issuerService, OIDCProviderMetadataService servers,
-      ClientConfigurationService clientConfigurationService,
+  public OIDCAuthenticationFilter(IamProperties properties,
+      IamJWKSetCacheService validationServices, IssuerService issuerService,
+      OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper, int timeSkewAllowance) {
 

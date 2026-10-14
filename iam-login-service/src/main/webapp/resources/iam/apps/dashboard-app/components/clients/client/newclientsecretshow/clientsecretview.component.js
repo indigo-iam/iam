@@ -23,9 +23,8 @@
         $ctrl.data = data;
         $ctrl.newClient = !!data.client.clientSecret;
         $ctrl.client = data.client
-
-        self.clipboardSuccess = clipboardSuccess;
-        self.clipboardError = clipboardError;
+        $ctrl.clientIdCopied = false;
+        $ctrl.clientSecretCopied = false;
 
         $ctrl.ok = function () {
             $uibModalInstance.close($ctrl.selected);
@@ -35,22 +34,33 @@
             $uibModalInstance.dismiss('cancel');
         };
 
-        function clipboardError(event) {
+        $ctrl.clipboardError = function (event) {
             toaster.pop({
                 type: 'error',
-                body: 'Could not copy secret to clipboard!'
+                body: 'Could not copy Client details to clipboard!'
             });
         }
 
-        function clipboardSuccess(event, source) {
+        $ctrl.clipboardSuccess = function (event, source) {
+
+            var message = "Copied to clipboard.";
+
+            if (source === "clientid") {
+                $ctrl.clientIdCopied = true;
+                message = "Client ID copied to clipboard.";
+            }
+
+            if (source === "secret") {
+                $ctrl.clientSecretCopied = true;
+                message = "Client Secret copied to clipboard.";
+            }
+
             toaster.pop({
                 type: 'success',
-                body: 'Secret copied to clipboard!'
+                body: message
             });
+
             event.clearSelection();
-            if (source === 'secret') {
-                toggleSecretVisibility();
-            }
         }
     };
 

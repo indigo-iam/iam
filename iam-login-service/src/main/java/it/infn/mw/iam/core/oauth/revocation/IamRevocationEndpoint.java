@@ -19,9 +19,6 @@ import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -47,6 +44,9 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
+import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
@@ -76,7 +76,7 @@ public class IamRevocationEndpoint {
     this.refreshTokenRepo = refreshTokenRepo;
   }
 
-  @PostMapping(value = "/revoke", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  @PostMapping(value = URL, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public void revoke(@RequestParam(name = OAuth2ParameterNames.TOKEN) String tokenValue,
       Authentication auth)

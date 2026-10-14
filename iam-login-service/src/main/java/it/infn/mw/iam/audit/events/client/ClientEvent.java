@@ -15,13 +15,12 @@
  */
 package it.infn.mw.iam.audit.events.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
 import it.infn.mw.iam.audit.utils.IamClientSerializer;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 public abstract class ClientEvent extends IamAuditApplicationEvent {
 

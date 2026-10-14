@@ -30,7 +30,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
@@ -50,6 +49,7 @@ import it.infn.mw.iam.authn.oidc.OidcClientError;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.model.TokenEndpointErrorResponse;
 import it.infn.mw.iam.config.oidc.OidcClient;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultOidcTokenRequestorTests {
@@ -77,7 +77,7 @@ class DefaultOidcTokenRequestorTests {
   void testPrepareTokenRequestWithSecretPostAuthMethod() throws JsonProcessingException {
 
     OidcClient client =
-        new OidcClient("client", "secret", null, null, null, AuthMethod.SECRET_POST);
+        new OidcClient("client", "secret", null, null, null, ClientAuthMethod.SECRET_POST);
 
     Map<String, String> mockResponse = Map.of("access_token", "token");
     String jsonResponse = mapper.writeValueAsString(mockResponse);
@@ -90,7 +90,7 @@ class DefaultOidcTokenRequestorTests {
 
     assertEquals(jsonResponse, response);
 
-    client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
+    client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.NONE);
     when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
       .thenReturn(jsonResponse);
 
@@ -102,7 +102,7 @@ class DefaultOidcTokenRequestorTests {
   @Test
   void testRequestTokensThrowsOidcClientErrorOnRestClientException() {
 
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.NONE);
 
     when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
       .thenThrow(new RestClientException("connection refused"));
@@ -119,7 +119,7 @@ class DefaultOidcTokenRequestorTests {
   @Test
   void testRequestTokensWithBadRequestAndInvalidJsonResponse() throws IOException {
 
-    OidcClient client = new OidcClient("client", "secret", null, null, null, AuthMethod.NONE);
+    OidcClient client = new OidcClient("client", "secret", null, null, null, ClientAuthMethod.NONE);
 
     HttpClientErrorException exception =
         HttpClientErrorException.create(HttpStatus.BAD_REQUEST, "Bad request", HttpHeaders.EMPTY,

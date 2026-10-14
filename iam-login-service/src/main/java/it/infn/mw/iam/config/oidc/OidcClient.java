@@ -15,15 +15,15 @@
  */
 package it.infn.mw.iam.config.oidc;
 
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 
 public record OidcClient(String clientId, String clientSecret, String scope,
     String codeChallengeMethod, String idTokenSignedResponseAlg,
-    AuthMethod tokenEndpointAuthMethod) {
+    ClientAuthMethod tokenEndpointAuthMethod) {
 
   public OidcClient {
     if (tokenEndpointAuthMethod == null) {
-      tokenEndpointAuthMethod = AuthMethod.SECRET_BASIC;
+      tokenEndpointAuthMethod = ClientAuthMethod.SECRET_BASIC;
     }
   }
 }

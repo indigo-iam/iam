@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.account.search;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -28,7 +29,6 @@ import org.springframework.http.converter.json.MappingJacksonValue;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
@@ -121,7 +121,7 @@ public abstract class AbstractSearchController<T, E> {
 
   protected List<T> convertFromPage(Page<E> entities, Converter<T, E> converter) {
 
-    List<T> resources = Lists.newArrayList();
+    List<T> resources = new ArrayList<>();
     entities.getContent().forEach(e -> resources.add(converter.dtoFromEntity(e)));
     return resources;
   }

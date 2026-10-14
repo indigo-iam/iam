@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.scope;
 
-import org.mitre.oauth2.model.SystemScope;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 public class ScopeCreatedEvent extends ScopeEvent {
 

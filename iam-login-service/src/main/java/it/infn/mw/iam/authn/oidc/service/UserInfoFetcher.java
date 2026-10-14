@@ -17,20 +17,19 @@ package it.infn.mw.iam.authn.oidc.service;
 
 import java.util.Optional;
 
-import org.mitre.openid.connect.model.DefaultUserInfo;
-import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import it.infn.mw.iam.authn.oidc.OIDCProviderMetadata;
 import it.infn.mw.iam.authn.oidc.PendingOIDCAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 
 @Component
 public class UserInfoFetcher {
@@ -38,12 +37,14 @@ public class UserInfoFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(UserInfoFetcher.class);
 
   private RestTemplateFactory factory;
+  private ObjectMapper objectMapper;
 
-  public UserInfoFetcher(RestTemplateFactory factory) {
+  public UserInfoFetcher(RestTemplateFactory factory, ObjectMapper objectMapper) {
     this.factory = factory;
+    this.objectMapper = objectMapper;
   }
 
-  public Optional<UserInfo> loadUserInfo(final PendingOIDCAuthenticationToken token) {
+  public Optional<UserInfoResponse> loadUserInfo(final PendingOIDCAuthenticationToken token) {
 
     OIDCProviderMetadata metadata = token.getWellKnownEndpoint();
 
@@ -52,20 +53,27 @@ public class UserInfoFetcher {
       return Optional.empty();
     }
 
+    LOG.debug("UserInfo request to: {}", metadata.userInfoEndpoint());
+
     RestTemplate restTemplate = factory.newRestTemplate();
 
     restTemplate.getInterceptors().add(new BearerTokenInterceptor((String) token.getCredentials()));
 
-    String response = restTemplate.getForObject(metadata.userInfoEndpoint(), String.class);
+    UserInfoResponse response =
+        restTemplate.getForObject(metadata.userInfoEndpoint(), UserInfoResponse.class);
 
-    if (Strings.isNullOrEmpty(response)) {
+    if (response == null) {
       LOG.warn("Received empty userinfo response from {}", metadata.userInfoEndpoint());
       return Optional.empty();
     }
 
-    JsonObject userInfoJson = JsonParser.parseString(response).getAsJsonObject();
-    return Optional.of(DefaultUserInfo.fromJson(userInfoJson));
+    try {
+      LOG.debug("UserInfo response: {}", objectMapper.writeValueAsString(response));
+    } catch (JsonProcessingException e) {
+      LOG.warn("Could not serialize UserInfo response", e);
+    }
 
+    return Optional.of(response);
   }
 }
 

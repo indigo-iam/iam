@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.client;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -30,6 +29,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @SuppressWarnings("deprecation")
 public class IAMClientUserDetailsService implements ClientUserDetailsService {

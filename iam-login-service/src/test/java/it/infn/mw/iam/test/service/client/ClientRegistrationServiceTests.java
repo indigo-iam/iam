@@ -38,6 +38,7 @@ import static org.mockito.Mockito.lenient;
 
 import java.text.ParseException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -46,9 +47,8 @@ import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.BlacklistedSiteService;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -78,8 +78,11 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.core.oauth.consent.BlockedUriService;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -96,6 +99,14 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 @Transactional
 @ActiveProfiles({"h2-test", "wlcg-scopes"})
 class ClientRegistrationServiceTests extends TokenGetterUtils {
+
+  public static final List<String> VALID_REDIRECT_URIS = List.of("http://localhost/redirect",
+      "http://127.0.0.1:8080/redirect", "http://[::1]:61023/oauth2redirect",
+      "http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect", "edu.kit.data.oidc-agent:/redirect");
+
+  public static final List<String> VALID_POST_LOGOUT_REDIRECT_URIS =
+      List.of("http://localhost/redirect", "http://127.0.0.1:8080/redirect",
+          "http://[::1]:61023/oauth2redirect", "http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect");
 
   @Autowired
   IamClientRepository clientRepo;
@@ -116,7 +127,7 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
   MutableClock clock;
 
   @MockBean
-  BlacklistedSiteService blsService;
+  BlockedUriService blsService;
 
   @SpyBean
   AccountUtils accountUtils;
@@ -184,6 +195,15 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     return request;
   }
 
+  private RegisteredClientDTO createClientDTO(String redirectUri, String postLogoutRedirectUri) {
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of(redirectUri));
+    request.setPostLogoutRedirectUris(Set.of(postLogoutRedirectUri));
+    return request;
+  }
+
   @Test
   void testRegistrationRequestRequiresClientName() {
     ConstraintViolationException exception =
@@ -204,7 +224,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientName("example");
           request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
-
           service.registerClient(request, userAuth);
         });
 
@@ -220,7 +239,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
           request.setClientName("example");
           request.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
           request.setScope(Set.of(""));
-
           service.registerClient(request, userAuth);
         });
 
@@ -232,7 +250,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = createClientDTO("not-a-uri");
-
           service.registerClient(request, userAuth);
         });
 
@@ -240,7 +257,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
     exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
       RegisteredClientDTO request = createClientDTO("myapp://redirect");
-
       service.registerClient(request, userAuth);
     });
 
@@ -248,7 +264,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
     exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
       RegisteredClientDTO request = createClientDTO("javascript:alert(1)");
-
       service.registerClient(request, userAuth);
     });
 
@@ -260,7 +275,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = createClientDTO(" ");
-
           service.registerClient(request, userAuth);
         });
 
@@ -272,7 +286,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = createClientDTO("http://example/redirect");
-
           service.registerClient(request, userAuth);
         });
 
@@ -286,7 +299,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request =
               createClientDTO("https://example.com/callback#token=abc123");
-
           service.registerClient(request, userAuth);
         });
 
@@ -295,41 +307,73 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
 
   @Test
   void testValidRedirectUris() {
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://localhost/redirect");
-
-      service.registerClient(request, userAuth);
+    VALID_REDIRECT_URIS.forEach(uri -> {
+      Assertions.assertDoesNotThrow(() -> {
+        RegisteredClientDTO request = createClientDTO(uri);
+        service.registerClient(request, userAuth);
+      });
     });
+  }
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://127.0.0.1:8080/redirect");
+  @ParameterizedTest
+  @CsvSource({"'not-a-uri', 'null'", "'myapp://redirect', 'myapp'",
+      "'javascript:alert(1)', 'javascript'"})
+  void testInvalidPostLogoutRedirectUriScheme(String postLogoutUri, String expectedScheme) {
+    final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    final RegisteredClientDTO request = createClientDTO(redirectUri, postLogoutUri);
 
-      service.registerClient(request, userAuth);
-    });
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("http://[::1]:61023/oauth2redirect");
+    assertThat(exception.getMessage(),
+        containsString("Invalid post logout redirect URI scheme: " + expectedScheme));
+  }
 
-      service.registerClient(request, userAuth);
-    });
+  @ParameterizedTest
+  @CsvSource({"' ', 'Invalid post logout redirect URI'",
+      "'http://example/redirect', 'Plain http post logout redirect URIs are only allowed for loopback'",
+      "'https://example.com/callback#token=abc123', 'Invalid post logout redirect URI: contains a fragment'"})
+  void testInvalidPostLogoutRedirectUri(String postLogoutRedirectUri, String expectedMessage) {
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request =
-          createClientDTO("http://[0:0:0:0:0:0:0:1]:61023/oauth2redirect");
+    final String redirectUri = VALID_REDIRECT_URIS.get(0);
+    final RegisteredClientDTO request = createClientDTO(redirectUri, postLogoutRedirectUri);
 
-      service.registerClient(request, userAuth);
-    });
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
 
-    Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO request = createClientDTO("edu.kit.data.oidc-agent:/redirect");
+    assertThat(exception.getMessage(), containsString(expectedMessage));
+  }
 
-      service.registerClient(request, userAuth);
+  @Test
+  void testValidPostLogoutRedirectUris() {
+    String validRedirectUri = VALID_REDIRECT_URIS.get(0);
+
+    VALID_POST_LOGOUT_REDIRECT_URIS.forEach(postLogoutUri -> {
+      Assertions.assertDoesNotThrow(() -> {
+        RegisteredClientDTO request = createClientDTO(validRedirectUri, postLogoutUri);
+        service.registerClient(request, userAuth);
+      });
     });
   }
 
   @Test
+  void testRejectsHttpPostLogoutRedirectUriForPublicClient() {
+
+    String validRedirectUri = VALID_REDIRECT_URIS.get(0);
+    String postLogoutUri = VALID_POST_LOGOUT_REDIRECT_URIS.get(0);
+    RegisteredClientDTO request = createClientDTO(validRedirectUri, postLogoutUri);
+    request.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+
+    ConstraintViolationException exception = Assertions.assertThrows(
+        ConstraintViolationException.class, () -> service.registerClient(request, userAuth));
+
+    assertThat(exception.getMessage(), containsString(
+        "Plain http post logout redirect URIs are only allowed for confidential clients"));
+  }
+
+  @Test
   void testBlacklistedUriValidation() {
-    lenient().when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
+    lenient().when(blsService.isBlockedUri("https://deny.example/cb")).thenReturn(true);
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -337,7 +381,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
           request.setClientName("example");
           request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
           request.setRedirectUris(Set.of("https://deny.example/cb"));
-
           service.registerClient(request, userAuth);
         });
 
@@ -425,7 +468,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
         is(TokenEndpointAuthenticationMethod.client_secret_basic));
     assertThat(response.getGrantTypes(),
         hasItems(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
-
     assertThat(response.getRegistrationAccessToken(), nullValue());
     assertThat(response.getClientSecret(), notNullValue());
 
@@ -435,8 +477,8 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     request.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD,
         AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS));
     request.setRedirectUris(Set.of("https://example/cb"));
-
     response = service.registerClient(request, adminAuth);
+
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
     assertThat(response.getTokenEndpointAuthMethod(),
@@ -444,7 +486,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertThat(response.getGrantTypes(),
         hasItems(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE,
             AuthorizationGrantType.PASSWORD, AuthorizationGrantType.CLIENT_CREDENTIALS));
-
     assertThat(response.getRegistrationAccessToken(), nullValue());
     assertThat(response.getClientSecret(), notNullValue());
     assertThat(response.getContacts(), hasItem(adminAccount.getUserInfo().getEmail()));
@@ -481,7 +522,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
         fail("Unexpected JSON parsing problem");
       }
       assertThat(response.getScope(), not(hasItem(restrictedScope)));
-
     });
   }
 
@@ -561,7 +601,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
       assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.CODE));
       assertThat(response.getRegistrationAccessToken(), nullValue());
       assertThat(response.getClientSecret(), notNullValue());
-
       assertThat(response.getScope(), hasItem("openid"));
       assertThat(response.getScope(), hasItem(restrictedScope));
       assertThat(response.getContacts(), hasItem(adminAccount.getUserInfo().getEmail()));
@@ -1135,7 +1174,6 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
           RegisteredClientDTO updateRequest = response;
           updateRequest.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
           service.updateClient(response.getClientId(), updateRequest, ratAuth);
-
         });
 
     assertThat(exception.getMessage(), containsString("Grant type not allowed"));

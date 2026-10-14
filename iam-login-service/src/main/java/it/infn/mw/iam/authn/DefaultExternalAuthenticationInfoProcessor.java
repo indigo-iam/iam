@@ -18,9 +18,10 @@ package it.infn.mw.iam.authn;
 import java.util.Collections;
 import java.util.Map;
 
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
+
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @Component
 @SuppressWarnings("deprecation")
