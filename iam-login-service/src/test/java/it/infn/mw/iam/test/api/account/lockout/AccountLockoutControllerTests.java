@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.account.lockout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import javax.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,11 +81,12 @@ class AccountLockoutControllerTests {
   }
 
   @Test
-  void getLockoutStatusReturnsNotSuspendedWhenEmpty() {
+  void getLockoutStatusReturnsNotFoundWhenEmpty() {
     when(accountService.findByUuid("uuid-1")).thenReturn(Optional.empty());
 
-    ResponseEntity<Map<String, Object>> r = lockoutController.getLockoutStatus("uuid-1");
-    assertEquals(false, r.getBody().get("suspended"));
+    EntityNotFoundException e = assertThrows(EntityNotFoundException.class,
+        () -> lockoutController.getLockoutStatus("uuid-1"));
+    assertEquals("UUID uuid-1 not found!", e.getMessage());
   }
 
   @Test
@@ -121,5 +125,15 @@ class AccountLockoutControllerTests {
 
     verify(accountService).resetLoginLockout("uuid-1", LoginLockoutResetReason.ADMIN_REVOKE);
     assertEquals(true, r.getBody().get("unlocked"));
+  }
+
+  @Test
+  void revokeLockoutReturnsNotFoundWhenEmpty() {
+    when(accountService.resetLoginLockout("uuid-1", LoginLockoutResetReason.ADMIN_REVOKE))
+      .thenThrow(new EntityNotFoundException("UUID uuid-1 not found!"));
+
+    EntityNotFoundException e = assertThrows(EntityNotFoundException.class,
+        () -> lockoutController.revokeLockout("uuid-1"));
+    assertEquals("UUID uuid-1 not found!", e.getMessage());
   }
 }

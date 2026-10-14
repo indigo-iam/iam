@@ -18,13 +18,18 @@ package it.infn.mw.iam.api.account.lockout;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
+import javax.persistence.EntityNotFoundException;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -49,15 +54,16 @@ public class AccountLockoutController {
 
   @GetMapping("/iam/account/{uuid}/lockout")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public ResponseEntity<Map<String, Object>> getLockoutStatus(@PathVariable String uuid) {
+  public ResponseEntity<Map<String, Object>> getLockoutStatus(@PathVariable String uuid)
+      throws EntityNotFoundException {
 
-    Optional<IamAccount> account = accountService.findByUuid(uuid);
-    if (account.isPresent() && account.get().getLockoutInfo() != null) {
-      IamAccountLoginLockout lockout = account.get().getLockoutInfo();
+    IamAccount account = accountService.findByUuid(uuid)
+      .orElseThrow(() -> new EntityNotFoundException("UUID " + uuid + " not found!"));
+    if (account.getLockoutInfo() != null) {
+      IamAccountLoginLockout lockout = account.getLockoutInfo();
       if (lockout.isSuspended(clock.instant())) {
-        return ResponseEntity.ok(Map.of(
-            "suspended", true,
-            "suspendedUntil", lockout.getSuspendedUntil()));
+        return ResponseEntity
+          .ok(Map.of("suspended", true, "suspendedUntil", lockout.getSuspendedUntil()));
       }
     }
     return ResponseEntity.ok(Map.of("suspended", false));
@@ -72,8 +78,16 @@ public class AccountLockoutController {
 
   @DeleteMapping("/iam/account/{uuid}/lockout")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public ResponseEntity<Map<String, Object>> revokeLockout(@PathVariable String uuid) {
+  public ResponseEntity<Map<String, Object>> revokeLockout(@PathVariable String uuid)
+      throws EntityNotFoundException {
     accountService.resetLoginLockout(uuid, LoginLockoutResetReason.ADMIN_REVOKE);
     return ResponseEntity.ok(Map.of("unlocked", true));
+  }
+
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  @ExceptionHandler(EntityNotFoundException.class)
+  @ResponseBody
+  public String accountNotFoundError(EntityNotFoundException ex) {
+    return ex.getMessage();
   }
 }

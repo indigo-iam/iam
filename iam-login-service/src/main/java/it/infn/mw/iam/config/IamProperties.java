@@ -20,6 +20,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.Valid;
+import javax.validation.constraints.AssertTrue;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -767,6 +770,17 @@ public class IamProperties {
     private Duration observationWindow;
     private Duration lockDuration;
 
+    @AssertTrue(message = "When login lockout is enabled, max-failed-attempts must be at least 1 "
+        + "and observation-window and lock-duration must be strictly positive")
+    public boolean isConfigurationValid() {
+      return !enabled
+          || (maxFailedAttempts >= 1 && isPositive(observationWindow) && isPositive(lockDuration));
+    }
+
+    private static boolean isPositive(Duration duration) {
+      return duration != null && !duration.isZero() && !duration.isNegative();
+    }
+
     public boolean isEnabled() {
       return enabled;
     }
@@ -868,6 +882,7 @@ public class IamProperties {
 
   private DashboardProperties dashboard = new DashboardProperties();
 
+  @Valid
   private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
   public String getBaseUrl() {
