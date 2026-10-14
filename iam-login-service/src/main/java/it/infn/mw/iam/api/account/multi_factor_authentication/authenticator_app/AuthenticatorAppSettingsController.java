@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
@@ -32,6 +34,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -66,14 +69,17 @@ public class AuthenticatorAppSettingsController {
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private final NotificationFactory notificationFactory;
+  private final AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, IamTotpMfaProperties iamTotpMfaProperties,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory,
+      AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.notificationFactory = notificationFactory;
+    this.authenticationSuccessHandlerHelper = authenticationSuccessHandlerHelper;
   }
 
   /**
@@ -112,13 +118,15 @@ public class AuthenticatorAppSettingsController {
    * 
    * @param code the TOTP to verify
    * @param validationResult result of validation checks on the code
-   * @return nothing
+   * @return where the client should navigate next &mdash; the request that brought the user to
+   *         enrollment in the first place, if one is still saved, rather than IAM's own dashboard
    */
   @PreAuthorize("hasAnyRole('USER', 'PRE_AUTHENTICATED')")
-  @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
+  @PostMapping(value = ENABLE_URL, produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
-      BindingResult validationResult, HttpSession session) {
+  public EnableMfaResponseDTO enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
+      BindingResult validationResult, HttpSession session, HttpServletRequest request,
+      HttpServletResponse response) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
     }
@@ -142,6 +150,12 @@ public class AuthenticatorAppSettingsController {
     service.enableTotpMfa(account);
     notificationFactory.createMfaEnableMessage(account);
     session.removeAttribute(REQUESTING_MFA);
+
+    Authentication current = SecurityContextHolder.getContext().getAuthentication();
+    String redirectUrl = authenticationSuccessHandlerHelper.resolveEnrollmentRedirect(current,
+        account, session, request, response);
+
+    return new EnableMfaResponseDTO(redirectUrl);
   }
 
 

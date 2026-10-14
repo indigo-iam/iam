@@ -21,6 +21,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.Date;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -29,17 +30,31 @@ import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.util.IamAuthenticationLogger;
+import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -56,11 +71,15 @@ public class AuthenticationSuccessHandlerHelper {
   private final IamAccountRepository accountRepo;
   private final IamTotpMfaService iamTotpMfaService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final ApplicationEventPublisher eventPublisher;
+  private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
+  private final RequestCache requestCache = new HttpSessionRequestCache();
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
       IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaProperties iamTotpMfaProperties, ApplicationEventPublisher eventPublisher,
+      SessionAuthenticationStrategy sessionAuthenticationStrategy) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
@@ -69,6 +88,8 @@ public class AuthenticationSuccessHandlerHelper {
     this.accountRepo = accountRepo;
     this.iamTotpMfaService = iamTotpMfaService;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.eventPublisher = eventPublisher;
+    this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -126,7 +147,7 @@ public class AuthenticationSuccessHandlerHelper {
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+        new RootIsDashboardSuccessHandler(iamBaseUrl, requestCache);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
         delegate, aupSignatureCheckService, accountUtils, accountRepo);
@@ -139,6 +160,87 @@ public class AuthenticationSuccessHandlerHelper {
       return;
     }
     session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
+  }
+
+  /**
+   * Called once a user finishes first-time TOTP enrollment at
+   * {@code /iam/authenticator-app/enable}. Mirrors
+   * {@link #handle}/{@link #continueWithDefaultSuccessHandler} for that one case, but returns where
+   * to go instead of writing a redirect, since the caller answers with JSON rather than a 302.
+   *
+   * @param current the authentication in place when enrollment completed
+   * @param account the account that just enrolled
+   * @return where the client should navigate next
+   */
+  public String resolveEnrollmentRedirect(Authentication current, IamAccount account,
+      HttpSession session, HttpServletRequest request, HttpServletResponse response) {
+
+    if (isPendingMfaUpgrade(current)) {
+      Authentication upgraded = MultiFactorTotpCheckProvider.upgradeToFullyAuthenticated(current);
+
+      sessionAuthenticationStrategy.onAuthentication(upgraded, request, response);
+
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      context.setAuthentication(upgraded);
+      SecurityContextHolder.setContext(context);
+
+      clearAuthenticationAttributes(request);
+
+      session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, Date.from(clock.instant()));
+
+      IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(upgraded);
+      accountRepo.touchLastLoginTimeForUserWithUsername(account.getUsername());
+      eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(upgraded,
+          AuthenticationSuccessHandlerHelper.class));
+
+      if (aupSignatureCheckService.needsAupSignature(account)) {
+        session.setAttribute(EnforceAupFilter.REQUESTING_SIGNATURE, true);
+        return EnforceAupFilter.AUP_SIGN_PATH;
+      }
+      return resolveSavedRequestOrDashboard(request, response);
+    }
+
+    if (isPreAuthenticated(current)) {
+      return MFA_VERIFY_URL;
+    }
+
+    return resolveSavedRequestOrDashboard(request, response);
+  }
+
+  /**
+   * True if pending MFA with {@code fullyAuthenticatedAuthorities} to upgrade with; checked by
+   * role, not {@code isAuthenticated()}, since external-IdP tokens report authenticated while still
+   * pre-auth.
+   */
+  private boolean isPendingMfaUpgrade(Authentication authentication) {
+    if (!isPreAuthenticated(authentication)) {
+      return false;
+    }
+    if (authentication instanceof ExtendedAuthenticationToken token) {
+      return token.getFullyAuthenticatedAuthorities() != null;
+    }
+    if (authentication instanceof AbstractExternalAuthenticationToken<?> token) {
+      return token.getFullyAuthenticatedAuthorities() != null;
+    }
+    if (authentication instanceof PreAuthenticatedAuthenticationToken token) {
+      return token.isAuthenticated() && token.getPrincipal() instanceof User;
+    }
+    return false;
+  }
+
+  private String resolveSavedRequestOrDashboard(HttpServletRequest request,
+      HttpServletResponse response) {
+    SavedRequest savedRequest = requestCache.getRequest(request, response);
+    if (savedRequest == null) {
+      return RootIsDashboardSuccessHandler.DASHBOARD_URL;
+    }
+
+    String redirectUrl = savedRequest.getRedirectUrl();
+    if (RootIsDashboardSuccessHandler.redirectsToIamRoot(redirectUrl, iamBaseUrl)) {
+      requestCache.removeRequest(request, response);
+      return RootIsDashboardSuccessHandler.DASHBOARD_URL;
+    }
+    return redirectUrl;
   }
 }
 

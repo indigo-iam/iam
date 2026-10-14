@@ -28,6 +28,7 @@ import javax.servlet.RequestDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -41,8 +42,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -52,6 +53,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -66,8 +69,9 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OIDCAuthenticationFilter;
+import it.infn.mw.iam.authn.oidc.OIDCAuthenticationProvider;
+import it.infn.mw.iam.authn.oidc.OidcLogoutSuccessHandler;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -77,6 +81,7 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -142,7 +147,13 @@ public class IamWebSecurityConfig {
     private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
+    private OidcLogoutSuccessHandler oidcLogoutSuccessHandler;
+
+    @Autowired
     private Clock clock;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
@@ -210,6 +221,7 @@ public class IamWebSecurityConfig {
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
+          .logoutSuccessHandler(oidcLogoutSuccessHandler)
         .and().anonymous()
         .and()
           .csrf()
@@ -224,9 +236,15 @@ public class IamWebSecurityConfig {
     }
 
     @Bean
+    SessionAuthenticationStrategy mfaSessionAuthenticationStrategy() {
+      return new ChangeSessionIdAuthenticationStrategy();
+    }
+
+    @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties);
+          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamTotpMfaProperties,
+          eventPublisher, mfaSessionAuthenticationStrategy());
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
@@ -495,8 +513,7 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
     }
 
     @Override
@@ -511,6 +528,52 @@ public class IamWebSecurityConfig {
         .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
         .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
         .authorizeRequests().anyRequest().fullyAuthenticated();
+      // @formatter:on
+    }
+  }
+
+  @Configuration
+  @Order(16)
+  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    @Qualifier("clientUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
+    }
+
+    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
+        throws Exception {
+
+      ClientCredentialsTokenEndpointFilter filter =
+          new ClientCredentialsTokenEndpointFilter("/revoke");
+      filter.setAuthenticationManager(authenticationManager());
+      return filter;
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/revoke**")
+        .httpBasic()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
+        .cors()
+        .and()
+        .exceptionHandling()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .csrf().disable()
+          .sessionManagement().sessionCreationPolicy(STATELESS);
       // @formatter:on
     }
   }
