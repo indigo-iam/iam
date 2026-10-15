@@ -49,4 +49,6 @@ public interface FindAccountService {
   ScimListResponse<ScimUser> findAccountByUuid(String uuid);
   
   ScimListResponse<ScimUser> findAccountByAuthority(String authority, Pageable pageable);
+
+  ScimListResponse<ScimUser> findAccountsInactiveSince(int days, Pageable pageable);
 }
