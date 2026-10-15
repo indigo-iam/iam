@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.web.registration;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static java.util.Objects.isNull;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.core.Authentication;
@@ -28,6 +29,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class DefaultStartRegistrationController {
 
   public static final String REGISTRATION_PROFILE = "registration";
+
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
 
   private boolean registrationProfileEnabled;
 
@@ -40,7 +44,7 @@ public class DefaultStartRegistrationController {
 
     if (!isNull(authentication) && authentication.isAuthenticated()
         && !authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH)) {
-      return "iam/dashboard";
+      return "redirect:" + dashboardBasePath;
     }
 
     if (registrationProfileEnabled) {
@@ -48,5 +52,4 @@ public class DefaultStartRegistrationController {
     }
     return "iam/registrationDisabled";
   }
-
 }

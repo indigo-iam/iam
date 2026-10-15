@@ -243,8 +243,8 @@ public class IamWebSecurityConfig {
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountService, iamTotpMfaService, iamTotpMfaProperties,
-          eventPublisher, mfaSessionAuthenticationStrategy());
+          aupSignatureCheckService, accountService, iamTotpMfaService, iamProperties.getDashboard(),
+          iamTotpMfaProperties, eventPublisher, mfaSessionAuthenticationStrategy());
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
