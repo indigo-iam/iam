@@ -304,10 +304,6 @@ class IamIdTokenCustomizerTests {
       super(properties, claimValueHelper, scopeClaimTranslationService);
     }
 
-//    boolean testIsExternalAuthn(SavedUserAuthentication authentication) {
-//      return AuthenticationUtils.isExternalAuthentication(authentication);
-//    }
-
     void testIncludeExternalAuthnInIdToken(Builder claims, OAuth2AccessTokenEntity accessToken,
         IamAccount account) {
 
