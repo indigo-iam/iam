@@ -22,6 +22,7 @@ import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.GIVEN_NAME;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.MAIL;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.SN;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -59,7 +60,7 @@ public class SamlExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
+  public Map<String, Object> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
 
     return visitor.buildInfoMap(this);
   }
@@ -93,7 +94,7 @@ public class SamlExternalAuthenticationToken
       ri.setSuggestedUsername(samlAttributes.get(EPPN));
     }
 
-    Map<String, String> additionalAttrs = Maps.newHashMap();
+    Map<String, Object> additionalAttrs = Maps.newHashMap();
     additionalAttrs.putAll(buildAuthnInfoMap());
 
     ri.setAdditionalAttributes(additionalAttrs);
@@ -107,9 +108,9 @@ public class SamlExternalAuthenticationToken
   }
 
   @Override
-  public Map<String, String> buildAuthnInfoMap() {
+  public Map<String, Object> buildAuthnInfoMap() {
 
-    Map<String, String> authnInfo = new HashMap<>();
+    Map<String, Object> authnInfo = new HashMap<>();
 
     authnInfo.put(TYPE_ATTR, SAML_TYPE);
 
@@ -127,7 +128,16 @@ public class SamlExternalAuthenticationToken
         attrName = maybeKnownAttr.get().name();
       }
 
-      String attrVal = cred.getAttributeAsString(attr.getName());
+      Object attrVal;
+      int valueCount = attr.getAttributeValues().size();
+
+      if (valueCount == 0) {
+        attrVal = null;
+      } else if (valueCount == 1) {
+        attrVal = cred.getAttributeAsString(attr.getName());
+      } else {
+        attrVal = Arrays.asList(cred.getAttributeAsStringArray(attr.getName()));
+      }
 
       if (attrVal != null) {
         authnInfo.put(attrName, attrVal);
