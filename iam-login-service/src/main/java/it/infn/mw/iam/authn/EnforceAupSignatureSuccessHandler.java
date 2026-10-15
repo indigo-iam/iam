@@ -33,9 +33,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -45,15 +45,15 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   private final AuthenticationSuccessHandler delegate;
   private final AUPSignatureCheckService service;
   private final AccountUtils accountUtils;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
 
   public EnforceAupSignatureSuccessHandler(Clock clock, AuthenticationSuccessHandler delegate,
-      AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo) {
+      AUPSignatureCheckService service, AccountUtils utils, IamAccountService accountService) {
     this.clock = clock;
     this.delegate = delegate;
     this.service = service;
     this.accountUtils = utils;
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
   }
 
   private Optional<Authentication> resolveUserAuthentication(Authentication auth) {
@@ -88,7 +88,7 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   protected void touchLastLoginTimeForIamAccount(Authentication authentication) {
 
     resolveUserAuthentication(authentication)
-      .ifPresent(a -> accountRepo.touchLastLoginTimeForUserWithUsername(a.getName()));
+      .ifPresent(a -> accountService.touchLastLoginTimeForUserWithUsername(a.getName()));
   }
 
   @Override

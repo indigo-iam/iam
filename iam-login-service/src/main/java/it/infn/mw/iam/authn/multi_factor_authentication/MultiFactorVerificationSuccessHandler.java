@@ -36,27 +36,28 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(MultiFactorVerificationSuccessHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(MultiFactorVerificationSuccessHandler.class);
 
   private final Clock clock;
   private final AccountUtils accountUtils;
   private final AUPSignatureCheckService aupSignatureCheckService;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final String iamBaseUrl;
 
-  public MultiFactorVerificationSuccessHandler(Clock clock,AccountUtils accountUtils,
-      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
+  public MultiFactorVerificationSuccessHandler(Clock clock, AccountUtils accountUtils,
+      AUPSignatureCheckService aupSignatureCheckService, IamAccountService accountService,
       String iamBaseUrl) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.iamBaseUrl = iamBaseUrl;
   }
 
@@ -72,8 +73,8 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else {
-        continueWithDefaultSuccessHandler(request, response, authentication);
-      }
+      continueWithDefaultSuccessHandler(request, response, authentication);
+    }
   }
 
   private void continueWithDefaultSuccessHandler(HttpServletRequest request,
@@ -82,8 +83,8 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     AuthenticationSuccessHandler delegate =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
-    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock, delegate,
-        aupSignatureCheckService, accountUtils, accountRepo);
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
+        delegate, aupSignatureCheckService, accountUtils, accountService);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 
