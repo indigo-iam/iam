@@ -74,6 +74,7 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.account.AccountReplacedEvent;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
@@ -120,7 +121,7 @@ public class ScimUserProvisioning
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties,
       IamGroupRepository groupRepository, Set<UpdaterType> enabledUpdaters,
-      AccountUtils accountUtils, X509CertificateConverter x509Converter) {
+      AccountUtils accountUtils, X509CertificateConverter x509Converter, CachedRefreshTokenStore refreshTokenStore) {
 
     this.clock = clock;
     this.notificationProperties = notificationProperties;
@@ -130,7 +131,7 @@ public class ScimUserProvisioning
     this.notificationFactory = notificationFactory;
     this.updatersFactory = new DefaultAccountUpdaterFactory(clock, passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
-        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
+        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository, refreshTokenStore);
     this.enabledUpdaters = enabledUpdaters;
     this.accountUtils = accountUtils;
     this.x509Converter = x509Converter;

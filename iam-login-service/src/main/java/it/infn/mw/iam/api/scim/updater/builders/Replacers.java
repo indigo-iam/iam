@@ -37,6 +37,7 @@ import it.infn.mw.iam.api.scim.updater.DefaultAccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UsernameUpdater;
 import it.infn.mw.iam.api.scim.updater.util.AccountFinder;
 import it.infn.mw.iam.api.scim.updater.util.IdNotBoundChecker;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.account.ActiveReplacedEvent;
 import it.infn.mw.iam.audit.events.account.AffiliationReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
@@ -64,10 +65,11 @@ public class Replacers extends AccountBuilderSupport {
 
   final AccountFinder<String> findByEmail;
   final AccountFinder<String> findByUsername;
+  private final CachedRefreshTokenStore refreshTokenStore;
 
   public Replacers(Clock clock, IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator, CachedRefreshTokenStore refreshTokenStore) {
 
     super(clock, repo, accountService, accessTokenRepo, refreshTokenRepo, encoder,
         usernameValidator, account);
@@ -77,6 +79,7 @@ public class Replacers extends AccountBuilderSupport {
     encodedPasswordChecker = t -> !encoder.matches(t, account.getPassword());
     emailAddChecks = buildEmailAddChecks();
     usernameAddChecks = buildUsernameAddChecks();
+    this.refreshTokenStore = refreshTokenStore;
 
   }
 
@@ -145,7 +148,7 @@ public class Replacers extends AccountBuilderSupport {
 
     return new UsernameUpdater(clock, account, ACCOUNT_REPLACE_USERNAME, account::setUsername,
         newUsername, usernameAddChecks, UsernameReplacedEvent::new, accessTokenRepo,
-        refreshTokenRepo);
+        refreshTokenRepo, refreshTokenStore);
   }
 
   public AccountUpdater active(boolean isActive) {

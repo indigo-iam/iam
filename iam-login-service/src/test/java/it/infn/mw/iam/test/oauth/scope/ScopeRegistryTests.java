@@ -38,10 +38,10 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.persistence.model.SystemScope;
-import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
@@ -51,19 +51,19 @@ class ScopeRegistryTests {
   ClientDetails client;
 
   @Mock
-  IamScopeRepository scopeRepo;
+  IamSystemScopeService scopeService; 
 
   @BeforeEach
   void setup() {
     SystemScope testScope = new SystemScope("test:/whatever");
-    when(scopeRepo.findAll()).thenReturn(Lists.newArrayList(testScope));
+    when(scopeService.getAllUnSorted()).thenReturn(Lists.newArrayList(testScope));
   }
 
   @Test
   void testEmptyScopes() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(emptySet(), scopeRepo);
+        new DefaultScopeMatcherRegistry(emptySet(), scopeService);
 
     when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
@@ -78,7 +78,7 @@ class ScopeRegistryTests {
   void testNonMatchingScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(Sets.newHashSet(regexpMatcher("^test:/.*$")), scopeRepo);
+        new DefaultScopeMatcherRegistry(Sets.newHashSet(regexpMatcher("^test:/.*$")), scopeService);
 
     when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
@@ -94,7 +94,7 @@ class ScopeRegistryTests {
 
     DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(
         Sets.newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")),
-        scopeRepo);
+        scopeService);
 
     when(client.getScope()).thenReturn(
         Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
