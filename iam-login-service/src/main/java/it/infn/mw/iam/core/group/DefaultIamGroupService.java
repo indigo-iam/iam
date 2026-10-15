@@ -176,9 +176,9 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
         new GroupRemovedEvent(this, g, String.format("Group %s has been removed", g.getName())));
   }
 
-  private void groupReplacedEvent(IamGroup oldGroup, IamGroup newGroup) {
-    eventPublisher.publishEvent(new GroupReplacedEvent(this, newGroup, oldGroup, String
-      .format("Replaced group %s with new group %s", oldGroup.getName(), newGroup.getName())));
+  private void groupReplacedEvent(String oldGroupName, IamGroup newGroup) {
+    eventPublisher.publishEvent(new GroupReplacedEvent(this, newGroup,
+        String.format("Replaced group %s with new group %s", oldGroupName, newGroup.getName())));
   }
 
   private void labelSetEvent(IamGroup group, IamLabel label) {
@@ -200,19 +200,11 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   }
 
   @Override
-  public IamGroup updateGroup(IamGroup oldGroup, IamGroup newGroup) {
-
-    newGroup.setId(oldGroup.getId());
-    newGroup.setUuid(oldGroup.getUuid());
-    newGroup.setCreationTime(oldGroup.getCreationTime());
-
-    newGroup.setDescription(oldGroup.getDescription());
-    newGroup.setParentGroup(oldGroup.getParentGroup());
-    newGroup.setChildrenGroups(oldGroup.getChildrenGroups());
+  public IamGroup updateGroup(String oldGroupName, IamGroup newGroup) {
 
     newGroup.touch(clock);
 
-    groupReplacedEvent(oldGroup, newGroup);
+    groupReplacedEvent(oldGroupName, newGroup);
     groupRepo.save(newGroup);
 
     return newGroup;
