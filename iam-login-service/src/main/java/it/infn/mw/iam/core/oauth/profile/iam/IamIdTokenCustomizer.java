@@ -24,8 +24,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -36,7 +35,6 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
-import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 
 @SuppressWarnings("deprecation")
 public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
@@ -78,24 +76,13 @@ public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
       return;
     }
 
-    Authentication oauth2auth =
+    Authentication userAuth =
         accessToken.getAuthenticationHolder().getAuthentication().getUserAuthentication();
 
-    if (isExternalAuthn(oauth2auth)) {
+    if (AuthenticationUtils.isExternalAuthentication(userAuth)) {
       idClaims.claim(BaseExtraClaimNames.EXTERNAL_AUTHN,
           getClaimValueHelper().resolveClaim(BaseExtraClaimNames.EXTERNAL_AUTHN,
               accessToken.getAuthenticationHolder().getAuthentication(), Optional.of(account)));
     }
-  }
-
-  protected boolean isExternalAuthn(Authentication auth) {
-    if (auth instanceof SavedUserAuthentication savedAuth) {
-
-      String sourceClass = savedAuth.getSourceClass();
-      return sourceClass != null
-          && (sourceClass.equals(SamlExternalAuthenticationToken.class.getName())
-              || sourceClass.equals(OidcExternalAuthenticationToken.class.getName()));
-    }
-    return false;
   }
 }

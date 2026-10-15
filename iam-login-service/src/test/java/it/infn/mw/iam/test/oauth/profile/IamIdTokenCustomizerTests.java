@@ -45,6 +45,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamTokenEnhancerProperties;
 import it.infn.mw.iam.config.IamTokenEnhancerProperties.ExternalAuthnTokenInclusion;
@@ -94,7 +95,7 @@ class IamIdTokenCustomizerTests {
     when(authentication.getSourceClass())
       .thenReturn(SamlExternalAuthenticationToken.class.getName());
 
-    assertTrue(customizer.testIsExternalAuthn(authentication));
+    assertTrue(AuthenticationUtils.isExternalAuthentication(authentication));
   }
 
   @Test
@@ -104,7 +105,7 @@ class IamIdTokenCustomizerTests {
     when(authentication.getSourceClass())
       .thenReturn(OidcExternalAuthenticationToken.class.getName());
 
-    assertTrue(customizer.testIsExternalAuthn(authentication));
+    assertTrue(AuthenticationUtils.isExternalAuthentication(authentication));
   }
 
   @Test
@@ -114,7 +115,7 @@ class IamIdTokenCustomizerTests {
     when(authentication.getSourceClass())
       .thenReturn(UsernamePasswordAuthenticationToken.class.getName());
 
-    assertFalse(customizer.testIsExternalAuthn(authentication));
+    assertFalse(AuthenticationUtils.isExternalAuthentication(authentication));
   }
 
   @Test
@@ -123,14 +124,14 @@ class IamIdTokenCustomizerTests {
 
     when(authentication.getSourceClass()).thenReturn(null);
 
-    assertFalse(customizer.testIsExternalAuthn(authentication));
+    assertFalse(AuthenticationUtils.isExternalAuthentication(authentication));
   }
 
   @Test
   void isExternalAuthnReturnsFalseForNonSavedAuthentication() {
     Authentication authentication = new UsernamePasswordAuthenticationToken("user", "password");
 
-    assertFalse(customizer.testIsExternalAuthn(authentication));
+    assertFalse(AuthenticationUtils.isExternalAuthentication(authentication));
   }
 
   @ParameterizedTest
@@ -303,9 +304,9 @@ class IamIdTokenCustomizerTests {
       super(properties, claimValueHelper, scopeClaimTranslationService);
     }
 
-    boolean testIsExternalAuthn(Authentication authentication) {
-      return isExternalAuthn(authentication);
-    }
+//    boolean testIsExternalAuthn(SavedUserAuthentication authentication) {
+//      return AuthenticationUtils.isExternalAuthentication(authentication);
+//    }
 
     void testIncludeExternalAuthnInIdToken(Builder claims, OAuth2AccessTokenEntity accessToken,
         IamAccount account) {
