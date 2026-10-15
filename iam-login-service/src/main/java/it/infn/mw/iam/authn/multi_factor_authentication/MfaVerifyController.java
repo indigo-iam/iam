@@ -38,8 +38,8 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 /**
  * Presents the step-up authentication page for verifying identity after successful username +
@@ -51,18 +51,18 @@ public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
   public static final String MFA_ACTIVATE_URL = "/iam/mfa/activate";
-  final IamAccountRepository accountRepository;
+  final IamAccountService accountService;
   private final IamTotpMfaService iamTotpMfaService;
 
-  public MfaVerifyController(IamAccountRepository accountRepository, IamTotpMfaService iamTotpMfaService) {
-    this.accountRepository = accountRepository;
+  public MfaVerifyController(IamAccountService accountService, IamTotpMfaService iamTotpMfaService) {
+    this.accountService = accountService;
     this.iamTotpMfaService = iamTotpMfaService;
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @GetMapping(value = MFA_VERIFY_URL)
   public String getVerifyMfaView(Authentication authentication, ModelMap model) {
-    IamAccount account = accountRepository.findByUsername(authentication.getName())
+    IamAccount account = accountService.findByUsername(authentication.getName())
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
     model.addAttribute("isAuthenticatorAppActive", iamTotpMfaService.isAuthenticatorAppActive(account));
 

@@ -210,6 +210,12 @@ iam:
         cron: ${IAM_CLEANUP_EXPIRED_REGISTRATION_CRON:0 0 7 * * *}
         
 
+  login-lockout:
+    enabled: ${IAM_LOGIN_LOCKOUT_ENABLED:true}
+    max-failed-attempts: ${IAM_LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS:5}
+    observation-window: ${IAM_LOGIN_LOCKOUT_OBSERVATION_WINDOW:5m}
+    lock-duration: ${IAM_LOGIN_LOCKOUT_LOCK_DURATION:30m}
+
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
   oidc-discovery-cleanup-period-secs: ${IAM_OIDC_DISCOVERY_CLEANUP_PERIOD_SECS:86400}
@@ -276,9 +282,10 @@ management:
       show-details: when-authorized
       roles:
       - ACTUATOR
+      
     metrics:
       enabled: true
-
+    
 rcauth:
   enabled: ${IAM_RCAUTH_ENABLED:false}
   label: ${IAM_RCAUTH_LABEL:RCAuth.eu online CA}

@@ -140,7 +140,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @BeforeEach
   void setup() {
     oauth2Filter.cleanupSecurityContext();
-    repo.touchLastLoginTimeForUserWithUsername(USERNAME);
+    accountService.touchLastLoginTimeForUserWithUsername(USERNAME);
   }
 
   @AfterEach

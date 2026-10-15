@@ -663,6 +663,7 @@ public class IamConfig {
   @Bean
   ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
       RestTemplateFactory restTemplateFactory, IamProperties iamProperties) {
+
     if (iamProperties.getScopeAuthz().getOpa().isEnabled()) {
       return new OpaScopePolicyEngine(policyRepo, restTemplateFactory,
           iamProperties.getScopeAuthz().getOpa());

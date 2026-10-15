@@ -21,9 +21,9 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.RegisteredGroupDTO;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -41,7 +41,7 @@ public interface IamAccountService {
 
   /**
    * Finds an account by UUID
-   * 
+   *
    * @param account UUID
    * @return an {@link Optional} IAM account
    */
@@ -49,7 +49,7 @@ public interface IamAccountService {
 
   /**
    * Finds an account by username
-   * 
+   *
    * @param account username
    * @return an {@link Optional} IAM account
    */
@@ -118,6 +118,7 @@ public interface IamAccountService {
 
   /**
    * Sets Given Name for a given account
+   * 
    * @param account
    * @param givenName
    * @return the updated account
@@ -126,6 +127,7 @@ public interface IamAccountService {
 
   /**
    * Sets Family Name for a given account
+   * 
    * @param account
    * @param familyName
    * @return the updated account
@@ -134,6 +136,7 @@ public interface IamAccountService {
 
   /**
    * Sets Email for a given account
+   * 
    * @param account
    * @param email
    * @throw EmailAlreadyBoundException
@@ -157,6 +160,28 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount disableAccount(IamAccount account);
+
+  void checkLoginAllowed(String accountUuid);
+
+  Optional<IamAccount> loginFailedAttemptByUsername(String username);
+
+  /**
+   * Track a failed login attempt
+   * 
+   * @param account
+   * @return the updated account
+   */
+  IamAccount loginFailedAttempt(String accountUuid);
+
+  /**
+   * Reset login lockout
+   * 
+   * @param account
+   * @param reason
+   * @return the account ready to login and with no locked count
+   */
+  IamAccount resetLoginLockout(String accountUuid, LoginLockoutResetReason reason);
+
 
   /**
    * Restores account
@@ -209,7 +234,7 @@ public interface IamAccountService {
    * @param page pagination params
    * @return the groups of the account
    */
-   ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable page);
+  ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable page);
 
   /**
    * Returns group members
@@ -221,8 +246,8 @@ public interface IamAccountService {
   Page<IamAccount> findGroupMembers(IamGroup group, Pageable page);
 
   /**
-   * Returns the total number of {@link IamAccount} entities that are members
-   * of the given {@link IamGroup}.
+   * Returns the total number of {@link IamAccount} entities that are members of the given
+   * {@link IamGroup}.
    *
    * @param group the group whose members should be counted
    * @return the total number of accounts associated with the given group
@@ -255,5 +280,7 @@ public interface IamAccountService {
    * @return the updated signer account
    */
   IamAccount signAup(IamAccount account, IamAup aup);
+
+  void touchLastLoginTimeForUserWithUsername(String username);
 
 }

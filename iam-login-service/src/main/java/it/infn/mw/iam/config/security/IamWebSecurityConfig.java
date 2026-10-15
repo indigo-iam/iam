@@ -84,7 +84,7 @@ import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -120,9 +120,6 @@ public class IamWebSecurityConfig {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private IamAccountRepository accountRepo;
-
-    @Autowired
     private IamX509CertificateRepository certRepo;
 
     @Autowired
@@ -153,12 +150,15 @@ public class IamWebSecurityConfig {
     private Clock clock;
 
     @Autowired
+    private IamAccountService accountService;
+
+    @Autowired
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, iamTotpMfaService, iamTotpMfaProperties));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountService, iamTotpMfaService, iamTotpMfaProperties));
       // @formatter:on
     }
 
@@ -243,7 +243,7 @@ public class IamWebSecurityConfig {
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo, iamTotpMfaService, iamProperties.getDashboard(),
+          aupSignatureCheckService, accountService, iamTotpMfaService, iamProperties.getDashboard(),
           iamTotpMfaProperties, eventPublisher, mfaSessionAuthenticationStrategy());
     }
 

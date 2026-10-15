@@ -37,7 +37,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
@@ -48,18 +48,18 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   private final Clock clock;
   private final AccountUtils accountUtils;
   private final AUPSignatureCheckService aupSignatureCheckService;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final String iamBaseUrl;
   private final DashboardProperties dashboardProperties;
 
   public MultiFactorVerificationSuccessHandler(Clock clock, AccountUtils accountUtils,
-      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
+      AUPSignatureCheckService aupSignatureCheckService, IamAccountService accountService,
       String iamBaseUrl, DashboardProperties dashboardProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.iamBaseUrl = iamBaseUrl;
     this.dashboardProperties = dashboardProperties;
   }
@@ -87,7 +87,7 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
         new HttpSessionRequestCache(), dashboardProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
-        delegate, aupSignatureCheckService, accountUtils, accountRepo);
+        delegate, aupSignatureCheckService, accountUtils, accountService);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 

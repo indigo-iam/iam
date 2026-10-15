@@ -70,9 +70,9 @@ import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
@@ -91,7 +91,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
   private AUPSignatureCheckService aupSignatureCheckService;
 
   @Mock
-  private IamAccountRepository accountRepository;
+  private IamAccountService accountService;
 
   @Mock
   private IamTotpMfaService iamTotpMfaService;
@@ -120,7 +120,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     mfaAccount = getTotpMfaAccount(clock.instant());
 
     helper = new AuthenticationSuccessHandlerHelper(clock, accountUtils, IAM_BASE_URL,
-        aupSignatureCheckService, accountRepository, iamTotpMfaService, dashboardProperties,
+        aupSignatureCheckService, accountService, iamTotpMfaService, dashboardProperties,
         iamTotpMfaProperties, eventPublisher, sessionAuthenticationStrategy);
 
     request = new MockHttpServletRequest();
@@ -182,7 +182,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     assertTrue(amr.contains(ONE_TIME_PASSWORD.getValue()));
 
     assertNotNull(session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP));
-    verify(accountRepository).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
+    verify(accountService).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
     verify(eventPublisher).publishEvent(any(InteractiveAuthenticationSuccessEvent.class));
 
     // Resume the client app's own request, not IAM dashboard.
@@ -230,7 +230,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     assertTrue(upgraded.getAuthorities()
       .stream()
       .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
-    verify(accountRepository).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
+    verify(accountService).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
     assertEquals(dashboardProperties.getBasePath(), redirectUrl);
   }
 
@@ -245,7 +245,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     // Left exactly as the caller had it -- nothing safe to upgrade to here.
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
-    verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
+    verify(accountService, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
     verify(aupSignatureCheckService, never()).needsAupSignature(any());
     assertEquals(MfaVerifyController.MFA_VERIFY_URL, redirectUrl);
@@ -300,7 +300,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
 
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
 
-    verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
+    verify(accountService, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
     verify(aupSignatureCheckService, never()).needsAupSignature(any());
 
@@ -321,7 +321,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
         () -> helper.resolveEnrollmentRedirect(current, mfaAccount, session, request, response));
 
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
-    verify(accountRepository, never()).touchLastLoginTimeForUserWithUsername(any());
+    verify(accountService, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
     assertEquals(dashboardProperties.getBasePath(), redirectUrl);
   }

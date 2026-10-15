@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,7 +93,9 @@ class PasswordResetTests {
 
     String newPassword = "Secure_P@ssw0rd!";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -118,7 +121,9 @@ class PasswordResetTests {
 
     String newPassword = "weakpassword";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -144,7 +149,9 @@ class PasswordResetTests {
 
     String newPassword = "Secure_P@ssw0rd!";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -200,16 +207,19 @@ class PasswordResetTests {
 
     String testEmail = "test@foo.bar";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
-
   }
 
   @Test
   void testEmailValidationForPasswordResetTokenCreation() throws Exception {
     String invalidEmailAddress = "this_is_not_an_email";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))
+    mvc
+      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", invalidEmailAddress))
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()
         .string("validation error: please specify a valid email address"));

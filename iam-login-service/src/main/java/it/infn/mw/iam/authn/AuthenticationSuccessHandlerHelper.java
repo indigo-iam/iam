@@ -54,10 +54,10 @@ import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class AuthenticationSuccessHandlerHelper {
@@ -69,7 +69,7 @@ public class AuthenticationSuccessHandlerHelper {
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final IamTotpMfaService iamTotpMfaService;
   private final DashboardProperties dashboardProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
@@ -79,7 +79,7 @@ public class AuthenticationSuccessHandlerHelper {
 
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
-      IamAccountRepository accountRepo, IamTotpMfaService iamTotpMfaService,
+      IamAccountService accountService, IamTotpMfaService iamTotpMfaService,
       DashboardProperties dashboardProperties, IamTotpMfaProperties iamTotpMfaProperties,
       ApplicationEventPublisher eventPublisher,
       SessionAuthenticationStrategy sessionAuthenticationStrategy) {
@@ -88,9 +88,9 @@ public class AuthenticationSuccessHandlerHelper {
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
-    this.accountRepo = accountRepo;
-    this.dashboardProperties = dashboardProperties;
+    this.accountService = accountService;
     this.iamTotpMfaService = iamTotpMfaService;
+    this.dashboardProperties = dashboardProperties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.eventPublisher = eventPublisher;
     this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
@@ -113,7 +113,7 @@ public class AuthenticationSuccessHandlerHelper {
 
   private boolean isMfaActive(Authentication authentication) {
     final String username = authentication.getName();
-    IamAccount account = accountRepo.findByUsername(username)
+    IamAccount account = accountService.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     return iamTotpMfaService.isAuthenticatorAppActive(account);
@@ -154,7 +154,7 @@ public class AuthenticationSuccessHandlerHelper {
         new RootIsDashboardSuccessHandler(iamBaseUrl, requestCache, dashboardProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
-        delegate, aupSignatureCheckService, accountUtils, accountRepo);
+        delegate, aupSignatureCheckService, accountUtils, accountService);
     handler.onAuthenticationSuccess(request, response, auth);
   }
 
@@ -193,7 +193,7 @@ public class AuthenticationSuccessHandlerHelper {
       session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, Date.from(clock.instant()));
 
       IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(upgraded);
-      accountRepo.touchLastLoginTimeForUserWithUsername(account.getUsername());
+      accountService.touchLastLoginTimeForUserWithUsername(account.getUsername());
       eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(upgraded,
           AuthenticationSuccessHandlerHelper.class));
 

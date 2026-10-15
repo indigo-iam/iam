@@ -28,6 +28,8 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -40,13 +42,19 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -54,8 +62,10 @@ import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
+import it.infn.mw.iam.audit.events.account.AccountLoginLockoutResetEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
+import it.infn.mw.iam.audit.events.account.AccountLoginSuspendedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -81,6 +91,7 @@ import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamAccountLoginLockout;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -108,6 +119,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAccountRepository accountRepo;
   private final IamGroupRepository groupRepo;
   private final IamAuthoritiesRepository authoritiesRepo;
+
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
   private final TokenRevocationService tokenRevocationService;
@@ -346,7 +358,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     accountClientRepo.deleteByAccount(account);
   }
-
 
   protected void deleteTokensForAccount(IamAccount account) {
 
@@ -606,6 +617,134 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     return account;
   }
 
+  private IamAccount loadAccountForUpdate(String accountUuid) {
+    if (accountUuid == null || accountUuid.isBlank()) {
+      throw new IllegalArgumentException("Account UUID must not be blank");
+    }
+    return accountRepo.findByUuidForUpdate(accountUuid)
+      .orElseThrow(() -> new EntityNotFoundException("Account not found: " + accountUuid));
+  }
+
+  private IamAccountLoginLockout getOrCreateLoginLockout(IamAccount account) {
+
+    IamAccountLoginLockout lockout = account.getLockoutInfo();
+
+    if (lockout == null) {
+      lockout = new IamAccountLoginLockout();
+      lockout.setAccount(account);
+      account.setLockoutInfo(lockout);
+    }
+
+    return lockout;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public void checkLoginAllowed(String accountUuid) {
+    if (accountUuid == null || accountUuid.isBlank()) {
+      throw new IllegalArgumentException("Account UUID must not be blank");
+    }
+    IamAccount account = accountRepo.findByUuid(accountUuid)
+      .orElseThrow(() -> new UsernameNotFoundException("Invalid login details"));
+    if (!account.isActive()) {
+      throw new DisabledException("Account is disabled");
+    }
+    if (!iamProperties.getLoginLockout().isEnabled()) {
+      return;
+    }
+    IamAccountLoginLockout lockout = account.getLockoutInfo();
+    if (lockout != null && lockout.isSuspended(clock.instant())) {
+      throw new LockedException("Login is suspended");
+    }
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public Optional<IamAccount> loginFailedAttemptByUsername(String username) {
+    return accountRepo.findByUsernameForUpdate(username).map(this::recordLoginFailure);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public IamAccount loginFailedAttempt(String accountUuid) {
+    return recordLoginFailure(loadAccountForUpdate(accountUuid));
+  }
+
+  private IamAccount recordLoginFailure(IamAccount account) {
+
+    if (!iamProperties.getLoginLockout().isEnabled()) {
+      return account;
+    }
+
+    Instant now = clock.instant();
+    IamAccountLoginLockout lockout = getOrCreateLoginLockout(account);
+
+    // Requests during an active suspension do not extend it.
+    if (lockout.isSuspended(now)) {
+      return account;
+    }
+
+    // Expired suspension: start another round, preserving lockoutCount.
+    if (lockout.getSuspendedUntil() != null) {
+      lockout.clearCurrentRound();
+    }
+
+    Date firstFailure = lockout.getFirstFailureTime();
+
+    // Fixed observation window, starting with the first failed attempt.
+    if (firstFailure == null || !now.isBefore(
+        firstFailure.toInstant().plus(iamProperties.getLoginLockout().getObservationWindow()))) {
+      lockout.clearCurrentRound();
+      lockout.setFirstFailureTime(Date.from(now));
+    }
+
+    lockout.setFailedAttempts(Math.incrementExact(lockout.getFailedAttempts()));
+
+    if (lockout.getFailedAttempts() >= iamProperties.getLoginLockout().getMaxFailedAttempts()) {
+      Duration lockDuration = iamProperties.getLoginLockout().getLockDuration();
+      lockout.applySuspension(now, lockDuration);
+      eventPublisher.publishEvent(new AccountLoginSuspendedEvent(this, account));
+    }
+
+    account.touch(now);
+    return accountRepo.save(account);
+  }
+
+  @Override
+  public IamAccount resetLoginLockout(String accountUuid, LoginLockoutResetReason reason) {
+
+    Objects.requireNonNull(reason, "Reset reason must not be null");
+
+    IamAccount account = loadAccountForUpdate(accountUuid);
+    IamAccountLoginLockout lockout = account.getLockoutInfo();
+    Instant now = clock.instant();
+
+    if (reason == LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION) {
+      if (!account.isActive()) {
+        throw new DisabledException("Account is disabled");
+      }
+
+      if (iamProperties.getLoginLockout().isEnabled() && lockout != null
+          && lockout.isSuspended(now)) {
+        throw new LockedException("Login is suspended");
+      }
+    }
+
+    if (lockout == null || (lockout.isCurrentRoundEmpty() && lockout.getLockoutCount() == 0)) {
+      return account;
+    }
+
+    lockout.clearCurrentRound();
+    lockout.setLockoutCount(0);
+
+    account.touch(now);
+    IamAccount updatedAccount = accountRepo.save(account);
+
+    eventPublisher.publishEvent(new AccountLoginLockoutResetEvent(this, updatedAccount, reason));
+
+    return updatedAccount;
+  }
+
   @Override
   public IamAccount setAttribute(IamAccount account, IamAttribute attribute) {
     account.getAttributes().remove(attribute);
@@ -803,6 +942,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         iamAupSignatureRepo.createSignatureForAccount(aup, account, Date.from(clock.instant()));
     eventPublisher.publishEvent(new AupSignedEvent(this, signature));
     return account;
+  }
+
+  @Override
+  public void touchLastLoginTimeForUserWithUsername(String username) {
+    accountRepo.findByUsername(username).ifPresent(a -> {
+      Instant now = clock.instant();
+      a.setLastLoginTime(Date.from(now));
+      a.touch(now);
+      accountRepo.save(a);
+    });
   }
 
 }
