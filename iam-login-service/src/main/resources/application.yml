@@ -104,6 +104,7 @@ iam:
     default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
     default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
+    standalone-fallback-enabled: ${IAM_JWK_STANDALONE_FALLBACK_ENABLED:false}
 
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}

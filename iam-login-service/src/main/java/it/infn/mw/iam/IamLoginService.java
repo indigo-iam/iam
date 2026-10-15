@@ -15,17 +15,28 @@
  */
 package it.infn.mw.iam;
 
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import java.io.IOException;
+import java.net.ConnectException;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.internal.exception.FlywaySqlException;
 
 import it.infn.mw.iam.core.util.IamBanner;
 
@@ -58,7 +69,53 @@ public class IamLoginService {
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.addListeners(new ApplicationFailedEventListener());
-    iamLoginService.run(args);
+    try {
+      iamLoginService.run(args);
+    } catch (BeanCreationException e) {
+      Throwable error = ExceptionUtils.getRootCause(e);
+      int indexOfFlyWay = ExceptionUtils.indexOfThrowable(e, FlywaySqlException.class);
+      boolean fallbackEnabled;
+
+      try {
+        YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+
+        PropertySource<?> source = loader.load(
+            "application", new ClassPathResource("application.yml")).get(0);
+
+        StandardEnvironment environment = new StandardEnvironment();
+        environment.getPropertySources().addFirst(source);
+
+        String value = environment.resolveRequiredPlaceholders(
+            "${iam.jwk.standalone-fallback-enabled}");
+
+        fallbackEnabled = Boolean.parseBoolean(value);
+
+      } catch (IOException exception) {
+        fallbackEnabled = false;
+      }
+
+      if (error instanceof ConnectException && indexOfFlyWay != -1 && fallbackEnabled) {
+        System.err.println("Connection exception in the db, sucks to be you, huh");
+        // Then start the jwk endpoint application
+
+        try {
+          SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
+          fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
+          fallback.run(args);
+
+        } catch (Exception fallbackError) {
+          System.err.println("Failed to start JWK fallback application:");
+          fallbackError.printStackTrace(System.err);
+          throw fallbackError;
+
+        }
+
+      } else {
+        throw e;
+      }
+
+    }
+
   }
 
   @Bean
