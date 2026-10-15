@@ -37,6 +37,5 @@ public class Sha256Encoder {
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("Unable to calculate SHA256", e);
     }
-
   }
 }

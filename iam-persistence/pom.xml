@@ -38,6 +38,12 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>it.infn.mw.iam-db-migrations</groupId>
+      <artifactId>iam-db-migrations</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Mitre Entity classes -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
