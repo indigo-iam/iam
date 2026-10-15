@@ -41,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ success() }}
 
+    concurrency:
+      group: iam-docker-publish
+      cancel-in-progress: false
+      queue: max
+
     steps:
 
     - name: Checkout
@@ -77,6 +82,30 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+    - name: Check stable release tag
+      id: release
+      shell: bash
+      run: |
+        stable=false
+
+        if [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          latest_tag=$(
+            git ls-remote --tags --refs origin |
+              awk '{sub(/^refs\/tags\//, "", $2); print $2}' |
+              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+              sort -V |
+              tail -n 1
+            )
+          echo "Current tag: $GITHUB_REF_NAME"
+          echo "Highest release tag: $latest_tag"
+
+          if [[ "$GITHUB_REF_NAME" == "$latest_tag" ]]; then
+            stable=true
+          fi
+        fi
+
+        echo "stable=$stable" >> "$GITHUB_OUTPUT"
+
     - name: Docker metainformation for iam-login-service
       id: ls-meta
       # tag v5
@@ -89,6 +118,7 @@ jobs:
           type=sha
           type=ref,event=tag
           type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
 
     - name: Docker metainformation for iam-voms-aa
       id: va-meta
@@ -102,6 +132,7 @@ jobs:
           type=sha
           type=ref,event=tag
           type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
 
     - name: Build & push iam-login-service docker image
       # tag v6
