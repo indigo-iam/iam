@@ -15,12 +15,20 @@
  */
 package it.infn.mw.iam.config.client_registration;
 
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS;
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.DEFAULT_FORBIDDEN_FOR_USER_CLIENTS;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ANYONE;
 
 import javax.validation.constraints.NotNull;
 
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 @ConfigurationProperties("client-registration")
 @Configuration
@@ -75,9 +83,21 @@ public class ClientRegistrationProperties {
     ADMINISTRATORS, REGISTERED_USERS, ANYONE
   }
 
+  public record GrantTypes(
+            Set<AuthorizationGrantType> forbiddenForUserClients,
+            Set<AuthorizationGrantType> forbiddenForAnonymousClients
+    ) {
+
+
+    public GrantTypes {
+      forbiddenForUserClients = Optional.ofNullable(forbiddenForUserClients).filter(s -> !s.isEmpty()).map(Collections::unmodifiableSet).orElse(DEFAULT_FORBIDDEN_FOR_USER_CLIENTS);
+      forbiddenForAnonymousClients = Optional.ofNullable(forbiddenForAnonymousClients).filter(a -> !a.isEmpty()).map(Collections::unmodifiableSet).orElse(DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS);
+    }
+  }
   private ClientRegistrationAuthorizationPolicy allowFor = ANYONE;
 
   private ClientDefaultsProperties clientDefaults = new ClientDefaultsProperties();
+  private GrantTypes grantTypes ;
 
   private boolean enable = true;
 
@@ -97,6 +117,14 @@ public class ClientRegistrationProperties {
 
   public void setClientDefaults(ClientDefaultsProperties clientDefaults) {
     this.clientDefaults = clientDefaults;
+  }
+
+  public GrantTypes getGrantTypes() {
+    return grantTypes;
+  }
+
+  public void setGrantTypes(GrantTypes grantTypes) {
+    this.grantTypes = (Objects.nonNull(grantTypes)) ? grantTypes : new GrantTypes(null, null);
   }
 
   public boolean isEnable() {
