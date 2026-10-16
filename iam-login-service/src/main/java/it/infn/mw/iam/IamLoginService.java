@@ -22,7 +22,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
-import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -30,17 +29,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.PropertySource;
-import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 
 import it.infn.mw.iam.core.util.IamBanner;
@@ -81,61 +76,24 @@ public class IamLoginService {
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.addListeners(new ApplicationFailedEventListener());
 
-    // So try the IAM
-    // When fail launch fallback
-    // Fallback should stop and show relevant stop signal/error?
-
+    // Attempting to run the IAM
     try {
       iamLoginService.run(args);
     } catch (BeanCreationException e) {
-      Throwable error = ExceptionUtils.getRootCause(e);
+
+      int indexOfconnectionException = ExceptionUtils.indexOfThrowable(e, ConnectException.class);
       int indexOfFlyWay = ExceptionUtils.indexOfThrowable(e, FlywaySqlException.class);
       boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
           false);
 
-      if (error instanceof ConnectException && indexOfFlyWay != -1 && fallbackEnabled) {
+      // Checking if the error is a database connection issue
+      if (indexOfconnectionException != -1 && indexOfFlyWay != -1 && fallbackEnabled) {
         System.err.println("Connection exception in the db, sucks to be you, huh");
-        // Then start the jwk endpoint application
 
-        try {
-
-          FallbackShutdownSignal shutdownSignal = new FallbackShutdownSignal();
-          SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
-          fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
-          fallback.addInitializers(context -> context.getBeanFactory().registerSingleton(
-              "fallbackShutdownSignal", shutdownSignal));
-          try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
-
-            shutdownSignal.awaitStopped();
-
-          } catch (InterruptedException error2) {
-            Thread.currentThread().interrupt();
-            return;
-          }
-
-        } catch (Exception fallbackError) {
-          System.err.println("Failed to start JWK fallback application:");
-          fallbackError.printStackTrace(System.err);
-          throw fallbackError;
-
-        }
-
-      } else {
-        throw e;
+        // Starting the fallback application
+        startFallBackApplication(args);
       }
-
-      // The fallback has stopped
-      System.err.println("JWK fallback stopped. Restarting IAM Login Service.");
-
-      // retrying the IAM
-      SpringApplication retry = new SpringApplication(IamLoginService.class);
-      retry.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
-      retry.addListeners(new ApplicationFailedEventListener());
-
-      retry.run(args);
-
     }
-
   }
 
   @Bean
@@ -149,5 +107,26 @@ public class IamLoginService {
     propsConfig.setIgnoreUnresolvablePlaceholders(true);
 
     return propsConfig;
+  }
+
+  private static void startFallBackApplication(final String[] args) {
+
+    // Starting the fallback application
+    FallbackShutdownSignal shutdownSignal = new FallbackShutdownSignal();
+    SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
+    fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
+    fallback.addInitializers(context -> context.getBeanFactory().registerSingleton(
+        "fallbackShutdownSignal", shutdownSignal));
+
+    try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
+
+      // Awaiting the shutdown before closing
+      // indicating the database connection has been restored
+      shutdownSignal.awaitStopped();
+
+    } catch (InterruptedException error2) {
+      Thread.currentThread().interrupt();
+      return;
+    }
   }
 }

@@ -15,58 +15,27 @@
  */
 package it.infn.mw.iam;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.http.CacheControl;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
-import org.springframework.http.CacheControl;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.context.annotation.Import;
-import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
-
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.core.io.ResourceLoader;
 
+import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
-import it.infn.mw.iam.util.JwkKeyStoreLoader;
-
-import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
-import it.infn.mw.iam.core.jwk.JwkKeyStore;
-import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
+import it.infn.mw.iam.util.JwkKeyStoreLoader;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.JWKProperties;
+import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
+
 
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "it.infn.mw.iam.jwkfallback", exclude = {
@@ -78,6 +47,7 @@ import it.infn.mw.iam.config.IamProperties;
 
         // This is also exluded by the IamLoginService
         SecurityAutoConfiguration.class,
+
         // UserDetailsServiceAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class
 })
