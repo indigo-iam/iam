@@ -40,6 +40,7 @@ import org.flywaydb.core.internal.exception.FlywaySqlException;
 
 import it.infn.mw.iam.core.util.IamBanner;
 import it.infn.mw.iam.jwkfallback.FallbackShutdownSignal;
+import it.infn.mw.iam.jwkfallback.IamJwkFallbackApplication;
 
 @SpringBootApplication
 @EnableTransactionManagement
