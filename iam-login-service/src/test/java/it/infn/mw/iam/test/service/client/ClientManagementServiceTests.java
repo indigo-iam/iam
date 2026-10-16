@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
+import java.util.Date;
 import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
@@ -46,9 +47,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.error.InvalidClientPatchRequestException;
+import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
 import it.infn.mw.iam.api.client.service.ClientService;
@@ -67,6 +74,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
+@SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.NONE)
 @Transactional
@@ -90,7 +98,16 @@ class ClientManagementServiceTests {
   @Autowired
   MutableClock clock;
 
+  @Autowired
+  ObjectMapper mapper;
+
   Authentication userAuth;
+
+  private JsonNode replacePatch(String path, String value) throws Exception {
+    return mapper
+      .readTree(String.format("[{\"op\":\"replace\",\"path\":\"%s\",\"value\":\"%s\"}]", path,
+          value));
+  }
 
   @Test
   void testPagedClientLookup() {
@@ -433,5 +450,84 @@ class ClientManagementServiceTests {
     assertFalse(client.isActive());
     assertEquals(clock.now(), client.getStatusChangedOn());
     assertEquals("userUUID", client.getStatusChangedBy());
+  }
+
+  @Test
+  void testPatchClientNameAndDescription() throws Exception {
+
+    JsonNode patch = mapper.readTree(
+        "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"patched-name\"},"
+            + "{\"op\":\"replace\",\"path\":\"/client_description\",\"value\":\"patched description\"}]");
+
+    RegisteredClientDTO patched = managementService.patchClient("client", patch);
+
+    assertEquals("patched-name", patched.getClientName());
+    assertEquals("patched description", patched.getClientDescription());
+
+    ClientDetailsEntity entity = clientRepo.findByClientId("client").orElseThrow();
+    assertEquals("patched-name", entity.getClientName());
+    assertEquals("patched description", entity.getClientDescription());
+  }
+
+  @Test
+  void testPatchClientRejectsUnsupportedPath() throws Exception {
+
+    JsonNode patch = replacePatch("/client_id", "another-id");
+
+    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
+        () -> managementService.patchClient("client", patch));
+
+    assertTrue(e.getMessage().contains("Unsupported patch path"));
+  }
+
+  @Test
+  void testPatchClientRejectsUnsupportedOperation() throws Exception {
+
+    JsonNode patch = mapper.readTree("[{\"op\":\"remove\",\"path\":\"/client_name\"}]");
+
+    InvalidClientPatchRequestException e = assertThrows(InvalidClientPatchRequestException.class,
+        () -> managementService.patchClient("client", patch));
+
+    assertTrue(e.getMessage().contains("Unsupported patch operation"));
+  }
+
+  @Test
+  void testPatchClientRejectsInvalidSize() throws Exception {
+
+    JsonNode patch = replacePatch("/client_name", "n".repeat(300));
+
+    assertThrows(ConstraintViolationException.class,
+        () -> managementService.patchClient("client", patch));
+  }
+
+  @Test
+  void testPatchFederatedClientIsRejected() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("federated-client");
+    client.setClientId("federated-client");
+    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setScope(Set.of("test"));
+    client.setEntityId("https://rp.example.org");
+    client.setExpiration(new Date(clock.instant().plusSeconds(3600).toEpochMilli()));
+    managementService.saveNewClient(client);
+
+    JsonNode patch = replacePatch("/client_name", "new-name");
+
+    InvalidRequestException e = assertThrows(InvalidRequestException.class,
+        () -> managementService.patchClient("federated-client", patch));
+
+    assertEquals("Federated clients cannot be updated", e.getMessage());
+    assertEquals("federated-client",
+        clientRepo.findByClientId("federated-client").orElseThrow().getClientName());
+  }
+
+  @Test
+  void testPatchClientNotFound() throws Exception {
+
+    JsonNode patch = replacePatch("/client_name", "new-name");
+
+    assertThrows(NoSuchClient.class,
+        () -> managementService.patchClient("does-not-exist", patch));
   }
 }
