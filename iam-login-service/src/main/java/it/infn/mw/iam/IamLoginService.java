@@ -80,10 +80,10 @@ public class IamLoginService {
     // Attempting to run the IAM
     try {
       iamLoginService.run(args);
-    } catch (BeanCreationException e) {
+    } catch (BeanCreationException error) {
 
-      int indexOfconnectionException = ExceptionUtils.indexOfThrowable(e, ConnectException.class);
-      int indexOfFlyWay = ExceptionUtils.indexOfThrowable(e, FlywaySqlException.class);
+      int indexOfconnectionException = ExceptionUtils.indexOfThrowable(error, ConnectException.class);
+      int indexOfFlyWay = ExceptionUtils.indexOfThrowable(error, FlywaySqlException.class);
       boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
           false);
 
@@ -93,6 +93,8 @@ public class IamLoginService {
 
         // Starting the fallback application
         startFallBackApplication(args);
+      } else {
+        throw error;
       }
     }
   }
