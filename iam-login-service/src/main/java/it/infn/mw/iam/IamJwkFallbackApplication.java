@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.IOException;
@@ -64,14 +65,16 @@ import it.infn.mw.iam.util.JwkKeyStoreLoader;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.core.jwk.JwkKeyStore;
+import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 import it.infn.mw.iam.config.IamProperties;
 
+@EnableScheduling
 @SpringBootApplication(scanBasePackages = "it.infn.mw.iam.jwkfallback", exclude = {
         DataSourceAutoConfiguration.class,
 
         // These two might need to be excluded later
         // HibernateJpaAutoConfiguration.class,
-        // FlywayAutoConfiguration.class,
+        FlywayAutoConfiguration.class,
 
         // This is also exluded by the IamLoginService
         SecurityAutoConfiguration.class,
@@ -108,6 +111,11 @@ public class IamJwkFallbackApplication {
     @Bean
     JWKProperties jwkProperties(IamProperties iamProperties) {
         return iamProperties.getJwk();
+    }
+
+    @Bean
+    ExternalConnectivityHealthIndicator externalConnectivityHealthIndicator(IamProperties properties) {
+        return new ExternalConnectivityHealthIndicator(properties);
     }
 
 }

@@ -21,11 +21,15 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
@@ -33,12 +37,14 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 
 import it.infn.mw.iam.core.util.IamBanner;
+import it.infn.mw.iam.jwkfallback.FallbackShutdownSignal;
 
 @SpringBootApplication
 @EnableTransactionManagement
@@ -66,42 +72,46 @@ import it.infn.mw.iam.core.util.IamBanner;
 public class IamLoginService {
 
   public static void main(final String[] args) {
+
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
+
+    AtomicReference<ConfigurableEnvironment> environmentRef = new AtomicReference<>();
+    iamLoginService.addListeners(
+        (ApplicationListener<ApplicationEnvironmentPreparedEvent>) event -> environmentRef.set(event.getEnvironment()));
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.addListeners(new ApplicationFailedEventListener());
+
+    // So try the IAM
+    // When fail launch fallback
+    // Fallback should stop and show relevant stop signal/error?
+
     try {
       iamLoginService.run(args);
     } catch (BeanCreationException e) {
       Throwable error = ExceptionUtils.getRootCause(e);
       int indexOfFlyWay = ExceptionUtils.indexOfThrowable(e, FlywaySqlException.class);
-      boolean fallbackEnabled;
-
-      try {
-        YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
-
-        PropertySource<?> source = loader.load(
-            "application", new ClassPathResource("application.yml")).get(0);
-
-        StandardEnvironment environment = new StandardEnvironment();
-        environment.getPropertySources().addFirst(source);
-
-        String value = environment.resolveRequiredPlaceholders(
-            "${iam.jwk.standalone-fallback-enabled}");
-
-        fallbackEnabled = Boolean.parseBoolean(value);
-
-      } catch (IOException exception) {
-        fallbackEnabled = false;
-      }
+      boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
+          false);
 
       if (error instanceof ConnectException && indexOfFlyWay != -1 && fallbackEnabled) {
         System.err.println("Connection exception in the db, sucks to be you, huh");
         // Then start the jwk endpoint application
 
         try {
+
+          FallbackShutdownSignal shutdownSignal = new FallbackShutdownSignal();
           SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
           fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
-          fallback.run(args);
+          fallback.addInitializers(context -> context.getBeanFactory().registerSingleton(
+              "fallbackShutdownSignal", shutdownSignal));
+          try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
+
+            shutdownSignal.awaitStopped();
+
+          } catch (InterruptedException error2) {
+            Thread.currentThread().interrupt();
+            return;
+          }
 
         } catch (Exception fallbackError) {
           System.err.println("Failed to start JWK fallback application:");
@@ -113,6 +123,16 @@ public class IamLoginService {
       } else {
         throw e;
       }
+
+      // The fallback has stopped
+      System.err.println("JWK fallback stopped. Restarting IAM Login Service.");
+
+      // retrying the IAM
+      SpringApplication retry = new SpringApplication(IamLoginService.class);
+      retry.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
+      retry.addListeners(new ApplicationFailedEventListener());
+
+      retry.run(args);
 
     }
 
