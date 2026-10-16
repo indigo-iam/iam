@@ -13,26 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.config.security;
+package it.infn.mw.iam.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
-
-import com.google.common.base.Predicates;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
-public class SpringHttpFirewallConfig {
+public class CsrfConfig {
 
   @Bean
-  HttpFirewall iamHttpFirewall() {
-
-    StrictHttpFirewall httpFirewall = new StrictHttpFirewall();
-    httpFirewall.setAllowedHeaderValues(Predicates.alwaysTrue());
-    httpFirewall.setAllowUrlEncodedDoubleSlash(true);
-
-    return httpFirewall;
+  CookieCsrfTokenRepository csrfTokenRepository() {
+    CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+    repository.setCookieHttpOnly(true);
+    repository.setCookiePath("/");
+    return repository;
   }
-
 }

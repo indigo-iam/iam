@@ -18,8 +18,10 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.mockito.Mockito.times;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -86,8 +88,10 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
     totp = getTotpMfaFor(mfaAccount, clock.instant());
     Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
 
-    Mockito.when(accountService.findByUsername(testAccount.getUsername())).thenReturn(Optional.of(testAccount));
-    Mockito.when(accountService.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
+    Mockito.when(accountService.findByUsername(testAccount.getUsername()))
+      .thenReturn(Optional.of(testAccount));
+    Mockito.when(accountService.findByUsername(mfaAccount.getUsername()))
+      .thenReturn(Optional.of(mfaAccount));
   }
 
   @Test
@@ -105,8 +109,9 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
   @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
   void testGetVerifyMfaViewThrowsNoSuchAccountError() throws Exception {
 
-    Mockito.when(accountService.findByUsername(mfaAccount.getUsername())).thenThrow(new NoSuchAccountError(
-        String.format("Account not found for username '%s'", mfaAccount.getUsername())));
+    Mockito.when(accountService.findByUsername(mfaAccount.getUsername()))
+      .thenThrow(new NoSuchAccountError(
+          String.format("Account not found for username '%s'", mfaAccount.getUsername())));
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isBadRequest());
 
     Mockito.verify(totpMfaRepository, times(0)).findByAccount(mfaAccount);
@@ -114,7 +119,9 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
 
   @Test
   void testGetMfaVerifyViewNoAuthenticationIsUnauthorized() throws Exception {
-    mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isUnauthorized());
+    mvc.perform(get(MFA_VERIFY_URL).with(anonymous()))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("http://localhost/login"));
   }
 
   @Test
@@ -146,21 +153,19 @@ class MfaVerifyControllerTests extends MultiFactorTestSupport {
   @WithMockUser(roles = "PRE_AUTHENTICATED")
   void getActivateMfaViewAuthorizedReturnsView() throws Exception {
     mvc.perform(get(MFA_ACTIVATE_URL))
-        .andExpect(status().isOk())
-        .andExpect(view().name("iam/activateMfa"));
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/activateMfa"));
   }
 
   @Test
   @WithMockUser(roles = "ADMIN")
   void getActivateMfaViewWrongRoleForbidden() throws Exception {
-    mvc.perform(get(MFA_ACTIVATE_URL))
-        .andExpect(status().isForbidden());
+    mvc.perform(get(MFA_ACTIVATE_URL)).andExpect(status().isForbidden());
   }
 
   @Test
   @WithAnonymousUser
   void getActivateMfaViewAnonymousUnauthorized() throws Exception {
-    mvc.perform(get(MFA_ACTIVATE_URL))
-        .andExpect(status().isUnauthorized());
+    mvc.perform(get(MFA_ACTIVATE_URL)).andExpect(status().isUnauthorized());
   }
 }

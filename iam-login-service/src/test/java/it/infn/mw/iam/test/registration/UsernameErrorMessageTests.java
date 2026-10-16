@@ -15,83 +15,57 @@
  */
 package it.infn.mw.iam.test.registration;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
+@SpringBootTest(classes = {IamLoginService.class})
 @AutoConfigureMockMvc
 @Transactional
 class UsernameErrorMessageTests implements StructuredScopeTestSupportConstants {
 
   @Autowired
-  ObjectMapper objectMapper;
-
-  @Autowired
-  WebApplicationContext webContext;
-
-  @Autowired
-  IamAccountRepository repo;
-
-  @Autowired
-  SecurityContextUtils securityContext;
+  ObjectMapper mapper;
 
   @Autowired
   MockMvc mvc;
 
-  @BeforeEach
-  void setup() {
-    securityContext.cleanupSecurityContext();
-    mvc =
-        MockMvcBuilders.webAppContextSetup(webContext).apply(springSecurity()).alwaysDo(log()).build();
-  }
-
   private RegistrationRequestDto createRegistrationRequest(String username) {
 
-    String email = username + "@example.org";
     RegistrationRequestDto request = new RegistrationRequestDto();
     request.setGivenname("Test");
     request.setFamilyname("User");
-    request.setEmail(email);
+    request.setEmail(username + "@example.org");
     request.setUsername(username);
     request.setNotes("Some short notes...");
-
     return request;
   }
 
   @Test
   void errorMessageTest() throws Exception {
 
-    final String u = "test/";
+    final String INVALID_USERNAME = "test/";
 
-    RegistrationRequestDto r = createRegistrationRequest(u);
+    RegistrationRequestDto r = createRegistrationRequest(INVALID_USERNAME);
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(r)))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(r)))
       .andExpect(jsonPath("error").value(
           "Invalid registration request: invalid username (the provided username is not a valid UNIX username)"));
   }

@@ -18,7 +18,6 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
-import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import java.time.Clock;
 import java.util.Optional;
@@ -35,16 +34,16 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
-import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -55,9 +54,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -81,8 +79,6 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
-import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
-import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -156,10 +152,13 @@ public class IamWebSecurityConfig {
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
-      // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountService, iamTotpMfaService, iamTotpMfaProperties));
-      // @formatter:on
+      auth.authenticationProvider(
+          new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder,
+              accountService, iamTotpMfaService, iamTotpMfaProperties));
     }
 
     @Override
@@ -186,48 +185,51 @@ public class IamWebSecurityConfig {
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
-
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
-      http.requestMatchers()
-        .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**", "/dashboard**",
-            "/reset-session", "/device/**")
-        .and()
-        .sessionManagement()
-          .enableSessionUrlRewriting(false)
-        .and()
-          .authorizeRequests()
-            .antMatchers("/", "/login**", "/webjars/**").permitAll()
-            .antMatchers("/authorize**").permitAll()
-            .antMatchers("/reset-session").permitAll()
-            .antMatchers("/device/**").authenticated()
-        .and()
-          .formLogin()
-            .loginPage("/login")
-            .failureUrl("/login?error=failure")
-            .successHandler(successHandler(authenticationSuccessHandlerHelper()))
-        .and()
-          .exceptionHandling()
-            .authenticationEntryPoint(entryPoint())
-        .and()
-          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+      http
+        .requestMatchers(matchers -> matchers.antMatchers("/", "/login**", "/logout", "/authorize",
+            "/manage/**", "/dashboard**", "/reset-session", "/device/**"))
 
-          // Need to replace the UsernamePasswordAuthenticationFilter because we are now making use of the ExtendedAuthenticationToken globally
-          .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
 
-          // Applied in the OAuth2 login flow
-          .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
-        .logout()
-          .logoutUrl("/logout")
-          .logoutSuccessHandler(oidcLogoutSuccessHandler)
-        .and().anonymous()
-        .and()
-          .csrf()
-            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
+        .authorizeRequests(authorize -> authorize.antMatchers("/", "/login**")
+          .permitAll()
+          .antMatchers("/authorize")
+          .permitAll()
+          .antMatchers("/reset-session")
+          .permitAll()
+          .antMatchers("/device/**")
+          .authenticated()
+          .anyRequest()
+          .authenticated())
+
+        .formLogin(form -> form.loginPage("/login")
+          .failureUrl("/login?error=failure")
+          .successHandler(successHandler(authenticationSuccessHandlerHelper())))
+
+        .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint()))
+
+        .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+
+        // Replace the standard filter to use ExtendedAuthenticationToken.
+        .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+        // Applied in the OAuth2 login flow.
+        .addFilterAfter(extendedHttpServletRequestFilter(),
+            UsernamePasswordAuthenticationFilter.class)
+
+        .logout(
+            logout -> logout.logoutUrl("/logout").logoutSuccessHandler(oidcLogoutSuccessHandler))
+
+        .anonymous(Customizer.withDefaults())
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
+
         .addFilter(iamX509Filter());
-      // @formatter:on
     }
 
     @Bean
@@ -271,13 +273,16 @@ public class IamWebSecurityConfig {
 
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
+    private final UserLoginConfig userLoginConfig;
+    private final IamProperties iamProperties;
+    private final CookieCsrfTokenRepository csrfTokenRepository;
 
-    private UserLoginConfig userLoginConfig;
-    private IamProperties iamProperties;
+    public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties,
+        CookieCsrfTokenRepository csrfTokenRepository) {
 
-    public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
       this.iamProperties = iamProperties;
+      this.csrfTokenRepository = csrfTokenRepository;
     }
 
     AccessDeniedHandler accessDeniedHandler() {
@@ -304,41 +309,37 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      // One can not assume the certificate registration field is provided
-
       boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
         .map(IamProperties.RegistrationProperties::getFields)
-        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(fields -> fields.get(RegistrationField.CERTIFICATE))
         .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
         .orElse(
             ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
 
+      http.antMatcher(START_REGISTRATION_ENDPOINT)
+
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
+
       if (certificateVisible) {
-        http.requestMatchers()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .and()
-          .addFilter(userLoginConfig.iamX509Filter());
-      } else {
-        http.requestMatchers()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false);
+        http.addFilter(userLoginConfig.iamX509Filter());
       }
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
-        http.authorizeRequests()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .hasAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH.getAuthority())
-          .and()
-          .exceptionHandling()
-          .accessDeniedHandler(accessDeniedHandler())
-          .authenticationEntryPoint(entryPoint());
+
+        http
+          .authorizeRequests(authorize -> authorize.anyRequest()
+            .hasAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH.getAuthority()))
+
+          .exceptionHandling(exceptions -> exceptions.accessDeniedHandler(accessDeniedHandler())
+            .authenticationEntryPoint(entryPoint()));
+
       } else {
-        http.authorizeRequests().antMatchers(START_REGISTRATION_ENDPOINT).permitAll();
+
+        http.authorizeRequests(authorize -> authorize.anyRequest().permitAll());
       }
     }
   }
@@ -347,88 +348,67 @@ public class IamWebSecurityConfig {
   @Order(105)
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
-    @Value("${iam.baseUrl}")
-    private String iamBaseUrl;
-
-    @Autowired
-    @Qualifier("OIDCAuthenticationManager")
-    private AuthenticationManager oidcAuthManager;
-
-    @Autowired
-    OIDCAuthenticationProvider authProvider;
-
-    @Autowired
     private IamProperties iamProperties;
-
-    private OIDCAuthenticationFilter oidcFilter;
+    private AuthenticationManager oidcAuthenticationManager;
+    private OIDCAuthenticationProvider authProvider;
+    private CookieCsrfTokenRepository csrfTokenRepository;
+    private OIDCAuthenticationFilter oidcAuthenticationFilter;
     private UserLoginConfig userLoginConfig;
+    private LoginUrlAuthenticationEntryPoint authenticationEntryPoint;
 
-    public ExternalOidcLogin(
-        @Qualifier("OIDCAuthenticationFilter") OIDCAuthenticationFilter oidcClientFilter,
+    public ExternalOidcLogin(IamProperties iamProperties, OIDCAuthenticationProvider authProvider,
+        CookieCsrfTokenRepository csrfTokenRepository,
+        @Qualifier("oidcAuthenticationFilter") OIDCAuthenticationFilter oidcAuthenticationFilter,
+        @Qualifier("oidcAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
         UserLoginConfig userLoginConfig) {
-      this.oidcFilter = oidcClientFilter;
+
+      this.iamProperties = iamProperties;
+      this.authProvider = authProvider;
+      this.csrfTokenRepository = csrfTokenRepository;
+      this.oidcAuthenticationFilter = oidcAuthenticationFilter;
+      this.oidcAuthenticationManager = oidcAuthenticationManager;
       this.userLoginConfig = userLoginConfig;
+      this.authenticationEntryPoint = new LoginUrlAuthenticationEntryPoint("/openid_connect_login");
     }
 
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
 
-      return oidcAuthManager;
-    }
-
-    public LoginUrlAuthenticationEntryPoint authenticationEntryPoint() {
-      return new LoginUrlAuthenticationEntryPoint("/openid_connect_login");
+      return oidcAuthenticationManager;
     }
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
       auth.authenticationProvider(authProvider);
     }
 
     @Override
-    protected void configure(final HttpSecurity http) throws Exception {
+    protected void configure(HttpSecurity http) throws Exception {
 
       boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
         .map(IamProperties.RegistrationProperties::getFields)
-        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(fields -> fields.get(RegistrationField.CERTIFICATE))
         .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
         .orElse(
             ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
 
-      if (certificateVisible) {
-        // @formatter:off
-      http
-        .antMatcher("/openid_connect_login**")
-          .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint())
-        .and()
-          .addFilter(userLoginConfig.iamX509Filter())
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
-          .authorizeRequests()
-        .antMatchers("/openid_connect_login**")
-          .permitAll()
-        .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
-      // @formatter:on
+      http.antMatcher("/openid_connect_login**")
 
-      } else {
-        // @formatter:off
-      http
-        .antMatcher("/openid_connect_login**")
-          .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint())
-        .and()
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
-          .authorizeRequests()
-        .antMatchers("/openid_connect_login**")
-          .permitAll()
-        .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
-      // @formatter:on
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+
+        .addFilterAfter(oidcAuthenticationFilter, SecurityContextPersistenceFilter.class)
+
+        .authorizeRequests(authorize -> authorize.anyRequest().permitAll())
+
+        .sessionManagement(session -> session.enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
+
+      if (certificateVisible) {
+        http.addFilter(userLoginConfig.iamX509Filter());
       }
     }
   }
@@ -441,16 +421,16 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      HttpSecurity h2Console = http.requestMatchers()
-        .antMatchers("/h2-console", "/h2-console/**")
-        .and()
-        .csrf()
-        .disable();
+      http.requestMatchers(matchers -> matchers.antMatchers("/h2-console", "/h2-console/**"))
 
-      h2Console.httpBasic();
-      h2Console.headers().frameOptions().disable();
+        .csrf(csrf -> csrf.disable())
 
-      h2Console.authorizeRequests().antMatchers("/h2-console/**", "/h2-console").permitAll();
+        .httpBasic(Customizer.withDefaults())
+
+        .headers(headers -> headers.frameOptions(FrameOptionsConfig::disable))
+
+        .authorizeRequests(
+            authorize -> authorize.antMatchers("/h2-console/**", "/h2-console").permitAll());
     }
 
     @Override
@@ -459,122 +439,44 @@ public class IamWebSecurityConfig {
     }
   }
 
-  /**
-   * Configure the login flow for the step-up authentication. This takes place at the /iam/verify
-   * endpoint
-   */
   @Configuration
   @Order(102)
   public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    @Qualifier("MultiFactorVerificationFilter")
+    private CookieCsrfTokenRepository csrfTokenRepository;
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
+    public MultiFactorConfigurationAdapter(
+        @Qualifier("multiFactorVerificationFilter") MultiFactorVerificationFilter multiFactorVerificationFilter,
+        CookieCsrfTokenRepository csrfTokenRepository) {
+
+      this.multiFactorVerificationFilter = multiFactorVerificationFilter;
+      this.csrfTokenRepository = csrfTokenRepository;
+    }
+
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
-      return new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
+      return new LoginUrlAuthenticationEntryPoint("/login");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
       http.antMatcher(MFA_VERIFY_URL + "**")
-        .authorizeRequests()
-        .anyRequest()
-        .hasRole("PRE_AUTHENTICATED")
-        .and()
-        .formLogin()
-        .failureUrl(MFA_VERIFY_URL + "?error=failure")
-        .and()
-        .exceptionHandling()
-        .authenticationEntryPoint(mfaAuthenticationEntryPoint())
-        .and()
-        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
-    }
-  }
 
-  @Configuration
-  @Order(15)
-  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
 
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-    private UserDetailsService userDetailsService;
-    private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
+        .authorizeRequests(authorize -> authorize.anyRequest().hasRole("PRE_AUTHENTICATED"))
 
-    public IntrospectEndpointAuthorizationConfig(
-        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
-        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
-        TokenEndpointJwtClientAuthFilter jwtClientAuthFilter) {
+        .formLogin(form -> form.failureUrl(MFA_VERIFY_URL + "?error=failure"))
 
-      this.authenticationEntryPoint = authenticationEntryPoint;
-      this.userDetailsService = userDetailsService;
-      this.jwtClientAuthFilter = jwtClientAuthFilter;
-    }
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(mfaAuthenticationEntryPoint()))
 
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class)
 
-      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      // @formatter:off
-      http.antMatcher("/introspect/**")
-        .csrf().disable()
-        .sessionManagement().sessionCreationPolicy(STATELESS).and()
-        .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
-        .cors().and()
-        .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
-        .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
-        .authorizeRequests().anyRequest().fullyAuthenticated();
-      // @formatter:on
-    }
-  }
-
-  @Configuration
-  @Order(16)
-  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
-    private UserDetailsService userDetailsService;
-
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-
-      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
-    }
-
-    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
-        throws Exception {
-
-      ClientCredentialsTokenEndpointFilter filter =
-          new ClientCredentialsTokenEndpointFilter("/revoke");
-      filter.setAuthenticationManager(authenticationManager());
-      return filter;
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      // @formatter:off
-      http.antMatcher("/revoke**")
-        .httpBasic()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
-        .cors()
-        .and()
-        .exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .csrf().disable()
-          .sessionManagement().sessionCreationPolicy(STATELESS);
-      // @formatter:on
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
     }
   }
 }

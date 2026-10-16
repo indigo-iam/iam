@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.ext_authn.x509;
 
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -304,7 +305,8 @@ public class X509TestSupport {
           .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -331,7 +333,8 @@ public class X509TestSupport {
           .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf())
+        .session(session)
         .param("username", TEST_100_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -358,7 +361,8 @@ public class X509TestSupport {
           .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -385,7 +389,8 @@ public class X509TestSupport {
           .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
