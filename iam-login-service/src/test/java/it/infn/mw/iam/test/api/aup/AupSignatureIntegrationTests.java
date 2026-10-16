@@ -19,6 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -111,7 +112,8 @@ class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   void signAupSignatureRequiresAuthenticatedUser() throws Exception {
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isUnauthorized());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader()))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -126,7 +128,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void getAupSignatureWithNoSignatureRecordReturns404() throws Exception {
-    mvc.perform(get("/iam/aup/signature"))
+    mvc.perform(get("/iam/aup/signature").with(csrf().asHeader()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
   }
@@ -134,9 +136,9 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void signatureCreationReturns204() throws Exception {
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
 
-    String sigString = mvc.perform(get("/iam/aup/signature"))
+    String sigString = mvc.perform(get("/iam/aup/signature").with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aup").exists())
       .andExpect(jsonPath("$.account.uuid").exists())
@@ -153,7 +155,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     clock.advance(Duration.ofMillis(1000L));
     Date expectedDate = clock.now();
 
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
     sigString = mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aup").exists())
@@ -180,24 +182,26 @@ class AupSignatureIntegrationTests extends AupTestSupport {
         aupSignatureRepo.findSignatureForAccount(aup, testAccount);
     assertThat(signature.isPresent(), equalTo(false));
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid()))
+    mvc
+      .perform(
+          patch("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isPresent(),
         equalTo(true));
 
-    AupSignatureDTO responseDTO =
-        mapper.readValue(mvc.perform(get("/iam/aup/signature/{accountId}", testAccount.getUuid()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.aup").exists())
-          .andExpect(jsonPath("$.account.uuid").exists())
-          .andExpect(jsonPath("$.account.uuid", equalTo(testAccount.getUuid())))
-          .andExpect(jsonPath("$.account.username", equalTo(testAccount.getUsername())))
-          .andExpect(jsonPath("$.account.name", equalTo(testAccount.getUserInfo().getName())))
-          .andExpect(jsonPath("$.signatureTime").exists())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(), AupSignatureDTO.class);
+    AupSignatureDTO responseDTO = mapper.readValue(mvc
+      .perform(get("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.aup").exists())
+      .andExpect(jsonPath("$.account.uuid").exists())
+      .andExpect(jsonPath("$.account.uuid", equalTo(testAccount.getUuid())))
+      .andExpect(jsonPath("$.account.username", equalTo(testAccount.getUsername())))
+      .andExpect(jsonPath("$.account.name", equalTo(testAccount.getUserInfo().getName())))
+      .andExpect(jsonPath("$.signatureTime").exists())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), AupSignatureDTO.class);
 
     assertThat(responseDTO.getSignatureTime(), equalTo(clock.now()));
   }
@@ -217,25 +221,27 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     AupSignaturePatchRequestDTO dto = new AupSignaturePatchRequestDTO();
     dto.setSignatureTime(updatedSignature);
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
-      .content(mapper.writeValueAsString(dto))
-      .contentType(APPLICATION_JSON)).andExpect(status().isCreated());
+    mvc.perform(
+        patch("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader())
+          .content(mapper.writeValueAsString(dto))
+          .contentType(APPLICATION_JSON))
+      .andExpect(status().isCreated());
 
     assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isPresent(),
         equalTo(true));
 
-    AupSignatureDTO responseDTO =
-        mapper.readValue(mvc.perform(get("/iam/aup/signature/{accountId}", testAccount.getUuid()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.aup").exists())
-          .andExpect(jsonPath("$.account.uuid").exists())
-          .andExpect(jsonPath("$.account.uuid", equalTo(testAccount.getUuid())))
-          .andExpect(jsonPath("$.account.username", equalTo(testAccount.getUsername())))
-          .andExpect(jsonPath("$.account.name", equalTo(testAccount.getUserInfo().getName())))
-          .andExpect(jsonPath("$.signatureTime").exists())
-          .andReturn()
-          .getResponse()
-          .getContentAsString(), AupSignatureDTO.class);
+    AupSignatureDTO responseDTO = mapper.readValue(mvc
+      .perform(get("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.aup").exists())
+      .andExpect(jsonPath("$.account.uuid").exists())
+      .andExpect(jsonPath("$.account.uuid", equalTo(testAccount.getUuid())))
+      .andExpect(jsonPath("$.account.username", equalTo(testAccount.getUsername())))
+      .andExpect(jsonPath("$.account.name", equalTo(testAccount.getUserInfo().getName())))
+      .andExpect(jsonPath("$.signatureTime").exists())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), AupSignatureDTO.class);
 
     assertThat(responseDTO.getSignatureTime(), equalTo(updatedSignature));
   }
@@ -250,7 +256,9 @@ class AupSignatureIntegrationTests extends AupTestSupport {
         aupSignatureRepo.findSignatureForAccount(aup, testAccount);
     assertThat(signature.isPresent(), equalTo(false));
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid()))
+    mvc
+      .perform(
+          patch("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     signature = aupSignatureRepo.findSignatureForAccount(aup, testAccount);
@@ -261,29 +269,30 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     AupSignaturePatchRequestDTO dto = new AupSignaturePatchRequestDTO();
     dto.setSignatureTime(clock.now());
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
-      .content(mapper.writeValueAsString(dto))
-      .contentType(APPLICATION_JSON)).andExpect(status().isCreated());
+    mvc.perform(
+        patch("/iam/aup/signature/{accountId}", testAccount.getUuid()).with(csrf().asHeader())
+          .content(mapper.writeValueAsString(dto))
+          .contentType(APPLICATION_JSON))
+      .andExpect(status().isCreated());
 
     assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isPresent(),
         equalTo(true));
-
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupRemovalForSingleUser() throws Exception {
 
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
 
     IamAccount account = accountRepo.findByUsername("admin")
       .orElseThrow(() -> new AssertionError("Expected admin account not found"));
 
-    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
+    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
-    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
+    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
-    mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
+    mvc.perform(get("/iam/aup/signature/" + account.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
 
@@ -300,7 +309,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     assertThat(signature.isPresent(), equalTo(false));
     aupSignatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
-    mvc.perform(delete("/iam/aup/signature/" + testAccount.getUuid()))
+    mvc.perform(delete("/iam/aup/signature/" + testAccount.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     signature = aupSignatureRepo.findSignatureForAccount(aup, testAccount);
@@ -311,8 +320,8 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupRemovalRemovesSignatureRecords() throws Exception {
 
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
-    mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isNoContent());
 
     IamAccount adminAccount = accountRepo.findByUsername("admin").orElseThrow();
     Optional<IamAupSignature> signature =
@@ -328,7 +337,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void accountRemovalRemovesSignatureRecords() throws Exception {
 
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
 
     IamAccount account = accountRepo.findByUsername("admin")
       .orElseThrow(() -> new AssertionError("Expected admin account not found"));
@@ -340,26 +349,32 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "test", roles = {"USER"})
   void normalUserCannotSeeOtherUserAup() throws Exception {
 
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
-    mvc.perform(get("/iam/aup/signature")).andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_UUID)).andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_100_USER_UUID)).andExpect(status().isForbidden());
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
+    mvc.perform(get("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(csrf().asHeader()))
+      .andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/" + TEST_100_USER_UUID).with(csrf().asHeader()))
+      .andExpect(status().isForbidden());
   }
 
   @Test
   void adminUserCanSeeOtherUserAup() throws Exception {
 
-    mvc.perform(post("/iam/aup/signature").with(user("test").roles("USER")))
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader()).with(user("test").roles("USER")))
       .andExpect(status().isCreated());
-    mvc.perform(get("/iam/aup/signature").with(user("test").roles("USER")))
-      .andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("test").roles("USER")))
-      .andExpect(status().isOk());
-    mvc.perform(get("/iam/aup/signature/" + TEST_UUID).with(user("test_100").roles("READER")))
+    mvc.perform(get("/iam/aup/signature").with(csrf().asHeader()).with(user("test").roles("USER")))
       .andExpect(status().isOk());
     mvc
-      .perform(
-          get("/iam/aup/signature/" + TEST_UUID).with(user("admin").roles("USER", "ADMIN")))
+      .perform(get("/iam/aup/signature/" + TEST_UUID).with(csrf().asHeader())
+        .with(user("test").roles("USER")))
+      .andExpect(status().isOk());
+    mvc
+      .perform(get("/iam/aup/signature/" + TEST_UUID).with(csrf().asHeader())
+        .with(user("test_100").roles("READER")))
+      .andExpect(status().isOk());
+    mvc
+      .perform(get("/iam/aup/signature/" + TEST_UUID).with(csrf().asHeader())
+        .with(user("admin").roles("USER", "ADMIN")))
       .andExpect(status().isOk());
   }
 
@@ -372,12 +387,13 @@ class AupSignatureIntegrationTests extends AupTestSupport {
         aupSignatureRepo.createSignatureForAccount(aup, testAccount, clock.now());
 
     // patch with no body => set signature to current Date
-    AupSignatureDTO signatureResponse =
-        mapper.readValue(mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID))
+    AupSignatureDTO signatureResponse = mapper.readValue(
+        mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader()))
           .andExpect(CREATED)
           .andReturn()
           .getResponse()
-          .getContentAsString(), AupSignatureDTO.class);
+          .getContentAsString(),
+        AupSignatureDTO.class);
 
     assertThat(signatureResponse.getSignatureTime().compareTo(signature.getSignatureTime()), is(0));
 
@@ -385,7 +401,7 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     dto.setSignatureTime(Date.from(clock.instant().plus(Duration.ofHours(2))));
 
     AupSignatureDTO updatedSignature = mapper.readValue(mvc
-      .perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)
+      .perform(patch("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader())
         .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(CREATED)
@@ -400,13 +416,14 @@ class AupSignatureIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
   void signAupOnBehalfOfUserThatHasNoSignature() throws Exception {
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID))
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
 
-    mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID)).andExpect(CREATED);
+    mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader()))
+      .andExpect(CREATED);
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID))
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aup").exists())
       .andExpect(jsonPath("$.account.uuid").exists())
@@ -414,7 +431,8 @@ class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(jsonPath("$.account.name", equalTo("Test User")))
       .andExpect(jsonPath("$.signatureTime").exists());
 
-    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID)).andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_UUID).with(csrf().asHeader()))
+      .andExpect(status().isOk());
 
   }
 
@@ -426,7 +444,8 @@ class AupSignatureIntegrationTests extends AupTestSupport {
     testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
 
-    mvc.perform(post("/iam/aup/sign")).andExpect(status().isMethodNotAllowed());
+    mvc.perform(post("/iam/aup/sign").with(csrf().asHeader()))
+      .andExpect(status().isMethodNotAllowed());
   }
 
 }

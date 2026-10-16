@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.oauth.authzcode;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,7 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,14 +41,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
-import io.restassured.http.Cookie;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import it.infn.mw.iam.IamLoginService;
@@ -56,6 +55,7 @@ import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.TestUtils;
+import it.infn.mw.iam.test.oauth.utils.OAuthBrowser;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -98,6 +98,30 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   @Autowired
   private IamAccountRepository accountRepo;
 
+  private String obtainAuthorizationCode(Map<String, String> extraParameters) {
+    OAuthBrowser browser = new OAuthBrowser(String.format(LOCALHOST_URL_TEMPLATE, iamPort));
+
+    Map<String, Object> parameters = new HashMap<>();
+    parameters.put("response_type", RESPONSE_TYPE_CODE);
+    parameters.put("client_id", TEST_CLIENT_ID);
+    parameters.put("redirect_uri", TEST_CLIENT_REDIRECT_URI);
+    parameters.put("scope", SCOPE);
+    parameters.put("nonce", "1");
+    parameters.put("state", "1");
+    parameters.putAll(extraParameters);
+
+    browser.authorize(parameters)
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
+
+    browser.login(TEST_USER_NAME, TEST_USER_PASSWORD).statusCode(HttpStatus.FOUND.value());
+
+    ValidatableResponse consentPage =
+        browser.authorize(parameters).statusCode(HttpStatus.OK.value());
+
+    return browser.approve(consentPage);
+  }
+
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
@@ -106,79 +130,19 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   private ValidatableResponse getTokenResponseWithAudience(String resourceParamAuthz,
       String resourceParamToken, String resourceValueAuthz, String resourceValueToken) {
 
-    ValidatableResponse resp1 = RestAssured.given()
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam(resourceParamAuthz, resourceValueAuthz)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value())
-      .header("Location", is(loginUrl));
-
-    RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
-      .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value());
-
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam(resourceParamAuthz, resourceValueAuthz)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
-
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
+    String code = obtainAuthorizationCode(Map.of(resourceParamAuthz, resourceValueAuthz));
 
     return RestAssured.given()
       .formParam("grant_type", "authorization_code")
       .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
+      .formParam("code", code)
       .formParam("state", "1")
       .formParam(resourceParamToken, resourceValueToken)
       .auth()
       .preemptive()
       .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .redirects()
+      .follow(false)
       .when()
       .post(tokenUrl)
       .then()
@@ -188,7 +152,6 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
   @BeforeAll
   static void init() {
     TestUtils.initRestAssured();
-
   }
 
   @BeforeEach
@@ -216,7 +179,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
       .then()
       .statusCode(HttpStatus.UNAUTHORIZED.value());
   }
-  
+
   @Test
   void testAuthzCodeSupportsClaimsRequestParameter() {
 
@@ -236,7 +199,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
       .statusCode(HttpStatus.FOUND.value())
       .header("Location", is(loginUrl));
   }
-  
+
   @Test
   void testAuthzCodeAudienceSupport() throws Exception {
 
@@ -244,82 +207,11 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     for (String audKey : audienceKeys) {
 
-      ValidatableResponse resp1 = RestAssured.given()
-        .queryParam("response_type", RESPONSE_TYPE_CODE)
-        .queryParam("client_id", TEST_CLIENT_ID)
-        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .queryParam("scope", SCOPE)
-        .queryParam(audKey, "example-audience")
-        .queryParam("nonce", "1")
-        .queryParam("state", "1")
-        .redirects()
-        .follow(false)
-        .when()
-        .get(authorizeUrl)
-        .then()
-        .statusCode(HttpStatus.FOUND.value())
-        .header("Location", is(loginUrl));
+      String code = obtainAuthorizationCode(Map.of(audKey, "example-audience"));
 
-      RestAssured.given()
-        .formParam("username", TEST_USER_NAME)
-        .formParam("password", TEST_USER_PASSWORD)
-        .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .redirects()
-        .follow(false)
-        .when()
-        .post(loginUrl)
-        .then()
-        .statusCode(HttpStatus.FOUND.value());
-
-      RestAssured.given()
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .queryParam("response_type", RESPONSE_TYPE_CODE)
-        .queryParam("client_id", TEST_CLIENT_ID)
-        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .queryParam("scope", SCOPE)
-        .queryParam(audKey, "example-audience")
-        .queryParam("nonce", "1")
-        .queryParam("state", "1")
-        .redirects()
-        .follow(false)
-        .when()
-        .get(authorizeUrl)
-        .then()
-        .log()
-        .all()
-        .statusCode(HttpStatus.OK.value());
-
-      ValidatableResponse resp2 = RestAssured.given()
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .formParam("user_oauth_approval", "true")
-        .formParam("authorize", "Authorize")
-        .formParam("remember", "none")
-        .redirects()
-        .follow(false)
-        .when()
-        .post(authorizeUrl)
-        .then()
-        .statusCode(HttpStatus.SEE_OTHER.value());
-
-      String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-        .build()
-        .getQueryParams()
-        .get("code")
-        .get(0);
-
-      ValidatableResponse resp3 = RestAssured.given()
-        .formParam("grant_type", "authorization_code")
-        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .formParam("code", authzCode)
-        .formParam("state", "1")
-        .auth()
-        .preemptive()
-        .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-        .when()
-        .post(tokenUrl)
-        .then()
-        .statusCode(HttpStatus.OK.value());
+      ValidatableResponse resp3 =
+          token(code, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
+            .statusCode(HttpStatus.OK.value());
 
       String accessToken =
           mapper.readTree(resp3.extract().body().asString()).get("access_token").asText();
@@ -356,89 +248,12 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Test
   void testAuthzCodeResourceIndicatorNotOriginallyGranted() {
+    String code = obtainAuthorizationCode(Map.of("resource", TEST_FULL_RESOURCE));
 
-    ValidatableResponse resp1 = RestAssured.given()
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("resource", "http://example1.org http://example2.org")
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value())
-      .header("Location", is(loginUrl));
-
-    RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
-      .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value());
-
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("resource", "http://example1.org http://example2.org")
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
-
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
-
-    RestAssured.given()
-      .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
-      .formParam("state", "1")
-      .formParam("resource", "http://example3.org")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
+    token(code, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, "http://example3.org")
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .assertThat()
       .body("error", equalTo("invalid_target"))
-      .assertThat()
       .body("error_description", equalTo("The requested resource was not originally granted"));
-
   }
 
   @Test
@@ -453,7 +268,6 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
-
   }
 
   @Test
@@ -468,7 +282,6 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://storm.org"));
-
   }
 
   @Test
@@ -483,252 +296,87 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://1.org"));
-
   }
 
   @Test
   void testAuthzCodeEmptyResourceIndicator() throws IOException, ParseException {
 
-    ValidatableResponse resp1 = RestAssured.given()
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("resource", "http://example1.org http://example2.org")
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value())
-      .header("Location", is(loginUrl));
+    String authzCode = obtainAuthorizationCode(Map.of("resource", TEST_FULL_RESOURCE));
 
-    RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
-      .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value());
-
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("resource", "http://example1.org http://example2.org")
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
-
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
-
-    ValidatableResponse resp3 = RestAssured.given()
-      .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
-      .formParam("state", "1")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value());
+    ValidatableResponse tokenResponse =
+        token(authzCode, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
+          .statusCode(HttpStatus.OK.value());
 
     String accessToken =
-        mapper.readTree(resp3.extract().body().asString()).get("access_token").asText();
+        mapper.readTree(tokenResponse.extract().body().asString()).get("access_token").asText();
+
     JWT atJwt = JWTParser.parse(accessToken);
 
     assertNotNull(atJwt.getJWTClaimsSet().getAudience());
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(2));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
-
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem(TEST_RESOURCE_1));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem(TEST_RESOURCE_2));
   }
 
   @Test
   void testRefreshTokenAfterAuthzCodeWorks() throws IOException {
-
     refreshTokenRepository.deleteAll();
 
-    ValidatableResponse resp1 = RestAssured.given()
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value())
-      .header("Location", is(loginUrl));
+    String authzCode = obtainAuthorizationCode(Map.of());
 
-    RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
-      .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value());
-
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
-
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
-
-    ValidatableResponse resp3 = RestAssured.given()
-      .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
-      .formParam("state", "1")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value());
+    ValidatableResponse tokenResponse =
+        token(authzCode, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
+          .statusCode(HttpStatus.OK.value());
 
     List<OAuth2RefreshTokenEntity> refreshTokens = refreshTokenRepository
       .findValidRefreshTokensForUserAndClient(TEST_USER_NAME, TEST_CLIENT_ID, new Date(),
           Pageable.unpaged())
       .getContent();
+
     assertThat(refreshTokens, hasSize(1));
-    assertThat(refreshTokens.get(0).getAuthenticationHolder().getScope(),
-        not(hasItems("iam:admin.read", "iam:admin.write", "scim:read", "scim:write")));
+
+    var grantedScopes = refreshTokens.get(0).getAuthenticationHolder().getScope();
+
+    for (String forbiddenScope : List.of("iam:admin.read", "iam:admin.write", "scim:read",
+        "scim:write")) {
+      assertThat(grantedScopes, not(hasItem(forbiddenScope)));
+    }
 
     String refreshToken =
-        mapper.readTree(resp3.extract().body().asString()).get("refresh_token").asText();
+        mapper.readTree(tokenResponse.extract().body().asString()).get("refresh_token").asText();
 
-    ValidatableResponse resp4 = RestAssured.given()
-      .formParam("grant_type", "refresh_token")
-      .formParam("refresh_token", refreshToken)
-      .formParam("scope", "openid")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value());
+    // Refresh with a narrower scope.
+    ValidatableResponse narrowedResponse =
+        refresh(refreshToken, "openid", null, TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+          .statusCode(HttpStatus.OK.value());
 
-    String refreshedToken =
-        mapper.readTree(resp4.extract().body().asString()).get("access_token").asText();
+    String narrowedAccessToken =
+        mapper.readTree(narrowedResponse.extract().body().asString()).get("access_token").asText();
 
-    verifyForbiddenEndpointsForTestUserWithToken(refreshedToken);
+    verifyForbiddenEndpointsForTestUserWithToken(narrowedAccessToken);
 
-    RestAssured.given()
-      .formParam("grant_type", "refresh_token")
-      .formParam("refresh_token", refreshToken)
-      .formParam("scope", "openid iam:admin.read iam:admin.write")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
+    // Reject attempts to request scopes that were not granted.
+    refresh(refreshToken, "openid iam:admin.read iam:admin.write", null, TEST_CLIENT_ID,
+        TEST_CLIENT_SECRET).statusCode(HttpStatus.BAD_REQUEST.value())
+          .body("error", equalTo("invalid_scope"))
+          .body("error_description", equalTo("Up-scoping is not allowed."));
+
+    refresh(refreshToken, "openid scim:read scim:write", null, TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body("error", equalTo("invalid_scope"))
       .body("error_description", equalTo("Up-scoping is not allowed."));
 
-    RestAssured.given()
-      .formParam("grant_type", "refresh_token")
-      .formParam("refresh_token", refreshToken)
-      .formParam("scope", "openid scim:read scim:write")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body("error", equalTo("invalid_scope"))
-      .body("error_description", equalTo("Up-scoping is not allowed."));
+    // Refresh without explicitly requesting a scope.
+    ValidatableResponse defaultScopeResponse =
+        refresh(refreshToken, null, null, TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+          .statusCode(HttpStatus.OK.value());
 
-    ValidatableResponse resp7 = RestAssured.given()
-      .formParam("grant_type", "refresh_token")
-      .formParam("refresh_token", refreshToken)
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value());
+    String defaultScopeAccessToken =
+        mapper.readTree(defaultScopeResponse.extract().body().asString())
+          .get("access_token")
+          .asText();
 
-    refreshedToken =
-        mapper.readTree(resp7.extract().body().asString()).get("access_token").asText();
-
-    verifyForbiddenEndpointsForTestUserWithToken(refreshedToken);
-
+    verifyForbiddenEndpointsForTestUserWithToken(defaultScopeAccessToken);
   }
 
   @Test
@@ -804,7 +452,6 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
-
   }
 
   @Test
@@ -813,14 +460,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     refreshTokenRepository.deleteAll();
 
-    Cookie session = getSession(
-        authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_FULL_RESOURCE)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_FULL_RESOURCE)
-      .statusCode(HttpStatus.OK.value());
-    String authzCode = approve(session);
+    String authzCode = obtainAuthorizationCode(Map.of("resource", TEST_FULL_RESOURCE));
+
     ValidatableResponse tokenResponse =
         token(authzCode, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
           .statusCode(HttpStatus.OK.value());
@@ -836,6 +477,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
       .auth()
       .preemptive()
       .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .redirects()
+      .follow(false)
       .when()
       .post(tokenUrl)
       .then()
@@ -847,8 +490,7 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
     JWT atJwt = JWTParser.parse(refreshedToken);
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
-
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem(TEST_RESOURCE_1));
   }
 
   @Test
@@ -856,14 +498,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
     refreshTokenRepository.deleteAll();
 
-    Cookie session = getSession(
-        authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_FULL_RESOURCE)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, TEST_FULL_RESOURCE)
-      .statusCode(HttpStatus.OK.value());
-    String authzCode = approve(session);
+    String authzCode = obtainAuthorizationCode(Map.of("resource", TEST_FULL_RESOURCE));
+
     ValidatableResponse tokenResponse =
         token(authzCode, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
           .statusCode(HttpStatus.OK.value());
@@ -881,9 +517,8 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
     JWT atJwt = JWTParser.parse(refreshedToken);
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(2));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
-
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem(TEST_RESOURCE_1));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem(TEST_RESOURCE_2));
   }
 
   private void verifyForbiddenEndpointsForTestUserWithToken(String token) {
@@ -962,90 +597,48 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Test
   void testNullAuthorizationCode() throws IOException {
-
-    Cookie session =
-        getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-      .statusCode(HttpStatus.OK.value());
-    approve(session);
     ValidatableResponse tokenResponse =
         token(null, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
           .statusCode(HttpStatus.BAD_REQUEST.value());
 
-    String error = mapper.readTree(tokenResponse.extract().body().asString()).get("error").asText();
-    String errorMessage = mapper.readTree(tokenResponse.extract().body().asString())
-      .get("error_description")
-      .asText();
+    var responseBody = mapper.readTree(tokenResponse.extract().body().asString());
 
-    assertEquals("invalid_request", error);
-    assertEquals("An authorization code must be supplied.", errorMessage);
-
+    assertEquals("invalid_request", responseBody.get("error").asText());
+    assertEquals("An authorization code must be supplied.",
+        responseBody.get("error_description").asText());
   }
 
   @Test
   void testFakeAuthorizationCode() throws IOException {
-
-    Cookie session =
-        getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-      .statusCode(HttpStatus.OK.value());
-    approve(session);
     ValidatableResponse tokenResponse =
         token("1234", TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
           .statusCode(HttpStatus.BAD_REQUEST.value());
 
-    String error = mapper.readTree(tokenResponse.extract().body().asString()).get("error").asText();
-    String errorMessage = mapper.readTree(tokenResponse.extract().body().asString())
-      .get("error_description")
-      .asText();
+    var responseBody = mapper.readTree(tokenResponse.extract().body().asString());
 
-    assertEquals("invalid_grant", error);
+    assertEquals("invalid_grant", responseBody.get("error").asText());
     assertEquals("JpaAuthorizationCodeRepository: no authorization code found for value 1234",
-        errorMessage);
+        responseBody.get("error_description").asText());
   }
 
   @Test
   void testRedirectURIMismatch() throws IOException {
+    String authzCode = obtainAuthorizationCode(Map.of());
 
-    Cookie session =
-        getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-      .statusCode(HttpStatus.OK.value());
-    String authzCode = approve(session);
     ValidatableResponse tokenResponse =
         token(authzCode, "http://fake.redirect.uri.org", TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
           .statusCode(HttpStatus.BAD_REQUEST.value());
 
-    String error = mapper.readTree(tokenResponse.extract().body().asString()).get("error").asText();
-    String errorMessage = mapper.readTree(tokenResponse.extract().body().asString())
-      .get("error_description")
-      .asText();
+    var responseBody = mapper.readTree(tokenResponse.extract().body().asString());
 
-    assertEquals("invalid_grant", error);
-    assertEquals("Redirect URI mismatch.", errorMessage);
-
+    assertEquals("invalid_grant", responseBody.get("error").asText());
+    assertEquals("Redirect URI mismatch.", responseBody.get("error_description").asText());
   }
 
   @Test
   void testClientIDMismatch() throws IOException {
+    String authzCode = obtainAuthorizationCode(Map.of());
 
-    Cookie session =
-        getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, TEST_USER_NAME, TEST_USER_PASSWORD);
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-      .statusCode(HttpStatus.OK.value());
-    String authzCode = approve(session);
     ValidatableResponse tokenResponse = RestAssured.given()
       .formParam("grant_type", "authorization_code")
       .formParam("client_id", "fake-client-id")
@@ -1055,93 +648,35 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
       .auth()
       .preemptive()
       .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .redirects()
+      .follow(false)
       .when()
       .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.UNAUTHORIZED.value());
 
-    String error = mapper.readTree(tokenResponse.extract().body().asString()).get("error").asText();
-    String errorMessage = mapper.readTree(tokenResponse.extract().body().asString())
-      .get("error_description")
-      .asText();
+    var responseBody = mapper.readTree(tokenResponse.extract().body().asString());
 
-    assertEquals("invalid_client", error);
-    assertEquals("Given client ID does not match authenticated client", errorMessage);
+    assertEquals("invalid_client", responseBody.get("error").asText());
+    assertEquals("Given client ID does not match authenticated client",
+        responseBody.get("error_description").asText());
   }
 
   @Test
   void testUnverifiedUserCannotGetAToken() {
+    OAuthBrowser browser = new OAuthBrowser(String.format(LOCALHOST_URL_TEMPLATE, iamPort));
 
-    Cookie session =
-        getSession(authorize(null, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-          .statusCode(HttpStatus.FOUND.value())
-          .header("Location", is(loginUrl)));
-    login(session, "unverified-user", "password");
-    authorize(session, TEST_CLIENT_ID, TEST_CLIENT_REDIRECT_URI, SCOPE, null)
-      .statusCode(HttpStatus.FORBIDDEN.value());
-  }
+    Map<String, Object> parameters =
+        Map.of("response_type", RESPONSE_TYPE_CODE, "client_id", TEST_CLIENT_ID, "redirect_uri",
+            TEST_CLIENT_REDIRECT_URI, "scope", SCOPE, "nonce", "1", "state", "1");
 
-  private ValidatableResponse authorize(Cookie cookie, String clientId, String redirectUri,
-      String scope, String resource) {
+    browser.authorize(parameters)
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
 
-    RequestSpecification request = RestAssured.given();
-    if (cookie != null) {
-      request.cookie(cookie);
-    }
-    if (clientId != null) {
-      request.queryParam("client_id", clientId);
-    }
-    if (redirectUri != null) {
-      request.queryParam("redirect_uri", redirectUri);
-    }
-    if (scope != null) {
-      request.queryParam("scope", scope);
-    }
-    if (resource != null) {
-      request.queryParam("resource", resource);
-    }
-    request.queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1");
-    return request.redirects().follow(false).when().get(authorizeUrl).then();
-  }
+    browser.login("unverified-user", "password").statusCode(HttpStatus.FOUND.value());
 
-  private Cookie getSession(ValidatableResponse authorizeResponse) {
-
-    return authorizeResponse.extract().detailedCookie("JSESSIONID");
-  }
-
-  private ValidatableResponse login(Cookie cookie, String username, String password) {
-
-    return RestAssured.given()
-      .formParam("username", username)
-      .formParam("password", password)
-      .formParam("submit", "Login")
-      .cookie(cookie)
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then();
-  }
-
-  private String approve(Cookie cookie) {
-    ValidatableResponse response = RestAssured.given()
-      .cookie(cookie)
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-    return UriComponentsBuilder.fromHttpUrl(response.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
+    browser.authorize(parameters).statusCode(HttpStatus.FORBIDDEN.value());
   }
 
   private ValidatableResponse token(String code, String redirectUri, String clientId,
@@ -1186,94 +721,12 @@ public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Test
   void testUsingCodeTwiceIsBadRequest() {
+    String code = obtainAuthorizationCode(Map.of());
 
-    ValidatableResponse resp1 = RestAssured.given()
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value())
-      .header("Location", is(loginUrl));
-
-    RestAssured.given()
-      .formParam("username", TEST_USER_NAME)
-      .formParam("password", TEST_USER_PASSWORD)
-      .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .redirects()
-      .follow(false)
-      .when()
-      .post(loginUrl)
-      .then()
-      .statusCode(HttpStatus.FOUND.value());
-
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
-      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .redirects()
-      .follow(false)
-      .when()
-      .get(authorizeUrl)
-      .then()
-      .log()
-      .all()
+    token(code, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
       .statusCode(HttpStatus.OK.value());
 
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-      .formParam("user_oauth_approval", "true")
-      .formParam("authorize", "Authorize")
-      .formParam("remember", "none")
-      .redirects()
-      .follow(false)
-      .when()
-      .post(authorizeUrl)
-      .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
-
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
-
-    RestAssured.given()
-      .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
-      .formParam("state", "1")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value());
-
-    RestAssured.given()
-      .formParam("grant_type", "authorization_code")
-      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-      .formParam("code", authzCode)
-      .formParam("state", "1")
-      .auth()
-      .preemptive()
-      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
-      .when()
-      .post(tokenUrl)
-      .then()
+    token(code, TEST_CLIENT_REDIRECT_URI, TEST_CLIENT_ID, TEST_CLIENT_SECRET, null)
       .statusCode(HttpStatus.BAD_REQUEST.value());
   }
-
 }

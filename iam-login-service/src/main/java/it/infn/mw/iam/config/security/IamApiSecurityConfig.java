@@ -26,6 +26,8 @@ import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -37,6 +39,7 @@ import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHand
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import it.infn.mw.iam.api.proxy.ProxyCertificatesApiController;
 import it.infn.mw.iam.config.IamProperties;
@@ -110,6 +113,9 @@ public class IamApiSecurityConfig {
     @Autowired
     private UserLoginConfig userLoginConfig;
 
+    @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
+
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
@@ -121,9 +127,61 @@ public class IamApiSecurityConfig {
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.NEVER))
         .authorizeRequests(requests -> requests.anyRequest().authenticated())
-        .csrf(csrf -> csrf.disable());
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
     }
   }
+
+  // @Configuration
+  // @Order(22)
+  // public static class IamApiConfig extends WebSecurityConfigurerAdapter {
+  //
+  // private static final String AUP_PATH = "/iam/aup";
+  //
+  // @Autowired
+  // private OAuth2AuthenticationProcessingFilter resourceFilter;
+  //
+  // @Autowired
+  // private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+  //
+  // @Override
+  // protected void configure(final HttpSecurity http) throws Exception {
+//      // @formatter:off
+//      http.requestMatchers()
+//        .antMatchers("/scim/**", 
+//            "/registration/**", 
+//            "/iam/**")
+//        .and()
+//          .exceptionHandling()
+//            .authenticationEntryPoint(authenticationEntryPoint)
+//            .accessDeniedHandler(new OAuth2AccessDeniedHandler())
+//        .and()
+//          .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+//          .addFilterAfter(new MtlsTokenBindingFilter(), ExceptionTranslationFilter.class)
+//        .cors()
+//        .and()
+//        .sessionManagement()
+//          .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+//        .and()
+//          .authorizeRequests()
+//            .antMatchers("/iam/password-reset/**").permitAll()
+//            .antMatchers(POST, "/registration/create").permitAll()
+//            .antMatchers(GET, "/registration/insufficient-auth").permitAll()
+//            .antMatchers(GET, "/registration/username-available/**").permitAll()
+//            .antMatchers(GET, "/registration/email-available/**").permitAll()
+//            .antMatchers(GET, "/registration/config").permitAll()
+//            .antMatchers(HEAD, "/registration/verify/**").permitAll()
+//            .antMatchers(GET, "/registration/verify/**").permitAll()
+//            .antMatchers(POST, "/registration/verify").permitAll()
+//            .antMatchers(GET, "/registration/submitted").permitAll()
+//            .antMatchers(GET, "/iam/config/**").permitAll()
+//            .antMatchers(GET, AUP_PATH).permitAll()
+//            .antMatchers(POST, "/iam/api/oid-fed/client-registration").permitAll()
+//            .anyRequest().authenticated()
+//        .and()
+//          .csrf().disable();
+//      // @formatter:on
+  // }
+  // }
 
   @Configuration
   @Order(22)
@@ -137,43 +195,58 @@ public class IamApiSecurityConfig {
     @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
+    @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
+
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
-      // @formatter:off
-      http.requestMatchers()
-        .antMatchers("/scim/**", 
-            "/registration/**", 
-            "/iam/**")
-        .and()
-          .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint)
-            .accessDeniedHandler(new OAuth2AccessDeniedHandler())
-        .and()
-          .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
-          .addFilterAfter(new MtlsTokenBindingFilter(), ExceptionTranslationFilter.class)
-        .cors()
-        .and()
-        .sessionManagement()
-          .sessionCreationPolicy(SessionCreationPolicy.NEVER)
-        .and()
-          .authorizeRequests()
-            .antMatchers("/iam/password-reset/**").permitAll()
-            .antMatchers(POST, "/registration/create").permitAll()
-            .antMatchers(GET, "/registration/insufficient-auth").permitAll()
-            .antMatchers(GET, "/registration/username-available/**").permitAll()
-            .antMatchers(GET, "/registration/email-available/**").permitAll()
-            .antMatchers(GET, "/registration/config").permitAll()
-            .antMatchers(HEAD, "/registration/verify/**").permitAll()
-            .antMatchers(GET, "/registration/verify/**").permitAll()
-            .antMatchers(POST, "/registration/verify").permitAll()
-            .antMatchers(GET, "/registration/submitted").permitAll()
-            .antMatchers(GET, "/iam/config/**").permitAll()
-            .antMatchers(GET, AUP_PATH).permitAll()
-            .antMatchers(POST, "/iam/api/oid-fed/client-registration").permitAll()
-            .anyRequest().authenticated()
-        .and()
-          .csrf().disable();
-      // @formatter:on
+
+      http
+        .requestMatchers(
+            matchers -> matchers.antMatchers("/scim/**", "/registration/**", "/iam/**"))
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
+              .accessDeniedHandler(new OAuth2AccessDeniedHandler()))
+
+        .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+
+        .addFilterAfter(new MtlsTokenBindingFilter(), ExceptionTranslationFilter.class)
+
+        .cors(Customizer.withDefaults())
+
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+
+        .authorizeRequests(authorize -> authorize.antMatchers("/iam/password-reset/**")
+          .permitAll()
+          .antMatchers(POST, "/registration/create")
+          .permitAll()
+          .antMatchers(GET, "/registration/insufficient-auth")
+          .permitAll()
+          .antMatchers(GET, "/registration/username-available/**")
+          .permitAll()
+          .antMatchers(GET, "/registration/email-available/**")
+          .permitAll()
+          .antMatchers(GET, "/registration/config")
+          .permitAll()
+          .antMatchers(HEAD, "/registration/verify/**")
+          .permitAll()
+          .antMatchers(GET, "/registration/verify/**")
+          .permitAll()
+          .antMatchers(POST, "/registration/verify")
+          .permitAll()
+          .antMatchers(GET, "/registration/submitted")
+          .permitAll()
+          .antMatchers(GET, "/iam/config/**")
+          .permitAll()
+          .antMatchers(GET, AUP_PATH)
+          .permitAll()
+          .antMatchers(POST, "/iam/api/oid-fed/client-registration")
+          .permitAll()
+          .anyRequest()
+          .authenticated())
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
     }
   }
 

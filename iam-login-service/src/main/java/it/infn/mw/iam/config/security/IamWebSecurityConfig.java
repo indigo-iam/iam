@@ -35,6 +35,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -57,7 +58,7 @@ import org.springframework.security.web.authentication.session.ChangeSessionIdAu
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -156,6 +157,9 @@ public class IamWebSecurityConfig {
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
+
+    @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountService, iamTotpMfaService, iamTotpMfaProperties));
@@ -186,48 +190,62 @@ public class IamWebSecurityConfig {
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
-
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
-      http.requestMatchers()
-        .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**", "/dashboard**",
-            "/reset-session", "/device/**")
-        .and()
-        .sessionManagement()
-          .enableSessionUrlRewriting(false)
-        .and()
-          .authorizeRequests()
+      http
+        .requestMatchers(matchers -> matchers.antMatchers(
+            "/",
+            "/login**",
+            "/logout",
+            "/authorize",
+            "/manage/**",
+            "/dashboard**",
+            "/reset-session",
+            "/device/**"))
+
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            .enableSessionUrlRewriting(false))
+
+        .authorizeRequests(authorize -> authorize
             .antMatchers("/", "/login**", "/webjars/**").permitAll()
             .antMatchers("/authorize**").permitAll()
             .antMatchers("/reset-session").permitAll()
-            .antMatchers("/device/**").authenticated()
-        .and()
-          .formLogin()
+            .antMatchers("/device/**").authenticated())
+
+        .formLogin(form -> form
             .loginPage("/login")
             .failureUrl("/login?error=failure")
-            .successHandler(successHandler(authenticationSuccessHandlerHelper()))
-        .and()
-          .exceptionHandling()
-            .authenticationEntryPoint(entryPoint())
-        .and()
-          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+            .successHandler(successHandler(authenticationSuccessHandlerHelper())))
 
-          // Need to replace the UsernamePasswordAuthenticationFilter because we are now making use of the ExtendedAuthenticationToken globally
-          .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+        .exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint(entryPoint()))
 
-          // Applied in the OAuth2 login flow
-          .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
-        .logout()
-          .logoutUrl("/logout")
-          .logoutSuccessHandler(oidcLogoutSuccessHandler)
-        .and().anonymous()
-        .and()
-          .csrf()
-            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
+        .addFilterBefore(
+            authorizationRequestFilter,
+            SecurityContextPersistenceFilter.class)
+
+        // Replace the standard filter to use ExtendedAuthenticationToken.
+        .addFilterAt(
+            extendedAuthenticationFilter(),
+            UsernamePasswordAuthenticationFilter.class)
+
+        // Applied in the OAuth2 login flow.
+        .addFilterAfter(
+            extendedHttpServletRequestFilter(),
+            UsernamePasswordAuthenticationFilter.class)
+
+        .logout(logout -> logout
+            .logoutUrl("/logout")
+            .logoutSuccessHandler(oidcLogoutSuccessHandler))
+
+        .anonymous(Customizer.withDefaults())
+
+        .csrf(csrf -> csrf
+            .csrfTokenRepository(csrfTokenRepository))
+
         .addFilter(iamX509Filter());
-      // @formatter:on
     }
 
     @Bean

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -131,7 +132,8 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", username)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", username)
         .param("password", password)
         .param("submit", "Login")
         .session(session))
@@ -458,7 +460,8 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -1050,7 +1053,8 @@ class DeviceCodeTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))

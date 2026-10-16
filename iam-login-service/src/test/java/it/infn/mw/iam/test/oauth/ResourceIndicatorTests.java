@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -92,7 +93,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -314,8 +316,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  void testResourceIndicatorWithQueryParameterValidationFailsPasswordFlow()
-    throws Exception {
+  void testResourceIndicatorWithQueryParameterValidationFailsPasswordFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
@@ -456,8 +457,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  void testResourceIndicatorWithAudienceValidationFailsClientCredentialFlow()
-    throws Exception {
+  void testResourceIndicatorWithAudienceValidationFailsClientCredentialFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -487,7 +487,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   void testResourceIndicatorWithQueryParameterValidationFailsClientCredentialsFlow()
-    throws Exception {
+      throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -502,8 +502,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  void testResourceIndicatorWithFragmentValidationFailsClientCredentialsFlow()
-    throws Exception {
+  void testResourceIndicatorWithFragmentValidationFailsClientCredentialsFlow() throws Exception {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -522,7 +521,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String resource = "https://example.org";
 
-    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
+    String accessToken =
+        getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -538,7 +538,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String resource = "https://example1.org https://example2.org";
 
-    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
+    String accessToken =
+        getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -594,7 +595,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
-    
+
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)

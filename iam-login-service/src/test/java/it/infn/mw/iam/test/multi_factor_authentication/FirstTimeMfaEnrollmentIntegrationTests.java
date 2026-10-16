@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -97,7 +98,8 @@ class FirstTimeMfaEnrollmentIntegrationTests extends TokenGetterUtils {
     // 2. Complete username/password authentication.
     // The user is authenticated only with PRE_AUTHENTICATED because MFA is mandatory.
     MvcResult loginResult = mvc
-      .perform(post(LOGIN_URL).session(session)
+      .perform(post(LOGIN_URL).with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -174,7 +176,8 @@ class FirstTimeMfaEnrollmentIntegrationTests extends TokenGetterUtils {
     MockHttpSession session = (MockHttpSession) authorizeResult.getRequest().getSession();
 
     MvcResult loginResult = mvc
-      .perform(post(LOGIN_URL).session(session)
+      .perform(post(LOGIN_URL).with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
