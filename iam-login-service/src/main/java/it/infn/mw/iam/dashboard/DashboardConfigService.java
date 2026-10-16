@@ -45,16 +45,16 @@ public class DashboardConfigService {
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
   public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
-      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email", "profile",
-          "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
+      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email",
+          "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
   private final ClientService clientService;
   private final ClientUtils clientUtils;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
-  public DashboardConfigService(ClientService clientService, ClientUtils clientUtils, ApplicationEventPublisher aep,
-      IamProperties iamProperties) {
+  public DashboardConfigService(ClientService clientService, ClientUtils clientUtils,
+      ApplicationEventPublisher aep, IamProperties iamProperties) {
     this.clientService = clientService;
     this.clientUtils = clientUtils;
     this.eventPublisher = aep;
@@ -123,8 +123,7 @@ public class DashboardConfigService {
         && usesClientSecretBasicAuth(client) && usesPKCES256(client) && client.isActive();
   }
 
-  private void createRecordDashboard(String clientId, String secret, String url)
-      throws ParseException {
+  private void createRecordDashboard(String clientId, String secret, String url) {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(clientId);
@@ -136,8 +135,7 @@ public class DashboardConfigService {
     client.setActive(true);
     client.setDynamicallyRegistered(false);
     client.setRedirectUris(Set.of(url));
-    client.setGrantTypes(Set.of(
-        AuthorizationGrantType.CODE.getGrantType(),
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
 
     clientUtils.setupClientDefaults(client);
