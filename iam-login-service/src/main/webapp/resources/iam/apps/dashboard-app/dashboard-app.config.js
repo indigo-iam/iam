@@ -238,12 +238,12 @@ angular
                 return ClientRegistrationService.retrieveOwnedClients(1, 10);
             }
 
-            function newRegisteredClient(ClientRegistrationService) {
-                return ClientRegistrationService.newClient();
+            function newRegisteredClient(ClientRegistrationService, systemScopes) {
+                return ClientRegistrationService.newClient(systemScopes);
             }
 
-            function newClient(ClientsService) {
-                return ClientsService.newClient();
+            function newClient(ClientsService, systemScopes) {
+                return ClientsService.newClient(systemScopes);
             }
 
             function loadClient(ClientsService, $stateParams) {
