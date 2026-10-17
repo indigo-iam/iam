@@ -202,4 +202,15 @@ class WellKnownConfigurationEndpointTests {
 
   }
 
+  @Test
+  void deprecatedAlgorithmsAreNotAdvertised() throws Exception {
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id_token_signing_alg_values_supported", hasItem("RS256")))
+      .andExpect(jsonPath("$.id_token_signing_alg_values_supported", not(hasItem("none"))))
+      .andExpect(jsonPath("$.id_token_encryption_alg_values_supported", not(hasItem("RSA1_5"))))
+      .andExpect(jsonPath("$.userinfo_encryption_alg_values_supported", not(hasItem("RSA1_5"))))
+      .andExpect(
+          jsonPath("$.request_object_encryption_alg_values_supported", not(hasItem("RSA1_5"))));
+  }
 }
