@@ -59,7 +59,9 @@ import it.infn.mw.iam.persistence.model.DeviceCode;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.issuer=http://localhost:8080/",
+        "iam.device-code.allow-complete-verification-uri=true"})
 @AutoConfigureMockMvc
 @Transactional
 class DeviceCodeApprovalTests extends EndpointsTestUtils {
@@ -140,6 +142,19 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(status().isInternalServerError());
   }
 
+  private String baseUrl() {
+    String issuer = config.getIssuer();
+    return issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
+  }
+
+  private String deviceUserUrl() {
+    return baseUrl() + "/device";
+  }
+
+  private String loginUrl() {
+    return baseUrl() + "/login";
+  }
+
   @Test
   void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
 
@@ -152,7 +167,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.user_code").isString())
       .andExpect(jsonPath("$.device_code").isString())
       .andExpect(jsonPath("$.verification_uri_complete").exists())
-      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andExpect(jsonPath("$.verification_uri", equalTo(deviceUserUrl())))
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -164,7 +179,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
           .getRequest()
           .getSession();
 
-    session = (MockHttpSession) mvc.perform(get(LOGIN_URL).session(session))
+    session = (MockHttpSession) mvc.perform(get(loginUrl()).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"))
       .andReturn()
@@ -172,7 +187,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -182,10 +197,9 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(get(DEVICE_CODE_USER_ENDPOINT + "?user_code=").session(session))
+    mvc.perform(get(deviceUserUrl() + "?user_code=").session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("requestUserCode"));
-
   }
 
   @Test
@@ -224,7 +238,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -281,7 +295,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -308,7 +322,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", DEVICE_CODE_CLIENT_ID)
-        .param("scope", "openid profile"))
+        .param("scope", "openid profile offline_access"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
       .andExpect(jsonPath("$.device_code").isString())
@@ -338,7 +352,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -409,7 +423,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -455,7 +469,6 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getContentAsString();
 
     JsonNode responseJson = mapper.readTree(response);
-
     String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
     String userCode = responseJson.get("user_code").asText();
 
@@ -474,7 +487,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -540,7 +553,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -618,7 +631,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -695,7 +708,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -769,7 +782,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -840,7 +853,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -915,7 +928,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -1007,7 +1020,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -1118,7 +1131,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -1185,7 +1198,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
@@ -1301,7 +1314,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).with(csrf().asHeader())
+      .perform(post(loginUrl()).with(csrf().asHeader())
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
