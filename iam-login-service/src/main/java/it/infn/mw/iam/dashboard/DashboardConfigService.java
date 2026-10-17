@@ -16,7 +16,6 @@
 
 package it.infn.mw.iam.dashboard;
 
-import java.text.ParseException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -25,18 +24,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.api.client.management.service.ClientManagementService;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
-import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 public class DashboardConfigService {
@@ -46,19 +44,18 @@ public class DashboardConfigService {
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
   public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
-      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email", "profile",
-          "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
+      Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email",
+          "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
-  private final IamClientRepository clientRepository;
-  private final ClientManagementService clientService;
+  private final ClientService clientService;
+  private final ClientUtils clientUtils;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
-  public DashboardConfigService(IamClientRepository clientRepository,
-      ClientManagementService clientService, ApplicationEventPublisher aep,
-      IamProperties iamProperties) {
+  public DashboardConfigService(ClientService clientService, ClientUtils clientUtils,
+      ApplicationEventPublisher aep, IamProperties iamProperties) {
     this.clientService = clientService;
-    this.clientRepository = clientRepository;
+    this.clientUtils = clientUtils;
     this.eventPublisher = aep;
     this.iamProperties = iamProperties;
   }
@@ -67,7 +64,7 @@ public class DashboardConfigService {
     return iamProperties.getDashboard().isEnabled();
   }
 
-  public void init() throws ParseException {
+  public void init() {
     if (!isEnabled()) {
       return;
     }
@@ -77,7 +74,7 @@ public class DashboardConfigService {
     String clientSecret = props.getClientSecret();
     String redirectUri = iamProperties.getBaseUrl() + DASHBOARD_CALLBACK;
 
-    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
+    Optional<ClientDetailsEntity> client = clientService.findClientByClientId(clientId);
 
     if (client.isEmpty()) {
       LOG.info("Dashboard client does not exist. Creating it.");
@@ -108,8 +105,7 @@ public class DashboardConfigService {
   }
 
   public static boolean hasSecretRotation(ClientDetailsEntity client, String configuredSecret) {
-
-    return !configuredSecret.equals(client.getClientSecret());
+    return !hasValidClientSecret(client, configuredSecret);
   }
 
   public static boolean hasConfigurationDrift(ClientDetailsEntity client, String redirectUri) {
@@ -126,35 +122,40 @@ public class DashboardConfigService {
         && usesClientSecretBasicAuth(client) && usesPKCES256(client) && client.isActive();
   }
 
-  private void createRecordDashboard(String clientId, String secret, String url)
-      throws ParseException {
-    RegisteredClientDTO client = new RegisteredClientDTO();
-    client.setScope(DASHBOARD_SCOPES);
+  private void createRecordDashboard(String clientId, String secret, String url) {
+
+    ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(clientId);
     client.setClientName(DASHBOARD_CLIENT_NAME);
-    client.setClientSecret(secret);
-    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    client.setScope(DASHBOARD_SCOPES);
+    client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setAccessTokenValiditySeconds(3600);
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setActive(true);
+    client.setDynamicallyRegistered(false);
     client.setRedirectUris(Set.of(url));
-    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.REFRESH_TOKEN));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
+        AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
+
+    clientUtils.setupClientDefaults(client);
+    client.setClientSecret(new IamSha256PasswordEncoder().encode(secret));
 
     clientService.saveNewClient(client);
   }
 
   private void updateRecordDashboard(ClientDetailsEntity client, String secret, String url) {
+
     client.setScope(DASHBOARD_SCOPES);
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
-    client.setClientSecret(secret);
+    client.setClientSecret(new IamSha256PasswordEncoder().encode(secret));
     client.setRedirectUris(Set.of(url));
     client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setActive(true);
 
-    clientRepository.save(client);
-    eventPublisher.publishEvent(new ClientUpdatedEvent(this, client));
+    ClientDetailsEntity updatedClient = clientService.updateClient(client);
+    eventPublisher.publishEvent(new ClientUpdatedEvent(this, updatedClient));
   }
 
   public static boolean hasAllRequiredScopes(ClientDetailsEntity client) {
@@ -162,7 +163,7 @@ public class DashboardConfigService {
   }
 
   public static boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
-    return clientSecret.equals(client.getClientSecret());
+    return new IamSha256PasswordEncoder().matches(clientSecret, client.getClientSecret());
   }
 
   public static boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {

@@ -15,55 +15,58 @@
  */
 package it.infn.mw.iam.test.dashboard;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.text.ParseException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
-import com.google.common.collect.Sets;
-
-import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
+import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardConfigServiceTest {
 
   private static final String CLIENT_ID = "dashboard-client";
   private static final String CLIENT_SECRET = "dashboard-client-secret-01234567890";
-  private static final String BASE_URL = "http://localhost:8080";
-  private static final Set<String> SCOPES = Sets.newHashSet("openid", "profile", "email", "iam:admin.read",
-      "iam:admin.write", "scim:read", "scim:write", "offline_access");
-  private static final Set<String> AUTH_GRAND_TYPE = Set.of(AuthorizationGrantType.CODE.getGrantType(),
-      AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
+  private static final String BASE_URL = "https://iam.example.org";
+  private static final String REDIRECT_URI = BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK;
+
+  private static final Set<String> GRANT_TYPES = Set.of("authorization_code", "refresh_token");
+
+  private static final IamSha256PasswordEncoder ENCODER = new IamSha256PasswordEncoder();
 
   @Mock
-  IamClientRepository clientRepository;
+  ClientService clientService;
 
   @Mock
-  DefaultClientManagementService clientService;
+  ClientUtils clientUtils;
 
   @Mock
   ApplicationEventPublisher eventPublisher;
@@ -71,101 +74,175 @@ class DashboardConfigServiceTest {
   @Mock
   IamProperties iamProperties;
 
-  private DashboardConfigService getService() {
-    return new DashboardConfigService(clientRepository, clientService, eventPublisher, iamProperties);
+  @Mock
+  DashboardProperties dashboardProperties;
+
+  private DashboardConfigService service;
+
+  @BeforeEach
+  void setUp() {
+    service = new DashboardConfigService(clientService, clientUtils, eventPublisher, iamProperties);
   }
 
   @Test
-  void testCheckRecordConfiguration() {
-    ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES,
-        true);
+  void disabledDashboardDoesNothing() {
+    when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
+    when(dashboardProperties.isEnabled()).thenReturn(false);
 
-    assertEquals(true, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
+    service.init();
+
+    verifyNoInteractions(clientService, clientUtils, eventPublisher);
   }
 
   @Test
-  void testFailCheckRecordWithWrongConfigurations() {
-    Set<String> scopesWithoutRequired = Sets.newHashSet("FAKE_SCOPE");
-    ClientDetailsEntity client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE,
-        scopesWithoutRequired, true);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
-    scopesWithoutRequired = Sets.newHashSet("openid");
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, scopesWithoutRequired, true);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
-    client = createClientDashboard(CLIENT_ID, "test_secret", BASE_URL, AUTH_GRAND_TYPE, SCOPES, true);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, "https://fake.url", AUTH_GRAND_TYPE, SCOPES, true);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL,
-        Set.of(AuthorizationGrantType.CODE.getGrantType()),
-        SCOPES, true);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
-    client = createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES, false);
-    assertEquals(false, getService().checkRecordConfiguration(client, CLIENT_SECRET, BASE_URL));
-
+  void validConfigurationIsAccepted() {
+    assertTrue(service.checkRecordConfiguration(existingClient(CLIENT_SECRET), CLIENT_SECRET,
+        REDIRECT_URI));
   }
 
   @Test
-  void testInit() throws ParseException {
-    ClientDetailsEntity dashboard = setClientDashboard();
-    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(dashboard));
+  void wrongSecretIsRejected() {
+    assertFalse(service.checkRecordConfiguration(existingClient("different-secret"), CLIENT_SECRET,
+        REDIRECT_URI));
+  }
 
-    mockDashboardProperties(true, CLIENT_ID, CLIENT_SECRET);
-    assertDoesNotThrow(() -> getService().init());
+  @ParameterizedTest
+  @MethodSource("configurationDrifts")
+  void invalidConfigurationIsRejected(Consumer<ClientDetailsEntity> drift) {
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    drift.accept(client);
+
+    assertFalse(service.checkRecordConfiguration(client, CLIENT_SECRET, REDIRECT_URI));
   }
 
   @Test
-  void testInitInsertNewDashboardClient() throws ParseException {
-    String newClientId = "new-" + CLIENT_ID;
-    mockDashboardProperties(true, newClientId, CLIENT_SECRET);
+  void unchangedConfigurationDoesNotTriggerUpdate() {
+    configureDashboard(CLIENT_SECRET);
+    when(clientService.findClientByClientId(CLIENT_ID))
+      .thenReturn(Optional.of(existingClient(CLIENT_SECRET)));
 
-    assertThat(clientRepository.findByClientId(newClientId).isPresent(), is(false));
-    assertDoesNotThrow(() -> getService().init());
-    verify(clientService, times(1)).saveNewClient(any());
-    verify(clientRepository, times(0)).save(any());
+    service.init();
+
+    verify(clientService, never()).saveNewClient(any());
+    verify(clientService, never()).updateClient(any());
+    verifyNoInteractions(clientUtils, eventPublisher);
   }
 
   @Test
-  void testInitUpdateDashboard() throws ParseException {
-    String newClientId = "new-" + CLIENT_ID;
-    mockDashboardProperties(true, CLIENT_ID, CLIENT_SECRET);
-    ClientDetailsEntity dashboard = setClientDashboard();
-    when(clientRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(dashboard));
+  void missingClientCreatesNewOne() {
+    configureDashboard(CLIENT_SECRET);
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.empty());
 
-    assertThat(clientRepository.findByClientId(newClientId).isPresent(), is(false));
-    assertDoesNotThrow(() -> getService().init());
-    verify(clientService, times(0)).saveNewClient(any());
-    verify(clientRepository, times(1)).save(any());
+    service.init();
+
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
+
+    verify(clientService).saveNewClient(captor.capture());
+
+    ClientDetailsEntity created = captor.getValue();
+    assertEquals(CLIENT_ID, created.getClientId());
+    assertEquals(DashboardConfigService.DASHBOARD_CLIENT_NAME, created.getClientName());
+    assertEquals(Integer.valueOf(3600), created.getAccessTokenValiditySeconds());
+    assertFalse(created.isDynamicallyRegistered());
+    assertExpectedConfiguration(created, CLIENT_SECRET);
+
+    verify(clientUtils).setupClientDefaults(created);
+    verify(clientService, never()).updateClient(any());
+
+    // ClientService publishes the creation event.
+    verifyNoInteractions(eventPublisher);
   }
 
-  private ClientDetailsEntity createClientDashboard(String clientId, String clientSecret,
-      String redirectUris, Set<String> grantTypes, Set<String> scopes, boolean isActive) {
+  @Test
+  void secretRotationUpdatesStoredHashAndPreservesOtherSettings() {
+    String newSecret = "new-dashboard-secret-01234567890";
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+
+    configureDashboard(newSecret);
+    mockExistingClientForUpdate(client);
+
+    service.init();
+
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
+
+    verify(clientService).updateClient(captor.capture());
+
+    ClientDetailsEntity updated = captor.getValue();
+    assertExpectedConfiguration(updated, newSecret);
+    assertEquals(CLIENT_ID, updated.getClientId());
+    assertEquals("Existing dashboard", updated.getClientName());
+    assertEquals(Integer.valueOf(7200), updated.getAccessTokenValiditySeconds());
+
+    verify(clientService, never()).saveNewClient(any());
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  @ParameterizedTest
+  @MethodSource("configurationDrifts")
+  void configurationDriftIsRepaired(Consumer<ClientDetailsEntity> drift) {
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    drift.accept(client);
+
+    configureDashboard(CLIENT_SECRET);
+    mockExistingClientForUpdate(client);
+
+    service.init();
+
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
+
+    verify(clientService).updateClient(captor.capture());
+    assertExpectedConfiguration(captor.getValue(), CLIENT_SECRET);
+
+    verify(clientService, never()).saveNewClient(any());
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  private static Stream<Consumer<ClientDetailsEntity>> configurationDrifts() {
+    return Stream.<Consumer<ClientDetailsEntity>>of(client -> client.setScope(null),
+        client -> client.setScope(Set.of("FAKE_SCOPE")),
+        client -> client.setScope(Set.of("openid")),
+        client -> client.setRedirectUris(Set.of("https://wrong.example.org")),
+        client -> client.setGrantTypes(Set.of("authorization_code")),
+        client -> client.setTokenEndpointAuthMethod(null),
+        client -> client.setCodeChallengeMethod(null), client -> client.setActive(false));
+  }
+
+  private ClientDetailsEntity existingClient(String plainSecret) {
     ClientDetailsEntity client = new ClientDetailsEntity();
-    client.setClientId(clientId);
-    client.setClientSecret(clientSecret);
-    client.setScope(scopes);
-    client.setGrantTypes(grantTypes);
-    client.setRedirectUris(Set.of(redirectUris));
-    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
+    client.setClientId(CLIENT_ID);
+    client.setClientName("Existing dashboard");
+    client.setClientSecret(ENCODER.encode(plainSecret));
+    client.setScope(DashboardConfigService.DASHBOARD_SCOPES);
+    client.setRedirectUris(Set.of(REDIRECT_URI));
+    client.setGrantTypes(GRANT_TYPES);
     client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
-    client.setActive(isActive);
+    client.setCodeChallengeMethod(PKCEAlgorithm.S256);
+    client.setAccessTokenValiditySeconds(7200);
+    client.setActive(true);
     return client;
   }
 
-  private ClientDetailsEntity setClientDashboard() {
-    return createClientDashboard(CLIENT_ID, CLIENT_SECRET, BASE_URL, AUTH_GRAND_TYPE, SCOPES, true);
+  private void configureDashboard(String plainSecret) {
+    when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
+    when(dashboardProperties.isEnabled()).thenReturn(true);
+    when(dashboardProperties.getClientId()).thenReturn(CLIENT_ID);
+    when(dashboardProperties.getClientSecret()).thenReturn(plainSecret);
+    when(iamProperties.getBaseUrl()).thenReturn(BASE_URL);
   }
 
-  private void mockDashboardProperties(boolean isENabled, String clientId, String secret) {
-    DashboardProperties properties = Mockito.mock(DashboardProperties.class);
-    lenient().when(properties.isEnabled()).thenReturn(isENabled);
-    lenient().when(properties.getClientId()).thenReturn(clientId);
-    lenient().when(properties.getClientSecret()).thenReturn(secret);
-    when(iamProperties.getDashboard()).thenReturn(properties);
+  private void mockExistingClientForUpdate(ClientDetailsEntity client) {
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+    when(clientService.updateClient(any(ClientDetailsEntity.class)))
+      .thenAnswer(invocation -> invocation.getArgument(0));
+  }
+
+  private void assertExpectedConfiguration(ClientDetailsEntity client, String plainSecret) {
+    assertEquals(ENCODER.encode(plainSecret), client.getClientSecret());
+    assertEquals(DashboardConfigService.DASHBOARD_SCOPES, client.getScope());
+    assertEquals(Set.of(REDIRECT_URI), client.getRedirectUris());
+    assertEquals(GRANT_TYPES, client.getGrantTypes());
+    assertEquals(ClientAuthMethod.SECRET_BASIC, client.getTokenEndpointAuthMethod());
+    assertEquals(PKCEAlgorithm.S256, client.getCodeChallengeMethod());
+    assertTrue(client.isActive());
   }
 }
