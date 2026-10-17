@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.text.ParseException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -86,7 +85,7 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void disabledDashboardDoesNothing() throws ParseException {
+  void disabledDashboardDoesNothing() {
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(false);
 
@@ -117,7 +116,7 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void unchangedConfigurationDoesNotTriggerUpdate() throws ParseException {
+  void unchangedConfigurationDoesNotTriggerUpdate() {
     configureDashboard(CLIENT_SECRET);
     when(clientService.findClientByClientId(CLIENT_ID))
       .thenReturn(Optional.of(existingClient(CLIENT_SECRET)));
@@ -130,7 +129,7 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void missingClientCreatesNewOne() throws ParseException {
+  void missingClientCreatesNewOne() {
     configureDashboard(CLIENT_SECRET);
     when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.empty());
 
@@ -155,7 +154,7 @@ class DashboardConfigServiceTest {
   }
 
   @Test
-  void secretRotationUpdatesStoredHashAndPreservesOtherSettings() throws ParseException {
+  void secretRotationUpdatesStoredHashAndPreservesOtherSettings() {
     String newSecret = "new-dashboard-secret-01234567890";
     ClientDetailsEntity client = existingClient(CLIENT_SECRET);
 
@@ -180,7 +179,7 @@ class DashboardConfigServiceTest {
 
   @ParameterizedTest
   @MethodSource("configurationDrifts")
-  void configurationDriftIsRepaired(Consumer<ClientDetailsEntity> drift) throws ParseException {
+  void configurationDriftIsRepaired(Consumer<ClientDetailsEntity> drift) {
     ClientDetailsEntity client = existingClient(CLIENT_SECRET);
     drift.accept(client);
 

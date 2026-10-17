@@ -21,8 +21,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.text.ParseException;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +45,7 @@ class StartupRunnerTests {
   }
 
   @Test
-  void testRunnerInitializesDashboard() throws ParseException {
+  void testRunnerInitializesDashboard() {
     when(service.isEnabled()).thenReturn(true);
     runner.run(mock(ApplicationArguments.class));
     assertDoesNotThrow(() -> runner.run(mock(ApplicationArguments.class)));
@@ -55,7 +53,7 @@ class StartupRunnerTests {
   }
 
   @Test
-  void testRunnerDoesNotInitializeDashboard() throws ParseException {
+  void testRunnerDoesNotInitializeDashboard() {
     when(service.isEnabled()).thenReturn(false);
     runner.run(mock(ApplicationArguments.class));
     verify(service, times(0)).init();
