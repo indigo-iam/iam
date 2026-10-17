@@ -16,8 +16,6 @@
 
 package it.infn.mw.iam.core.util;
 
-import java.text.ParseException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -39,16 +37,12 @@ public class StartupRunner implements ApplicationRunner {
 
   @Override
   public void run(ApplicationArguments args) {
+
     if (!dashboardConfigService.isEnabled()) {
       LOG.info("Skipping dashboard client initialization.");
       return;
     }
-
-    try {
-      dashboardConfigService.init();
-    } catch (ParseException e) {
-      LOG.error("Error initializing dashboard client configuration", e);
-      throw new IllegalStateException("Error during dashboard client initialization. Startup failed. Please check the logged error.", e);
-    }
+    LOG.info("Dashboard client initialization...");
+    dashboardConfigService.init();
   }
 }

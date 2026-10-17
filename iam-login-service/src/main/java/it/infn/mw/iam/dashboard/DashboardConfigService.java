@@ -16,7 +16,6 @@
 
 package it.infn.mw.iam.dashboard;
 
-import java.text.ParseException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -65,7 +64,7 @@ public class DashboardConfigService {
     return iamProperties.getDashboard().isEnabled();
   }
 
-  public void init() throws ParseException {
+  public void init() {
     if (!isEnabled()) {
       return;
     }
