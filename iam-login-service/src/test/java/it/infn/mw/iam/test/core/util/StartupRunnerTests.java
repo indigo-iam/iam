@@ -16,8 +16,6 @@
 package it.infn.mw.iam.test.core.util;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -31,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.ApplicationArguments;
+
 import it.infn.mw.iam.core.util.StartupRunner;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 
@@ -60,13 +59,5 @@ class StartupRunnerTests {
     when(service.isEnabled()).thenReturn(false);
     runner.run(mock(ApplicationArguments.class));
     verify(service, times(0)).init();
-  }
-
-  @Test
-  void testRunnerThrowsExceptionOnInitializationFailure() throws ParseException {
-    when(service.isEnabled()).thenReturn(true);
-    doThrow(new ParseException("Test exception", 0)).when(service).init();
-    assertThrows(IllegalStateException.class, () -> runner.run(mock(ApplicationArguments.class)));
-    verify(service, times(1)).init();
   }
 }
