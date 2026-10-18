@@ -49,13 +49,13 @@ class StartupRunnerTests {
     when(service.isEnabled()).thenReturn(true);
     runner.run(mock(ApplicationArguments.class));
     assertDoesNotThrow(() -> runner.run(mock(ApplicationArguments.class)));
-    verify(service, times(2)).init();
+    verify(service, times(2)).ensureDashboardClientConfigured();
   }
 
   @Test
   void testRunnerDoesNotInitializeDashboard() {
     when(service.isEnabled()).thenReturn(false);
     runner.run(mock(ApplicationArguments.class));
-    verify(service, times(0)).init();
+    verify(service, times(0)).ensureDashboardClientConfigured();
   }
 }

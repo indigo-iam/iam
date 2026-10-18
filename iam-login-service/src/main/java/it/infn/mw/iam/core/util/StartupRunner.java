@@ -43,6 +43,6 @@ public class StartupRunner implements ApplicationRunner {
       return;
     }
     LOG.info("Dashboard client initialization...");
-    dashboardConfigService.init();
+    dashboardConfigService.ensureDashboardClientConfigured();
   }
 }

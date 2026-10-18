@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -60,8 +61,6 @@ class DashboardConfigServiceTest {
 
   private static final Set<String> GRANT_TYPES = Set.of("authorization_code", "refresh_token");
 
-  private static final IamSha256PasswordEncoder ENCODER = new IamSha256PasswordEncoder();
-
   @Mock
   ClientService clientService;
 
@@ -77,11 +76,14 @@ class DashboardConfigServiceTest {
   @Mock
   DashboardProperties dashboardProperties;
 
-  private DashboardConfigService service;
+  IamSha256PasswordEncoder encoder;
+  DashboardConfigService service;
 
   @BeforeEach
   void setUp() {
-    service = new DashboardConfigService(clientService, clientUtils, eventPublisher, iamProperties);
+    encoder = new IamSha256PasswordEncoder();
+    service = new DashboardConfigService(clientService, clientUtils, encoder, eventPublisher,
+        iamProperties);
   }
 
   @Test
@@ -89,30 +91,9 @@ class DashboardConfigServiceTest {
     when(iamProperties.getDashboard()).thenReturn(dashboardProperties);
     when(dashboardProperties.isEnabled()).thenReturn(false);
 
-    service.init();
+    service.ensureDashboardClientConfigured();
 
     verifyNoInteractions(clientService, clientUtils, eventPublisher);
-  }
-
-  @Test
-  void validConfigurationIsAccepted() {
-    assertTrue(service.checkRecordConfiguration(existingClient(CLIENT_SECRET), CLIENT_SECRET,
-        REDIRECT_URI));
-  }
-
-  @Test
-  void wrongSecretIsRejected() {
-    assertFalse(service.checkRecordConfiguration(existingClient("different-secret"), CLIENT_SECRET,
-        REDIRECT_URI));
-  }
-
-  @ParameterizedTest
-  @MethodSource("configurationDrifts")
-  void invalidConfigurationIsRejected(Consumer<ClientDetailsEntity> drift) {
-    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
-    drift.accept(client);
-
-    assertFalse(service.checkRecordConfiguration(client, CLIENT_SECRET, REDIRECT_URI));
   }
 
   @Test
@@ -121,7 +102,7 @@ class DashboardConfigServiceTest {
     when(clientService.findClientByClientId(CLIENT_ID))
       .thenReturn(Optional.of(existingClient(CLIENT_SECRET)));
 
-    service.init();
+    service.ensureDashboardClientConfigured();
 
     verify(clientService, never()).saveNewClient(any());
     verify(clientService, never()).updateClient(any());
@@ -133,7 +114,7 @@ class DashboardConfigServiceTest {
     configureDashboard(CLIENT_SECRET);
     when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.empty());
 
-    service.init();
+    service.ensureDashboardClientConfigured();
 
     ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
 
@@ -161,7 +142,7 @@ class DashboardConfigServiceTest {
     configureDashboard(newSecret);
     mockExistingClientForUpdate(client);
 
-    service.init();
+    service.ensureDashboardClientConfigured();
 
     ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
 
@@ -186,7 +167,7 @@ class DashboardConfigServiceTest {
     configureDashboard(CLIENT_SECRET);
     mockExistingClientForUpdate(client);
 
-    service.init();
+    service.ensureDashboardClientConfigured();
 
     ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
 
@@ -195,6 +176,51 @@ class DashboardConfigServiceTest {
 
     verify(clientService, never()).saveNewClient(any());
     verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  @Test
+  void configurationDriftAndSecretRotationAreRepairedTogether() {
+    String newSecret = "new-dashboard-secret-01234567890";
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    client.setRedirectUris(Set.of("https://wrong.example.org"));
+    client.setActive(false);
+
+    configureDashboard(newSecret);
+    mockExistingClientForUpdate(client);
+
+    service.ensureDashboardClientConfigured();
+
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
+
+    verify(clientService).updateClient(captor.capture());
+
+    ClientDetailsEntity updated = captor.getValue();
+    assertExpectedConfiguration(updated, newSecret);
+    assertEquals(CLIENT_ID, updated.getClientId());
+    assertEquals("Existing dashboard", updated.getClientName());
+    assertEquals(Integer.valueOf(7200), updated.getAccessTokenValiditySeconds());
+
+    verify(clientService, never()).saveNewClient(any());
+    verifyNoInteractions(clientUtils);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  @Test
+  void additionalScopesDoNotTriggerUpdate() {
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    Set<String> scopes = new HashSet<>(DashboardConfigService.DASHBOARD_SCOPES);
+    scopes.add("additional-scope");
+    client.setScope(scopes);
+
+    configureDashboard(CLIENT_SECRET);
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.ensureDashboardClientConfigured();
+
+    verify(clientService, never()).saveNewClient(any());
+    verify(clientService, never()).updateClient(any());
+    verifyNoInteractions(clientUtils, eventPublisher);
+    assertEquals(scopes, client.getScope());
   }
 
   private static Stream<Consumer<ClientDetailsEntity>> configurationDrifts() {
@@ -211,7 +237,7 @@ class DashboardConfigServiceTest {
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);
     client.setClientName("Existing dashboard");
-    client.setClientSecret(ENCODER.encode(plainSecret));
+    client.setClientSecret(encoder.encode(plainSecret));
     client.setScope(DashboardConfigService.DASHBOARD_SCOPES);
     client.setRedirectUris(Set.of(REDIRECT_URI));
     client.setGrantTypes(GRANT_TYPES);
@@ -237,7 +263,7 @@ class DashboardConfigServiceTest {
   }
 
   private void assertExpectedConfiguration(ClientDetailsEntity client, String plainSecret) {
-    assertEquals(ENCODER.encode(plainSecret), client.getClientSecret());
+    assertEquals(encoder.encode(plainSecret), client.getClientSecret());
     assertEquals(DashboardConfigService.DASHBOARD_SCOPES, client.getScope());
     assertEquals(Set.of(REDIRECT_URI), client.getRedirectUris());
     assertEquals(GRANT_TYPES, client.getGrantTypes());

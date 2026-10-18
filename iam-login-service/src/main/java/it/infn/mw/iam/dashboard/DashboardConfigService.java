@@ -22,6 +22,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.client.service.ClientService;
@@ -30,7 +31,6 @@ import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
-import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -49,13 +49,15 @@ public class DashboardConfigService {
 
   private final ClientService clientService;
   private final ClientUtils clientUtils;
+  private final PasswordEncoder secretEncoder;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
   public DashboardConfigService(ClientService clientService, ClientUtils clientUtils,
-      ApplicationEventPublisher aep, IamProperties iamProperties) {
+      PasswordEncoder secretEncoder, ApplicationEventPublisher aep, IamProperties iamProperties) {
     this.clientService = clientService;
     this.clientUtils = clientUtils;
+    this.secretEncoder = secretEncoder;
     this.eventPublisher = aep;
     this.iamProperties = iamProperties;
   }
@@ -64,7 +66,7 @@ public class DashboardConfigService {
     return iamProperties.getDashboard().isEnabled();
   }
 
-  public void init() {
+  public void ensureDashboardClientConfigured() {
     if (!isEnabled()) {
       return;
     }
@@ -77,12 +79,12 @@ public class DashboardConfigService {
     Optional<ClientDetailsEntity> client = clientService.findClientByClientId(clientId);
 
     if (client.isEmpty()) {
-      LOG.info("Dashboard client does not exist. Creating it.");
+      LOG.info("Dashboard client does not exist. Creating it...");
       createRecordDashboard(clientId, clientSecret, redirectUri);
-      return;
+    } else {
+      LOG.debug("Dashboard client exists. Checking client configuration...");
+      reconcileClient(client.get(), clientSecret, redirectUri);
     }
-
-    reconcileClient(client.get(), clientSecret, redirectUri);
   }
 
   private void reconcileClient(ClientDetailsEntity client, String configuredSecret,
@@ -98,28 +100,20 @@ public class DashboardConfigService {
       LOG.info("Dashboard client secret rotation detected.");
     }
     if (structuralDrift) {
-      LOG.warn("Dashboard client configuration drift detected. Restoring expected configuration.");
+      LOG.warn("Dashboard client configuration drift detected.");
     }
-
     updateRecordDashboard(client, configuredSecret, redirectUri);
   }
 
-  public static boolean hasSecretRotation(ClientDetailsEntity client, String configuredSecret) {
+  private boolean hasSecretRotation(ClientDetailsEntity client, String configuredSecret) {
     return !hasValidClientSecret(client, configuredSecret);
   }
 
-  public static boolean hasConfigurationDrift(ClientDetailsEntity client, String redirectUri) {
+  private boolean hasConfigurationDrift(ClientDetailsEntity client, String redirectUri) {
 
     return !hasAllRequiredScopes(client) || !hasValidRedirectUris(client, redirectUri)
-        || !supportsAuthorizationCodeGrant(client) || !usesClientSecretBasicAuth(client)
+        || !hasExpectedGrantTypes(client) || !usesClientSecretBasicAuth(client)
         || !usesPKCES256(client) || !client.isActive();
-  }
-
-  public boolean checkRecordConfiguration(ClientDetailsEntity client, String clientSecret,
-      String url) {
-    return hasAllRequiredScopes(client) && hasValidClientSecret(client, clientSecret)
-        && hasValidRedirectUris(client, url) && supportsAuthorizationCodeGrant(client)
-        && usesClientSecretBasicAuth(client) && usesPKCES256(client) && client.isActive();
   }
 
   private void createRecordDashboard(String clientId, String secret, String url) {
@@ -138,7 +132,7 @@ public class DashboardConfigService {
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
 
     clientUtils.setupClientDefaults(client);
-    client.setClientSecret(new IamSha256PasswordEncoder().encode(secret));
+    client.setClientSecret(secretEncoder.encode(secret));
 
     clientService.saveNewClient(client);
   }
@@ -149,7 +143,7 @@ public class DashboardConfigService {
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
-    client.setClientSecret(new IamSha256PasswordEncoder().encode(secret));
+    client.setClientSecret(secretEncoder.encode(secret));
     client.setRedirectUris(Set.of(url));
     client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setActive(true);
@@ -158,30 +152,30 @@ public class DashboardConfigService {
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, updatedClient));
   }
 
-  public static boolean hasAllRequiredScopes(ClientDetailsEntity client) {
+  private boolean hasAllRequiredScopes(ClientDetailsEntity client) {
     return client.getScope() != null && client.getScope().containsAll(DASHBOARD_SCOPES);
   }
 
-  public static boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
-    return new IamSha256PasswordEncoder().matches(clientSecret, client.getClientSecret());
+  private boolean hasValidClientSecret(ClientDetailsEntity client, String clientSecret) {
+    return secretEncoder.matches(clientSecret, client.getClientSecret());
   }
 
-  public static boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
+  private boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
     return Set.of(url).equals(client.getRedirectUris());
   }
 
-  public static boolean supportsAuthorizationCodeGrant(ClientDetailsEntity client) {
+  private boolean hasExpectedGrantTypes(ClientDetailsEntity client) {
     return Set
       .of(AuthorizationGrantType.CODE.getGrantType(),
           AuthorizationGrantType.REFRESH_TOKEN.getGrantType())
       .equals(client.getGrantTypes());
   }
 
-  public static boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
+  private boolean usesClientSecretBasicAuth(ClientDetailsEntity client) {
     return ClientAuthMethod.SECRET_BASIC.equals(client.getTokenEndpointAuthMethod());
   }
 
-  public static boolean usesPKCES256(ClientDetailsEntity client) {
+  private boolean usesPKCES256(ClientDetailsEntity client) {
     return PKCEAlgorithm.S256.equals(client.getCodeChallengeMethod());
   }
 }
