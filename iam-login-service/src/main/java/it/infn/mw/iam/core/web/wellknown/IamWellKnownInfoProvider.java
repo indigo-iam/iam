@@ -39,7 +39,6 @@ import it.infn.mw.iam.core.userinfo.IamUserInfoEndpoint;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
-@SuppressWarnings("deprecation")
 @Service
 public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 

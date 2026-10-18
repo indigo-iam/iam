@@ -80,10 +80,6 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     if (defaultAlgorithm != null) {
       checkArgument(!JWSAlgorithm.NONE.equals(defaultAlgorithm),
           "The default JWS signing algorithm cannot be none");
-
-      JWSSigner signer = signers.get(defaultSignerKeyId);
-      checkArgument(signer != null && signer.supportedJWSAlgorithms().contains(defaultAlgorithm),
-          "The default JWS signing algorithm is not supported by the configured signing key");
     }
   }
 
