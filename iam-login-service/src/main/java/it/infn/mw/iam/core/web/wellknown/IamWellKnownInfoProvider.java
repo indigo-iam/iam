@@ -50,8 +50,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String SCIM_ENDPOINT = "scim";
   public static final String LOGOUT_ENDPOINT = "logout";
 
-  private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = List.of("client_secret_basic",
-      "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
+  private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS =
+      List.of("client_secret_basic", "client_secret_post", "private_key_jwt", "none");
 
   private static final List<String> RESPONSE_TYPES = List.of("code", "token");
 
