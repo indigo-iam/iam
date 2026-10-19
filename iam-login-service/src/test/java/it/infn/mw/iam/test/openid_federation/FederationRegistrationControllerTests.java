@@ -228,7 +228,8 @@ class FederationRegistrationControllerTests {
   void testResponseTypesAreFiltered() throws Exception {
 
     fakeChain = TrustChainTestFactory.createRpToTaChain(issuer,
-        Set.of(ResponseType.CODE_IDTOKEN, ResponseType.CODE), REDIRECT_URI, null, null, clock);
+        Set.of(ResponseType.CODE_IDTOKEN, ResponseType.TOKEN, ResponseType.CODE), REDIRECT_URI,
+        null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 

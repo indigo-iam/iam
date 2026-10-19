@@ -945,7 +945,6 @@ var ClientFormView = Backbone.View.extend({
 	grantMap: {
 		'authorization_code': 'authorization_code',
 		'password': 'password',
-		'implicit': 'implicit',
 		'client_credentials': 'client_credentials',
 		'redelegate': 'urn:ietf:params:oauth:grant_type:redelegate',
 		'refresh_token': 'refresh_token',
@@ -955,13 +954,7 @@ var ClientFormView = Backbone.View.extend({
 
 	// maps from a form-friendly name to the real response type parameter name
 	responseMap: {
-		'code': 'code',
-		'token': 'token',
-		'idtoken': 'id_token',
-		'token-idtoken': 'token id_token',
-		'code-idtoken': 'code id_token',
-		'code-token': 'code token',
-		'code-token-idtoken': 'code token id_token'
+		'code': 'code'
 	},
 
 	saveClient: function(event) {

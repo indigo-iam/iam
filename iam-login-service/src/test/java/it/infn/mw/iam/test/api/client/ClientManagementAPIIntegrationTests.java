@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -32,11 +33,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,6 +54,8 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
@@ -514,6 +522,60 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
+  }
 
+  @ParameterizedTest
+  @MethodSource("unsupportedClientMetadata")
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void clientCreationRejectsUnsupportedMetadata(String field, List<String> values)
+      throws Exception {
+
+    ObjectNode payload = validAuthorizationCodeClientPayload();
+    replaceMetadata(payload, field, values);
+
+    long clientsBefore = clientRepo.count();
+
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload)))
+      .andExpect(status().isBadRequest());
+
+    assertEquals(clientsBefore, clientRepo.count());
+  }
+
+  static Stream<Arguments> unsupportedClientMetadata() {
+    return Stream.of(
+        Arguments.of("grant_types", List.of("implicit")),
+        Arguments.of("grant_types", List.of("authorization_code", "implicit")),
+        Arguments.of("response_types", List.of("token")),
+        Arguments.of("response_types", List.of("code", "token")),
+        Arguments.of("response_types", List.of("id_token")),
+        Arguments.of("response_types", List.of("token id_token")),
+        Arguments.of("response_types", List.of("id_token token")),
+        Arguments.of("response_types", List.of("code token")),
+        Arguments.of("response_types", List.of("code id_token")),
+        Arguments.of("response_types", List.of("code token id_token")));
+  }
+
+  private ObjectNode validAuthorizationCodeClientPayload() throws Exception {
+    String json = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .grantTypes("authorization_code")
+      .build();
+
+    ObjectNode payload = (ObjectNode) mapper.readTree(json);
+
+    payload.putArray("response_types").add("code");
+    payload.putArray("redirect_uris").add("https://client.example.org/callback");
+
+    return payload;
+  }
+
+  private void replaceMetadata(
+      ObjectNode payload, String field, List<String> values) {
+
+    ArrayNode array = payload.putArray(field);
+    values.forEach(value -> array.add(value));
   }
 }
