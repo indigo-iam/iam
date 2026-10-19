@@ -117,7 +117,9 @@ public class DashboardConfigService {
   private void createRecordDashboard(String clientId, String secret, String url) {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
+    clientUtils.setupClientDefaults(client);
     client.setClientId(clientId);
+    client.setClientSecret(secretEncoder.encode(secret));
     client.setClientName(DASHBOARD_CLIENT_NAME);
     client.setScope(DASHBOARD_SCOPES);
     client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
@@ -128,10 +130,6 @@ public class DashboardConfigService {
     client.setRedirectUris(Set.of(url));
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
-
-    clientUtils.setupClientDefaults(client);
-    client.setClientSecret(secretEncoder.encode(secret));
-
     clientService.saveNewClient(client);
   }
 
