@@ -17,7 +17,6 @@ package it.infn.mw.iam.jwkfallback;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,7 +34,6 @@ import it.infn.mw.iam.util.JwkKeyStoreLoader;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
-
 
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "it.infn.mw.iam.jwkfallback", exclude = {
@@ -56,11 +54,6 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 @EnableConfigurationProperties(IamProperties.class)
 @Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class })
 public class IamJwkFallbackApplication {
-    
-
-    public static void main(String[] args) {
-        SpringApplication.run(IamJwkFallbackApplication.class, args);
-    }
 
     @Bean
     IamJWTSigningService iamJWTSigningService(
