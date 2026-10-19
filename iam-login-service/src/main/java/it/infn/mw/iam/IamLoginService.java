@@ -22,6 +22,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -37,6 +38,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.infn.mw.iam.core.util.IamBanner;
 import it.infn.mw.iam.jwkfallback.FallbackShutdownSignal;
@@ -114,13 +117,19 @@ public class IamLoginService {
 
   private static void startFallBackApplication(final String[] args) {
 
+    Logger LOG = LoggerFactory.getLogger(IamJwkFallbackApplication.class);
+
     // Starting the fallback application
     FallbackShutdownSignal shutdownSignal = new FallbackShutdownSignal();
     SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
     fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
     fallback.addInitializers(context -> context.getBeanFactory().registerSingleton(
         "fallbackShutdownSignal", shutdownSignal));
+    fallback.addListeners(new ApplicationFailedEventListener());
+    fallback.addListeners(
+        (ApplicationListener<ApplicationReadyEvent>) event -> LOG.info("JWK fallback application is ready"));
 
+    LOG.info("Starting the JWK fallback application");
     try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
 
       // Awaiting the shutdown before closing

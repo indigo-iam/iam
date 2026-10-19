@@ -48,12 +48,15 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
         // This is also exluded by the IamLoginService
         SecurityAutoConfiguration.class,
 
+        // I have no user details, so I can safely omit this
         // UserDetailsServiceAutoConfiguration.class,
+
         ManagementWebSecurityAutoConfiguration.class
 })
 @EnableConfigurationProperties(IamProperties.class)
-@Import(IamJWKSetPublishingEndpoint.class)
+@Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class })
 public class IamJwkFallbackApplication {
+    
 
     public static void main(String[] args) {
         SpringApplication.run(IamJwkFallbackApplication.class, args);
@@ -82,10 +85,4 @@ public class IamJwkFallbackApplication {
     JWKProperties jwkProperties(IamProperties iamProperties) {
         return iamProperties.getJwk();
     }
-
-    @Bean
-    ExternalConnectivityHealthIndicator externalConnectivityHealthIndicator(IamProperties properties) {
-        return new ExternalConnectivityHealthIndicator(properties);
-    }
-
 }

@@ -50,22 +50,15 @@ public class DatabaseRecoveryMonitor {
         this.username = username;
         this.password = password;
         this.shutdownSignal = shutdownSignal;
-        LOG.info(
-                "DatabaseRecoveryMonitor created. Context id: {}, context class: {}",
-                applicationContext.getId(),
-                applicationContext.getClass().getName());
     }
 
-    @Scheduled(fixedDelayString = "${iam.jwk.fallback.database-check-interval}")
+    @Scheduled(fixedDelayString = "${iam.jwk.fallback-database-check-interval}")
     public void checkDatabaseConnection() {
 
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
 
             if (connection.isValid(2)) {
                 LOG.info("Database connection recovered. Stopping JWK fallback.");
-                LOG.warn(
-                        "Closing Spring context from DatabaseRecoveryMonitor. Context id: {}",
-                        applicationContext.getId());
                 applicationContext.close();
                 // Signal only after close() has returned.
                 shutdownSignal.signalStopped();
