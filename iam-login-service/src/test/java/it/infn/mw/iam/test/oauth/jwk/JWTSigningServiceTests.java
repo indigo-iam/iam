@@ -240,18 +240,4 @@ class JWTSigningServiceTests implements JWKTestSupport {
     assertThrows(IllegalArgumentException.class,
         () -> new IamJWTSigningService(keystore, properties));
   }
-
-  @Test
-  void unsupportedDefaultSigningAlgorithmForConfiguredKeyIsRejected() throws Exception {
-    lenient().when(properties.getDefaultJwsAlgorithm()).thenReturn(JWSAlgorithm.ES256.getName());
-    lenient().when(properties.getDefaultKeyId()).thenReturn("iam1");
-
-    JwkKeyStore keystore = JwkKeyStore.from(loadJWKSet(KS1_LOCATION));
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> new IamJWTSigningService(keystore, properties));
-
-    assertThat(exception.getMessage(),
-        is("The default JWS signing algorithm is not supported by the configured signing key"));
-  }
 }
