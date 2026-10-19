@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.ClientUtils;
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DashboardProperties;
@@ -124,13 +125,22 @@ class DashboardConfigServiceTest {
     assertEquals(CLIENT_ID, created.getClientId());
     assertEquals(DashboardConfigService.DASHBOARD_CLIENT_NAME, created.getClientName());
     assertEquals(Integer.valueOf(3600), created.getAccessTokenValiditySeconds());
+    assertEquals(ClientAuthMethod.SECRET_BASIC, created.getTokenEndpointAuthMethod());
+    assertEquals(2, created.getGrantTypes().size());
+    assertTrue(created.getGrantTypes()
+      .containsAll(Set.of(AuthorizationGrantType.CODE.getGrantType(),
+          AuthorizationGrantType.REFRESH_TOKEN.getGrantType())));
+    assertEquals(PKCEAlgorithm.S256, created.getCodeChallengeMethod());
+    assertEquals(DashboardConfigService.DASHBOARD_SCOPES.size(), created.getScope().size());
+    assertTrue(created.getScope().containsAll(DashboardConfigService.DASHBOARD_SCOPES));
+    assertEquals(1, created.getRedirectUris().size());
+    assertTrue(created.getRedirectUris().contains(BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK));
     assertFalse(created.isDynamicallyRegistered());
+    assertTrue(created.isActive());
     assertExpectedConfiguration(created, CLIENT_SECRET);
 
     verify(clientUtils).setupClientDefaults(created);
     verify(clientService, never()).updateClient(any());
-
-    // ClientService publishes the creation event.
     verifyNoInteractions(eventPublisher);
   }
 
