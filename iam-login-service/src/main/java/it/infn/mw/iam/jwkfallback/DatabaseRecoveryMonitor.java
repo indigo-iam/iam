@@ -56,7 +56,7 @@ public class DatabaseRecoveryMonitor {
                 applicationContext.getClass().getName());
     }
 
-    @Scheduled(fixedDelayString = "${iam.jwk.fallback.database-check-interval:5000}")
+    @Scheduled(fixedDelayString = "${iam.jwk.fallback.database-check-interval}")
     public void checkDatabaseConnection() {
 
         try (Connection connection = DriverManager.getConnection(url, username, password)) {

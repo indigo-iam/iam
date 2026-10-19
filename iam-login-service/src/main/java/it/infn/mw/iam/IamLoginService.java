@@ -127,9 +127,8 @@ public class IamLoginService {
       // indicating the database connection has been restored
       shutdownSignal.awaitStopped();
 
-    } catch (InterruptedException error2) {
+    } catch (InterruptedException error) {
       Thread.currentThread().interrupt();
-      return;
     }
   }
 }
