@@ -16,13 +16,15 @@
 package it.infn.mw.iam.jwkfallback;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ResourceLoader;
@@ -37,11 +39,12 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "it.infn.mw.iam.jwkfallback", exclude = {
+        // Excluded as it must not try to establish the db connection upon boot
         DataSourceAutoConfiguration.class,
 
         // These two might need to be excluded later
-        // HibernateJpaAutoConfiguration.class,
-        FlywayAutoConfiguration.class,
+        //HibernateJpaAutoConfiguration.class,
+        //FlywayAutoConfiguration.class,
 
         // This is also exluded by the IamLoginService
         SecurityAutoConfiguration.class,
@@ -52,7 +55,8 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
         ManagementWebSecurityAutoConfiguration.class
 })
 @EnableConfigurationProperties(IamProperties.class)
-@Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class })
+@Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class,
+        FallbackHealthEndpointWebExtension.class })
 public class IamJwkFallbackApplication {
 
     @Bean
@@ -77,5 +81,10 @@ public class IamJwkFallbackApplication {
     @Bean
     JWKProperties jwkProperties(IamProperties iamProperties) {
         return iamProperties.getJwk();
+    }
+
+    @Bean
+    Duration slowIndicatorLoggingThreshold() {
+        return Duration.ofSeconds(10);
     }
 }

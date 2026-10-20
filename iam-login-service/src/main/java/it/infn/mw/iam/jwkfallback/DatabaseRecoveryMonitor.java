@@ -58,14 +58,15 @@ public class DatabaseRecoveryMonitor {
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
 
             if (connection.isValid(2)) {
-                LOG.info("Database connection recovered. Stopping JWK fallback.");
+                LOG.info("Database connection recovered. Stopping JWK fallback");
                 applicationContext.close();
+                // System.exit(1);
                 // Signal only after close() has returned.
                 shutdownSignal.signalStopped();
             }
 
         } catch (SQLException e) {
-            LOG.debug("Database is not yet available; fallback remains active.");
+            LOG.debug("Database is not yet available; fallback remains active");
         }
     }
 }

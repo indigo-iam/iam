@@ -84,7 +84,7 @@ public class IamLoginService {
     try {
       iamLoginService.run(args);
     } catch (BeanCreationException error) {
-
+      // maybe a check for key store
       int indexOfconnectionException = ExceptionUtils.indexOfThrowable(error, ConnectException.class);
       int indexOfFlyWay = ExceptionUtils.indexOfThrowable(error, FlywaySqlException.class);
       boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
@@ -92,7 +92,13 @@ public class IamLoginService {
 
       // Checking if the error is a database connection issue
       if (indexOfconnectionException != -1 && indexOfFlyWay != -1 && fallbackEnabled) {
-        System.err.println("Connection exception in the db, sucks to be you, huh");
+
+        // Need to manually log
+        Logger LOG = LoggerFactory.getLogger(IamLoginService.class);
+        LOG.error("Error in establishing a connection to the database");
+
+        // Disabling startup info to avoid miscommnunication to the user 
+        iamLoginService.setLogStartupInfo(false);
 
         // Starting the fallback application
         startFallBackApplication(args);
@@ -128,13 +134,16 @@ public class IamLoginService {
     fallback.addListeners(new ApplicationFailedEventListener());
     fallback.addListeners(
         (ApplicationListener<ApplicationReadyEvent>) event -> LOG.info("JWK fallback application is ready"));
-
+    
+    // Have to manually derive the info as the name it inherits from the parent
+    fallback.setLogStartupInfo(false);
     LOG.info("Starting the JWK fallback application");
     try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
 
       // Awaiting the shutdown before closing
       // indicating the database connection has been restored
       shutdownSignal.awaitStopped();
+      LOG.info("Restarting the IamLoginService");
 
     } catch (InterruptedException error) {
       Thread.currentThread().interrupt();
