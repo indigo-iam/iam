@@ -73,7 +73,6 @@ class ClientRegistrationAPIControllerTests {
 
   private ClientDetailsEntity clientUpscopingOff;
 
-
   @BeforeEach
   void setup() throws Exception {
 
@@ -165,6 +164,66 @@ class ClientRegistrationAPIControllerTests {
       .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST);
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userShouldNotCreateClientWithClientSecretJwt() throws Exception {
+    String requestBody = """
+        {
+          "redirect_uris": [
+            "https://another.client.example/oidc"
+          ],
+          "client_name": "another-example-client",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid email profile offline_access",
+          "grant_types": [
+            "refresh_token",
+            "authorization_code"
+          ],
+          "response_types": [
+            "code"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(
+          post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON).content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminShouldNotCreateClientWithClientSecretJwt() throws Exception {
+    String requestBody = """
+        {
+          "redirect_uris": [
+            "https://another.client.example/oidc"
+          ],
+          "client_name": "another-example-client",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid email profile offline_access",
+          "grant_types": [
+            "refresh_token",
+            "authorization_code"
+          ],
+          "response_types": [
+            "code"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(
+          post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON).content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
 
   @Test
@@ -532,5 +591,89 @@ class ClientRegistrationAPIControllerTests {
             .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void shouldNotUpdateClientWithClientSecretJwt() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    client.setScope(Set.of("openid"));
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    String requestBody = """
+        {
+          "client_name": "test-client-creation",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid",
+          "grant_types": [
+            "client_credentials"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminShouldNotUpdateClientWithClientSecretJwt() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    client.setScope(Set.of("openid"));
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    String requestBody = """
+        {
+          "client_name": "test-client-creation",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid",
+          "grant_types": [
+            "client_credentials"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(put(IAM_CLIENTS_MANAGMENT_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
 }
