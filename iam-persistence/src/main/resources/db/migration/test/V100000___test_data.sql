@@ -22,7 +22,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (10, 'registration-client', 'secret', 'Registration service test client', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (11, 'token-lookup-client', 'secret', 'Token lookup client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (12, 'device-code-client', 'secret', 'Device code client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
-  (13, 'consent-test-client', null, 'Consent Test Client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
+  (13, 'consent-client', null, 'Consent Client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (14, 'public-dc-client', null, 'Public Device Code client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, 86400, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
@@ -37,8 +37,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (27, 'https://federated-client.com', 'secret', 'Federated client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true);
 
 UPDATE client_details
-SET client_description = 'Consent test client description'
-WHERE id = 13 AND client_id = 'consent-test-client';
+SET client_description = 'Consent client description'
+WHERE id = 13 AND client_id = 'consent-client';
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
