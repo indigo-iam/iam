@@ -595,7 +595,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  void shouldNotUpdateClientWithClientSecretJwt() throws Exception {
+  void userShouldNotUpdateClientWithClientSecretJwt() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
