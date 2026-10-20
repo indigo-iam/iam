@@ -244,6 +244,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   }
 
   private void validateResponseTypes(AuthorizationRequest request) {
+    // Skip this check for a device code request
     if (!Set.of("code").equals(request.getResponseTypes()) && request.getState() != null) {
       throw OAuth2ProtocolException.unsupportedResponseType("Only response_type=code is supported");
     }

@@ -545,8 +545,7 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   }
 
   static Stream<Arguments> unsupportedClientMetadata() {
-    return Stream.of(
-        Arguments.of("grant_types", List.of("implicit")),
+    return Stream.of(Arguments.of("grant_types", List.of("implicit")),
         Arguments.of("grant_types", List.of("authorization_code", "implicit")),
         Arguments.of("response_types", List.of("token")),
         Arguments.of("response_types", List.of("code", "token")),
@@ -559,10 +558,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   }
 
   private ObjectNode validAuthorizationCodeClientPayload() throws Exception {
-    String json = ClientJsonStringBuilder.builder()
-      .scopes("openid")
-      .grantTypes("authorization_code")
-      .build();
+    String json =
+        ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
 
     ObjectNode payload = (ObjectNode) mapper.readTree(json);
 
@@ -572,10 +569,9 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     return payload;
   }
 
-  private void replaceMetadata(
-      ObjectNode payload, String field, List<String> values) {
+  private void replaceMetadata(ObjectNode payload, String field, List<String> values) {
 
     ArrayNode array = payload.putArray(field);
-    values.forEach(value -> array.add(value));
+    values.forEach(array::add);
   }
 }

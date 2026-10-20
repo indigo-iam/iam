@@ -451,6 +451,6 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
   private void replaceMetadata(ObjectNode payload, String field, List<String> values) {
 
     ArrayNode array = payload.putArray(field);
-    values.forEach(value -> array.add(value));
+    values.forEach(array::add);
   }
 }
