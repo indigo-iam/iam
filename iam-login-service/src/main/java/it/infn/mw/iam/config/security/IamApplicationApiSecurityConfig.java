@@ -23,7 +23,6 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 
 import java.util.LinkedHashMap;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -98,6 +97,8 @@ public class IamApplicationApiSecurityConfig {
 
   private static final RequestMatcher BROWSER_API_REQUEST =
       new AndRequestMatcher(API_PATHS, new NegatedRequestMatcher(BEARER_HEADER));
+
+  private IamApplicationApiSecurityConfig() {}
 
   @Configuration
   @Order(21)
@@ -224,11 +225,14 @@ public class IamApplicationApiSecurityConfig {
   @Order(11)
   public static class ResourceEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private OAuth2AuthenticationProcessingFilter resourceFilter;
-
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    public ResourceEndpointAuthorizationConfig(OAuth2AuthenticationProcessingFilter resourceFilter,
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint) {
+      this.resourceFilter = resourceFilter;
+      this.authenticationEntryPoint = authenticationEntryPoint;
+    }
 
     @Override
     public void configure(final HttpSecurity http) throws Exception {
@@ -257,15 +261,18 @@ public class IamApplicationApiSecurityConfig {
     private static final String PROXY_API_MATCHER =
         ProxyCertificatesApiController.PROXY_API_PATH + "/**";
 
-    @Autowired
     private OAuth2AuthenticationProcessingFilter resourceFilter;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
-
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    public IamProxyCertificateApiConfig(OAuth2AuthenticationProcessingFilter resourceFilter,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint) {
+
+      this.resourceFilter = resourceFilter;
+      this.userDetailsService = userDetailsService;
+      this.authenticationEntryPoint = authenticationEntryPoint;
+    }
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
@@ -307,11 +314,14 @@ public class IamApplicationApiSecurityConfig {
   @Order(25)
   public static class ActuatorEndpointsConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private IamProperties properties;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    public ActuatorEndpointsConfig(IamProperties properties, PasswordEncoder passwordEncoder) {
+
+      this.properties = properties;
+      this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {

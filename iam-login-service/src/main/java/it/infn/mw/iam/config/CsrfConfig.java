@@ -25,11 +25,8 @@ public class CsrfConfig {
   @Bean
   CookieCsrfTokenRepository csrfTokenRepository() {
 
-    CookieCsrfTokenRepository repository =
-        CookieCsrfTokenRepository.withHttpOnlyFalse();
-
+    CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
     repository.setCookiePath("/");
-
     return repository;
   }
 }

@@ -41,6 +41,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -161,9 +162,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
-      // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountService, iamTotpMfaService, iamTotpMfaProperties));
-      // @formatter:on
+      auth.authenticationProvider(
+          new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder,
+              accountService, iamTotpMfaService, iamTotpMfaProperties));
     }
 
     @Override
@@ -438,7 +439,7 @@ public class IamWebSecurityConfig {
 
         .httpBasic(Customizer.withDefaults())
 
-        .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
+        .headers(headers -> headers.frameOptions(FrameOptionsConfig::disable))
 
         .authorizeRequests(
             authorize -> authorize.antMatchers("/h2-console/**", "/h2-console").permitAll());

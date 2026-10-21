@@ -73,15 +73,11 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Autowired
   IamOAuthRefreshTokenRepository refreshTokenRepository;
 
-  // @Autowired
-  // SecurityContextUtils context;
-
   @Autowired
   MutableClock clock;
 
   @BeforeEach
   void initSecurityContext() {
-    // context.cleanupSecurityContext();
     refreshTokenRepository.deleteAll();
     assertEquals(0L, refreshTokenRepository.count());
   }

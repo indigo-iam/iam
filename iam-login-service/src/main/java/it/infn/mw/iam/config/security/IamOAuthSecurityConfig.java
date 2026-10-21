@@ -19,7 +19,6 @@ import static org.springframework.http.HttpMethod.OPTIONS;
 import static org.springframework.security.config.http.SessionCreationPolicy.NEVER;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
@@ -50,17 +49,21 @@ public class IamOAuthSecurityConfig {
 
     public static final String TOKEN_ENDPOINT = "/token";
 
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
     private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
-
-    @Autowired
     private ClientCredentialsTokenEndpointFilter ccFilter;
-
-    @Autowired
     private TokenEndpointBasicAuthenticationProvider basicAuthProvider;
+
+    public IamTokenEndointSecurityConfig(OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        TokenEndpointJwtClientAuthFilter jwtClientAuthFilter,
+        ClientCredentialsTokenEndpointFilter ccFilter,
+        TokenEndpointBasicAuthenticationProvider basicAuthProvider) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.jwtClientAuthFilter = jwtClientAuthFilter;
+      this.ccFilter = ccFilter;
+      this.basicAuthProvider = basicAuthProvider;
+    }
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -104,11 +107,15 @@ public class IamOAuthSecurityConfig {
     public static final String REGISTER_ENDPOINT_PATTERN =
         ClientRegistrationApiController.ENDPOINT + "/**";
 
-    @Autowired
     private OAuth2AuthenticationProcessingFilter resourceFilter;
-
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    public RegisterEndpointAuthorizationConfig(OAuth2AuthenticationProcessingFilter resourceFilter,
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint) {
+
+      this.resourceFilter = resourceFilter;
+      this.authenticationEntryPoint = authenticationEntryPoint;
+    }
 
     @Override
     public void configure(final HttpSecurity http) throws Exception {
@@ -133,11 +140,15 @@ public class IamOAuthSecurityConfig {
   @Order(13)
   public static class UserInfoEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private OAuth2AuthenticationProcessingFilter resourceFilter;
-
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    public UserInfoEndpointAuthorizationConfig(OAuth2AuthenticationProcessingFilter resourceFilter,
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint) {
+
+      this.resourceFilter = resourceFilter;
+      this.authenticationEntryPoint = authenticationEntryPoint;
+    }
 
     @Override
     public void configure(final HttpSecurity http) throws Exception {
@@ -161,8 +172,12 @@ public class IamOAuthSecurityConfig {
   @Order(17)
   public static class JwkEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private Http403ForbiddenEntryPoint http403ForbiddenEntryPoint;
+
+    public JwkEndpointAuthorizationConfig(Http403ForbiddenEntryPoint http403ForbiddenEntryPoint) {
+
+      this.http403ForbiddenEntryPoint = http403ForbiddenEntryPoint;
+    }
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {

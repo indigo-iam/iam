@@ -349,7 +349,7 @@ class ScimUserProvisioningTests {
     ScimUser user1 =
         buildUser("test_same_email_1", "same_email@test.org", "Test", "Same Email 1").build();
 
-    user0 = postUser(user0);
+    postUser(user0);
 
     performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user1))
         .contentType(SCIM_CONTENT_TYPE))
@@ -366,7 +366,7 @@ class ScimUserProvisioningTests {
     ScimUser user1 = buildUser("user1", "user1@test.org", "Test", "User 1").build();
 
     user0 = postUser(user0);
-    user1 = postUser(user1);
+    postUser(user1);
 
     ScimUser updatedUser0 =
         buildUserWithUUID(user0.getId(), "user0", "user1@test.org", "Test", "User 0").build();

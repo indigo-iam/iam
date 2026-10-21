@@ -77,9 +77,6 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Autowired
   ScimResourceLocationProvider scimResourceLocationProvider;
 
-  // @Autowired
-  // SecurityContextUtils context;
-
   @Autowired
   MutableClock clock;
 
@@ -88,7 +85,6 @@ class AccessTokenGetListTests extends TokenGetterUtils {
 
   @BeforeEach
   void initSecurityContext() {
-    // context.cleanupSecurityContext();
     accessTokenRepository.deleteAll();
   }
 
