@@ -98,8 +98,6 @@ public class IamApplicationApiSecurityConfig {
   private static final RequestMatcher BROWSER_API_REQUEST =
       new AndRequestMatcher(API_PATHS, new NegatedRequestMatcher(BEARER_HEADER));
 
-  private IamApplicationApiSecurityConfig() {}
-
   @Configuration
   @Order(21)
   public static class BearerApiConfig extends WebSecurityConfigurerAdapter {
