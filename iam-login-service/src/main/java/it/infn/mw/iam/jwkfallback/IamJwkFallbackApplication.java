@@ -21,9 +21,8 @@ import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Bean;
@@ -41,22 +40,12 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 @SpringBootApplication(scanBasePackages = "it.infn.mw.iam.jwkfallback", exclude = {
         // Excluded as it must not try to establish the db connection upon boot
         DataSourceAutoConfiguration.class,
-
-        // These two might need to be excluded later
-        //HibernateJpaAutoConfiguration.class,
-        //FlywayAutoConfiguration.class,
-
-        // This is also exluded by the IamLoginService
-        SecurityAutoConfiguration.class,
-
-        // I have no user details, so I can safely omit this
-        // UserDetailsServiceAutoConfiguration.class,
-
-        ManagementWebSecurityAutoConfiguration.class
+        // Omitting as no endpoints in fallback needs authentication
+        UserDetailsServiceAutoConfiguration.class,
 })
 @EnableConfigurationProperties(IamProperties.class)
 @Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class,
-        FallbackHealthEndpointWebExtension.class })
+        FallbackHealthEndpointWebExtension.class})
 public class IamJwkFallbackApplication {
 
     @Bean

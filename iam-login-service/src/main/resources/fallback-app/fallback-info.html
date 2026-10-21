@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Service temporarily unavailable</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #212529;
+      --muted: #5c636a;
+      --rule: #dee2e6;
+      color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #16191d;
+        --text: #e9ecef;
+        --muted: #a2a9b0;
+        --rule: #343a40;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+    }
+
+    main {
+      width: 100%;
+      max-width: 28rem;
+      text-align: center;
+    }
+
+    .logo {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      max-height: 6rem;
+      margin: 0 auto 2rem;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      font-size: 1.75rem;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1.0625rem;
+      color: var(--muted);
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--rule);
+      margin: 1.75rem auto;
+      width: 4rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- The logo is replaced at startup by the fallback application from the logo
+     in the yaml.-->
+    {{LOGO}}
+
+    <h1>Service temporarily unavailable</h1>
+    <hr>
+    <p>The service you have requested is currently unavailable.<br>Please try again later.</p>
+  </main>
+</body>
+</html>

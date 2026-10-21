@@ -52,8 +52,7 @@ public class FallbackHealthEndpointWebExtension
 
         HealthComponent health = value.getBody();
 
-        if (health instanceof CompositeHealth) {
-            CompositeHealth composite = (CompositeHealth) health;
+        if (health instanceof CompositeHealth composite) {
 
             Map<String, HealthComponent> components = composite.getComponents();
 
