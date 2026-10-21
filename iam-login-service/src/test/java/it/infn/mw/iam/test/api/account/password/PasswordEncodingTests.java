@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -90,7 +91,8 @@ class PasswordEncodingTests {
     request.setNotes("Some short notes...");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -99,7 +101,8 @@ class PasswordEncodingTests {
 
     String confirmationKey = "NoValidToken";
     mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + confirmationKey)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationFailure"));
@@ -119,7 +122,8 @@ class PasswordEncodingTests {
     request.setNotes("Some short notes...");
 
     String rs = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -129,12 +133,14 @@ class PasswordEncodingTests {
     request = mapper.readValue(rs, RegistrationRequestDto.class);
 
     String confirmationKey = tokenGenerator.getLastToken();
-    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+    mvc
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + confirmationKey)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
 
-    mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
+    mvc.perform(post("/registration/approve/{uuid}", request.getUuid()).with(csrf().asHeader())
       .with(authentication(adminAuthentication()))
       .contentType(APPLICATION_JSON)).andExpect(status().isOk());
 
@@ -145,7 +151,8 @@ class PasswordEncodingTests {
     dto.setToken(resetKey);
 
     mvc
-      .perform(post("/iam/password-reset").content(mapper.writeValueAsString(dto))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .with(authentication(adminAuthentication()))
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(MockMvcResultMatchers.status().isCreated());

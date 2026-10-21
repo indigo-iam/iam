@@ -194,56 +194,45 @@ public class IamWebSecurityConfig {
     protected void configure(final HttpSecurity http) throws Exception {
 
       http
-        .requestMatchers(matchers -> matchers.antMatchers(
-            "/",
-            "/login**",
-            "/logout",
-            "/authorize",
-            "/manage/**",
-            "/dashboard**",
-            "/reset-session",
-            "/device/**"))
+        .requestMatchers(matchers -> matchers.antMatchers("/", "/login**", "/logout", "/authorize",
+            "/manage/**", "/dashboard**", "/reset-session", "/device/**"))
 
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            .enableSessionUrlRewriting(false))
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
 
-        .authorizeRequests(authorize -> authorize
-            .antMatchers("/", "/login**", "/webjars/**").permitAll()
-            .antMatchers("/authorize**").permitAll()
-            .antMatchers("/reset-session").permitAll()
-            .antMatchers("/device/**").authenticated())
+        .authorizeRequests(authorize -> authorize.antMatchers("/", "/login**")
+          .permitAll()
+          .antMatchers("/authorize")
+          .permitAll()
+          .antMatchers("/reset-session")
+          .permitAll()
+          .antMatchers("/device/**")
+          .authenticated()
+          .anyRequest()
+          .authenticated())
 
-        .formLogin(form -> form
-            .loginPage("/login")
-            .failureUrl("/login?error=failure")
-            .successHandler(successHandler(authenticationSuccessHandlerHelper())))
+        .formLogin(form -> form.loginPage("/login")
+          .failureUrl("/login?error=failure")
+          .successHandler(successHandler(authenticationSuccessHandlerHelper())))
 
-        .exceptionHandling(exceptions -> exceptions
-            .authenticationEntryPoint(entryPoint()))
+        .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint()))
 
-        .addFilterBefore(
-            authorizationRequestFilter,
-            SecurityContextPersistenceFilter.class)
+        .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
 
         // Replace the standard filter to use ExtendedAuthenticationToken.
-        .addFilterAt(
-            extendedAuthenticationFilter(),
-            UsernamePasswordAuthenticationFilter.class)
+        .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 
         // Applied in the OAuth2 login flow.
-        .addFilterAfter(
-            extendedHttpServletRequestFilter(),
+        .addFilterAfter(extendedHttpServletRequestFilter(),
             UsernamePasswordAuthenticationFilter.class)
 
-        .logout(logout -> logout
-            .logoutUrl("/logout")
-            .logoutSuccessHandler(oidcLogoutSuccessHandler))
+        .logout(
+            logout -> logout.logoutUrl("/logout").logoutSuccessHandler(oidcLogoutSuccessHandler))
 
         .anonymous(Customizer.withDefaults())
 
-        .csrf(csrf -> csrf
-            .csrfTokenRepository(csrfTokenRepository))
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
 
         .addFilter(iamX509Filter());
     }
@@ -289,13 +278,16 @@ public class IamWebSecurityConfig {
 
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
+    private final UserLoginConfig userLoginConfig;
+    private final IamProperties iamProperties;
+    private final CookieCsrfTokenRepository csrfTokenRepository;
 
-    private UserLoginConfig userLoginConfig;
-    private IamProperties iamProperties;
+    public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties,
+        CookieCsrfTokenRepository csrfTokenRepository) {
 
-    public RegistrationConfig(UserLoginConfig userLoginConfig, IamProperties iamProperties) {
       this.userLoginConfig = userLoginConfig;
       this.iamProperties = iamProperties;
+      this.csrfTokenRepository = csrfTokenRepository;
     }
 
     AccessDeniedHandler accessDeniedHandler() {
@@ -322,41 +314,37 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      // One can not assume the certificate registration field is provided
-
       boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
         .map(IamProperties.RegistrationProperties::getFields)
-        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(fields -> fields.get(RegistrationField.CERTIFICATE))
         .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
         .orElse(
             ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
 
+      http.antMatcher(START_REGISTRATION_ENDPOINT)
+
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
+
       if (certificateVisible) {
-        http.requestMatchers()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .and()
-          .addFilter(userLoginConfig.iamX509Filter());
-      } else {
-        http.requestMatchers()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false);
+        http.addFilter(userLoginConfig.iamX509Filter());
       }
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
-        http.authorizeRequests()
-          .antMatchers(START_REGISTRATION_ENDPOINT)
-          .hasAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH.getAuthority())
-          .and()
-          .exceptionHandling()
-          .accessDeniedHandler(accessDeniedHandler())
-          .authenticationEntryPoint(entryPoint());
+
+        http
+          .authorizeRequests(authorize -> authorize.anyRequest()
+            .hasAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH.getAuthority()))
+
+          .exceptionHandling(exceptions -> exceptions.accessDeniedHandler(accessDeniedHandler())
+            .authenticationEntryPoint(entryPoint()));
+
       } else {
-        http.authorizeRequests().antMatchers(START_REGISTRATION_ENDPOINT).permitAll();
+
+        http.authorizeRequests(authorize -> authorize.anyRequest().permitAll());
       }
     }
   }
@@ -377,6 +365,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamProperties iamProperties;
+
+    @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
 
     private OIDCAuthenticationFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
@@ -404,49 +395,31 @@ public class IamWebSecurityConfig {
     }
 
     @Override
-    protected void configure(final HttpSecurity http) throws Exception {
+    protected void configure(HttpSecurity http) throws Exception {
 
       boolean certificateVisible = Optional.ofNullable(iamProperties.getRegistration())
         .map(IamProperties.RegistrationProperties::getFields)
-        .map(f -> f.get(RegistrationField.CERTIFICATE))
+        .map(fields -> fields.get(RegistrationField.CERTIFICATE))
         .map(IamProperties.RegistrationFieldProperties::getFieldBehaviour)
         .orElse(
             ExternalAuthAttributeSectionBehaviour.HIDDEN) != ExternalAuthAttributeSectionBehaviour.HIDDEN;
 
-      if (certificateVisible) {
-        // @formatter:off
-      http
-        .antMatcher("/openid_connect_login**")
-          .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint())
-        .and()
-          .addFilter(userLoginConfig.iamX509Filter())
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
-          .authorizeRequests()
-        .antMatchers("/openid_connect_login**")
-          .permitAll()
-        .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
-      // @formatter:on
+      http.antMatcher("/openid_connect_login**")
 
-      } else {
-        // @formatter:off
-      http
-        .antMatcher("/openid_connect_login**")
-          .exceptionHandling()
-            .authenticationEntryPoint(authenticationEntryPoint())
-        .and()
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
-          .authorizeRequests()
-        .antMatchers("/openid_connect_login**")
-          .permitAll()
-        .and()
-          .sessionManagement()
-          .enableSessionUrlRewriting(false)
-          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
-      // @formatter:on
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint()))
+
+        .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
+
+        .authorizeRequests(authorize -> authorize.anyRequest().permitAll())
+
+        .sessionManagement(session -> session.enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
+
+      if (certificateVisible) {
+        http.addFilter(userLoginConfig.iamX509Filter());
       }
     }
   }
@@ -459,16 +432,16 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      HttpSecurity h2Console = http.requestMatchers()
-        .antMatchers("/h2-console", "/h2-console/**")
-        .and()
-        .csrf()
-        .disable();
+      http.requestMatchers(matchers -> matchers.antMatchers("/h2-console", "/h2-console/**"))
 
-      h2Console.httpBasic();
-      h2Console.headers().frameOptions().disable();
+        .csrf(csrf -> csrf.disable())
 
-      h2Console.authorizeRequests().antMatchers("/h2-console/**", "/h2-console").permitAll();
+        .httpBasic(Customizer.withDefaults())
+
+        .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
+
+        .authorizeRequests(
+            authorize -> authorize.antMatchers("/h2-console/**", "/h2-console").permitAll());
     }
 
     @Override
@@ -477,36 +450,40 @@ public class IamWebSecurityConfig {
     }
   }
 
-  /**
-   * Configure the login flow for the step-up authentication. This takes place at the /iam/verify
-   * endpoint
-   */
   @Configuration
   @Order(102)
   public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private CookieCsrfTokenRepository csrfTokenRepository;
 
     @Autowired
     @Qualifier("MultiFactorVerificationFilter")
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
-      return new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
+      return new LoginUrlAuthenticationEntryPoint("/login");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
       http.antMatcher(MFA_VERIFY_URL + "**")
-        .authorizeRequests()
-        .anyRequest()
-        .hasRole("PRE_AUTHENTICATED")
-        .and()
-        .formLogin()
-        .failureUrl(MFA_VERIFY_URL + "?error=failure")
-        .and()
-        .exceptionHandling()
-        .authenticationEntryPoint(mfaAuthenticationEntryPoint())
-        .and()
-        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+              .enableSessionUrlRewriting(false))
+
+        .authorizeRequests(authorize -> authorize.anyRequest().hasRole("PRE_AUTHENTICATED"))
+
+        .formLogin(form -> form.failureUrl(MFA_VERIFY_URL + "?error=failure"))
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(mfaAuthenticationEntryPoint()))
+
+        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class)
+
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
     }
   }
 
@@ -537,16 +514,22 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
       http.antMatcher("/introspect/**")
-        .csrf().disable()
-        .sessionManagement().sessionCreationPolicy(STATELESS).and()
-        .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
-        .cors().and()
-        .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
+
+        .csrf(csrf -> csrf.disable())
+
+        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+
+        .cors(Customizer.withDefaults())
+
+        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
+
         .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
-        .authorizeRequests().anyRequest().fullyAuthenticated();
-      // @formatter:on
+
+        .authorizeRequests(authorize -> authorize.anyRequest().fullyAuthenticated());
     }
   }
 
@@ -572,27 +555,29 @@ public class IamWebSecurityConfig {
 
       ClientCredentialsTokenEndpointFilter filter =
           new ClientCredentialsTokenEndpointFilter("/revoke");
+
       filter.setAuthenticationManager(authenticationManager());
+
       return filter;
     }
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
       http.antMatcher("/revoke**")
-        .httpBasic()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
-        .cors()
-        .and()
-        .exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .csrf().disable()
-          .sessionManagement().sessionCreationPolicy(STATELESS);
-      // @formatter:on
+
+        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
+
+        .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
+
+        .cors(Customizer.withDefaults())
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+
+        .csrf(csrf -> csrf.disable())
+
+        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
     }
   }
 }

@@ -72,7 +72,6 @@ import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswo
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.servlet.LocaleResolver;
@@ -672,12 +671,4 @@ public class IamConfig {
 
     return new DefaultScopePolicyEngine(policyRepo);
   }
-
-  @Bean
-  CookieCsrfTokenRepository csrfTokenRepository() {
-    CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-    repository.setCookiePath("/");
-    return repository;
-  }
-
 }

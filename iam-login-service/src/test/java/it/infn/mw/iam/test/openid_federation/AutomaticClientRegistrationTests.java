@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -178,7 +179,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     var resultLogin = mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -190,7 +192,8 @@ class AutomaticClientRegistrationTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -199,7 +202,8 @@ class AutomaticClientRegistrationTests {
       .andExpect(status().isOk());
 
     var approveResult = mvc
-      .perform(post("/authorize").session(session)
+      .perform(post("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("scope.openid", "true")
         .param("remember", "none")
         .param("user_oauth_approval", "true")
@@ -414,8 +418,8 @@ class AutomaticClientRegistrationTests {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
-    fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null, null, clock);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null,
+        null, clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -577,7 +581,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -585,7 +590,8 @@ class AutomaticClientRegistrationTests {
 
     // Second request should log user out again because prompt=login ALWAYS forces re-auth
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -609,7 +615,8 @@ class AutomaticClientRegistrationTests {
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
     var result = mvc
-      .perform(get("/authorize").param("client_id", rpEntityId)
+      .perform(get("/authorize").with(csrf().asHeader())
+        .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
         .param("redirect_uri", redirectUri)
@@ -619,7 +626,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -630,7 +638,8 @@ class AutomaticClientRegistrationTests {
         new Date(System.currentTimeMillis() - 10000)); // > 5 seconds ago
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")

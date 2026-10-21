@@ -18,7 +18,9 @@ package it.infn.mw.iam.test.api.tokens;
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest.MAX_PAGE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,7 +55,6 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
@@ -76,8 +77,8 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Autowired
   ScimResourceLocationProvider scimResourceLocationProvider;
 
-  @Autowired
-  SecurityContextUtils context;
+  // @Autowired
+  // SecurityContextUtils context;
 
   @Autowired
   MutableClock clock;
@@ -87,16 +88,16 @@ class AccessTokenGetListTests extends TokenGetterUtils {
 
   @BeforeEach
   void initSecurityContext() {
-    context.cleanupSecurityContext();
+    // context.cleanupSecurityContext();
     accessTokenRepository.deleteAll();
   }
 
   @Test
-  void forbiddenAccessTokenList() throws Exception {
+  void forbiddenAccessTokenListForLocalUser() throws Exception {
 
-    /* get list */
-    context.useBearerTestToken(new String[] {"openid", "profile"});
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE))
+    mvc
+      .perform(get(ACCESS_TOKENS_BASE_PATH).with(user(TEST_USERNAME).roles("USER"))
+        .contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isForbidden());
   }
 
@@ -106,7 +107,6 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     assertEquals(0L, accessTokenRepository.count());
 
     /* get list */
-    context.useBearerAdminToken();
     ListResponseDTO<AccessToken> atl = getAccessTokenList();
 
     assertEquals(0L, atl.getTotalResults());
@@ -128,13 +128,11 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getNotEmptyAccessTokenListWithCountZero() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, accessTokenRepository.count());
     assertEquals(1L, atl.getTotalResults());
@@ -146,10 +144,8 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListWithClientIdFilter() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useBearerClientToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     getClientCredentialsToken(DEFAULT_SCOPES);
 
     assertEquals(3L, accessTokenRepository.count());
@@ -157,8 +153,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(2L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -171,20 +166,16 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListWithUserIdFilter() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES).accessToken();
-    getPasswordToken(DEFAULT_SCOPES).accessToken();
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertEquals(3L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(2L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -200,12 +191,8 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListWithFullClientIdAndUserIdFilter() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useBearerClientToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
     getClientCredentialsToken(DEFAULT_SCOPES);
 
     assertEquals(3L, accessTokenRepository.count());
@@ -213,8 +200,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -231,18 +217,14 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertEquals(2L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().userId("tes").build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(0L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -253,16 +235,15 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListLimitedToPageSizeFirstPage() throws Exception {
 
-    context.useLocalTestUser();
     for (int i = 0; i < MAX_PAGE_SIZE; i++) {
-      getPasswordToken(DEFAULT_SCOPES);
+      getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     }
 
     assertEquals(Long.valueOf(MAX_PAGE_SIZE), accessTokenRepository.count());
 
-    context.useBearerAdminToken();
     /* get first page */
-    ListResponseDTO<AccessToken> atl = getAccessTokenList();
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().build();
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(Long.valueOf(MAX_PAGE_SIZE), atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -273,9 +254,8 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListLimitedToPageSizeSecondPage() throws Exception {
 
-    context.useLocalTestUser();
     for (int i = 0; i < MAX_PAGE_SIZE; i++) {
-      getPasswordToken(DEFAULT_SCOPES);
+      getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     }
 
     assertEquals(Long.valueOf(MAX_PAGE_SIZE), accessTokenRepository.count());
@@ -283,9 +263,8 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().startIndex(MAX_PAGE_SIZE).build();
 
-    context.useBearerAdminToken();
     /* get second page */
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(Long.valueOf(MAX_PAGE_SIZE), atl.getTotalResults());
     assertEquals(MAX_PAGE_SIZE, atl.getStartIndex());
@@ -296,16 +275,14 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListFilterUserIdInjection() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     assertEquals(1L, accessTokenRepository.count());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(INJECTION_QUERY).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(0L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -316,13 +293,11 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListWithOneClientCredentialAccessToken() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useBearerClientToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     getClientCredentialsToken(DEFAULT_SCOPES);
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList();
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().build();
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(2L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -332,15 +307,13 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidAccessTokensCountWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofHours(6));
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -350,13 +323,10 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidAccessTokensCountForUserWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES).accessToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofDays(1));
-    getPasswordToken(DEFAULT_SCOPES).accessToken();
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertEquals(3L, accessTokenRepository.count());
 
@@ -374,8 +344,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().count(0).userId(TEST_USERNAME).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -385,10 +354,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidAccessTokensCountForClientWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofHours(6));
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     assertEquals(2L, accessTokenRepository.count());
 
@@ -403,8 +371,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().count(0).clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -414,21 +381,12 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidAccessTokensCountForUserAndClientWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useBearerClientToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
     getClientCredentialsToken(DEFAULT_SCOPES);
     clock.advance(Duration.ofDays(1));
-    context.useLocalTestUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useBearerClientToken();
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
     getClientCredentialsToken(DEFAULT_SCOPES);
 
     assertEquals(6L, accessTokenRepository.count());
@@ -447,8 +405,7 @@ class AccessTokenGetListTests extends TokenGetterUtils {
       .clientId(PASSWORD_CLIENT_ID)
       .build();
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> atl = getAccessTokenList(params);
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
 
     assertEquals(1L, atl.getTotalResults());
     assertEquals(1, atl.getStartIndex());
@@ -458,11 +415,10 @@ class AccessTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAccessTokenListAfterClearingPersistenceContext() throws Exception {
 
-    context.useLocalTestUser();
-    String jwt = getPasswordToken(DEFAULT_SCOPES).accessToken();
+    String jwt = getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).accessToken();
     Set<String> expectedAudiences =
         new HashSet<>(SignedJWT.parse(jwt).getJWTClaimsSet().getAudience());
-    org.junit.jupiter.api.Assertions.assertFalse(expectedAudiences.isEmpty());
+    assertFalse(expectedAudiences.isEmpty());
     entityManager.flush();
     entityManager.clear();
 
@@ -470,9 +426,9 @@ class AccessTokenGetListTests extends TokenGetterUtils {
     assertNull(reloaded.getJwt());
     assertEquals(expectedAudiences, reloaded.getAudiences());
 
-    context.useBearerAdminToken();
-    ListResponseDTO<AccessToken> result = getAccessTokenList();
-    assertEquals(1, result.getResources().size());
-    assertEquals(expectedAudiences, result.getResources().get(0).audiences());
+    MultiValueMap<String, String> params = MultiValueMapBuilder.builder().build();
+    ListResponseDTO<AccessToken> atl = getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
+    assertEquals(1, atl.getResources().size());
+    assertEquals(expectedAudiences, atl.getResources().get(0).audiences());
   }
 }

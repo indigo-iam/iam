@@ -21,6 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +49,6 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
@@ -73,15 +73,15 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Autowired
   IamOAuthRefreshTokenRepository refreshTokenRepository;
 
-  @Autowired
-  SecurityContextUtils context;
+  // @Autowired
+  // SecurityContextUtils context;
 
   @Autowired
   MutableClock clock;
 
   @BeforeEach
   void initSecurityContext() {
-    context.cleanupSecurityContext();
+    // context.cleanupSecurityContext();
     refreshTokenRepository.deleteAll();
     assertEquals(0L, refreshTokenRepository.count());
   }
@@ -89,17 +89,15 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void forbiddenRefreshTokenList() throws Exception {
 
-    /* get list */
-    context.useBearerTestToken(new String[] {"openid", "profile"});
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).contentType(APPLICATION_JSON_CONTENT_TYPE))
+    mvc
+      .perform(get(REFRESH_TOKENS_BASE_PATH).with(user(TEST_USERNAME).roles("USER"))
+        .contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isForbidden());
   }
 
   @Test
   void getEmptyRefreshTokenList() throws Exception {
 
-    /* get list */
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList();
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -109,7 +107,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
-    /* get count */
     atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -121,12 +118,10 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getNotEmptyRefreshTokenListWithCountZero() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().count(0).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(refreshTokenRepository.count(), equalTo(1L));
@@ -139,14 +134,11 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListWithAttributes() throws Exception {
 
-    context.useLocalTestUser();
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().attributes("user,expiration").build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertEquals(1L, refreshTokenRepository.count());
@@ -168,13 +160,8 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListWithClientIdFilter() throws Exception {
 
-    context.useLocalTestUser();
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
-    context.useLocalTestUser();
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
-    context.useAnotherLocalUser(TEST_CLIENT_ID);
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
     assertNotNull(getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, ANOTHER_USERNAME,
         ANOTHER_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
@@ -183,7 +170,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(2L));
@@ -197,19 +183,15 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListWithUserIdFilter() throws Exception {
 
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME,
-        ADMIN_PASSWORD, DEFAULT_SCOPES));
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES));
 
     assertThat(refreshTokenRepository.count(), equalTo(3L));
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(2L));
@@ -226,19 +208,14 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListWithClientIdAndUserIdFilter() throws Exception {
 
-    context.useLocalTestUser(TEST_CLIENT_ID);
-    getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useLocalAdminUser(PASSWORD_CLIENT_ID);
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_CLIENT_ID, TEST_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertThat(refreshTokenRepository.count(), equalTo(2L));
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -246,13 +223,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     assertThat(atl.getItemsPerPage(), equalTo(0));
     assertThat(atl.getResources().size(), equalTo(0));
 
-    context.useLocalTestUser(PASSWORD_CLIENT_ID);
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
-        DEFAULT_SCOPES);
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
-    context.useBearerAdminToken();
     atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(2L));
@@ -270,17 +243,13 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertThat(refreshTokenRepository.count(), equalTo(2L));
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().userId("tes").build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -292,14 +261,12 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListLimitedToPageSizeFirstPage() throws Exception {
 
-    context.useLocalTestUser();
     for (int i = 0; i < MAX_PAGE_SIZE; i++) {
-      getPasswordToken(DEFAULT_SCOPES);
+      getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     }
 
     assertThat(refreshTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
 
-    context.useBearerAdminToken();
     /* get first page */
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList();
 
@@ -312,9 +279,8 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListLimitedToPageSizeSecondPage() throws Exception {
 
-    context.useLocalTestUser();
     for (int i = 0; i < MAX_PAGE_SIZE; i++) {
-      getPasswordToken(DEFAULT_SCOPES);
+      getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     }
 
     assertThat(refreshTokenRepository.count(), equalTo(Long.valueOf(MAX_PAGE_SIZE)));
@@ -322,7 +288,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().startIndex(MAX_PAGE_SIZE).build();
 
-    context.useBearerAdminToken();
     /* get second page */
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
@@ -335,15 +300,13 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getRefreshTokenListFilterUserIdInjection() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     assertThat(refreshTokenRepository.count(), equalTo(1L));
 
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(INJECTION_QUERY).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(0L));
@@ -355,14 +318,12 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidRefreshTokensCountWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofHours(40));
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     MultiValueMap<String, String> params = MultiValueMapBuilder.builder().build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
@@ -373,20 +334,13 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidRefreshTokensCountForUserWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
     clock.advance(Duration.ofDays(40));
 
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
-    context.useLocalAdminUser();
-
-    assertNotNull(getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME,
-        ADMIN_PASSWORD, DEFAULT_SCOPES).refreshToken());
+    assertNotNull(getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES).refreshToken());
 
     assertThat(refreshTokenRepository.count(), equalTo(3L));
 
@@ -404,7 +358,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
@@ -415,10 +368,9 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidRefreshTokensCountForClientWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofDays(2));
-    getPasswordToken(DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
 
     assertThat(refreshTokenRepository.count(), equalTo(2L));
 
@@ -433,7 +385,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
@@ -445,18 +396,11 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
   @Test
   void getAllValidRefreshTokensCountForUserAndClientWithExpiredTokens() throws Exception {
 
-    context.useLocalTestUser();
-    getPasswordToken(DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
     clock.advance(Duration.ofDays(40));
-    context.useLocalTestUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME, TEST_PASSWORD,
-        DEFAULT_SCOPES);
-    context.useLocalAdminUser();
-    getPasswordToken(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD,
-        DEFAULT_SCOPES);
+    getPasswordToken(TEST_USERNAME, TEST_PASSWORD, DEFAULT_SCOPES);
+    getPasswordToken(ADMIN_USERNAME, ADMIN_PASSWORD, DEFAULT_SCOPES);
 
     assertThat(refreshTokenRepository.count(), equalTo(4L));
 
@@ -471,7 +415,6 @@ class RefreshTokenGetListTests extends TokenGetterUtils {
     MultiValueMap<String, String> params =
         MultiValueMapBuilder.builder().userId(TEST_USERNAME).clientId(PASSWORD_CLIENT_ID).build();
 
-    context.useBearerAdminToken();
     ListResponseDTO<RefreshToken> atl = getRefreshTokenList(params);
 
     assertThat(atl.getTotalResults(), equalTo(1L));
