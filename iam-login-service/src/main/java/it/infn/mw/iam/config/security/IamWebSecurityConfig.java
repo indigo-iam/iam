@@ -354,30 +354,26 @@ public class IamWebSecurityConfig {
   @Order(105)
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
-    @Value("${iam.baseUrl}")
-    private String iamBaseUrl;
-
-    @Autowired
-    @Qualifier("OIDCAuthenticationManager")
-    private AuthenticationManager oidcAuthManager;
-
-    @Autowired
-    OIDCAuthenticationProvider authProvider;
-
-    @Autowired
     private IamProperties iamProperties;
-
-    @Autowired
+    private AuthenticationManager oidcAuthManager;
+    private OIDCAuthenticationProvider authProvider;
     private CookieCsrfTokenRepository csrfTokenRepository;
-
     private OIDCAuthenticationFilter oidcFilter;
     private UserLoginConfig userLoginConfig;
+    private LoginUrlAuthenticationEntryPoint authenticationEntryPoint;
 
-    public ExternalOidcLogin(
-        @Qualifier("OIDCAuthenticationFilter") OIDCAuthenticationFilter oidcClientFilter,
+    public ExternalOidcLogin(IamProperties iamProperties, OIDCAuthenticationProvider authProvider,
+        CookieCsrfTokenRepository csrfTokenRepository,
+        @Qualifier("OIDCAuthenticationFilter") OIDCAuthenticationFilter oidcFilter,
+        @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthManager,
         UserLoginConfig userLoginConfig) {
-      this.oidcFilter = oidcClientFilter;
+
+      this.iamProperties = iamProperties;
+      this.authProvider = authProvider;
+      this.csrfTokenRepository = csrfTokenRepository;
+      this.oidcFilter = oidcFilter;
       this.userLoginConfig = userLoginConfig;
+      this.authenticationEntryPoint = new LoginUrlAuthenticationEntryPoint("/openid_connect_login");
     }
 
     @Override
@@ -386,12 +382,9 @@ public class IamWebSecurityConfig {
       return oidcAuthManager;
     }
 
-    public LoginUrlAuthenticationEntryPoint authenticationEntryPoint() {
-      return new LoginUrlAuthenticationEntryPoint("/openid_connect_login");
-    }
-
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
       auth.authenticationProvider(authProvider);
     }
 
@@ -408,7 +401,7 @@ public class IamWebSecurityConfig {
       http.antMatcher("/openid_connect_login**")
 
         .exceptionHandling(
-            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint()))
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
 
         .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
 
@@ -455,12 +448,16 @@ public class IamWebSecurityConfig {
   @Order(102)
   public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private CookieCsrfTokenRepository csrfTokenRepository;
-
-    @Autowired
-    @Qualifier("MultiFactorVerificationFilter")
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
+
+    public MultiFactorConfigurationAdapter(
+        @Qualifier("MultiFactorVerificationFilter") MultiFactorVerificationFilter multiFactorVerificationFilter,
+        CookieCsrfTokenRepository csrfTokenRepository) {
+
+      this.multiFactorVerificationFilter = multiFactorVerificationFilter;
+      this.csrfTokenRepository = csrfTokenRepository;
+    }
 
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
       return new LoginUrlAuthenticationEntryPoint("/login");
@@ -538,12 +535,16 @@ public class IamWebSecurityConfig {
   @Order(16)
   public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
+
+    public RevokeEndpointAuthorizationConfig(
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
