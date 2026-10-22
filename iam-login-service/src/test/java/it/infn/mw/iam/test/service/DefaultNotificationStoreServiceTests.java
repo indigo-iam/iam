@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.Clock;
@@ -106,52 +107,61 @@ public class DefaultNotificationStoreServiceTests {
     assertThat(service.countPendingNotifications(), is(15));
   }
 
-  @Test
-  void clearExpiredNotificationsClearsTheRightNotifications() {
+   @Test
+   void clearExpiredNotificationsClearsTheRightNotifications() {
 
-    Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
-    Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
+     Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
+     Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
 
-    IamEmailNotification notification = mock(IamEmailNotification.class);
+     IamEmailNotification notification = mock(IamEmailNotification.class);
 
-    lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
-      .thenReturn(Arrays.asList(notification));
-    lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
+     lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
+       .thenReturn(Arrays.asList(notification));
+     lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
 
-    service.clearExpiredNotifications();
+     service.clearExpiredNotifications();
 
-    verify(notificationRepo).findByStatusWithUpdateTime(statusArgumentCaptor.capture(),
-        dateArgumentCaptor.capture());
+     // Verify findByStatusWithUpdateTime called twice: once for DELIVERED, once for SKIPPED
+     verify(notificationRepo, times(2)).findByStatusWithUpdateTime(statusArgumentCaptor.capture(),
+         dateArgumentCaptor.capture());
 
-    assertThat(statusArgumentCaptor.getValue(), is(IamDeliveryStatus.DELIVERED));
-    assertThat(dateArgumentCaptor.getValue(), equalTo(oneDayAfterNow));
+     List<IamDeliveryStatus> statuses = statusArgumentCaptor.getAllValues();
+     assertThat(statuses.get(0), is(IamDeliveryStatus.DELIVERED));
+     assertThat(statuses.get(1), is(IamDeliveryStatus.SKIPPED));
 
-    verify(notificationRepo).deleteAll(notificationCaptor.capture());
+     for (Date capturedDate : dateArgumentCaptor.getAllValues()) {
+       assertThat(capturedDate, equalTo(oneDayAfterNow));
+     }
 
-    List<IamEmailNotification> removedNotifications =
-        Lists.newArrayList(notificationCaptor.getValue());
-    assertThat(removedNotifications, hasSize(1));
-    assertThat(removedNotifications, hasItem(notification));
-  }
+     // Verify deleteAll called twice
+     verify(notificationRepo, times(2)).deleteAll(notificationCaptor.capture());
+   }
 
-  @Test
-  void clearExpiredNotificationsDoesNotClearAnythingWhenThereAreNoExpiredNotifications() {
+   @Test
+   void clearExpiredNotificationsDoesNotClearAnythingWhenThereAreNoExpiredNotifications() {
 
-    Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
-    Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
+     Date oneDayAfterNow = Date.from(NOW.plus(1L, ChronoUnit.DAYS));
+     Date twoDaysAfterNow = Date.from(NOW.plus(2L, ChronoUnit.DAYS));
 
-    lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
-      .thenReturn(emptyList());
-    lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
+     lenient().when(notificationRepo.findByStatusWithUpdateTime(Mockito.any(), Mockito.any()))
+       .thenReturn(emptyList());
+     lenient().when(clock.instant()).thenReturn(twoDaysAfterNow.toInstant());
 
-    service.clearExpiredNotifications();
+     service.clearExpiredNotifications();
 
-    verify(notificationRepo).findByStatusWithUpdateTime(statusArgumentCaptor.capture(),
-        dateArgumentCaptor.capture());
+     // Verify findByStatusWithUpdateTime called twice: once for DELIVERED, once for SKIPPED
+     verify(notificationRepo, times(2)).findByStatusWithUpdateTime(statusArgumentCaptor.capture(),
+         dateArgumentCaptor.capture());
 
-    assertThat(statusArgumentCaptor.getValue(), is(IamDeliveryStatus.DELIVERED));
-    assertThat(dateArgumentCaptor.getValue(), equalTo(oneDayAfterNow));
+     List<IamDeliveryStatus> statuses = statusArgumentCaptor.getAllValues();
+     assertThat(statuses.get(0), is(IamDeliveryStatus.DELIVERED));
+     assertThat(statuses.get(1), is(IamDeliveryStatus.SKIPPED));
 
-    verify(notificationRepo, never()).deleteAll(notificationCaptor.capture());
-  }
+     for (Date capturedDate : dateArgumentCaptor.getAllValues()) {
+       assertThat(capturedDate, equalTo(oneDayAfterNow));
+     }
+
+     // Verify deleteAll never called since both queries returned empty lists
+     verify(notificationRepo, never()).deleteAll(notificationCaptor.capture());
+   }
 }
