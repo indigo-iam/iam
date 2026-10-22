@@ -55,13 +55,24 @@ public class DefaultNotificationStoreService implements NotificationStoreService
     Date currentTime = Date.from(clock.instant());
     Date threshold = DateUtils.addDays(currentTime, -properties.getCleanupAge());
 
-    List<IamEmailNotification> messageList =
+    // Delete old DELIVERED notifications
+    List<IamEmailNotification> deliveredMessages =
         repo.findByStatusWithUpdateTime(IamDeliveryStatus.DELIVERED, threshold);
 
-    if (!messageList.isEmpty()) {
-      repo.deleteAll(messageList);
-      LOG.info("Deleted {} messages in status {} older than {}", messageList.size(),
+    if (!deliveredMessages.isEmpty()) {
+      repo.deleteAll(deliveredMessages);
+      LOG.info("Deleted {} messages in status {} older than {}", deliveredMessages.size(),
           IamDeliveryStatus.DELIVERED, threshold);
+    }
+
+    // Delete old SKIPPED notifications
+    List<IamEmailNotification> skippedMessages =
+        repo.findByStatusWithUpdateTime(IamDeliveryStatus.SKIPPED, threshold);
+
+    if (!skippedMessages.isEmpty()) {
+      repo.deleteAll(skippedMessages);
+      LOG.info("Deleted {} messages in status {} older than {}", skippedMessages.size(),
+          IamDeliveryStatus.SKIPPED, threshold);
     }
   }
 
