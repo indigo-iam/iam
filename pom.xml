@@ -87,7 +87,6 @@
     <nimbus-jose-jwt.version>9.37.4</nimbus-jose-jwt.version>
 
     <eclipselink.version>2.7.16</eclipselink.version>
-    <test-clock.version>1.0.4</test-clock.version>
 
     <resource.delimiter>@</resource.delimiter>
 
