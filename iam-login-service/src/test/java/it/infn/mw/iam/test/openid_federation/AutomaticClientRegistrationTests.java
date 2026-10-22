@@ -192,7 +192,7 @@ class AutomaticClientRegistrationTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
@@ -590,7 +590,7 @@ class AutomaticClientRegistrationTests {
 
     // Second request should log user out again because prompt=login ALWAYS forces re-auth
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
@@ -615,7 +615,7 @@ class AutomaticClientRegistrationTests {
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
     var result = mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -638,7 +638,7 @@ class AutomaticClientRegistrationTests {
         new Date(System.currentTimeMillis() - 10000)); // > 5 seconds ago
 
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")

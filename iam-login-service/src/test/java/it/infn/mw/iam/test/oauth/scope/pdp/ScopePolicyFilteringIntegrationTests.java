@@ -199,7 +199,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("scope", "openid profile read-tasks")
         .param("response_type", "code")
@@ -254,7 +254,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("scope", "openid profile read:/ read:/that/thing write:/")
         .param("response_type", "code")

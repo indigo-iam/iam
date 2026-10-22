@@ -18,7 +18,6 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
-import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import java.time.Clock;
 import java.util.Optional;
@@ -45,8 +44,6 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
-import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -57,9 +54,9 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -83,8 +80,6 @@ import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
-import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
-import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -233,7 +228,11 @@ public class IamWebSecurityConfig {
 
         .anonymous(Customizer.withDefaults())
 
-        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
+        .csrf(csrf -> csrf.requireCsrfProtectionMatcher(request -> {
+          boolean isAuthorizeGet = "GET".equals(request.getMethod())
+              && new AntPathRequestMatcher("/authorize").matches(request);
+          return !isAuthorizeGet;
+        }).csrfTokenRepository(csrfTokenRepository))
 
         .addFilter(iamX509Filter());
     }
@@ -482,104 +481,6 @@ public class IamWebSecurityConfig {
         .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class)
 
         .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository));
-    }
-  }
-
-  @Configuration
-  @Order(15)
-  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
-
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-    private UserDetailsService userDetailsService;
-    private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
-
-    public IntrospectEndpointAuthorizationConfig(
-        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
-        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
-        TokenEndpointJwtClientAuthFilter jwtClientAuthFilter) {
-
-      this.authenticationEntryPoint = authenticationEntryPoint;
-      this.userDetailsService = userDetailsService;
-      this.jwtClientAuthFilter = jwtClientAuthFilter;
-    }
-
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-
-      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      http.antMatcher("/introspect/**")
-
-        .csrf(csrf -> csrf.disable())
-
-        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
-
-        .exceptionHandling(
-            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
-
-        .cors(Customizer.withDefaults())
-
-        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
-
-        .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
-
-        .authorizeRequests(authorize -> authorize.anyRequest().fullyAuthenticated());
-    }
-  }
-
-  @Configuration
-  @Order(16)
-  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
-
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-    private UserDetailsService userDetailsService;
-
-    public RevokeEndpointAuthorizationConfig(
-        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
-        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService) {
-
-      this.authenticationEntryPoint = authenticationEntryPoint;
-      this.userDetailsService = userDetailsService;
-    }
-
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-
-      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
-    }
-
-    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
-        throws Exception {
-
-      ClientCredentialsTokenEndpointFilter filter =
-          new ClientCredentialsTokenEndpointFilter("/revoke");
-
-      filter.setAuthenticationManager(authenticationManager());
-
-      return filter;
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      http.antMatcher("/revoke**")
-
-        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
-
-        .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
-
-        .cors(Customizer.withDefaults())
-
-        .exceptionHandling(
-            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
-
-        .csrf(csrf -> csrf.disable())
-
-        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
     }
   }
 }

@@ -158,7 +158,7 @@ class FederationRegistrationControllerTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize").with(csrf().asHeader())
+      .perform(get("/authorize")
         .session(session)
         .param("client_id", client.getClientId())
         .param("response_type", "code")

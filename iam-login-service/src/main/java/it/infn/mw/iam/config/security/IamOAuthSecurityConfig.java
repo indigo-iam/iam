@@ -19,6 +19,7 @@ import static org.springframework.http.HttpMethod.OPTIONS;
 import static org.springframework.security.config.http.SessionCreationPolicy.NEVER;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
@@ -26,6 +27,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
@@ -37,6 +39,7 @@ import org.springframework.security.web.context.SecurityContextPersistenceFilter
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.core.authn.TokenEndpointBasicAuthenticationProvider;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 
 @SuppressWarnings("deprecation")
@@ -96,7 +99,6 @@ public class IamOAuthSecurityConfig {
         .cors(Customizer.withDefaults())
 
         .csrf(csrf -> csrf.disable());
-
     }
   }
 
@@ -229,4 +231,101 @@ public class IamOAuthSecurityConfig {
     }
   }
 
+  @Configuration
+  @Order(15)
+  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+    private UserDetailsService userDetailsService;
+    private TokenEndpointJwtClientAuthFilter jwtClientAuthFilter;
+
+    public IntrospectEndpointAuthorizationConfig(
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
+        TokenEndpointJwtClientAuthFilter jwtClientAuthFilter) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.userDetailsService = userDetailsService;
+      this.jwtClientAuthFilter = jwtClientAuthFilter;
+    }
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      http.antMatcher("/introspect/**")
+
+        .csrf(csrf -> csrf.disable())
+
+        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+
+        .cors(Customizer.withDefaults())
+
+        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
+
+        .addFilterBefore(jwtClientAuthFilter, BasicAuthenticationFilter.class)
+
+        .authorizeRequests(authorize -> authorize.anyRequest().fullyAuthenticated());
+    }
+  }
+
+  @Configuration
+  @Order(16)
+  public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+    private UserDetailsService userDetailsService;
+
+    public RevokeEndpointAuthorizationConfig(
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.userDetailsService = userDetailsService;
+    }
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService).passwordEncoder(new IamSha256PasswordEncoder());
+    }
+
+    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
+        throws Exception {
+
+      ClientCredentialsTokenEndpointFilter filter =
+          new ClientCredentialsTokenEndpointFilter("/revoke");
+
+      filter.setAuthenticationManager(authenticationManager());
+
+      return filter;
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      http.antMatcher("/revoke**")
+
+        .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
+
+        .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
+
+        .cors(Customizer.withDefaults())
+
+        .exceptionHandling(
+            exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+
+        .csrf(csrf -> csrf.disable())
+
+        .sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
+    }
+  }
 }
