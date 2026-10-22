@@ -56,9 +56,10 @@ public class FallbackSecurityConfig {
             Exception ex) throws IOException {
 
         response.setHeader("Cache-Control", "no-store");
-
+        // Attempt to redirect if it looks like a browser
         if (looksLikeBrowserNavigation(request)) {
             response.sendRedirect(request.getContextPath() + "/fallback-info");
+        //Otherwise just send error
         } else {
             response.setHeader("Retry-After", "300");
             response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
