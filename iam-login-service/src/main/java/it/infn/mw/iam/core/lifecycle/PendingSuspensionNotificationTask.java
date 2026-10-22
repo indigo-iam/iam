@@ -87,7 +87,7 @@ public class PendingSuspensionNotificationTask implements Runnable {
       return;
     }
 
-    // Skip all older pending digests of this type, keep only the latest
+    // Mark all older pending digests as skipped, keep only the latest
     List<IamEmailNotification> oldPendingDigests =
         notificationRepo.findByNotificationType(ACCOUNT_PENDING_SUSPENSION);
     for (IamEmailNotification oldDigest : oldPendingDigests) {
