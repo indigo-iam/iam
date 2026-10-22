@@ -192,9 +192,10 @@ public class RegisteredClientDTO {
       ClientViews.NoSecretManagementRegistration.class})
   private Integer idTokenValiditySeconds;
 
+  // Explicit JSON name ensures READ_ONLY is handled correctly with snake-case naming.
+  @JsonProperty(value = "id_token_signed_response_alg", access = Access.READ_ONLY)
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
-  @JsonProperty(access = Access.READ_ONLY)
   private String idTokenSignedResponseAlg;
 
   @Min(value = 0, groups = OnClientCreation.class)
