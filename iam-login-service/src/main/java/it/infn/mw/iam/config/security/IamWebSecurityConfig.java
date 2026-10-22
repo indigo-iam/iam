@@ -56,7 +56,6 @@ import org.springframework.security.web.authentication.session.ChangeSessionIdAu
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
@@ -228,11 +227,7 @@ public class IamWebSecurityConfig {
 
         .anonymous(Customizer.withDefaults())
 
-        .csrf(csrf -> csrf.requireCsrfProtectionMatcher(request -> {
-          boolean isAuthorizeGet = "GET".equals(request.getMethod())
-              && new AntPathRequestMatcher("/authorize").matches(request);
-          return !isAuthorizeGet;
-        }).csrfTokenRepository(csrfTokenRepository))
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
 
         .addFilter(iamX509Filter());
     }
