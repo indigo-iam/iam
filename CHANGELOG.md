@@ -1,10 +1,45 @@
 # Changelog
 
+## 1.15.0 (2026-10-26)
+
+### What's Added
+
+* Implement Explicit Client Registration when acting as an OpenID Federated Relying Party
+* Add SCIM AARC "User" and "Group" schema 
+* Add SCIM 2.0 discovery endpoints and iprove SCIM protocol compliance
+* Add support for certificate-bound access tokens 
+* Persist access-token claims instead of complete JWT values
+* Hash client secrets and add benchmark for encoder 
+* Publish stable Docker tag for latest release builds 
+* Make external_authn inclusion configurable and remove it from UserInfo
+* Add configurable lockout for local password and IAM TOTP authentication
+* Add flyway-repair profile to VOMS-AA
+* Add OPA-backed scope authorization with client-aware policies 
+* Add OIDC post-logout redirect URI support
+
+### What's Changed
+
+* Remove iam-test-client module
+* Fix URL-encoding/decoding of client credentials in Authorization header when client id is a URI
+* Align user interface min-length for name/surname/username with backend (min 2)
+* Remove CNAF Maven mirror and add Shibboleth repository
+* Fix admin-only custom scopes configuration
+* Enable AUDIT level in VOMS Attribute Authority
+* Bump voms-api-java version from 3.3.8 to 3.4.0
+* Apply code challenge validation only to the authz code flow
+* Fix premature cleanup of device-code authentication holders
+* Resume original authorization request after MFA enrollment during JiT user provisioning
+* Return WLCG groups only when explicitly requested
+
 ## 1.14.4 (2026-09-18)
+
+### What's Changed
 
 * Correct grant type comparison in refresh token validation
 
 ## 1.14.3 (2026-09-14)
+
+### What's Changed
 
 * Fix the available values displayed in client cryptographic settings
 * Remove remaining MITREid dependencies from the login-service and persistence modules
@@ -16,6 +51,8 @@
 * Add UserInfo audit events and improve logging during external OIDC authentication
 
 ## 1.14.2 (2026-07-24)
+
+### What's Changed
 
 * Fix broken client owners API calls
 * Handle count zero for group member API calls properly
