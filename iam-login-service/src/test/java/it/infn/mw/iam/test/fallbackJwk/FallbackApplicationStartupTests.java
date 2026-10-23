@@ -72,7 +72,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             HttpResponse<String> login = getBrowser(port, "/login");
             assertEquals(302, login.statusCode());
             assertEquals(String.format("http://localhost:%2d/fallback-info", port),
-                    login.headers().allValues("location").getFirst());
+                    login.headers().allValues("location").get(0));
 
         } finally {
             app.interrupt(); // makes awaitStopped() return and closes the fallback context
