@@ -22,6 +22,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,8 +43,10 @@ import it.infn.mw.iam.test.oauth.jwk.JWKTestSupport;
 
 public class FallbackApplicationStartupTests implements JWKTestSupport {
 
+    private final String LICENSE = "Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021";
+
     @Test
-    void fallbackServesJwkAndActuatorWhenDatabaseIsDown() throws Exception {
+    void fallbackServesJwkWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
                 "--server.port=" + port,
@@ -64,15 +68,48 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             assertEquals(1, keys.size());
             assertEquals("iam", keys.get(0).get("kid").asText());
 
-            // Checking the redirect page is present
-            HttpResponse<String> fallbackInfo = get(port, "/fallback-info");
+        } finally {
+            app.interrupt(); // makes awaitStopped() return and closes the fallback context
+            app.join(10_000);
+        }
+    }
+
+    @Test
+    void fallbackHandlesBrowserAndClientWhenDatabaseIsDown() throws Exception {
+        int port = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                // force an unreachable database whatever the environment has running
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        try {
+
+            // Checking the /fallback-info endpoint for client
+            HttpResponse<String> fallbackInfo = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
             assertEquals(503, fallbackInfo.statusCode());
+            assertTrue(fallbackInfo.body().contains(LICENSE));
+
+            // Checking that browser displays the page at /fallback-info endpoint
+            HttpResponse<String> fallbackInfoBrowser = getBrowser(port, "/fallback-info");
+            assertEquals(503, fallbackInfoBrowser.statusCode());
+            assertTrue(fallbackInfoBrowser.body().contains(LICENSE));
 
             // Checking that one is redirected from a browser
-            HttpResponse<String> login = getBrowser(port, "/login");
-            assertEquals(302, login.statusCode());
+            HttpResponse<String> loginBrowser = getBrowser(port, "/login");
+            assertEquals(302, loginBrowser.statusCode());
             assertEquals(String.format("http://localhost:%2d/fallback-info", port),
-                    login.headers().allValues("location").get(0));
+                    loginBrowser.headers().allValues("location").get(0));
+
+            // Checking a client doesn't get redirect, but 503
+            HttpResponse<String> login = get(port, "/login");
+            assertEquals(503, login.statusCode());
+            assertEquals(0, login.headers().allValues("location").size());
 
         } finally {
             app.interrupt(); // makes awaitStopped() return and closes the fallback context
@@ -216,7 +253,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
 
             // Multiple attempt from the database monitor and the fallback application is
             // still running
-            Thread.sleep(3_000);
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3L));
             assertTrue(app.isAlive());
             assertEquals(200, get(port, "/jwk").statusCode());
 
@@ -248,7 +285,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 if (System.nanoTime() > deadline) {
                     throw notUpYet;
                 }
-                Thread.sleep(500);
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500L));
             }
         }
     }
@@ -263,12 +300,6 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
         return HttpClient.newHttpClient().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET()
                         .header(HttpHeaders.ACCEPT, "text/html").build(),
-                HttpResponse.BodyHandlers.ofString());
-    }
-
-    private static HttpResponse<String> post(int port, String path) throws Exception {
-        return HttpClient.newHttpClient().send(
-                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).POST(null).build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 
