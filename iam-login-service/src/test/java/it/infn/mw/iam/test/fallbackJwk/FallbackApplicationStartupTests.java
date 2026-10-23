@@ -22,13 +22,17 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.h2.tools.Server;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.http.HttpHeaders;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,12 +69,37 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             HttpResponse<String> fallbackInfo = get(port, "/fallback-info");
             assertEquals(503, fallbackInfo.statusCode());
 
-            // Checking other endpoints are denied
-            HttpResponse<String> login = get(port, "/login");
-            assertEquals(503, login.statusCode());
+            // Checking that one is redirected from a browser
+            HttpResponse<String> login = getBrowser(port, "/login");
+            assertEquals(302, login.statusCode());
+            List<String> temp = login.headers().allValues("location");
+            assertEquals(String.format("http://localhost:%2d/fallback-info", port),
+                    login.headers().allValues("location").getFirst());
+
+        } finally {
+            app.interrupt(); // makes awaitStopped() return and closes the fallback context
+            app.join(10_000);
+        }
+    }
+
+    @Test
+    void fallbackServesActuatorWhenDatabaseIsDown() throws Exception {
+        int port = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                // force an unreachable database whatever the environment has running
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        try {
 
             // Checking /actuator endpoint
-            HttpResponse<String> actuator = get(port, "/actuator");
+            HttpResponse<String> actuator = awaitResponse(port, "/actuator", Duration.ofSeconds(60));
             assertEquals(200, actuator.statusCode());
             JsonNode actuatorContent = new ObjectMapper().readTree(actuator.body()).get("_links");
             assertEquals(4, actuatorContent.size());
@@ -97,8 +126,30 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             assertEquals("UP", actuatorHealthContent.get("components").get("ping").get("status").asText());
             assertEquals("UP", actuatorHealthContent.get("components").get("diskSpace").get("status").asText());
 
+        } finally {
+            app.interrupt(); // makes awaitStopped() return and closes the fallback context
+            app.join(10_000);
+        }
+    }
+
+    @Test
+    void fallbackServesHealthPathEndpointWhenDatabaseIsDown() throws Exception {
+        int port = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                // force an unreachable database whatever the environment has running
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        try {
+
             // Checking /actuator/health/db
-            HttpResponse<String> actuatorHealthDb = get(port, "/actuator/health/db");
+            HttpResponse<String> actuatorHealthDb = awaitResponse(port, "/actuator/health/db", Duration.ofSeconds(60));
             assertEquals(503, actuatorHealthDb.statusCode());
             JsonNode actuatorHealthDbContent = new ObjectMapper().readTree(actuatorHealthDb.body());
             assertEquals(1, actuatorHealthDbContent.size());
@@ -142,6 +193,53 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
         assertThrows(BeanCreationException.class, () -> IamLoginService.main(args));
     }
 
+    @Test
+    void fallbackStopsWhenDatabaseRecovers() throws Exception {
+        int port = freePort();
+        int dbPort = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                "--spring.datasource.url=jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam",
+                "--spring.datasource.driver-class-name=org.h2.Driver",
+                "--spring.datasource.username=sa",
+                "--spring.datasource.password=",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true",
+                "--iam.jwk.fallback-database-check-interval=500" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        Server database = null;
+        try {
+            // Fallback starts when database is unavailable
+            assertEquals(200, awaitResponse(port, "/jwk", Duration.ofSeconds(60)).statusCode());
+
+            // Multiple attempt from the database monitor and the fallback application is
+            // still running
+            Thread.sleep(3_000);
+            assertTrue(app.isAlive());
+            assertEquals(200, get(port, "/jwk").statusCode());
+
+            // The database comes online
+            database = Server.createTcpServer("-tcpPort", String.valueOf(dbPort), "-ifNotExists").start();
+
+            // The monitor connects and sends the shutdown signal
+            app.join(30_000);
+            assertFalse(app.isAlive(), "fallback should have stopped after the database recovered");
+            assertThrows(IOException.class, () -> get(port, "/jwk"));
+        } finally {
+            if (database != null) {
+                database.stop();
+            }
+            if (app.isAlive()) {
+                app.interrupt();
+                app.join(10_000);
+            }
+        }
+    }
+
     private static HttpResponse<String> awaitResponse(int port, String path, Duration timeout)
             throws Exception {
         long deadline = System.nanoTime() + timeout.toNanos();
@@ -160,6 +258,19 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     private static HttpResponse<String> get(int port, String path) throws Exception {
         return HttpClient.newHttpClient().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> getBrowser(int port, String path) throws Exception {
+        return HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET()
+                        .header(HttpHeaders.ACCEPT, "text/html").build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> post(int port, String path) throws Exception {
+        return HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).POST(null).build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 
