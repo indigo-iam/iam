@@ -62,11 +62,11 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
@@ -97,6 +97,9 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
   private IamTotpMfaService iamTotpMfaService;
 
   @Mock
+  private DashboardProperties dashboardProperties;
+
+  @Mock
   private IamTotpMfaProperties iamTotpMfaProperties;
 
   @Mock
@@ -117,8 +120,8 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     mfaAccount = getTotpMfaAccount(clock.instant());
 
     helper = new AuthenticationSuccessHandlerHelper(clock, accountUtils, IAM_BASE_URL,
-        aupSignatureCheckService, accountService, iamTotpMfaService, iamTotpMfaProperties,
-        eventPublisher, sessionAuthenticationStrategy);
+        aupSignatureCheckService, accountService, iamTotpMfaService, dashboardProperties,
+        iamTotpMfaProperties, eventPublisher, sessionAuthenticationStrategy);
 
     request = new MockHttpServletRequest();
     response = new MockHttpServletResponse();
@@ -228,7 +231,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
       .stream()
       .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
     verify(accountService).touchLastLoginTimeForUserWithUsername(TOTP_USERNAME);
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
+    assertEquals(dashboardProperties.getBasePath(), redirectUrl);
   }
 
   @Test
@@ -301,7 +304,7 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     verify(eventPublisher, never()).publishEvent(any());
     verify(aupSignatureCheckService, never()).needsAupSignature(any());
 
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
+    assertEquals(dashboardProperties.getBasePath(), redirectUrl);
   }
 
   @Test
@@ -320,6 +323,6 @@ class AuthenticationSuccessHandlerHelperEnrollmentRedirectTests extends MultiFac
     assertSame(current, SecurityContextHolder.getContext().getAuthentication());
     verify(accountService, never()).touchLastLoginTimeForUserWithUsername(any());
     verify(eventPublisher, never()).publishEvent(any());
-    assertEquals(RootIsDashboardSuccessHandler.DASHBOARD_URL, redirectUrl);
+    assertEquals(dashboardProperties.getBasePath(), redirectUrl);
   }
 }
