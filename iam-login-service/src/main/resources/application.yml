@@ -53,7 +53,7 @@ spring:
       order: 1
 
   profiles:
-    default: mysql-test
+    default: h2-test
     group:
      "dev": "registration"
      "h2-test": "h2,saml,registration"
@@ -97,14 +97,14 @@ iam:
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
   showSql: ${IAM_DATABASE_SHOW_SQL:false}
 
-  jwk: #file:/home/patrick/Indigo-iam/iam/iam-login-service/keystore.jwks
-    keystore-location: ${IAM_KEY_STORE_LOCATION:file:/home/patrick/Indigo-iam/iam/iam-login-service/keystore.jwks}
+  jwk:
+    keystore-location: ${IAM_KEY_STORE_LOCATION:file:}
     default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
     default-jwe-decrypt-key-id: ${IAM_JWK_DEFAULT_JWE_DECRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
     default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
-    standalone-fallback-enabled: ${IAM_JWK_STANDALONE_FALLBACK_ENABLED:true}
+    standalone-fallback-enabled: ${IAM_JWK_STANDALONE_FALLBACK_ENABLED:false}
     fallback-database-check-interval: ${IAM_JWK_FALLBACK_DATABASE_CHECK_INTERVAL:5000}
 
   jwt-profile:
@@ -272,8 +272,6 @@ management:
       show-components: always 
       enabled: true
       show-details: when-authorized
-      probes:
-        enabled: true
       roles:
       - ACTUATOR
     metrics:
