@@ -77,6 +77,10 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     this.defaultAlgorithm = JWSAlgorithm.parse(properties.getDefaultJwsAlgorithm());
     this.defaultSignerKeyId = properties.getDefaultKeyId();
     initializeSignersAndVerifiers();
+    if (defaultAlgorithm != null) {
+      checkArgument(!JWSAlgorithm.NONE.equals(defaultAlgorithm),
+          "The default JWS signing algorithm cannot be none");
+    }
   }
 
   public IamJWTSigningService(JwkKeyStore keystore) {

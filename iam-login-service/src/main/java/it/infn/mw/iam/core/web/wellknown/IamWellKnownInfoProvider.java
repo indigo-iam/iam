@@ -81,7 +81,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private static final List<Algorithm> ID_TOKEN_JWS_ALGOS_SUPPORTED =
       List.of(JWSAlgorithm.RS256, JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256,
           JWSAlgorithm.ES384, JWSAlgorithm.ES512, JWSAlgorithm.PS256, JWSAlgorithm.PS384,
-          JWSAlgorithm.PS512, Algorithm.NONE);
+          JWSAlgorithm.PS512);
 
   private final IamProperties properties;
   private final SystemScopeService systemScopeService;
