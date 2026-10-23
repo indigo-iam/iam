@@ -16,6 +16,10 @@
 package it.infn.mw.iam.test.api.consent;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -35,7 +39,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -46,7 +52,8 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class ConsentGrantControllerTests extends TokenGetterUtils {
@@ -61,7 +68,7 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
   void testIamApiApprovedReturnsClientDetailsAndCanBeRemoved() throws Exception {
 
-    MockHttpSession session = performImplicitFlowAndGetSession("until-revoked");
+    MockHttpSession session = performAuthorizationCodeFlowAndGetSession("until-revoked");
 
     ConsentGrantWithClientDetailsDTO dto =
         mapper
@@ -71,10 +78,10 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
                 .andExpect(jsonPath("$[0]").exists())
                 .andExpect(jsonPath("$[0].id").exists())
                 .andExpect(jsonPath("$[0].userId").value(TEST_USERNAME))
-                .andExpect(jsonPath("$[0].clientId").value(IMPLICIT_CLIENT_ID))
-                .andExpect(jsonPath("$[0].clientName").value("Implicit Flow client"))
+                .andExpect(jsonPath("$[0].clientId").value(CONSENT_CLIENT_ID))
+                .andExpect(jsonPath("$[0].clientName").value("Consent Client"))
                 .andExpect(
-                    jsonPath("$[0].clientDescription").value("implicit-flow-client description"))
+                    jsonPath("$[0].clientDescription").value("Consent client description"))
                 .andExpect(jsonPath("$[0].authorizationDate").isNotEmpty())
                 .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
                 .andExpect(jsonPath("$[0].timeoutDate").doesNotExist())
@@ -89,9 +96,9 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id").value(dto.id()))
       .andExpect(jsonPath("$.userId").value(TEST_USERNAME))
-      .andExpect(jsonPath("$.clientId").value(IMPLICIT_CLIENT_ID))
-      .andExpect(jsonPath("$.clientName").value("Implicit Flow client"))
-      .andExpect(jsonPath("$.clientDescription").value("implicit-flow-client description"))
+      .andExpect(jsonPath("$.clientId").value(CONSENT_CLIENT_ID))
+      .andExpect(jsonPath("$.clientName").value("Consent Client"))
+      .andExpect(jsonPath("$.clientDescription").value("Consent client description"))
       .andExpect(
           jsonPath("$.authorizationDate").value(dto.authorizationDate().toInstant().toString()))
       .andExpect(jsonPath("$.accessDate").value(dto.accessDate().toInstant().toString()))
@@ -104,19 +111,21 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
     mvc.perform(get("/iam/api/approved/" + dto.id()).with(user("another-user").roles("USER")))
       .andExpect(status().isInternalServerError());
 
-    performImplicitFlowAndExpectNoForwardToConfirmAccess();
+    performAuthorizationCodeFlowAndExpectNoForwardToConfirmAccess();
 
-    mvc.perform(delete("/iam/api/approved/" + dto.id()).session(session))
+    mvc.perform(delete("/iam/api/approved/" + dto.id())
+        .with(csrf())
+        .session(session))
       .andExpect(status().isNoContent());
 
-    performImplicitFlowAndExpectForwardToConfirmAccess();
+    performAuthorizationCodeFlowAndExpectForwardToConfirmAccess();
   }
 
   @Test
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
   void testIamApiApprovedEmptyWhenSetNone() throws Exception {
 
-    MockHttpSession session = performImplicitFlowAndGetSession("none");
+    MockHttpSession session = performAuthorizationCodeFlowAndGetSession("none");
 
     mvc.perform(get("/iam/api/approved").session(session))
       .andExpect(status().isOk())
@@ -127,16 +136,16 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
   @WithMockUser(username = TEST_USERNAME, roles = {"USER"})
   void testIamApiApprovedExistsButLimitedWhenOneHour() throws Exception {
 
-    MockHttpSession session = performImplicitFlowAndGetSession("one-hour");
+    MockHttpSession session = performAuthorizationCodeFlowAndGetSession("one-hour");
 
     mvc.perform(get("/iam/api/approved").session(session))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[0]").exists())
       .andExpect(jsonPath("$[0].id").exists())
       .andExpect(jsonPath("$[0].userId").value(TEST_USERNAME))
-      .andExpect(jsonPath("$[0].clientId").value(IMPLICIT_CLIENT_ID))
-      .andExpect(jsonPath("$[0].clientName").value("Implicit Flow client"))
-      .andExpect(jsonPath("$[0].clientDescription").value("implicit-flow-client description"))
+      .andExpect(jsonPath("$[0].clientId").value(CONSENT_CLIENT_ID))
+      .andExpect(jsonPath("$[0].clientName").value("Consent Client"))
+      .andExpect(jsonPath("$[0].clientDescription").value("Consent client description"))
       .andExpect(jsonPath("$[0].authorizationDate").isNotEmpty())
       .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
       .andExpect(jsonPath("$[0].timeoutDate").exists())
@@ -144,30 +153,33 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
 
     clock.advance(Duration.ofHours(2));
 
-    performImplicitFlowAndExpectForwardToConfirmAccess();
+    performAuthorizationCodeFlowAndExpectForwardToConfirmAccess();
 
   }
 
-  private MockHttpSession performImplicitFlowAndGetSession(String remember) throws Exception {
-
-    String authzEndpointUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", "token id_token")
-      .queryParam("client_id", IMPLICIT_CLIENT_ID)
-      .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
+  private String authorizationCodeRequestUrl() {
+    return UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
+      .queryParam("response_type", "code")
+      .queryParam("client_id", CONSENT_CLIENT_ID)
+      .queryParam("redirect_uri", CONSENT_CLIENT_REDIRECT_URL)
       .queryParam("scope", SCOPE)
       .queryParam("nonce", "1")
       .queryParam("state", "1")
       .build()
       .toUriString();
+  }
 
-    MockHttpSession session = (MockHttpSession) mvc.perform(get(authzEndpointUrl))
+  private MockHttpSession performAuthorizationCodeFlowAndGetSession(String remember)
+      throws Exception {
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(authorizationCodeRequestUrl()))
       .andExpect(status().isOk())
       .andExpect(view().name("forward:/oauth/confirm_access"))
       .andReturn()
       .getRequest()
       .getSession();
 
-    mvc
+    MvcResult result = mvc
       .perform(post("/authorize").with(csrf())
         .param("user_oauth_approval", "true")
         .param("scope_openid", "openid")
@@ -175,40 +187,50 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
         .param("authorize", "Authorize")
         .param("remember", remember)
         .session(session))
-      .andExpect(status().is3xxRedirection());
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
 
+    assertAuthorizationCodeRedirect(result);
     return session;
   }
 
-  private void performImplicitFlowAndExpectNoForwardToConfirmAccess() throws Exception {
+  private void performAuthorizationCodeFlowAndExpectNoForwardToConfirmAccess() throws Exception {
 
-    String authzEndpointUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", "token id_token")
-      .queryParam("client_id", IMPLICIT_CLIENT_ID)
-      .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .build()
-      .toUriString();
+    MvcResult result = mvc.perform(get(authorizationCodeRequestUrl()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
 
-    mvc.perform(get(authzEndpointUrl)).andExpect(status().is3xxRedirection());
+    assertAuthorizationCodeRedirect(result);
   }
 
-  private void performImplicitFlowAndExpectForwardToConfirmAccess() throws Exception {
+  private void performAuthorizationCodeFlowAndExpectForwardToConfirmAccess() throws Exception {
 
-    String authzEndpointUrl = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_URL)
-      .queryParam("response_type", "token id_token")
-      .queryParam("client_id", IMPLICIT_CLIENT_ID)
-      .queryParam("redirect_uri", IMPLICIT_CLIENT_REDIRECT_URL)
-      .queryParam("scope", SCOPE)
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .build()
-      .toUriString();
-
-    mvc.perform(get(authzEndpointUrl))
+    mvc.perform(get(authorizationCodeRequestUrl()))
       .andExpect(status().isOk())
       .andExpect(view().name("forward:/oauth/confirm_access"));
+  }
+
+  private void assertAuthorizationCodeRedirect(MvcResult result) {
+    String location = result.getResponse().getRedirectedUrl();
+    assertNotNull(location);
+
+    UriComponents redirect = UriComponentsBuilder.fromUriString(location).build();
+
+    assertEquals(CONSENT_CLIENT_REDIRECT_URL,
+        UriComponentsBuilder.fromUriString(location)
+          .replaceQuery(null)
+          .fragment(null)
+          .build()
+          .toUriString());
+
+    String code = redirect.getQueryParams().getFirst("code");
+    assertNotNull(code);
+    assertFalse(code.isBlank());
+
+    assertEquals("1", redirect.getQueryParams().getFirst("state"));
+    assertFalse(redirect.getQueryParams().containsKey("error"));
+    assertFalse(redirect.getQueryParams().containsKey("access_token"));
+    assertFalse(redirect.getQueryParams().containsKey("id_token"));
+    assertNull(redirect.getFragment());
   }
 }

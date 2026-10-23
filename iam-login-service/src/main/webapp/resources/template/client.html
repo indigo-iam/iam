@@ -56,8 +56,7 @@
 
     <td>
 		<% if (_.isEmpty(client.redirectUris)) { 
-			if (_.contains(client.grantTypes, 'authorization_code') ||
-				_.contains(client.grantTypes, 'implicit')) {
+			if (_.contains(client.grantTypes, 'authorization_code')) {
 		%>
 			<div><span class="badge badge-important"><i class="icon-warning-sign icon-white"></i> <span data-i18n="client.client-table.no-redirect">NO REDIRECT URI</span></span></div>
 		<% 		}
@@ -333,18 +332,10 @@
                         <label for="grantTypes-client_credentials" class="checkbox" data-i18n="client.client-form.client-credentials">client credentials</label>
                     </div>
 
-					<% if (!heartMode) { // disable password on heart mode %>
                     <div>
                         <input id="grantTypes-password" type="checkbox"
                             <%-($.inArray("password", client.grantTypes) > -1 ? 'checked' : '')%>>
                         <label for="grantTypes-password" class="checkbox" data-i18n="client.client-form.password">password</label>
-                    </div>
-					<% } %>
-
-                    <div>
-                        <input id="grantTypes-implicit" <%= heartMode ? 'type="radio" name="grantType"' : 'type="checkbox"' %>
-                            <%-($.inArray("implicit", client.grantTypes) > -1 ? 'checked' : '')%>> 
-                        <label for="grantTypes-implicit" class="checkbox" data-i18n="client.client-form.implicit">implicit</label>
                     </div>
 
                     <div>
@@ -374,30 +365,6 @@
                     <div>
                         <input id="responseTypes-code" type="checkbox" <%-($.inArray("code", client.responseTypes) > -1 ? 'checked' : '')%>>
                         <label for="responseTypes-code" class="checkbox">code</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-token" type="checkbox" <%-($.inArray("token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-token" class="checkbox">token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-idtoken" type="checkbox" <%-($.inArray("id_token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-idtoken" class="checkbox">id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-token-idtoken" type="checkbox" <%-($.inArray("token id_token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-token-idtoken" class="checkbox">token id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-idtoken" type="checkbox" <%-($.inArray("code id_token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-idtoken" class="checkbox">code id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-token" type="checkbox" <%-($.inArray("code token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-token" class="checkbox">code token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-token-idtoken" type="checkbox" <%-($.inArray("code token id_token", client.responseTypes) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-token-idtoken" class="checkbox">code token id_token</label>
                     </div>
 				</div>
 			</div>
