@@ -22,7 +22,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -72,7 +71,6 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             // Checking that one is redirected from a browser
             HttpResponse<String> login = getBrowser(port, "/login");
             assertEquals(302, login.statusCode());
-            List<String> temp = login.headers().allValues("location");
             assertEquals(String.format("http://localhost:%2d/fallback-info", port),
                     login.headers().allValues("location").getFirst());
 
