@@ -34,10 +34,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,20 +88,17 @@ public class IamLoginService {
     try {
       iamLoginService.run(args);
     } catch (BeanCreationException error) {
-      // maybe a check for key store
-      int indexOfconnectionException = ExceptionUtils.indexOfThrowable(error, ConnectException.class);
-      int indexOfFlyWay = ExceptionUtils.indexOfThrowable(error, FlywaySqlException.class);
       boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
           false);
 
       // Checking if the error is a database connection issue
-      if (indexOfconnectionException != -1 && indexOfFlyWay != -1 && fallbackEnabled) {
+      if (isDatabaseUnavailable(error) && fallbackEnabled) {
 
         // Need to manually log
         Logger LOG = LoggerFactory.getLogger(IamLoginService.class);
         LOG.error("Error in establishing a connection to the database");
 
-        // Disabling startup info to avoid miscommnunication to the user 
+        // Disabling startup info to avoid miscommnunication to the user
         iamLoginService.setLogStartupInfo(false);
 
         // Starting the fallback application
@@ -121,6 +122,27 @@ public class IamLoginService {
     return propsConfig;
   }
 
+  private static boolean isDatabaseUnavailable(Throwable error) {
+    for (Throwable t : ExceptionUtils.getThrowableList(error)) {
+      if (t instanceof ConnectException
+          || t instanceof NoRouteToHostException
+          || t instanceof SocketTimeoutException
+          || t instanceof UnknownHostException
+          || t instanceof SQLTransientConnectionException) {
+        return true;
+      }
+      if (t instanceof SQLException) {
+        String state = ((SQLException) t).getSQLState();
+        // 08 failueres in SQLStates are releated to connection exceptions,
+        // but not credentials or schema exceptions
+        if (state != null && state.startsWith("08")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private static void startFallBackApplication(final String[] args) {
 
     Logger LOG = LoggerFactory.getLogger(IamJwkFallbackApplication.class);
@@ -134,7 +156,7 @@ public class IamLoginService {
     fallback.addListeners(new ApplicationFailedEventListener());
     fallback.addListeners(
         (ApplicationListener<ApplicationReadyEvent>) event -> LOG.info("JWK fallback application is ready"));
-    
+
     // Have to manually derive the info as the name it inherits from the parent
     fallback.setLogStartupInfo(false);
     LOG.info("Starting the JWK fallback application");
