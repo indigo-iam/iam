@@ -75,6 +75,62 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     }
 
     @Test
+    void fallbackServesInfoWithNoUrlWhenDatabaseIsDown() throws Exception {
+        int port = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                // force an unreachable database whatever the environment has running
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true",
+                "--iam.logo.url=" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        try {
+
+            // Checking the /fallback-info endpoint works without image
+            HttpResponse<String> info = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
+            assertEquals(503, info.statusCode());
+            assertTrue(info.body().contains(LICENSE));
+
+        } finally {
+            app.interrupt(); // makes awaitStopped() return and closes the fallback context
+            app.join(10_000);
+        }
+    }
+
+    @Test
+    void fallbackServesInfoWithUrlWhenDatabaseIsDown() throws Exception {
+        int port = freePort();
+        String[] args = {
+                "--server.port=" + port,
+                // force an unreachable database whatever the environment has running
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true",
+                "--iam.logo.url=https://cern-ipmc.web.cern.ch/logo" };
+
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        app.start();
+        try {
+
+            // Checking the /fallback-info endpoint works with external web image
+            HttpResponse<String> info = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
+            assertEquals(503, info.statusCode());
+            assertTrue(info.body().contains(LICENSE));
+
+        } finally {
+            app.interrupt(); // makes awaitStopped() return and closes the fallback context
+            app.join(10_000);
+        }
+    }
+
+    @Test
     void fallbackHandlesBrowserAndClientWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
