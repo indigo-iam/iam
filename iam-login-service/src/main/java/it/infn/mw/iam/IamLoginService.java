@@ -131,8 +131,8 @@ public class IamLoginService {
           || t instanceof SQLTransientConnectionException) {
         return true;
       }
-      if (t instanceof SQLException) {
-        String state = ((SQLException) t).getSQLState();
+      if (t instanceof SQLException exception) {
+        String state = exception.getSQLState();
         // 08 failueres in SQLStates are releated to connection exceptions,
         // but not credentials or schema exceptions
         if (state != null && state.startsWith("08")) {
