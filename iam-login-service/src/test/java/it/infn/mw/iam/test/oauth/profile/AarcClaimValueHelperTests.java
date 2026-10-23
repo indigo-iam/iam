@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -195,7 +196,7 @@ class AarcClaimValueHelperTests {
   void testResolveScopedAffiliations() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("EPSA", "external@test.org");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
@@ -220,10 +221,40 @@ class AarcClaimValueHelperTests {
   }
 
   @Test
+  void testResolveScopedAffiliationsWhenIdPReturnsAList() {
+    OAuth2Authentication auth = mock(OAuth2Authentication.class);
+
+    Map<String, Object> additionalInfo = new HashMap<>();
+    List<String> epsa = List.of("faculty@infn.it", "staff@infn.it");
+    additionalInfo.put("EPSA", epsa);
+
+    SavedUserAuthentication savedAuth = new SavedUserAuthentication();
+    savedAuth.setSourceClass(OidcExternalAuthenticationToken.class.getName());
+    savedAuth.setAdditionalInfo(additionalInfo);
+
+    when(auth.getUserAuthentication()).thenReturn(savedAuth);
+
+    IamAccount account = mock(IamAccount.class);
+    IamUserInfo accountUserInfo = mock(IamUserInfo.class);
+
+    when(account.getAffiliation()).thenReturn("member");
+    when(account.getUserInfo()).thenReturn(accountUserInfo);
+    when(accountUserInfo.getAffiliation()).thenReturn("member");
+
+    Set<String> result = (Set<String>) helper
+      .resolveClaim(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION, auth, Optional.of(account));
+
+    assertThat(result, hasSize(3));
+    assertThat(result, hasItem("member@" + properties.getAarcProfile().getAffiliationScope()));
+    assertThat(result, hasItem("faculty@infn.it"));
+    assertThat(result, hasItem("staff@infn.it"));
+  }
+
+  @Test
   void testResolveScopedAffiliationsWithNullAffiliation() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("EPSA", "external@test.org");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
@@ -248,7 +279,7 @@ class AarcClaimValueHelperTests {
   void testResolveAssuranceInfo() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("urn:oid:1.3.6.1.4.1.5923.1.1.1.11",
         "https://refeds.org/assurance/IAP/medium");
 
@@ -273,7 +304,7 @@ class AarcClaimValueHelperTests {
   void testResolveSchacHomeOrganization() {
     OAuth2Authentication auth = mock(OAuth2Authentication.class);
 
-    Map<String, String> additionalInfo = new HashMap<>();
+    Map<String, Object> additionalInfo = new HashMap<>();
     additionalInfo.put("urn:oid:1.3.6.1.4.1.25178.1.2.9", "infn.it");
 
     SavedUserAuthentication savedAuth = new SavedUserAuthentication();
