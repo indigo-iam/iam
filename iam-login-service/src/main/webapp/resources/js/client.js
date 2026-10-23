@@ -815,7 +815,7 @@ var ClientFormView = Backbone.View.extend({
 
 		var tokenEndpointAuthMethod = $('#tokenEndpointAuthMethod input', this.el).filter(':checked').val();
 
-		if (tokenEndpointAuthMethod == 'SECRET_BASIC' || tokenEndpointAuthMethod == 'SECRET_POST' || tokenEndpointAuthMethod == 'SECRET_JWT') {
+		if (tokenEndpointAuthMethod == 'SECRET_BASIC' || tokenEndpointAuthMethod == 'SECRET_POST') {
 
 			// client secret is required, show all the bits
 			$('#clientSecretPanel', this.el).show();
@@ -828,7 +828,7 @@ var ClientFormView = Backbone.View.extend({
 
 		// show or hide the signing algorithm method depending on what's
 		// selected
-		if (tokenEndpointAuthMethod == 'PRIVATE_KEY' || tokenEndpointAuthMethod == 'SECRET_JWT') {
+		if (tokenEndpointAuthMethod == 'PRIVATE_KEY') {
 			$('#tokenEndpointAuthSigningAlg', this.el).show();
 		} else {
 			$('#tokenEndpointAuthSigningAlg', this.el).hide();
@@ -1000,7 +1000,7 @@ var ClientFormView = Backbone.View.extend({
 		// whether or not the client secret changed
 		var secretChanged = false;
 
-		if (tokenEndpointAuthMethod == 'SECRET_BASIC' || tokenEndpointAuthMethod == 'SECRET_POST' || tokenEndpointAuthMethod == 'SECRET_JWT') {
+		if (tokenEndpointAuthMethod == 'SECRET_BASIC' || tokenEndpointAuthMethod == 'SECRET_POST') {
 
 			if (!generateClientSecret) {
 				// if it's required but we're not generating it, send the value
