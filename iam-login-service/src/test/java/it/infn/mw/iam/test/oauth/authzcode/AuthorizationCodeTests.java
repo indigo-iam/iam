@@ -53,7 +53,6 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
@@ -82,9 +81,6 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
 
   @Autowired
   IamAccountRepository accountRepo;
-
-  @Autowired
-  IamClientRepository clientRepo;
 
   private void removeTestClientOwners() {
 
@@ -261,9 +257,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
     removeTestClientOwners();
 
     User testUser =
@@ -300,7 +296,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources", is(empty())));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
     setTestClientOwners();
 
   }
@@ -308,9 +304,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     removeTestClientOwners();
 
@@ -350,7 +346,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources[0].client_id", is(TEST_CLIENT_ID)));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     setTestClientOwners();
 
@@ -359,9 +355,9 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
   @Test
   void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
 
-    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    ClientDetailsEntity entity = clientService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
     entity.setClientName("oidc-agent:test-client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
     User testUser =
         new User(TEST_USERNAME, TEST_PASSWORD, commaSeparatedStringToAuthorityList("ROLE_USER"));
@@ -395,7 +391,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.Resources", is(empty())));
 
     entity.setClientName("Test Client");
-    clientRepo.save(entity);
+    clientService.updateClient(entity);
 
   }
 

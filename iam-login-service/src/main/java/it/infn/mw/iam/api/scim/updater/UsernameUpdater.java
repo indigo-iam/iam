@@ -26,21 +26,24 @@ import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 
 public class UsernameUpdater extends DefaultAccountUpdater<String, UsernameReplacedEvent> {
 
   private IamOAuthAccessTokenRepository accessTokenRepo;
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private CachedRefreshTokenStore refreshTokenStore;
   private String oldUsername;
 
   public UsernameUpdater(Clock clock, IamAccount account, UpdaterType type, Consumer<String> consumer,
       String newVal, Predicate<String> predicate,
       AccountEventBuilder<String, UsernameReplacedEvent> eventBuilder,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, CachedRefreshTokenStore refreshTokenStore) {
     super(clock, account, type, consumer, newVal, predicate, eventBuilder);
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
+    this.refreshTokenStore = refreshTokenStore;
   }
 
   @Override
@@ -64,7 +67,7 @@ public class UsernameUpdater extends DefaultAccountUpdater<String, UsernameRepla
 
     for (OAuth2RefreshTokenEntity t : refreshTokens) {
       t.getAuthenticationHolder().getUserAuth().setName(newValue);
-      refreshTokenRepo.save(t);
+      refreshTokenStore.save(t);
     }
   }
 
