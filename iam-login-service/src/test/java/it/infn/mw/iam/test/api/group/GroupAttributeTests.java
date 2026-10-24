@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -101,10 +102,11 @@ public class GroupAttributeTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .with(csrf().asHeader())
       .content(mapper.writeValueAsString(attr))).andExpect(UNAUTHORIZED);
 
-    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
-      .andExpect(UNAUTHORIZED);
+    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .param("name", ATTR_NAME)).andExpect(UNAUTHORIZED);
   }
 
   @Test
@@ -118,11 +120,12 @@ public class GroupAttributeTests {
 
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .contentType(APPLICATION_JSON)
       .content(mapper.writeValueAsString(attr))).andExpect(FORBIDDEN);
 
-    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
-      .andExpect(FORBIDDEN);
+    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .param("name", ATTR_NAME)).andExpect(FORBIDDEN);
   }
 
   @Test
@@ -147,6 +150,7 @@ public class GroupAttributeTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .with(csrf().asHeader())
       .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid()))
@@ -158,6 +162,7 @@ public class GroupAttributeTests {
     attr = new AttributeDTO(ATTR_NAME, null);
 
     mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .with(csrf().asHeader())
       .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid()))
@@ -176,15 +181,16 @@ public class GroupAttributeTests {
 
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .contentType(APPLICATION_JSON)
       .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
-    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
-      .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .param("name", ATTR_NAME)).andExpect(status().isNoContent());
 
     // A delete succeeds even if the attribute isn't there
-    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
-      .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).with(csrf().asHeader())
+      .param("name", ATTR_NAME)).andExpect(status().isNoContent());
   }
 
   @Test
@@ -198,12 +204,15 @@ public class GroupAttributeTests {
       .andExpect(jsonPath("$.error", containsString("Group not found")));
 
     mvc
-      .perform(put("/iam/group/{id}/attributes", randomUuid).contentType(APPLICATION_JSON)
+      .perform(put("/iam/group/{id}/attributes", randomUuid).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(NOT_FOUND)
       .andExpect(jsonPath("$.error", containsString("Group not found")));
 
-    mvc.perform(delete("/iam/group/{id}/attributes", randomUuid).param("name", ATTR_NAME))
+    mvc
+      .perform(delete("/iam/group/{id}/attributes", randomUuid).with(csrf().asHeader())
+        .param("name", ATTR_NAME))
       .andExpect(NOT_FOUND)
       .andExpect(jsonPath("$.error", containsString("Group not found")));
 

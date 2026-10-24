@@ -46,7 +46,8 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class ConsentGrantControllerTests extends TokenGetterUtils {
@@ -106,7 +107,7 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
 
     performImplicitFlowAndExpectNoForwardToConfirmAccess();
 
-    mvc.perform(delete("/iam/api/approved/" + dto.id()).session(session))
+    mvc.perform(delete("/iam/api/approved/" + dto.id()).with(csrf().asHeader()).session(session))
       .andExpect(status().isNoContent());
 
     performImplicitFlowAndExpectForwardToConfirmAccess();

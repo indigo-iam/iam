@@ -15,11 +15,12 @@
  */
 package it.infn.mw.iam.test.login;
 
-
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -49,8 +50,9 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    ClockConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class LoginTests implements LoginTestSupport {
@@ -79,7 +81,7 @@ class LoginTests implements LoginTestSupport {
     //@formatter:off
     MockHttpSession session = (MockHttpSession) mvc
       .perform(
-          post(LOGIN_URL)
+          post(LOGIN_URL).with(csrf())
             .param("username", ADMIN_USERNAME)
             .param("password", ADMIN_PASSWORD)
             .param("submit", "Login"))
@@ -105,14 +107,14 @@ class LoginTests implements LoginTestSupport {
   @Test
   void loginWithInvalidCredentialsIsBlocked() throws Exception {
     //@formatter:off
-    mvc.perform(post(LOGIN_URL)
+    mvc.perform(post(LOGIN_URL).with(csrf())
         .param("username", ADMIN_USERNAME)
         .param("password", "whatever")
         .param("submit", "Login"))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("/login?error=failure"));
 
-    mvc.perform(post(LOGIN_URL)
+    mvc.perform(post(LOGIN_URL).with(csrf())
         .param("username", "whatever")
         .param("password", "whatever")
         .param("submit", "Login"))
@@ -136,7 +138,8 @@ class LoginTests implements LoginTestSupport {
     aupRepo.save(aup);
 
     mvc
-      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", ADMIN_USERNAME)
         .param("password", ADMIN_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().isFound())
@@ -147,12 +150,39 @@ class LoginTests implements LoginTestSupport {
   void testLoginRedirectsToActivateMfaPageWhenMultiFactorMandatory() throws Exception {
     iamTotpMfaProperties.setMultiFactorMandatory(true);
     mvc
-      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", ADMIN_USERNAME)
         .param("password", ADMIN_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(MFA_ACTIVATE_URL));
 
     iamTotpMfaProperties.setMultiFactorMandatory(false);
+  }
+
+  @Test
+  void loginWithoutCsrfIsRejected() throws Exception {
+    mvc
+      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+        .param("password", ADMIN_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().isForbidden())
+      .andExpect(unauthenticated());
+  }
+
+  @Test
+  void loginWithInvalidCsrfIsRejected() throws Exception {
+    mvc
+      .perform(post(LOGIN_URL).with(csrf().useInvalidToken())
+        .param("username", ADMIN_USERNAME)
+        .param("password", ADMIN_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().isForbidden())
+      .andExpect(unauthenticated());
+  }
+
+  @Test
+  void loginPageDoesNotRequireCsrf() throws Exception {
+    mvc.perform(get(LOGIN_URL)).andExpect(status().isOk());
   }
 }

@@ -17,7 +17,10 @@ package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -96,8 +99,9 @@ class AupIntegrationTests extends AupTestSupport {
 
   private void verifyAupCreationSuccess(AupDTO aup) throws Exception {
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isCreated());
 
     String aupJson = mvc.perform(get("/iam/aup"))
@@ -115,24 +119,27 @@ class AupIntegrationTests extends AupTestSupport {
   private void verifyAupCreationFailureWithBadRequest(AupDTO aup, String errorMessage)
       throws Exception {
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(errorMessage)));
   }
 
   private void createAup(AupDTO aup) throws Exception {
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isCreated());
   }
 
   private void verifyAupUpdateFailureWithBadRequest(AupDTO aup, String errorMessage)
       throws Exception {
     mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(errorMessage)));
   }
@@ -161,8 +168,9 @@ class AupIntegrationTests extends AupTestSupport {
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
 
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isUnauthorized());
   }
 
@@ -175,8 +183,9 @@ class AupIntegrationTests extends AupTestSupport {
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
 
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("Access is denied")));
   }
@@ -407,27 +416,28 @@ class AupIntegrationTests extends AupTestSupport {
     createAup(aup);
 
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.error", equalTo("AUP already exists")));
   }
 
   @Test
   void aupDeletionRequiresAuthenticatedUser() throws Exception {
-    mvc.perform(delete("/iam/aup")).andExpect(status().isUnauthorized());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void aupDeletionRequiresAdminUser() throws Exception {
-    mvc.perform(delete("/iam/aup")).andExpect(status().isForbidden());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void aupDeletionReturns404IfAupIsNotDefined() throws Exception {
-    mvc.perform(delete("/iam/aup")).andExpect(status().isNotFound());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isNotFound());
   }
 
   @Test
@@ -437,7 +447,7 @@ class AupIntegrationTests extends AupTestSupport {
 
     createAup(aup);
 
-    mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isNoContent());
 
     mvc.perform(get("/iam/aup")).andExpect(status().isNotFound());
   }
@@ -448,6 +458,7 @@ class AupIntegrationTests extends AupTestSupport {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
     mvc
       .perform(MockMvcRequestBuilders.patch("/iam/aup")
+        .with(csrf().asHeader())
         .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isNotFound())
@@ -489,8 +500,9 @@ class AupIntegrationTests extends AupTestSupport {
     aup.setUrl(null);
 
     mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("Invalid AUP: the AUP URL cannot be blank")));
 
@@ -557,8 +569,9 @@ class AupIntegrationTests extends AupTestSupport {
     aup.setAupRemindersInDays("");
 
     mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
   }
 
@@ -666,8 +679,9 @@ class AupIntegrationTests extends AupTestSupport {
     aup.setAupRemindersInDays(null);
 
     mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
   }
 
@@ -699,8 +713,9 @@ class AupIntegrationTests extends AupTestSupport {
     clock.advance(Duration.ofMillis(1L));
 
     String updatedAupString = mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -740,4 +755,49 @@ class AupIntegrationTests extends AupTestSupport {
     mvc.perform(get("/iam/aup/sign")).andExpect(status().isOk());
   }
 
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void deleteAupWithoutCsrfIsRejected() throws Exception {
+    IamAup aup = aupRepo.save(buildDefaultAup(clock.now()));
+
+    mvc.perform(delete("/iam/aup")).andExpect(status().isForbidden());
+
+    assertTrue(aupRepo.findDefaultAup().isPresent());
+
+    mvc.perform(get("/iam/aup"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.url", equalTo(aup.getUrl())))
+      .andExpect(jsonPath("$.description", equalTo(aup.getDescription())));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void deleteAupWithInvalidCsrfIsRejected() throws Exception {
+    IamAup aup = aupRepo.save(buildDefaultAup(clock.now()));
+
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader().useInvalidToken()))
+      .andExpect(status().isForbidden());
+
+    assertTrue(aupRepo.findDefaultAup().isPresent());
+
+    mvc.perform(get("/iam/aup"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.url", equalTo(aup.getUrl())))
+      .andExpect(jsonPath("$.description", equalTo(aup.getDescription())));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void deleteAupWithCsrfSucceeds() throws Exception {
+
+    aupRepo.save(buildDefaultAup(clock.now()));
+
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isNoContent());
+
+    assertFalse(aupRepo.findDefaultAup().isPresent());
+
+    mvc.perform(get("/iam/aup"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", equalTo(AupNotFoundError.AUP_NOT_DEFINED)));
+  }
 }

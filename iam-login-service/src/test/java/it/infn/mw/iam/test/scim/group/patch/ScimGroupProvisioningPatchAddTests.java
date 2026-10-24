@@ -25,17 +25,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -46,17 +50,15 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
 
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  static final String SCIM_CLIENT_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_SECRET = "secret";
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
@@ -73,8 +75,12 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   @Autowired
   private IamGroupRequestRepository groupRequestRepo;
 
-  private ScimGroup engineers;
-  private ScimUser lennon, lincoln;
+  @Autowired
+  Clock clock;
+
+  ScimGroup engineers;
+  ScimUser lennon, lincoln;
+  String scimAccessToken;
 
   private Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
@@ -82,34 +88,26 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
 
   @BeforeEach
   void setup() throws Exception {
-    mockOAuth2Filter.cleanupSecurityContext();
+
+    scimAccessToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, "scim:read", "scim:write");
+
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
   }
 
-  @AfterEach
-  void teardown() throws Exception {
-    deleteScimResource(lennon);
-    deleteScimResource(lincoln);
-    deleteScimResource(engineers);
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
   @Test
   void testGroupPatchAddMember() throws Exception {
 
-    List<ScimUser> members = new ArrayList<ScimUser>();
+    List<ScimUser> members = new ArrayList<>();
     members.add(lennon);
 
     ScimGroupPatchRequest patchReq = getPatchAddUsersRequest(members);
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     assertIsGroupMember(lennon, engineers);
   }
@@ -117,21 +115,26 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   @Test
   void testGroupPatchAddMemberAndDeleteGMR() throws Exception {
 
-    List<ScimUser> members = new ArrayList<ScimUser>();
+    List<ScimUser> members = new ArrayList<>();
+
     IamAccount account =
         iamAccountRepo.findByUsername(TEST_100_USERNAME).orElseThrow(assertionError("Not found"));
     ScimUser scimUser = userConverter.dtoFromEntity(account);
+
     IamAccount account2 =
         iamAccountRepo.findByUsername(TEST_101_USERNAME).orElseThrow(assertionError("Not found"));
     ScimUser scimUser2 = userConverter.dtoFromEntity(account2);
+
     members.add(scimUser);
 
     IamGroup group =
         iamGroupRepo.findByName(TEST_001_GROUPNAME).orElseThrow(assertionError("Not found"));
     ScimGroup scimGroup = groupConverter.dtoFromEntity(group);
 
-    savePendingGroupRequest(scimUser.getUserName(), scimGroup.getDisplayName());
-    savePendingGroupRequest(scimUser2.getUserName(), scimGroup.getDisplayName());
+    savePendingGroupRequest(scimUser.getUserName(), scimGroup.getDisplayName(),
+        Date.from(clock.instant()));
+    savePendingGroupRequest(scimUser2.getUserName(), scimGroup.getDisplayName(),
+        Date.from(clock.instant()));
 
     assertThat(
         groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
@@ -143,12 +146,9 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
 
     ScimGroupPatchRequest patchReq = getPatchAddUsersRequest(members);
 
-    //@formatter:off
-    mvc.perform(patch(scimGroup.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(scimGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     assertIsGroupMember(scimUser, scimGroup);
 
@@ -164,52 +164,48 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   @Test
   void testGroupPatchAddMembers() throws Exception {
 
-    List<ScimUser> members = new ArrayList<ScimUser>();
+    List<ScimUser> members = new ArrayList<>();
     members.add(lennon);
     members.add(lincoln);
 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(members);
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchAddReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchAddReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
-    mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
-      .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    performScimWithToken(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE),
+        scimAccessToken).andExpect(status().isOk())
+          .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
+          .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())));
 
     assertIsGroupMember(lennon, engineers);
     assertIsGroupMember(lincoln, engineers);
-
   }
 
   @Test
   void testGroupPatchAddMembersWithFakeUser() throws Exception {
 
-    List<ScimUser> members = new ArrayList<ScimUser>();
+    List<ScimUser> members = new ArrayList<>();
     ScimUser ringo = addTestUser("ringo", "mail@domain.com", "Ringo", "Star");
+
     members.add(lennon);
     members.add(ringo);
 
-    mvc.perform(delete(ringo.getMeta().getLocation()));
+    performScimWithToken(delete(ringo.getMeta().getLocation()), scimAccessToken)
+      .andExpect(status().isNoContent());
 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(members);
 
-    mvc.perform(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isBadRequest());
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchAddReq)), scimAccessToken)
+        .andExpect(status().isBadRequest());
 
-    mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
-      .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
-      .andExpect(jsonPath("$.members").doesNotExist());
+    performScimWithToken(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE),
+        scimAccessToken).andExpect(status().isOk())
+          .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
+          .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
+          .andExpect(jsonPath("$.members").doesNotExist());
   }
 
   @Test
@@ -217,13 +213,14 @@ class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(new ArrayList<ScimUser>());
 
-    mvc.perform(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNoContent());
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchAddReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
-    mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
-      .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
-      .andExpect(jsonPath("$.members").doesNotExist());
+    performScimWithToken(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE),
+        scimAccessToken).andExpect(status().isOk())
+          .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
+          .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
+          .andExpect(jsonPath("$.members").doesNotExist());
   }
 }
