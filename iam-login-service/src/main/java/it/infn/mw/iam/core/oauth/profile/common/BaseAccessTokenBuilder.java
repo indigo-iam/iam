@@ -174,7 +174,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
-      builder.claim(BaseExtraClaimNames.SCOPE, token.getScope().stream().collect(joining(SPACE)));
+      builder.claim(BaseExtraClaimNames.SCOPE, serializeScopes(token, authentication));
     }
 
     /* include nbf claim if configured */
@@ -199,6 +199,11 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     includeRequiredClaims(builder, authentication, account);
 
     return builder.build();
+  }
+
+  protected String serializeScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+    return token.getScope().stream().collect(joining(SPACE));
   }
 
   protected Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
