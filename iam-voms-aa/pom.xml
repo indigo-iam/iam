@@ -32,11 +32,6 @@
   <name>IAM VOMS AA</name>
   <description>IAM VOMS attribute authority</description>
 
-  <properties>
-    <!-- Override the version that comes from parent pom -->
-    <flyway.version>7.15.0</flyway.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>it.infn.mw.iam-common</groupId>
