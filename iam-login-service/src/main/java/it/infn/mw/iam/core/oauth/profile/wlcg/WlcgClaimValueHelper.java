@@ -47,7 +47,8 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
       case WLCG_VER:
         return WlcgJWTProfile.PROFILE_VERSION;
       case WLCG_GROUPS:
-        return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
+        return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(
+            WlcgScopeOrder.forAuthentication(auth, auth.getOAuth2Request().getScope()),
             account.get().getUserInfo().getGroups()) : null;
       case AUTH_TIME:
         return account.isPresent() && account.get().getLastLoginTime() != null
