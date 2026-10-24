@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
@@ -396,17 +398,63 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
     model.put("durationInMinutes", duration.toMinutes());
-    model.put("hasLocalPassword",
-        account.getPassword() != null && !account.getPassword().isEmpty());
+    model.put(
+        "hasLocalPassword", account.getPassword() != null && !account.getPassword().isEmpty());
 
     String subject = "Account temporarily locked";
 
-    IamEmailNotification notification = createMessage("accountLocked.ftl", model,
-        IamNotificationType.ACCOUNT_LOCKED, subject, asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification =
+        createMessage(
+            "accountLocked.ftl",
+            model,
+            IamNotificationType.ACCOUNT_LOCKED,
+            subject,
+            asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created account locked message for the account {}", account.getUuid());
 
     return notification;
+    }
+
+  public IamEmailNotification createPendingSuspensionAccountsMessage(List<IamAccount> accounts,
+      long suspensionGracePeriodDays) {
+    Map<String, Object> model = new HashMap<>();
+    model.put("accounts", buildPendingSuspensionDigestEntries(accounts,
+        suspensionGracePeriodDays, clock));
+    model.put("suspensionGracePeriodDays", suspensionGracePeriodDays);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = properties.getSubject().getOrDefault("pendingSuspension",
+        "Users pending account suspension");
+
+    return createMessage("pendingSuspensionAccounts.ftl", model,
+        IamNotificationType.ACCOUNT_PENDING_SUSPENSION, subject,
+        adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+  }
+
+  public static List<Map<String, Object>> buildPendingSuspensionDigestEntries(
+      List<IamAccount> accounts, long suspensionGracePeriodDays, Clock clock) {
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    
+    return accounts.stream().map(account -> {
+      LocalDateTime expirationDateTime = account.getEndTime().toInstant().atZone(ZoneId.of("UTC"))
+        .toLocalDateTime();
+      LocalDateTime suspensionDateTime = expirationDateTime.plusDays(suspensionGracePeriodDays);
+      LocalDateTime now = clock.instant().atZone(ZoneId.of("UTC")).toLocalDateTime();
+
+      long days = ChronoUnit.DAYS.between(now, suspensionDateTime);
+      long hours = ChronoUnit.HOURS.between(now, suspensionDateTime) % 24;
+      long minutes = ChronoUnit.MINUTES.between(now, suspensionDateTime) % 60;
+      
+      Map<String, Object> entry = new HashMap<>();
+      entry.put("account", account);
+      entry.put("expirationDateTime", expirationDateTime.format(dateTimeFormatter));
+      entry.put("suspensionDateTime", suspensionDateTime.format(dateTimeFormatter));
+      entry.put("daysLeft", days);
+      entry.put("hoursLeft", hours);
+      entry.put("minutesLeft", minutes);
+      return entry;
+    }).collect(Collectors.toList());
   }
 
   @Override
