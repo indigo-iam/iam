@@ -76,7 +76,8 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
     if (account.isPresent()) {
 
       /* add wlcg.groups */
-      Set<String> groups = WlcgGroupHelper.resolveGroupNames(token.getScope(),
+      Set<String> groups = WlcgGroupHelper.resolveGroupNames(
+          WlcgScopeOrder.forAuthentication(authentication, token.getScope()),
           account.get().getUserInfo().getGroups());
       if (isValidClaimValue(groups)) {
         builder.claim(WLCG_GROUPS, groups);
@@ -89,6 +90,13 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
     }
 
     return builder.build();
+  }
+
+  @Override
+  protected String serializeScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+    return WlcgScopeOrder.serialize(
+        WlcgScopeOrder.forAuthentication(authentication, token.getScope()));
   }
 
   @Override
