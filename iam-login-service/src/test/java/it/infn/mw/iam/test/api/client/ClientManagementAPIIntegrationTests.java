@@ -48,6 +48,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
@@ -275,15 +276,16 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
+      .andExpect(jsonPath("$.access_token_validity_seconds").value(3600))
+      .andExpect(jsonPath("$.refresh_token_validity_seconds").value(2592000))
+      .andExpect(jsonPath("$.id_token_validity_seconds").value(600))
+      .andExpect(jsonPath("$.id_token_signed_response_alg").value(JWSAlgorithm.RS256.getName()))
+      .andExpect(jsonPath("$.device_code_validity_seconds").value(600))
       .andReturn()
       .getResponse()
       .getContentAsString();
 
     RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertEquals(3600, client.getAccessTokenValiditySeconds());
-    assertEquals(2592000, client.getRefreshTokenValiditySeconds());
-    assertEquals(600, client.getIdTokenValiditySeconds());
-    assertEquals(600, client.getDeviceCodeValiditySeconds());
 
     Optional<ClientDetailsEntity> clientDB = clientRepo.findByClientId(client.getClientId());
     assertEquals(client.getAccessTokenValiditySeconds(),
