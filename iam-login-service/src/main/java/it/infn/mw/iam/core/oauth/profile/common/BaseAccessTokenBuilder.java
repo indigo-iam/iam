@@ -201,7 +201,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     return builder.build();
   }
 
-  protected String serializeScopes(OAuth2AccessTokenEntity token,
+  @Override
+  public String serializeScopes(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication) {
     return token.getScope().stream().collect(joining(SPACE));
   }

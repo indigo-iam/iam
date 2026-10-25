@@ -93,10 +93,10 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
   }
 
   @Override
-  protected String serializeScopes(OAuth2AccessTokenEntity token,
+  public String serializeScopes(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication) {
-    return WlcgScopeOrder.serialize(
-        WlcgScopeOrder.forAuthentication(authentication, token.getScope()));
+    return WlcgScopeOrder
+      .serialize(WlcgScopeOrder.forAuthentication(authentication, token.getScope()));
   }
 
   @Override

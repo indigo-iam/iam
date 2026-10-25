@@ -34,7 +34,7 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeOrder;
 class WlcgScopeOrderTests {
 
   @Test
-  void preservesRequestedOrderAndFiltersUnauthorizedScopes() throws Exception {
+  void preservesRequestedOrderAndFiltersUnauthorizedScopes() {
 
     Set<String> authorized = Set.of("wlcg.groups:/a", "wlcg.groups:/b", "wlcg");
     assertThat(
@@ -43,7 +43,7 @@ class WlcgScopeOrderTests {
   }
 
   @Test
-  void removesDuplicatesAndHandlesLegacyRequests() throws Exception {
+  void removesDuplicatesAndHandlesLegacyRequests() {
 
     Set<String> authorized = new LinkedHashSet<>(Set.of("wlcg.groups:/b", "wlcg.groups:/a"));
     assertThat(WlcgScopeOrder.fromRaw("wlcg.groups:/b wlcg.groups:/b", authorized))
