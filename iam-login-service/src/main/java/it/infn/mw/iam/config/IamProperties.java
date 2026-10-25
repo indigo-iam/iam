@@ -618,6 +618,16 @@ public class IamProperties {
   @ValidDashboard
   public static class DashboardProperties {
 
+    private boolean legacyEnabled = true;
+
+    public boolean isLegacyEnabled() {
+      return legacyEnabled;
+    }
+
+    public void setLegacyEnabled(boolean legacyEnabled) {
+      this.legacyEnabled = legacyEnabled;
+    }
+
     private boolean enabled = false;
     private String clientId;
     private String clientSecret;
