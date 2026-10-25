@@ -225,6 +225,8 @@ public class IamSamlProperties {
 
   private int maxAuthenticationAgeSec;
 
+  private boolean forceAuthn = false;
+
   private long metadataRefreshPeriodSec = TimeUnit.HOURS.toSeconds(12);
 
   private String idpEntityIdWhilelist;
@@ -313,6 +315,14 @@ public class IamSamlProperties {
 
   public void setMaxAssertionTimeSec(int maxAssertionTimeSec) {
     this.maxAssertionTimeSec = maxAssertionTimeSec;
+  }
+
+  public boolean isForceAuthn() {
+    return forceAuthn;
+  }
+
+  public void setForceAuthn(boolean forceAuthn) {
+    this.forceAuthn = forceAuthn;
   }
 
   public int getMaxAuthenticationAgeSec() {

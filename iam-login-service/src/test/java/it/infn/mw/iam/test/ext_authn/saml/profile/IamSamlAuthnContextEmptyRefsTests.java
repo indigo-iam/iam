@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.ext_authn.saml.profile;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,6 +51,7 @@ class IamSamlAuthnContextEmptyRefsTests extends SamlAuthenticationTestSupport {
 
     AuthnRequest authnRequest = getAuthnRequestFromSession(session);
 
+    assertFalse(Boolean.TRUE.equals(authnRequest.isForceAuthn()));
     assertThat(authnRequest.getRequestedAuthnContext(), notNullValue());
     assertThat(authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs(), empty());
   }
