@@ -41,7 +41,8 @@ public class WlcgUserinfoHelper extends IamUserinfoHelper {
     Map<String, Object> claims = super.resolveScopeClaims(scopes, account, auth);
     claims.remove("groups");
     Set<String> resolvedGroups =
-        WlcgGroupHelper.resolveGroupNames(scopes, account.getUserInfo().getGroups());
+        WlcgGroupHelper.resolveGroupNames(
+            WlcgScopeOrder.forAuthentication(auth, scopes), account.getUserInfo().getGroups());
     if (!resolvedGroups.isEmpty()) {
       claims.put(WlcgExtraClaimNames.WLCG_GROUPS, resolvedGroups);
     }
