@@ -21,7 +21,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -159,7 +162,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             // Checking that one is redirected from a browser
             HttpResponse<String> loginBrowser = getBrowser(port, "/login");
             assertEquals(302, loginBrowser.statusCode());
-            assertEquals(String.format("http://localhost:%2d/fallback-info", port),
+            assertEquals(String.format("http://localhost:%d/fallback-info", port),
                     loginBrowser.headers().allValues("location").get(0));
 
             // Checking a client doesn't get redirect, but 503
@@ -298,7 +301,8 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.default-jws-algorithm=ES256",
                 "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
                 "--iam.jwk.standalone-fallback-enabled=true",
-                "--iam.jwk.fallback-database-check-interval=500" };
+                "--iam.jwk.fallback-database-check-interval=500",
+                "--iam.jwk.fallback-exit-on-recovery=false" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
         app.start();
@@ -328,6 +332,49 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 app.interrupt();
                 app.join(10_000);
             }
+        }
+    }
+
+    @Test
+    void processExitsWithFailureStatusWhenDatabaseRecovers() throws Exception {
+        int port = freePort();
+        int dbPort = freePort();
+        Path log = Files.createTempFile("fallback-exit-test", ".log");
+
+        List<String> command = List.of(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp", System.getProperty("java.class.path"),
+                "it.infn.mw.iam.IamLoginService",
+                "--server.port=" + port,
+                "--spring.datasource.url=jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam",
+                "--spring.datasource.driver-class-name=org.h2.Driver",
+                "--spring.datasource.username=sa",
+                "--spring.datasource.password=",
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true",
+                "--iam.jwk.fallback-database-check-interval=500");
+
+        Process process = new ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .redirectOutput(log.toFile())
+                .start();
+        Server database = null;
+        try {
+            // Fallback has started, so the exit code will not be from startup failure
+            assertEquals(200, awaitResponse(port, "/jwk", Duration.ofSeconds(30)).statusCode());
+            assertTrue(process.isAlive());
+
+            database = Server.createTcpServer("-tcpPort", String.valueOf(dbPort), "-ifNotExists").start();
+
+            assertTrue(process.waitFor(10, TimeUnit.SECONDS), "process should exit once the database recovers");
+            assertEquals(1, process.exitValue());
+        } finally {
+            if (database != null) {
+                database.stop();
+            }
+            process.destroyForcibly();
         }
     }
 

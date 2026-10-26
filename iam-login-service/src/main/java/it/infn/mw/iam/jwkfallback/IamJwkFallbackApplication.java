@@ -45,7 +45,7 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 })
 @EnableConfigurationProperties(IamProperties.class)
 @Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class,
-        FallbackHealthEndpointWebExtension.class})
+        FallbackHealthEndpointWebExtension.class })
 public class IamJwkFallbackApplication {
 
     @Bean
@@ -75,5 +75,12 @@ public class IamJwkFallbackApplication {
     @Bean
     Duration slowIndicatorLoggingThreshold() {
         return Duration.ofSeconds(10);
+    }
+
+    @Bean
+    FallbackProcessExit fallbackProcessExit(
+            @Value("${iam.jwk.fallback-exit-on-recovery:true}") boolean exitOnRecovery) {
+        return exitOnRecovery ? System::exit : status -> {
+        };
     }
 }

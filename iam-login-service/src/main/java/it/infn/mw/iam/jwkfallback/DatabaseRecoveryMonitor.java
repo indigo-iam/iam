@@ -37,19 +37,22 @@ public class DatabaseRecoveryMonitor {
     private final String url;
     private final String username;
     private final String password;
+    private final FallbackProcessExit processExit;
 
     public DatabaseRecoveryMonitor(
             ConfigurableApplicationContext applicationContext,
             FallbackShutdownSignal shutdownSignal,
             @Value("${spring.datasource.url}") String url,
             @Value("${spring.datasource.username}") String username,
-            @Value("${spring.datasource.password}") String password) {
+            @Value("${spring.datasource.password}") String password,
+            FallbackProcessExit processExit) {
 
         this.applicationContext = applicationContext;
         this.url = url;
         this.username = username;
         this.password = password;
         this.shutdownSignal = shutdownSignal;
+        this.processExit = processExit;
     }
 
     @Scheduled(fixedDelayString = "${iam.jwk.fallback-database-check-interval}")
@@ -60,9 +63,9 @@ public class DatabaseRecoveryMonitor {
             if (connection.isValid(2)) {
                 LOG.info("Database connection recovered. Stopping JWK fallback");
                 applicationContext.close();
-                // System.exit(1);
-                // Signal only after close() has returned.
                 shutdownSignal.signalStopped();
+                processExit.exit(1);
+                
             }
 
         } catch (SQLException e) {

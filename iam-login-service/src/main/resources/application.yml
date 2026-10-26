@@ -106,6 +106,7 @@ iam:
     default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
     standalone-fallback-enabled: ${IAM_JWK_STANDALONE_FALLBACK_ENABLED:false}
     fallback-database-check-interval: ${IAM_JWK_FALLBACK_DATABASE_CHECK_INTERVAL:5000}
+    fallback-exit-on-recovery: ${IAM_JWK_FALLBACK_EXIT_ON_RECOVERY:true}
 
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}

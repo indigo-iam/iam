@@ -348,6 +348,7 @@ public class IamProperties {
     String defaultJweEncryptKeyId = "rsa1";
     boolean standaloneFallbackEnabled = false;
     String fallbackDatabaseCheckInterval = "5000";
+    boolean fallbackExitOnRecovery = true;
 
     public String getKeystoreLocation() {
       return keystoreLocation;
@@ -411,6 +412,14 @@ public class IamProperties {
 
     public void setFallbackDatabaseCheckInterval(String fallbackDatabaseCheckInterval) {
       this.fallbackDatabaseCheckInterval = fallbackDatabaseCheckInterval;
+    }
+
+    public boolean getfallbackExitOnRecovery() {
+      return fallbackExitOnRecovery;
+    }
+
+    public void setfallbackExitOnRecovery(boolean fallbackExitOnRecovery) {
+      this.fallbackExitOnRecovery = fallbackExitOnRecovery;
     }
   }
 
