@@ -209,6 +209,9 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             assertEquals(2, actuatorInfoContent.size());
             assertTrue(actuatorInfoContent.has("git"));
             assertTrue(actuatorInfoContent.has("build"));
+            // Checks the time formatting
+            assertTrue(actuatorInfoContent.get("git").get("commit").get("time").isNumber());
+            assertTrue(actuatorInfoContent.get("build").get("time").isNumber());
 
             // Checking /actuator/health endpoint
             HttpResponse<String> actuatorHealth = get(port, "/actuator/health");

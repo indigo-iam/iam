@@ -33,6 +33,7 @@ import it.infn.mw.iam.core.jwk.JwkKeyStore;
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.util.JwkKeyStoreLoader;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.JacksonConfig;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 
@@ -45,7 +46,7 @@ import it.infn.mw.iam.actuator.health.ExternalConnectivityHealthIndicator;
 })
 @EnableConfigurationProperties(IamProperties.class)
 @Import({ IamJWKSetPublishingEndpoint.class, ExternalConnectivityHealthIndicator.class,
-        FallbackHealthEndpointWebExtension.class })
+        FallbackHealthEndpointWebExtension.class, JacksonConfig.class })
 public class IamJwkFallbackApplication {
 
     @Bean
