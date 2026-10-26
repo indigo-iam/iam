@@ -192,6 +192,35 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
   }
 
   @Test
+  void labelValueMayContainWhitespaceButNotNewLines() throws Exception {
+
+    LabelDTO label = LabelDTO.builder()
+      .prefix(LABEL_PREFIX)
+      .name(LABEL_NAME)
+      .value("a value\twith spaces")
+      .build();
+
+    mvc
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(label)))
+      .andExpect(OK);
+
+    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$[0].value", is(label.getValue())));
+
+    for (String v : new String[] {"carriage\nreturn", "another\rreturn"}) {
+      LabelDTO invalidValueLabel =
+          LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
+      mvc
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+          .content(mapper.writeValueAsString(invalidValueLabel)))
+        .andExpect(BAD_REQUEST)
+        .andExpect(INVALID_VALUE_ERROR_MESSAGE);
+    }
+  }
+
+  @Test
   void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();

@@ -31,7 +31,7 @@ public class NoNewLineOrCarriageReturnValidator implements ConstraintValidator<N
 
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {
-    return value == null || !value.matches(".*(?:[ \r\n\t].*)+");
+    return value == null || !(value.contains("\n") || value.contains("\r"));
   }
 
 }
