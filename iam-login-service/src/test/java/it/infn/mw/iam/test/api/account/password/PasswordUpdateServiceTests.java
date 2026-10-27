@@ -41,6 +41,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordError;
 
 @ExtendWith(MockitoExtension.class)
 class PasswordUpdateServiceTests {
@@ -74,6 +75,24 @@ class PasswordUpdateServiceTests {
     result.setUsername(username);
     result.setUuid(UUID.randomUUID().toString());
     return result;
+  }
+
+  @Test
+  void rejectsOversizedPasswordWhenCalledWithoutBeanValidation() {
+    IamAccount account = newAccount("active_user");
+    account.setActive(true);
+    account.getUserInfo().setEmailVerified(true);
+    String originalHash = encoder.encode(OLD_PASSWORD);
+    account.setPassword(originalHash);
+    Mockito.when(accountRepository.findByUsername(account.getUsername()))
+        .thenReturn(Optional.of(account));
+
+    assertThrows(InvalidPasswordError.class,
+        () -> updateService.updatePassword(account.getUsername(), OLD_PASSWORD, "é".repeat(37)));
+
+    assertThat(account.getPassword(), is(originalHash));
+    Mockito.verify(accountRepository, Mockito.never()).save(Mockito.any());
+    Mockito.verifyNoInteractions(eventPublisher);
   }
 
   @Test

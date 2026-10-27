@@ -22,11 +22,13 @@ import javax.validation.constraints.Size;
 
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
+import it.infn.mw.iam.core.user.validation.ValidBCryptLength;
 
 public class ResetPasswordDTO {
 
   @NotEmpty
   @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
+  @ValidBCryptLength
   private String updatedPassword;
 
   @NotEmpty
