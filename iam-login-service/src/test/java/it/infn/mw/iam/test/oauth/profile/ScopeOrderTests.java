@@ -28,17 +28,17 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
-import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeOrder;
+import it.infn.mw.iam.core.oauth.scope.ScopeOrder;
 
 @SuppressWarnings("deprecation")
-class WlcgScopeOrderTests {
+class ScopeOrderTests {
 
   @Test
   void preservesRequestedOrderAndFiltersUnauthorizedScopes() {
 
     Set<String> authorized = Set.of("wlcg.groups:/a", "wlcg.groups:/b", "wlcg");
     assertThat(
-        WlcgScopeOrder.fromRaw("wlcg.groups:/b wlcg.groups:/unknown wlcg.groups:/a", authorized))
+        ScopeOrder.fromRaw("wlcg.groups:/b wlcg.groups:/unknown wlcg.groups:/a", authorized))
           .containsExactly("wlcg.groups:/b", "wlcg.groups:/a", "wlcg");
   }
 
@@ -46,9 +46,9 @@ class WlcgScopeOrderTests {
   void removesDuplicatesAndHandlesLegacyRequests() {
 
     Set<String> authorized = new LinkedHashSet<>(Set.of("wlcg.groups:/b", "wlcg.groups:/a"));
-    assertThat(WlcgScopeOrder.fromRaw("wlcg.groups:/b wlcg.groups:/b", authorized))
+    assertThat(ScopeOrder.fromRaw("wlcg.groups:/b wlcg.groups:/b", authorized))
       .containsExactly("wlcg.groups:/b", "wlcg.groups:/a");
-    assertThat(WlcgScopeOrder.fromRaw(null, authorized)).containsExactly("wlcg.groups:/a",
+    assertThat(ScopeOrder.fromRaw(null, authorized)).containsExactly("wlcg.groups:/a",
         "wlcg.groups:/b");
   }
 
@@ -58,7 +58,7 @@ class WlcgScopeOrderTests {
     OAuth2Authentication authentication =
         authentication(false, Map.of("scope", "wlcg.groups:/b wlcg.groups:/a"), null);
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/a", "wlcg.groups:/b"))).containsExactly("wlcg.groups:/b",
             "wlcg.groups:/a");
   }
@@ -70,7 +70,7 @@ class WlcgScopeOrderTests {
         authentication(true, Map.of("scope", "wlcg.groups:/a wlcg.groups:/b"),
             Map.of("scope", "wlcg.groups:/b wlcg.groups:/a"));
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/a", "wlcg.groups:/b"))).containsExactly("wlcg.groups:/b",
             "wlcg.groups:/a");
   }
@@ -81,7 +81,7 @@ class WlcgScopeOrderTests {
     OAuth2Authentication authentication =
         authentication(true, Map.of("scope", "wlcg.groups:/b wlcg.groups:/a"), Map.of());
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/a", "wlcg.groups:/b"))).containsExactly("wlcg.groups:/b",
             "wlcg.groups:/a");
   }
@@ -92,7 +92,7 @@ class WlcgScopeOrderTests {
     OAuth2Authentication authentication =
         authentication(true, Map.of("scope", "wlcg.groups:/b wlcg.groups:/a"), null);
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/a", "wlcg.groups:/b"))).containsExactly("wlcg.groups:/b",
             "wlcg.groups:/a");
   }
@@ -102,7 +102,7 @@ class WlcgScopeOrderTests {
 
     OAuth2Authentication authentication = authentication(false, Map.of(), null);
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/b", "wlcg.groups:/a"))).containsExactly("wlcg.groups:/a",
             "wlcg.groups:/b");
   }
@@ -112,7 +112,7 @@ class WlcgScopeOrderTests {
 
     OAuth2Authentication authentication = authentication(false, null, null);
 
-    assertThat(WlcgScopeOrder.forAuthentication(authentication,
+    assertThat(ScopeOrder.forAuthentication(authentication,
         Set.of("wlcg.groups:/b", "wlcg.groups:/a"))).containsExactly("wlcg.groups:/a",
             "wlcg.groups:/b");
   }
@@ -122,9 +122,9 @@ class WlcgScopeOrderTests {
 
     Set<String> authorized = Set.of("wlcg.groups:/b", "wlcg.groups:/a");
 
-    assertThat(WlcgScopeOrder.fromRaw("   ", authorized)).containsExactly("wlcg.groups:/a",
+    assertThat(ScopeOrder.fromRaw("   ", authorized)).containsExactly("wlcg.groups:/a",
         "wlcg.groups:/b");
-    assertThat(WlcgScopeOrder.fromRaw("\t wlcg.groups:/b \n wlcg.groups:/a   ", authorized))
+    assertThat(ScopeOrder.fromRaw("\t wlcg.groups:/b \n wlcg.groups:/a   ", authorized))
       .containsExactly("wlcg.groups:/b", "wlcg.groups:/a");
   }
 
@@ -132,8 +132,8 @@ class WlcgScopeOrderTests {
   void supportsLongScopesAndEmptyAuthorizedScopes() {
 
     String longScope = "storage.read:/" + "a".repeat(5000);
-    assertThat(WlcgScopeOrder.fromRaw(longScope, Set.of(longScope))).containsExactly(longScope);
-    assertThat(WlcgScopeOrder.fromRaw("wlcg.groups:/a", Set.of())).isEmpty();
+    assertThat(ScopeOrder.fromRaw(longScope, Set.of(longScope))).containsExactly(longScope);
+    assertThat(ScopeOrder.fromRaw("wlcg.groups:/a", Set.of())).isEmpty();
   }
 
   @Test
@@ -143,8 +143,8 @@ class WlcgScopeOrderTests {
     ordered.add("wlcg.groups:/b");
     ordered.add("wlcg.groups:/a");
 
-    assertThat(WlcgScopeOrder.serialize(ordered)).isEqualTo("wlcg.groups:/b wlcg.groups:/a");
-    assertThat(WlcgScopeOrder.serialize(Set.of())).isEmpty();
+    assertThat(ScopeOrder.serialize(ordered)).isEqualTo("wlcg.groups:/b wlcg.groups:/a");
+    assertThat(ScopeOrder.serialize(Set.of())).isEmpty();
   }
 
   private static OAuth2Authentication authentication(boolean refresh,
