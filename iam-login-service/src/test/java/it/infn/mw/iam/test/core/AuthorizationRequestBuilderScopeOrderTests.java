@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,9 +54,9 @@ class AuthorizationRequestBuilderScopeOrderTests {
 
     builder.filterRequestedScopes(parameters, authentication, "client");
 
-    assertThat(parameters.get("scope")).isEqualTo("wlcg wlcg.groups wlcg.groups:/Optional");
-    assertThat(builder.build(parameters).getRequestParameters().get("scope"))
-      .isEqualTo("wlcg wlcg.groups wlcg.groups:/Optional");
+    assertEquals("wlcg wlcg.groups wlcg.groups:/Optional", parameters.get("scope"));
+    assertEquals("wlcg wlcg.groups wlcg.groups:/Optional",
+        builder.build(parameters).getRequestParameters().get("scope"));
 
     IamGroup analysis = group("Analysis");
     IamGroup production = group("Production");
@@ -83,7 +84,7 @@ class AuthorizationRequestBuilderScopeOrderTests {
 
     builder.filterRequestedScopes(parameters, authentication, "client");
 
-    assertThat(parameters.get("scope")).isEqualTo("wlcg wlcg.groups:/Optional wlcg.groups");
+    assertEquals("wlcg wlcg.groups:/Optional wlcg.groups", parameters.get("scope"));
   }
 
   private static IamGroup group(String name) {
