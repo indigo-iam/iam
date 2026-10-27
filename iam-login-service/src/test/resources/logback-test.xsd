@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="configuration">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="include">
+					<xs:complexType>
+						<xs:attribute name="resource" use="required" />
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="root">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="appender-ref">
+								<xs:complexType>
+									<xs:attribute name="ref" use="required" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="level" use="required" />
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="logger" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:attribute name="name" use="required" />
+						<xs:attribute name="level" use="required" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
