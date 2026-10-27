@@ -28,27 +28,34 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ScimNestedGroupTests {
+
+  static final String SCIM_CLIENT_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_SECRET = "secret";
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -57,23 +64,22 @@ class ScimNestedGroupTests {
   private ScimResourceLocationProvider scimResourceLocationProvider;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-  @Autowired
   private MockMvc mvc;
 
+  private String scimAccessToken;
+
   @BeforeEach
-  void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  void setup() throws Exception {
+    scimAccessToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, "scim:read", "scim:write");
   }
 
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  private ResultActions performScim(MockHttpServletRequestBuilder request) throws Exception {
+
+    return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + scimAccessToken));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateNewChildGroup() throws Exception {
 
     ScimGroup animals = createGroup("animals");
@@ -86,7 +92,6 @@ class ScimNestedGroupTests {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateGroupWithNotExistingParent() throws Exception {
     String uuid = "fake-group-very-long-uuid";
     ScimGroupRef fakeGroupRef = ScimGroupRef.builder()
@@ -98,82 +103,65 @@ class ScimNestedGroupTests {
     ScimIndigoGroup scimFakeParentGroup =
         ScimIndigoGroup.getBuilder().parentGroup(fakeGroupRef).build();
 
-    // @formatter:off
-    mvc.perform(post("/scim/Groups")
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(ScimGroup.builder("mammals").indigoGroup(scimFakeParentGroup).build())))
-      .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.status", equalTo("404")))
-      .andExpect(jsonPath("$.detail", equalTo(format("Parent group '%s' not found", uuid))));
-    // @formatter:on
+    performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper
+        .writeValueAsString(ScimGroup.builder("mammals").indigoGroup(scimFakeParentGroup).build())))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.status", equalTo("404")))
+          .andExpect(jsonPath("$.detail", equalTo(format("Parent group '%s' not found", uuid))));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testDeleteParentGroupWithChildren() throws Exception {
+
     ScimGroup animals = createGroup("animals");
     createGroup("mammals", animals);
 
-    // @formatter:off
-    mvc.perform(delete(animals.getMeta().getLocation()))
-      .andExpect(status().isBadRequest())
+    performScim(delete(animals.getMeta().getLocation())).andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
       .andExpect(jsonPath("$.detail", equalTo("Group is not empty")));
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testDeleteChildGroup() throws Exception {
+
     ScimGroup animals = createGroup("animals");
     ScimGroup mammals = createGroup("mammals", animals);
 
-    // @formatter:off
-    mvc.perform(delete(mammals.getMeta().getLocation()))
-      .andExpect(status().isNoContent());
-    // @formatter:on
+    performScim(delete(mammals.getMeta().getLocation())).andExpect(status().isNoContent());
 
-    // @formatter:off
-    mvc.perform(get("/scim/Groups/{id}", animals.getId()))
-      .andExpect(status().isOk())
+    performScim(get("/scim/Groups/{id}", animals.getId())).andExpect(status().isOk())
       .andExpect(jsonPath("$.id", equalTo(animals.getId())))
       .andExpect(jsonPath("$.members").doesNotExist());
-    // @formatter:on
   }
 
-
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testGetChildGroup() throws Exception {
     ScimGroup animals = createGroup("animals");
     ScimGroup mammals = createGroup("mammals", animals);
 
-    // @formatter:off
-    mvc.perform(get("/scim/Groups/{id}", mammals.getId()))
-      .andExpect(status().isOk())
+    performScim(get("/scim/Groups/{id}", mammals.getId())).andExpect(status().isOk())
       .andExpect(jsonPath("$.id", equalTo(mammals.getId())))
       .andExpect(jsonPath("$.displayName", equalTo(mammals.getDisplayName())))
-      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.display", equalTo(animals.getDisplayName())))
-      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.value", equalTo(animals.getId())))
-      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.$ref", equalTo(animals.getMeta().getLocation())));
-    // @formatter:on
+      .andExpect(jsonPath("$." + INDIGO_GROUP_SCHEMA + ".parentGroup.display",
+          equalTo(animals.getDisplayName())))
+      .andExpect(
+          jsonPath("$." + INDIGO_GROUP_SCHEMA + ".parentGroup.value", equalTo(animals.getId())))
+      .andExpect(jsonPath("$." + INDIGO_GROUP_SCHEMA + ".parentGroup.$ref",
+          equalTo(animals.getMeta().getLocation())));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateGroupWithASlashIntoDisplayName() throws Exception {
     ScimGroup group = ScimGroup.builder("te/st").build();
 
-    // @formatter:off
-    mvc.perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", equalTo("Group displayName cannot contain a slash character")));
-    // @formatter:on
+    performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.detail", equalTo("Group displayName cannot contain a slash character")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateTwoGroupsWithSameNameButDifferentParent() throws Exception {
     ScimGroup cms = createGroup("cms");
     ScimGroup alice = createGroup("alice");
@@ -188,7 +176,6 @@ class ScimNestedGroupTests {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateTwoGroupsWithSameNameAndSameParent() throws Exception {
     ScimGroup cms = createGroup("cms");
 
@@ -196,16 +183,13 @@ class ScimNestedGroupTests {
     assertNotNull(cmsTest);
     assertThat(cmsTest.getDisplayName(), equalTo("cms/test"));
 
-    // @formatter:off
-    mvc.perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(buildGroupObject("test", cms))))
-      .andExpect(status().isConflict())
-      .andExpect(jsonPath("$.detail", equalTo("Duplicated group 'cms/test'")));
-    // @formatter:on
+    performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(buildGroupObject("test", cms))))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.detail", equalTo("Duplicated group 'cms/test'")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateGroupWithFullNameTooLong() throws Exception {
     String name = "group_with_fifty_characters_name_has_a_long_name_";
     ScimGroup group = createGroup(name);
@@ -216,28 +200,22 @@ class ScimNestedGroupTests {
 
     group = buildGroupObject(name, group);
 
-    // @formatter:off
-    mvc.perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", equalTo("Group displayName length cannot exceed 512 characters")));
-    // @formatter:on
+    performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.detail", equalTo("Group displayName length cannot exceed 512 characters")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
   void testCreateGroupWithNameTooLong() throws Exception {
     ScimGroup group =
         buildGroupObject("group_with_name_longer_than_fifty_characters_is_not_allowed", null);
 
     assertNotNull(group);
 
-    // @formatter:off
-    mvc.perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", equalTo("Group name length cannot exceed 50 characters")));
-    // @formatter:on
+    performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail", equalTo("Group name length cannot exceed 50 characters")));
   }
 
   private ScimGroup createGroup(String name) throws Exception {
@@ -245,15 +223,14 @@ class ScimNestedGroupTests {
   }
 
   private ScimGroup createGroup(String name, ScimGroup parent) throws Exception {
+
     ScimGroup group = buildGroupObject(name, parent);
 
-    String response = mvc
-      .perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String response = performScim(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
 
     return objectMapper.readValue(response, ScimGroup.class);
   }

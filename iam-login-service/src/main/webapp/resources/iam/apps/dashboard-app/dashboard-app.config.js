@@ -13,6 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+angular.module('dashboardApp')
+    .factory('csrfInterceptor', ['$document', '$window', function ($document, $window) {
+        return {
+            request: function (config) {
+                var method = (config.method || 'GET').toUpperCase();
+
+                if (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method)) {
+                    return config;
+                }
+
+                var document = $document[0];
+                var target = new $window.URL(config.url, document.baseURI);
+
+                // Do not send token CSRF to different origins.
+                if (target.origin !== $window.location.origin) {
+                    return config;
+                }
+
+                var token = document.querySelector('meta[name="_csrf"]');
+                var header = document.querySelector('meta[name="_csrf_header"]');
+
+                if (token && token.content && header && header.content) {
+                    config.headers = config.headers || {};
+                    config.headers[header.content] = token.content;
+                }
+
+                return config;
+            }
+        };
+    }]);
+
 angular.module('dashboardApp').value('getUserInfo', getUserInfo);
 
 angular
@@ -21,7 +52,7 @@ angular
         function ($stateProvider, $urlRouterProvider, $httpProvider) {
             $httpProvider.interceptors.push('gatewayErrorInterceptor');
             $httpProvider.interceptors.push('sessionExpiredInterceptor');
-
+            $httpProvider.interceptors.push('csrfInterceptor');
 
             $urlRouterProvider.otherwise(function ($injector, $location) {
                 return '/home';

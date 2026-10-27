@@ -19,6 +19,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -107,7 +108,7 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
   @WithAnonymousUser
   void addingProxyRequiresAuthenticatedUser() throws Exception {
 
-    mvc.perform(put(ACCOUNT_PROXY_CERT_ENDPOINT)).andExpect(UNAUTHORIZED);
+    mvc.perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())).andExpect(UNAUTHORIZED);
 
   }
 
@@ -118,7 +119,8 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     ProxyCertificateDTO dto = new ProxyCertificateDTO();
 
     mvc
-      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
+      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("Invalid proxy")));
@@ -136,7 +138,8 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     dto.setCertificateChain(pcPem);
 
     mvc
-      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
+      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("does not own")));
@@ -150,7 +153,8 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     dto.setCertificateChain(getTest0CertString());
 
     mvc
-      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
+      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("Error reading proxy certificate")));
@@ -164,7 +168,8 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     dto.setCertificateChain("JunkJunk");
 
     mvc
-      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
+      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("Error reading proxy certificate")));
@@ -188,7 +193,8 @@ public class AccountProxyCertificatesTests extends X509TestSupport {
     dto.setCertificateChain(pcPem);
 
     mvc
-      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).content(mapper.writeValueAsString(dto))
+      .perform(put(ACCOUNT_PROXY_CERT_ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(status().isOk());
 

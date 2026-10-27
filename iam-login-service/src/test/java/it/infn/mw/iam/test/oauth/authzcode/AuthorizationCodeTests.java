@@ -142,7 +142,8 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -188,7 +189,8 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).session(session)
+      .perform(post(LOGIN_URL).with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -211,7 +213,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
 
-    mvc.perform(post(SIGN_AUP_URL).session(session).with(securityContext(context)))
+    mvc.perform(post(SIGN_AUP_URL).with(csrf()).session(session).with(securityContext(context)))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(uriComponents.encode().toUriString()))
       .andReturn()

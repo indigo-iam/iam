@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -51,6 +52,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -129,20 +131,27 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
+  private RequestPostProcessor adminUser() {
+    return user("admin").roles("ADMIN", "USER");
+  }
+
   private void clientManagementFailsWithResponseForClient(ResultMatcher response, String clientId)
       throws Exception {
     String clientJson = ClientJsonStringBuilder.builder().build();
     mvc.perform(get(ClientManagementAPIController.ENDPOINT)).andExpect(response);
     mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(response);
+    mvc
+      .perform(put(ClientManagementAPIController.ENDPOINT + "/" + clientId).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(response);
     mvc
       .perform(
-          put(ClientManagementAPIController.ENDPOINT + "/" + clientId).contentType(APPLICATION_JSON)
-            .content(clientJson))
-      .andExpect(response);
-    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/" + clientId))
+          delete(ClientManagementAPIController.ENDPOINT + "/" + clientId).with(csrf().asHeader()))
       .andExpect(response);
   }
 
@@ -204,7 +213,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .andExpect(OK)
       .andExpect(jsonPath("$.client_id").value("client"));
 
-    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/client")).andExpect(NO_CONTENT);
+    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/client").with(csrf().asHeader()))
+      .andExpect(NO_CONTENT);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(NOT_FOUND)
@@ -218,7 +228,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
     String responseJson = mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andReturn()
@@ -232,7 +243,10 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     final String url =
         String.format("%s/%s/rat", ClientManagementAPIController.ENDPOINT, client.getClientId());
 
-    String responseJson2 = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
+    String responseJson2 = mvc.perform(post(url).with(csrf().asHeader()))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
     client = mapper.readValue(responseJson2, RegisteredClientDTO.class);
     assertThat(client.getClientSecret(), nullValue());
     assertThat(client.getRegistrationAccessToken(), notNullValue());
@@ -245,7 +259,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
     String responseJson = mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andReturn()
@@ -258,6 +273,7 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
 
     responseJson = mvc
       .perform(put(ClientManagementAPIController.ENDPOINT + "/" + clientDto.getClientId())
+        .with(csrf().asHeader())
         .contentType("application/json")
         .content(mapper.writeValueAsString(clientDto)))
       .andExpect(status().is2xxSuccessful())
@@ -280,7 +296,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .build();
 
     String responseJson = mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andReturn()
@@ -309,7 +326,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .build();
 
     responseJson = mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andReturn()
@@ -336,7 +354,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .build();
 
     responseJson = mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(CREATED)
       .andReturn()
@@ -366,7 +385,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
         ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1).build();
 
     mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
@@ -380,7 +400,8 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
         ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1).build();
 
     mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+      .perform(post(ClientManagementAPIController.ENDPOINT).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(clientJson))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
@@ -394,7 +415,9 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client"))
+    mvc
+      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client")
+        .with(csrf().asHeader()))
       .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
@@ -410,7 +433,9 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client"))
+    mvc
+      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client")
+        .with(csrf().asHeader()))
       .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
@@ -419,37 +444,32 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   }
 
   @Test
-  // @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void testClientRevokeAllRefreshTokensWorks() throws Exception {
 
-    context.useBearerAdminToken();
     getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password",
         "openid profile offline_access");
+
     getPasswordToken(TEST_CLIENT_ID, "secret", "admin", "password", "openid profile");
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(1));
 
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
 
     mvc
       .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-refresh-tokens",
-          TEST_CLIENT_ID))
+          TEST_CLIENT_ID).with(adminUser()).with(csrf().asHeader()))
       .andExpect(OK);
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
 
-    /*
-     * It was 1 before changing the effects of the refresh token revocation: access-token now are
-     * not deleted when the refresh token is revoked, same behavior of the token-not-in-database
-     * solution
-     */
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    // Revoking refresh tokens does not delete the associated access tokens.
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
   }
@@ -457,29 +477,29 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
   @Test
   void testClientRevokeAllAccessTokensWorks() throws Exception {
 
-    context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
     getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password",
         "openid profile offline_access");
-    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
-    context.useBearerAdminToken();
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
+
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(1));
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
 
     mvc
       .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-access-tokens",
-          TEST_CLIENT_ID))
+          TEST_CLIENT_ID).with(adminUser()).with(csrf().asHeader()))
       .andExpect(OK);
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(1));
 
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
   }
@@ -490,36 +510,37 @@ class ClientManagementAPIIntegrationTests extends TokenGetterUtils {
     ClientDetailsEntity client =
         clientDetailsService.findClientByClientId(TEST_CLIENT_ID).orElseThrow();
 
-    context.useLocalUser(TESTUSER_USERNAME, TEST_CLIENT_ID, USER_AUTHORITIES);
     getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password",
         "openid profile offline_access");
-    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
-    context.useBearerAdminToken();
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    getPasswordToken(TEST_CLIENT_ID, "secret", TESTUSER_USERNAME, "password", "openid profile");
+
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(1));
 
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(2));
 
     String oldSecret = client.getClientSecret();
-    String newSecret = mvc
-      .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/reset-client",
-          TEST_CLIENT_ID))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+
+    String newSecret =
+        mvc
+          .perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/reset-client",
+              TEST_CLIENT_ID).with(adminUser()).with(csrf().asHeader()))
+          .andExpect(OK)
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
 
     assertNotEquals(oldSecret, newSecret);
 
-    mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(REFRESH_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
 
-    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH).with(adminUser()).param("clientId", TEST_CLIENT_ID))
       .andExpect(OK)
       .andExpect(jsonPath("$.totalResults").value(0));
   }

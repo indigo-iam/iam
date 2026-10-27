@@ -20,6 +20,7 @@ import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticat
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -84,7 +85,8 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
     clock = Clock.systemUTC();
     mfaAccount = getTotpMfaAccount(clock.instant());
     totpMfa = getTotpMfaFor(mfaAccount, clock.instant());
-    when(accountRepository.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
+    when(accountRepository.findByUsername(mfaAccount.getUsername()))
+      .thenReturn(Optional.of(mfaAccount));
     when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
   }
 
@@ -96,16 +98,18 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
         iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     Mockito.when(totpMfaService.addTotpMfaSecret(mfaAccount)).thenReturn(totpMfa);
 
-    Mockito.when(totpMfaService.generateQRCodeFromSecret(TOTP_MFA_SECRET, TOTP_USERNAME)).thenThrow(
-        new QrGenerationException("Simulated QR generation failure", new RuntimeException()));
+    Mockito.when(totpMfaService.generateQRCodeFromSecret(TOTP_MFA_SECRET, TOTP_USERNAME))
+      .thenThrow(
+          new QrGenerationException("Simulated QR generation failure", new RuntimeException()));
 
-    mvc.perform(put(ADD_SECRET_URL))
+    mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(content().string(containsString("Could not generate QR code")));
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).addTotpMfaSecret(mfaAccount);
-    Mockito.verify(totpMfaService, times(1)).generateQRCodeFromSecret(TOTP_MFA_SECRET, TOTP_USERNAME);
+    Mockito.verify(totpMfaService, times(1))
+      .generateQRCodeFromSecret(TOTP_MFA_SECRET, TOTP_USERNAME);
   }
 
   @Test
@@ -119,7 +123,8 @@ class AuthenticationAppSettingsTotpTests extends MultiFactorTestSupport {
 
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isOk());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isOk());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);

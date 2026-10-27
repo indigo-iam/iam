@@ -415,10 +415,6 @@
                         <input type="radio" id="tokenEndpointAuthMethodPost" name="tokenEndpointAuthMethod" value="SECRET_POST" <%-(client.tokenEndpointAuthMethod == 'SECRET_POST' ? 'checked' : '')%>>
                         <label for="tokenEndpointAuthMethodPost" class="radio" data-i18n="client.client-form.secret-post">Client Secret over HTTP POST</label>
                     </div>
-                    <div>
-                        <input type="radio" id="tokenEndpointAuthMethodSymm" name="tokenEndpointAuthMethod" value="SECRET_JWT" <%-(client.tokenEndpointAuthMethod == 'SECRET_JWT' ? 'checked' : '')%>>
-                        <label for="tokenEndpointAuthMethodSymm" class="radio" data-i18n="client.client-form.secret-symmetric-jwt">Client Secret via symmetrically-signed JWT assertion</label>
-                    </div>
 					<% } %>
                     <div>
                         <input type="radio" id="tokenEndpointAuthMethodAssym" name="tokenEndpointAuthMethod" value="PRIVATE_KEY" <%-((client.tokenEndpointAuthMethod == 'PRIVATE_KEY')  || (heartMode && !client.tokenEndpointAuthMethod) ? 'checked' : '')%>>

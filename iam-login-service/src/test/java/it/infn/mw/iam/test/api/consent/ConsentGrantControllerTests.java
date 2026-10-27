@@ -80,8 +80,7 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
                 .andExpect(jsonPath("$[0].userId").value(TEST_USERNAME))
                 .andExpect(jsonPath("$[0].clientId").value(CONSENT_CLIENT_ID))
                 .andExpect(jsonPath("$[0].clientName").value("Consent Client"))
-                .andExpect(
-                    jsonPath("$[0].clientDescription").value("Consent client description"))
+                .andExpect(jsonPath("$[0].clientDescription").value("Consent client description"))
                 .andExpect(jsonPath("$[0].authorizationDate").isNotEmpty())
                 .andExpect(jsonPath("$[0].accessDate").isNotEmpty())
                 .andExpect(jsonPath("$[0].timeoutDate").doesNotExist())
@@ -113,9 +112,7 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
 
     performAuthorizationCodeFlowAndExpectNoForwardToConfirmAccess();
 
-    mvc.perform(delete("/iam/api/approved/" + dto.id())
-        .with(csrf())
-        .session(session))
+    mvc.perform(delete("/iam/api/approved/" + dto.id()).with(csrf().asHeader()).session(session))
       .andExpect(status().isNoContent());
 
     performAuthorizationCodeFlowAndExpectForwardToConfirmAccess();

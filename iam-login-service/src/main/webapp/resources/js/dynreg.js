@@ -301,7 +301,7 @@ var DynRegEditView = Backbone.View.extend({
 
 		// show or hide the signing algorithm method depending on what's
 		// selected
-		if (tokenEndpointAuthMethod == 'private_key_jwt' || tokenEndpointAuthMethod == 'client_secret_jwt') {
+		if (tokenEndpointAuthMethod == 'private_key_jwt') {
 			$('#tokenEndpointAuthSigningAlg', this.el).show();
 		} else {
 			$('#tokenEndpointAuthSigningAlg', this.el).hide();

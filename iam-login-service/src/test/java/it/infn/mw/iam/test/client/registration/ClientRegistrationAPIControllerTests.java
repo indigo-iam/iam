@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,7 +74,6 @@ class ClientRegistrationAPIControllerTests {
 
   private ClientDetailsEntity clientUpscopingOff;
 
-
   @BeforeEach
   void setup() throws Exception {
 
@@ -82,7 +82,8 @@ class ClientRegistrationAPIControllerTests {
     client.setScope(Set.of("test"));
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(user("test").roles("USER"))
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .with(user("test").roles("USER"))
         .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
@@ -96,7 +97,7 @@ class ClientRegistrationAPIControllerTests {
 
     client.setUpScopingEnabled(false);
 
-    mvc.perform(put(IAM_CLIENTS_MANAGMENT_API_URL + response.getClientId())
+    mvc.perform(put(IAM_CLIENTS_MANAGMENT_API_URL + response.getClientId()).with(csrf().asHeader())
       .with(user("admin").roles("ADMIN"))
       .contentType(APPLICATION_JSON)
       .content(mapper.writeValueAsString(client))).andExpect(OK);
@@ -104,7 +105,8 @@ class ClientRegistrationAPIControllerTests {
     String assingOwner = IAM_CLIENTS_MANAGMENT_API_URL + response.getClientId() + "/owners/"
         + accountRepo.findByUsername("admin").get().getUuid();
 
-    mvc.perform(post(assingOwner).with(user("admin").roles("ADMIN"))).andExpect(CREATED);
+    mvc.perform(post(assingOwner).with(csrf().asHeader()).with(user("admin").roles("ADMIN")))
+      .andExpect(CREATED);
 
     clientUpscopingOff = clientRepository.findByClientId(response.getClientId()).get();
 
@@ -125,7 +127,8 @@ class ClientRegistrationAPIControllerTests {
     client.setTokenEndpointAuthMethod(null);
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.client_id").exists())
@@ -162,9 +165,70 @@ class ClientRegistrationAPIControllerTests {
     client.setTokenEndpointAuthMethod(null);
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST);
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userShouldNotCreateClientWithClientSecretJwt() throws Exception {
+    String requestBody = """
+        {
+          "redirect_uris": [
+            "https://another.client.example/oidc"
+          ],
+          "client_name": "another-example-client",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid email profile offline_access",
+          "grant_types": [
+            "refresh_token",
+            "authorization_code"
+          ],
+          "response_types": [
+            "code"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(
+          post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON).content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminShouldNotCreateClientWithClientSecretJwt() throws Exception {
+    String requestBody = """
+        {
+          "redirect_uris": [
+            "https://another.client.example/oidc"
+          ],
+          "client_name": "another-example-client",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid email profile offline_access",
+          "grant_types": [
+            "refresh_token",
+            "authorization_code"
+          ],
+          "response_types": [
+            "code"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(
+          post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON).content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
 
   @Test
@@ -179,7 +243,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -205,7 +270,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(false, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -230,7 +296,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -256,7 +323,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(false, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -282,9 +350,9 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(
-          put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
-            .content(mapper.writeValueAsString(client)))
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andReturn()
       .getResponse()
@@ -308,7 +376,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -323,9 +392,10 @@ class ClientRegistrationAPIControllerTests {
     client.setUpScopingEnabled(false);
 
     response = mapper.readValue(mvc
-      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
-        .contentType(APPLICATION_JSON)
-        .content(mapper.writeValueAsString(client)))
+      .perform(
+          put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId()).with(csrf().asHeader())
+            .contentType(APPLICATION_JSON)
+            .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andReturn()
       .getResponse()
@@ -348,9 +418,9 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(
-          put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
-            .content(mapper.writeValueAsString(client)))
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andReturn()
       .getResponse()
@@ -374,7 +444,8 @@ class ClientRegistrationAPIControllerTests {
     assertEquals(true, client.isUpScopingEnabled());
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -389,9 +460,10 @@ class ClientRegistrationAPIControllerTests {
     client.setUpScopingEnabled(false);
 
     response = mapper.readValue(mvc
-      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
-        .contentType(APPLICATION_JSON)
-        .content(mapper.writeValueAsString(client)))
+      .perform(
+          put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId()).with(csrf().asHeader())
+            .contentType(APPLICATION_JSON)
+            .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andReturn()
       .getResponse()
@@ -416,7 +488,8 @@ class ClientRegistrationAPIControllerTests {
     client.setJwk(NOT_A_JSON_STRING);
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", startsWith("Invalid JSON object")));
@@ -439,7 +512,8 @@ class ClientRegistrationAPIControllerTests {
     String expectedMessage = "registerClient.request.jwksUri: must be a valid URL";
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -463,7 +537,8 @@ class ClientRegistrationAPIControllerTests {
         "registerClient.request: private_key_jwt requires a jwks uri or a jwk value";
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -473,7 +548,8 @@ class ClientRegistrationAPIControllerTests {
 
     try {
       mvc
-        .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(client)))
         .andExpect(CREATED);
     } finally {
@@ -489,7 +565,8 @@ class ClientRegistrationAPIControllerTests {
     expectedMessage = "registerClient.request: private_key_jwt requires a jwks uri or a jwk value";
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -500,7 +577,8 @@ class ClientRegistrationAPIControllerTests {
     expectedMessage = "Grant type not allowed: client_credentials";
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -517,7 +595,8 @@ class ClientRegistrationAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED);
 
@@ -527,10 +606,94 @@ class ClientRegistrationAPIControllerTests {
         "updateClient.request: private_key_jwt requires a jwks uri or a jwk value";
 
     mvc
-      .perform(
-          put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
-            .content(mapper.writeValueAsString(client)))
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void userShouldNotUpdateClientWithClientSecretJwt() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    client.setScope(Set.of("openid"));
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    String requestBody = """
+        {
+          "client_name": "test-client-creation",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid",
+          "grant_types": [
+            "client_credentials"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(put(IAM_CLIENT_REGISTRATION_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  void adminShouldNotUpdateClientWithClientSecretJwt() throws Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+    client.setScope(Set.of("openid"));
+
+    RegisteredClientDTO response = mapper.readValue(mvc
+      .perform(post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), RegisteredClientDTO.class);
+
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
+
+    String requestBody = """
+        {
+          "client_name": "test-client-creation",
+          "token_endpoint_auth_method": "client_secret_jwt",
+          "scope": "openid",
+          "grant_types": [
+            "client_credentials"
+          ]
+        }
+        """;
+
+    String expectedMessage = "client_secret_jwt is not supported";
+
+    mvc
+      .perform(put(IAM_CLIENTS_MANAGMENT_API_URL + createdClient.getClientId())
+        .contentType(APPLICATION_JSON)
+        .content(requestBody))
+      .andExpect(UNAUTHORIZED)
+      .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
 }

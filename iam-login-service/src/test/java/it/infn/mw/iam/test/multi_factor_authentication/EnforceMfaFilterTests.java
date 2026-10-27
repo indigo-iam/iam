@@ -15,14 +15,14 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.REQUESTING_MFA;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_ACTIVATE_URL;
 import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.AUP_SIGN_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import javax.servlet.http.HttpSession;
 
@@ -116,7 +116,7 @@ class EnforceMfaFilterTests {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/iam/mfa/activate"))
-                .andExpect(header().doesNotExist("Set-Cookie"));
+                .andExpect(cookie().doesNotExist("JSESSIONID"));
     }
 
     @Test
