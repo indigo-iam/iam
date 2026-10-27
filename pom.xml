@@ -64,6 +64,7 @@
 
     <rest-assured.version>5.5.7</rest-assured.version>
     <json-path.version>2.9.0</json-path.version>
+    <json-patch.version>1.13</json-patch.version>
     <google-guava.version>33.6.0-jre</google-guava.version>
 
     <spring-framework.version>5.3.39</spring-framework.version>
@@ -288,6 +289,12 @@
         <groupId>com.jayway.jsonpath</groupId>
         <artifactId>json-path</artifactId>
         <version>${json-path.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.java-json-tools</groupId>
+        <artifactId>json-patch</artifactId>
+        <version>${json-patch.version}</version>
       </dependency>
 
       <dependency>
