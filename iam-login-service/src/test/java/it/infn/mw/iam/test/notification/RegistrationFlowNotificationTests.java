@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -140,7 +141,8 @@ class RegistrationFlowNotificationTests {
     request.setNotes("Some short notes...");
 
     String responseJson = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(MockMvcResultMatchers.status().isOk())
       .andReturn()
@@ -172,13 +174,15 @@ class RegistrationFlowNotificationTests {
     mvc.perform(get("/registration/verify/wrongtoken")).andExpect(status().isOk());
 
     mvc
-      .perform(post("/registration/verify").content("token=wrongtoken")
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=wrongtoken")
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationFailure"));
 
     mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + confirmationKey)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
@@ -197,7 +201,7 @@ class RegistrationFlowNotificationTests {
 
     notificationDelivery.clearDeliveredNotifications();
 
-    mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
+    mvc.perform(post("/registration/approve/{uuid}", request.getUuid()).with(csrf().asHeader())
       .with(authentication(adminAuthentication()))
       .contentType(APPLICATION_JSON)).andExpect(status().isOk());
 
@@ -209,7 +213,6 @@ class RegistrationFlowNotificationTests {
 
     assertThat(message.getSubject(), equalTo(formatSubject("activated")));
     assertThat(message.getBody(), containsString(request.getUsername()));
-
   }
 
   @Test
@@ -217,7 +220,7 @@ class RegistrationFlowNotificationTests {
 
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
-    mvc.perform(post("/registration/reject/{uuid}", request.getUuid())
+    mvc.perform(post("/registration/reject/{uuid}", request.getUuid()).with(csrf().asHeader())
       .with(authentication(adminAuthentication()))
       .contentType(APPLICATION_JSON)).andExpect(status().isOk());
 
@@ -237,7 +240,7 @@ class RegistrationFlowNotificationTests {
   void testRejectFlowNoNotificationSent() throws Exception {
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
-    mvc.perform(post("/registration/reject/{uuid}", request.getUuid())
+    mvc.perform(post("/registration/reject/{uuid}", request.getUuid()).with(csrf().asHeader())
       .param("motivation", "Lack of motivation")
       .param("doNotSendEmail", "true")
       .with(authentication(adminAuthentication()))
@@ -254,11 +257,10 @@ class RegistrationFlowNotificationTests {
 
     RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
-    mvc.perform(
-        post("/registration/reject/{uuid}", request.getUuid()).param("motivation", "We hate you")
-          .with(authentication(adminAuthentication()))
-          .contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+    mvc.perform(post("/registration/reject/{uuid}", request.getUuid()).with(csrf().asHeader())
+      .param("motivation", "We hate you")
+      .with(authentication(adminAuthentication()))
+      .contentType(APPLICATION_JSON)).andExpect(status().isOk());
 
     notificationDelivery.sendPendingNotifications();
 
@@ -288,7 +290,8 @@ class RegistrationFlowNotificationTests {
       throws Exception {
 
     String responseJson = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(MockMvcResultMatchers.status().isOk())
       .andReturn()
@@ -310,7 +313,8 @@ class RegistrationFlowNotificationTests {
     String confirmationKey = generator.getLastToken();
 
     mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + confirmationKey)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));

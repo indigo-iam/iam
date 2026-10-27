@@ -15,10 +15,7 @@
  */
 package it.infn.mw.iam.test.scim.user;
 
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithPassword;
 import static java.lang.Boolean.FALSE;
@@ -31,6 +28,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,11 +44,15 @@ import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -64,20 +66,14 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.X509Utils;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"scim.include_authorities=true"})
-class ScimUserCreationTests extends ScimUserTestSupport {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"scim.include_authorities=true"})
+@AutoConfigureMockMvc
+@Transactional
+class ScimUserCreationTests {
 
   @Autowired
   IamAccountRepository accountRepo;
@@ -86,37 +82,59 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   PasswordEncoder encoder;
 
   @Autowired
-  ScimRestUtilsMvc scimUtils;
-
-  @Autowired
   MockMvc mvc;
 
   @Autowired
   ObjectMapper mapper;
 
   @Autowired
-  MockOAuth2Filter mockOAuth2Filter;
-
-  @Autowired
   AupService aupService;
-
-  @Autowired
-  SecurityContextUtils context;
 
   @Autowired
   Clock clock;
 
+  String scimAccessToken;
+
   @BeforeEach
-  void setup() {
-    context.cleanupSecurityContext();
+  void setup() throws Exception {
+    scimAccessToken =
+        OAuthTokenTestUtils.clientCredentialsToken(mvc, mapper, ScimUtils.SCIM_CLIENT_ID,
+            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE, ScimUtils.SCIM_WRITE_SCOPE);
+  }
+
+  private ResultActions performScim(MockHttpServletRequestBuilder request) throws Exception {
+
+    return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + scimAccessToken));
+  }
+
+  private ScimUser postUser(ScimUser user) throws Exception {
+
+    String response = performScim(post(ScimUtils.getUsersLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(mapper.writeValueAsBytes(user))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    return mapper.readValue(response, ScimUser.class);
+  }
+
+  private ScimUser getUser(String uuid) throws Exception {
+
+    String response =
+        performScim(get(ScimUtils.getUsersLocation() + "/{uuid}", uuid).accept(SCIM_CONTENT_TYPE))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    return mapper.readValue(response, ScimUser.class);
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationAccessDeletion() throws Exception {
 
     ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
     assertThat(user.getEmails(), hasSize(equalTo(1)));
@@ -125,14 +143,13 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithPassword() throws Exception {
 
     ScimUser user =
         buildUserWithPassword("john_lennon", "password", "lennon@email.test", "John", "Lennon")
           .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
 
     assertNull(createdUser.getPassword());
 
@@ -146,7 +163,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithOidcAccount() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_oidc")
@@ -156,14 +172,14 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getOidcIds(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getOidcIds().get(0).getIssuer(),
         equalTo("urn:oidc:test:issuer"));
     assertThat(createdUser.getIndigoUser().getOidcIds().get(0).getSubject(), equalTo("1234"));
 
-    createdUser = scimUtils.getUser(createdUser.getId());
+    createdUser = getUser(createdUser.getId());
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getOidcIds(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getOidcIds().get(0).getIssuer(),
@@ -172,7 +188,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithStolenOidcAccountFailure() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_oidc")
@@ -182,7 +197,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getOidcIds(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getOidcIds().get(0).getIssuer(),
@@ -196,17 +211,12 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(anotherUser))
-        .contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isConflict())
-      .andExpect(jsonPath("$.detail", containsString("already bound to a user")));
-
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(anotherUser))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isConflict())
+        .andExpect(jsonPath("$.detail", containsString("already bound to a user")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithSshKey() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
@@ -216,7 +226,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getDisplay(), equalTo("Personal"));
@@ -225,7 +235,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getFingerprint(),
         equalTo(SshKeyUtils.sshKeys.get(0).fingerprintSHA256));
 
-    createdUser = scimUtils.getUser(createdUser.getId());
+    createdUser = getUser(createdUser.getId());
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getDisplay(), equalTo("Personal"));
@@ -236,7 +246,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithSshKeyValueOnly() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
@@ -246,7 +255,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getDisplay(),
@@ -256,7 +265,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getFingerprint(),
         equalTo(SshKeyUtils.sshKeys.get(0).fingerprintSHA256));
 
-    createdUser = scimUtils.getUser(createdUser.getId());
+    createdUser = getUser(createdUser.getId());
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getDisplay(),
@@ -268,7 +277,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithStolenSshKeyFailure() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_sshkey")
@@ -278,7 +286,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSshKeys().get(0).getDisplay(), equalTo("Personal"));
@@ -294,16 +302,12 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(anotherUser))
-        .contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isConflict())
-      .andExpect(jsonPath("$.detail", containsString("already bound to a user")));
-
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(anotherUser))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isConflict())
+        .andExpect(jsonPath("$.detail", containsString("already bound to a user")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithSamlId() throws Exception {
 
     ScimUser user = ScimUser.builder("user_with_samlId")
@@ -313,7 +317,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSamlIds(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSamlIds().get(0).getIdpId(),
@@ -321,7 +325,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(createdUser.getIndigoUser().getSamlIds().get(0).getUserId(),
         equalTo(user.getIndigoUser().getSamlIds().get(0).getUserId()));
 
-    createdUser = scimUtils.getUser(createdUser.getId());
+    createdUser = getUser(createdUser.getId());
     assertNotNull(createdUser.getIndigoUser());
     assertThat(createdUser.getIndigoUser().getSamlIds(), hasSize(equalTo(1)));
     assertThat(createdUser.getIndigoUser().getSamlIds().get(0).getIdpId(),
@@ -331,7 +335,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithX509Certificate() throws Exception {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
@@ -349,7 +352,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
 
     List<ScimX509Certificate> userCertList = user.getIndigoUser().getCertificates();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
@@ -358,7 +361,9 @@ class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(createdUserCertList.get(0).getPemEncodedCertificate(),
         equalTo(userCertList.get(0).getPemEncodedCertificate()));
 
-    createdUser = scimUtils.getUser(createdUser.getId());
+    createdUser = getUser(createdUser.getId());
+    createdUserCertList = createdUser.getIndigoUser().getCertificates();
+
     assertNotNull(createdUserCertList);
     assertThat(createdUserCertList, hasSize(equalTo(1)));
     assertThat(createdUserCertList.get(0).getDisplay(), equalTo(userCertList.get(0).getDisplay()));
@@ -367,7 +372,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithMultipleX509Certificate() throws Exception {
 
     ScimX509Certificate cert1 = ScimX509Certificate.builder()
@@ -390,7 +394,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
@@ -415,7 +419,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithMultipleX509CertificateAndNoPrimary() throws Exception {
 
     ScimX509Certificate cert1 = ScimX509Certificate.builder()
@@ -438,7 +441,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
@@ -463,7 +466,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithEndTimeAndBasicAuthorities() throws Exception {
 
     Date expTime = Date.from(clock.instant().plus(Duration.ofHours(1)));
@@ -472,7 +474,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
       .endTime(expTime)
       .addAuthority("ROLE_ADMIN")
       .build();
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
     assertThat(user.getEmails(), hasSize(equalTo(1)));
@@ -483,7 +485,6 @@ class ScimUserCreationTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserCreationWithAupSignatureIsIgnored() throws Exception {
 
     final String AUP_URL = "https://valid.test.url.com/";
@@ -499,7 +500,7 @@ class ScimUserCreationTests extends ScimUserTestSupport {
         buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
           .aupSignatureTime(signatureTime)
           .build();
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
     assertThat(user.getEmails(), hasSize(equalTo(1)));

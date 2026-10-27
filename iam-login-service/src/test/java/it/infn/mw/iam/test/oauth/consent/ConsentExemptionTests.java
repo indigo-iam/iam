@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.oauth.consent;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -111,7 +112,8 @@ class ConsentExemptionTests extends EndpointsTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", ADMIN_USERNAME)
         .param("password", ADMIN_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -121,7 +123,9 @@ class ConsentExemptionTests extends EndpointsTestUtils {
       .getRequest()
       .getSession();
 
-    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+    mvc
+      .perform(
+          post(DEVICE_USER_VERIFY_URL).with(csrf()).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"));
 
