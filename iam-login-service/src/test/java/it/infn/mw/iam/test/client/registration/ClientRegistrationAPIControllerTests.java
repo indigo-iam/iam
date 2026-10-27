@@ -225,8 +225,9 @@ class ClientRegistrationAPIControllerTests {
     String expectedMessage = "client_secret_jwt is not supported";
 
     mvc
-      .perform(
-          post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON).content(requestBody))
+      .perform(post(IAM_CLIENTS_MANAGMENT_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(requestBody))
       .andExpect(UNAUTHORIZED)
       .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
@@ -666,7 +667,8 @@ class ClientRegistrationAPIControllerTests {
     client.setScope(Set.of("openid"));
 
     RegisteredClientDTO response = mapper.readValue(mvc
-      .perform(post(IAM_CLIENTS_MANAGMENT_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_MANAGMENT_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -690,9 +692,10 @@ class ClientRegistrationAPIControllerTests {
     String expectedMessage = "client_secret_jwt is not supported";
 
     mvc
-      .perform(put(IAM_CLIENTS_MANAGMENT_API_URL + createdClient.getClientId())
-        .contentType(APPLICATION_JSON)
-        .content(requestBody))
+      .perform(
+          put(IAM_CLIENTS_MANAGMENT_API_URL + createdClient.getClientId()).with(csrf().asHeader())
+            .contentType(APPLICATION_JSON)
+            .content(requestBody))
       .andExpect(UNAUTHORIZED)
       .andExpect(jsonPath("$.error_description", is(expectedMessage)));
   }
