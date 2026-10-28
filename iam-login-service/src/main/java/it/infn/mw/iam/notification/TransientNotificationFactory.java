@@ -19,6 +19,7 @@ import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -383,6 +384,27 @@ public class TransientNotificationFactory implements NotificationFactory {
         IamNotificationType.ACCOUNT_SUSPENDED, subject, asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created suspension message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAccountLockedMessage(IamAccount account, Duration duration) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("durationInMinutes", duration.toMinutes());
+    model.put("hasLocalPassword",
+        account.getPassword() != null && !account.getPassword().isEmpty());
+
+    String subject = "Account temporarily locked";
+
+    IamEmailNotification notification = createMessage("accountLocked.ftl", model,
+        IamNotificationType.ACCOUNT_LOCKED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created account locked message for the account {}", account.getUuid());
 
     return notification;
   }

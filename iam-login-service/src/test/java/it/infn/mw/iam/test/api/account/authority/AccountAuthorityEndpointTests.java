@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -102,16 +103,17 @@ class AccountAuthorityEndpointTests {
       .andExpect(status().isUnauthorized());
 
     mvc
-      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", "ROLE_ADMIN")
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", "ROLE_ADMIN")
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isUnauthorized());
 
 
     mvc
-      .perform(
-          delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", "ROLE_USER")
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", "ROLE_USER")
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isUnauthorized());
   }
@@ -176,9 +178,9 @@ class AccountAuthorityEndpointTests {
     String expectedErrorMessage = String.format("Invalid authority: '%s'", invalidAuthority);
 
     mvc
-      .perform(
-          post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", invalidAuthority)
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", invalidAuthority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
@@ -193,9 +195,9 @@ class AccountAuthorityEndpointTests {
     String expectedErrorMessage = "Authority cannot be an empty string";
 
     mvc
-      .perform(
-          post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", invalidAuthority)
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", invalidAuthority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
@@ -216,9 +218,9 @@ class AccountAuthorityEndpointTests {
     String expectedErrorMessage = "Invalid authority size";
 
     mvc
-      .perform(
-          post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", invalidAuthority)
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", invalidAuthority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
@@ -234,7 +236,8 @@ class AccountAuthorityEndpointTests {
         alreadyBoundAuthority, TEST_100, TEST_100_UUID);
 
     mvc
-      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", "ROLE_USER")
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", "ROLE_USER")
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isBadRequest())
@@ -253,7 +256,8 @@ class AccountAuthorityEndpointTests {
       .andExpect(jsonPath("$.authorities", contains(ROLE_USER)));
 
     mvc
-      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", authority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
@@ -277,7 +281,8 @@ class AccountAuthorityEndpointTests {
     String authority = ROLE_ADMIN;
 
     mvc
-      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", authority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
@@ -306,7 +311,8 @@ class AccountAuthorityEndpointTests {
     String authority = "ROLE_USER";
 
     mvc
-      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", authority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
@@ -329,7 +335,8 @@ class AccountAuthorityEndpointTests {
     String authority = "ROLE_USER";
 
     mvc
-      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", authority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
@@ -359,7 +366,7 @@ class AccountAuthorityEndpointTests {
     String unboundAuthority = ROLE_ADMIN;
 
     mvc
-      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID)
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
         .param("authority", unboundAuthority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
@@ -374,7 +381,7 @@ class AccountAuthorityEndpointTests {
     String expectedErrorMessage = String.format("Invalid authority: '%s'", invalidAuthority);
 
     mvc
-      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID)
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
         .param("authority", invalidAuthority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
@@ -391,9 +398,9 @@ class AccountAuthorityEndpointTests {
 
 
     mvc
-      .perform(
-          delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", emptyAuthority)
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).with(csrf().asHeader())
+        .param("authority", emptyAuthority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
@@ -411,16 +418,17 @@ class AccountAuthorityEndpointTests {
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
 
     mvc
-      .perform(post("/iam/account/{id}/authorities", INVALID_USER_ID).param("authority", ROLE_ADMIN)
+      .perform(post("/iam/account/{id}/authorities", INVALID_USER_ID).with(csrf().asHeader())
+        .param("authority", ROLE_ADMIN)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));
 
     mvc
-      .perform(
-          delete("/iam/account/{id}/authorities", INVALID_USER_ID).param("authority", ROLE_USER)
-            .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .perform(delete("/iam/account/{id}/authorities", INVALID_USER_ID).with(csrf().asHeader())
+        .param("authority", ROLE_USER)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo(expectedErrorMessage)));

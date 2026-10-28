@@ -27,7 +27,9 @@ spring:
       - classpath:db/migration/test
   datasource:
     type: org.h2.jdbcx.JdbcDataSource
-    url: jdbc:h2:mem:iam;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
+    # Preserve H2 1.x identity syntax and explicit-ID seed behavior in historical migrations.
+    # External authentication attributes map an unquoted column named value.
+    url: jdbc:h2:mem:iam;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE
     username: sa
     password:
 

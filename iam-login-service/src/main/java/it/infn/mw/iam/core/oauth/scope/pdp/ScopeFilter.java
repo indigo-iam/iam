@@ -22,7 +22,6 @@ import org.springframework.security.core.Authentication;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public interface ScopeFilter {
 
   public Set<String> filterScopes(Set<String> scopes, Authentication authn, String clientId);

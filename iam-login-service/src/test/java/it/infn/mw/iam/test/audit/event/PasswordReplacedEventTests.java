@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,7 +69,8 @@ class PasswordReplacedEventTests {
         Map.of("schemas", List.of("urn:ietf:params:scim:api:messages:2.0:PatchOp"), "operations",
             List.of(Map.of("op", "replace", "value", Map.of("password", "LEAKME-PaTcHv1-99887"))));
 
-    mvc.perform(patch("/scim/Users/{accountId}", account.getUuid()).contentType(SCIM_CONTENT_TYPE)
+    mvc.perform(patch("/scim/Users/{accountId}", account.getUuid()).with(csrf().asHeader())
+      .contentType(SCIM_CONTENT_TYPE)
       .content(objectMapper.writeValueAsString(payload))).andExpect(status().isNoContent());
 
     IamAuditApplicationEvent event = logger.getLastEvent();

@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.notification;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,7 +97,8 @@ class NotificationDisabledTests {
     String jsonReq = mapper.writeValueAsString(req);
 
     String response = mvc
-      .perform(post(REGISTRATION_CREATE_ENDPOINT).content(jsonReq)
+      .perform(post(REGISTRATION_CREATE_ENDPOINT).with(csrf().asHeader())
+        .content(jsonReq)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
       .andReturn()

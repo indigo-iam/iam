@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -77,7 +78,8 @@ class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport {
     request.setNotes("Some short notes...");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -116,7 +118,9 @@ class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport {
         startsWith("Your registration request to indigo-dc was submitted successfully"));
 
     // the same happens after having confirmed the request
-    mvc.perform(post("/registration/verify").content("token=" + token)
+    mvc
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));

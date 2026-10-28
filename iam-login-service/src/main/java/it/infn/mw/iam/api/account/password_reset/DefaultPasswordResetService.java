@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +30,8 @@ import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerifie
 import it.infn.mw.iam.api.account.password_reset.error.UserNotFoundError;
 import it.infn.mw.iam.audit.events.account.password.PasswordResetEvent;
 import it.infn.mw.iam.audit.events.account.password.PasswordUpdatedEvent;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -46,50 +47,55 @@ public class DefaultPasswordResetService
   private final NotificationFactory notificationFactory;
   private final TokenGenerator tokenGenerator;
   private final PasswordEncoder passwordEncoder;
+  private final IamAccountService accountService;
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultPasswordResetService(IamAccountRepository accountRepository,
       NotificationFactory notificationFactory, TokenGenerator tokenGenerator,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder, IamAccountService accountService) {
 
     this.accountRepository = accountRepository;
     this.notificationFactory = notificationFactory;
     this.tokenGenerator = tokenGenerator;
     this.passwordEncoder = passwordEncoder;
+    this.accountService = accountService;
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
   }
 
-  @Override
-  public void validateResetToken(String resetToken) {
+  private IamAccount findAndValidateAccount(String resetToken) {
 
     IamAccount account = accountRepository.findByResetKey(resetToken)
-        .orElseThrow(() -> new InvalidPasswordResetTokenError(
-            String.format("No account found for reset_key [%s]", resetToken)));
+      .orElseThrow(() -> new InvalidPasswordResetTokenError(
+          String.format("No account found for reset_key [%s]", resetToken)));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new InvalidPasswordResetTokenError(
           "The user account is not active or is linked to an email that has not been verified");
     }
+
+    return account;
+  }
+
+  @Override
+  public void validateResetToken(String resetToken) {
+
+    findAndValidateAccount(resetToken);
   }
 
   @Override
   public void resetPassword(String resetToken, String password) {
 
-    validateResetToken(resetToken);
-    // FIXME: we perform the lookup twice. if validateResetToken
-    // was modified to return the IamAccount we save one call to the DB
-    IamAccount account = accountRepository.findByResetKey(resetToken)
-        .orElseThrow(() -> new InvalidPasswordResetTokenError(
-            String.format("No account found for reset_key [%s]", resetToken)));
+    IamAccount account = findAndValidateAccount(resetToken);
 
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);
 
     accountRepository.save(account);
+
+    accountService.resetLoginLockout(account.getUuid(), LoginLockoutResetReason.PASSWORD_RESET);
 
     eventPublisher.publishEvent(new PasswordResetEvent(this, account,
         String.format("User %s reset its password", account.getUsername())));
@@ -123,7 +129,7 @@ public class DefaultPasswordResetService
       throws UserNotActiveOrNotVerified, BadUserPasswordError {
 
     IamAccount account = accountRepository.findByUsername(username)
-        .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
+      .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new UserNotActiveOrNotVerified("Account is not active or email is not verified");
@@ -133,7 +139,6 @@ public class DefaultPasswordResetService
       throw new BadUserPasswordError("Wrong password provided");
     }
 
-    // set the new password
     account.setPassword(passwordEncoder.encode(newPassword));
     accountRepository.save(account);
 
