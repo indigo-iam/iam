@@ -36,5 +36,6 @@
     <div class="form-group sign-aup-btns">
       <input id="sign-aup-btn" class="btn btn-success" type="submit" value="I agree with the AUP terms">
     </div>
+    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
   </form>
 </t:page>

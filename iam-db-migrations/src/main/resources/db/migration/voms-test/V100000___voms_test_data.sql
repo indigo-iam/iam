@@ -19,7 +19,6 @@ INSERT INTO client_scope (owner_id, scope) VALUES
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
   (1, 'urn:ietf:params:oauth:grant_type:redelegate'),
-  (1, 'implicit'),
   (1, 'refresh_token');
     
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER) VALUES

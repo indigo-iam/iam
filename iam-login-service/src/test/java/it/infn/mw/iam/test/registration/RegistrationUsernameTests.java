@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,8 +41,7 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class},
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
@@ -85,7 +85,8 @@ class RegistrationUsernameTests implements StructuredScopeTestSupportConstants {
     for (String u : validUsernames) {
       RegistrationRequestDto r = createRegistrationRequest(u);
       mvc
-        .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+        .perform(post("/registration/create").with(csrf().asHeader())
+          .contentType(MediaType.APPLICATION_JSON)
           .content(objectMapper.writeValueAsString(r)))
         .andExpect(status().isOk());
     }
@@ -106,7 +107,8 @@ class RegistrationUsernameTests implements StructuredScopeTestSupportConstants {
     for (String u : invalidUsernames) {
       RegistrationRequestDto r = createRegistrationRequest(u);
       mvc
-        .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+        .perform(post("/registration/create").with(csrf().asHeader())
+          .contentType(MediaType.APPLICATION_JSON)
           .content(objectMapper.writeValueAsString(r)))
         .andExpect(status().isBadRequest());
     }

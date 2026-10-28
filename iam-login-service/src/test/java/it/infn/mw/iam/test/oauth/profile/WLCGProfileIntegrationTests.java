@@ -286,7 +286,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
       .clientSecret(CLIENT_SECRET)
       .username(USERNAME)
       .password(PASSWORD)
-      .scope("openid profile email wlcg")
+      .scope("openid profile email wlcg wlcg.groups")
       .getTokenResponseObject()
       .getAdditionalInformation()
       .get("id_token");
@@ -841,7 +841,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid"})
+      scopes = {"openid"})
   void testUserInfoEndpointRetursMinimalInformation() throws Exception {
 
     // @formatter:off

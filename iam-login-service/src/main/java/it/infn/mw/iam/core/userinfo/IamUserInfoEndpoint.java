@@ -29,7 +29,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -67,7 +68,8 @@ public class IamUserInfoEndpoint {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @GetMapping(path = URL, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @RequestMapping(path = URL, method = {RequestMethod.GET, RequestMethod.POST},
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
     String username = auth.getName();

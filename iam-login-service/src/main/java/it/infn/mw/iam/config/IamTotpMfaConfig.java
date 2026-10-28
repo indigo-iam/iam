@@ -104,9 +104,9 @@ public class IamTotpMfaConfig {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
-  @Bean(name = "MultiFactorVerificationFilter")
+  @Bean(name = "multiFactorVerificationFilter")
   MultiFactorVerificationFilter multiFactorVerificationFilter(
-      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
+      @Qualifier("multiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
       Clock clock) {
 
     return new MultiFactorVerificationFilter(authenticationManager, successHandler(clock),
@@ -119,7 +119,7 @@ public class IamTotpMfaConfig {
    * @param totpCheckProvider checks a provided TOTP
    * @return a new provider manager
    */
-  @Bean(name = "MultiFactorVerificationAuthenticationManager")
+  @Bean(name = "multiFactorVerificationAuthenticationManager")
   AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
     return new ProviderManager(Arrays.asList(totpCheckProvider));
   }

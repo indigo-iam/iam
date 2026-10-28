@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.account.password;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -94,7 +95,8 @@ class PasswordResetTests {
     String newPassword = "Secure_P@ssw0rd!";
 
     mvc
-      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("email", testEmail))
       .andExpect(status().isOk());
 
@@ -107,7 +109,8 @@ class PasswordResetTests {
     request.setToken(resetToken);
 
     mvc
-      .perform(post("/iam/password-reset").contentType(APPLICATION_JSON)
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isCreated());
 
@@ -122,7 +125,8 @@ class PasswordResetTests {
     String newPassword = "weakpassword";
 
     mvc
-      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("email", testEmail))
       .andExpect(status().isOk());
 
@@ -135,8 +139,9 @@ class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()
         .string("Invalid reset password: [resetPasswordDTO.updatedPassword : "
@@ -150,7 +155,8 @@ class PasswordResetTests {
     String newPassword = "Secure_P@ssw0rd!";
 
     mvc
-      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("email", testEmail))
       .andExpect(status().isOk());
 
@@ -163,13 +169,15 @@ class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().isCreated());
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().is4xxClientError());
   }
 
@@ -208,7 +216,8 @@ class PasswordResetTests {
     String testEmail = "test@foo.bar";
 
     mvc
-      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("email", testEmail))
       .andExpect(status().isOk());
   }
@@ -218,7 +227,8 @@ class PasswordResetTests {
     String invalidEmailAddress = "this_is_not_an_email";
 
     mvc
-      .perform(post("/iam/password-reset/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("email", invalidEmailAddress))
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()

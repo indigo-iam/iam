@@ -13,30 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.config;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
-public class Sha256Encoder {
+@Configuration
+public class CsrfConfig {
 
-  private Sha256Encoder() {
-    // Nothing to do
-  }
-
-  public static String encode(String secret) {
-
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] digest = md.digest(secret.getBytes(StandardCharsets.UTF_8));
-
-      return Base64.getEncoder().encodeToString(digest);
-
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Unable to calculate SHA256", e);
-    }
-
+  @Bean
+  CookieCsrfTokenRepository csrfTokenRepository() {
+    CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+    repository.setCookieHttpOnly(true);
+    repository.setCookiePath("/");
+    return repository;
   }
 }

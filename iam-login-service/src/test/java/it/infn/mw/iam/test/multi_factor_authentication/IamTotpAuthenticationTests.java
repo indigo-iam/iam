@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,12 +90,16 @@ public class IamTotpAuthenticationTests {
         .header("Location", is(loginUrl));
       // @formatter:on
 
+    String csrfToken = resp1.extract().cookie("XSRF-TOKEN");
+    assertNotNull(csrfToken, "Expected a CSRF cookie from GET /authorize");
+
     // @formatter:off
       RestAssured.given()
+        .cookies(resp1.extract().detailedCookies())
+        .header("X-XSRF-TOKEN", csrfToken)
         .formParam("username", "test-with-mfa")
         .formParam("password", "password")
         .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
       .when()
         .post(loginUrl)
@@ -127,12 +132,16 @@ public class IamTotpAuthenticationTests {
         .header("Location", is(loginUrl));
       // @formatter:on
 
+    String csrfToken = resp1.extract().cookie("XSRF-TOKEN");
+    assertNotNull(csrfToken, "Expected a CSRF cookie from GET /authorize");
+
     // @formatter:off
       RestAssured.given()
+        .cookies(resp1.extract().detailedCookies())
+        .header("X-XSRF-TOKEN", csrfToken)
         .formParam("username", "test-with-mfa")
         .formParam("password", "password")
         .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
       .when()
         .post(loginUrl)
