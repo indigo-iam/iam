@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -100,7 +101,8 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(UNAUTHORIZED);
   }
@@ -155,7 +157,8 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
@@ -163,7 +166,8 @@ class ClientManagementAPIControllerTests {
     client.setTokenEndpointAuthMethod(none);
 
     mvc
-      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is("none")));
@@ -185,7 +189,8 @@ class ClientManagementAPIControllerTests {
     client.setUpScopingEnabled(false);
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
@@ -206,7 +211,8 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
@@ -227,7 +233,8 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
@@ -239,7 +246,8 @@ class ClientManagementAPIControllerTests {
     client.setUpScopingEnabled(false);
 
     mvc
-      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(OK);
 
@@ -259,7 +267,8 @@ class ClientManagementAPIControllerTests {
     client.setUpScopingEnabled(false);
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
@@ -271,7 +280,8 @@ class ClientManagementAPIControllerTests {
     client.setUpScopingEnabled(true);
 
     mvc
-      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(OK);
 
@@ -294,7 +304,8 @@ class ClientManagementAPIControllerTests {
     client.setJwk(NOT_A_JSON_STRING);
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", startsWith("Invalid JSON object")));
@@ -318,7 +329,8 @@ class ClientManagementAPIControllerTests {
     String expectedMessage = "saveNewClient.client.jwksUri: must be a valid URL";
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -343,7 +355,8 @@ class ClientManagementAPIControllerTests {
         "saveNewClient.client: private_key_jwt requires a jwks uri or a jwk value";
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -353,7 +366,8 @@ class ClientManagementAPIControllerTests {
 
     try {
       mvc
-        .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(client)))
         .andExpect(CREATED);
     } finally {
@@ -372,7 +386,8 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED);
 
@@ -383,6 +398,7 @@ class ClientManagementAPIControllerTests {
 
     mvc
       .perform(put(IAM_CLIENTS_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
+        .with(csrf().asHeader())
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
@@ -402,7 +418,8 @@ class ClientManagementAPIControllerTests {
     client.setClientSecret(clientPassword);
 
     String responseJson = mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED)
       .andReturn()
@@ -415,6 +432,7 @@ class ClientManagementAPIControllerTests {
 
     responseJson = mvc
       .perform(put(IAM_CLIENTS_API_URL + client.getClientId()).contentType(APPLICATION_JSON)
+        .with(csrf().asHeader())
         .content(mapper.writeValueAsString(client)))
       .andExpect(OK)
       .andReturn()

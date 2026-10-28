@@ -21,7 +21,9 @@ import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACT;
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.CNF;
 import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.EXTERNAL_AUTHN;
+import static it.infn.mw.iam.util.x509.X509Utils.getCertificateThumbprint;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 
@@ -39,12 +41,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.google.common.collect.Maps;
 import com.nimbusds.jwt.JWT;
@@ -54,8 +60,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -73,6 +78,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
   protected static final String SPACE = " ";
   protected static final String SUBJECT_TOKEN = "subject_token";
+  public static final String CERT_HASH_FIELD_NAME = "x5t#S256";
+  public static final String CLIENT_CERT_HEADER = "X-SSL-Client-cert";
 
   private final IamProperties properties;
   private final ScopeFilter scopeFilter;
@@ -153,9 +160,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       if (savedAuth.getAdditionalInfo().get(ACR) != null) {
         builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
       }
-      if (savedAuth.getSourceClass() != null && (savedAuth.getSourceClass()
-        .equals(SamlExternalAuthenticationToken.class.getName())
-          || savedAuth.getSourceClass().equals(OidcExternalAuthenticationToken.class.getName()))) {
+      if (AuthenticationUtils.isExternalAuthentication(savedAuth)
+          && getProperties().getTokenEnhancer().getIncludeExternalAuthn().includesAccessTokens()) {
         builder.claim(EXTERNAL_AUTHN,
             claimValueHelper.resolveClaim(EXTERNAL_AUTHN, authentication, account));
       }
@@ -163,11 +169,12 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* update token scopes filtering the requested ones */
     Set<String> requestedScopes = getRequestedScopes(token, authentication);
-    token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
+    token.setScope(
+        scopeFilter.filterScopes(requestedScopes, authentication, token.getClient().getClientId()));
 
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
-      builder.claim(BaseExtraClaimNames.SCOPE, token.getScope().stream().collect(joining(SPACE)));
+      builder.claim(BaseExtraClaimNames.SCOPE, serializeScopes(token, authentication));
     }
 
     /* include nbf claim if configured */
@@ -181,10 +188,23 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       includeAdditionalAuthnInfoClaims(builder, token, authentication, account.get());
     }
 
+    /* include the client certificate hash if present */
+    Optional<String> clientCertificateHash = getClientCertificateThumbprint();
+    if (clientCertificateHash.isPresent()) {
+      Map<String, Object> cnfValue = Map.of(CERT_HASH_FIELD_NAME, clientCertificateHash.get());
+      builder.claim(CNF, cnfValue);
+    }
+
     /* include the required claims if set */
     includeRequiredClaims(builder, authentication, account);
 
     return builder.build();
+  }
+
+  @Override
+  public String serializeScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+    return token.getScope().stream().collect(joining(SPACE));
   }
 
   protected Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
@@ -343,5 +363,18 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       return !coll.isEmpty();
     }
     return value != null;
+  }
+
+  private Optional<String> getClientCertificateThumbprint() {
+    HttpServletRequest request =
+        ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+
+    String clientCert = request.getHeader(CLIENT_CERT_HEADER);
+
+    if (clientCert == null || clientCert.isBlank()) {
+      return Optional.empty();
+    }
+
+    return getCertificateThumbprint(clientCert);
   }
 }

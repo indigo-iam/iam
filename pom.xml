@@ -8,14 +8,14 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <!-- Update this in sync with the spring-boot version below -->
-    <version>2.6.15</version>
+    <version>2.7.18</version>
     <relativePath />
     <!-- lookup parent from repository -->
   </parent>
 
   <groupId>it.infn.mw.iam-parent</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.14.2</version>
+  <version>1.15.0</version>
   <packaging>pom</packaging>
 
   <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
@@ -25,22 +25,7 @@
     <module>iam-persistence</module>
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
-    <module>iam-test-client</module>
   </modules>
-
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
-
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 
   <properties>
     <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
@@ -50,18 +35,19 @@
 
     <java.version>17</java.version>
 
-    <junit.version>5.14.1</junit.version>
+    <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+    <junit-jupiter.version>5.14.1</junit-jupiter.version>
 
-    <mitreid.version>2.3.1.cnaf-20260728</mitreid.version>
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
+    <jackson-bom.version>2.18.11</jackson-bom.version>
 
-    <voms.version>3.3.8</voms.version>
-    <bc.version>1.84</bc.version>
+    <voms.version>3.4.0</voms.version>
+    <bc.version>1.86</bc.version>
 
     <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
     <!-- Update this in sync with the parent project version -->
-    <spring-boot.version>2.6.15</spring-boot.version>
+    <spring-boot.version>2.7.18</spring-boot.version>
 
     <angularjs.version>1.8.3</angularjs.version>
     <angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
@@ -77,27 +63,26 @@
     <bootstrap.version>3.4.1</bootstrap.version>
     <jquery-ui.version>1.13.3</jquery-ui.version>
 
-    <rest-assured.version>5.2.0</rest-assured.version>
+    <rest-assured.version>5.5.7</rest-assured.version>
     <json-path.version>2.9.0</json-path.version>
-    <google-guava.version>33.6.0-jre</google-guava.version>
+    <google-guava.version>33.7.1-jre</google-guava.version>
 
-    <flyway.version>7.15.0</flyway.version>
+    <spring-framework.version>5.3.39</spring-framework.version>
+    <spring-security.version>5.8.16</spring-security.version>
 
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
-    <jacoco-plugin.version>0.8.7</jacoco-plugin.version>
-    <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
+    <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
+    <jib-maven-plugin.version>3.5.2</jib-maven-plugin.version>
     <sonar-maven-plugin.version>5.3.0.6276</sonar-maven-plugin.version>
 
     <jsr250-api.version>1.0</jsr250-api.version>
-    <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
-    <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
     <shedlock-spring.version>4.48.0</shedlock-spring.version>
 
-    <nimbus-jose-jwt.version>9.37.4</nimbus-jose-jwt.version>
+    <nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx2500m -Duser.timezone=UTC</jvm.test.args>
+    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=512m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
@@ -109,7 +94,33 @@
     <sonar.language>java</sonar.language>
     <sonar.coverage.exclusions>
       iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
+    <sonar.exclusions>iam-login-service/src/main/java/it/infn/mw/iam/util/crypto/**</sonar.exclusions>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>shibboleth-releases</id>
+      <name>Shibboleth Releases</name>
+      <url>https://build.shibboleth.net/maven/releases/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <name>Central Portal Snapshots</name>
+      <id>central-portal-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <dependencyManagement>
     <dependencies>
@@ -125,7 +136,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>${junit.version}</version>
+        <version>${junit-jupiter.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -133,12 +144,6 @@
         <groupId>org.springframework.security.oauth</groupId>
         <artifactId>spring-security-oauth2</artifactId>
         <version>${spring-security-oauth2.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-config</artifactId>
-        <version>5.6.12</version>
       </dependency>
 
       <dependency>
@@ -330,18 +335,6 @@
       </dependency>
 
       <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind-api.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${jaxb-runtime.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.sonarsource.scanner.maven</groupId>
         <artifactId>sonar-maven-plugin</artifactId>
         <version>${sonar-maven-plugin.version}</version>
@@ -355,16 +348,6 @@
     </dependencies>
 
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>infn-cnaf</id>
-      <url>https://repo.cloud.cnaf.infn.it/repository/maven-public/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>
@@ -423,7 +406,7 @@
                   <version>17</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>3.6.0</version>
+                  <version>3.6.3</version>
                 </requireMavenVersion>
               </rules>
             </configuration>
@@ -509,6 +492,8 @@
             <java.awt.headless>true</java.awt.headless>
           </systemPropertyVariables>
           <argLine>${surefireArgLine}</argLine>
+          <!-- Allow cached Spring test contexts to shut down cleanly. -->
+          <forkedProcessExitTimeoutInSeconds>120</forkedProcessExitTimeoutInSeconds>
         </configuration>
       </plugin>
       <plugin>

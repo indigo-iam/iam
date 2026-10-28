@@ -22,7 +22,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (10, 'registration-client', 'secret', 'Registration service test client', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (11, 'token-lookup-client', 'secret', 'Token lookup client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (12, 'device-code-client', 'secret', 'Device code client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
-  (13, 'implicit-flow-client', null, 'Implicit Flow client', false, 86400, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), 'optional', true),
+  (13, 'consent-client', null, 'Consent Client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (14, 'public-dc-client', null, 'Public Device Code client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, 86400, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
@@ -33,10 +33,12 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (23, 'public-client-with-secret', 'secret', 'Public client with secret', false, 3600, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (24, 'pkce-s256-client', 'secret', 'Client with PKCE S256', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'S256', true),
   (25, 'pkce-plain-client', 'secret', 'Client with PKCE plain', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'plain', true),
-  (26, 'pkce-none-client', 'secret', 'Client with PKCE none', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'none', true);
+  (26, 'pkce-none-client', 'secret', 'Client with PKCE none', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'none', true),
+  (27, 'https://federated-client.com', 'secret', 'Federated client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true);
 
-UPDATE client_details SET client_description = 'implicit-flow-client description'
-WHERE id = 13 AND client_id = 'implicit-flow-client';
+UPDATE client_details
+SET client_description = 'Consent client description'
+WHERE id = 13 AND client_id = 'consent-client';
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -193,7 +195,8 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (25, 'openid'),
   (25, 'profile'),
   (26, 'openid'),
-  (26, 'profile');
+  (26, 'profile'),
+  (27, 'openid');
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
@@ -202,7 +205,7 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (3, 'http://localhost:4000/callback'),
   (4, 'http://localhost:5000/callback'),
   (11, 'http://localhost:1234/callback'),
-  (13, 'http://localhost:9876/implicit'),
+  (13, 'http://localhost:9876/callback'),
   (18, 'https://iam.local.io/iam-test-client/openid_connect_login'),
   (20, 'http://localhost:4000/callback'),
   (22, 'http://localhost:1234/callback'),
@@ -213,7 +216,6 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
   (1, 'urn:ietf:params:oauth:grant_type:redelegate'),
-  (1, 'implicit'),
   (1, 'password'),
   (1, 'refresh_token'),
   (3, 'authorization_code'),
@@ -247,7 +249,7 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (11, 'urn:ietf:params:oauth:grant-type:token-exchange'),
   (12, 'refresh_token'),
   (12, 'urn:ietf:params:oauth:grant-type:device_code'),
-  (13, 'implicit'),
+  (13, 'authorization_code'),
   (14, 'urn:ietf:params:oauth:grant-type:device_code'),
   (15, 'client_credentials'),
   (16, 'client_credentials'),
@@ -267,8 +269,10 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (22, 'authorization_code'),
   (23, 'client_credentials'),
   (24, 'authorization_code'),
+  (24, 'urn:ietf:params:oauth:grant-type:device_code'),
   (25, 'authorization_code'),
-  (26, 'authorization_code');
+  (26, 'authorization_code'),
+  (27, 'client_credentials');
 
 INSERT INTO client_contact (owner_id, contact) VALUES
   (1, 'admin@example.com'),
@@ -1613,26 +1617,26 @@ INSERT INTO iam_account_group(account_id, group_id) VALUES
 (347,2);
 
 -- Owned clients
-insert into iam_account_client(id, account_id, client_id, creation_time) VALUES 
+INSERT INTO iam_account_client(id, account_id, client_id, creation_time) VALUES 
 (1, 200, 1, CURRENT_TIMESTAMP()),
 (2, 200, 2, CURRENT_TIMESTAMP()),
 (3, 199, 1, CURRENT_TIMESTAMP()),
 (4, 199, 2, CURRENT_TIMESTAMP());
 
 -- TOTP multi-factor secrets
-insert into iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
+INSERT INTO iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
 (true, '4S6Jqrvrv4eJDE9va5RkxaVjdjn5FCC958Gysekk1T7eel0pahEbp5iFLENeWZ4VKE1Dzit7AGowmOwD5i5Ma9VjnkdNMnU5WSK58w==', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 1000);
 
 -- Client last used dates
-insert into client_last_used(client_details_id, last_used) VALUES
+INSERT INTO client_last_used(client_details_id, last_used) VALUES
 (1, '1994-03-21'),
 (2, '1994-03-20'),
 (3, '1994-03-19'),
 (4, '1994-03-23');
 
-insert into whitelisted_site(id, creator_user_id, client_id) values
+INSERT INTO whitelisted_site(id, creator_user_id, client_id) VALUES
 (1, 'admin', 'whitelist-client');
 
-insert into whitelisted_site_scope(owner_id, scope) values
+INSERT INTO whitelisted_site_scope(owner_id, scope) VALUES
 (1, 'openid'),
 (1, 'profile');

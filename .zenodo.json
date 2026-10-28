@@ -20,12 +20,30 @@
     },
     {
       "name": "Chung, Donald",
+      "orcid": "0009-0003-0475-6008",
       "affiliation": "STFC"
     },
     {
       "name": "Dack, Thomas",
       "orcid": "0000-0003-3805-4402",
       "affiliation": "STFC"
+    },
+    {
+      "name": "De Simone, Ivan",
+      "affiliation": "University of Bologna"
+    },
+    {
+      "name": "Delli Veneri, Michele",
+      "orcid": "0000-0002-8178-2942",
+      "affiliation": "SKAO"
+    },
+    {
+      "name": "El Kihal, Anouar",
+      "affiliation": "University of Bologna"
+    },
+    {
+      "name": "Fayer, Simon",
+      "affiliation": "Imperial College London"
     },
     {
       "name": "Furnell, Will",
@@ -48,6 +66,16 @@
     {
       "name": "Glendenning, Sam",
       "affiliation": "STFC"
+    },
+    {
+      "name": "Guerrieri, Giovanni",
+      "orcid": "0000-0002-3403-1177",
+      "affiliation": "CERN"
+    },
+    {
+      "name": "Haugen, Anders",
+      "orcid": "0009-0003-4945-5698",
+      "affiliation": "CERN"
     },
     {
       "name": "Machalet, Patrick",
@@ -90,6 +118,16 @@
     {
       "name": "Vilaca, Marcelo",
       "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Yilmaz, Ugur",
+      "orcid": "0009-0001-9759-4284",
+      "affiliation": "SKA"
+    },
+    {
+      "name": "Zhang, Xuantong",
+      "orcid": "0000-0002-2967-1217",
+      "affiliation": "IHEP"
     },
     {
       "name": "Zotti, Stefano Enrico",

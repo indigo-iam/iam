@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 
 import java.util.Collections;
@@ -50,17 +51,23 @@ public final class ScimGroup extends ScimResource {
   @JsonProperty(value = ScimConstants.INDIGO_GROUP_SCHEMA)
   private final ScimIndigoGroup indigoGroup;
 
+  @JsonProperty(value = ScimConstants.AARC_GROUP_SCHEMA)
+  private final ScimAarcGroup aarcGroup;
+
+
   @JsonCreator
   private ScimGroup(@JsonProperty("id") String id, @JsonProperty("externalId") String externalId,
       @JsonProperty("meta") ScimMeta meta, @JsonProperty("schemas") Set<String> schemas,
       @JsonProperty("displayName") String displayName,
       @JsonProperty("members") Set<ScimMemberRef> members,
-      @JsonProperty(INDIGO_GROUP_SCHEMA) ScimIndigoGroup indigoGroup) {
+      @JsonProperty(INDIGO_GROUP_SCHEMA) ScimIndigoGroup indigoGroup,
+      @JsonProperty(AARC_GROUP_SCHEMA) ScimAarcGroup aarcGroup) {
 
     super(id, externalId, meta, schemas);
     this.displayName = displayName;
     this.members = (members != null ? members : Collections.<ScimMemberRef>emptySet());
     this.indigoGroup = (indigoGroup != null ? indigoGroup : ScimIndigoGroup.getBuilder().build());
+    this.aarcGroup = aarcGroup;
   }
 
   private ScimGroup(Builder b) {
@@ -69,6 +76,7 @@ public final class ScimGroup extends ScimResource {
     this.displayName = b.displayName;
     this.members = b.members;
     this.indigoGroup = b.indigoGroup;
+    this.aarcGroup = b.aarcGroup;
   }
 
   public String getDisplayName() {
@@ -95,6 +103,7 @@ public final class ScimGroup extends ScimResource {
     private String displayName;
     private Set<ScimMemberRef> members = new HashSet<>();
     private ScimIndigoGroup indigoGroup = null;
+    private ScimAarcGroup aarcGroup = null;
 
     public Builder(String displayName) {
       super();
@@ -102,6 +111,16 @@ public final class ScimGroup extends ScimResource {
       schemas.add(INDIGO_GROUP_SCHEMA);
       this.displayName = displayName;
       indigoGroup = ScimIndigoGroup.getBuilder().build();
+    }
+
+    public Builder enableAarc(boolean enableAarc) {
+
+      if (enableAarc) {
+        schemas.add(AARC_GROUP_SCHEMA);
+      } else {
+        schemas.remove(AARC_GROUP_SCHEMA);
+      }
+      return this;
     }
 
     public Builder id(String id) {
@@ -124,6 +143,12 @@ public final class ScimGroup extends ScimResource {
 
     public Builder indigoGroup(ScimIndigoGroup indigoGroup) {
       this.indigoGroup = indigoGroup;
+      return this;
+    }
+
+    public Builder aarcGroup(ScimAarcGroup aarcGroup) {
+
+      this.aarcGroup = aarcGroup;
       return this;
     }
 

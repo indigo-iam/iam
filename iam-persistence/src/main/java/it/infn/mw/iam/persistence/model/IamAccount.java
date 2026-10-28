@@ -159,6 +159,10 @@ public class IamAccount implements Serializable {
   @Column(name = "service_account")
   private boolean serviceAccount;
 
+  @OneToOne(cascade = CascadeType.ALL, mappedBy = "account")
+  @JsonIgnore
+  private IamAccountLoginLockout lockoutInfo;
+
   public IamAccount() {
     // empty constructor
   }
@@ -365,8 +369,7 @@ public class IamAccount implements Serializable {
 
   private void sanitizePrimarySshKey() {
 
-    if (!sshKeys.isEmpty()
-        && sshKeys.stream().filter(IamSshKey::isPrimary).findAny().isEmpty()) {
+    if (!sshKeys.isEmpty() && sshKeys.stream().filter(IamSshKey::isPrimary).findAny().isEmpty()) {
       sshKeys.iterator().next().setPrimary(true);
     }
   }
@@ -642,6 +645,14 @@ public class IamAccount implements Serializable {
 
   public String getAffiliation() {
     return this.userInfo.getAffiliation();
+  }
+
+  public IamAccountLoginLockout getLockoutInfo() {
+    return lockoutInfo;
+  }
+
+  public void setLockoutInfo(IamAccountLoginLockout lockoutInfo) {
+    this.lockoutInfo = lockoutInfo;
   }
 
   public JsonObject toJson() {

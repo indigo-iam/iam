@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.service.client;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CLIENT_CREDENTIALS;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CODE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.DEVICE_CODE;
-import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.IMPLICIT;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REDELEGATE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REFRESH_TOKEN;
 import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_basic;
@@ -59,6 +58,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -132,9 +132,8 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertEquals("client", client.getClientId());
-    assertEquals("secret", client.getClientSecret());
-    assertTrue(
-        client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN)));
+    assertEquals(new IamSha256PasswordEncoder().encode("secret"), client.getClientSecret());
+    assertTrue(client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, REFRESH_TOKEN)));
     assertTrue(client.getScope()
       .containsAll(Set.of("openid", "offline_access", "profile", "email", "address", "phone",
           "read-tasks", "write-tasks", "read:/", "write:/")));
@@ -283,7 +282,8 @@ class ClientManagementServiceTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.none, updatedClient.getTokenEndpointAuthMethod());
+    assertEquals(TokenEndpointAuthenticationMethod.none,
+        updatedClient.getTokenEndpointAuthMethod());
     assertNull(updatedClient.getClientSecret());
   }
 
@@ -308,7 +308,8 @@ class ClientManagementServiceTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic, updatedClient.getTokenEndpointAuthMethod());
+    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic,
+        updatedClient.getTokenEndpointAuthMethod());
     assertNotNull(updatedClient.getClientSecret());
   }
 

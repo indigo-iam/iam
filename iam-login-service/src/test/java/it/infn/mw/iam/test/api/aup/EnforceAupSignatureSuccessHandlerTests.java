@@ -42,9 +42,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -64,7 +64,7 @@ class EnforceAupSignatureSuccessHandlerTests {
   AccountUtils accountUtils;
 
   @Mock
-  IamAccountRepository accountRepo;
+  IamAccountService accountService;
 
   @Mock
   HttpServletRequest request;
@@ -104,7 +104,7 @@ class EnforceAupSignatureSuccessHandlerTests {
         Mockito.any());
     verify(session).setAttribute(Mockito.eq(EnforceAupFilter.REQUESTING_SIGNATURE),
         Mockito.eq(true));
-    verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
+    verify(accountService).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
     verify(response).sendRedirect(Mockito.eq("/iam/aup/sign"));
   }
 
@@ -120,7 +120,7 @@ class EnforceAupSignatureSuccessHandlerTests {
         Mockito.any());
     verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response),
         Mockito.eq(auth));
-    verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
+    verify(accountService).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
   }
 
   @Test
@@ -139,7 +139,7 @@ class EnforceAupSignatureSuccessHandlerTests {
         Mockito.any());
     verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response),
         Mockito.eq(oauth));
-    verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
+    verify(accountService).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
   }
 
   @Test
@@ -155,7 +155,7 @@ class EnforceAupSignatureSuccessHandlerTests {
         Mockito.any());
     verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response),
         Mockito.eq(oauth));
-    verify(accountRepo, Mockito.never()).touchLastLoginTimeForUserWithUsername(Mockito.anyString());
+    verify(accountService, Mockito.never()).touchLastLoginTimeForUserWithUsername(Mockito.anyString());
   }
 
 }

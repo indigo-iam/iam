@@ -29,7 +29,7 @@
                 ng-class="{'has-error': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'has-success': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}">
                 <div class="col-sm-10">
                     <input class="form-control" id="name" name="name" placeholder="First name" required type="text"
-                        ng-minlength="3" ng-maxlength="64" ng-model="$ctrl.eUser.name" ng-pattern="$ctrl.pattern"
+                        ng-minlength="2" ng-maxlength="64" ng-model="$ctrl.eUser.name" ng-pattern="$ctrl.pattern"
                         ng-disabled="!$ctrl.isAdmin() && !$ctrl.isUserEditableField('NAME')" />
                     <span class="glyphicon form-control-feedback"
                         ng-class="{'glyphicon-remove': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'glyphicon-ok': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}"
@@ -55,7 +55,7 @@
                 ng-class="{'has-error': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'has-success': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}">
                 <div class="col-sm-10">
                     <input class="form-control" id="surname" name="surname" placeholder="Family name" required
-                        type="text" ng-minlength="3" ng-maxlength="64" ng-model="$ctrl.eUser.surname"
+                        type="text" ng-minlength="2" ng-maxlength="64" ng-model="$ctrl.eUser.surname"
                         ng-pattern="$ctrl.pattern"
                         ng-disabled="!$ctrl.isAdmin() && !$ctrl.isUserEditableField('SURNAME')" />
                     <span class="glyphicon form-control-feedback"

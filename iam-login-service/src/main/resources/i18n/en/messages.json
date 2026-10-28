@@ -78,7 +78,6 @@
             "id-token-crypto-method": "ID Token Encryption Method",
             "id-token-signing-algorithm": "ID Token Signing Algorithm",
             "id-token-timeout": "ID Token Timeout",
-            "implicit": "implicit",
             "initiate-login": "Initiate Login",
             "initiate-login-help": "URL to initiate login on the client",
             "introspection": "Introspection",

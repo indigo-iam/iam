@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +52,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -68,7 +68,6 @@ import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
-import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
 import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswordTokenGranter;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
@@ -84,6 +83,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
@@ -92,6 +92,7 @@ import it.infn.mw.iam.core.IamClientDetailsService;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
@@ -104,7 +105,6 @@ import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
-import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
@@ -144,7 +144,10 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidato
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
+import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopePolicyEngine;
+import it.infn.mw.iam.core.oauth.scope.pdp.OpaScopePolicyEngine;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyEngine;
 import it.infn.mw.iam.core.oidc.AuthorizationClientResolver;
 import it.infn.mw.iam.core.oidc.AuthorizationRequestFilter;
 import it.infn.mw.iam.core.oidc.LoginHintService;
@@ -155,6 +158,7 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
+import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -167,6 +171,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthorizationCodeRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -488,14 +493,6 @@ public class IamConfig {
   }
 
   @Bean
-  ImplicitTokenGranter implicitTokenGranter(AuthorizationServerTokenServices tokenServices,
-      OAuth2RequestFactory requestFactory,
-      @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService) {
-
-    return new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory);
-  }
-
-  @Bean
   RefreshTokenGranter refreshTokenGranter(AuthorizationServerTokenServices tokenServices,
       OAuth2RequestFactory requestFactory,
       @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService,
@@ -549,15 +546,15 @@ public class IamConfig {
 
   @Bean
   TokenGranter tokenGranter(AuthorizationCodeTokenGranter codeTokenGranter,
-      ImplicitTokenGranter implicitTokenGranter, RefreshTokenGranter refreshTokenGranter,
+      RefreshTokenGranter refreshTokenGranter,
       ClientCredentialsTokenGranter clientCredentialsTokenGranter,
       ResourceOwnerPasswordTokenGranter passwordTokenGranter,
       IamDeviceCodeTokenGranter deviceCodeTokenGranter,
       TokenExchangeTokenGranter tokenExchangeGranter) {
 
     return new CompositeTokenGranter(Arrays.<TokenGranter>asList(codeTokenGranter,
-        implicitTokenGranter, refreshTokenGranter, clientCredentialsTokenGranter,
-        passwordTokenGranter, tokenExchangeGranter, deviceCodeTokenGranter));
+        refreshTokenGranter, clientCredentialsTokenGranter, passwordTokenGranter,
+        tokenExchangeGranter, deviceCodeTokenGranter));
   }
 
   @Bean
@@ -571,7 +568,7 @@ public class IamConfig {
 
     DaoAuthenticationProvider dao = new DaoAuthenticationProvider();
     dao.setUserDetailsService(userDetailsService);
-    dao.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+    dao.setPasswordEncoder(new IamSha256PasswordEncoder());
 
     ClientBasicAuthenticationProvider authProvider =
         new ClientBasicAuthenticationProvider(dao, clientService);
@@ -654,5 +651,24 @@ public class IamConfig {
   IamJWKSetCacheService defaultCacheService(RestTemplateFactory rtf) {
 
     return new IamJWKSetCacheService(rtf, 100, 1, TimeUnit.HOURS);
+  }
+
+  @Bean
+  ScopePolicyEngine scopePolicyEngine(IamScopePolicyRepository policyRepo,
+      RestTemplateFactory restTemplateFactory, IamProperties iamProperties) {
+
+    if (iamProperties.getScopeAuthz().getOpa().isEnabled()) {
+      return new OpaScopePolicyEngine(policyRepo, restTemplateFactory,
+          iamProperties.getScopeAuthz().getOpa());
+    }
+
+    return new DefaultScopePolicyEngine(policyRepo);
+  }
+
+  @Bean
+  DashboardConfigService dashboardConfigService(ClientService clientService,
+      ClientUtils clientUtils, ApplicationEventPublisher publisher, IamProperties properties) {
+    return new DashboardConfigService(clientService, clientUtils, new IamSha256PasswordEncoder(),
+        publisher, properties);
   }
 }

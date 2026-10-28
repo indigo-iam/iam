@@ -42,8 +42,8 @@ public interface StructuredScopeTestSupportConstants {
   static final String LOOKUP_CLIENT_ID = "token-lookup-client";
   static final String LOOKUP_CLIENT_SECRET = "secret";
 
-  static final String IMPLICIT_CLIENT_ID = "implicit-flow-client";
-  static final String IMPLICIT_CLIENT_REDIRECT_URL = "http://localhost:9876/implicit";
+  static final String CONSENT_CLIENT_ID = "consent-client";
+  static final String CONSENT_CLIENT_REDIRECT_URL = "http://localhost:9876/callback";
 
   static final String TEST_CLIENT_ID = "client";
   static final String TEST_CLIENT_SECRET = "secret";
@@ -109,15 +109,15 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String EMPTY_SCOPES = "";
 
-  static final String AFFILIATION_SCOPE = "iam.example";    
+  static final String AFFILIATION_SCOPE = "iam.example";
 
   static final String ORGANISATION_NAME = "indigo-dc";
 
   static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
   static final String TOKEN_TYPE_JWT = "urn:ietf:params:oauth:token-type:jwt";
 
-  static final String[] USER_AUTHORITIES = new String[] { "ROLE_USER" };
-  static final String[] ADMIN_AUTHORITIES = new String[] { "ROLE_USER", "ROLE_ADMIN" };
+  static final String[] USER_AUTHORITIES = new String[] {"ROLE_USER"};
+  static final String[] ADMIN_AUTHORITIES = new String[] {"ROLE_USER", "ROLE_ADMIN"};
 
   static final String TEST_001_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980001";
   static final String TEST_002_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980002";
@@ -132,6 +132,9 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String JWT_AUTH_CLIENT_ID = "jwt-auth-private_key_jwt";
   static final String JWT_AUTH_CLIENT_SECRET = "secret";
+
+  static final String PKCE_S256_CLIENT_ID = "pkce-s256-client";
+  static final String PKCE_S256_CLIENT_SECRET = "secret";
 
   public static final ResultMatcher OK = status().isOk();
   public static final ResultMatcher NO_CONTENT = status().isNoContent();

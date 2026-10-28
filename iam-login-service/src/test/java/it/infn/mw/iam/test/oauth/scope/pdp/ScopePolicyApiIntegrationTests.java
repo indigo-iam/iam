@@ -20,6 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hamcrest.Matchers;
@@ -40,7 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -117,6 +120,14 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     listPolicyWorks();
   }
 
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void testListOpaPolicyWorks() throws Exception {
+
+    listOpaPolicyWorks();
+  }
+
   public void listPolicyWorks() throws Exception {
     mvc.perform(get("/iam/scope_policies"))
       .andExpect(status().isOk())
@@ -124,6 +135,16 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(jsonPath("$").value(Matchers.hasSize(1)))
       .andExpect(jsonPath("$[0].description").exists())
       .andExpect(jsonPath("$[0].description").value("Default Permit ALL policy"));
+  }
+
+  public ResultActions listOpaPolicyWorks() throws Exception {
+
+    return mvc.perform(get("/iam/scope_policies/opa"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.policies").isArray())
+      .andExpect(jsonPath("$.policies[0].actor").doesNotExist())
+      .andExpect(jsonPath("$.policies[0].description").exists())
+      .andExpect(jsonPath("$.policies[0].description").value("Default Permit ALL policy"));
   }
 
   @Test
@@ -161,6 +182,29 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   }
 
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaUserPolicyTest() throws Exception {
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    IamScopePolicy p = initDenyScopePolicy();
+    p.setDescription("Deny all to test user");
+    p.setAccount(testAccount);
+
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks()
+      .andExpect(jsonPath("$.policies[1].actor.id").value(equalTo(testAccount.getUuid())))
+      .andExpect(jsonPath("$.policies[1].actor.username").value(equalTo(testAccount.getUsername())))
+      .andExpect(jsonPath("$.policies[1].actor.type").value(equalTo("account")))
+      .andExpect(jsonPath("$.policies[1].description").value("Deny all to test user"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())));
+  }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
@@ -199,13 +243,74 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaGroupPolicyTest() throws Exception {
+
+    IamGroup prodGroup = groupRepo.findByName("Production")
+      .orElseThrow(() -> new AssertionError("Expected production group not found"));
+
+    IamScopePolicy p = initDenyScopePolicy();
+    p.setDescription("Deny all to Production group members");
+    p.setGroup(prodGroup);
+
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks()
+      .andExpect(jsonPath("$.policies[1].actor.id").value(equalTo(prodGroup.getUuid())))
+      .andExpect(jsonPath("$.policies[1].actor.name").value(equalTo(prodGroup.getName())))
+      .andExpect(jsonPath("$.policies[1].actor.type").value(equalTo("group")))
+      .andExpect(
+          jsonPath("$.policies[1].description").value("Deny all to Production group members"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void listOpaDefaultPolicyTest() throws Exception {
+
+    IamScopePolicy p = initPermitScopePolicy();
+    p.setDescription("Allow openid scope to everybody");
+
+    p.setScopes(Set.of("openid", "profile"));
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks().andExpect(jsonPath("$.policies[1].actor").doesNotExist())
+      .andExpect(jsonPath("$.policies[1].description").value("Allow openid scope to everybody"))
+      .andExpect(
+          jsonPath("$.policies[1].matchingPolicy").value(equalTo(p.getMatchingPolicy().toString())))
+      .andExpect(jsonPath("$.policies[1].rule").value(equalTo(p.getRule().toString())))
+      .andExpect(jsonPath("$.policies[1].scopes")
+        .value(Matchers.containsInAnyOrder(p.getScopes().toArray())));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
+  void regexpPolicyNotShownInOpa() throws Exception {
+
+    IamScopePolicy p = initPermitScopePolicy();
+    p.setDescription("Allow openid scope to everybody");
+    p.setMatchingPolicy(MatchingPolicy.REGEXP);
+    scopePolicyRepo.save(p);
+
+    listOpaPolicyWorks().andExpect(jsonPath("$.policies").value(Matchers.hasSize(1)));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
       scopes = "iam:admin.write")
   void defaultPolicyRuleValidationTest() throws Exception {
     ScopePolicyDTO sp = new ScopePolicyDTO();
     sp.setRule("ciccio");
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(startsWith("Invalid scope policy")));
   }
@@ -221,7 +326,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setAccount(accountRef);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error")
         .value(Matchers.equalTo("Invalid scope policy: no IAM account found for the given UUID")));
@@ -241,7 +349,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setGroup(groupRef);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(Matchers.equalTo("no group found for the given UUID")));
   }
@@ -268,7 +379,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setAccount(accountRef);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
           Matchers.equalTo("Invalid scope policy: group and account cannot be both non-null")));
@@ -284,7 +398,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet(""));
     String serializedSp = mapper.writeValueAsString(sp);
 
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(Matchers
         .equalTo("Invalid scope policy: scope length must be >= 1 and < 255 characters")));
@@ -296,7 +413,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     final String INVALID_POLICY = new String(
         Files.readAllBytes(Paths.get("src/test/resources/api/scope_policy/invalid_policy.json")));
 
-    mvc.perform(post("/iam/scope_policies").content(INVALID_POLICY).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(INVALID_POLICY)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(Matchers
         .equalTo("Invalid scope policy: could not parse the policy JSON representation")));
@@ -316,7 +436,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet(s.toString()));
     String serializedSp = mapper.writeValueAsString(sp);
 
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(Matchers
         .equalTo("Invalid scope policy: scope length must be >= 1 and < 255 characters")));
@@ -333,7 +456,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
     String serializedSp = mapper.writeValueAsString(sp);
 
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(Matchers
         .equalTo("Invalid scope policy: custom matching policy requires one or more scopes")));
@@ -349,7 +475,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet("scim:read", "scim:write"));
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     assertThat(scopePolicyRepo.count(), equalTo(2L));
@@ -366,7 +495,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet("scim:read", "scim:write"));
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(
           jsonPath("$.error", is("Invalid scope policy: matching policy cannot be empty or null")));
@@ -381,7 +513,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setRule(PolicyRule.DENY.name());
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     assertThat(scopePolicyRepo.count(), equalTo(2L));
@@ -410,7 +545,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
     String serializedSp = mapper.writeValueAsString(sp);
     System.out.println(serializedSp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     mvc.perform(get("/iam/scope_policies"))
@@ -450,7 +588,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
     String serializedSp = mapper.writeValueAsString(sp);
 
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     mvc.perform(get("/iam/scope_policies"))
@@ -471,7 +612,7 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
       scopes = {"iam:admin.read", "iam:admin.write"})
   void testScopePolicyDeletion() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.delete("/iam/scope_policies/1"))
+    mvc.perform(delete("/iam/scope_policies/1").with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     mvc.perform(get("/iam/scope_policies"))
@@ -479,7 +620,7 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(jsonPath("$").isArray())
       .andExpect(jsonPath("$").value(Matchers.hasSize(0)));
 
-    mvc.perform(MockMvcRequestBuilders.delete("/iam/scope_policies/1"))
+    mvc.perform(delete("/iam/scope_policies/1").with(csrf().asHeader()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error").exists())
       .andExpect(jsonPath("$.error").value("No scope policy found for id: 1"));
@@ -514,7 +655,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet("scim:read", "scim:write"));
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     sp = new ScopePolicyDTO();
@@ -522,7 +666,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setScopes(Sets.newHashSet("scim:read", "scim:write"));
 
     serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     assertThat(scopePolicyRepo.count(), equalTo(3L));
@@ -536,7 +683,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(1L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/1").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isForbidden());
   }
 
@@ -547,7 +697,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(1L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/1").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isUnauthorized());
   }
 
@@ -563,7 +716,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(1L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/1").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isNoContent());
 
     mvc.perform(get("/iam/scope_policies/1"))
@@ -589,7 +745,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(1L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/1").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isNoContent());
 
     mvc.perform(get("/iam/scope_policies/1"))
@@ -613,7 +772,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(1L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/1").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("Invalid scope policy: rule cannot be empty"));
   }
@@ -630,7 +792,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setId(10L);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(put("/iam/scope_policies/10").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(put("/iam/scope_policies/10").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error").value("No scope policy found for id: 10"));
 
@@ -654,10 +819,16 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setGroup(groupRef);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", startsWith("Duplicate policy error")));
   }
@@ -679,7 +850,10 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp.setGroup(groupRef);
 
     String serializedSp = mapper.writeValueAsString(sp);
-    mvc.perform(post("/iam/scope_policies").content(serializedSp).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(serializedSp)
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
 
@@ -689,7 +863,8 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp2.setGroup(groupRef);
 
     mvc
-      .perform(post("/iam/scope_policies").content(mapper.writeValueAsString(sp2))
+      .perform(post("/iam/scope_policies").with(csrf().asHeader())
+        .content(mapper.writeValueAsString(sp2))
         .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
@@ -711,7 +886,7 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     sp2.setScopes(Sets.newHashSet(SCIM_READ));
 
     mvc
-      .perform(put("/iam/scope_policies/{id}", savedObject.getId())
+      .perform(put("/iam/scope_policies/{id}", savedObject.getId()).with(csrf().asHeader())
         .content(mapper.writeValueAsString(sp2))
         .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())

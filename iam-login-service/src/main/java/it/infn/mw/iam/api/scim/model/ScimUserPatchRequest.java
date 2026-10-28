@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUserPatchRequest {
@@ -39,6 +40,7 @@ public class ScimUserPatchRequest {
   @Valid
   @JsonProperty("Operations")
   @JsonAlias("operations")
+  @JsonDeserialize(contentUsing = ScimUserPatchOperationDeserializer.class)
   private List<ScimPatchOperation<ScimUser>> operations;
 
   public ScimUserPatchRequest() {

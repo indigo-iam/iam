@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.scim.user.x509;
 
+import static it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils.bearerToken;
+import static it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils.clientCredentialsToken;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,7 +37,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,22 +49,21 @@ import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.clock.MutableClock;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
   static final Logger LOG = LoggerFactory.getLogger(ScimX509Tests.class);
   static final String JP_INDIGO_USER = "$." + INDIGO_USER_SCHEMA;
+
+  static final String SCIM_CLIENT_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_SECRET = "secret";
+  static final String TEST_UUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
 
   @Autowired
   IamAccountRepository iamAccountRepo;
@@ -75,14 +75,44 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
   MockMvc mvc;
 
   @Autowired
-  SecurityContextUtils context;
-
-  @Autowired
   MutableClock clock;
 
+  String scimAccessToken;
+
   @BeforeEach
-  void setup() {
-    context.cleanupSecurityContext();
+  void setup() throws Exception {
+
+    scimAccessToken = clientCredentialsToken(mvc, mapper, SCIM_CLIENT_ID, SCIM_CLIENT_SECRET,
+        "scim:read", "scim:write");
+  }
+
+  @Test
+  void invalidBearerTokenIsUnauthorized() throws Exception {
+
+    mvc.perform(get("/scim/Users/{id}", TEST_UUID).with(bearerToken("invalid-token")))
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void readOnlyBearerTokenCannotPatchUser() throws Exception {
+
+    String readOnlyToken =
+        clientCredentialsToken(mvc, mapper, SCIM_CLIENT_ID, SCIM_CLIENT_SECRET, "scim:read");
+
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .display(TEST_0_CERT_LABEL)
+      .pemEncodedCertificate(getTest0CertString())
+      .build();
+
+    ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder()
+      .add(ScimUser.builder().addX509Certificate(cert).build())
+      .build();
+
+    mvc
+      .perform(patch("/scim/Users/{id}", TEST_UUID).with(bearerToken(readOnlyToken))
+        .contentType(SCIM_CONTENT_TYPE)
+        .content(mapper.writeValueAsString(patchRequest)))
+      .andExpect(status().isForbidden());
   }
 
   @Test
@@ -90,8 +120,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    mvc.perform(get("/scim/Users/{id}", user.getUuid())).andExpect(status().isOk()).andExpect(
-        jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
+    mvc.perform(get("/scim/Users/{id}", user.getUuid()).with(bearerToken(scimAccessToken)))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
 
   }
 
@@ -104,7 +135,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     iamAccountRepo.save(user);
 
-    mvc.perform(get("/scim/Users/{id}", user.getUuid()))
+    mvc.perform(get("/scim/Users/{id}", user.getUuid()).with(bearerToken(scimAccessToken)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).exists())
       .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).isArray())
@@ -132,7 +163,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     iamAccountRepo.save(user);
 
-    mvc.perform(get("/scim/Users/{id}", user.getUuid()))
+    mvc.perform(get("/scim/Users/{id}", user.getUuid()).with(bearerToken(scimAccessToken)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).exists())
       .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).isArray())
@@ -158,7 +189,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     String scimUserString = mapper.writeValueAsString(user);
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(scimUserString)
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated())
@@ -200,7 +231,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     String scimUserString = mapper.writeValueAsString(user);
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(scimUserString)
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated())
@@ -240,7 +271,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
     String scimUserString = mapper.writeValueAsString(user);
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(scimUserString)
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
@@ -268,7 +299,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(mapper.writeValueAsString(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
@@ -281,7 +312,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(mapper.writeValueAsString(anotherUser))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
@@ -312,10 +343,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().add(user).build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid()).with(bearerToken(scimAccessToken))
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     testUser = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
@@ -339,8 +369,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+      .perform(patch("/scim/Users/{id}", testUser.getUuid()).with(bearerToken(scimAccessToken))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("400")))
@@ -367,7 +398,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(mapper.writeValueAsString(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
@@ -381,8 +412,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+      .perform(patch("/scim/Users/{id}", testUser.getUuid()).with(bearerToken(scimAccessToken))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("409")))
@@ -412,7 +444,7 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(MockMvcRequestBuilders.post("/scim/Users")
+      .perform(post("/scim/Users").with(bearerToken(scimAccessToken))
         .content(mapper.writeValueAsString(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
@@ -425,10 +457,9 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", account.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", account.getUuid()).with(bearerToken(scimAccessToken))
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     iamAccountRepo.findByCertificate(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError("Found unexpected account bound to '" + TEST_0_SUBJECT
@@ -456,9 +487,8 @@ class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid()).with(bearerToken(scimAccessToken))
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
   }
 }

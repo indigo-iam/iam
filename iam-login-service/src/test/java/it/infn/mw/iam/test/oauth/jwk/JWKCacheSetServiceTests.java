@@ -73,7 +73,7 @@ class JWKCacheSetServiceTests {
   @BeforeEach
   void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
-    mockRtf.resetTemplate();
+    mockRtf.resetServer();
   }
 
   @Test
@@ -119,6 +119,6 @@ class JWKCacheSetServiceTests {
 
   void verifyMockServerCalls() {
     mockRtf.getMockServer().verify();
-    mockRtf.resetTemplate();
+    mockRtf.resetServer();
   }
 }

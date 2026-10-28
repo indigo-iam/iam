@@ -166,6 +166,7 @@ public class IamRegistrationTokenService implements RegistrationTokenService {
     token.setJwt(signed);
     token.setTokenValueHash(tokenUtils.sha256(signed.serialize()));
 
-    return tokenRepo.save(token);
+    tokenRepo.save(token);
+    return token;
   }
 }

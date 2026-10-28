@@ -32,7 +32,6 @@ import org.springframework.security.oauth2.provider.ClientDetailsService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -40,6 +39,7 @@ import com.google.gson.JsonParser;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.oauth.scope.ScopeOrder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -51,32 +51,35 @@ public class AuthorizationRequestBuilder {
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationRequestBuilder.class);
 
   private final ScopeFilter scopeFilter;
-  private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsService clientDetailsService;
   private final RequestObjectProcessor requestObjectProcessor;
   private final JsonParser parser = new JsonParser();
 
-  AuthorizationRequestBuilder(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
+  public AuthorizationRequestBuilder(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
       RequestObjectProcessor requestObjectProcessor) {
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.requestObjectProcessor = requestObjectProcessor;
   }
 
-  void filterRequestedScopes(Map<String, String> inputParams, Authentication authn) {
+  public void filterRequestedScopes(Map<String, String> inputParams, Authentication authn,
+      String clientId) {
+
     if (authn == null || authn instanceof AnonymousAuthenticationToken) {
       return;
     }
 
-    Set<String> requestedScopes =
-        OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
+    String rawScopes = inputParams.get(OAuth2Utils.SCOPE);
+    Set<String> requestedScopes = OAuth2Utils.parseParameterList(rawScopes);
+    Set<String> authorizedScopes = scopeFilter.filterScopes(requestedScopes, authn, clientId);
 
     // scopes are filtered also here to avoid authorizing them on the consent page
+    // Preserve the request order: the scope filter may return an unordered set.
     inputParams.put(OAuth2Utils.SCOPE,
-        joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
+        ScopeOrder.serialize(ScopeOrder.fromRaw(rawScopes, authorizedScopes)));
   }
 
-  AuthorizationRequest build(Map<String, String> inputParams) {
+  public AuthorizationRequest build(Map<String, String> inputParams) {
     return new AuthorizationRequest(inputParams, Collections.emptyMap(),
         inputParams.get(OAuth2Utils.CLIENT_ID),
         OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE)), null, null, false,
@@ -84,7 +87,7 @@ public class AuthorizationRequestBuilder {
         OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.RESPONSE_TYPE)));
   }
 
-  void addExtensions(Map<String, String> inputParams, AuthorizationRequest authzRequest) {
+  public void addExtensions(Map<String, String> inputParams, AuthorizationRequest authzRequest) {
     copyExtension(inputParams, authzRequest, ConnectRequestParameters.PROMPT);
     copyExtension(inputParams, authzRequest, ConnectRequestParameters.NONCE);
     copyExtension(inputParams, authzRequest, ConnectRequestParameters.MAX_AGE);
@@ -95,7 +98,7 @@ public class AuthorizationRequestBuilder {
     addRequestObjectExtension(inputParams, authzRequest);
   }
 
-  void applyClientDefaults(AuthorizationRequest authzRequest) {
+  public void applyClientDefaults(AuthorizationRequest authzRequest) {
     if (authzRequest.getClientId() == null) {
       return;
     }
@@ -112,7 +115,7 @@ public class AuthorizationRequestBuilder {
     }
   }
 
-  void addAuthenticationMethodReferences(Authentication authn, AuthorizationRequest authzRequest) {
+  public void addAuthenticationMethodReferences(Authentication authn, AuthorizationRequest authzRequest) {
     if (authn instanceof ExtendedAuthenticationToken extendedToken) {
       processToken(extendedToken.getAuthenticationMethodReferences(), authzRequest);
       return;
