@@ -158,8 +158,7 @@ class FederationRegistrationControllerTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize")
-        .session(session)
+      .perform(get("/authorize").session(session)
         .param("client_id", client.getClientId())
         .param("response_type", "code")
         .param("scope", "openid")
@@ -298,11 +297,10 @@ class FederationRegistrationControllerTests {
     clientDto.setScope(Set.of("openid"));
 
     mvc.perform(put(IAM_CLIENT_API_URL + client.get().getClientId())
-        .with(user("admin").roles("ADMIN", "USER"))
-        .with(csrf().asHeader())
-        .contentType("application/json")
-        .content(mapper.writeValueAsString(clientDto)))
-      .andExpect(status().isBadRequest());
+      .with(user("admin").roles("ADMIN", "USER"))
+      .with(csrf().asHeader())
+      .contentType("application/json")
+      .content(mapper.writeValueAsString(clientDto))).andExpect(status().isBadRequest());
   }
 
   @Test

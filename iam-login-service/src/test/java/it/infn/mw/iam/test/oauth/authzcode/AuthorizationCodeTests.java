@@ -400,5 +400,4 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
     clientRepo.save(entity);
 
   }
-
 }
