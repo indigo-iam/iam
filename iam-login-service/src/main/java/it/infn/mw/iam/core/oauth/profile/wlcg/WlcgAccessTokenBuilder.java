@@ -39,6 +39,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.scope.ScopeOrder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
@@ -77,7 +78,7 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
 
       /* add wlcg.groups */
       Set<String> groups = WlcgGroupHelper.resolveGroupNames(
-          WlcgScopeOrder.forAuthentication(authentication, token.getScope()),
+          ScopeOrder.forAuthentication(authentication, token.getScope()),
           account.get().getUserInfo().getGroups());
       if (isValidClaimValue(groups)) {
         builder.claim(WLCG_GROUPS, groups);
@@ -95,8 +96,8 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
   @Override
   public String serializeScopes(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication) {
-    return WlcgScopeOrder
-      .serialize(WlcgScopeOrder.forAuthentication(authentication, token.getScope()));
+    return ScopeOrder
+      .serialize(ScopeOrder.forAuthentication(authentication, token.getScope()));
   }
 
   @Override
