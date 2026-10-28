@@ -48,12 +48,14 @@ public class MvcConfig implements WebMvcConfigurer {
 
   public MvcConfig(IamUserInfoInterceptor userInfoInterceptor,
       LegacyServerConfigInterceptor serverConfigInterceptor,
-      IamViewInfoInterceptor iamViewInfoInterceptor, IamProperties iamProperties,
+      IamViewInfoInterceptor iamViewInfoInterceptor,
+      LegacyDashboardViewInterceptor legacyDashboardViewInterceptor, IamProperties iamProperties,
       ResourceHandlerConfigurer resourceConfigurer) {
 
     this.userInfoInterceptor = userInfoInterceptor;
     this.serverConfigInterceptor = serverConfigInterceptor;
     this.iamViewInfoInterceptor = iamViewInfoInterceptor;
+    this.legacyDashboardViewInterceptor = legacyDashboardViewInterceptor;
     this.iamProperties = iamProperties;
     this.resourceConfigurer = resourceConfigurer;
   }
