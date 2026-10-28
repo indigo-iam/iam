@@ -26,6 +26,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -128,11 +129,14 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(UNAUTHORIZED);
 
-    mvc.perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).param("name", ATTR_NAME))
+    mvc
+      .perform(
+          delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader()).param("name", ATTR_NAME))
       .andExpect(UNAUTHORIZED);
   }
 
@@ -206,7 +210,8 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(OK);
 
@@ -219,7 +224,8 @@ public class AccountAttributesTests {
     attr = new AttributeDTO(ATTR_NAME, null);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(OK);
 
@@ -243,7 +249,8 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("access_denied")))
@@ -262,7 +269,8 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(OK);
   }
@@ -278,15 +286,20 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(OK);
 
-    mvc.perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).param("name", ATTR_NAME))
+    mvc
+      .perform(
+          delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader()).param("name", ATTR_NAME))
       .andExpect(NO_CONTENT);
 
     // A delete succeeds even if the attribute isn't there
-    mvc.perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).param("name", ATTR_NAME))
+    mvc
+      .perform(
+          delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader()).param("name", ATTR_NAME))
       .andExpect(NO_CONTENT);
   }
 
@@ -301,7 +314,8 @@ public class AccountAttributesTests {
     AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
-      .perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("access_denied")))
@@ -321,12 +335,15 @@ public class AccountAttributesTests {
       .andExpect(accountNotFound);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, randomUuid).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, randomUuid).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(NOT_FOUND)
       .andExpect(accountNotFound);
 
-    mvc.perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, randomUuid).param("name", ATTR_NAME))
+    mvc
+      .perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, randomUuid).with(csrf().asHeader())
+        .param("name", ATTR_NAME))
       .andExpect(NOT_FOUND)
       .andExpect(accountNotFound);
   }
@@ -353,12 +370,14 @@ public class AccountAttributesTests {
 
     for (AttributeDTO a : attrs) {
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(a)))
         .andExpect(OK);
 
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_100_UUID).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_100_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(a)))
         .andExpect(OK);
     }
@@ -381,7 +400,7 @@ public class AccountAttributesTests {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void attributeValidationTests() throws Exception {
-    
+
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -390,7 +409,8 @@ public class AccountAttributesTests {
     AttributeDTO noNameAttribute = new AttributeDTO(null, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(noNameAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must not be blank")));
@@ -401,7 +421,8 @@ public class AccountAttributesTests {
     for (String name : SOME_INVALID_NAMES) {
       AttributeDTO invalidAttribute = new AttributeDTO(name, ATTR_VALUE);
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidAttribute)))
         .andExpect(BAD_REQUEST)
         .andExpect(jsonPath("$.error", containsString("invalid name (does not match with regexp")));
@@ -412,7 +433,8 @@ public class AccountAttributesTests {
     for (String value : SOME_INVALID_VALES) {
       AttributeDTO invalidAttribute = new AttributeDTO(ATTR_NAME, value);
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidAttribute)))
         .andExpect(BAD_REQUEST)
         .andExpect(jsonPath("$.error",
@@ -422,7 +444,8 @@ public class AccountAttributesTests {
     AttributeDTO longNameAttribute = new AttributeDTO(randomAlphabetic(65), ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longNameAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("name cannot be longer than 64 chars")));
@@ -431,7 +454,8 @@ public class AccountAttributesTests {
     AttributeDTO longValueAttribute = new AttributeDTO(ATTR_NAME, randomAlphabetic(257));
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longValueAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("value cannot be longer than 256 chars")));

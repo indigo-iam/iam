@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -47,9 +48,12 @@ class GroupRequestsPaginationTests extends GroupRequestsTestUtils {
   @Autowired
   MockMvc mvc;
 
+  @Autowired
+  MutableClock clock;
+
   void saveNPendingGroupRequests(String username, int numRequests) {
     for (int i = 1; i <= numRequests; i++) {
-      savePendingGroupRequest(username, String.format(GROUP_NAME_TEMPLATE, i));
+      savePendingGroupRequest(username, String.format(GROUP_NAME_TEMPLATE, i), clock.now());
     }
   }
 

@@ -23,6 +23,5 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 public interface IamAccountRepositoryCustom {
   
   Optional<IamAccount> findBySamlId(IamSamlId samlId);  
-  void touchLastLoginTimeForUserWithUsername(String username);
-  
+
 }

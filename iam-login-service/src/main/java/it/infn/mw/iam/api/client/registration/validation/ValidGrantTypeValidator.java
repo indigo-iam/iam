@@ -36,8 +36,7 @@ public class ValidGrantTypeValidator
       return true;
     }
 
-    if ((value.getGrantTypes().contains(AuthorizationGrantType.CODE)
-        || value.getGrantTypes().contains(AuthorizationGrantType.IMPLICIT))
+    if (value.getGrantTypes().contains(AuthorizationGrantType.CODE)
         && (isNull(value.getRedirectUris()) || value.getRedirectUris().isEmpty())) {
       context.disableDefaultConstraintViolation();
       context

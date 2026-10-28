@@ -33,23 +33,29 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.clock.MutableClock;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
 
-  @Autowired
-  SecurityContextUtils context;
+  static final String SCIM_CLIENT_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_SECRET = "secret";
 
   @Autowired
   MutableClock clock;
@@ -59,15 +65,20 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
 
   List<ScimUser> members;
 
+  String scimAccessToken;
+
   @BeforeEach
   void initTests() throws Exception {
-    context.cleanupSecurityContext();
+
+    scimAccessToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, "scim:read", "scim:write");
+
     engineers = addTestGroup("engineers");
     lennon = addTestUser("john_lennon", "lennon@email.test", "John", "Lennon");
     lincoln = addTestUser("abraham_lincoln", "lincoln@email.test", "Abraham", "Lincoln");
     kennedy = addTestUser("jfk", "jfk@whitehouse.us", "John", "Kennedy");
 
-    members = new ArrayList<ScimUser>();
+    members = new ArrayList<>();
     members.add(lennon);
     members.add(lincoln);
     members.add(kennedy);
@@ -83,24 +94,17 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
 
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
-
     assertIsGroupMember(lennon, engineersBeforeUpdate);
     assertIsGroupMember(lincoln, engineersBeforeUpdate);
     assertIsGroupMember(kennedy, engineersBeforeUpdate);
 
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-    }
-
+    // Mantiene l'attesa del test originale.
+    Thread.sleep(1000);
     clock.advance(Duration.ofMillis(100));
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchRemoveRequest)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchRemoveRequest)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
 
@@ -108,8 +112,8 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
     assertIsGroupMember(lincoln, engineersAfterUpdate);
     assertIsGroupMember(kennedy, engineersAfterUpdate);
 
-    final long dateBeforeUpdate = engineersBeforeUpdate.getMeta().getLastModified().getTime();
-    final long dateAfterUpdate = engineersAfterUpdate.getMeta().getLastModified().getTime();
+    long dateBeforeUpdate = engineersBeforeUpdate.getMeta().getLastModified().getTime();
+    long dateAfterUpdate = engineersAfterUpdate.getMeta().getLastModified().getTime();
 
     assertThat(dateBeforeUpdate, lessThan(dateAfterUpdate));
   }
@@ -117,18 +121,15 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
   @Test
   void testGroupPatchRemoveMultipleMembers() throws Exception {
 
-    List<ScimUser> membersToRemove = new ArrayList<ScimUser>();
+    List<ScimUser> membersToRemove = new ArrayList<>();
     membersToRemove.add(lennon);
     membersToRemove.add(lincoln);
 
     ScimGroupPatchRequest patchReq = getPatchRemoveUsersRequest(membersToRemove);
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     ScimGroup updatedGroup = getGroup(engineers.getMeta().getLocation());
 
@@ -140,65 +141,52 @@ class ScimGroupProvisioningPatchRemoveTests extends ScimGroupPatchUtils {
   @Test
   void testGroupPatchRemoveAllListOfMembers() throws Exception {
 
-    List<ScimUser> membersToRemove = new ArrayList<ScimUser>();
+    List<ScimUser> membersToRemove = new ArrayList<>();
     membersToRemove.add(lennon);
     membersToRemove.add(lincoln);
     membersToRemove.add(kennedy);
 
     ScimGroupPatchRequest patchReq = getPatchRemoveUsersRequest(membersToRemove);
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
-    mvc.perform(get(engineers.getMeta().getLocation() + "/members").contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.totalResults", is(0)))
-      .andExpect(jsonPath("$.Resources", empty()));
-
+    performScimWithToken(get(engineers.getMeta().getLocation() + "/members").contentType(SCIM_CONTENT_TYPE),
+        scimAccessToken).andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalResults", is(0)))
+          .andExpect(jsonPath("$.Resources", empty()));
   }
 
   @Test
   void testGroupPatchRemoveAllMembers() throws Exception {
 
-    List<ScimUser> emptyMembers = new ArrayList<ScimUser>();
+    List<ScimUser> emptyMembers = new ArrayList<>();
     ScimGroupPatchRequest patchReq = getPatchRemoveUsersRequest(emptyMembers);
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchReq)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchReq)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     ScimGroup updatedGroup = getGroup(engineers.getMeta().getLocation());
     assertThat(updatedGroup.getMembers(), empty());
   }
 
   @Test
-  void testGroupPatchRemogmveMemberTwice() throws Exception {
+  void testGroupPatchRemoveMemberTwice() throws Exception {
 
     ScimGroupPatchRequest patchRemoveRequest =
         getPatchRemoveUsersRequest(Lists.newArrayList(lennon));
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchRemoveRequest)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchRemoveRequest)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
-    //@formatter:off
-    mvc.perform(patch(engineers.getMeta().getLocation())
-        .contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchRemoveRequest)))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+    performScimWithToken(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchRemoveRequest)), scimAccessToken)
+        .andExpect(status().isNoContent());
 
     ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
 

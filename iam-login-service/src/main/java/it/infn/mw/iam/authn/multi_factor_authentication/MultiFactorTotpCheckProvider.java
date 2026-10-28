@@ -31,11 +31,13 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationStateMask;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 /**
  * Grants full authentication by verifying a provided MFA TOTP. Only comes into play in the step-up
@@ -43,12 +45,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  */
 public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final IamTotpMfaService totpMfaService;
 
-  public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo,
+  public MultiFactorTotpCheckProvider(IamAccountService accountService,
       IamTotpMfaService totpMfaService) {
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.totpMfaService = totpMfaService;
   }
 
@@ -67,12 +69,20 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       return null;
     }
 
-    IamAccount account = accountRepo.findByUsername(authentication.getName())
+    String username = authentication.getName();
+    IamAccount account = accountService.findByUsername(username)
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
+    AuthenticationStateMask.checkLoginAllowedOrThrowBadCredentials(accountService,
+        account.getUuid(), "Bad TOTP");
+
     if (!isValidTotp(account, totp)) {
+      accountService.loginFailedAttempt(account.getUuid());
       throw new BadCredentialsException("Bad TOTP");
     }
+
+    AuthenticationStateMask.resetLoginLockoutOrThrowBadCredentials(accountService,
+        account.getUuid(), LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, "Bad TOTP");
 
     return upgradeToFullyAuthenticated(authentication);
   }

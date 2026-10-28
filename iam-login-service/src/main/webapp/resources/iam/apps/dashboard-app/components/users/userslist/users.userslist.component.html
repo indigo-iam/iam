@@ -91,7 +91,11 @@
                         </td>
                         <!-- Active -->
                         <td class="col-md-1 hidden-xs text-center"><i class="fa fa-circle text-success"
-                                ng-show="user.active"></i> <i class="fa fa-circle text-danger"
+                                ng-show="user.active && !$ctrl.isSuspended(user)"></i>
+                            <i class="fa fa-circle"
+                                ng-show="user.active && $ctrl.isSuspended(user)"
+                                style="color: #ff9800;"></i>
+                            <i class="fa fa-circle text-danger"
                                 ng-show="!user.active"></i></td>
                         <!-- E-mail -->
                         <td class="col-md-2 hidden-xs">{{user.emails[0].value}}</td>
