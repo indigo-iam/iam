@@ -42,8 +42,8 @@
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
     <jackson-bom.version>2.18.11</jackson-bom.version>
 
-    <voms.version>3.4.0</voms.version>
-    <bc.version>1.86</bc.version>
+    <voms.version>3.4.1</voms.version>
+    <bc.version>1.84</bc.version>
 
     <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
