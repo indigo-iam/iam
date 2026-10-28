@@ -47,6 +47,11 @@
   rel="stylesheet"
   href="${resourcesPrefix}/iam/css/tooltip.css"></link>  
 
+<c:if test="${not empty _csrf}">
+  <meta name="_csrf" content="<c:out value='${_csrf.token}'/>">
+  <meta name="_csrf_header" content="<c:out value='${_csrf.headerName}'/>">
+</c:if>
+
 </head>
 
 <script>

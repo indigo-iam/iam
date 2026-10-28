@@ -24,9 +24,13 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,13 +42,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -121,7 +123,8 @@ class OidcExtAuthRegistrationTests {
     request.setNotes("Some short notes...");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -134,8 +137,7 @@ class OidcExtAuthRegistrationTests {
     // login page with an account disabled error
 
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(get("/openid_connect_login")
-        .with(SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
+      .perform(get("/openid_connect_login").with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isFound())
       .andExpect(MockMvcResultMatchers
         .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
@@ -157,9 +159,8 @@ class OidcExtAuthRegistrationTests {
       .perform(
           get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
       .andExpect(status().isFound())
-      .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
-      .andExpect(
-          MockMvcResultMatchers.request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
+      .andExpect(redirectedUrlPattern("/login**"))
+      .andExpect(request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
       .andReturn()
       .getRequest()
       .getSession();
@@ -172,14 +173,14 @@ class OidcExtAuthRegistrationTests {
 
     // the same happens after having confirmed the request
     mvc
-      .perform(post("/registration/verify").content("token=" + token)
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
 
     session = (MockHttpSession) mvc
-      .perform(get("/openid_connect_login")
-        .with(SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
+      .perform(get("/openid_connect_login").with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isFound())
       .andExpect(MockMvcResultMatchers
         .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
@@ -196,7 +197,7 @@ class OidcExtAuthRegistrationTests {
       .perform(
           get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
       .andExpect(status().isFound())
-      .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
+      .andExpect(redirectedUrlPattern("/login**"))
       .andExpect(request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
       .andReturn()
       .getRequest()

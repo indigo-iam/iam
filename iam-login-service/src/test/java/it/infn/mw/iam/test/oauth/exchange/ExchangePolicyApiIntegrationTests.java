@@ -24,6 +24,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -145,22 +146,23 @@ class ExchangePolicyApiIntegrationTests {
 
   @Test
   void deletePolicyRequiresAuthenticatedUser() throws Exception {
-    mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isUnauthorized());
+    mvc.perform(delete(ENDPOINT + "/1").with(csrf().asHeader()))
+      .andExpect(status().isUnauthorized());
   }
 
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
   void deletePolicyRequiresAdminUser() throws Exception {
-    mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isForbidden());
+    mvc.perform(delete(ENDPOINT + "/1").with(csrf().asHeader())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
       scopes = "iam:admin.write")
   void deletePolicyWorks() throws Exception {
-    mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNoContent());
-    mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNotFound());
+    mvc.perform(delete(ENDPOINT + "/1").with(csrf().asHeader())).andExpect(status().isNoContent());
+    mvc.perform(delete(ENDPOINT + "/1").with(csrf().asHeader())).andExpect(status().isNotFound());
     verify(pdp, times(1)).reloadPolicies();
   }
 
@@ -168,14 +170,16 @@ class ExchangePolicyApiIntegrationTests {
   @Test
   void createPolicyRequiresAuthenticatedUser() throws Exception {
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
-    mvc.perform(post(ENDPOINT).content(policy)).andExpect(status().isUnauthorized());
+    mvc.perform(post(ENDPOINT).with(csrf().asHeader()).content(policy))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
   void createPolicyRequiresAdminUser() throws Exception {
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
-    mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post(ENDPOINT).with(csrf().asHeader()).content(policy).contentType(APPLICATION_JSON))
       .andExpect(status().isForbidden());
   }
 
@@ -186,7 +190,8 @@ class ExchangePolicyApiIntegrationTests {
     repo.deleteAll();
 
     String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
-    mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post(ENDPOINT).with(csrf().asHeader()).content(policy).contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     mvc.perform(get(ENDPOINT))
@@ -198,7 +203,8 @@ class ExchangePolicyApiIntegrationTests {
       .andExpect(jsonPath("$[0].originClient.type").value("ANY"))
       .andExpect(jsonPath("$[0].destinationClient.type").value("ANY"));
 
-    mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post(ENDPOINT).with(csrf().asHeader()).content(policy).contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
 
@@ -246,7 +252,8 @@ class ExchangePolicyApiIntegrationTests {
     policyDto.setDestinationClient(ClientMatchingPolicyDTO.anyClient());
 
     String policy = mapper.writeValueAsString(policyDto);
-    mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
+    mvc
+      .perform(post(ENDPOINT).with(csrf().asHeader()).content(policy).contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
     mvc.perform(get(ENDPOINT))
@@ -273,8 +280,9 @@ class ExchangePolicyApiIntegrationTests {
     // Empty object
     ObjectNode node = mapper.createObjectNode();
     mvc
-      .perform(
-          post(ENDPOINT).content(mapper.writeValueAsString(node)).contentType(APPLICATION_JSON))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(node))
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("Invalid token exchange policy")));
 
@@ -283,8 +291,9 @@ class ExchangePolicyApiIntegrationTests {
     node.put("rule", "WHATEVER");
 
     mvc
-      .perform(
-          post(ENDPOINT).content(mapper.writeValueAsString(node)).contentType(APPLICATION_JSON))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(node))
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(
           jsonPath("$.error", containsString("could not parse the policy JSON representation")));
@@ -293,7 +302,8 @@ class ExchangePolicyApiIntegrationTests {
     ExchangePolicyDTO longDescriptionPolicy = denyAllExchangesPolicy();
     longDescriptionPolicy.setDescription(RandomStringUtils.randomAlphanumeric(513));
     mvc
-      .perform(post(ENDPOINT).content(mapper.writeValueAsString(longDescriptionPolicy))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(longDescriptionPolicy))
         .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error",
@@ -311,8 +321,9 @@ class ExchangePolicyApiIntegrationTests {
     node.set("destinationClient", destClient);
 
     mvc
-      .perform(
-          post(ENDPOINT).content(mapper.writeValueAsString(node)).contentType(APPLICATION_JSON))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(node))
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(
           jsonPath("$.error", containsString("could not parse the policy JSON representation")));
@@ -329,8 +340,9 @@ class ExchangePolicyApiIntegrationTests {
     node.set("destinationClient", destClient);
 
     mvc
-      .perform(
-          post(ENDPOINT).content(mapper.writeValueAsString(node)).contentType(APPLICATION_JSON))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(node))
+        .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(
           jsonPath("$.error", containsString("could not parse the policy JSON representation")));
@@ -340,7 +352,8 @@ class ExchangePolicyApiIntegrationTests {
     longMatchParamPolicy.setOriginClient(clientById(randomAlphanumeric(257)));
 
     mvc
-      .perform(post(ENDPOINT).content(mapper.writeValueAsString(longMatchParamPolicy))
+      .perform(post(ENDPOINT).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(longMatchParamPolicy))
         .contentType(APPLICATION_JSON))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("must be at most 256")));

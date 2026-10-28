@@ -1,40 +1,87 @@
 name: Build & Test
 
-on: [push, pull_request] 
+on: [push, pull_request]
+
+permissions:
+  contents: read
 
 jobs:
   build-and-test:
+    name: Tests (Java ${{ matrix.java }}, ${{ matrix.database }})
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+        database: [h2, mysql]
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-    - name: Checkout
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          cache: maven
+          java-version: ${{ matrix.java }}
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v5
-      with:
-        distribution: temurin
-        cache: maven
-        java-version: 17
+      - name: License check
+        if: matrix.java == '17' && matrix.database == 'mysql'
+        run: |
+          mvn -version
+          mvn -B license:check
 
-    - name: License check
-      run: |
-        mvn -version
-        mvn -B license:check
+      - name: Start MySQL
+        if: matrix.database == 'mysql'
+        run: |
+          sudo systemctl start mysql
+          mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
+          mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
+          mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
+          mysql -uroot -proot -e "FLUSH PRIVILEGES;"
 
-    - name: Build & MySQL tests
-      env:
-        IAM_DB_HOST: localhost
-      run: |
-        sudo systemctl start mysql
-        mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
-        mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
-        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
-        mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test -q package install
+      - name: Build and test
+        env:
+          IAM_DB_HOST: localhost
+          TEST_DATABASE: ${{ matrix.database }}
+        shell: bash
+        run: |
+          args=()
+          if [[ "$TEST_DATABASE" == "mysql" ]]; then
+            args+=(-Dspring.profiles.active=mysql-test)
+          fi
+          mvn -B -ntp verify -Dsurefire.exitTimeout=120 "${args[@]}"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-reports-java-${{ matrix.java }}-${{ matrix.database }}
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Stage application artifacts
+        if: matrix.java == '17' && matrix.database == 'mysql'
+        run: |
+          mkdir -p application-artifacts
+          cp iam-login-service/target/iam-login-service.war application-artifacts/
+          cp iam-voms-aa/target/iam-voms-aa.jar application-artifacts/
+
+      - name: Upload application artifacts
+        if: matrix.java == '17' && matrix.database == 'mysql'
+        uses: actions/upload-artifact@v5
+        with:
+          name: application-artifacts-java-17
+          path: application-artifacts/
+          if-no-files-found: error
+          retention-days: 7
 
   build-docker-images:
     needs: build-and-test
@@ -47,111 +94,118 @@ jobs:
       queue: max
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-    - name: Checkout
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
+      - name: Download tested application artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: application-artifacts-java-17
+          path: application-artifacts/
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v5
-      with:
-        distribution: temurin
-        cache: maven
-        java-version: 17
+      - name: Copy artifacts to docker dir
+        run: |
+          cp application-artifacts/iam-login-service.war iam-login-service/docker/
+          cp application-artifacts/iam-voms-aa.jar iam-voms-aa/docker/
 
-    - name: Build & Package
-      run: |
-        mvn -DskipTests package install
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
 
-    - name: Copy artifacts to docker dir
-      run: |
-        cp iam-login-service/target/iam-login-service.war iam-login-service/docker
-        cp iam-voms-aa/target/iam-voms-aa.jar iam-voms-aa/docker
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Setup QEMU
-      uses: docker/setup-qemu-action@v3
-    
-    - name: Setup Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Docker login
-      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/develop'
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Docker login
+        if: >-
+          github.event_name == 'push' &&
+          github.repository == 'indigo-iam/iam' &&
+          (startsWith(github.ref, 'refs/tags/') ||
+           github.ref == 'refs/heads/develop')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Check stable release tag
-      id: release
-      shell: bash
-      run: |
-        stable=false
+      - name: Check stable release tag
+        id: release
+        shell: bash
+        run: |
+          stable=false
 
-        if [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          latest_tag=$(
-            git ls-remote --tags --refs origin |
-              awk '{sub(/^refs\/tags\//, "", $2); print $2}' |
-              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
-              sort -V |
-              tail -n 1
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            latest_tag=$(
+              git ls-remote --tags --refs origin |
+                awk '{sub(/^refs\/tags\//, "", $2); print $2}' |
+                grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+                sort -V |
+                tail -n 1
             )
-          echo "Current tag: $GITHUB_REF_NAME"
-          echo "Highest release tag: $latest_tag"
 
-          if [[ "$GITHUB_REF_NAME" == "$latest_tag" ]]; then
-            stable=true
+            echo "Current tag: $GITHUB_REF_NAME"
+            echo "Highest release tag: $latest_tag"
+
+            if [[ "$GITHUB_REF_NAME" == "$latest_tag" ]]; then
+              stable=true
+            fi
           fi
-        fi
 
-        echo "stable=$stable" >> "$GITHUB_OUTPUT"
+          echo "stable=$stable" >> "$GITHUB_OUTPUT"
 
-    - name: Docker metainformation for iam-login-service
-      id: ls-meta
-      # tag v5
-      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-      with:
-        images: indigoiam/iam-login-service
-        flavor: |
-          latest=false
-        tags: |
-          type=sha
-          type=ref,event=tag
-          type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
-          type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
+      - name: Docker metainformation for iam-login-service
+        id: ls-meta
+        # tag v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        with:
+          images: indigoiam/iam-login-service
+          flavor: |
+            latest=false
+          tags: |
+            type=sha
+            type=ref,event=tag
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
 
-    - name: Docker metainformation for iam-voms-aa
-      id: va-meta
-      # tag v5
-      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-      with:
-        images: indigoiam/iam-voms-aa
-        flavor: |
-          latest=false
-        tags: |
-          type=sha
-          type=ref,event=tag
-          type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
-          type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
+      - name: Docker metainformation for iam-voms-aa
+        id: va-meta
+        # tag v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        with:
+          images: indigoiam/iam-voms-aa
+          flavor: |
+            latest=false
+          tags: |
+            type=sha
+            type=ref,event=tag
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=raw,value=stable,enable=${{ steps.release.outputs.stable == 'true' }}
 
-    - name: Build & push iam-login-service docker image
-      # tag v6
-      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-      with:
-        tags: ${{ steps.ls-meta.outputs.tags }}
-        labels: ${{ steps.ls-meta.outputs.labels }}
-        context: iam-login-service/docker/
-        file: iam-login-service/docker/Dockerfile.prod
-        platforms: linux/amd64,linux/arm64
-        push: ${{ startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/develop' }}
+      - name: Build & push iam-login-service docker image
+        # tag v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          tags: ${{ steps.ls-meta.outputs.tags }}
+          labels: ${{ steps.ls-meta.outputs.labels }}
+          context: iam-login-service/docker/
+          file: iam-login-service/docker/Dockerfile.prod
+          platforms: linux/amd64,linux/arm64
+          push: >-
+            ${{ github.event_name == 'push' &&
+                github.repository == 'indigo-iam/iam' &&
+                (startsWith(github.ref, 'refs/tags/') ||
+                 github.ref == 'refs/heads/develop') }}
 
-    - name: Build & push iam-voms-aa docker image
-      # tag v6
-      uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-      with:
-        tags: ${{ steps.va-meta.outputs.tags }}
-        labels: ${{ steps.va-meta.outputs.labels }}
-        context: iam-voms-aa/docker/
-        file: iam-voms-aa/docker/Dockerfile.prod
-        platforms: linux/amd64,linux/arm64
-        push: ${{ startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/develop' }}
+      - name: Build & push iam-voms-aa docker image
+        # tag v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          tags: ${{ steps.va-meta.outputs.tags }}
+          labels: ${{ steps.va-meta.outputs.labels }}
+          context: iam-voms-aa/docker/
+          file: iam-voms-aa/docker/Dockerfile.prod
+          platforms: linux/amd64,linux/arm64
+          push: >-
+            ${{ github.event_name == 'push' &&
+                github.repository == 'indigo-iam/iam' &&
+                (startsWith(github.ref, 'refs/tags/') ||
+                 github.ref == 'refs/heads/develop') }}

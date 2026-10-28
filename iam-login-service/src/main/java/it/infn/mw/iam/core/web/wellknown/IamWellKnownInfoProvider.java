@@ -53,7 +53,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS =
       List.of("client_secret_basic", "client_secret_post", "private_key_jwt", "none");
 
-  private static final List<String> RESPONSE_TYPES = List.of("code", "token");
+  private static final List<String> RESPONSE_TYPES = List.of("code");
 
   private static final List<String> SUBJECT_TYPES = List.of("public", "pairwise");
 
@@ -64,10 +64,9 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
           "nickname", "profile", "picture", "zoneinfo", "locale", "updated_at", "email",
           "email_verified", "organisation_name", "groups", "wlcg.groups", "external_authn");
 
-  private static final List<String> GRANT_TYPES =
-      List.of("authorization_code", "implicit", "refresh_token", "client_credentials", "password",
-          "urn:ietf:params:oauth:grant-type:token-exchange",
-          "urn:ietf:params:oauth:grant-type:device_code");
+  private static final List<String> GRANT_TYPES = List.of("authorization_code", "refresh_token",
+      "client_credentials", "password", "urn:ietf:params:oauth:grant-type:token-exchange",
+      "urn:ietf:params:oauth:grant-type:device_code");
 
   public static final List<JWSAlgorithm> SIGNING_ALGOS = List.of(JWSAlgorithm.RS256,
       JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256, JWSAlgorithm.ES384,
@@ -81,7 +80,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private static final List<Algorithm> ID_TOKEN_JWS_ALGOS_SUPPORTED =
       List.of(JWSAlgorithm.RS256, JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256,
           JWSAlgorithm.ES384, JWSAlgorithm.ES512, JWSAlgorithm.PS256, JWSAlgorithm.PS384,
-          JWSAlgorithm.PS512, Algorithm.NONE);
+          JWSAlgorithm.PS512);
 
   private final IamProperties properties;
   private final SystemScopeService systemScopeService;

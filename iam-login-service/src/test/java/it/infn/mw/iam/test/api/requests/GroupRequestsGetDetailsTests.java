@@ -38,6 +38,7 @@ import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -46,10 +47,13 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
 
   @Autowired
-  private GroupRequestsService groupRequestsService;
+  GroupRequestsService groupRequestsService;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   @WithMockUser(roles = {"ADMIN"}, username = TEST_ADMIN)
@@ -84,14 +88,15 @@ class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void getGroupRequestDetailsOfAnotherUser() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest("test_101", TEST_001_GROUPNAME);
+    GroupRequestDto request = savePendingGroupRequest("test_101", TEST_001_GROUPNAME, clock.now());
     mvc.perform(get(GET_DETAILS_URL, request.getUuid())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithAnonymousUser
   void getGroupRequestDetailsAsAnonymous() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", containsString("unauthorized")))
@@ -112,7 +117,8 @@ class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   void getGroupRequestDetailsAsUserWithBothRoles() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
