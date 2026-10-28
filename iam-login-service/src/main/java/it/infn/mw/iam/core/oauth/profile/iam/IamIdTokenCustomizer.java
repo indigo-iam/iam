@@ -19,14 +19,17 @@ import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_T
 
 import java.util.Optional;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
+import it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -43,7 +46,7 @@ public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
 
   protected final void includeLabelsInIdToken(Builder idClaims, IamAccount account) {
 
-    for (IncludeLabelProperties includeLabel : getIamProperties().getTokenEnhancer()
+    for (IncludeLabelProperties includeLabel : getProperties().getTokenEnhancer()
       .getIncludeLabels()) {
       if (includeLabel.getContext().contains(ID_TOKEN)) {
         Optional<IamLabel> label = account.getLabelByPrefixAndName(
@@ -63,5 +66,23 @@ public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
     super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
 
     includeLabelsInIdToken(idClaims, account);
+    includeExternalAuthnInIdToken(idClaims, accessToken, account);
+  }
+
+  protected void includeExternalAuthnInIdToken(Builder idClaims,
+      OAuth2AccessTokenEntity accessToken, IamAccount account) {
+
+    if (!getProperties().getTokenEnhancer().getIncludeExternalAuthn().includesIdTokens()) {
+      return;
+    }
+
+    Authentication userAuth =
+        accessToken.getAuthenticationHolder().getAuthentication().getUserAuthentication();
+
+    if (AuthenticationUtils.isExternalAuthentication(userAuth)) {
+      idClaims.claim(BaseExtraClaimNames.EXTERNAL_AUTHN,
+          getClaimValueHelper().resolveClaim(BaseExtraClaimNames.EXTERNAL_AUTHN,
+              accessToken.getAuthenticationHolder().getAuthentication(), Optional.of(account)));
+    }
   }
 }

@@ -97,7 +97,7 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
   @Test
   void testX509AuthenticationSuccessButNotRequestedLeadsToLoginPage() throws Exception {
 
-    Instant now = Instant.now();
+    Instant now = clock.instant();
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
@@ -105,6 +105,8 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
     linkTest0CertificateToAccount(testAccount, clock.instant());
 
     iamAccountRepo.save(testAccount);
+
+    clock.advance(Duration.ofSeconds(10));
 
     IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(
@@ -513,13 +515,13 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/login"));
 
-    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+    mvc.perform(post("/login").with(csrf()).param("username", "test").param("password", "password"))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("/login?error=failure"));
 
     resolvedAccount.setActive(true);
 
-    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+    mvc.perform(post("/login").with(csrf()).param("username", "test").param("password", "password"))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("/dashboard"));
 

@@ -24,6 +24,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
+import it.infn.mw.iam.core.oauth.scope.ScopeOrder;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -41,7 +42,8 @@ public class WlcgUserinfoHelper extends IamUserinfoHelper {
     Map<String, Object> claims = super.resolveScopeClaims(scopes, account, auth);
     claims.remove("groups");
     Set<String> resolvedGroups =
-        WlcgGroupHelper.resolveGroupNames(scopes, account.getUserInfo().getGroups());
+        WlcgGroupHelper.resolveGroupNames(
+            ScopeOrder.forAuthentication(auth, scopes), account.getUserInfo().getGroups());
     if (!resolvedGroups.isEmpty()) {
       claims.put(WlcgExtraClaimNames.WLCG_GROUPS, resolvedGroups);
     }

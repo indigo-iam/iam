@@ -19,6 +19,7 @@ import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionC
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
@@ -46,6 +47,13 @@ public class WlcgIntrospectionHelper extends BaseIntrospectionHelper {
 
   private void addWlcgGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {
 
+    if (accessToken.getPayload() != null) {
+      Object groups = accessToken.getPayload().getClaim(WlcgExtraClaimNames.WLCG_GROUPS);
+      if (groups instanceof List<?>) {
+        claims.put(WlcgExtraClaimNames.WLCG_GROUPS, groups);
+        return;
+      }
+    }
     if (claims.containsKey(USERNAME)) {
       IamAccount account = loadUserFrom(claims.get(SUB).toString()).orElseThrow(
           () -> new IllegalStateException("Token sub doesn't refer to any registered user"));

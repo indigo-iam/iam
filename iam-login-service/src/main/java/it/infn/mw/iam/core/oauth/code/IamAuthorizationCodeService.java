@@ -37,6 +37,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Service
 public class IamAuthorizationCodeService implements AuthorizationCodeServices {
 
+  private static final int AUTHORIZATION_CODE_LENGTH_BYTES = 32;
+
   private final Clock clock;
   private final IamAuthorizationCodeRepository codeRepository;
   private final IamClientRepository clientRepository;
@@ -56,7 +58,7 @@ public class IamAuthorizationCodeService implements AuthorizationCodeServices {
 
   private String generateToken() {
 
-    byte[] bytes = new byte[16];
+    byte[] bytes = new byte[AUTHORIZATION_CODE_LENGTH_BYTES];
     random.nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   }

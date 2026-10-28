@@ -42,8 +42,8 @@ public interface StructuredScopeTestSupportConstants {
   static final String LOOKUP_CLIENT_ID = "token-lookup-client";
   static final String LOOKUP_CLIENT_SECRET = "secret";
 
-  static final String IMPLICIT_CLIENT_ID = "implicit-flow-client";
-  static final String IMPLICIT_CLIENT_REDIRECT_URL = "http://localhost:9876/implicit";
+  static final String CONSENT_CLIENT_ID = "consent-client";
+  static final String CONSENT_CLIENT_REDIRECT_URL = "http://localhost:9876/callback";
 
   static final String TEST_CLIENT_ID = "client";
   static final String TEST_CLIENT_SECRET = "secret";

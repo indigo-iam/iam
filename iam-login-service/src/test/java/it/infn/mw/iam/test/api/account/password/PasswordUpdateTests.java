@@ -15,52 +15,68 @@
  */
 package it.infn.mw.iam.test.api.account.password;
 
-import static it.infn.mw.iam.test.TestUtils.passwordTokenGetter;
+import static it.infn.mw.iam.test.TestUtils.CLIENT_CRED_GRANT_CLIENT_ID;
+import static it.infn.mw.iam.test.TestUtils.CLIENT_CRED_GRANT_CLIENT_SECRET;
+import static it.infn.mw.iam.test.TestUtils.PASSWORD_GRANT_CLIENT_ID;
+import static it.infn.mw.iam.test.TestUtils.PASSWORD_GRANT_CLIENT_SECRET;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import io.restassured.RestAssured;
-import io.restassured.response.ValidatableResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.password_reset.PasswordUpdateController;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.TestUtils;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = IamLoginService.class)
+@AutoConfigureMockMvc
 class PasswordUpdateTests {
 
-  @Value("${local.server.port}")
-  private Integer iamPort;
+  private static final String USER_USERNAME = "password_tester_user";
+  private static final String USER_PASSWORD = "password";
+  private static final String USER_NAME = "TESTER";
+  private static final String USER_SURNAME = "USER";
+  private static final String USER_EMAIL = "password_tester_user@test.org";
 
-  private IamAccount testUser;
+  private static final String VALID_PASSWORD = "Secure_P@ssw0rd!";
 
-  private final String USER_USERNAME = "password_tester_user";
-  private final String USER_PASSWORD = "password";
-  private final String USER_NAME = "TESTER";
-  private final String USER_SURNAME = "USER";
-  private final String USER_EMAIL = "password_tester_user@test.org";
+  @Autowired
+  private MockMvc mvc;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Autowired
   private IamAccountService accountService;
+
   @Autowired
   private IamAccountRepository accountRepository;
 
-  @BeforeAll
-  static void init() {
-    TestUtils.initRestAssured();
-  }
+  private IamAccount testUser;
 
   @BeforeEach
   void testSetup() {
@@ -73,221 +89,143 @@ class PasswordUpdateTests {
     account.getUserInfo().setFamilyName(USER_SURNAME);
     account.getUserInfo().setEmail(USER_EMAIL);
     account.getUserInfo().setEmailVerified(true);
+
     testUser = accountService.createAccount(account);
   }
 
   @AfterEach
   void testTeardown() {
 
-    accountService.deleteAccount(testUser);
+    if (testUser != null) {
+      accountService.deleteAccount(testUser);
+    }
   }
 
-  private ValidatableResponse doPost(String accessToken, String currentPassword,
-      String newPassword) {
+  private String getAccessToken(MockHttpServletRequestBuilder request) throws Exception {
 
-    return RestAssured.given()
-      .port(iamPort)
-      .auth()
-      .preemptive()
-      .oauth2(accessToken)
-      .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
-      .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
-      .log()
-      .all(true)
-      .when()
-      .post(PasswordUpdateController.BASE_URL)
-      .then()
-      .log()
-      .all(true);
+    String response = mvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token", is(not(emptyOrNullString()))))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    return objectMapper.readTree(response).get("access_token").asText();
   }
 
-  private ValidatableResponse doPost(String currentPassword, String newPassword) {
+  private String getUserAccessToken(String password) throws Exception {
 
-    return RestAssured.given()
-      .port(iamPort)
-      .formParam(PasswordUpdateController.CURRENT_PASSWORD, currentPassword)
-      .formParam(PasswordUpdateController.UPDATED_PASSWORD, newPassword)
-      .log()
-      .all(true)
-      .when()
-      .post(PasswordUpdateController.BASE_URL)
-      .then()
-      .log()
-      .all(true);
+    return getAccessToken(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .param("grant_type", "password")
+      .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+      .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+      .param("username", testUser.getUsername())
+      .param("password", password));
+  }
+
+  private String getClientAccessToken() throws Exception {
+
+    return getAccessToken(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .param("grant_type", "client_credentials")
+      .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+      .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET));
+  }
+
+  private ResultActions updatePassword(String accessToken, String currentPassword,
+      String newPassword) throws Exception {
+
+    MockHttpServletRequestBuilder request =
+        post(PasswordUpdateController.BASE_URL).with(csrf().asHeader())
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+    if (accessToken != null) {
+      request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+    }
+
+    if (currentPassword != null) {
+      request.param(PasswordUpdateController.CURRENT_PASSWORD, currentPassword);
+    }
+
+    if (newPassword != null) {
+      request.param(PasswordUpdateController.UPDATED_PASSWORD, newPassword);
+    }
+
+    return mvc.perform(request);
   }
 
   @Test
-  void testUpdatePassword() {
+  void testUpdatePassword() throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = "Secure_p@ssw0rd";
+    String accessToken = getUserAccessToken(USER_PASSWORD);
 
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
+    updatePassword(accessToken, USER_PASSWORD, VALID_PASSWORD).andExpect(status().isOk());
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
-
-    passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(newPassword)
-      .getAccessToken();
+    // Verify authentication with the updated password.
+    getUserAccessToken(VALID_PASSWORD);
   }
 
   @Test
-  void testUpdatePasswordWithMinLength() {
+  void testUpdatePasswordWithMinLength() throws Exception {
 
-    String currentPassword = "password";
     String newPassword = "S3crP@ss";
+    String accessToken = getUserAccessToken(USER_PASSWORD);
 
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
+    updatePassword(accessToken, USER_PASSWORD, newPassword).andExpect(status().isOk());
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
+    getUserAccessToken(newPassword);
 
-    passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(newPassword)
-      .getAccessToken();
-
-    currentPassword = newPassword;
-    newPassword = "T0S#ort";
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
+    updatePassword(accessToken, newPassword, "T0S#ort").andExpect(status().isBadRequest());
   }
 
   @Test
-  void testUpdatePasswordFullAuthenticationRequired() {
+  void testUpdatePasswordFullAuthenticationRequired() throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = "Secure_P@ssw0rd!";
-
-    doPost(currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
-      .body("error", equalTo("unauthorized"))
-      .body("error_description",
-          equalTo("Full authentication is required to access this resource"));
+    updatePassword(null, USER_PASSWORD, VALID_PASSWORD).andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error").value("unauthorized"))
+      .andExpect(jsonPath("$.error_description")
+        .value("Full authentication is required to access this resource"));
   }
 
   @Test
-  void testUpdateWrongPasswordProvided() {
+  void testUpdateWrongPasswordProvided() throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = "Secure_P@ssw0rd!";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
+    String accessToken = getUserAccessToken(USER_PASSWORD);
 
-    doPost(accessToken, "thisisnotthecurrentpassword", newPassword)
-      .statusCode(HttpStatus.BAD_REQUEST.value());
+    updatePassword(accessToken, "thisisnotthecurrentpassword", VALID_PASSWORD)
+      .andExpect(status().isBadRequest());
   }
 
   @Test
-  void testUpdatePasswordForbiddenAccess() {
+  void testUpdatePasswordForbiddenAccess() throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = "Secure_P@ssw0rd!";
-    String accessToken = TestUtils.clientCredentialsTokenGetter().port(iamPort).getAccessToken();
+    String accessToken = getClientAccessToken();
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.FORBIDDEN.value());
+    updatePassword(accessToken, USER_PASSWORD, VALID_PASSWORD).andExpect(status().isForbidden());
   }
 
-  @Test
-  void testUpdatePasswordNullPasswordAccess() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"pass", "newweakpassword", "Password1", "Sjfyt-hdddW!"})
+  void testUpdatePasswordRejectsInvalidPassword(String newPassword) throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = null;
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
+    String accessToken = getUserAccessToken(USER_PASSWORD);
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
-  }
-
-  @Test
-  void testUpdatePasswordEmptyPasswordAccess() {
-
-    String currentPassword = "password";
-    String newPassword = "";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
-
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
-  }
-
-  @Test
-  void testUpdatePasswordTooShortPasswordAccess() {
-
-    String currentPassword = "password";
-    String newPassword = "pass";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
-
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
-  }
-
-  @Test
-  void testUpdatePasswordWithWeakPasswordAccess() {
-
-    String currentPassword = "password";
-    String newPassword = "newweakpassword";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
-
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
-  }
-
-  @Test
-  void testUpdatePasswordWithWeakPasswordWithoutSpecialChars() {
-
-    String currentPassword = "password";
-    String newPassword = "Password1";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
-
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
-  }
-
-  @Test
-  void testUpdatePasswordWithWeakPasswordWithoutNumbers() {
-
-    String currentPassword = "password";
-    String newPassword = "Sjfyt-hdddW!";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
-
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
+    updatePassword(accessToken, USER_PASSWORD, newPassword).andExpect(status().isBadRequest());
   }
 
   @Test
   void testUpdatePasswordUserNotActive() throws Exception {
 
-    String currentPassword = "password";
-    String newPassword = "newP@ssw0rd";
-    String accessToken = passwordTokenGetter().port(iamPort)
-      .username(testUser.getUsername())
-      .password(currentPassword)
-      .getAccessToken();
+    String accessToken = getUserAccessToken(USER_PASSWORD);
 
     IamAccount account = accountRepository.findByUsername(testUser.getUsername())
-      .orElseThrow(() -> new Exception("Test user not found"));
+      .orElseThrow(() -> new IllegalStateException("Test user not found"));
+
     account.setActive(false);
     accountRepository.save(account);
 
-    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
-      .body(containsString("User with uuid " + account.getUuid() + " is not active"));
+    updatePassword(accessToken, USER_PASSWORD, VALID_PASSWORD).andExpect(status().isUnauthorized())
+      .andExpect(content()
+        .string(containsString("User with uuid " + account.getUuid() + " is not active")));
   }
 }

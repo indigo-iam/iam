@@ -60,7 +60,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
     this.scopeClaimTranslationService = scopeClaimTranslationService;
   }
 
-  public IamProperties getIamProperties() {
+  public IamProperties getProperties() {
     return properties;
   }
 

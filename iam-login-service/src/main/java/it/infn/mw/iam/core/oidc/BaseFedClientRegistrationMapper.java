@@ -94,8 +94,7 @@ public abstract class BaseFedClientRegistrationMapper {
 
   protected void setResponseTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata)
       throws FederationException {
-    Set<String> supportedResponseTypes =
-        Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
+    Set<String> supportedResponseTypes = Set.of(ResponseType.CODE.toString());
     if (metadata.getResponseTypes() != null) {
       Set<OAuthResponseType> responseTypes = metadata.getResponseTypes()
         .stream()

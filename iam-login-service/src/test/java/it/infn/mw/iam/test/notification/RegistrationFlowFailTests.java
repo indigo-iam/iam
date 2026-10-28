@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.notification;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
@@ -47,8 +48,10 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK,
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class,
+        NotificationTestConfig.class},
+    webEnvironment = WebEnvironment.MOCK,
     properties = {"notification.disable=false", "spring.freemarker.template-loader-path=/invalid/"})
 @AutoConfigureMockMvc
 @Transactional
@@ -112,7 +115,8 @@ class RegistrationFlowFailTests {
 
     assertThrows(NestedServletException.class,
         () -> mvc
-          .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+          .perform(post("/registration/create").with(csrf().asHeader())
+            .contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(request)))
           .andExpect(status().isInternalServerError()));
   }

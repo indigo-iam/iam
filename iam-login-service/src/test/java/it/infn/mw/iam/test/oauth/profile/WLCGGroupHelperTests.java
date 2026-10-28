@@ -113,6 +113,20 @@ class WLCGGroupHelperTests {
   }
 
   @Test
+  void testWLCGGroupsAreNotReturnedWithWlcgScopeOnly() {
+
+    IamGroup g1 = buildGroup("g1");
+    IamGroup g2 = buildGroup("g2");
+
+    lenient().when(userInfo.getGroups()).thenReturn(Sets.newHashSet(g1, g2));
+
+    lenient().when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "wlcg")));
+
+    Set<IamGroup> groups = WlcgGroupHelper.resolveGroups(token, userInfo);
+    assertThat(groups, empty());
+  }
+
+  @Test
   void testWLCGGroupScopeAllOptionalGroups() {
 
     IamGroup g1 = buildOptionalGroup("g1");

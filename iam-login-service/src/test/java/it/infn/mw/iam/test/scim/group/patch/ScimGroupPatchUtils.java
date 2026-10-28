@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.scim.group.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -27,7 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +61,18 @@ public class ScimGroupPatchUtils extends GroupRequestsTestUtils {
   @Autowired
   protected MockMvc mvc;
 
+  protected ResultActions performScimWithToken(MockHttpServletRequestBuilder request,
+      String accessToken) throws Exception {
+
+    return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken));
+  }
+
+  protected ResultActions performScimAsUser(MockHttpServletRequestBuilder request, String username,
+      String... roles) throws Exception {
+
+    return mvc.perform(request.with(user(username).roles(roles)));
+  }
+
   protected ScimGroupPatchRequest getPatchAddUsersRequest(List<ScimUser> users) {
 
     return ScimGroupPatchRequest.builder().add(TestUtils.buildScimMemberRefList(users)).build();
@@ -74,15 +91,13 @@ public class ScimGroupPatchUtils extends GroupRequestsTestUtils {
   protected ScimGroup addTestGroup(String displayName) throws Exception {
 
     ScimGroup group = ScimGroup.builder(displayName).build();
-    String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    return objectMapper.readValue(result, ScimGroup.class);
+    return objectMapper.readValue(performScimAsUser(post(GROUP_URI).with(csrf().asHeader())
+      .contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group)), TEST_ADMIN, "USER", "ADMIN")
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), ScimGroup.class);
   }
 
   protected ScimUser addTestUser(String userName, String email, String firstName, String LastName)
@@ -91,13 +106,13 @@ public class ScimGroupPatchUtils extends GroupRequestsTestUtils {
     ScimUser user =
         ScimUser.builder(userName).buildEmail(email).buildName(firstName, LastName).build();
 
-    String result = mvc
-      .perform(post(USER_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(user)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String result = performScimAsUser(post(USER_URI).with(csrf().asHeader())
+      .contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(user)), TEST_ADMIN, "USER", "ADMIN")
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
 
     return objectMapper.readValue(result, ScimUser.class);
   }
@@ -106,51 +121,46 @@ public class ScimGroupPatchUtils extends GroupRequestsTestUtils {
 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(members);
 
-    mvc.perform(patch(group.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNoContent());
+    performScimAsUser(patch(group.getMeta().getLocation()).with(csrf().asHeader())
+      .contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(patchAddReq)), TEST_ADMIN, "USER", "ADMIN")
+        .andExpect(status().isNoContent());
 
     getGroup(group.getMeta().getLocation());
 
-    mvc.perform(get(group.getMeta().getLocation() + "/members"))
+    performScimAsUser(get(group.getMeta().getLocation() + "/members"), TEST_ADMIN, "USER", "ADMIN")
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", is(members.size())));
-
-
   }
 
-  protected void assertIsGroupMember(ScimUser user, ScimGroup group)
-      throws Exception {
+  protected void assertIsGroupMember(ScimUser user, ScimGroup group) throws Exception {
 
-     
-    mvc.perform(get(group.getMeta().getLocation() + "/members"))
+    performScimAsUser(get(group.getMeta().getLocation() + "/members"), TEST_ADMIN, "USER", "ADMIN")
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.Resources[?(@.value=='" + user.getId() + "')]").exists());
-      
   }
 
   protected void assertIsNotGroupMember(ScimUser user, ScimGroup group) throws Exception {
 
-
-    mvc.perform(get(group.getMeta().getLocation() + "/members"))
+    performScimAsUser(get(group.getMeta().getLocation() + "/members"), TEST_ADMIN, "USER", "ADMIN")
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.Resources[?(@.value=='" + user.getId() + "')]").doesNotExist());
-
   }
 
-
   protected ScimGroup getGroup(String location) throws Exception {
-    String result = mvc.perform(get(location).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-    return objectMapper.readValue(result, ScimGroup.class);
+
+    return objectMapper.readValue(
+        performScimAsUser(get(location).contentType(SCIM_CONTENT_TYPE), TEST_ADMIN, "USER", "ADMIN")
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString(),
+        ScimGroup.class);
   }
 
   protected void deleteScimResource(ScimResource resource) throws Exception {
-    //@formatter:off
-    mvc.perform(delete(resource.getMeta().getLocation()))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+
+    performScimAsUser(delete(resource.getMeta().getLocation()).with(csrf().asHeader()), TEST_ADMIN,
+        "USER", "ADMIN").andExpect(status().isNoContent());
   }
 }
