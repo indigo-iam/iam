@@ -20,7 +20,6 @@ package it.infn.mw.iam.api.account.password_reset;
  * The IAM password reset service
  *
  */
-@SuppressWarnings("unused")
 public interface PasswordResetService {
 
 

@@ -15,10 +15,8 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -26,7 +24,9 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,7 +40,6 @@ import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordResetToken
 import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 
 @Controller
-@RequestMapping(PasswordResetController.BASE_RESOURCE)
 public class PasswordResetController {
 
   public static final String BASE_RESOURCE = "/iam/password-reset";
@@ -49,21 +48,20 @@ public class PasswordResetController {
   private static final String EMAIL_FIELD = "email";
   private static final String EMAIL_VALIDATION_ERROR_MSG = "invalid email address";
 
-  @Autowired
-  private PasswordResetService service;
+  private final PasswordResetService service;
 
-  private String nullSafeValidationErrorMessage(BindingResult validationResult) {
-
-    FieldError result = validationResult.getFieldError(EMAIL_FIELD);
-    if (result == null) {
-      return EMAIL_VALIDATION_ERROR_MSG;
-    } else {
-      return result.getDefaultMessage();
-    }
+  public PasswordResetController(PasswordResetService service) {
+    this.service = service;
   }
 
-  @RequestMapping(value = "/token", method = RequestMethod.POST,
-      produces = MediaType.TEXT_PLAIN_VALUE)
+  private String nullSafeValidationErrorMessage(BindingResult validationResult) {
+    FieldError error = validationResult.getFieldError(EMAIL_FIELD);
+
+    return error != null && error.getDefaultMessage() != null ? error.getDefaultMessage()
+        : EMAIL_VALIDATION_ERROR_MSG;
+  }
+
+  @PostMapping(value = BASE_TOKEN_URL, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   @ResponseBody
   public void createPasswordResetToken(@Valid EmailDTO emailDTO, BindingResult validationResult) {
 
@@ -73,35 +71,31 @@ public class PasswordResetController {
     }
 
     service.createPasswordResetToken(emailDTO.getEmail());
-
   }
 
-  @RequestMapping(value = "/token/{token}", method = RequestMethod.HEAD)
+  @RequestMapping(value = BASE_TOKEN_URL + "/{token}", method = RequestMethod.HEAD)
   @ResponseBody
-  public String validateResetToken(@PathVariable("token") String token) {
+  public void validateResetToken(@PathVariable String token) {
     service.validateResetToken(sanitizeToken(token));
-    return "ok";
   }
 
-  @RequestMapping(value = "/token/{token}", method = RequestMethod.GET)
-  public String resetPasswordPage(Model model, @PathVariable("token") String token) {
-    String message = null;
+  @GetMapping(value = BASE_TOKEN_URL + "/{token}")
+  public String resetPasswordPage(Model model, @PathVariable String token) {
 
     String sanitizedToken = sanitizeToken(token);
     try {
-
       service.validateResetToken(sanitizedToken);
       model.addAttribute("resetKey", sanitizedToken);
     } catch (InvalidPasswordResetTokenError e) {
-      message = e.getMessage();
-      model.addAttribute("errorMessage", message);
+      model.addAttribute("errorMessage", e.getMessage());
     }
-
     return "iam/resetPassword";
   }
 
-  @RequestMapping(value = {"", "/"}, method = RequestMethod.POST)
-  @ResponseStatus(value = HttpStatus.CREATED)
+  @PostMapping(value = {"/iam/password-reset", "/iam/password-reset/"},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseBody
   public void resetPassword(@RequestBody @Valid ResetPasswordDTO password,
       BindingResult validationResult) {
 
@@ -112,24 +106,17 @@ public class PasswordResetController {
     service.resetPassword(password.getToken(), password.getUpdatedPassword());
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidEmailAddressError.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler({InvalidEmailAddressError.class, InvalidPasswordError.class})
   @ResponseBody
-  public String emailValidationError(HttpServletRequest req, Exception ex) {
+  public String validationError(Exception ex) {
     return ex.getMessage();
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidPasswordError.class)
-  @ResponseBody
-  public String passwordResetValidationError(HttpServletRequest req, Exception ex) {
-    return ex.getMessage();
-  }
-
-  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(InvalidPasswordResetTokenError.class)
   @ResponseBody
-  public String invalidPasswordRequestTokenError(HttpServletRequest req, Exception ex) {
+  public String invalidPasswordRequestTokenError(InvalidPasswordResetTokenError ex) {
     return ex.getMessage();
   }
 

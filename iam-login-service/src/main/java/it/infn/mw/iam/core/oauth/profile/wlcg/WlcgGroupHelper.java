@@ -52,9 +52,8 @@ public class WlcgGroupHelper {
   }
 
   private static boolean wantsImplicitGroups(Set<String> scopes) {
-    return scopes.contains(WlcgOidcScopes.WLCG)
-        || (scopes.stream().anyMatch(WlcgOidcScopes::isWlcgGroupScope)
-            && !scopes.contains(WlcgOidcScopes.WLCG_GROUPS));
+    return scopes.stream().anyMatch(WlcgOidcScopes::isWlcgGroupScope)
+        && !scopes.contains(WlcgOidcScopes.WLCG_GROUPS);
   }
 
   private static Stream<IamGroup> addCatchallGroupScope(Set<IamGroup> groups) {

@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.api.requests;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,6 +39,7 @@ import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -52,13 +54,17 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   static final String GROUP_MANAGER_ROLE_002 = "GM:" + TEST_002_GROUP_UUID;
 
   @Autowired
-  private MockMvc mvc;
+  MockMvc mvc;
+
+  @Autowired
+  MutableClock clock;
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagerCanAccessGroupPendingRequest() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
@@ -73,12 +79,12 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   @WithMockUser(username = GROUP_MANAGER_USER,
       roles = {GROUP_MANAGER_ROLE_001, GROUP_MANAGER_ROLE_002, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroups() throws Exception {
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME, clock.now());
 
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
-    savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME, clock.now());
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
@@ -97,12 +103,12 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroup() throws Exception {
 
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME, clock.now());
 
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
-    savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME, clock.now());
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
@@ -121,9 +127,9 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_002, USER_ROLE})
   void testGroupManagercanListPendingRequestForManagedGroup2() throws Exception {
 
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
-    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME, clock.now());
+    savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
@@ -135,9 +141,10 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagerCanApproveRequestsForManagedGroup() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
+    mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -146,18 +153,23 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.lastUpdateTime").exists())
       .andExpect(jsonPath("$.lastUpdateTime").isNotEmpty());
 
-    GroupRequestDto otherRequest = savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
+    GroupRequestDto otherRequest =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME, clock.now());
 
-    mvc.perform(post(APPROVE_URL, otherRequest.getUuid())).andExpect(status().isForbidden());
+    mvc.perform(post(APPROVE_URL, otherRequest.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagerCanRejectRequestsForManagedGroup() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
-    mvc.perform(post(REJECT_URL, request.getUuid()).param("motivation", TEST_REJECT_MOTIVATION))
+    mvc
+      .perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
+        .param("motivation", TEST_REJECT_MOTIVATION))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -166,27 +178,35 @@ class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.lastUpdateTime").exists())
       .andExpect(jsonPath("$.lastUpdateTime").isNotEmpty());
 
-    GroupRequestDto otherRequest = savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
+    GroupRequestDto otherRequest =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME, clock.now());
 
-    mvc
-      .perform(post(REJECT_URL, otherRequest.getUuid()).param("motivation", TEST_REJECT_MOTIVATION))
-      .andExpect(status().isForbidden());
+    mvc.perform(post(REJECT_URL, otherRequest.getUuid()).with(csrf().asHeader())
+      .param("motivation", TEST_REJECT_MOTIVATION)).andExpect(status().isForbidden());
   }
 
   @Test
   @WithMockUser(username = GROUP_MANAGER_USER, roles = {GROUP_MANAGER_ROLE_001, USER_ROLE})
   void testGroupManagerCanDeleteRequestsForManagedGroup() throws Exception {
 
-    GroupRequestDto req1 = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    GroupRequestDto req2 = saveApprovedGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
-    GroupRequestDto req3 = saveRejectedGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto req1 =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    GroupRequestDto req2 =
+        saveApprovedGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME, clock.now());
+    GroupRequestDto req3 =
+        saveRejectedGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME, clock.now());
 
-    GroupRequestDto otherReq = savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
+    GroupRequestDto otherReq =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME, clock.now());
 
-    mvc.perform(delete(DELETE_URL, req1.getUuid())).andExpect(status().isNoContent());
-    mvc.perform(delete(DELETE_URL, req2.getUuid())).andExpect(status().isNoContent());
-    mvc.perform(delete(DELETE_URL, req3.getUuid())).andExpect(status().isNoContent());
+    mvc.perform(delete(DELETE_URL, req1.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isNoContent());
+    mvc.perform(delete(DELETE_URL, req2.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isNoContent());
+    mvc.perform(delete(DELETE_URL, req3.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isNoContent());
 
-    mvc.perform(delete(DELETE_URL, otherReq.getUuid())).andExpect(status().isForbidden());
+    mvc.perform(delete(DELETE_URL, otherReq.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isForbidden());
   }
 }

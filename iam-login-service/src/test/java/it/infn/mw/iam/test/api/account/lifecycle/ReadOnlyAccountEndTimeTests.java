@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.account.lifecycle;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -76,7 +77,8 @@ class ReadOnlyAccountEndTimeTests implements StructuredScopeTestSupportConstants
     dto.setEndTime(newEndTime);
 
     mvc
-      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error").value("Account end time is read-only for this organization"));
