@@ -54,7 +54,7 @@ public class AupReminderTask {
     this.aupSignatureRepo = aupSignatureRepo;
   }
 
-  @SchedulerLock(name = "sendAupReminders", lockAtLeastFor = "1m", lockAtMostFor = "30m")
+  @SchedulerLock(name = "sendAupReminders", lockAtLeastFor = "5m", lockAtMostFor = "30m")
   public void sendAupReminders() {
     aupRepo.findDefaultAup().ifPresent(aup -> {
 
