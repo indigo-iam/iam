@@ -201,7 +201,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
       .build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(label)))
       .andExpect(OK);
 
@@ -213,7 +214,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
       LabelDTO invalidValueLabel =
           LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidValueLabel)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_VALUE_ERROR_MESSAGE);
