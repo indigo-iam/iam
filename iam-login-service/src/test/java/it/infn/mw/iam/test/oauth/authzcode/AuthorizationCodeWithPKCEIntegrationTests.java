@@ -151,6 +151,13 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.OK.value());
 
+    String consentTransactionId = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
     String consentCsrfToken = consentPage.extract()
       .htmlPath()
       .getString("**.find { it.name() == 'input' && it.@name == '_csrf' }.@value");
@@ -161,6 +168,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     ValidatableResponse resp2 = RestAssured.given()
       .filter(cookies)
       .formParam("_csrf", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")
@@ -244,6 +252,13 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.OK.value());
 
+    String consentTransactionId = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
     String consentCsrfToken = consentPage.extract()
       .htmlPath()
       .getString("**.find { it.name() == 'input' && it.@name == '_csrf' }.@value");
@@ -254,6 +269,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
     ValidatableResponse approvalResponse = RestAssured.given()
       .filter(cookies)
       .formParam("_csrf", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")

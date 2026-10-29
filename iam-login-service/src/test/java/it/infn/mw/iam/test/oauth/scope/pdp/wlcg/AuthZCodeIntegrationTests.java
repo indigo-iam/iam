@@ -15,16 +15,12 @@
  */
 package it.infn.mw.iam.test.oauth.scope.pdp.wlcg;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-import io.restassured.filter.cookie.CookieFilter;
-import io.restassured.response.Response;
-
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,6 +48,8 @@ import com.google.common.collect.Sets;
 import com.nimbusds.jwt.SignedJWT;
 
 import io.restassured.RestAssured;
+import io.restassured.filter.cookie.CookieFilter;
+import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -244,11 +242,19 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .extract()
       .response();
 
+    String consentTransactionId = consentPage
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
     String consentCsrfToken = csrfTokenFromPage(consentPage);
 
     Response approvalResponse = RestAssured.given()
       .filter(cookies)
       .header("X-XSRF-TOKEN", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")

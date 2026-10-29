@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -37,6 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,11 +55,14 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
+@SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class OpenIDConnectAudienceTests extends TokenGetterUtils {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   public static final String SCOPE = "openid profile";
 
@@ -85,6 +90,14 @@ public class OpenIDConnectAudienceTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     MvcResult result = mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "true")
@@ -92,6 +105,7 @@ public class OpenIDConnectAudienceTests extends TokenGetterUtils {
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -157,6 +171,14 @@ public class OpenIDConnectAudienceTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     MvcResult result = mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "true")
@@ -164,6 +186,7 @@ public class OpenIDConnectAudienceTests extends TokenGetterUtils {
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
