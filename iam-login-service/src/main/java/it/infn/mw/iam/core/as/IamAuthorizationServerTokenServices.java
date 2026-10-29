@@ -92,7 +92,6 @@ import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.util.IdTokenHashUtils;
 
 @SuppressWarnings("deprecation")
 @Service
