@@ -32,6 +32,7 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Component
 public class AupReminderTask {
@@ -53,6 +54,7 @@ public class AupReminderTask {
     this.aupSignatureRepo = aupSignatureRepo;
   }
 
+  @SchedulerLock(name = "sendAupReminders", lockAtLeastFor = "5m", lockAtMostFor = "30m")
   public void sendAupReminders() {
     aupRepo.findDefaultAup().ifPresent(aup -> {
 
