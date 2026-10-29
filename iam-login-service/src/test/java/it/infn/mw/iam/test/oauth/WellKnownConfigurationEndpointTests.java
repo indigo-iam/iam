@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,6 +36,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +51,8 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.core.web.wellknown.WellKnownConfiguration;
+import it.infn.mw.iam.core.web.wellknown.WellKnownInfoProvider;
 import it.infn.mw.iam.persistence.model.SystemScope;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
@@ -82,6 +87,9 @@ class WellKnownConfigurationEndpointTests {
 
   @Autowired
   private CacheManager cacheManager;
+
+  @Autowired
+  private WellKnownInfoProvider wellKnownInfoProvider;
 
   private void evictWellKnownCache() {
     Cache cache = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
@@ -220,5 +228,15 @@ class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.userinfo_encryption_alg_values_supported", not(hasItem("RSA1_5"))))
       .andExpect(
           jsonPath("$.request_object_encryption_alg_values_supported", not(hasItem("RSA1_5"))));
+  }
+
+  @Test
+  void testWellKnownConfigurationCanBeStoredInRedisCache() {
+
+    WellKnownConfiguration configuration = wellKnownInfoProvider.getWellKnownInfo();
+    SerializationPair<Object> valueSerializer =
+        RedisCacheConfiguration.defaultCacheConfig().getValueSerializationPair();
+
+    assertEquals(configuration, valueSerializer.read(valueSerializer.write(configuration)));
   }
 }
