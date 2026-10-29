@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.oauth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,13 +36,18 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.jose.EncryptionMethod;
@@ -211,6 +218,35 @@ class AuthorizationRequestAsJwtTests {
         .param("redirect_uri", REDIRECT_URI)
         .param("request", requestObject))
       .andExpect(status().is3xxRedirection());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"token", "id_token", "token id_token", "id_token token", "code token",
+      "code id_token", "code token id_token"})
+  @WithMockUser(username = "test", roles = {"USER"})
+  void unsupportedResponseTypeInSignedRequestObjectIsRejected(String responseType)
+      throws Exception {
+
+    String requestObject = signedRequestObject(rsaKeyPair, clock.instant(), CLIENT_ID, responseType,
+        "openid profile", REDIRECT_URI, "test-nonce");
+
+    mvc
+      .perform(get("/authorize").param("client_id", CLIENT_ID)
+        .param("response_type", responseType)
+        .param("scope", "openid profile")
+        .param("redirect_uri", REDIRECT_URI)
+        .param("state", "test-state")
+        .param("request", requestObject))
+      .andExpect(unsupportedResponseTypeError());
+  }
+
+  private ResultMatcher unsupportedResponseTypeError() {
+    return result -> {
+      status().isBadRequest().match(result);
+      header().doesNotExist(HttpHeaders.LOCATION).match(result);
+      jsonPath("$.error").value("unsupported_response_type").match(result);
+      jsonPath("$.error_description").value("Only response_type=code is supported").match(result);
+    };
   }
 
   private static String signedRequestObject(KeyPair keyPair, Instant now, String clientId,

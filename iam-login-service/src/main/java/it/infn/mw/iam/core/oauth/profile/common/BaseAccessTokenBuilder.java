@@ -60,8 +60,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -161,9 +160,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       if (savedAuth.getAdditionalInfo().get(ACR) != null) {
         builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
       }
-      if (savedAuth.getSourceClass() != null && (savedAuth.getSourceClass()
-        .equals(SamlExternalAuthenticationToken.class.getName())
-          || savedAuth.getSourceClass().equals(OidcExternalAuthenticationToken.class.getName()))) {
+      if (AuthenticationUtils.isExternalAuthentication(savedAuth)
+          && getProperties().getTokenEnhancer().getIncludeExternalAuthn().includesAccessTokens()) {
         builder.claim(EXTERNAL_AUTHN,
             claimValueHelper.resolveClaim(EXTERNAL_AUTHN, authentication, account));
       }
@@ -176,7 +174,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
-      builder.claim(BaseExtraClaimNames.SCOPE, token.getScope().stream().collect(joining(SPACE)));
+      builder.claim(BaseExtraClaimNames.SCOPE, serializeScopes(token, authentication));
     }
 
     /* include nbf claim if configured */
@@ -201,6 +199,12 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     includeRequiredClaims(builder, authentication, account);
 
     return builder.build();
+  }
+
+  @Override
+  public String serializeScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+    return token.getScope().stream().collect(joining(SPACE));
   }
 
   protected Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
@@ -364,7 +368,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
   private Optional<String> getClientCertificateThumbprint() {
     HttpServletRequest request =
         ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-    
+
     String clientCert = request.getHeader(CLIENT_CERT_HEADER);
 
     if (clientCert == null || clientCert.isBlank()) {

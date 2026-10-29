@@ -22,7 +22,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.14.4</version>
+    <version>1.15.0</version>
   </parent>
 
   <groupId>it.infn.mw.iam-login-service</groupId>
@@ -36,8 +36,9 @@
     <!-- needed fix to remove Eclipse issue on running jUnit tests -->
     <jacocoArgLine>${argLine}</jacocoArgLine>
     <test-clock.version>1.0.2</test-clock.version>
-    <eclipselink.version>2.7.9</eclipselink.version>
+    <eclipselink.version>2.7.16</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
+    <openjdk-jmh.version>1.37</openjdk-jmh.version>
   </properties>
 
   <dependencies>
@@ -409,6 +410,19 @@
       <artifactId>totp</artifactId>
       <version>1.7.1</version>
     </dependency>
+    
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>${openjdk-jmh.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>${openjdk-jmh.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -519,6 +533,21 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.openjdk.jmh</groupId>
+              <artifactId>jmh-generator-annprocess</artifactId>
+              <version>${openjdk-jmh.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      
     </plugins>
   </build>
 </project>

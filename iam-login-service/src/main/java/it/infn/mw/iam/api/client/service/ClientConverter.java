@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.client.service;
 
+import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_jwt;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -23,6 +24,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -35,9 +37,9 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 
 @Component
 public class ClientConverter {
@@ -90,8 +92,8 @@ public class ClientConverter {
     }
 
     if (dto.getTokenEndpointAuthMethod() != null) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
@@ -117,6 +119,7 @@ public class ClientConverter {
 
     clientDTO.setJwksUri(entity.getJwksUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
+    clientDTO.setPostLogoutRedirectUris(entity.getPostLogoutRedirectUris());
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
       .valueOf(Optional.ofNullable(entity.getTokenEndpointAuthMethod())
@@ -198,6 +201,8 @@ public class ClientConverter {
 
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
+    client.setPostLogoutRedirectUris(dto.getPostLogoutRedirectUris());
+
     client.setScope(cloneSet(dto.getScope()));
 
     client.setGrantTypes(new HashSet<>());
@@ -209,7 +214,7 @@ public class ClientConverter {
           dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
-    if (dto.getScope().contains("offline_access")) {
+    if (client.getScope().contains("offline_access")) {
       client.getGrantTypes().add(AuthorizationGrantType.REFRESH_TOKEN.getGrantType());
     }
 
@@ -221,8 +226,11 @@ public class ClientConverter {
     client.setContacts(cloneSet(dto.getContacts()));
 
     if (!isNull(dto.getTokenEndpointAuthMethod())) {
-      client
-        .setTokenEndpointAuthMethod(ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+      if (dto.getTokenEndpointAuthMethod().equals(client_secret_jwt)) {
+        throw new AuthenticationServiceException(client_secret_jwt + " is not supported");
+      }
+      client.setTokenEndpointAuthMethod(
+          ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     if (dto.getCodeChallengeMethod() != null) {

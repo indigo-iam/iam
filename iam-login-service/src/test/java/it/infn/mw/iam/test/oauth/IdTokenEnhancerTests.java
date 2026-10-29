@@ -19,6 +19,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,9 +33,11 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -114,5 +118,13 @@ class IdTokenEnhancerTests {
     assertThat(token.getJWTClaimsSet().getClaim("preferred_username"), is(nullValue()));
     assertThat(token.getJWTClaimsSet().getClaim("organisation_name"), is(nullValue()));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), is(nullValue()));
+  }
+
+  @Test
+  void issuedIdTokenIsSignedWithRsa256() throws Exception {
+    SignedJWT idToken = SignedJWT.parse(getIdToken("openid"));
+
+    assertEquals(JWSAlgorithm.RS256, idToken.getHeader().getAlgorithm());
+    assertNotNull(idToken.getSignature());
   }
 }

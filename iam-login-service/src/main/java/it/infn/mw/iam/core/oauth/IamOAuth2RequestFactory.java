@@ -40,6 +40,7 @@ import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.utils.EventUtils;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
+import it.infn.mw.iam.core.oauth.exceptions.OAuth2ProtocolException;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
@@ -96,6 +97,9 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
     AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);
 
     authorizationRequestBuilder.addExtensions(inputParams, authzRequest);
+
+    validateResponseTypes(authzRequest);
+
     authorizationRequestBuilder.applyClientDefaults(authzRequest);
     authorizationRequestBuilder.addAuthenticationMethodReferences(authn, authzRequest);
 
@@ -236,6 +240,13 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
       // Required by RT flow after device
       tokenRequestParameters.put(IamOAuthRequestParameters.RESOURCE_KEY,
           authzRequestParams.get(IamOAuthRequestParameters.RESOURCE_KEY));
+    }
+  }
+
+  private void validateResponseTypes(AuthorizationRequest request) {
+    // Skip this check for a device code request
+    if (!Set.of("code").equals(request.getResponseTypes()) && request.getState() != null) {
+      throw OAuth2ProtocolException.unsupportedResponseType("Only response_type=code is supported");
     }
   }
 

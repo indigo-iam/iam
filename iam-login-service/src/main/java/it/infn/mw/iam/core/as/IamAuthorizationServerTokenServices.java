@@ -185,7 +185,9 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       account = accountService.findByUsername(username);
     }
 
-    handleCodeChallenge(request, client);
+    if (AuthorizationGrantType.CODE.getGrantType().equalsIgnoreCase(request.getGrantType())) {
+      handleCodeChallenge(request, client);
+    }
 
     Instant iat = clock.instant();
     AuthenticationHolderEntity authHolder =
@@ -613,14 +615,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       idClaims.claim("nonce", nonce);
     }
 
-    Set<String> responseTypes = request.getResponseTypes();
-
     JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
-
-    if (responseTypes.contains("token")) {
-      Base64URL atHash = IdTokenHashUtils.getAccessTokenHash(signingAlg, accessToken);
-      idClaims.claim("at_hash", atHash);
-    }
 
     addCustomIdTokenClaims(idClaims, client, request, sub, accessToken);
 

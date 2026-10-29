@@ -45,15 +45,15 @@ public class WithMockOIDCUserSecurityContextFactory
       .authorities(annotation.authorities())
       .expirationTime(annotation.expirationTime());
 
-    if (annotation.claims().length >= 2) {
-      if (annotation.claims().length % 2 != 0) {
-        throw new IllegalArgumentException(
-            "claims must be a string array with an even number of elements");
-      }
+    String[] claims = annotation.claims();
 
-      for (int i = 0; i < annotation.claims().length; i += 2) {
-        builder.claim(annotation.claims()[i], annotation.claims()[i + 1]);
-      }
+    if (claims.length % 2 != 0) {
+      throw new IllegalArgumentException(
+          "claims must be a string array with an even number of elements");
+    }
+
+    for (int i = 0; i < claims.length; i += 2) {
+      builder.claim(claims[i], claims[i + 1]);
     }
 
     return builder.buildSecurityContext();
