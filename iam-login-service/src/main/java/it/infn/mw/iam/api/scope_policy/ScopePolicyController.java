@@ -23,7 +23,6 @@ import javax.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,19 +46,20 @@ import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
 
-
 @RestController
 public class ScopePolicyController {
 
   private static final Logger LOG = LoggerFactory.getLogger(ScopePolicyController.class);
 
   private final ScopePolicyService policyService;
+  private final OpaBundleService opaBundleService;
   private final IamScopePolicyConverter converter;
 
-  @Autowired
   public ScopePolicyController(ScopePolicyService policyService,
+      OpaBundleService opaBundleService,
       IamScopePolicyConverter converter) {
     this.policyService = policyService;
+    this.opaBundleService = opaBundleService;
     this.converter = converter;
   }
 
@@ -127,17 +127,7 @@ public class ScopePolicyController {
   @GetMapping(value = "/iam/scope_policies/opa")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   public OpaPolicies convertToOpaPolicies() {
-
-    Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();
-    List<OpaPolicies.OpaPolicy> dtos = new ArrayList<>();
-
-    policies.forEach(p -> {
-      if (!p.getMatchingPolicy().equals(MatchingPolicy.REGEXP)) {
-        dtos.add(converter.toOpaPolicyDTO(p));
-      }
-    });
-
-    return new OpaPolicies(dtos);
+    return opaBundleService.getPolicies();
   }
 
   public record OpaPolicies(List<OpaPolicy> policies) {
