@@ -621,6 +621,7 @@ public class IamProperties {
     private boolean enabled = false;
     private String clientId;
     private String clientSecret;
+    private String basePath;
 
     public boolean isEnabled() {
       return enabled;
@@ -644,6 +645,14 @@ public class IamProperties {
 
     public void setClientSecret(String clientSecret) {
       this.clientSecret = clientSecret;
+    }
+
+    public String getBasePath() {
+      return basePath;
+    }
+
+    public void setBasePath(String basePath) {
+      this.basePath = basePath;
     }
   }
 
