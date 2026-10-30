@@ -48,7 +48,7 @@ class ExternalAuthenticationInfoProcessorTests {
   @Test
   void processorReturnsUserInfoIfPresent() {
 
-    Map<String, String> info = Maps.newHashMap();
+    Map<String, Object> info = Maps.newHashMap();
     info.put("key", "val");
 
     OAuth2Authentication oAuth = mock(OAuth2Authentication.class);
@@ -66,7 +66,7 @@ class ExternalAuthenticationInfoProcessorTests {
   @Test
   void processorReturnsEmtpyCollectionForEmptyUserInfo() {
 
-    Map<String, String> info = Maps.newHashMap();
+    Map<String, Object> info = Maps.newHashMap();
 
     OAuth2Authentication oAuth = mock(OAuth2Authentication.class);
     SavedUserAuthentication userAuth = mock(SavedUserAuthentication.class);

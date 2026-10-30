@@ -46,7 +46,7 @@ public class ExternalAuthenticationRegistrationInfo implements Serializable {
   
   private String suggestedUsername;
 
-  private Map<String, String> additionalAttributes;
+  private Map<String, Object> additionalAttributes;
   
   public ExternalAuthenticationRegistrationInfo(ExternalAuthenticationType type) {
     this.type = type;
@@ -135,11 +135,11 @@ public class ExternalAuthenticationRegistrationInfo implements Serializable {
   }
   
   @JsonProperty("additional_attributes")
-  public Map<String, String> getAdditionalAttributes() {
+  public Map<String, Object> getAdditionalAttributes() {
     return additionalAttributes;
   }
   
-  public void setAdditionalAttributes(Map<String, String> additionalAttributes) {
+  public void setAdditionalAttributes(Map<String, Object> additionalAttributes) {
     this.additionalAttributes = additionalAttributes;
   }
   

@@ -64,7 +64,7 @@ class IamAuthenticationHolderServiceTests {
     String homeOrganization = "example.org";
     String externalAffiliation = "researcher@example.org";
 
-    Map<String, String> aarcInfo =
+    Map<String, Object> aarcInfo =
         Map.of("urn:oid:1.3.6.1.4.1.25178.1.2.9", homeOrganization, "EPSA", externalAffiliation);
 
     OIDCAuthenticationToken oidcToken = mock(OIDCAuthenticationToken.class);
