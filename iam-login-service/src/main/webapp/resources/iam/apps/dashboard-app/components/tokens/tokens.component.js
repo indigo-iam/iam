@@ -20,6 +20,7 @@
 
     var self = this;
     var USERS_CHUNCK_SIZE = 100;
+    var CLIENTS_CHUNK_SIZE = 100;
 
     self.$onInit = function() {
       self.selected = 0;
@@ -57,9 +58,25 @@
     }
 
     self.loadClients = function() {
-        return ClientsService.getClientList().then(function(r) {
-            var c = r.data;
-            self.clients = c['Resources'];
+        var clients = [];
+
+        function loadPage(startIndex) {
+            return ClientsService.retrieveClients(startIndex, CLIENTS_CHUNK_SIZE)
+                .then(function(response) {
+                    var page = response.Resources;
+                    clients = clients.concat(page);
+                    var nextIndex = startIndex + page.length;
+
+                    // Advance by the actual page size, even if the server caps it.
+                    if (page.length > 0 && nextIndex <= response.totalResults) {
+                        return loadPage(nextIndex);
+                    }
+                    return clients;
+                });
+        }
+
+        return loadPage(1).then(function(clients) {
+            self.clients = clients;
             console.log('all clients received');
         });
     }
@@ -112,10 +129,10 @@
                 return $q.all(promises);
             })
             .then(function(response) {
-                self.closeLoadingModal();
                 self.loaded = true;
             })
-            .catch(self.handleError);
+            .catch(self.handleError)
+            .finally(self.closeLoadingModal);
     };
   }
 
