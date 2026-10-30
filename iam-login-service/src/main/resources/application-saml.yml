@@ -21,6 +21,8 @@ saml:
   key-id: ${IAM_SAML_KEY_ID:iam}
   key-password: ${IAM_SAML_KEY_PASSWORD:password}
   max-assertion-time-sec: ${IAM_SAML_MAX_ASSERTION_TIME:3000}
+  # Applies to the default SSO profile; custom profiles have their own options.
+  force-authn: ${IAM_SAML_FORCE_AUTHN:false}
   max-authentication-age-sec: ${IAM_SAML_MAX_AUTHENTICATION_AGE:86400}
   id-resolvers: ${IAM_SAML_ID_RESOLVERS:eduPersonUniqueId,eduPersonTargetedId,eduPersonPrincipalName}
   metadata-refresh-period-sec: ${IAM_SAML_METADATA_REFRESH_PERIOD_SEC:43200}
