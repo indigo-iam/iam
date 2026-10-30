@@ -53,6 +53,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 public class Replacers extends AccountBuilderSupport {
 
@@ -135,6 +137,9 @@ public class Replacers extends AccountBuilderSupport {
   }
 
   public AccountUpdater password(String newPassword) {
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(newPassword)) {
+      throw new ScimValidationException(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE);
+    }
 
     return new DefaultAccountUpdater<String, PasswordReplacedEvent>(clock, account,
         ACCOUNT_REPLACE_PASSWORD, encodedPasswordSetter, newPassword, encodedPasswordChecker,

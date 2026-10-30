@@ -86,6 +86,8 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 @Service
 public class ScimUserProvisioning
@@ -388,6 +390,9 @@ public class ScimUserProvisioning
 
   @Override
   public ScimUser create(final ScimUser user) {
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(user.getPassword())) {
+      throw new ScimValidationException(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE);
+    }
 
     IamAccount newAccount = userConverter.entityFromDto(user);
     /*
