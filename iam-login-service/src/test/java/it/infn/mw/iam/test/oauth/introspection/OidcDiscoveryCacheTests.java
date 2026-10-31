@@ -31,12 +31,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,9 +48,7 @@ class OidcDiscoveryCacheTests {
   protected static final String URL = REMOTE_ISSUER + "/.well-known/openid-configuration";
 
   @Nested
-  @SpringBootTest(properties = {"cache.enabled=true", "cache.redis.enabled=false"})
-  @TestPropertySource(properties = "cache.oidc-discovery-cleanup-period-secs=1")
-  @EnableCaching
+  @SpringBootTest(properties = {"cache.enabled=true", "cache.redis.enabled=false", "cache.oidc-discovery-cleanup-period-secs=1"})
   class InMemoryCacheTest {
 
     @Autowired
@@ -122,7 +118,6 @@ class OidcDiscoveryCacheTests {
 
   @Nested
   @SpringBootTest(properties = {"cache.enabled=true", "cache.redis.enabled=true"})
-  @EnableCaching
   class RedisCacheTest {
 
     @Autowired
@@ -136,7 +131,6 @@ class OidcDiscoveryCacheTests {
 
   @Nested
   @SpringBootTest(properties = {"cache.enabled=false"})
-  @EnableCaching
   class NoCacheTest {
 
     @Autowired
