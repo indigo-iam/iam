@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -423,7 +424,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackNotStartedOnWrongCredentials() throws Exception {
         int port = freePort();
         int dbPort = freePort();
-        String url = "jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam";
+        String url = "jdbc:h2:tcp://localhost:" + dbPort + "/mem:wrongcreds" + dbPort;
         Server database = Server.createTcpServer("-tcpPort", String.valueOf(dbPort), "-ifNotExists").start();
         // The open connection keeps the in-memory database (user sa / "right") alive
         try (Connection keepAlive = DriverManager.getConnection(url, "sa", "right")) {
@@ -436,10 +437,29 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                     "--iam.jwk.default-key-id=iam",
                     "--iam.jwk.default-jws-algorithm=ES256",
                     "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
-                    "--iam.jwk.standalone-fallback-enabled=true" }, port);
+                    "--iam.jwk.standalone-fallback-enabled=true" }, port, "28000");
         } finally {
             database.stop();
         }
+    }
+
+    private void assertStartupFailsWithoutFallback(String[] args, int port, String expectedSqlState)
+            throws Exception {
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        AtomicReference<Throwable> failure = start(app);
+        app.join(60_000);
+        if (app.isAlive()) {
+            app.interrupt();
+            app.join(10_000);
+            fail("fallback started, but this error must not start it");
+        }
+        assertTrue(failure.get() instanceof BeanCreationException);
+        List<Throwable> chain = ExceptionUtils.getThrowableList(failure.get());
+        assertTrue(chain.stream().anyMatch(
+                t -> t instanceof SQLException e && expectedSqlState.equals(e.getSQLState())),
+                "expected SQLState " + expectedSqlState + " in " + failure.get());
+        assertTrue(chain.stream().noneMatch(t -> t instanceof ConnectException));
+        assertThrows(IOException.class, () -> get(port, "/jwk"));
     }
 
     private void assertStartupFailsWithoutFallback(String[] args, int port) throws Exception {
