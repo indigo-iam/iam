@@ -479,8 +479,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setId(oldClient.getId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
-      // We should add a pop-up window to the UI with the new secret --
-      // it is now available to the user only under secret regeneration
       String plainClientSecret = clientUtils.generateClientSecret();
       hashClientSecret(newClient, plainClientSecret);
     } else if (!ClientUtils.AUTH_METHODS_REQUIRING_SECRET

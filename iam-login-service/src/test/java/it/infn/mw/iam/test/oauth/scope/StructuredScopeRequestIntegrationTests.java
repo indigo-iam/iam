@@ -21,6 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -72,7 +73,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   void test() throws Exception {
 
     // @formatter:off
-    mvc.perform(post("/token")
+    mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("grant_type", GrantType.CLIENT_CREDENTIALS.getValue())
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
@@ -86,7 +87,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   void testIntrospectionResponse() throws Exception {
     // @formatter:off
     String tokenResponse = 
-        mvc.perform(post("/token")
+        mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("grant_type", GrantType.CLIENT_CREDENTIALS.getValue())
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
@@ -102,8 +103,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
     String accessToken = tokenResponseObject.getValue();
     mvc
-      .perform(post("/introspect")
-        .contentType(APPLICATION_FORM_URLENCODED)
+      .perform(post("/introspect").contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -167,7 +167,8 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf().asHeader())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -185,7 +186,9 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .perform(post(DEVICE_USER_VERIFY_URL).with(csrf().asHeader())
+        .param("user_code", userCode)
+        .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
       .andReturn()
@@ -193,7 +196,8 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getSession();
 
     mvc
-      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+      .perform(post(DEVICE_USER_APPROVE_URL).with(csrf().asHeader())
+        .param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
@@ -203,10 +207,10 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getSession();
 
     String tokenResponse = mvc
-      .perform(
-          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", GrantType.DEVICE_CODE.getValue())
-            .param("device_code", deviceCode))
+      .perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
+        .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.refresh_token").exists())
@@ -231,7 +235,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .andExpect(status().isOk());
 
     mvc
-      .perform(post(INTROSPECTION_ENDPOINT)
+      .perform(post(INTROSPECTION_ENDPOINT).with(csrf().asHeader())
         .contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("token", accessToken))
@@ -254,7 +258,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     assertThat(tokenResponse.getScope(), hasItem("storage.read:/"));
 
     mvc
-      .perform(post("/token").with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
         .param("grant_type", "refresh_token")
         .param("scope", "openid storage.read:/test offline_access")
         .param("refresh_token", tokenResponse.getRefreshToken().getValue()))

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.client.service;
 
+import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_jwt;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -23,6 +24,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -35,9 +37,10 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
 
 @Component
 public class ClientConverter {
@@ -46,11 +49,14 @@ public class ClientConverter {
 
   private final String clientRegistrationBaseUrl;
   private final ClientRegistrationProperties clientRegistrationProperties;
+  private final JWTSigningAndValidationService jwtSigningService;
 
   public ClientConverter(IamProperties properties,
-      ClientRegistrationProperties clientRegistrationProperties) {
+      ClientRegistrationProperties clientRegistrationProperties,
+      JWTSigningAndValidationService jwtSigningService) {
     this.iamProperties = properties;
     this.clientRegistrationProperties = clientRegistrationProperties;
+    this.jwtSigningService = jwtSigningService;
     clientRegistrationBaseUrl =
         String.format("%s%s", iamProperties.getBaseUrl(), ClientRegistrationApiController.ENDPOINT);
   }
@@ -140,6 +146,7 @@ public class ClientConverter {
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
     clientDTO.setDynamicallyRegistered(entity.isDynamicallyRegistered());
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
+    clientDTO.setIdTokenSignedResponseAlg(jwtSigningService.getDefaultSigningAlgorithm().getName());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
     clientDTO.setRefreshTokenValiditySeconds(entity.getRefreshTokenValiditySeconds());
@@ -224,6 +231,9 @@ public class ClientConverter {
     client.setContacts(cloneSet(dto.getContacts()));
 
     if (!isNull(dto.getTokenEndpointAuthMethod())) {
+      if (dto.getTokenEndpointAuthMethod().equals(client_secret_jwt)) {
+        throw new AuthenticationServiceException(client_secret_jwt + " is not supported");
+      }
       client.setTokenEndpointAuthMethod(
           ClientAuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
@@ -232,7 +242,6 @@ public class ClientConverter {
       client.setCodeChallengeMethod(dto.getCodeChallengeMethod());
     }
 
-    // bypasses MitreID default setting to zero inside client's entity
     client.setAccessTokenValiditySeconds(
         clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     client.setRefreshTokenValiditySeconds(

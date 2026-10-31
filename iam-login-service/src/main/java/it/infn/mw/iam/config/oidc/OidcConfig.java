@@ -99,15 +99,15 @@ public class OidcConfig {
         federationRegistrationService);
   }
 
-  @Bean(name = "OIDCAuthenticationFilter")
+  @Bean(name = "oidcAuthenticationFilter")
   OIDCAuthenticationFilter openIdConnectAuthenticationFilterCanl(IamProperties properties,
       IamJWKSetCacheService validationServices, IssuerService issuerService,
       OIDCProviderMetadataService servers, ClientConfigurationService clientConfigurationService,
       PlainAuthRequestUrlBuilder authRequestBuilder, Clock clock, OidcTokenRequestor tokenRequestor,
       Environment env, ObjectMapper objectMapper,
-      @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
-      @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
-      @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
+      @Qualifier("oidcAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
+      @Qualifier("oidcExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
+      @Qualifier("oidcExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler) {
 
     OIDCAuthenticationFilter filter = new OIDCAuthenticationFilter(properties, validationServices,
         issuerService, servers, clientConfigurationService, authRequestBuilder, clock,
@@ -134,19 +134,19 @@ public class OidcConfig {
     return new DefaultRestTemplateFactory(rf);
   }
 
-  @Bean(name = "OIDCExternalAuthenticationFailureHandler")
+  @Bean(name = "oidcExternalAuthenticationFailureHandler")
   AuthenticationFailureHandler failureHandler() {
 
     return new ExternalAuthenticationFailureHandler(new OidcExceptionMessageHelper());
   }
 
-  @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
+  @Bean(name = "oidcExternalAuthenticationSuccessHandler")
   AuthenticationSuccessHandler successHandler(AuthenticationSuccessHandlerHelper helper) {
 
     return new ExternalAuthenticationSuccessHandler("/", helper);
   }
 
-  @Bean(name = "OIDCAuthenticationManager")
+  @Bean(name = "oidcAuthenticationManager")
   AuthenticationManager authenticationManager(
       OIDCAuthenticationProvider oidcAuthenticationProvider) {
     return new ProviderManager(Arrays.asList(oidcAuthenticationProvider));

@@ -26,6 +26,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,9 +59,9 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.registration.add-nickname-as-attribute=true",
-  "iam.registration.fields.email.read-only=true", "iam.registration.fields.name.read-only=true",
-  "iam.registration.fields.surname.read-only=true",
-  "iam.registration.fields.username.read-only=true"})
+    "iam.registration.fields.email.read-only=true", "iam.registration.fields.name.read-only=true",
+    "iam.registration.fields.surname.read-only=true",
+    "iam.registration.fields.username.read-only=true"})
 class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstants {
 
   private static final String TEST_ATTRIBUTES_USERNAME = "test-attributes";
@@ -141,11 +142,13 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
   @Test
   void anonymousRequestWithReadOnlyFieldsFails() throws Exception {
 
-    final String EXPECTED_ERROR = "{\"error\":\"External authentication is required with read only fields\"}";
+    final String EXPECTED_ERROR =
+        "{\"error\":\"External authentication is required with read only fields\"}";
 
     RegistrationRequestDto request = createTestRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(EXPECTED_ERROR));
@@ -153,12 +156,13 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
   void samlAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -186,13 +190,14 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-    email = OIDC_EMAIL)
+      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+      email = OIDC_EMAIL)
   void oidcAuthenticatedRequestWorksAndNicknameIsSet() throws Exception {
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -220,7 +225,7 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
 
   @Test
   @WithMockSAMLUser(issuer = DEFAULT_IDP_ID, username = SAML_USERNAME, givenName = SAML_GIVENNAME,
-    familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
+      familyName = SAML_FAMILYNAME, email = SAML_EMAIL, subject = SAML_SUBJECT)
   void samlAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     final String EXPECTED_ERROR =
@@ -230,7 +235,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setUsername("custom-username");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, USERNAME)));
@@ -239,7 +245,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setGivenname("custom-name");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, NAME)));
@@ -248,7 +255,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setFamilyname("custom-surname");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, SURNAME)));
@@ -257,7 +265,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setEmail("custom-email@example.com");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, EMAIL)));
@@ -265,8 +274,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
 
   @Test
   @WithMockOIDCUser(subject = OIDC_SUBJECT, issuer = OidcTestConfig.TEST_OIDC_ISSUER,
-    givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
-    email = OIDC_EMAIL)
+      givenName = OIDC_GIVENNAME, familyName = OIDC_FAMILYNAME, username = OIDC_USERNAME,
+      email = OIDC_EMAIL)
   void oidcAuthenticatedRequestInvalidDueToDtoManipulation() throws Exception {
 
     final String EXPECTED_ERROR =
@@ -276,7 +285,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setUsername("custom-username");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, USERNAME)));
@@ -285,7 +295,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setGivenname("custom-name");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, NAME)));
@@ -294,7 +305,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setFamilyname("custom-surname");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, SURNAME)));
@@ -303,7 +315,8 @@ class ReadOnlyFieldsValidationTests implements StructuredScopeTestSupportConstan
     r.setEmail("custom-email@example.com");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
       .andExpect(content().json(format(EXPECTED_ERROR, EMAIL)));

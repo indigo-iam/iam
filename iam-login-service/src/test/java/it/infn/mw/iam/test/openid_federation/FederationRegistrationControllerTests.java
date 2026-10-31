@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -35,13 +38,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,6 +53,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,18 +74,15 @@ import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.config.ClockConfig;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.clock.MutableClock;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
+@SuppressWarnings({"deprecation", "unchecked"})
 @ActiveProfiles({"h2-test", "openid-federation"})
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class FederationRegistrationControllerTests {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   private static final String IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT =
       "/iam/api/oid-fed/client-registration";
@@ -106,23 +107,13 @@ class FederationRegistrationControllerTests {
   @MockBean
   TrustChainService trustChainService;
 
-  TrustChain fakeChain;
-
   @Autowired
-  MutableClock clock;
-
-  @Autowired
-  SecurityContextUtils securityContext;
-
-  @BeforeEach
-  void cleanupContext() {
-    securityContext.cleanupSecurityContext();
-  }
+  Clock clock;
 
   @Test
   void testSuccessfullExplicitClientRegistration() throws Exception {
 
-    fakeChain =
+    TrustChain fakeChain =
         TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
 
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
@@ -159,7 +150,8 @@ class FederationRegistrationControllerTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     var resultLogin = mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -178,11 +170,21 @@ class FederationRegistrationControllerTests {
         .param("redirect_uri", REDIRECT_URI.toString()))
       .andExpect(status().isOk());
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     var approveResult = mvc
-      .perform(post("/authorize").session(session)
+      .perform(post("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("scope.openid", "true")
         .param("remember", "none")
         .param("user_oauth_approval", "true")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .param("authorize", "Authorize"))
       .andExpect(status().isSeeOther())
       .andExpect(header().exists("Location"))
@@ -227,7 +229,7 @@ class FederationRegistrationControllerTests {
   @Test
   void testResponseTypesAreFiltered() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer,
+    TrustChain fakeChain = TrustChainTestFactory.createRpToTaChain(issuer,
         Set.of(ResponseType.CODE_IDTOKEN, ResponseType.CODE), REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
@@ -246,8 +248,8 @@ class FederationRegistrationControllerTests {
   @Test
   void testUnsupportedResponseTypeError() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, Set.of(ResponseType.IDTOKEN),
-        REDIRECT_URI, null, null, clock);
+    TrustChain fakeChain = TrustChainTestFactory.createRpToTaChain(issuer,
+        Set.of(ResponseType.IDTOKEN), REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -266,7 +268,8 @@ class FederationRegistrationControllerTests {
   @Test
   void testMissingRedirectUriCausesError() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, null, null, null, clock);
+    TrustChain fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, null, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -285,14 +288,13 @@ class FederationRegistrationControllerTests {
   @Test
   void testRelyingPartyClientUpdateThroughApiClientsEndpointReturnsException() throws Exception {
 
-    fakeChain =
+    TrustChain fakeChain =
         TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
     when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
 
-    securityContext.useBearerAdminToken();
     mvc
       .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
         .contentType("application/entity-statement+jwt")
@@ -308,15 +310,18 @@ class FederationRegistrationControllerTests {
     clientDto.setClientName("test-relying_party");
     clientDto.setScope(Set.of("openid"));
 
-    mvc.perform(put(IAM_CLIENT_API_URL + client.get().getClientId()).contentType("application/json")
+    mvc.perform(put(IAM_CLIENT_API_URL + client.get().getClientId())
+      .with(user("admin").roles("ADMIN", "USER"))
+      .with(csrf().asHeader())
+      .contentType("application/json")
       .content(mapper.writeValueAsString(clientDto))).andExpect(status().isBadRequest());
   }
 
   @Test
   void testInvalidAudienceDuringRegistration() throws Exception {
 
-    fakeChain = TrustChainTestFactory.createRpToTaChain("http://wrong-audience", null, REDIRECT_URI,
-        null, null, clock);
+    TrustChain fakeChain = TrustChainTestFactory.createRpToTaChain("http://wrong-audience", null,
+        REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -346,7 +351,7 @@ class FederationRegistrationControllerTests {
   @Transactional
   void testClientDisabledWhenExpired() throws Exception {
 
-    fakeChain =
+    TrustChain fakeChain =
         TrustChainTestFactory.createRpToTaChain(null, null, REDIRECT_URI, null, null, clock);
     ClientDetailsEntity client = clientRepo.findByClientId("client-cred").orElseThrow();
 
@@ -384,7 +389,7 @@ class FederationRegistrationControllerTests {
   @Test
   void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
 
-    fakeChain =
+    TrustChain fakeChain =
         TrustChainTestFactory.createRpToTaChain(issuer, null, REDIRECT_URI, null, null, clock);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();

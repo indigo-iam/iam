@@ -19,6 +19,8 @@ import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PAT
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,9 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,7 +48,10 @@ import com.google.common.collect.Sets;
 import com.nimbusds.jwt.SignedJWT;
 
 import io.restassured.RestAssured;
+import io.restassured.filter.cookie.CookieFilter;
+import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
@@ -54,10 +60,9 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@IamRandomPortIntegrationTest
-@TestPropertySource(properties = {"iam.access_token.include_scope=true"})
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = {"iam.access_token.include_scope=true"})
 @ActiveProfiles({"h2-test", "wlcg-scopes", "registration"})
 class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
 
@@ -90,7 +95,6 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
   @BeforeAll
   static void init() {
     TestUtils.initRestAssured();
-
   }
 
   @BeforeEach
@@ -147,31 +151,40 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
     allowUserWithPathPolicy.setMatchingPolicy(PATH);
     scopePolicyRepo.save(allowUserWithPathPolicy);
 
-    // refresh again and check policies are applied
+    try {
 
-    accessToken = refreshTokenWithScopes(refreshToken, ALL_SCOPES);
-    checkAccessTokenScopes(accessToken, ALLOWED_SCOPES);
+      // refresh again and check policies are applied
+      accessToken = refreshTokenWithScopes(refreshToken, ALL_SCOPES);
+      checkAccessTokenScopes(accessToken, ALLOWED_SCOPES);
 
-    accessToken = refreshTokenWithScopes(refreshToken, NO_SCOPES);
-    checkAccessTokenScopes(accessToken, ALLOWED_SCOPES);
+      accessToken = refreshTokenWithScopes(refreshToken, NO_SCOPES);
+      checkAccessTokenScopes(accessToken, ALLOWED_SCOPES);
 
-    accessToken = refreshTokenWithScopes(refreshToken, Set.of("storage.read:/"));
-    checkAccessTokenScopes(accessToken, NO_SCOPES);
+      accessToken = refreshTokenWithScopes(refreshToken, Set.of("storage.read:/"));
+      checkAccessTokenScopes(accessToken, NO_SCOPES);
 
-    accessToken = refreshTokenWithScopes(refreshToken, Set.of("storage.write:/"));
-    checkAccessTokenScopes(accessToken, NO_SCOPES);
+      accessToken = refreshTokenWithScopes(refreshToken, Set.of("storage.write:/"));
+      checkAccessTokenScopes(accessToken, NO_SCOPES);
 
-    accessToken = refreshTokenWithScopes(refreshToken, Set.of("openid storage.read:/another/path"));
-    checkAccessTokenScopes(accessToken, Set.of("openid"));
+      accessToken =
+          refreshTokenWithScopes(refreshToken, Set.of("openid", "storage.read:/another/path"));
+      checkAccessTokenScopes(accessToken, Set.of("openid"));
 
-    scopePolicyRepo.delete(denyAllPolicy);
-    scopePolicyRepo.delete(allowUserWithPathPolicy);
+    } finally {
+
+      scopePolicyRepo.delete(allowUserWithPathPolicy);
+      scopePolicyRepo.delete(denyAllPolicy);
+
+    }
   }
 
   private ValidatableResponse authorizationCodeFlow(String clientId, String clientSecret,
       String redirectUri, String username, String password, String scopes) {
 
-    ValidatableResponse resp1 = RestAssured.given()
+    CookieFilter cookies = new CookieFilter();
+
+    RestAssured.given()
+      .filter(cookies)
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
       .queryParam("redirect_uri", redirectUri)
@@ -186,11 +199,25 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .statusCode(HttpStatus.FOUND.value())
       .header("Location", is(loginUrl));
 
+    Response loginPage = RestAssured.given()
+      .filter(cookies)
+      .redirects()
+      .follow(false)
+      .when()
+      .get(loginUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value())
+      .extract()
+      .response();
+
+    String loginCsrfToken = csrfTokenFromPage(loginPage);
+
     RestAssured.given()
+      .filter(cookies)
+      .header("X-XSRF-TOKEN", loginCsrfToken)
       .formParam("username", username)
       .formParam("password", password)
       .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
       .redirects()
       .follow(false)
       .when()
@@ -198,8 +225,8 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .then()
       .statusCode(HttpStatus.FOUND.value());
 
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+    Response consentPage = RestAssured.given()
+      .filter(cookies)
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
       .queryParam("redirect_uri", redirectUri)
@@ -211,12 +238,23 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .when()
       .get(authorizeUrl)
       .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
+      .statusCode(HttpStatus.OK.value())
+      .extract()
+      .response();
 
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+    String consentTransactionId = consentPage
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
+    String consentCsrfToken = csrfTokenFromPage(consentPage);
+
+    Response approvalResponse = RestAssured.given()
+      .filter(cookies)
+      .header("X-XSRF-TOKEN", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")
@@ -225,26 +263,46 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .when()
       .post(authorizeUrl)
       .then()
-      .statusCode(HttpStatus.SEE_OTHER.value());
+      .statusCode(HttpStatus.SEE_OTHER.value())
+      .extract()
+      .response();
 
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
+    String location = approvalResponse.getHeader("Location");
+    assertNotNull(location, "Missing authorization response Location");
+
+    String authzCode =
+        UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams().getFirst("code");
+
+    assertNotNull(authzCode, "Missing authorization code in redirect");
+    assertFalse(authzCode.isBlank(), "Empty authorization code");
 
     return RestAssured.given()
       .formParam("grant_type", "authorization_code")
       .formParam("redirect_uri", redirectUri)
       .formParam("code", authzCode)
-      .formParam("state", "1")
       .auth()
       .preemptive()
       .basic(clientId, clientSecret)
+      .redirects()
+      .follow(false)
       .when()
       .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
+  }
+
+  private String csrfTokenFromPage(Response page) {
+
+    String token = page.htmlPath().getString("**.find { it.@name == '_csrf' }.@value");
+
+    if (token == null || token.isBlank()) {
+      token = page.getCookie("XSRF-TOKEN");
+    }
+
+    assertNotNull(token, "Missing CSRF token in page");
+    assertFalse(token.isBlank(), "Empty CSRF token");
+
+    return token;
   }
 
   private String refreshTokenWithScopes(String refreshToken, Set<String> requestedScopes)

@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.scim.discovery;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_GROUP_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_USER_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_BULK_MAX_OPERATIONS;
@@ -158,8 +160,8 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testSchemasEndpointSupportsSingleSchemaRetrieval() throws Exception {
 
-    mvc.perform(
-        get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.schemas", hasItem(ScimSchema.SCHEMA_SCHEMA)))
@@ -174,8 +176,8 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testUserSchemaDeclaresOnlySupportedCoreUserAttributes() throws Exception {
 
-    mvc.perform(
-        get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(get(SCHEMAS_ENDPOINT + "/{id}", ScimUser.USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.attributes[*].name",
           hasItems("userName", "password", "name", "displayName", "nickName", "profileUrl",
@@ -198,8 +200,7 @@ class ScimDiscoveryEndpointTests {
       .andExpect(jsonPath(
           "$.attributes[?(@.name == 'name')].subAttributes[?(@.name == 'familyName')].required",
           hasItem(true)))
-      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].mutability",
-          hasItem("writeOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'password')].mutability", hasItem("writeOnly")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'password')].returned", hasItem("never")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'emails')].required", hasItem(true)))
       .andExpect(jsonPath(
@@ -207,13 +208,11 @@ class ScimDiscoveryEndpointTests {
           hasItem(true)))
       .andExpect(
           jsonPath("$.attributes[?(@.name == 'displayName')].mutability", hasItem("readOnly")))
-      .andExpect(
-          jsonPath("$.attributes[?(@.name == 'nickName')].mutability", hasItem("readOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'nickName')].mutability", hasItem("readOnly")))
       .andExpect(
           jsonPath("$.attributes[?(@.name == 'profileUrl')].mutability", hasItem("readOnly")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'locale')].mutability", hasItem("readOnly")))
-      .andExpect(
-          jsonPath("$.attributes[?(@.name == 'timezone')].mutability", hasItem("readOnly")))
+      .andExpect(jsonPath("$.attributes[?(@.name == 'timezone')].mutability", hasItem("readOnly")))
       .andExpect(jsonPath(
           "$.attributes[?(@.name == 'emails')].subAttributes[?(@.name == 'type')].mutability",
           hasItem("readOnly")))
@@ -235,11 +234,12 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testGroupSchemaMutabilityMatchesProvisioningBehavior() throws Exception {
 
-    mvc.perform(
-        get(SCHEMAS_ENDPOINT + "/{id}", ScimGroup.GROUP_SCHEMA).contentType(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(
+          get(SCHEMAS_ENDPOINT + "/{id}", ScimGroup.GROUP_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.attributes[?(@.name == 'displayName')].mutability",
-          hasItem("readWrite")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'displayName')].mutability", hasItem("readWrite")))
       .andExpect(jsonPath(
           "$.attributes[?(@.name == 'members')].subAttributes[?(@.name == 'value')].mutability",
           hasItem("readWrite")))
@@ -257,9 +257,9 @@ class ScimDiscoveryEndpointTests {
     mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", INDIGO_USER_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.attributes[*].name",
-          hasItems("serviceAccount", "affiliation", "sshKeys", "oidcIds", "samlIds",
-              "certificates", "aupSignatureTime", "endTime", "labels", "authorities",
-              "attributes", "managedGroups")))
+          hasItems("serviceAccount", "affiliation", "sshKeys", "oidcIds", "samlIds", "certificates",
+              "aupSignatureTime", "endTime", "labels", "authorities", "attributes",
+              "managedGroups")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'sshKeys')].subAttributes[*].name",
           hasItems("display", "primary", "fingerprint", "value", "created", "lastModified")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'certificates')].subAttributes[*].name",
@@ -272,12 +272,11 @@ class ScimDiscoveryEndpointTests {
 
     mvc.perform(get(SCHEMAS_ENDPOINT + "/{id}", INDIGO_GROUP_SCHEMA).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
+      .andExpect(jsonPath("$.attributes[*].name", hasItems("parentGroup", "description", "labels")))
       .andExpect(
-          jsonPath("$.attributes[*].name", hasItems("parentGroup", "description", "labels")))
-      .andExpect(jsonPath("$.attributes[?(@.name == 'parentGroup')].mutability",
-          hasItem("immutable")))
-      .andExpect(jsonPath("$.attributes[?(@.name == 'description')].mutability",
-          hasItem("readWrite")))
+          jsonPath("$.attributes[?(@.name == 'parentGroup')].mutability", hasItem("immutable")))
+      .andExpect(
+          jsonPath("$.attributes[?(@.name == 'description')].mutability", hasItem("readWrite")))
       .andExpect(jsonPath("$.attributes[?(@.name == 'parentGroup')].subAttributes[*].name",
           hasItems("value", "display", "$ref")));
   }
@@ -303,10 +302,33 @@ class ScimDiscoveryEndpointTests {
   @Test
   void testResourceTypesListWithFilterReturnsForbidden() throws Exception {
 
-    mvc.perform(
-        get(RESOURCE_TYPES_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
+    mvc
+      .perform(get(RESOURCE_TYPES_ENDPOINT).contentType(SCIM_CONTENT_TYPE).param("filter", "id pr"))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.status", equalTo("403")))
       .andExpect(jsonPath("$.detail", equalTo(FILTER_NOT_SUPPORTED_MSG)));
+  }
+
+  @Test
+  void testSchemasEndpointDoesNotReturnAarcSchemasWhenDisabled() throws Exception {
+
+    mvc.perform(get(SCHEMAS_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", equalTo(4)))
+      .andExpect(jsonPath("$.Resources", hasSize(4)))
+      .andExpect(jsonPath("$.Resources[*].id", not(hasItem(AARC_USER_SCHEMA))))
+      .andExpect(jsonPath("$.Resources[*].id", not(hasItem(AARC_GROUP_SCHEMA))));
+  }
+
+  @Test
+  void testResourceTypesDoNotDeclareAarcExtensionsWhenDisabled() throws Exception {
+
+    mvc.perform(get(RESOURCE_TYPES_ENDPOINT + "/User").contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.schemaExtensions['" + AARC_USER_SCHEMA + "']").doesNotExist());
+
+    mvc.perform(get(RESOURCE_TYPES_ENDPOINT + "/Group").contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.schemaExtensions['" + AARC_GROUP_SCHEMA + "']").doesNotExist());
   }
 }

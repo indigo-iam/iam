@@ -15,9 +15,13 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.validation.Valid;
+import javax.validation.constraints.AssertTrue;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -784,7 +788,57 @@ public class IamProperties {
     public void setOpa(OpaProperties opa) {
       this.opa = opa;
     }
+  }
 
+  public static class LoginLockoutProperties {
+
+    private boolean enabled;
+    private int maxFailedAttempts;
+    private Duration observationWindow;
+    private Duration lockDuration;
+
+    @AssertTrue(message = "When login lockout is enabled, max-failed-attempts must be at least 1 "
+        + "and observation-window and lock-duration must be strictly positive")
+    public boolean isConfigurationValid() {
+      return !enabled
+          || (maxFailedAttempts >= 1 && isPositive(observationWindow) && isPositive(lockDuration));
+    }
+
+    private static boolean isPositive(Duration duration) {
+      return duration != null && !duration.isZero() && !duration.isNegative();
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public int getMaxFailedAttempts() {
+      return maxFailedAttempts;
+    }
+
+    public void setMaxFailedAttempts(int maxFailedAttempts) {
+      this.maxFailedAttempts = maxFailedAttempts;
+    }
+
+    public Duration getLockDuration() {
+      return lockDuration;
+    }
+
+    public void setLockDuration(Duration lockDuration) {
+      this.lockDuration = lockDuration;
+    }
+
+    public Duration getObservationWindow() {
+      return observationWindow;
+    }
+
+    public void setObservationWindow(Duration observationWindow) {
+      this.observationWindow = observationWindow;
+    }
   }
 
   private String host;
@@ -854,6 +908,9 @@ public class IamProperties {
   private List<String> languageNamespaces = List.of("messages");
 
   private DashboardProperties dashboard = new DashboardProperties();
+
+  @Valid
+  private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -1115,6 +1172,14 @@ public class IamProperties {
 
   public void setAarcProfile(AarcProfile aarcProfile) {
     this.aarcProfile = aarcProfile;
+  }
+
+  public LoginLockoutProperties getLoginLockout() {
+    return loginLockout;
+  }
+
+  public void setLoginLockout(LoginLockoutProperties loginLockout) {
+    this.loginLockout = loginLockout;
   }
 
   public List<String> getLanguageNamespaces() {

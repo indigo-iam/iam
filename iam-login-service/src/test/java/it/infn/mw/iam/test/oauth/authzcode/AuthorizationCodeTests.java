@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth.authzcode;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -42,6 +43,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponents;
@@ -57,14 +59,16 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
+@SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class AuthorizationCodeTests extends TokenGetterUtils {
 
-  public static final String LOGIN_URL = "http://localhost/login";
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
+  public static final String LOGIN_URL = "http://localhost/login";
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
   public static final String SIGN_AUP_URL = "/iam/aup/sign";
   public static final String SIGN_AUP_URL_EXTENDED = "http://localhost/iam/aup/sign";
@@ -142,7 +146,8 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login")
         .session(session))
@@ -188,7 +193,8 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).session(session)
+      .perform(post(LOGIN_URL).with(csrf())
+        .session(session)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("submit", "Login"))
@@ -211,7 +217,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getSession();
 
 
-    mvc.perform(post(SIGN_AUP_URL).session(session).with(securityContext(context)))
+    mvc.perform(post(SIGN_AUP_URL).with(csrf()).session(session).with(securityContext(context)))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl(uriComponents.encode().toUriString()))
       .andReturn()
@@ -240,6 +246,14 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "true")
@@ -247,6 +261,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -283,6 +298,14 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "false")
@@ -290,6 +313,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -302,7 +326,6 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
     entity.setClientName("Test Client");
     clientRepo.save(entity);
     setTestClientOwners();
-
   }
 
   @Test
@@ -331,6 +354,14 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "true")
@@ -338,6 +369,7 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
         .param("scope.profile", "true")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -380,11 +412,20 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     mvc
       .perform(post("/authorize").session(session)
         .param("user_oauth_approval", "true")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -398,5 +439,4 @@ public class AuthorizationCodeTests extends TokenGetterUtils {
     clientRepo.save(entity);
 
   }
-
 }

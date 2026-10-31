@@ -16,6 +16,8 @@
 package it.infn.mw.iam.test.oauth.authzcode;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -36,6 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Base64URL;
 
 import io.restassured.RestAssured;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -95,6 +98,8 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       String redirectUri, String scope, String username, String password, String codeVerifier,
       String codeChallenge, PKCEAlgorithm codeChallengeMethod) {
 
+    CookieFilter cookies = new CookieFilter();
+
     ValidatableResponse resp1 = RestAssured.given()
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
@@ -104,6 +109,7 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .queryParam("state", "1")
       .queryParam("code_challenge", codeChallenge)
       .queryParam("code_challenge_method", codeChallengeMethod)
+      .filter(cookies)
       .redirects()
       .follow(false)
       .when()
@@ -112,11 +118,15 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .statusCode(HttpStatus.FOUND.value())
       .header("Location", is(loginUrl));
 
+    String csrfToken = resp1.extract().cookie("XSRF-TOKEN");
+    assertNotNull(csrfToken, "Expected a CSRF cookie from GET /authorize");
+
     RestAssured.given()
+      .filter(cookies)
+      .header("X-XSRF-TOKEN", csrfToken)
       .formParam("username", username)
       .formParam("password", password)
       .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
       .redirects()
       .follow(false)
       .when()
@@ -124,8 +134,8 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.FOUND.value());
 
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+    ValidatableResponse consentPage = RestAssured.given()
+      .filter(cookies)
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
       .queryParam("redirect_uri", redirectUri)
@@ -141,8 +151,24 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.OK.value());
 
+    String consentTransactionId = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
+    String consentCsrfToken = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == '_csrf' }.@value");
+
+    assertNotNull(consentCsrfToken, "Expected a CSRF token in the consent form");
+    assertFalse(consentCsrfToken.isBlank(), "Consent CSRF token must not be blank");
+
     ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .filter(cookies)
+      .formParam("_csrf", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")
@@ -176,7 +202,10 @@ class AuthorizationCodeWithPKCEIntegrationTests {
   private ValidatableResponse getTokenResponseWithoutPkce(String clientId, String clientSecret,
       String redirectUri, String scope, String username, String password) {
 
-    ValidatableResponse resp1 = RestAssured.given()
+    CookieFilter cookies = new CookieFilter();
+
+    ValidatableResponse initialResponse = RestAssured.given()
+      .filter(cookies)
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
       .queryParam("redirect_uri", redirectUri)
@@ -191,11 +220,16 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .statusCode(HttpStatus.FOUND.value())
       .header("Location", is(loginUrl));
 
+    String loginCsrfToken = initialResponse.extract().cookie("XSRF-TOKEN");
+    assertNotNull(loginCsrfToken, "Expected a CSRF cookie from GET /authorize");
+    assertFalse(loginCsrfToken.isBlank(), "Login CSRF token must not be blank");
+
     RestAssured.given()
+      .filter(cookies)
+      .header("X-XSRF-TOKEN", loginCsrfToken)
       .formParam("username", username)
       .formParam("password", password)
       .formParam("submit", "Login")
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
       .redirects()
       .follow(false)
       .when()
@@ -203,8 +237,8 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.FOUND.value());
 
-    RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+    ValidatableResponse consentPage = RestAssured.given()
+      .filter(cookies)
       .queryParam("response_type", "code")
       .queryParam("client_id", clientId)
       .queryParam("redirect_uri", redirectUri)
@@ -218,8 +252,24 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.OK.value());
 
-    ValidatableResponse resp2 = RestAssured.given()
-      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+    String consentTransactionId = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
+    assertFalse(consentTransactionId.isBlank(), "Consent transaction ID must not be blank");
+
+    String consentCsrfToken = consentPage.extract()
+      .htmlPath()
+      .getString("**.find { it.name() == 'input' && it.@name == '_csrf' }.@value");
+
+    assertNotNull(consentCsrfToken, "Expected a CSRF token in the consent form");
+    assertFalse(consentCsrfToken.isBlank(), "Consent CSRF token must not be blank");
+
+    ValidatableResponse approvalResponse = RestAssured.given()
+      .filter(cookies)
+      .formParam("_csrf", consentCsrfToken)
+      .formParam("consent_transaction_id", consentTransactionId)
       .formParam("user_oauth_approval", "true")
       .formParam("authorize", "Authorize")
       .formParam("remember", "none")
@@ -230,12 +280,15 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .then()
       .statusCode(HttpStatus.SEE_OTHER.value());
 
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
-      .build()
-      .getQueryParams()
-      .get("code")
-      .get(0);
+    String location = approvalResponse.extract().header("Location");
+    assertNotNull(location, "Expected an authorization redirect");
 
+    String authzCode =
+        UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams().getFirst("code");
+
+    assertNotNull(authzCode, "Expected an authorization code in the redirect");
+
+    // Client-authenticated token exchange: no browser cookies or CSRF token.
     return RestAssured.given()
       .formParam("grant_type", "authorization_code")
       .formParam("redirect_uri", redirectUri)
@@ -244,6 +297,8 @@ class AuthorizationCodeWithPKCEIntegrationTests {
       .auth()
       .preemptive()
       .basic(clientId, clientSecret)
+      .redirects()
+      .follow(false)
       .when()
       .post(tokenUrl)
       .then();

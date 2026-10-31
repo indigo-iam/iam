@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.fallbackJwk;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,16 +24,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.h2.tools.Server;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
@@ -47,11 +53,13 @@ import it.infn.mw.iam.test.oauth.jwk.JWKTestSupport;
 public class FallbackApplicationStartupTests implements JWKTestSupport {
 
     private final String LICENSE = "Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021";
+    private static final String MYSQL_PROFILE = "--spring.profiles.active=mysql-test";
 
     @Test
     void fallbackServesJwkWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -61,11 +69,11 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.standalone-fallback-enabled=true" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking the jwk endpoint
-            HttpResponse<String> jwk = awaitResponse(port, "/jwk", Duration.ofSeconds(60));
+            HttpResponse<String> jwk = awaitResponse(app, failure, port, "/jwk", Duration.ofSeconds(60));
             assertEquals(200, jwk.statusCode());
             JsonNode keys = new ObjectMapper().readTree(jwk.body()).get("keys");
             assertEquals(1, keys.size());
@@ -81,6 +89,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackServesInfoWithNoUrlWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -91,13 +100,14 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.logo.url=" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking the /fallback-info endpoint works without image
-            HttpResponse<String> info = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
+            HttpResponse<String> info = awaitResponse(app, failure, port, "/fallback-info", Duration.ofSeconds(60));
             assertEquals(503, info.statusCode());
             assertTrue(info.body().contains(LICENSE));
+            assertFalse(info.body().contains("<img"));
 
         } finally {
             app.interrupt(); // makes awaitStopped() return and closes the fallback context
@@ -109,6 +119,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackServesInfoWithUrlWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -119,13 +130,14 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.logo.url=https://cern-ipmc.web.cern.ch/logo" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking the /fallback-info endpoint works with external web image
-            HttpResponse<String> info = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
+            HttpResponse<String> info = awaitResponse(app, failure, port, "/fallback-info", Duration.ofSeconds(60));
             assertEquals(503, info.statusCode());
             assertTrue(info.body().contains(LICENSE));
+            assertTrue(info.body().contains("src=\"https://cern-ipmc.web.cern.ch/logo\""));
 
         } finally {
             app.interrupt(); // makes awaitStopped() return and closes the fallback context
@@ -137,6 +149,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackHandlesBrowserAndClientWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -146,11 +159,12 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.standalone-fallback-enabled=true" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking the /fallback-info endpoint for client
-            HttpResponse<String> fallbackInfo = awaitResponse(port, "/fallback-info", Duration.ofSeconds(60));
+            HttpResponse<String> fallbackInfo = awaitResponse(app, failure, port, "/fallback-info",
+                    Duration.ofSeconds(60));
             assertEquals(503, fallbackInfo.statusCode());
             assertTrue(fallbackInfo.body().contains(LICENSE));
 
@@ -180,6 +194,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackServesActuatorWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -189,11 +204,11 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.standalone-fallback-enabled=true" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking /actuator endpoint
-            HttpResponse<String> actuator = awaitResponse(port, "/actuator", Duration.ofSeconds(60));
+            HttpResponse<String> actuator = awaitResponse(app, failure, port, "/actuator", Duration.ofSeconds(60));
             assertEquals(200, actuator.statusCode());
             JsonNode actuatorContent = new ObjectMapper().readTree(actuator.body()).get("_links");
             assertEquals(4, actuatorContent.size());
@@ -233,6 +248,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackServesHealthPathEndpointWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -242,11 +258,12 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.standalone-fallback-enabled=true" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         try {
 
             // Checking /actuator/health/db
-            HttpResponse<String> actuatorHealthDb = awaitResponse(port, "/actuator/health/db", Duration.ofSeconds(60));
+            HttpResponse<String> actuatorHealthDb = awaitResponse(app, failure, port, "/actuator/health/db",
+                    Duration.ofSeconds(60));
             assertEquals(503, actuatorHealthDb.statusCode());
             JsonNode actuatorHealthDbContent = new ObjectMapper().readTree(actuatorHealthDb.body());
             assertEquals(1, actuatorHealthDbContent.size());
@@ -280,6 +297,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
     void fallbackDisabledWhenDatabaseIsDown() throws Exception {
         int port = freePort();
         String[] args = {
+                MYSQL_PROFILE,
                 "--server.port=" + port,
                 // force an unreachable database whatever the environment has running
                 "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam",
@@ -287,7 +305,10 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.default-jws-algorithm=ES256",
                 "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
                 "--iam.jwk.standalone-fallback-enabled=false" };
-        assertThrows(BeanCreationException.class, () -> IamLoginService.main(args));
+        BeanCreationException error = assertThrows(BeanCreationException.class, () -> IamLoginService.main(args));
+        assertTrue(ExceptionUtils.getThrowableList(error).stream()
+                .anyMatch(t -> t instanceof ConnectException),
+                "should fail because the database is unreachable");
     }
 
     @Test
@@ -295,6 +316,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
         int port = freePort();
         int dbPort = freePort();
         String[] args = {
+                "--spring.profiles.active=h2-test",
                 "--server.port=" + port,
                 "--spring.datasource.url=jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam",
                 "--spring.datasource.driver-class-name=org.h2.Driver",
@@ -308,11 +330,11 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.fallback-exit-on-recovery=false" };
 
         Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
-        app.start();
+        AtomicReference<Throwable> failure = start(app);
         Server database = null;
         try {
             // Fallback starts when database is unavailable
-            assertEquals(200, awaitResponse(port, "/jwk", Duration.ofSeconds(60)).statusCode());
+            assertEquals(200, awaitResponse(app, failure, port, "/jwk", Duration.ofSeconds(60)).statusCode());
 
             // Multiple attempt from the database monitor and the fallback application is
             // still running
@@ -348,6 +370,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 Path.of(System.getProperty("java.home"), "bin", "java").toString(),
                 "-cp", System.getProperty("java.class.path"),
                 "it.infn.mw.iam.IamLoginService",
+                "--spring.profiles.active=h2-test",
                 "--server.port=" + port,
                 "--spring.datasource.url=jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam",
                 "--spring.datasource.driver-class-name=org.h2.Driver",
@@ -372,12 +395,90 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
             database = Server.createTcpServer("-tcpPort", String.valueOf(dbPort), "-ifNotExists").start();
 
             assertTrue(process.waitFor(10, TimeUnit.SECONDS), "process should exit once the database recovers");
-            assertEquals(1, process.exitValue());
+            String output = Files.readString(log);
+            assertTrue(output.contains("Database connection recovered. Stopping JWK fallback"), output);
+            assertEquals(1, process.exitValue(), output);
         } finally {
             if (database != null) {
                 database.stop();
             }
             process.destroyForcibly();
+        }
+    }
+
+    @Test
+    void fallbackNotStartedOnConfigurationError() throws Exception {
+        int port = freePort();
+        assertStartupFailsWithoutFallback(new String[] {
+                "--spring.profiles.active=h2-test",
+                "--server.port=" + port,
+                "--spring.datasource.url=jdbc:mysql://127.0.0.1:1/iam", // MySQL URL on an H2 datasource
+                "--iam.jwk.default-key-id=iam",
+                "--iam.jwk.default-jws-algorithm=ES256",
+                "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                "--iam.jwk.standalone-fallback-enabled=true" }, port);
+    }
+
+    @Test
+    void fallbackNotStartedOnWrongCredentials() throws Exception {
+        int port = freePort();
+        int dbPort = freePort();
+        String url = "jdbc:h2:tcp://localhost:" + dbPort + "/mem:iam";
+        Server database = Server.createTcpServer("-tcpPort", String.valueOf(dbPort), "-ifNotExists").start();
+        // The open connection keeps the in-memory database (user sa / "right") alive
+        try (Connection keepAlive = DriverManager.getConnection(url, "sa", "right")) {
+            assertStartupFailsWithoutFallback(new String[] {
+                    "--spring.profiles.active=h2-test",
+                    "--server.port=" + port,
+                    "--spring.datasource.url=" + url,
+                    "--spring.datasource.username=sa",
+                    "--spring.datasource.password=wrong",
+                    "--iam.jwk.default-key-id=iam",
+                    "--iam.jwk.default-jws-algorithm=ES256",
+                    "--iam.jwk.keystore-location=classpath:/jwk/ec.jwks",
+                    "--iam.jwk.standalone-fallback-enabled=true" }, port);
+        } finally {
+            database.stop();
+        }
+    }
+
+    private void assertStartupFailsWithoutFallback(String[] args, int port) throws Exception {
+        Thread app = new Thread(() -> IamLoginService.main(args), "iam-under-test");
+        AtomicReference<Throwable> failure = start(app);
+        app.join(60_000);
+        if (app.isAlive()) {
+            app.interrupt();
+            app.join(10_000);
+            fail("fallback started, but this error must not start it");
+        }
+        assertTrue(failure.get() instanceof BeanCreationException);
+        assertTrue(ExceptionUtils.getThrowableList(failure.get()).stream()
+                .noneMatch(t -> t instanceof ConnectException));
+        assertThrows(IOException.class, () -> get(port, "/jwk"));
+    }
+
+    private static AtomicReference<Throwable> start(Thread app) {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        app.setUncaughtExceptionHandler((t, e) -> failure.set(e));
+        app.start();
+        return failure;
+    }
+
+    private static HttpResponse<String> awaitResponse(Thread app, AtomicReference<Throwable> failure,
+            int port, String path, Duration timeout) throws Exception {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (true) {
+            if (!app.isAlive()) {
+                throw new AssertionError("Application stopped during startup", failure.get());
+            }
+            try {
+                return get(port, path);
+            } catch (IOException notUpYet) {
+                if (System.nanoTime() > deadline) {
+                    throw notUpYet;
+                }
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(500L));
+            }
         }
     }
 

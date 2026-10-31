@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -106,11 +107,14 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(UNAUTHORIZED);
 
-    mvc.perform(delete(RESOURCE, TEST_001_GROUP_UUID).param("name", LABEL_NAME))
+    mvc
+      .perform(
+          delete(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader()).param("name", LABEL_NAME))
       .andExpect(UNAUTHORIZED);
   }
 
@@ -121,11 +125,14 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(FORBIDDEN);
 
-    mvc.perform(delete(RESOURCE, TEST_001_GROUP_UUID).param("name", LABEL_NAME))
+    mvc
+      .perform(
+          delete(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader()).param("name", LABEL_NAME))
       .andExpect(FORBIDDEN);
   }
 
@@ -154,7 +161,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
   void setLabelWorks() throws Exception {
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(OK);
 
@@ -169,7 +177,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     LabelDTO label = LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(label)))
       .andExpect(OK);
 
@@ -183,17 +192,50 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
   }
 
   @Test
+  void labelValueMayContainWhitespaceButNotNewLines() throws Exception {
+
+    LabelDTO label = LabelDTO.builder()
+      .prefix(LABEL_PREFIX)
+      .name(LABEL_NAME)
+      .value("a value\twith spaces")
+      .build();
+
+    mvc
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(label)))
+      .andExpect(OK);
+
+    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$[0].value", is(label.getValue())));
+
+    for (String v : new String[] {"carriage\nreturn", "another\rreturn"}) {
+      LabelDTO invalidValueLabel =
+          LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
+      mvc
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
+          .content(mapper.writeValueAsString(invalidValueLabel)))
+        .andExpect(BAD_REQUEST)
+        .andExpect(INVALID_VALUE_ERROR_MESSAGE);
+    }
+  }
+
+  @Test
   void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(OK);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(unqualified)))
       .andExpect(OK);
 
@@ -210,7 +252,9 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     assertThat(results, hasItem(TEST_LABEL));
     assertThat(results, hasItem(unqualified));
 
-    mvc.perform(delete(RESOURCE, TEST_001_GROUP_UUID).param("name", unqualified.getName()))
+    mvc
+      .perform(delete(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .param("name", unqualified.getName()))
       .andExpect(NO_CONTENT);
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
@@ -222,7 +266,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
       .andExpect(jsonPath("$[0].value", is(TEST_LABEL.getValue())));
 
     mvc
-      .perform(delete(RESOURCE, TEST_001_GROUP_UUID).param("name", TEST_LABEL.getName())
+      .perform(delete(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .param("name", TEST_LABEL.getName())
         .param("prefix", TEST_LABEL.getPrefix()))
       .andExpect(NO_CONTENT);
 
@@ -239,13 +284,15 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
 
     mvc
-      .perform(put(RESOURCE, RANDOM_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, RANDOM_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(NOT_FOUND)
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
 
     mvc
-      .perform(delete(RESOURCE, RANDOM_UUID).param("name", TEST_LABEL.getName())
+      .perform(delete(RESOURCE, RANDOM_UUID).with(csrf().asHeader())
+        .param("name", TEST_LABEL.getName())
         .param("prefix", TEST_LABEL.getPrefix()))
       .andExpect(NOT_FOUND)
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
@@ -262,12 +309,14 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
 
     for (LabelDTO l : labels) {
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(OK);
 
       mvc
-        .perform(put(RESOURCE, TEST_002_GROUP_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_002_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(OK);
     }
@@ -314,7 +363,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     for (String p : SOME_INVALID_PREFIXES) {
       LabelDTO l = LabelDTO.builder().prefix(p).value(LABEL_VALUE).name(LABEL_NAME).build();
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_PREFIX_ERROR_MESSAGE);
@@ -323,7 +373,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     LabelDTO noNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(noNameLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_REQUIRED_ERROR_MESSAGE);
@@ -333,7 +384,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
     for (String in : SOME_INVALID_NAMES) {
       LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(in).build();
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+          .contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidNameLabel)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_NAME_ERROR_MESSAGE);
@@ -343,7 +395,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
         LabelDTO.builder().prefix(LABEL_PREFIX).name(randomAlphabetic(65)).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longNameLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_TOO_LONG_ERROR_MESSAGE);
@@ -356,7 +409,8 @@ class GroupLabelTests implements StructuredScopeTestSupportConstants {
       .build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longValueLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(VALUE_TOO_LONG_ERROR_MESSAGE);

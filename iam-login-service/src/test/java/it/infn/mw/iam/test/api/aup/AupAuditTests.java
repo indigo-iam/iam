@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,9 +59,8 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class AupAuditTests extends AupTestSupport {
@@ -104,8 +104,9 @@ class AupAuditTests extends AupTestSupport {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup(clock.now()));
 
     mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(post("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isCreated());
 
     verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -120,7 +121,7 @@ class AupAuditTests extends AupTestSupport {
     IamAup aup = buildDefaultAup(clock.now());
     aupRepo.saveDefaultAup(aup);
 
-    mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/aup").with(csrf().asHeader())).andExpect(status().isNoContent());
 
     verify(eventPublisher).publishEvent(eventCaptor.capture());
     ApplicationEvent event = eventCaptor.getValue();
@@ -140,10 +141,11 @@ class AupAuditTests extends AupTestSupport {
     clock.advance(Duration.ofMinutes(1L));
 
     mvc
-      .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .perform(patch("/iam/aup").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
-    
+
     verify(eventPublisher).publishEvent(eventCaptor.capture());
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(AupUpdatedEvent.class));
@@ -155,8 +157,8 @@ class AupAuditTests extends AupTestSupport {
 
     IamAup aup = buildDefaultAup(clock.now());
     aupRepo.saveDefaultAup(aup);
-    
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+
+    mvc.perform(post("/iam/aup/signature").with(csrf().asHeader())).andExpect(status().isCreated());
     verify(eventPublisher).publishEvent(eventCaptor.capture());
     ApplicationEvent event = eventCaptor.getValue();
     assertThat(event, instanceOf(AupSignedEvent.class));

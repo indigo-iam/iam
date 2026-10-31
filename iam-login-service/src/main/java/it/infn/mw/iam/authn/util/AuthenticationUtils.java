@@ -43,6 +43,14 @@ public class AuthenticationUtils {
     return Optional.empty();
   }
 
+  public static boolean isExternalAuthentication(Authentication userAuth) {
+    if (userAuth instanceof SavedUserAuthentication savedUserAuth) {
+      return isExternalOidcAuthentication(savedUserAuth)
+          || isExternalSamlAuthentication(savedUserAuth);
+    }
+    return false;
+  }
+
   public static boolean isExternalOidcAuthentication(SavedUserAuthentication userAuth) {
     return OidcExternalAuthenticationToken.class.getName().equals(userAuth.getSourceClass());
   }

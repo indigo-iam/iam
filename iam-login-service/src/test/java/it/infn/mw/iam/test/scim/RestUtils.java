@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.scim;
 
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -51,7 +52,8 @@ public class RestUtils {
 
     String contentJson = mapper.writeValueAsString(contentObj);
 
-    return mvc.perform(post(location).contentType(requestContentType).content(contentJson))
+    return mvc.perform(
+        post(location).with(csrf().asHeader()).contentType(requestContentType).content(contentJson))
       .andExpect(status().is(expectedStatus.value()))
       .andExpect(content().contentType(expectedContentType));
   }
@@ -61,7 +63,8 @@ public class RestUtils {
 
     String contentJson = mapper.writeValueAsString(contentObj);
 
-    return mvc.perform(post(location).contentType(contentType).content(contentJson))
+    return mvc
+      .perform(post(location).with(csrf().asHeader()).contentType(contentType).content(contentJson))
       .andExpect(status().is(expectedStatus.value()))
       .andExpect(content().contentType(contentType));
   }
@@ -70,7 +73,10 @@ public class RestUtils {
       MultiValueMap<String, String> formParams, String expectedContentType,
       HttpStatus expectedStatus) throws Exception {
 
-    return mvc.perform(post(location).contentType(APPLICATION_FORM_URLENCODED).params(formParams))
+    return mvc
+      .perform(post(location).with(csrf().asHeader())
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .params(formParams))
       .andExpect(status().is(expectedStatus.value()))
       .andExpect(content().contentType(expectedContentType));
   }
@@ -89,7 +95,7 @@ public class RestUtils {
 
   public ResultActions doDelete(String location) throws Exception {
 
-    return mvc.perform(delete(location));
+    return mvc.perform(delete(location).with(csrf().asHeader()));
   }
 
   public <B> ResultActions doPut(String location, B contentObj, String expectedContentType,
@@ -97,7 +103,8 @@ public class RestUtils {
 
     String contentJson = mapper.writeValueAsString(contentObj);
 
-    return mvc.perform(put(location).contentType(expectedContentType).content(contentJson))
+    return mvc.perform(
+        put(location).with(csrf().asHeader()).contentType(expectedContentType).content(contentJson))
       .andExpect(status().is(expectedStatus.value()))
       .andExpect(content().contentType(expectedContentType));
   }
@@ -113,7 +120,9 @@ public class RestUtils {
       throws Exception {
 
     String contentJson = mapper.writeValueAsString(contentObj);
-    return mvc.perform(patch(location).contentType(expectedContentType).content(contentJson));
+    return mvc.perform(patch(location).with(csrf().asHeader())
+      .contentType(expectedContentType)
+      .content(contentJson));
   }
 
 }
