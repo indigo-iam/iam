@@ -68,7 +68,6 @@
     <json-path.version>2.9.0</json-path.version>
     <google-guava.version>33.7.1-jre</google-guava.version>
 
-    <flyway.version>7.15.0</flyway.version>
     <postgresql.version>42.7.7</postgresql.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <spring-framework.version>5.3.39</spring-framework.version>
@@ -289,12 +288,6 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${google-guava.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-client</artifactId>
-        <version>${mitreid.version}</version>
       </dependency>
 
       <dependency>
