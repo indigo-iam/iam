@@ -94,13 +94,15 @@ public class AccountUnlinkTests {
   @Test
   void accountUnlinkEndpointFailsForUnauthenticatedUsers() throws Exception {
     mvc
-      .perform(delete(accountLinkingResourceOidc()).param("iss", LINKED_OIDC_ID.getIssuer())
+      .perform(delete(accountLinkingResourceOidc()).with(csrf().asHeader())
+        .param("iss", LINKED_OIDC_ID.getIssuer())
         .param("sub", LINKED_OIDC_ID.getSubject()))
       .andDo(print())
       .andExpect(status().isUnauthorized());
 
     mvc
-      .perform(delete(accountLinkingResourceSaml()).param("iss", LINKED_SAML_ID.getIdpId())
+      .perform(delete(accountLinkingResourceSaml()).with(csrf().asHeader())
+        .param("iss", LINKED_SAML_ID.getIdpId())
         .param("sub", LINKED_SAML_ID.getUserId()))
       .andDo(print())
       .andExpect(status().isUnauthorized());
@@ -142,9 +144,9 @@ public class AccountUnlinkTests {
     assertThat(LINKED_OIDC_ID, is(in(user.getOidcIds())));
 
     mvc
-      .perform(delete(accountLinkingResourceOidc()).param("iss", LINKED_OIDC_ID.getIssuer())
-        .param("sub", LINKED_OIDC_ID.getSubject())
-        .with(csrf().asHeader()))
+      .perform(delete(accountLinkingResourceOidc()).with(csrf().asHeader())
+        .param("iss", LINKED_OIDC_ID.getIssuer())
+        .param("sub", LINKED_OIDC_ID.getSubject()))
       .andDo(print())
       .andExpect(status().isNoContent());
 
@@ -169,9 +171,9 @@ public class AccountUnlinkTests {
     Date lastUpdateTime = user.getLastUpdateTime();
 
     mvc
-      .perform(delete(accountLinkingResourceSaml()).param("iss", UNLINKED_SAML_ID.getIdpId())
-        .param("sub", UNLINKED_SAML_ID.getUserId())
-        .with(csrf().asHeader()))
+      .perform(delete(accountLinkingResourceSaml()).with(csrf().asHeader())
+        .param("iss", UNLINKED_SAML_ID.getIdpId())
+        .param("sub", UNLINKED_SAML_ID.getUserId()))
       .andDo(print())
       .andExpect(status().isNoContent());
 
@@ -191,10 +193,10 @@ public class AccountUnlinkTests {
     Date lastUpdateTime = user.getLastUpdateTime();
 
     mvc
-      .perform(delete(accountLinkingResourceSaml()).param("iss", SAML_LINKED_ISSUER)
+      .perform(delete(accountLinkingResourceSaml()).with(csrf().asHeader())
+        .param("iss", SAML_LINKED_ISSUER)
         .param("sub", SAML_LINKED_SUBJECT)
-        .param("attr", LINKED_SAML_ID.getAttributeId())
-        .with(csrf().asHeader()))
+        .param("attr", LINKED_SAML_ID.getAttributeId()))
       .andDo(print())
       .andExpect(status().isNoContent());
 
@@ -205,9 +207,5 @@ public class AccountUnlinkTests {
     LINKED_SAML_ID.setAccount(user);
     user.getSamlIds().add(LINKED_SAML_ID);
     iamAccountRepo.save(user);
-
   }
-
-
-
 }

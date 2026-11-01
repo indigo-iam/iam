@@ -1,0 +1,13 @@
+{
+    "actor": {
+        "id": "123456789",
+        "name": "test",
+        "type": "group"
+    },
+    "description": "Test",
+    "matchingPolicy": "PATH",
+    "rule": "DENY",
+    "scopes": [
+        "storage.read:/123456789"
+    ]
+}

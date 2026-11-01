@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -146,7 +147,8 @@ class ConsentExemptionControllerTests {
     when(exceptionService.save(any(ConsentExemption.class))).thenReturn(saved);
 
     mockMvc
-      .perform(post("/api/whitelist").principal(authentication)
+      .perform(post("/api/whitelist").with(csrf().asHeader())
+        .principal(authentication)
         .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .content("""
@@ -189,7 +191,8 @@ class ConsentExemptionControllerTests {
     when(exceptionService.save(any(ConsentExemption.class))).thenReturn(saved);
 
     mockMvc
-      .perform(post("/api/whitelist").principal(authentication)
+      .perform(post("/api/whitelist").with(csrf().asHeader())
+        .principal(authentication)
         .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .content("""
@@ -216,7 +219,7 @@ class ConsentExemptionControllerTests {
 
     when(exceptionService.findById(5L)).thenReturn(Optional.of(entity));
 
-    mockMvc.perform(delete("/api/whitelist/{id}", 5L))
+    mockMvc.perform(delete("/api/whitelist/{id}", 5L).with(csrf().asHeader()))
       .andExpect(status().isNoContent())
       .andExpect(content().string(""));
 
@@ -229,7 +232,7 @@ class ConsentExemptionControllerTests {
 
     when(exceptionService.findById(404L)).thenReturn(Optional.empty());
 
-    mockMvc.perform(delete("/api/whitelist/{id}", 404L))
+    mockMvc.perform(delete("/api/whitelist/{id}", 404L).with(csrf().asHeader()))
       .andExpect(status().isNoContent())
       .andExpect(content().string(""));
 

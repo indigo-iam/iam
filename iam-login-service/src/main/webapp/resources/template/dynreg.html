@@ -250,12 +250,6 @@
                         <label for="grantTypes-client_credentials" class="radio" data-i18n="client.client-form.client-credentials">client credentials</label>
                     </div>
 
-                    <div>
-                        <input id="grantTypes-implicit" type="radio" name="grantTypes"
-                            <%-($.inArray("implicit", client.grant_types) > -1 ? 'checked' : '')%>> 
-                        <label for="grantTypes-implicit" class="radio" data-i18n="client.client-form.implicit">implicit</label>
-                    </div>
-
                     <div style="color: gray; pointer-events: none;">
                         <input id="grantTypes-password" type="checkbox" name="grantTypes" readonly
                             <%-($.inArray("password", client.grant_types) > -1 ? 'checked' : '')%>>
@@ -296,30 +290,6 @@
                         <input id="responseTypes-code" type="checkbox" <%-($.inArray("code", client.response_types) > -1 ? 'checked' : '')%>>
                         <label for="responseTypes-code" class="checkbox">code</label>
                     </div>
-                    <div>
-                        <input id="responseTypes-token" type="checkbox" <%-($.inArray("token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-token" class="checkbox">token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-idtoken" type="checkbox" <%-($.inArray("id_token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-idtoken" class="checkbox">id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-token-idtoken" type="checkbox" <%-($.inArray("token id_token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-token-idtoken" class="checkbox">token id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-idtoken" type="checkbox" <%-($.inArray("code id_token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-idtoken" class="checkbox">code id_token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-token" type="checkbox" <%-($.inArray("code token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-token" class="checkbox">code token</label>
-                    </div>
-                    <div>
-                        <input id="responseTypes-code-token-idtoken" type="checkbox" <%-($.inArray("code token id_token", client.response_types) > -1 ? 'checked' : '')%>>
-                        <label for="responseTypes-code-token-idtoken" class="checkbox">code token id_token</label>
-                    </div>
 				</div>
 			</div>
 
@@ -358,10 +328,6 @@
                     <div>
                         <input type="radio" id="tokenEndpointAuthMethodPost" name="tokenEndpointAuthMethod" value="client_secret_post" <%-(client.token_endpoint_auth_method == 'client_secret_post' ? 'checked' : '')%>>
                         <label for="tokenEndpointAuthMethodPost" class="radio" data-i18n="client.client-form.secret-post">Client Secret over HTTP POST</label>
-                    </div>
-                    <div>
-                        <input type="radio" id="tokenEndpointAuthMethodSymm" name="tokenEndpointAuthMethod" value="client_secret_jwt" <%-(client.token_endpoint_auth_method == 'client_secret_jwt' ? 'checked' : '')%>>
-                        <label for="tokenEndpointAuthMethodSymm" class="radio" data-i18n="client.client-form.secret-symmetric-jwt">Client Secret via symmetrically-signed JWT assertion</label>
                     </div>
 					<% } %>
                     <div>

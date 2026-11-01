@@ -77,7 +77,7 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
       ClientDetailsEntity authenticatedClient) {
 
     ClientDetailsEntity client = accessToken.getClient();
-    JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
+    JWTClaimsSet claims = accessToken.getPayload();
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.ACCESS_TOKEN);
     result.put(SUB, claims.getSubject());
     result.put(IAT, claims.getIssueTime().getTime() / 1000);

@@ -37,6 +37,7 @@ public class IamTotpMfaServiceTestSupport extends IamTotpMfaCommons {
   protected IamAccount getAccount(Instant instant) {
 
     IamAccount a = IamAccount.newAccount();
+    a.setActive(true);
     a.setUuid(TOTP_MFA_ACCOUNT_UUID);
     a.setUsername(TOTP_MFA_ACCOUNT_USERNAME);
     a.getUserInfo().setEmail(TOTP_MFA_ACCOUNT_EMAIL);

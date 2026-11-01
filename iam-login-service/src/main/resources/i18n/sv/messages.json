@@ -76,7 +76,6 @@
             "id-token-crypto-method": "Krypteringsmetod för ID-token",
             "id-token-signing-algorithm": "Signeringsalgoritm för ID-token",
             "id-token-timeout": "Livslängd för ID-token",
-            "implicit": "implicit",
             "intiate-login": "Initiera inloggning",
              "intiate-login-help": "Länk för att initiera inloggning i klienten",
             "introspection": "Introspektion",

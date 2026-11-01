@@ -16,6 +16,7 @@
 
 package it.infn.mw.iam.test.login;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +43,7 @@ class JDBCSessionLoginTests implements LoginTestSupport {
     //@formatter:off
     mvc
       .perform(
-          post(LOGIN_URL)
+          post(LOGIN_URL).with(csrf())
             .param("username", ADMIN_USERNAME)
             .param("password", ADMIN_PASSWORD)
             .param("submit", "Login"))

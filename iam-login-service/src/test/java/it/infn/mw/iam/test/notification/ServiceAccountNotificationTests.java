@@ -19,6 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
@@ -56,7 +57,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-  NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 @TestPropertySource(properties = {"notification.disable=false"})
 class ServiceAccountNotificationTests {
@@ -102,7 +103,7 @@ class ServiceAccountNotificationTests {
 
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(user).build();
 
-    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid()).with(csrf().asHeader())
       .content(mapper.writeValueAsString(patchRequest))
       .contentType("application/scim+json;charset=UTF-8")).andExpect(status().isNoContent());
     List<IamEmailNotification> notifications =
@@ -138,7 +139,7 @@ class ServiceAccountNotificationTests {
 
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(user).build();
 
-    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid()).with(csrf().asHeader())
       .content(mapper.writeValueAsString(patchRequest))
       .contentType("application/scim+json;charset=UTF-8")).andExpect(status().isNoContent());
     List<IamEmailNotification> notifications =

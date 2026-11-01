@@ -21,6 +21,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,7 +79,8 @@ class ExternalAuthenticationRegistrationTests {
     request.setNotes("Some short notes...");
 
     byte[] requestBytes = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -87,15 +90,15 @@ class ExternalAuthenticationRegistrationTests {
     request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
-    mvc.perform(post("/registration/verify").content("token=" + token)
+    mvc
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
 
-    mvc
-      .perform(post("/registration/approve/{uuid}", request.getUuid())
-        .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
-      .andExpect(status().isOk());
+    mvc.perform(post("/registration/approve/{uuid}", request.getUuid()).with(csrf().asHeader())
+      .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());
 
     IamAccount account = accountRepository.findByUsername("test-oidc-subject").get();
 
@@ -125,7 +128,8 @@ class ExternalAuthenticationRegistrationTests {
     request.setNotes("Some short notes...");
 
     byte[] requestBytes = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -135,15 +139,15 @@ class ExternalAuthenticationRegistrationTests {
     request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
-    mvc.perform(post("/registration/verify").content("token=" + token)
+    mvc
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .content("token=" + token)
         .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
 
-    mvc
-      .perform(post("/registration/approve/{uuid}", request.getUuid())
-        .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
-      .andExpect(status().isOk());
+    mvc.perform(post("/registration/approve/{uuid}", request.getUuid()).with(csrf().asHeader())
+      .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());
 
     IamAccount account = accountRepository.findByUsername("test-saml-user").get();
 

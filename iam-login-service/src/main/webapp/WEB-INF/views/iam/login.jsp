@@ -171,6 +171,26 @@
                 </c:choose>
             </c:forEach>
 
+            <!-- OpenID Federation -->
+            <spring:eval expression="@environment.acceptsProfiles('openid-federation')" var="openidFederationEnabled"/>
+            <c:if test="${openidFederationEnabled and param.oidfed == 'y'}">
+                <div id="openid-federation-login" class="ext-authn-login-button openid-federation-login">
+                    <div class="ext-login-preamble text-muted openid-federation-preamble">
+                        Or sign in with OpenID Federation
+                    </div>
+
+                    <form method="get" action="/openid_connect_login">
+                        <input
+                            type="url"
+                            name="iss"
+                            class="form-control"
+                            placeholder="https://your-op.example.org"
+                            required
+                        />
+                    </form>
+                </div>
+            </c:if>
+
             <c:if test="${loginPageConfiguration.showLinkToLocalAuthenticationPage and param.sll == null}">
                 <a class="btn btn-block btn-login" href="/login?sll=y">Local credentials</a>
             </c:if>
@@ -203,19 +223,6 @@
                     <a class="btn btn-success btn-block" href="/saml/login">Register an account with eduGAIN</a>
                 </c:if>
             </div>
-        </c:if>
-
-        <!-- OpenID Federation -->
-        <spring:eval expression="@environment.acceptsProfiles('openid-federation')" var="openidFederationEnabled"/>
-        <c:if test="${openidFederationEnabled}">
-        <form method="get" action="/openid_connect_login">
-            <div id="login-registration">
-                <div class="registration-preamble text-muted">
-                    OpenID Federation
-                </div>
-                <input type="url" name="iss" placeholder="Type your OP" required/>
-            </div>
-        </form>
         </c:if>
 
         <c:if test="${loginPageConfiguration.privacyPolicyUrl.isPresent()}">

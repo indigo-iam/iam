@@ -16,7 +16,9 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.X509;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,13 +26,18 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.util.AuthenticationStateMask;
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.LoginLockoutResetReason;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 /**
  * Grants full authentication by verifying a provided MFA TOTP. Only comes into play in the step-up
@@ -38,12 +45,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  */
 public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
-  private final IamAccountRepository accountRepo;
+  private final IamAccountService accountService;
   private final IamTotpMfaService totpMfaService;
 
-  public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo,
+  public MultiFactorTotpCheckProvider(IamAccountService accountService,
       IamTotpMfaService totpMfaService) {
-    this.accountRepo = accountRepo;
+    this.accountService = accountService;
     this.totpMfaService = totpMfaService;
   }
 
@@ -62,14 +69,22 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       return null;
     }
 
-    IamAccount account = accountRepo.findByUsername(authentication.getName())
+    String username = authentication.getName();
+    IamAccount account = accountService.findByUsername(username)
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
+    AuthenticationStateMask.checkLoginAllowedOrThrowBadCredentials(accountService,
+        account.getUuid(), "Bad TOTP");
+
     if (!isValidTotp(account, totp)) {
+      accountService.loginFailedAttempt(account.getUuid());
       throw new BadCredentialsException("Bad TOTP");
     }
 
-    return createSuccessfulAuthentication(authentication);
+    AuthenticationStateMask.resetLoginLockoutOrThrowBadCredentials(accountService,
+        account.getUuid(), LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION, "Bad TOTP");
+
+    return upgradeToFullyAuthenticated(authentication);
   }
 
   private String getTotp(Authentication authentication) {
@@ -89,7 +104,14 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     }
   }
 
-  private Authentication createSuccessfulAuthentication(Authentication authentication) {
+  /**
+   * Builds the fully-authenticated token for a user who has just proven a TOTP code, without
+   * re-verifying it. Shared with
+   * {@code AuthenticationSuccessHandlerHelper#resolveEnrollmentRedirect}, which has already
+   * verified the code itself (to enable MFA in the first place) and upgrades the session directly
+   * instead of sending the user through {@code /iam/verify} a second time.
+   */
+  public static Authentication upgradeToFullyAuthenticated(Authentication authentication) {
     IamAuthenticationMethodReference otp =
         new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
 
@@ -111,6 +133,15 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       credentials = token.getCredentials();
       authorities = token.getFullyAuthenticatedAuthorities();
       externalAuthentication = token;
+    } else if (authentication instanceof PreAuthenticatedAuthenticationToken token
+        && token.isAuthenticated() && token.getPrincipal() instanceof User user) {
+      principal = user.getUsername();
+      credentials = null;
+      authorities = new HashSet<>(token.getAuthorities());
+      authorities.removeIf(authority -> Authorities.ROLE_PRE_AUTHENTICATED.getAuthority()
+        .equals(authority.getAuthority()));
+      refs = new HashSet<>();
+      refs.add(new IamAuthenticationMethodReference(X509.getValue()));
     } else {
       throw new IllegalArgumentException(
           "Unsupported authentication type: " + authentication.getClass());

@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -34,12 +35,17 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
@@ -49,11 +55,16 @@ import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.test.TestUtils;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ScimGroupManagerTests {
 
   static final String GROUP_URI = ScimUtils.getGroupsLocation();
@@ -133,7 +144,9 @@ class ScimGroupManagerTests {
   @Test
   @WithMockUser(username = "test", roles = "READER")
   void roleReaderCanSeeGroupMembersCount() throws Exception {
-    mvc.perform(get(GROUP_URI + "/{uuid}/members?count=0", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(
+          get(GROUP_URI + "/{uuid}/members?count=0", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.totalResults", equalTo(0)))
@@ -143,7 +156,9 @@ class ScimGroupManagerTests {
   @Test
   @WithMockUser(username = "test", roles = "ADMIN")
   void roleAdminCanSeeGroupMembersCountForNonemptyGroup() throws Exception {
-    mvc.perform(get(GROUP_URI + "/{uuid}/members?count=0", PRODUCTION_GROUP_ID).content(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(get(GROUP_URI + "/{uuid}/members?count=0", PRODUCTION_GROUP_ID)
+        .content(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.totalResults", equalTo(250)))
@@ -154,10 +169,14 @@ class ScimGroupManagerTests {
   @WithMockUser(username = "test", roles = {"USER", "GM:" + TEST_001_GROUP_ID})
   void groupManagerCanDeleteGroup() throws Exception {
 
-    mvc.perform(delete(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(delete(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).with(csrf().asHeader())
+        .content(SCIM_CONTENT_TYPE))
       .andExpect(status().isNoContent());
 
-    mvc.perform(delete(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).content(SCIM_CONTENT_TYPE))
+    mvc
+      .perform(delete(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).with(csrf().asHeader())
+        .content(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden());
   }
 
@@ -168,8 +187,9 @@ class ScimGroupManagerTests {
     ScimGroup group = ScimGroup.builder(name).build();
 
     String res = mvc
-      .perform(
-          post(GROUP_URI).contentType(SCIM_CONTENT_TYPE).content(mapper.writeValueAsString(group)))
+      .perform(post(GROUP_URI).with(csrf().asHeader())
+        .contentType(SCIM_CONTENT_TYPE)
+        .content(mapper.writeValueAsString(group)))
       .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
@@ -190,8 +210,9 @@ class ScimGroupManagerTests {
     ScimGroup group = ScimGroup.builder(name).build();
 
     String res = mvc
-      .perform(
-          post(GROUP_URI).contentType(SCIM_CONTENT_TYPE).content(mapper.writeValueAsString(group)))
+      .perform(post(GROUP_URI).with(csrf().asHeader())
+        .contentType(SCIM_CONTENT_TYPE)
+        .content(mapper.writeValueAsString(group)))
       .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
@@ -210,7 +231,7 @@ class ScimGroupManagerTests {
 
     accountRepo.save(testAccount);
 
-    mvc.perform(delete(GROUP_URI + "/{uuid}", createdGroup.getId()))
+    mvc.perform(delete(GROUP_URI + "/{uuid}", createdGroup.getId()).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     assertThat(accountRepo.findByAuthority(authority).isEmpty(), is(true));
@@ -235,17 +256,20 @@ class ScimGroupManagerTests {
         ScimGroupPatchRequest.builder().remove(TestUtils.buildScimMemberRefList(members)).build();
 
     mvc
-      .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
+      .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).with(csrf().asHeader())
+        .contentType(SCIM_CONTENT_TYPE)
         .content(mapper.writeValueAsString(patchAddReq)))
       .andExpect(status().isNoContent());
 
     mvc
-      .perform(patch(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
+      .perform(patch(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).with(csrf().asHeader())
+        .contentType(SCIM_CONTENT_TYPE)
         .content(mapper.writeValueAsString(patchAddReq)))
       .andExpect(status().isForbidden());
 
     mvc
-      .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).contentType(SCIM_CONTENT_TYPE)
+      .perform(patch(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).with(csrf().asHeader())
+        .contentType(SCIM_CONTENT_TYPE)
         .content(mapper.writeValueAsString(patchRemReq)))
       .andExpect(status().isNoContent());
 

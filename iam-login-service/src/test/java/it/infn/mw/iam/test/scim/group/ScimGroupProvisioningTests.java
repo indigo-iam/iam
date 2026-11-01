@@ -28,6 +28,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,25 +43,29 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
@@ -74,20 +79,20 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@ExtendWith(SpringExtension.class)
-@IamMockMvcIntegrationTest
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class ScimGroupProvisioningTests {
 
   private static final String GROUP_URI = ScimUtils.getGroupsLocation();
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
+  private static final String SCIM_CLIENT_ID = "scim-client-rw";
+  private static final String SCIM_CLIENT_SECRET = "secret";
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -121,14 +126,21 @@ class ScimGroupProvisioningTests {
   @InjectMocks
   private ScimGroupProvisioning scimGroupProvisioning;
 
+  private String scimAccessToken;
+
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    scimAccessToken = null;
   }
 
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  private ResultActions performScim(MockHttpServletRequestBuilder request) throws Exception {
+
+    if (scimAccessToken == null) {
+      scimAccessToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+          SCIM_CLIENT_ID, SCIM_CLIENT_SECRET, "scim:read", "scim:write");
+    }
+
+    return mvc.perform(request.header(AUTHORIZATION, "Bearer " + scimAccessToken));
   }
 
   @Test
@@ -136,7 +148,7 @@ class ScimGroupProvisioningTests {
 
     String randomUuid = UUID.randomUUID().toString();
 
-    mvc.perform(get(GROUP_URI + "/{uuid}", randomUuid).contentType(SCIM_CONTENT_TYPE))
+    performScim(get(GROUP_URI + "/{uuid}", randomUuid).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isNotFound())
       .andExpect(content().contentType(APPLICATION_JSON_VALUE))
       .andExpect(jsonPath("$.status", equalTo("404")))
@@ -149,22 +161,19 @@ class ScimGroupProvisioningTests {
     String randomUuid = UUID.randomUUID().toString();
     ScimGroup group = ScimGroup.builder("engineers").id(randomUuid).build();
 
-    mvc
-      .perform(put(GROUP_URI + "/{uuid}", randomUuid).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isNotFound())
-      .andExpect(content().contentType(APPLICATION_JSON_VALUE))
-      .andExpect(jsonPath("$.status", equalTo("404")))
-      .andExpect(jsonPath("$.detail", equalTo("No group mapped to id '" + randomUuid + "'")));
+    performScim(put(GROUP_URI + "/{uuid}", randomUuid).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isNotFound())
+        .andExpect(content().contentType(APPLICATION_JSON_VALUE))
+        .andExpect(jsonPath("$.status", equalTo("404")))
+        .andExpect(jsonPath("$.detail", equalTo("No group mapped to id '" + randomUuid + "'")));
   }
 
   @Test
   void testGetExistingGroup() throws Exception {
 
-    // Some existing group as defined in the test db
     String groupId = "c617d586-54e6-411d-8e38-64967798fa8a";
 
-    mvc.perform(get(GROUP_URI + "/{uuid}", groupId).content(SCIM_CONTENT_TYPE))
+    performScim(get(GROUP_URI + "/{uuid}", groupId).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(content().contentType(SCIM_CONTENT_TYPE))
       .andExpect(jsonPath("$.id", equalTo(groupId)))
@@ -172,9 +181,6 @@ class ScimGroupProvisioningTests {
       .andExpect(jsonPath("$.meta.resourceType", equalTo("Group")))
       .andExpect(
           jsonPath("$.meta.location", equalTo("http://localhost:8080/scim/Groups/" + groupId)))
-      // FIXME
-      // .andExpect(jsonPath("$.members", hasSize(equalTo(249))))
-      // .andExpect(jsonPath("$.members[0].$ref", startsWith("http://localhost:8080/scim/Users/")))
       .andExpect(jsonPath("$.schemas",
           hasItems(ScimGroup.GROUP_SCHEMA, ScimConstants.INDIGO_GROUP_SCHEMA)));
   }
@@ -185,24 +191,18 @@ class ScimGroupProvisioningTests {
     String name = "engineers";
     ScimGroup group = ScimGroup.builder(name).build();
 
-    String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String result = performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
 
-    //@formatter:off
-    mvc.perform(get(createdGroup.getMeta().getLocation()))
-      .andExpect(status().isOk())
+    performScim(get(createdGroup.getMeta().getLocation())).andExpect(status().isOk())
       .andExpect(jsonPath("$.displayName", equalTo(name)));
-    
-    mvc.perform(delete(createdGroup.getMeta().getLocation()))
-      .andExpect(status().isNoContent());
-    //@formatter:on
+
+    performScim(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
   }
 
   @Test
@@ -210,99 +210,91 @@ class ScimGroupProvisioningTests {
 
     ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
-    String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(requestedGroup)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String result = performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(requestedGroup))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
-
     requestedGroup = ScimGroup.builder("engineers_updated").build();
 
-    mvc
-      .perform(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(requestedGroup)))
-      .andExpect(jsonPath("$.displayName", equalTo(requestedGroup.getDisplayName())));
+    performScim(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(requestedGroup))).andExpect(status().isOk())
+        .andExpect(jsonPath("$.displayName", equalTo(requestedGroup.getDisplayName())));
 
-    mvc.perform(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
+    performScim(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
   }
 
   @Test
   void testCreateGroupEmptyDisplayNameValidationError() throws Exception {
 
-    String displayName = "";
-    ScimGroup group = ScimGroup.builder(displayName).build();
+    ScimGroup group = ScimGroup.builder("").build();
 
-    mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", containsString("scimGroup.displayName : must not be blank")));
+    performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(group))).andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.detail", containsString("scimGroup.displayName : must not be blank")));
   }
+
 
   @Test
   void testUpdateGroupEmptyDisplayNameValidationError() throws Exception {
 
     ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
-    String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(requestedGroup)))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String result = performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(requestedGroup))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
-
     requestedGroup = ScimGroup.builder("").build();
 
-    mvc
-      .perform(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsBytes(requestedGroup)))
-      .andExpect(status().isBadRequest());
+    performScim(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsBytes(requestedGroup))).andExpect(status().isBadRequest());
 
-    mvc.perform(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
+    performScim(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
   }
 
   @Test
   void testUpdateGroupAlreadyUsedDisplaynameError() throws Exception {
 
-    String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(ScimGroup.builder("engineers").build())))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    String result = performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(ScimGroup.builder("engineers").build())))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
     ScimGroup engineers = objectMapper.readValue(result, ScimGroup.class);
 
-    result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(ScimGroup.builder("artists").build())))
-      .andExpect(status().isCreated())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+    result = performScim(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(ScimGroup.builder("artists").build())))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
     ScimGroup artists = objectMapper.readValue(result, ScimGroup.class);
 
-    mvc
-      .perform(put(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(ScimGroup.builder("artists").build())))
-      .andExpect(status().isConflict());
+    performScim(put(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(objectMapper.writeValueAsString(ScimGroup.builder("artists").build())))
+        .andExpect(status().isConflict());
 
-    mvc.perform(delete(engineers.getMeta().getLocation())).andExpect(status().isNoContent());
-    mvc.perform(delete(artists.getMeta().getLocation())).andExpect(status().isNoContent());
+    performScim(delete(engineers.getMeta().getLocation())).andExpect(status().isNoContent());
+
+    performScim(delete(artists.getMeta().getLocation())).andExpect(status().isNoContent());
   }
 
   @Test
   void groupDescriptionIsRendered() throws Exception {
+
     final String groupId = UUID.randomUUID().toString();
     final String groupName = "group-with-description";
     final String groupDesc = "A group description";
+
     IamGroup group = new IamGroup();
     group.setUuid(groupId);
     group.setName(groupName);
@@ -312,7 +304,7 @@ class ScimGroupProvisioningTests {
 
     repo.save(group);
 
-    mvc.perform(get("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE))
+    performScim(get("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.displayName", is(groupName)))
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())

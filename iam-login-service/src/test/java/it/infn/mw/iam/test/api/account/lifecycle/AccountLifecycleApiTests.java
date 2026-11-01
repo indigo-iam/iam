@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.account.lifecycle;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.util.Date;
@@ -87,7 +88,8 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
   void managingEndTimeRequiresAuthenticatedUser() throws Exception {
     AccountLifecycleDTO dto = new AccountLifecycleDTO();
     mvc
-      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(UNAUTHORIZED);
   }
@@ -110,13 +112,14 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
     dto.setEndTime(newEndTime);
 
     mvc
-      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(OK);
 
     IamAccount account =
         repo.findByUuid(TEST_100_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-    
+
     assertThat(account.getEndTime(), is(newEndTime));
   }
 
@@ -128,7 +131,8 @@ class AccountLifecycleApiTests implements StructuredScopeTestSupportConstants {
     dto.setEndTime(newEndTime);
 
     mvc
-      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).with(csrf().asHeader())
+        .content(mapper.writeValueAsString(dto))
         .contentType(APPLICATION_JSON))
       .andExpect(OK);
   }

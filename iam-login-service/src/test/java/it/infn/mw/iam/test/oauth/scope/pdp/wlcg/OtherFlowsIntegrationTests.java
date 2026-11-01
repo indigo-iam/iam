@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -217,7 +218,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("http://localhost/login").session(session))
+    session = (MockHttpSession) mvc
+      .perform(get("http://localhost/login").with(csrf().asHeader()).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"))
       .andReturn()
@@ -225,7 +227,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -236,7 +239,9 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/device/verify").param("user_code", userCode).session(session))
+      .perform(post("/device/verify").with(csrf().asHeader())
+        .param("user_code", userCode)
+        .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
       .andReturn()
@@ -244,7 +249,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(post("/device/approve").param("user_code", userCode)
+      .perform(post("/device/approve").with(csrf().asHeader())
+        .param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
@@ -352,7 +358,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("http://localhost/login").session(session))
+    session = (MockHttpSession) mvc
+      .perform(get("http://localhost/login").with(csrf().asHeader()).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"))
       .andReturn()
@@ -360,7 +367,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -371,7 +379,9 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/device/verify").param("user_code", userCode).session(session))
+      .perform(post("/device/verify").with(csrf().asHeader())
+        .param("user_code", userCode)
+        .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
       .andReturn()
@@ -379,7 +389,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(post("/device/approve").param("user_code", userCode)
+      .perform(post("/device/approve").with(csrf().asHeader())
+        .param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
@@ -491,7 +502,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -502,7 +514,9 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/device/verify").param("user_code", userCode).session(session))
+      .perform(post("/device/verify").with(csrf().asHeader())
+        .param("user_code", userCode)
+        .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
       .andReturn()
@@ -510,7 +524,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(post("/device/approve").param("user_code", userCode)
+      .perform(post("/device/approve").with(csrf().asHeader())
+        .param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
@@ -625,7 +640,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -636,7 +652,9 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/device/verify").param("user_code", userCode).session(session))
+      .perform(post("/device/verify").with(csrf().asHeader())
+        .param("user_code", userCode)
+        .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
       .andReturn()
@@ -644,7 +662,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(post("/device/approve").param("user_code", userCode)
+      .perform(post("/device/approve").with(csrf().asHeader())
+        .param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())

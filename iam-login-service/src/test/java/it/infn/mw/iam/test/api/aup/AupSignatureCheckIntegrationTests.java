@@ -19,10 +19,11 @@ import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -136,12 +137,12 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mvc
       .perform(
-          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+          patch("/iam/aup").with(csrf().asHeader()).contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
-    mvc.perform(post("/iam/aup/touch")).andExpect(status().isOk());
+    mvc.perform(post("/iam/aup/touch").with(csrf().asHeader())).andExpect(status().isOk());
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
@@ -167,7 +168,7 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mvc
       .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+          post("/iam/aup").with(csrf().asHeader()).contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isCreated());
 
     mvc.perform(get("/iam/aup")).andExpect(status().isOk());
@@ -195,7 +196,7 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
         .session(session))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/iam/aup/sign"))
-        .andExpect(header().doesNotExist("Set-Cookie"));
+        .andExpect(cookie().doesNotExist("JSESSIONID"));
   }
 
   @Test
@@ -212,6 +213,6 @@ class AupSignatureCheckIntegrationTests extends AupTestSupport {
         .session(session))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/iam/aup/sign"))
-        .andExpect(header().doesNotExist("Set-Cookie"));
+        .andExpect(cookie().doesNotExist("JSESSIONID"));
   }
 }

@@ -20,6 +20,7 @@ import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PAT
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -186,7 +187,8 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -197,7 +199,8 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize")
+        .session(session)
         .param("scope", "openid profile read-tasks")
         .param("response_type", "code")
         .param("client_id", clientId)
@@ -239,7 +242,8 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
+      .perform(post("/login").with(csrf().asHeader())
+        .param("username", "test")
         .param("password", "password")
         .param("submit", "Login")
         .session(session))
@@ -250,7 +254,8 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getSession();
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize")
+        .session(session)
         .param("scope", "openid profile read:/ read:/that/thing write:/")
         .param("response_type", "code")
         .param("client_id", clientId)

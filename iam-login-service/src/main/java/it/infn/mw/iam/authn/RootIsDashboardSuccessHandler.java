@@ -52,15 +52,16 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
       return;
     }
 
-    if (savedRequest.getRedirectUrl().equals(iamBaseUrl)) {
-      requestCache.removeRequest(request, response);
-    }
-
-    if (savedRequest.getRedirectUrl().equals(iamBaseUrl + "/")) {
+    if (redirectsToIamRoot(savedRequest.getRedirectUrl(), iamBaseUrl)) {
       requestCache.removeRequest(request, response);
     }
 
     super.onAuthenticationSuccess(request, response, authentication);
+  }
+
+  /** True if redirectUrl points at IAM's own root &mdash; nothing useful to resume there. */
+  public static boolean redirectsToIamRoot(String redirectUrl, String iamBaseUrl) {
+    return redirectUrl.equals(iamBaseUrl) || redirectUrl.equals(iamBaseUrl + "/");
   }
 
 }

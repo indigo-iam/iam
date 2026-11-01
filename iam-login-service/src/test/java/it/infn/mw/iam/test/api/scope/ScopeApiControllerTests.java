@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.scope;
 
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -104,7 +105,8 @@ class ScopeApiControllerTests {
     SystemScopeDto dto = SystemScopeDto.builder().value("scope.read").build();
 
     mockMvc
-      .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/api/scopes").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(dto)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.value").value("scope.read"));
@@ -117,7 +119,8 @@ class ScopeApiControllerTests {
     SystemScopeDto dto = SystemScopeDto.builder().value("prefix:/").structured(true).build();
 
     mockMvc
-      .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/api/scopes").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(dto)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.value").value("prefix:/"))
@@ -131,7 +134,8 @@ class ScopeApiControllerTests {
     SystemScopeDto dto = SystemScopeDto.builder().value("scope.read").build();
 
     mockMvc
-      .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/api/scopes").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(dto)))
       .andExpect(status().isForbidden());
   }
@@ -150,7 +154,8 @@ class ScopeApiControllerTests {
 
         try {
           mockMvc
-            .perform(post("/api/scopes").contentType(MediaType.APPLICATION_JSON)
+            .perform(post("/api/scopes").with(csrf().asHeader())
+              .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isBadRequest());
         } catch (Exception e) {
@@ -178,7 +183,8 @@ class ScopeApiControllerTests {
       .build();
 
     mockMvc
-      .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
+      .perform(put("/api/scopes/" + addedScope.getId()).with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(dto)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id").value(addedScope.getId()))
@@ -203,10 +209,9 @@ class ScopeApiControllerTests {
         .build();
 
       try {
-        mockMvc
-          .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(dto)))
-          .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/scopes/" + addedScope.getId()).with(csrf().asHeader())
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest());
       } catch (Exception e) {
         fail("This call is not expected to fail!");
       }
@@ -231,10 +236,9 @@ class ScopeApiControllerTests {
         .build();
 
       try {
-        mockMvc
-          .perform(put("/api/scopes/" + addedScope.getId()).contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(dto)))
-          .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/scopes/" + addedScope.getId()).with(csrf().asHeader())
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(objectMapper.writeValueAsString(dto))).andExpect(status().isBadRequest());
       } catch (Exception e) {
         fail("This call is not expected to fail!");
       }
@@ -252,11 +256,13 @@ class ScopeApiControllerTests {
     newScope.setRestricted(false);
     SystemScope addedScope = scopeService.create(newScope);
 
-    mockMvc.perform(delete("/api/scopes/" + addedScope.getId())).andExpect(status().isOk());
+    mockMvc.perform(delete("/api/scopes/" + addedScope.getId()).with(csrf().asHeader()))
+      .andExpect(status().isOk());
 
     Assertions.assertTrue(scopeService.get(addedScope.getId()).isEmpty());
 
-    mockMvc.perform(delete("/api/scopes/" + addedScope.getId())).andExpect(status().isOk());
+    mockMvc.perform(delete("/api/scopes/" + addedScope.getId()).with(csrf().asHeader()))
+      .andExpect(status().isOk());
   }
 
   @Test

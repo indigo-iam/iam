@@ -30,6 +30,8 @@ import org.hibernate.validator.constraints.URL;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -44,17 +46,19 @@ import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
+import it.infn.mw.iam.api.client.registration.validation.ValidPostLogoutRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
-
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @ValidGrantType(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
+    OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
+@ValidPostLogoutRedirectURIs(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidTokenEndpointAuthMethod(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
@@ -114,6 +118,11 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientUri;
+
+  @Valid
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
+  private Set<String> postLogoutRedirectUris;
 
   @Size(max = 2048,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
@@ -182,6 +191,12 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretManagementRegistration.class})
   private Integer idTokenValiditySeconds;
+
+  // Explicit JSON name ensures READ_ONLY is handled correctly with snake-case naming.
+  @JsonProperty(value = "id_token_signed_response_alg", access = Access.READ_ONLY)
+  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
+  private String idTokenSignedResponseAlg;
 
   @Min(value = 0, groups = OnClientCreation.class)
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
@@ -324,6 +339,14 @@ public class RegisteredClientDTO {
     this.clientUri = clientUri;
   }
 
+  public Set<String> getPostLogoutRedirectUris() {
+    return postLogoutRedirectUris;
+  }
+
+  public void setPostLogoutRedirectUris(Set<String> postLogoutRedirectUris) {
+    this.postLogoutRedirectUris = postLogoutRedirectUris;
+  }
+
   public String getTosUri() {
     return tosUri;
   }
@@ -403,6 +426,14 @@ public class RegisteredClientDTO {
 
   public void setIdTokenValiditySeconds(Integer idTokenValiditySeconds) {
     this.idTokenValiditySeconds = idTokenValiditySeconds;
+  }
+
+  public String getIdTokenSignedResponseAlg() {
+    return idTokenSignedResponseAlg;
+  }
+
+  public void setIdTokenSignedResponseAlg(String idTokenSignedResponseAlg) {
+    this.idTokenSignedResponseAlg = idTokenSignedResponseAlg;
   }
 
   public Integer getDeviceCodeValiditySeconds() {

@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,91 +23,70 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Component;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
-import it.infn.mw.iam.persistence.model.IamScopePolicy;
-import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
-@SuppressWarnings("deprecation")
 @Component
+@SuppressWarnings("deprecation")
 public class DefaultScopeFilter implements ScopeFilter {
-
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopeFilter.class);
-
-  public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
-
+  public static final Set<String> ADMIN_SCOPES =
+      Set.of("iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
   private static final Set<String> EXCLUDED_SCOPES = Set.of("openid");
 
-  private Cache<String, ScopeMatcher> matchersCache =
-      CacheBuilder.newBuilder().maximumSize(30).build();
-
   private final IamProperties config;
-  private final IamScopePolicyRepository policyRepo;
   private final AccountUtils accountUtils;
+  private final ScopePolicyEngine policyEngine;
+  private final IamProperties properties;
 
-  public DefaultScopeFilter(IamProperties config, IamScopePolicyRepository policyRepo,
-      AccountUtils accountUtils) {
+  public DefaultScopeFilter(IamProperties config, AccountUtils accountUtils,
+      ScopePolicyEngine policyEngine, IamProperties properties) {
     this.config = config;
-    this.policyRepo = policyRepo;
     this.accountUtils = accountUtils;
+    this.policyEngine = policyEngine;
+    this.properties = properties;
   }
 
   @Override
-  public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn) {
-
+  public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn,
+      String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
+      if (properties.getScopeAuthz().getOpa().isEnabled()) {
+        return filterScopes(requestedScopes, (IamAccount) null, clientId);
+      }
       return requestedScopes;
     }
-    return filterScopes(requestedScopes, account.get());
+    return filterScopes(requestedScopes, account.get(), clientId);
   }
 
   @Override
-  public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account) {
-
+  public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account,
+      String clientId) {
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
     filteredScopes.retainAll(adminPolicies(requestedScopes, account));
-    if (config.isEnableScopeAuthz()) {
-      filteredScopes.retainAll(scopePolicies(filteredScopes, account));
+    if (config.getScopeAuthz().isEnabled()) {
+
+      Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
+      filteredScopes.retainAll(policyEngine.apply(filteredScopes, account, clientId));
+
+      if (config.getScopeAuthz().isEarlyFail() && !cleanedRequestedScopes.equals(filteredScopes)) {
+
+        throw new InvalidRequestException("Scopes not allowed by the scope policy");
+      }
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
     return filteredScopes;
   }
 
-  @Override
-  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {
-
-    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication()));
-    return authHolder;
-  }
-
-  @Override
-  public OAuth2Authentication filterScopes(OAuth2Authentication authn) {
-
-    OAuth2Request oldRequest = authn.getOAuth2Request();
-    OAuth2Request updatedRequest = new OAuth2Request(oldRequest.getRequestParameters(), oldRequest.getClientId(),
-        oldRequest.getAuthorities(), oldRequest.isApproved(), filterScopes(oldRequest.getScope(), authn),
-        oldRequest.getResourceIds(), oldRequest.getRedirectUri(), oldRequest.getResponseTypes(),
-        oldRequest.getExtensions());
-    return new OAuth2Authentication(updatedRequest, authn.getUserAuthentication());
-  }
-
   private Set<String> excludedScopes(Set<String> requestedScopes) {
-
     return EXCLUDED_SCOPES.stream()
       .distinct()
       .filter(requestedScopes::contains)
@@ -116,7 +94,6 @@ public class DefaultScopeFilter implements ScopeFilter {
   }
 
   private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {
-
     if (!accountUtils.isAdmin(account)) {
       return requestedScopes.stream()
         .filter(s -> !ADMIN_SCOPES.contains(s))
@@ -125,60 +102,10 @@ public class DefaultScopeFilter implements ScopeFilter {
     return requestedScopes;
   }
 
-  private Set<String> scopePolicies(Set<String> requestedScopes, IamAccount account) {
-
-    DecisionContext dc = new DecisionContext(matchersCache, requestedScopes);
-
-    // Apply user policies
-    for (IamScopePolicy p : account.getScopePolicies()) {
-      dc.applyPolicy(p, account);
-    }
-
-    Set<String> allowedScopes = dc.getAllowedScopes();
-
-    if (!dc.hasUnprocessedScopes()) {
-      return allowedScopes;
-    }
-
-    Set<IamScopePolicy> groupPolicies = resolveGroupScopePolicies(account);
-
-    // Apply group policies only on unprocessed scopes
-    dc.forgetProcessedEntries();
-
-    // Group policies are naturally composed with the deny overrides behavior
-    for (IamScopePolicy p : groupPolicies) {
-      dc.applyPolicy(p, account);
-    }
-
-    allowedScopes.addAll(dc.getAllowedScopes());
-
-    if (!dc.hasUnprocessedScopes()) {
-      return allowedScopes;
-    }
-
-    dc.forgetProcessedEntries();
-
-    List<IamScopePolicy> defaultPolicies = policyRepo.findDefaultPolicies();
-
-    for (IamScopePolicy p : defaultPolicies) {
-      dc.applyPolicy(p, account);
-    }
-
-    allowedScopes.addAll(dc.getAllowedScopes());
-
-    return allowedScopes;
-  }
-
-  private Set<IamScopePolicy> resolveGroupScopePolicies(IamAccount account) {
-
-    Set<IamScopePolicy> groupPolicies = Sets.newHashSet();
-
-    Set<IamAccountGroupMembership> groups = account.getGroups();
-    for (IamAccountGroupMembership g : groups) {
-      groupPolicies.addAll(g.getGroup().getScopePolicies());
-    }
-
-    return groupPolicies;
+  public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {
+    authHolder.setScope(filterScopes(authHolder.getScope(), authHolder.getAuthentication(),
+        authHolder.getClient().getClientId()));
+    return authHolder;
   }
 
 }

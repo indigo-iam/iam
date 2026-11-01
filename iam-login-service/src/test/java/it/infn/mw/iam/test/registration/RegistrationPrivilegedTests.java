@@ -25,7 +25,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,15 +37,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -51,21 +56,21 @@ import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.RegistrationRequestService;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
 class RegistrationPrivilegedTests {
+
+  static final String REGISTRATION_CLIENT_ID = "registration-client";
+  static final String REGISTRATION_CLIENT_SECRET = "secret";
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
 
   @Autowired
   private ObjectMapper objectMapper;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
   private MockMvc mvc;
@@ -79,15 +84,14 @@ class RegistrationPrivilegedTests {
   @Autowired
   private IamAccountRepository repo;
 
-  @BeforeEach
-  void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
   @AfterEach
   void teardown() {
     requestRepo.deleteAll();
-    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  private String registrationToken(String... scopes) throws Exception {
+    return OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, REGISTRATION_CLIENT_ID,
+        REGISTRATION_CLIENT_SECRET, scopes);
   }
 
   private Supplier<AssertionError> assertionError(String message) {
@@ -106,7 +110,7 @@ class RegistrationPrivilegedTests {
 
     // @formatter:off
     String response = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader()).contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -119,42 +123,45 @@ class RegistrationPrivilegedTests {
 
   private void confirmRegistrationRequest(String confirmationKey) throws Exception {
     mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
-        .contentType(APPLICATION_FORM_URLENCODED))
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", confirmationKey))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationSuccess"));
   }
 
-  protected RegistrationRequestDto approveRequest(String uuid) throws Exception {
+  protected RegistrationRequestDto approveRequest(String uuid, String accessToken)
+      throws Exception {
+
     String response = mvc
-      .perform(post("/registration/approve/{uuid}", uuid)
-        .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
+      .perform(
+          post("/registration/approve/{uuid}", uuid).header(AUTHORIZATION, "Bearer " + accessToken))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
+
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:read"})
   void testListNewRequests() throws Exception {
+
+    String accessToken = registrationToken("registration:read");
 
     createRegistrationRequest("test_list_new");
 
-    // @formatter:off
-    mvc.perform(get("/registration/list")
+    mvc
+      .perform(get("/registration/list").header(AUTHORIZATION, "Bearer " + accessToken)
         .param("status", NEW.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$", hasSize(1)));
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client",
-      scopes = {"registration:read", "registration:write"})
   void testListPendingRequest() throws Exception {
+
+    String accessToken = registrationToken("registration:read", "registration:write");
 
     createRegistrationRequest("test_1");
     createRegistrationRequest("test_2");
@@ -163,154 +170,148 @@ class RegistrationPrivilegedTests {
     confirmRegistrationRequest(confirmationKey);
 
     RegistrationRequestDto reg3 = createRegistrationRequest("test_3");
-    approveRequest(reg3.getUuid());
+    approveRequest(reg3.getUuid(), accessToken);
 
-    // @formatter:off
-    // 1 NEW, 1 CONFIRMED, 1 APPROVED -> expect 2 elements returned
-    mvc.perform(get("/registration/list/pending"))
+    mvc.perform(get("/registration/list/pending").header(AUTHORIZATION, "Bearer " + accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$", hasSize(2)));
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:read"})
   void testListAllRequests() throws Exception {
+
+    String accessToken = registrationToken("registration:read");
 
     createRegistrationRequest("test_list_1");
     createRegistrationRequest("test_list_2");
 
-    String token = generator.getLastToken();
-    assertNotNull(token);
+    String confirmationKey = generator.getLastToken();
+    assertNotNull(confirmationKey);
 
-    confirmRegistrationRequest(token);
+    confirmRegistrationRequest(confirmationKey);
 
-    // @formatter:off
-    mvc.perform(get("/registration/list"))
-     .andExpect(status().isOk())
-     .andExpect(jsonPath("$", hasSize(2)));
-    // @formatter:on
+    mvc.perform(get("/registration/list").header(AUTHORIZATION, "Bearer " + accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$", hasSize(2)));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
   void testApproveRequest() throws Exception {
+
+    String accessToken = registrationToken("registration:write");
 
     RegistrationRequestDto reg = createRegistrationRequest("test_approve");
     assertNotNull(reg);
 
-    String token = generator.getLastToken();
-    assertNotNull(token);
+    String confirmationKey = generator.getLastToken();
+    assertNotNull(confirmationKey);
 
-    confirmRegistrationRequest(token);
+    confirmRegistrationRequest(confirmationKey);
 
-    // approve it
-    // @formatter:off
-    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid()))
+    mvc
+      .perform(post("/registration/approve/{uuid}", reg.getUuid()).header(AUTHORIZATION,
+          "Bearer " + accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(APPROVED.name())))
       .andExpect(jsonPath("$.uuid", equalTo(reg.getUuid())));
-    // @formatter:on
 
     IamAccount account = repo.findByUsername("test_approve")
       .orElseThrow(assertionError("Expected account not found"));
-    assertThat(account.getEndTime(), nullValue());
 
+    assertThat(account.getEndTime(), nullValue());
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client",
-      scopes = {"scim:write", "scim:read", "registration:write"})
   void testRejectRequest() throws Exception {
+
+    String accessToken = registrationToken("scim:write", "scim:read", "registration:write");
 
     RegistrationRequestDto reg = createRegistrationRequest("test_reject");
     assertNotNull(reg);
 
-    String token = generator.getLastToken();
-    assertNotNull(token);
+    String confirmationKey = generator.getLastToken();
+    assertNotNull(confirmationKey);
 
-    confirmRegistrationRequest(token);
+    confirmRegistrationRequest(confirmationKey);
 
-    // @formatter:off
-    // reject it
-    mvc.perform(post("/registration/reject/{uuid}", reg.getUuid()))
+    mvc
+      .perform(post("/registration/reject/{uuid}", reg.getUuid()).header(AUTHORIZATION,
+          "Bearer " + accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(REJECTED.name())))
       .andExpect(jsonPath("$.uuid", equalTo(reg.getUuid())));
-    // @formatter:on
 
-    // Reject delete user: verify user not found
-    // @formatter:off
-    mvc.perform(get("/scim/Users/{uuid}", reg.getAccountId())
-        .contentType(SCIM_CONTENT_TYPE))
+    mvc.perform(
+        get("/scim/Users/{uuid}", reg.getAccountId()).header(AUTHORIZATION, "Bearer " + accessToken)
+          .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isNotFound());
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
   void testApproveRequestNotConfirmed() throws Exception {
 
-    // create new request
+    String accessToken = registrationToken("registration:write");
+
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_not_confirmed");
     assertNotNull(reg);
 
-    // @formatter:off
-    // approve it without confirm
-    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid(), APPROVED.name()))
+    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid()).header(AUTHORIZATION,
+        "Bearer " + accessToken))
       .andExpect(status().isOk());
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
   void testConfirmAfterApprovation() throws Exception {
+
+    String accessToken = registrationToken("registration:write");
 
     RegistrationRequestDto reg = createRegistrationRequest("test_confirm_after_approve");
     assertNotNull(reg);
+
     String confirmationKey = generator.getLastToken();
+    assertNotNull(confirmationKey);
 
-    approveRequest(reg.getUuid());
+    approveRequest(reg.getUuid(), accessToken);
 
-    // @formatter:off
-    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
-        .contentType(APPLICATION_FORM_URLENCODED))
+    mvc
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", confirmationKey))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationFailure"));
-    // @formatter:on
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
   void confirmAlreadyConfirmedRequest() throws Exception {
-    // create new request
+
     RegistrationRequestDto reg = createRegistrationRequest("test_multiple_confirm");
     assertNotNull(reg);
 
     String confirmationKey = generator.getLastToken();
-    approveRequest(reg.getUuid());
+    assertNotNull(confirmationKey);
+
+    confirmRegistrationRequest(confirmationKey);
 
     mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
-        .contentType(APPLICATION_FORM_URLENCODED))
+      .perform(post("/registration/verify").with(csrf().asHeader())
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", confirmationKey))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("verificationFailure"));
-
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:write"})
   void approveAlreadyManagedRequest() throws Exception {
 
-    // create new request
+    String accessToken = registrationToken("registration:write");
+
     RegistrationRequestDto reg = createRegistrationRequest("test_multiple_approve");
     assertNotNull(reg);
+
     String regUuid = reg.getUuid();
 
-    // first approval works fine
-    registrationService.approveRequest(regUuid);
+    approveRequest(regUuid, accessToken);
 
-    // second one raises exception, due to a not allowed transition
     assertThrows(IllegalArgumentException.class, () -> registrationService.approveRequest(regUuid));
   }
 }

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.oauth.userinfo;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -100,7 +99,7 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid"})
+      scopes = {"openid"})
   void testUserInfoEndpointRetursOk() throws Exception {
 
     mvc.perform(get("/userinfo"))
@@ -115,7 +114,7 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid", "profile"})
+      scopes = {"openid", "profile"})
   void testUserInfoEndpointRetursAllExpectedInfo() throws Exception {
 
     mvc.perform(get("/userinfo"))
@@ -131,9 +130,9 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid", "profile"}, externallyAuthenticated = true,
-    externalAuthenticationType = ExternalAuthenticationType.OIDC)
-  void testUserInfoEndpointRetursExtAuthnClaim() throws Exception {
+      scopes = {"openid", "profile"}, externallyAuthenticated = true,
+      externalAuthenticationType = ExternalAuthenticationType.OIDC)
+  void testUserInfoEndpointOmitsExternalAuthnClaim() throws Exception {
 
     MvcResult result = mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
@@ -141,8 +140,7 @@ class UserInfoEndpointTests {
       .andExpect(jsonPath("$.scope").exists())
       .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
       .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
-      .andExpect(jsonPath("$.external_authn").exists())
-      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")))
+      .andExpect(jsonPath("$.external_authn").doesNotExist())
       .andReturn();
 
     checkNoRootKeyDuplicates(result.getResponse().getContentAsString());
@@ -150,7 +148,7 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid", "profile"})
+      scopes = {"openid", "profile"})
   void userinfoEndpointDoesNotReturnsSshKeysWithoutScope() throws Exception {
 
     IamAccount test = accountRepo.findByUsername("test")
@@ -174,7 +172,7 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid", "profile", "ssh-keys"})
+      scopes = {"openid", "profile", "ssh-keys"})
   void userinfoEndpointDoesNotReturnsSshKeysWithAppropriateScope() throws Exception {
     IamAccount test = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected account not found"));
@@ -200,12 +198,12 @@ class UserInfoEndpointTests {
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-    scopes = {"openid", "profile"})
+      scopes = {"openid", "profile"})
   @Transactional
   void testUserInfoEndpointReturnsNoEmptyClaims() throws Exception {
 
     IamAccount test = accountRepo.findByUsername("test")
-        .orElseThrow(() -> new AssertionError("Expected account not found"));
+      .orElseThrow(() -> new AssertionError("Expected account not found"));
     test.getUserInfo().setPicture("  ");
     accountRepo.save(test);
 

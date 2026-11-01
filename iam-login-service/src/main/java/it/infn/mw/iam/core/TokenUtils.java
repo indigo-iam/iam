@@ -112,7 +112,7 @@ public class TokenUtils {
       .stream()
       .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
       .collect(Collectors.toSet());
-    Set<String> scopes = scopeFilter.filterScopes(token.scopes(), account);
+    Set<String> scopes = scopeFilter.filterScopes(token.scopes(), account, token.clientId() );
     Authentication userAuthentication = buildAuthenticateUser(account, authorities);
     return getUserAuthentication(token.clientId(), scopes, authorities, token.audiences(),
         userAuthentication);
@@ -249,6 +249,7 @@ public class TokenUtils {
       if (isExpired(accessTokenOnDb.get())) {
         throw invalidToken("The access token is expired");
       }
+      accessTokenOnDb.get().setJwt(parseAccessToken(accessTokenValue).jwt());
       return accessTokenOnDb;
     }
     if (iamProperties.getAccessToken().isStoreOnDatabase()) {

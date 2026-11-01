@@ -70,6 +70,11 @@ public class IamDeviceCodeTokenGranter extends AbstractTokenGranter {
       throw new AuthorizationPendingException("Authorization pending for code: " + deviceCode);
     }
 
+    if (dc.getAuthenticationHolder() == null) {
+      deviceCodeService.clearDeviceCode(dc);
+      throw new InvalidGrantException("Device code is no longer valid: " + deviceCode);
+    }
+
     tokenRequest.setScope(dc.getScope());
 
     OAuth2Authentication auth =

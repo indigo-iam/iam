@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -47,7 +48,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 class ClientEventTests {
-  
+
   @Autowired
   private IamAuditEventLogger logger;
 
@@ -57,60 +58,56 @@ class ClientEventTests {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testClientCreation() throws Exception {
-  
+
     String jsonInString = ClientJsonStringBuilder.builder().name("client").scopes("test").build();
-  
-    // @formatter:off
-    mvc.perform(post("/iam/api/clients")
-            .contentType(APPLICATION_JSON)
-            .content(jsonInString))
-          .andExpect(status().isCreated())
-          .andExpect(content().contentType(APPLICATION_JSON))
-          .andReturn()
-          .getResponse()
-          .getContentAsString();
-    // @formatter:on
-    
+
+    mvc
+      .perform(post("/iam/api/clients").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonInString))
+      .andExpect(status().isCreated())
+      .andExpect(content().contentType(APPLICATION_JSON))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
     IamAuditApplicationEvent event = logger.getLastEvent();
     assertThat(event, instanceOf(ClientCreatedEvent.class));
     assertNotNull(event.getMessage());
-    assertThat(event.getMessage(),
-        containsString("Client created"));
+    assertThat(event.getMessage(), containsString("Client created"));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testClientUpdate() throws Exception {
-  
+
     String newScope = ClientJsonStringBuilder.builder().scopes("test1").build();
-    
-    mvc.perform(put("/iam/api/clients/client")
-            .contentType(APPLICATION_JSON)
-            .content(newScope))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.scope", is("test1")));
-    // @formatter:on
-    
+
+    mvc
+      .perform(put("/iam/api/clients/client").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(newScope))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope", is("test1")));
+
     IamAuditApplicationEvent event = logger.getLastEvent();
     assertThat(event, instanceOf(ClientUpdatedEvent.class));
     assertNotNull(event.getMessage());
-    assertThat(event.getMessage(),
-        containsString("Client updated"));
+    assertThat(event.getMessage(), containsString("Client updated"));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testClientDelete() throws Exception {
-    
-    mvc.perform(delete("/iam/api/clients/client")
-            .contentType(APPLICATION_JSON))
-          .andExpect(status().isNoContent());
-    // @formatter:on
-    
+
+    mvc
+      .perform(
+          delete("/iam/api/clients/client").with(csrf().asHeader()).contentType(APPLICATION_JSON))
+      .andExpect(status().isNoContent());
+
     IamAuditApplicationEvent event = logger.getLastEvent();
     assertThat(event, instanceOf(ClientRemovedEvent.class));
     assertNotNull(event.getMessage());
-    assertThat(event.getMessage(),
-        containsString("Client removed"));
+    assertThat(event.getMessage(), containsString("Client removed"));
   }
 }

@@ -46,7 +46,8 @@
             isGroupMember: isGroupMember,
             username: username,
             isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled,
-            isMfaMandatory: isMfaMandatory
+            isMfaMandatory: isMfaMandatory,
+            defaultScopeValue: defaultScopeValue
         };
 
         return service;
@@ -178,6 +179,14 @@
                 type: "success",
                 text: message
             };
+        }
+
+        function defaultScopeValue(systemScopes) {
+            return systemScopes
+                .filter(scope => scope.defaultScope)
+                .filter(scope => !scope.restricted)
+                .map(scope => scope.value)
+                .join(' ');
         }
     }
 })();

@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -131,7 +132,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
 
     RegistrationRequestDto request = createTestRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isOk());
 
@@ -163,7 +165,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
 
     RegistrationRequestDto r = createSamlRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -196,7 +199,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
 
     RegistrationRequestDto r = createOidcRegistrationRequest();
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -230,7 +234,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setUsername("custom-username");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -241,7 +246,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setGivenname("custom-name");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -252,7 +258,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setFamilyname("custom-surname");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -263,7 +270,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setEmail("custom-email@example.com");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -281,7 +289,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setUsername("custom-username");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -292,7 +301,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setGivenname("custom-name");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -303,7 +313,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setFamilyname("custom-surname");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 
@@ -314,7 +325,8 @@ class DefaultFieldsValidationTests implements StructuredScopeTestSupportConstant
     r.setEmail("custom-email@example.com");
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isOk());
 

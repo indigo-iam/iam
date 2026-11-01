@@ -57,4 +57,6 @@ public interface AccessTokenBuilder {
   JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token, OAuth2Authentication authentication,
       Optional<IamAccount> account, Instant issueTime);
 
+  String serializeScopes(OAuth2AccessTokenEntity token, OAuth2Authentication authentication);
+
 }

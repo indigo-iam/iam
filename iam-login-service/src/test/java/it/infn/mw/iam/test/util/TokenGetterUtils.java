@@ -19,6 +19,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,6 +122,13 @@ public class TokenGetterUtils implements StructuredScopeTestSupportConstants {
 
     return parseTokens(
         getPasswordTokenResponse(clientId, clientSecret, username, password, scopes, clientId));
+  }
+
+  protected TokenEndpointResponse getPasswordToken(String username, String password, String scopes)
+      throws Exception {
+
+    return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        username, password, scopes, PASSWORD_CLIENT_ID));
   }
 
   protected TokenEndpointResponse getPasswordToken(String scopes) throws Exception {
@@ -364,16 +372,22 @@ public class TokenGetterUtils implements StructuredScopeTestSupportConstants {
   protected ListResponseDTO<AccessToken> getAccessTokenList(MultiValueMap<String, String> params)
       throws Exception {
 
-    /* @formatter:off */
-    return mapper.readValue(
-        mvc.perform(get(ACCESS_TOKENS_BASE_PATH)
-            .contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .params(params))
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString(), new TypeReference<ListResponseDTO<AccessToken>>() {});
-    /* @formatter:on */
+    return getAccessTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
+  }
+
+  protected ListResponseDTO<AccessToken> getAccessTokenList(MultiValueMap<String, String> params,
+      String username, String... roles) throws Exception {
+
+    String response = mvc
+      .perform(get(ACCESS_TOKENS_BASE_PATH).with(user(username).roles(roles))
+        .contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .params(params))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    return mapper.readValue(response, new TypeReference<ListResponseDTO<AccessToken>>() {});
   }
 
   protected ListResponseDTO<RefreshToken> getRefreshTokenList() throws Exception {
@@ -384,16 +398,22 @@ public class TokenGetterUtils implements StructuredScopeTestSupportConstants {
   protected ListResponseDTO<RefreshToken> getRefreshTokenList(MultiValueMap<String, String> params)
       throws Exception {
 
-    /* @formatter:off */
-    return mapper.readValue(
-        mvc.perform(get(REFRESH_TOKENS_BASE_PATH)
-            .contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .params(params))
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString(), new TypeReference<ListResponseDTO<RefreshToken>>() {});
-    /* @formatter:on */
+    return getRefreshTokenList(params, ADMIN_USERNAME, "ADMIN", "USER");
+  }
+
+  protected ListResponseDTO<RefreshToken> getRefreshTokenList(MultiValueMap<String, String> params,
+      String username, String... roles) throws Exception {
+
+    String response = mvc
+      .perform(get(REFRESH_TOKENS_BASE_PATH).with(user(username).roles(roles))
+        .contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .params(params))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    return mapper.readValue(response, new TypeReference<ListResponseDTO<RefreshToken>>() {});
   }
 
   protected ResultActions revoke(String username, String password, String tokenToRevoke)

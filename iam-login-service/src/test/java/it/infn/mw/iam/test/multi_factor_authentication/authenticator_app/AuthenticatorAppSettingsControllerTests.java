@@ -21,6 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,12 +66,16 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
 
   @Autowired
   MockMvc mvc;
+
   @Autowired
   MockNotificationDelivery notificationDelivery;
+
   @Autowired
   IamEmailNotificationRepository notificationRepo;
+
   @MockBean
   IamAccountRepository accountRepository;
+
   @MockBean
   IamTotpMfaRepository totpMfaRepository;
 
@@ -99,19 +104,22 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   @Test
   @WithAnonymousUser
   void testDisableAuthenticatorAppNoAuthenticationFails() throws Exception {
-    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isUnauthorized());
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID).with(csrf().asHeader()))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testDisableAuthenticatorAppWorksForAdmin() throws Exception {
-    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isOk());
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID).with(csrf().asHeader()))
+      .andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   void testConfirmationEmailSentOnMfaDisable() throws Exception {
-    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID)).andExpect(status().isOk());
+    mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID).with(csrf().asHeader()))
+      .andExpect(status().isOk());
 
     List<IamEmailNotification> notifications =
         notificationRepo.findByNotificationType(IamNotificationType.MFA_DISABLE);

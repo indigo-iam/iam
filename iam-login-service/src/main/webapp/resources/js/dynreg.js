@@ -301,7 +301,7 @@ var DynRegEditView = Backbone.View.extend({
 
 		// show or hide the signing algorithm method depending on what's
 		// selected
-		if (tokenEndpointAuthMethod == 'private_key_jwt' || tokenEndpointAuthMethod == 'client_secret_jwt') {
+		if (tokenEndpointAuthMethod == 'private_key_jwt') {
 			$('#tokenEndpointAuthSigningAlg', this.el).show();
 		} else {
 			$('#tokenEndpointAuthSigningAlg', this.el).hide();
@@ -366,7 +366,6 @@ var DynRegEditView = Backbone.View.extend({
 	grantMap: {
 		'authorization_code': 'authorization_code',
 		'password': 'password',
-		'implicit': 'implicit',
 		'client_credentials': 'client_credentials',
 		'redelegate': 'urn:ietf:params:oauth:grant_type:redelegate',
 		'refresh_token': 'refresh_token',
@@ -377,13 +376,7 @@ var DynRegEditView = Backbone.View.extend({
 	// maps from a form-friendly name to the real response type
 	// parameter name
 	responseMap: {
-		'code': 'code',
-		'token': 'token',
-		'idtoken': 'id_token',
-		'token-idtoken': 'token id_token',
-		'code-idtoken': 'code id_token',
-		'code-token': 'code token',
-		'code-token-idtoken': 'code token id_token'
+		'code': 'code'
 	},
 
 	saveClient: function(e) {

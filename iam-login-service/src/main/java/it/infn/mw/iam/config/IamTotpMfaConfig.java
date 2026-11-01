@@ -44,7 +44,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 /**
@@ -57,7 +57,7 @@ public class IamTotpMfaConfig {
   private String iamBaseUrl;
 
   @Autowired
-  private IamAccountRepository accountRepo;
+  private IamAccountService accountService;
 
   @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
@@ -101,9 +101,9 @@ public class IamTotpMfaConfig {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
-  @Bean(name = "MultiFactorVerificationFilter")
+  @Bean(name = "multiFactorVerificationFilter")
   MultiFactorVerificationFilter multiFactorVerificationFilter(
-      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
+      @Qualifier("multiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
       Clock clock) {
 
     return new MultiFactorVerificationFilter(authenticationManager, successHandler(clock),
@@ -116,14 +116,14 @@ public class IamTotpMfaConfig {
    * @param totpCheckProvider checks a provided TOTP
    * @return a new provider manager
    */
-  @Bean(name = "MultiFactorVerificationAuthenticationManager")
+  @Bean(name = "multiFactorVerificationAuthenticationManager")
   AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
     return new ProviderManager(Arrays.asList(totpCheckProvider));
   }
 
   public AuthenticationSuccessHandler successHandler(Clock clock) {
     return new MultiFactorVerificationSuccessHandler(clock, accountUtils, aupSignatureCheckService,
-        accountRepo, iamBaseUrl);
+        accountService, iamBaseUrl);
   }
 
   /**
@@ -138,7 +138,6 @@ public class IamTotpMfaConfig {
 
   @Bean
   MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
-    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
+    return new MultiFactorTotpCheckProvider(accountService, totpMfaService);
   }
-
 }

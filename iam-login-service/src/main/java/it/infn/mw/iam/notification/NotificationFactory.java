@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.notification;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,6 +56,8 @@ public interface NotificationFactory {
   IamEmailNotification createAupSignatureRequestMessage(IamAccount account);
 
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
+
+  IamEmailNotification createAccountLockedMessage(IamAccount account, Duration duration);
 
   IamEmailNotification createAccountRestoredMessage(IamAccount account);
 

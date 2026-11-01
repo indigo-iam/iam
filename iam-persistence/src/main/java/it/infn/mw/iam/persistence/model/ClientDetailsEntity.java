@@ -283,8 +283,7 @@ public class ClientDetailsEntity implements ClientDetails {
   public boolean isSecretRequired() {
     return tokenEndpointAuthMethod != null
         && (tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_BASIC)
-            || tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_POST)
-            || tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_JWT));
+            || tokenEndpointAuthMethod.equals(ClientAuthMethod.SECRET_POST));
   }
 
   @Override

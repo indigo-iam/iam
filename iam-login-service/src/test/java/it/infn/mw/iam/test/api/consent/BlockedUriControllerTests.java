@@ -22,6 +22,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -124,7 +125,8 @@ class BlockedUriControllerTests {
     when(blockedUriService.save(any(BlockedUri.class))).thenReturn(saved);
 
     mockMvc
-      .perform(post("/api/blacklist").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/api/blacklist").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -153,7 +155,8 @@ class BlockedUriControllerTests {
     when(blockedUriService.save(any(BlockedUri.class))).thenReturn(saved);
 
     mockMvc
-      .perform(post("/api/blacklist").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/api/blacklist").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -182,7 +185,7 @@ class BlockedUriControllerTests {
 
     doNothing().when(blockedUriService).remove(blockedUri);
 
-    mockMvc.perform(delete("/api/blacklist/{id}", 5L))
+    mockMvc.perform(delete("/api/blacklist/{id}", 5L).with(csrf().asHeader()))
       .andExpect(status().isNoContent())
       .andExpect(content().string(""));
 
@@ -195,7 +198,7 @@ class BlockedUriControllerTests {
 
     when(blockedUriService.findById(404L)).thenReturn(Optional.empty());
 
-    mockMvc.perform(delete("/api/blacklist/{id}", 404L))
+    mockMvc.perform(delete("/api/blacklist/{id}", 404L).with(csrf().asHeader()))
       .andExpect(status().isNoContent())
       .andExpect(content().string(""));
 

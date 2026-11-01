@@ -1,0 +1,28 @@
+{
+    "policies": [
+        {
+            "actor": {
+                "id": "1234",
+                "name": "Test account",
+                "type": "account"
+            },
+            "matchingPolicy": "EQ",
+            "rule": "PERMIT",
+            "scopes": [
+                "test1"
+            ]
+        },
+        {
+            "actor": {
+                "id": "5678",
+                "name": "Test Group",
+                "type": "group"
+            },
+            "matchingPolicy": "EQ",
+            "rule": "DENY",
+            "scopes": [
+                "test1", "test2"
+            ]
+        }
+    ]
+}

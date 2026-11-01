@@ -73,8 +73,33 @@ public class IamTokenEnhancerProperties {
     }
   }
 
+  public enum ExternalAuthnTokenInclusion {
+    NEVER(false, false),
+    ACCESS_TOKENS(true, false),
+    ID_TOKENS(false, true),
+    ALL(true, true);
+
+    private final boolean accessTokens;
+    private final boolean idTokens;
+
+    ExternalAuthnTokenInclusion(boolean accessTokens, boolean idTokens) {
+      this.accessTokens = accessTokens;
+      this.idTokens = idTokens;
+    }
+
+    public boolean includesAccessTokens() {
+      return accessTokens;
+    }
+
+    public boolean includesIdTokens() {
+      return idTokens;
+    }
+  }
+
   @Valid
   List<IncludeLabelProperties> includeLabels = Lists.newArrayList();
+
+  ExternalAuthnTokenInclusion includeExternalAuthn = ExternalAuthnTokenInclusion.ID_TOKENS;
 
   public List<IncludeLabelProperties> getIncludeLabels() {
     return includeLabels;
@@ -82,6 +107,14 @@ public class IamTokenEnhancerProperties {
 
   public void setIncludeLabels(List<IncludeLabelProperties> includeLabels) {
     this.includeLabels = includeLabels;
+  }
+
+  public ExternalAuthnTokenInclusion getIncludeExternalAuthn() {
+    return includeExternalAuthn;
+  }
+
+  public void setIncludeExternalAuthn(ExternalAuthnTokenInclusion includeExternalAuthn) {
+    this.includeExternalAuthn = includeExternalAuthn;
   }
 
 }

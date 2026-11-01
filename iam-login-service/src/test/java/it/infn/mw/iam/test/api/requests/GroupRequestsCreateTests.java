@@ -20,6 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +49,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -66,6 +69,9 @@ class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Autowired
   MockMvc mvc;
 
+  @Autowired
+  MutableClock clock;
+
   @BeforeEach
   void setup() {
     notificationService.clearAllNotifications();
@@ -74,10 +80,11 @@ class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   void createGroupRequestAsAdmin() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_ADMIN_UUID, TEST_001_GROUPNAME);
 
+    GroupRequestDto request = buildGroupRequest(TEST_ADMIN_UUID, TEST_001_GROUPNAME);
     mvc
-      .perform(post(CREATE_URL).contentType(MediaType.APPLICATION_JSON)
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_ADMIN)))
@@ -90,10 +97,11 @@ class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void createGroupRequestIgnoresTheGroupRequestUser() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_101_USERUUID, TEST_001_GROUPNAME);
 
+    GroupRequestDto request = buildGroupRequest(TEST_101_USERUUID, TEST_001_GROUPNAME);
     mvc
-      .perform(post(CREATE_URL).contentType(MediaType.APPLICATION_JSON)
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -105,10 +113,11 @@ class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void createGroupRequestAsUser() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
+    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     mvc
-      .perform(post(CREATE_URL).contentType(MediaType.APPLICATION_JSON)
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -129,110 +138,104 @@ class GroupRequestsCreateTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   void createGroupRequestAsAnonymous() throws Exception {
-    GroupRequestDto request = buildGroupRequest(null, TEST_001_GROUPNAME);
 
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
+    GroupRequestDto request = buildGroupRequest(null, TEST_001_GROUPNAME);
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
         .contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isUnauthorized());
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void createGroupRequestWitInvalidNotes() throws Exception {
+
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     request.setNotes(null);
 
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
 
     request.setNotes("");
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
 
     request.setNotes("   ");
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void createGroupRequestWithInvalidGroup() throws Exception {
+
     GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
     request.setGroupName("");
 
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
 
     request.setGroupName("fake_group");
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void createGroupRequestAlreadyExists() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("already exist")));
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"USER"}, username = TEST_USERNAME)
   void createGroupRequestUserAlreadyMember() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_USERUUID, "Analysis");
 
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    GroupRequestDto request = buildGroupRequest(TEST_USERUUID, "Analysis");
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("already member")));
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_100_USERNAME)
   void createGroupRequestAsUserWithBothRoles() throws Exception {
-    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
 
-    // @formatter:off
-    mvc.perform(post(CREATE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
+    GroupRequestDto request = buildGroupRequest(TEST_100_USERUUID, TEST_001_GROUPNAME);
+    mvc
+      .perform(post(CREATE_URL).with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.PENDING.name())));
-    // @formatter:on
   }
 }

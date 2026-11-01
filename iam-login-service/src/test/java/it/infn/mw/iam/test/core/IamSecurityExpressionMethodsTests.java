@@ -47,6 +47,7 @@ import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 import it.infn.mw.iam.test.config.ClockConfig;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -80,6 +81,9 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @Mock
   IamClientRepository clientRepo;
 
+  @Autowired
+  MutableClock clock;
+
   private IamSecurityExpressionMethods getMethods() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return new IamSecurityExpressionMethods(authentication, accountUtils, groupRequestUtils,
@@ -93,7 +97,8 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
     assertTrue(getMethods().isUser(TEST_ADMIN_UUID));
     assertFalse(getMethods().isUser(TEST_USERUUID));
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME, clock.now());
     assertTrue(getMethods().canAccessGroupRequest(request.getUuid()));
     assertTrue(getMethods().canManageGroupRequest(request.getUuid()));
     assertTrue(getMethods().userCanDeleteGroupRequest(request.getUuid()));
@@ -106,17 +111,20 @@ class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
     assertTrue(getMethods().isUser(TEST_USERUUID));
     assertFalse(getMethods().isUser(TEST_ADMIN_UUID));
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME, clock.now());
     assertTrue(getMethods().canAccessGroupRequest(request.getUuid()));
     assertFalse(getMethods().canManageGroupRequest(request.getUuid()));
     assertTrue(getMethods().userCanDeleteGroupRequest(request.getUuid()));
 
-    GroupRequestDto approved = saveApprovedGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto approved =
+        saveApprovedGroupRequest(TEST_USERNAME, TEST_001_GROUPNAME, clock.now());
     assertTrue(getMethods().canAccessGroupRequest(approved.getUuid()));
     assertFalse(getMethods().canManageGroupRequest(approved.getUuid()));
     assertFalse(getMethods().userCanDeleteGroupRequest(approved.getUuid()));
 
-    GroupRequestDto notMine = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto notMine =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
     assertFalse(getMethods().canAccessGroupRequest(notMine.getUuid()));
     assertFalse(getMethods().canManageGroupRequest(notMine.getUuid()));
     assertFalse(getMethods().userCanDeleteGroupRequest(notMine.getUuid()));

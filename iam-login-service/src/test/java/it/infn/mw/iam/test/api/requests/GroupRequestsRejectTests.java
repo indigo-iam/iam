@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,6 +49,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -66,6 +68,9 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Autowired
   MockMvc mvc;
 
+  @Autowired
+  MutableClock clock;
+
   @BeforeEach
   void setup() {
     emailRepository.deleteAll();
@@ -75,10 +80,11 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   void rejectGroupRequestAsAdmin() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     // @formatter:off
-    String response = mvc.perform(post(REJECT_URL, request.getUuid())
+    String response = mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
@@ -113,10 +119,11 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   void rejectGroupRequestAsUser() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isForbidden());
@@ -126,9 +133,10 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   void rejectGroupRequestAsAnonymous() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isUnauthorized());
@@ -138,12 +146,12 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void rejectNotExitingGroupRequest() throws Exception {
-    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     String fakeRequestUuid = UUID.randomUUID().toString();
 
     // @formatter:off
-    mvc.perform(post(REJECT_URL, fakeRequestUuid)
+    mvc.perform(post(REJECT_URL, fakeRequestUuid).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isBadRequest());
@@ -153,10 +161,11 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void rejectAlreadyRejectedRequest() throws Exception {
-    GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
     .andExpect(status().isBadRequest());
@@ -167,10 +176,11 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   void rejectAlreadyApprovedRequest() throws Exception {
 
-    GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
     .andExpect(status().isBadRequest());
@@ -180,14 +190,15 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void rejectRequestWithoutMotivation() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
 
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .contentType(MediaType.APPLICATION_JSON))
     .andExpect(status().isBadRequest());
         
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", "     ")
         .contentType(MediaType.APPLICATION_JSON))
     .andExpect(status().isBadRequest());
@@ -198,9 +209,10 @@ class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"})
   void rejectGroupRequestAsUserWithBothRoles() throws Exception {
 
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
     // @formatter:off
-    mvc.perform(post(REJECT_URL, request.getUuid())
+    mvc.perform(post(REJECT_URL, request.getUuid()).with(csrf().asHeader())
         .param("motivation", TEST_REJECT_MOTIVATION)
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())

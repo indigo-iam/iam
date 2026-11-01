@@ -16,25 +16,25 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
-@ExtendWith(SpringExtension.class)
-@IamRandomPortIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class IamTotpAuthenticationTests {
 
   @Autowired
@@ -90,12 +90,16 @@ public class IamTotpAuthenticationTests {
         .header("Location", is(loginUrl));
       // @formatter:on
 
+    String csrfToken = resp1.extract().cookie("XSRF-TOKEN");
+    assertNotNull(csrfToken, "Expected a CSRF cookie from GET /authorize");
+
     // @formatter:off
       RestAssured.given()
+        .cookies(resp1.extract().detailedCookies())
+        .header("X-XSRF-TOKEN", csrfToken)
         .formParam("username", "test-with-mfa")
         .formParam("password", "password")
         .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
       .when()
         .post(loginUrl)
@@ -128,12 +132,16 @@ public class IamTotpAuthenticationTests {
         .header("Location", is(loginUrl));
       // @formatter:on
 
+    String csrfToken = resp1.extract().cookie("XSRF-TOKEN");
+    assertNotNull(csrfToken, "Expected a CSRF cookie from GET /authorize");
+
     // @formatter:off
       RestAssured.given()
+        .cookies(resp1.extract().detailedCookies())
+        .header("X-XSRF-TOKEN", csrfToken)
         .formParam("username", "test-with-mfa")
         .formParam("password", "password")
         .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
       .when()
         .post(loginUrl)

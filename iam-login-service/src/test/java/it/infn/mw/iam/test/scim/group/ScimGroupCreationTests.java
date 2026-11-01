@@ -17,11 +17,13 @@ package it.infn.mw.iam.test.scim.group;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,25 +36,32 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
-import it.infn.mw.iam.test.config.ClockConfig;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 @Transactional
 class ScimGroupCreationTests {
-  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
+
+  static final String GROUP_URI = ScimUtils.getGroupsLocation();
+
+  static final String SCIM_CLIENT_ID = "scim-client-rw";
+  static final String SCIM_CLIENT_SECRET = "secret";
 
   @Autowired
   private MockMvc mvc;
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  private String scimAccessToken;
+
+  @BeforeEach
+  void setup() throws Exception {
+    scimAccessToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, "scim:read", "scim:write");
+  }
 
   @Test
   void testCreateGroupWithAnExistingName() throws Exception {
@@ -61,7 +70,8 @@ class ScimGroupCreationTests {
     ScimGroup group = ScimGroup.builder(name).build();
 
     String result = mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .perform(post(GROUP_URI).header(AUTHORIZATION, "Bearer " + scimAccessToken)
+        .contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(group)))
       .andExpect(status().isCreated())
       .andReturn()
@@ -70,13 +80,16 @@ class ScimGroupCreationTests {
 
     ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
 
-    mvc.perform(get(createdGroup.getMeta().getLocation()))
+    mvc
+      .perform(get(createdGroup.getMeta().getLocation()).header(AUTHORIZATION,
+          "Bearer " + scimAccessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.displayName", equalTo(name)));
 
-    // create a group with the same name
+    // Create a group with the same name.
     mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+      .perform(post(GROUP_URI).header(AUTHORIZATION, "Bearer " + scimAccessToken)
+        .contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(group)))
       .andExpect(status().isConflict());
   }

@@ -33,10 +33,10 @@
                 Client secret over HTTP POST authentication
             </label>
         </div>
-        <div class="radio">
-            <label>
+        <div class="radio" ng-if="$ctrl.client.token_endpoint_auth_method === 'client_secret_jwt'">
+            <label title="DEPRECATED">
                 <input type="radio" name="token-endpoint-auth-radios" id="client_secret_jwt" value="client_secret_jwt"
-                    ng-model="$ctrl.client.token_endpoint_auth_method">
+                    ng-model="$ctrl.client.token_endpoint_auth_method" disabled>
                 Client secret with symmetrically
                 signed JWT assertion
             </label>

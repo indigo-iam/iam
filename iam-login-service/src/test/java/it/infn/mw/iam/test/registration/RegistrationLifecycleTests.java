@@ -19,6 +19,7 @@ import static java.util.Date.from;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,7 +94,7 @@ class RegistrationLifecycleTests extends EndpointsTestUtils {
 
     // @formatter:off
     String response = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader()).contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -121,7 +122,7 @@ class RegistrationLifecycleTests extends EndpointsTestUtils {
   private IamAccount approveRegistrationAndGetAccount(String username) throws Exception {
     RegistrationRequestDto reg = createRegistrationRequest(username);
 
-    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid())
+    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid()).with(csrf().asHeader())
       .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());
 
     return repo.findByUsername(username).orElseThrow(assertionError("Expected account not found"));

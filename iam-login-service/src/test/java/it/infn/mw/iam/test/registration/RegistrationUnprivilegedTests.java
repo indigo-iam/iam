@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -71,8 +72,7 @@ import it.infn.mw.iam.test.api.aup.AupTestSupport;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, ClockConfig.class},
+@SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
@@ -188,7 +188,7 @@ class RegistrationUnprivilegedTests extends AupTestSupport {
     confirmRegistrationRequest(token);
 
     mvc.perform(post("/registration/{uuid}/{decision}", reg.getUuid(), APPROVED.name())
-      .with(authentication(anonymousAuthenticationToken()))).andExpect(status().isUnauthorized());
+      .with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -277,7 +277,8 @@ class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setNotes("Some short notes...");
 
     String response = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isOk())
       .andReturn()

@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
+import static com.nimbusds.jose.Algorithm.NONE;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildSigner;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildVerifier;
 import static java.lang.String.format;
@@ -77,6 +78,9 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     this.defaultAlgorithm = JWSAlgorithm.parse(properties.getDefaultJwsAlgorithm());
     this.defaultSignerKeyId = properties.getDefaultKeyId();
     initializeSignersAndVerifiers();
+    if (defaultAlgorithm != null && NONE.equals(defaultAlgorithm)) {
+      throw new IllegalArgumentException("The default JWS signing algorithm cannot be none");
+    }
   }
 
   public IamJWTSigningService(JwkKeyStore keystore) {

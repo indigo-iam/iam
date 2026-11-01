@@ -17,11 +17,13 @@ package it.infn.mw.iam.test.openid_federation;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -43,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -73,9 +76,12 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SuppressWarnings("deprecation")
 @ActiveProfiles({"h2-test", "openid-federation"})
 @IamMockMvcIntegrationTest
 class AutomaticClientRegistrationTests {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -178,7 +184,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     var resultLogin = mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -190,7 +197,8 @@ class AutomaticClientRegistrationTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize")
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -198,11 +206,24 @@ class AutomaticClientRegistrationTests {
         .param("request", requestJwt))
       .andExpect(status().isOk());
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    assertNotNull(authorizationRequest);
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertNotNull(consentTransactionId);
+    assertFalse(consentTransactionId.isBlank());
+
     var approveResult = mvc
-      .perform(post("/authorize").session(session)
+      .perform(post("/authorize").with(csrf().asHeader())
+        .session(session)
         .param("scope.openid", "true")
         .param("remember", "none")
         .param("user_oauth_approval", "true")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .param("authorize", "Authorize"))
       .andExpect(status().isSeeOther())
       .andExpect(header().exists("Location"))
@@ -414,8 +435,8 @@ class AutomaticClientRegistrationTests {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
-    fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null, null, clock);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null,
+        null, clock);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -577,7 +598,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -585,7 +607,8 @@ class AutomaticClientRegistrationTests {
 
     // Second request should log user out again because prompt=login ALWAYS forces re-auth
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize")
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -609,7 +632,8 @@ class AutomaticClientRegistrationTests {
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
     var result = mvc
-      .perform(get("/authorize").param("client_id", rpEntityId)
+      .perform(get("/authorize")
+        .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
         .param("redirect_uri", redirectUri)
@@ -619,7 +643,8 @@ class AutomaticClientRegistrationTests {
     MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
     mvc
-      .perform(post("/login").session(session)
+      .perform(post("/login").with(csrf().asHeader())
+        .session(session)
         .param("username", "test")
         .param("password", "password")
         .param("submit", "Login"))
@@ -630,7 +655,8 @@ class AutomaticClientRegistrationTests {
         new Date(System.currentTimeMillis() - 10000)); // > 5 seconds ago
 
     mvc
-      .perform(get("/authorize").session(session)
+      .perform(get("/authorize")
+        .session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")

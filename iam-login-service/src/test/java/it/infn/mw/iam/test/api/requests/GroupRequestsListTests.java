@@ -42,6 +42,7 @@ import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -59,16 +60,19 @@ class GroupRequestsListTests extends GroupRequestsTestUtils {
   @Autowired
   MockMvc mvc;
 
+  @Autowired
+  MutableClock clock;
+
   @BeforeEach
   void setup() {
-    savePendingGroupRequest(USER_100, GROUP_01);
-    savePendingGroupRequest(USER_101, GROUP_01);
+    savePendingGroupRequest(USER_100, GROUP_01, clock.now());
+    savePendingGroupRequest(USER_101, GROUP_01, clock.now());
 
-    saveApprovedGroupRequest(USER_100, GROUP_02);
-    saveApprovedGroupRequest(USER_101, GROUP_02);
+    saveApprovedGroupRequest(USER_100, GROUP_02, clock.now());
+    saveApprovedGroupRequest(USER_101, GROUP_02, clock.now());
 
-    saveRejectedGroupRequest(USER_100, GROUP_03);
-    saveRejectedGroupRequest(USER_101, GROUP_03);
+    saveRejectedGroupRequest(USER_100, GROUP_03, clock.now());
+    saveRejectedGroupRequest(USER_101, GROUP_03, clock.now());
   }
 
   @Test

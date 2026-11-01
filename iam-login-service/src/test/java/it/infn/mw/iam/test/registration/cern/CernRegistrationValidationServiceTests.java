@@ -23,7 +23,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +39,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -44,8 +47,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
@@ -63,15 +66,14 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@IamMockMvcIntegrationTest
 @SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    CernRegistrationValidationServiceTests.TestConfig.class},
-  webEnvironment = WebEnvironment.MOCK)
+    classes = {IamLoginService.class, CoreControllerTestSupport.class,
+        CernRegistrationValidationServiceTests.TestConfig.class},
+    webEnvironment = WebEnvironment.MOCK, properties = {"cern.task.enabled=false"})
+@AutoConfigureMockMvc
+@Transactional
 @ActiveProfiles({"h2-test", "cern"})
-@TestPropertySource(properties = {"cern.task.enabled=false"})
 class CernRegistrationValidationServiceTests {
 
   @TestConfiguration
@@ -82,9 +84,6 @@ class CernRegistrationValidationServiceTests {
       return mock(CernHrDBApiService.class);
     }
   }
-
-  @Autowired
-  private ObjectMapper objectMapper;
 
   @Autowired
   private CernHrDBApiService hrDbApi;
@@ -173,8 +172,9 @@ class CernRegistrationValidationServiceTests {
   void testAuthenticationIsRequired() throws Exception {
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("error").value("User is not authenticated"));
 
@@ -185,8 +185,9 @@ class CernRegistrationValidationServiceTests {
   void testCernSSOAuthIsRequired() throws Exception {
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("error", containsString("not authenticated by CERN SSO issuer")));
 
@@ -197,8 +198,9 @@ class CernRegistrationValidationServiceTests {
   void testPersonIdIsRequired() throws Exception {
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("error", containsString("person id claim")));
 
@@ -206,14 +208,14 @@ class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
-    claims = {"cern_person_id", "988211"})
+      claims = {"cern_person_id", "988211"})
   void testHrDbApiErrorIsHandled() throws Exception {
-    when(hrDbApi.getHrDbPersonRecord(anyString()))
-      .thenThrow(new CernHrDbApiError("error"));
+    when(hrDbApi.getHrDbPersonRecord(anyString())).thenThrow(new CernHrDbApiError("error"));
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("error", containsString("HR Db API error")));
 
@@ -221,26 +223,28 @@ class CernRegistrationValidationServiceTests {
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern", givenName = "Test",
-    familyName = "User", claims = {"cern_person_id", "988211"})
+      familyName = "User", claims = {"cern_person_id", "988211"})
   void testInvalidRequestIsReported() throws Exception {
     when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockInvalidVoPerson());
 
     mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("error", containsString("No valid experiment participation found")));
   }
 
   @Test
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
-    claims = {"cern_person_id", "988211"})
+      claims = {"cern_person_id", "988211"})
   void testLabelIsAddedToRegistrationRequest() throws Exception {
     when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockVoPerson());
 
     String response = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createDto("test_reg"))))
+      .perform(post("/registration/create").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -257,7 +261,7 @@ class CernRegistrationValidationServiceTests {
     assertThat(request.getFamilyname(), is(mockVoPerson().get().getName()));
     assertThat(request.getEmail(), is(mockVoPerson().get().getEmail()));
 
-    mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
+    mvc.perform(post("/registration/approve/{uuid}", request.getUuid()).with(csrf().asHeader())
       .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());
 
     IamAccount account =
@@ -265,10 +269,21 @@ class CernRegistrationValidationServiceTests {
 
     assertThat(account.getLabels(), hasSize(1));
 
-    Optional<IamLabel> personId =
-        account.getLabelByPrefixAndName("hr.cern", "cern_person_id");
+    Optional<IamLabel> personId = account.getLabelByPrefixAndName("hr.cern", "cern_person_id");
     assertThat(personId.isPresent(), is(true));
     assertThat(personId.get().getValue(), is("988211"));
   }
 
+  @Test
+  @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
+      claims = {"cern_person_id", "988211"})
+  void registrationWithoutCsrfIsForbidden() throws Exception {
+
+    mvc
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(createDto("test_reg"))))
+      .andExpect(status().isForbidden());
+
+    verifyNoInteractions(hrDbApi);
+  }
 }

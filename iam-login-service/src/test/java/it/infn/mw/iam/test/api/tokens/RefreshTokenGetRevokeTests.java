@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.api.tokens;
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,13 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.test.config.ClockConfig;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+    classes = {IamLoginService.class},
     webEnvironment = WebEnvironment.MOCK, properties = {"iam.access_token.store_on_database=true"})
 @AutoConfigureMockMvc
 @Transactional
@@ -48,46 +47,49 @@ class RefreshTokenGetRevokeTests extends TokenGetterUtils {
   @Autowired
   IamOAuthRefreshTokenRepository refreshTokenRepository;
 
-  @Autowired
-  SecurityContextUtils context;
-
   @BeforeEach
   void setup() {
-    context.cleanupSecurityContext();
     refreshTokenRepository.deleteAll();
+  }
+
+  private String createRefreshTokenPath() throws Exception {
+
+    assertThat(refreshTokenRepository.count(), is(0L));
+
+    getPasswordToken("openid profile offline_access");
+
+    assertThat(refreshTokenRepository.count(), is(1L));
+
+    Long id = refreshTokenRepository.findAll().get(0).getId();
+
+    return String.format("%s/%d", REFRESH_TOKENS_BASE_PATH, id);
   }
 
   @Test
   void revokeRefreshTokenForbiddenForUser() throws Exception {
 
-    assertThat(refreshTokenRepository.count(), is(0L));
-    getPasswordToken("openid profile offline_access");
+    String path = createRefreshTokenPath();
+
+    mvc
+      .perform(delete(path).with(user(TEST_USERNAME).roles("USER"))
+        .with(csrf().asHeader())
+        .contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
+
     assertThat(refreshTokenRepository.count(), is(1L));
-    Long id = refreshTokenRepository.findAll().get(0).getId();
-    String path = String.format("%s/%d", REFRESH_TOKENS_BASE_PATH, id);
-
-    context.useLocalTestUser();
-    mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
-      .andExpect(status().isForbidden());
-
-    context.useBearerTestToken(new String[] {"openid", "profile"});
-    mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
-      .andExpect(status().isForbidden());
   }
 
   @Test
   void revokeRefreshTokenAllowedForAdmin() throws Exception {
 
-    assertThat(refreshTokenRepository.count(), is(0L));
-    getPasswordToken("openid profile offline_access");
-    assertThat(refreshTokenRepository.count(), is(1L));
-    Long id = refreshTokenRepository.findAll().get(0).getId();
-    String path = String.format("%s/%d", REFRESH_TOKENS_BASE_PATH, id);
+    String path = createRefreshTokenPath();
 
-    context.useBearerAdminToken();
-
-    mvc.perform(delete(path).contentType(APPLICATION_JSON_CONTENT_TYPE))
+    mvc
+      .perform(delete(path).with(user(ADMIN_USERNAME).roles("ADMIN", "USER"))
+        .with(csrf().asHeader())
+        .contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isNoContent());
+
     assertThat(refreshTokenRepository.count(), is(0L));
   }
 
@@ -95,9 +97,27 @@ class RefreshTokenGetRevokeTests extends TokenGetterUtils {
   void revokeFakeRefreshTokenGetsNoContent() throws Exception {
 
     assertThat(refreshTokenRepository.count(), is(0L));
+
     String path = String.format("%s/%d", REFRESH_TOKENS_BASE_PATH, FAKE_TOKEN_ID);
-    context.useBearerAdminToken();
-    mvc.perform(delete(path)).andExpect(status().isNoContent());
+
+    mvc
+      .perform(
+          delete(path).with(user(ADMIN_USERNAME).roles("ADMIN", "USER")).with(csrf().asHeader()))
+      .andExpect(status().isNoContent());
+
+    assertThat(refreshTokenRepository.count(), is(0L));
   }
 
+  @Test
+  void revokeRefreshTokenWithoutCsrfIsForbiddenForAdmin() throws Exception {
+
+    String path = createRefreshTokenPath();
+
+    mvc
+      .perform(delete(path).with(user(ADMIN_USERNAME).roles("ADMIN", "USER"))
+        .contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
+
+    assertThat(refreshTokenRepository.count(), is(1L));
+  }
 }

@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +52,7 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.clock.MutableClock;
 
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
@@ -69,6 +71,9 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Autowired
   MockMvc mvc;
 
+  @Autowired
+  MutableClock clock;
+
   @BeforeEach
   void setup() {
     emailRepository.deleteAll();
@@ -77,9 +82,9 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void approveGroupRequestAsAdmin() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    String response = mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -90,7 +95,6 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
 
     GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
     assertThat(result.getLastUpdateTime(), greaterThanOrEqualTo(result.getCreationTime()));
@@ -109,23 +113,21 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"})
   void approveGroupRequestAsUser() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
-      .andExpect(status().isForbidden());
-    // @formatter:on
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc.perform(post(APPROVE_URL, request.getUuid())).andExpect(status().isForbidden());
   }
 
   @Test
   @WithAnonymousUser
   void approveGroupRequestAsAnonymous() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", containsString("unauthorized")))
-      .andExpect(jsonPath("$.error_description", containsString("Full authentication is required")));
-    // @formatter:on
+      .andExpect(
+          jsonPath("$.error_description", containsString("Full authentication is required")));
   }
 
   @Test
@@ -133,41 +135,37 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   void approveNotExitingGroupRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, fakeRequestUuid))
+    mvc.perform(post(APPROVE_URL, fakeRequestUuid).with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("does not exist")));
-    // @formatter:on
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void approveAlreadyApprovedRequest() throws Exception {
-    GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
-    .andExpect(status().isBadRequest())
-    .andExpect(jsonPath("$.error", containsString("Invalid group request transition")));
-    // @formatter:on
+    GroupRequestDto request =
+        saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", containsString("Invalid group request transition")));
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
   void approveRejectedRequest() throws Exception {
-    GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
-    .andExpect(status().isBadRequest())
-    .andExpect(jsonPath("$.error", containsString("Invalid group request transition")));
-    // @formatter:on
+    GroupRequestDto request =
+        saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", containsString("Invalid group request transition")));
   }
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   void approveGroupRequestAsUserWithBothRoles() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(post(APPROVE_URL, request.getUuid()))
+    GroupRequestDto request =
+        savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, clock.now());
+    mvc.perform(post(APPROVE_URL, request.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
@@ -175,7 +173,6 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
       .andExpect(jsonPath("$.lastUpdateTime").exists())
       .andExpect(jsonPath("$.lastUpdateTime").isNotEmpty());
-    // @formatter:on
   }
 
   @Transactional
@@ -210,7 +207,7 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     groupRequestRepository.save(childRequest);
 
     // Approve child request - User will be automatically added to the parent group
-    String response = mvc.perform(post(APPROVE_URL, childRequest.getUuid()))
+    String response = mvc.perform(post(APPROVE_URL, childRequest.getUuid()).with(csrf().asHeader()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
@@ -269,7 +266,9 @@ class GroupRequestsApproveTests extends GroupRequestsTestUtils {
 
     // Reject parent request -> should cascade to child
     String motivation = "Parent group request rejected";
-    mvc.perform(post(REJECT_URL, parentRequest.getUuid()).param("motivation", motivation))
+    mvc
+      .perform(post(REJECT_URL, parentRequest.getUuid()).with(csrf().asHeader())
+        .param("motivation", motivation))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())));
 

@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -102,7 +103,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
         iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()));
     Mockito.when(totpMfaService.addTotpMfaSecret(mfaAccount)).thenReturn(totpMfa);
 
-    mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isOk());
+    mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader())).andExpect(status().isOk());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).addTotpMfaSecret(mfaAccount);
@@ -120,7 +121,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
       .thenThrow(new MfaSecretAlreadyBoundException(
           "A multi-factor secret is already assigned to this account"));
 
-    mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isConflict());
+    mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader())).andExpect(status().isConflict());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).addTotpMfaSecret(mfaAccount);
@@ -139,7 +140,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(iamTotpMfaProperties.getPasswordToEncryptAndDecrypt()).thenReturn("");
 
     NestedServletException thrownException = assertThrows(NestedServletException.class, () -> {
-      mvc.perform(put(ADD_SECRET_URL));
+      mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader()));
     });
 
     assertTrue(
@@ -149,13 +150,13 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   @Test
   @WithAnonymousUser
   void testAddSecretNoAuthenticationIsUnauthorized() throws Exception {
-    mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isUnauthorized());
+    mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockPreAuthenticatedUser
   void testAddSecretPreAuthenticationIsUnauthorized() throws Exception {
-    mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isUnauthorized());
+    mvc.perform(put(ADD_SECRET_URL).with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -171,7 +172,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp)).thenReturn(true);
     Mockito.when(totpMfaService.enableTotpMfa(mfaAccount)).thenReturn(totpMfa);
 
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isOk());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isOk());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
@@ -188,7 +190,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(totpMfaService.enableTotpMfa(mfaAccount))
       .thenThrow(new TotpMfaAlreadyEnabledException("TOTP MFA is already enabled on this account"));
 
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isConflict());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isConflict());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
@@ -203,7 +206,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
 
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp)).thenReturn(false);
 
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
 
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
@@ -218,7 +222,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp))
       .thenThrow(new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE));
 
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
 
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
@@ -229,7 +234,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppInvalidCharactersInCode() throws Exception {
 
     String totp = "abcdef";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
   }
 
@@ -238,7 +244,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppCodeTooShort() throws Exception {
 
     String totp = "12345";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
   }
 
@@ -247,7 +254,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppCodeTooLong() throws Exception {
 
     String totp = "1234567";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
   }
 
@@ -256,7 +264,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppNullCode() throws Exception {
 
     String totp = null;
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
   }
 
@@ -265,7 +274,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppEmptyCode() throws Exception {
 
     String totp = "";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).enableTotpMfa(mfaAccount);
   }
 
@@ -274,7 +284,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
 
     String totp = "123456";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -282,7 +293,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testEnableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
 
     String totp = "654321";
-    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(ENABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -294,7 +306,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp)).thenReturn(true);
     Mockito.when(totpMfaService.disableTotpMfa(mfaAccount)).thenReturn(totpMfa);
 
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isOk());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isOk());
 
     Mockito.verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
@@ -309,7 +322,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
 
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp)).thenReturn(false);
 
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
 
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
@@ -324,7 +338,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
     Mockito.when(totpMfaService.verifyTotp(mfaAccount, totp))
       .thenThrow(new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE));
 
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
 
     Mockito.verify(totpMfaService, times(1)).verifyTotp(mfaAccount, totp);
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
@@ -335,7 +350,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppInvalidCharactersInCode() throws Exception {
 
     String totp = "123456";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
@@ -344,7 +360,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppCodeTooShort() throws Exception {
 
     String totp = "12345";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
@@ -353,7 +370,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppCodeTooLong() throws Exception {
 
     String totp = "1234567";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
@@ -362,7 +380,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppNullCode() throws Exception {
 
     String totp = null;
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
@@ -371,7 +390,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppEmptyCode() throws Exception {
 
     String totp = "";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().is4xxClientError());
     Mockito.verify(totpMfaService, never()).disableTotpMfa(mfaAccount);
   }
 
@@ -380,7 +400,8 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
 
     String totp = "123456";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -388,6 +409,7 @@ class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupport {
   void testDisableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
 
     String totp = "654321";
-    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(DISABLE_URL).with(csrf().asHeader()).param("code", totp))
+      .andExpect(status().isUnauthorized());
   }
 }

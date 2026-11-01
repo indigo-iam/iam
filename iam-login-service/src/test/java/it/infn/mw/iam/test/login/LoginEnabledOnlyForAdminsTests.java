@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.login;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -45,7 +46,8 @@ class LoginEnabledOnlyForAdminsTests implements LoginTestSupport {
   @Test
   void loginForAdminUserWorks() throws Exception {
     mvc
-      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", ADMIN_USERNAME)
         .param("password", ADMIN_PASSWORD)
         .param("submit", "Login"))
       .andExpect(status().isFound())
@@ -55,7 +57,8 @@ class LoginEnabledOnlyForAdminsTests implements LoginTestSupport {
   @Test
   void loginForUnprivilegedUserFails() throws Exception {
     MockHttpSession session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", USER_USERNAME)
+      .perform(post(LOGIN_URL).with(csrf())
+        .param("username", USER_USERNAME)
         .param("password", USER_PASSWORD)
         .param("submit", "Login"))
       .andExpect(unauthenticated())

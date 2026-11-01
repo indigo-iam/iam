@@ -54,11 +54,14 @@
                     Status
                 </td>
                 <td class="text-right">
-                    <span class="label label-success" ng-show="$ctrl.user.active">
+                    <span class="label label-success" ng-show="$ctrl.user.active && !$ctrl.user.lockoutInfo.suspended">
                         <i class="fa fa-check"></i> Active
                     </span>
-                    <span class="label label-warning" ng-show="!$ctrl.user.active">
-                        <i class="fa fa-check"></i> Disabled
+                    <span class="label label-warning" ng-show="$ctrl.user.active && $ctrl.user.lockoutInfo.suspended">
+                        <i class="fa fa-pause"></i> Suspended
+                    </span>
+                    <span class="label label-danger" ng-show="!$ctrl.user.active">
+                        <i class="fa fa-ban"></i> Disabled
                     </span>
                 </td>
             </tr>
@@ -85,6 +88,16 @@
                 </td>
                 <td class="text-right">
                     {{$ctrl.user.meta.lastModified | relativeDate }}
+                </td>
+            </tr>
+            <tr ng-if="$ctrl.user.lockoutInfo.suspended">
+                <td class="text-bold text-left">
+                    Suspended Until
+                </td>
+                <td class="text-right">
+                    <span class="label label-warning">
+                        <i class="fa fa-clock-o"></i> {{$ctrl.user.lockoutInfo.suspendedUntil | date:'yyyy-MM-dd HH:mm'}}
+                    </span>
                 </td>
             </tr>
             <tr>

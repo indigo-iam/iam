@@ -16,13 +16,13 @@
 package it.infn.mw.iam.test.startup;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -33,7 +33,6 @@ import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
-import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class},
     properties = {"iam.dashboard.enabled=true", "iam.dashboard.client-id=dashboard-client",
@@ -43,19 +42,13 @@ import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 @AutoConfigureMockMvc
 class DashboardIntegrationTests extends TokenGetterUtils {
 
-  @Autowired
-  SecurityContextUtils context;
-
-  @BeforeEach
-  void setup() {
-    context.cleanupSecurityContext();
-  }
-
   @Test
   void testScimMeEndpointReturnsAuthoritiesIfDashboardIsEnabled() throws Exception {
 
-    context.useLocalTestUser();
-    mvc.perform(get("/scim/Me").contentType(ScimConstants.SCIM_CONTENT_TYPE))
+    mvc
+      .perform(get("/scim/Me").with(user("test").roles("USER"))
+        .with(csrf().asHeader())
+        .contentType(ScimConstants.SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$." + INDIGO_USER_SCHEMA.AUTHORITIES).exists());
   }
@@ -63,7 +56,6 @@ class DashboardIntegrationTests extends TokenGetterUtils {
   @Test
   void testTokenContainsScopesIfDashboardIsEnabled() throws Exception {
 
-    context.useLocalTestUser();
     String accessToken = getPasswordToken("profile email").accessToken();
     SignedJWT jwt = SignedJWT.parse(accessToken);
     assertNotNull(jwt.getJWTClaimsSet().getStringClaim("scope"));

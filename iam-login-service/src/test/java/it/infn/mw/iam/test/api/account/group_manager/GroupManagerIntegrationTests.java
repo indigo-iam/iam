@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.account.group_manager;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -189,7 +190,7 @@ class GroupManagerIntegrationTests {
 
     mvc
       .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
-          TEST_001_GROUP_ID))
+          TEST_001_GROUP_ID).with(csrf().asHeader()))
       .andExpect(MockMvcResultMatchers.status().isUnauthorized());
   }
 
@@ -213,7 +214,7 @@ class GroupManagerIntegrationTests {
 
     mvc
       .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
-          TEST_001_GROUP_ID))
+          TEST_001_GROUP_ID).with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     List<IamGroup> allGroups = Lists.newArrayList(groupRepo.findAll());
@@ -236,7 +237,7 @@ class GroupManagerIntegrationTests {
 
     mvc
       .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
-          TEST_001_GROUP_ID))
+          TEST_001_GROUP_ID).with(csrf().asHeader()))
       .andExpect(status().isCreated());
   }
 
@@ -260,14 +261,15 @@ class GroupManagerIntegrationTests {
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
     mvc
-      .perform(
-          post("/iam/account/{uuid}/managed-groups/{groupUuid}", randomUuid, TEST_001_GROUP_ID))
+      .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", randomUuid, TEST_001_GROUP_ID)
+        .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(format("Account not found for id '%s'", randomUuid))));
 
     mvc
       .perform(
-          post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(), randomUuid))
+          post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(), randomUuid)
+            .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo(format("Group '%s' not found", randomUuid))));
 
@@ -289,7 +291,7 @@ class GroupManagerIntegrationTests {
 
     mvc
       .perform(delete("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
-          TEST_001_GROUP_ID))
+          TEST_001_GROUP_ID).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     List<IamGroup> allGroups = Lists.newArrayList(groupRepo.findAll());
@@ -319,7 +321,7 @@ class GroupManagerIntegrationTests {
 
     mvc
       .perform(delete("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
-          TEST_001_GROUP_ID))
+          TEST_001_GROUP_ID).with(csrf().asHeader()))
       .andExpect(status().isNoContent());
   }
 

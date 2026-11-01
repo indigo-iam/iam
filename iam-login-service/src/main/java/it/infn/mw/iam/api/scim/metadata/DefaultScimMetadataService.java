@@ -15,9 +15,12 @@
  */
 package it.infn.mw.iam.api.scim.metadata;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_GROUP_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.AARC_USER_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +41,7 @@ import it.infn.mw.iam.api.scim.model.ScimServiceProviderConfig.ScimBulkCapabilit
 import it.infn.mw.iam.api.scim.model.ScimServiceProviderConfig.ScimCapability;
 import it.infn.mw.iam.api.scim.model.ScimServiceProviderConfig.ScimFilterCapability;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.config.scim.ScimProperties;
 
 @Service
 public class DefaultScimMetadataService implements ScimMetadataService {
@@ -54,14 +58,21 @@ public class DefaultScimMetadataService implements ScimMetadataService {
   private final GroupSchemaDefinition groupSchema;
   private final IndigoUserSchemaDefinition indigoUserSchema;
   private final IndigoGroupSchemaDefinition indigoGroupSchema;
+  private final AarcUserSchemaDefinition aarcUserSchema;
+  private final AarcGroupSchemaDefinition aarcGroupSchema;
+  private final ScimProperties scimProperties;
 
   public DefaultScimMetadataService(UserSchemaDefinition userSchema,
       GroupSchemaDefinition groupSchema, IndigoUserSchemaDefinition indigoUserSchema,
-      IndigoGroupSchemaDefinition indigoGroupSchema) {
+      IndigoGroupSchemaDefinition indigoGroupSchema, AarcUserSchemaDefinition aarcUserSchema,
+      AarcGroupSchemaDefinition aarcGroupSchema, ScimProperties scimProperties) {
     this.userSchema = userSchema;
     this.groupSchema = groupSchema;
     this.indigoUserSchema = indigoUserSchema;
     this.indigoGroupSchema = indigoGroupSchema;
+    this.aarcUserSchema = aarcUserSchema;
+    this.aarcGroupSchema = aarcGroupSchema;
+    this.scimProperties = scimProperties;
   }
 
   @Cacheable(value = "scimServiceProviderConfig", sync = true)
@@ -92,21 +103,51 @@ public class DefaultScimMetadataService implements ScimMetadataService {
   @Cacheable(value = "scimSchemas", sync = true)
   @Override
   public List<ScimSchema> schemas() {
-    return Arrays.asList(userSchema.asScimSchema(), groupSchema.asScimSchema(),
-        indigoUserSchema.asScimSchema(), indigoGroupSchema.asScimSchema());
+    List<ScimSchema> schemas =
+        new ArrayList<>(Arrays.asList(userSchema.asScimSchema(), groupSchema.asScimSchema(),
+            indigoUserSchema.asScimSchema(), indigoGroupSchema.asScimSchema()));
+
+    if (scimProperties.isEnableAarc()) {
+      schemas.add(aarcUserSchema.asScimSchema());
+      schemas.add(aarcGroupSchema.asScimSchema());
+    }
+
+    return schemas;
+  }
+
+  private List<SchemaExtension> userSchemaExtensions() {
+    List<SchemaExtension> extensions = new ArrayList<>();
+
+    extensions.add(new SchemaExtension(INDIGO_USER_SCHEMA, false));
+
+    if (scimProperties.isEnableAarc()) {
+      extensions.add(new SchemaExtension(AARC_USER_SCHEMA, false));
+    }
+
+    return extensions;
+  }
+
+  private List<SchemaExtension> groupSchemaExtensions() {
+    List<SchemaExtension> extensions = new ArrayList<>();
+
+    extensions.add(new SchemaExtension(INDIGO_GROUP_SCHEMA, false));
+
+    if (scimProperties.isEnableAarc()) {
+      extensions.add(new SchemaExtension(AARC_GROUP_SCHEMA, false));
+    }
+
+    return extensions;
   }
 
   private ScimResourceType userResourceType() {
     return new ScimResourceType(ScimUser.RESOURCE_TYPE, ScimUser.RESOURCE_TYPE, "/Users",
-        "User Account", ScimUser.USER_SCHEMA,
-        Collections.singletonList(new SchemaExtension(INDIGO_USER_SCHEMA, false)),
+        "User Account", ScimUser.USER_SCHEMA, userSchemaExtensions(),
         resourceTypeMeta(ScimUser.RESOURCE_TYPE));
   }
 
   private ScimResourceType groupResourceType() {
     return new ScimResourceType(ScimGroup.RESOURCE_TYPE, ScimGroup.RESOURCE_TYPE, "/Groups",
-        "Group", ScimGroup.GROUP_SCHEMA,
-        Collections.singletonList(new SchemaExtension(INDIGO_GROUP_SCHEMA, false)),
+        "Group", ScimGroup.GROUP_SCHEMA, groupSchemaExtensions(),
         resourceTypeMeta(ScimGroup.RESOURCE_TYPE));
   }
 

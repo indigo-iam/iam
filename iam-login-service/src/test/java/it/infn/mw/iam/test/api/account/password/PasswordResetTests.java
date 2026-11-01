@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.account.password;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,7 +94,10 @@ class PasswordResetTests {
 
     String newPassword = "Secure_P@ssw0rd!";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -104,7 +109,8 @@ class PasswordResetTests {
     request.setToken(resetToken);
 
     mvc
-      .perform(post("/iam/password-reset").contentType(APPLICATION_JSON)
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isCreated());
 
@@ -118,7 +124,10 @@ class PasswordResetTests {
 
     String newPassword = "weakpassword";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -130,8 +139,9 @@ class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()
         .string("Invalid reset password: [resetPasswordDTO.updatedPassword : "
@@ -144,7 +154,10 @@ class PasswordResetTests {
 
     String newPassword = "Secure_P@ssw0rd!";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
@@ -156,13 +169,15 @@ class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().isCreated());
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
+        .content(jsonBody.toString()))
       .andExpect(status().is4xxClientError());
   }
 
@@ -200,20 +215,50 @@ class PasswordResetTests {
 
     String testEmail = "test@foo.bar";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+    mvc
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", testEmail))
       .andExpect(status().isOk());
-
   }
 
   @Test
   void testEmailValidationForPasswordResetTokenCreation() throws Exception {
     String invalidEmailAddress = "this_is_not_an_email";
 
-    mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))
+    mvc
+      .perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("email", invalidEmailAddress))
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()
         .string("validation error: please specify a valid email address"));
 
+  }
+
+  @Test
+  void oversizedPasswordDoesNotConsumeResetTokenOrChangePassword() throws Exception {
+    IamAccount account = accountRepo.findByEmail("test@iam.test").orElseThrow();
+    String originalHash = account.getPassword();
+    mvc.perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("email", "test@iam.test"))
+        .andExpect(status().isOk());
+    String token = tokenGenerator.getLastToken();
+    ResetPasswordDTO request = new ResetPasswordDTO();
+    request.setToken(token);
+    request.setUpdatedPassword("Aa1!" + "é".repeat(35));
+    mvc.perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON).content(mapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.content().string(
+            org.hamcrest.Matchers.containsString("72 bytes")));
+    org.junit.jupiter.api.Assertions.assertEquals(originalHash, account.getPassword());
+    mvc.perform(head("/iam/password-reset/token/{token}", token)).andExpect(status().isOk());
+    request.setUpdatedPassword("Aa1!" + "é".repeat(34));
+    mvc.perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON).content(mapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+    mvc.perform(head("/iam/password-reset/token/{token}", token)).andExpect(status().isNotFound());
   }
 
 }

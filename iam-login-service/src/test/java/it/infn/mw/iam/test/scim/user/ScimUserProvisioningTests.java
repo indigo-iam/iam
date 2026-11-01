@@ -15,10 +15,7 @@
  */
 package it.infn.mw.iam.test.scim.user;
 
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithUUID;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
@@ -30,21 +27,29 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,65 +58,108 @@ import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
-@IamMockMvcIntegrationTest
-@SpringBootTest(
-  classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-  webEnvironment = WebEnvironment.MOCK)
-class ScimUserProvisioningTests extends ScimUserTestSupport {
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@AutoConfigureMockMvc
+@Transactional
+class ScimUserProvisioningTests {
 
   @Autowired
-  private ScimRestUtilsMvc scimUtils;
+  MockMvc mvc;
 
   @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
-
-  @Autowired
-  private MockMvc mvc;
-
-  @Autowired
-  private ObjectMapper mapper;
+  ObjectMapper mapper;
 
   @InjectMocks
-  private ScimUserProvisioning scimUserProvisioning;
+  ScimUserProvisioning scimUserProvisioning;
+
+  String scimAccessToken;
 
   @BeforeEach
   void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
+    scimAccessToken = null;
   }
 
-  @AfterEach
-  void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
+  private String token(String... scopes) throws Exception {
+    return OAuthTokenTestUtils.clientCredentialsToken(mvc, mapper, ScimUtils.SCIM_CLIENT_ID,
+        ScimUtils.SCIM_CLIENT_SECRET, scopes);
+  }
+
+  private ResultActions performScim(MockHttpServletRequestBuilder request) throws Exception {
+
+    if (scimAccessToken == null) {
+      scimAccessToken = token(ScimUtils.SCIM_READ_SCOPE, ScimUtils.SCIM_WRITE_SCOPE);
+    }
+
+    return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + scimAccessToken));
+  }
+
+  private ResultActions getUser(String uuid, HttpStatus expectedStatus) throws Exception {
+
+    return performScim(
+        get(ScimUtils.getUsersLocation() + "/{uuid}", uuid).accept(SCIM_CONTENT_TYPE))
+          .andExpect(status().is(expectedStatus.value()));
+  }
+
+  private ScimUser getUser(String uuid) throws Exception {
+
+    String response = getUser(uuid, HttpStatus.OK).andReturn().getResponse().getContentAsString();
+
+    return mapper.readValue(response, ScimUser.class);
+  }
+
+  private ScimUser postUser(ScimUser user) throws Exception {
+
+    String response = performScim(post(ScimUtils.getUsersLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(mapper.writeValueAsBytes(user))).andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    return mapper.readValue(response, ScimUser.class);
+  }
+
+  private ScimUser putUser(String uuid, ScimUser user) throws Exception {
+
+    String response = performScim(
+        put(ScimUtils.getUsersLocation() + "/{uuid}", uuid).contentType(SCIM_CONTENT_TYPE)
+          .content(mapper.writeValueAsBytes(user))).andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    return mapper.readValue(response, ScimUser.class);
+  }
+
+  private ResultActions deleteUser(String uuid) throws Exception {
+    return performScim(delete(ScimUtils.getUsersLocation() + "/{uuid}", uuid));
+  }
+
+  private String getRandomUUid() {
+    return UUID.randomUUID().toString();
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
   void testGetUserNotFoundResponse() throws Exception {
+
+    scimAccessToken = token(ScimUtils.SCIM_READ_SCOPE);
 
     String randomUuid = getRandomUUid();
 
-    scimUtils.getUser(randomUuid, HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.status", equalTo("404")))
+    getUser(randomUuid, HttpStatus.NOT_FOUND).andExpect(jsonPath("$.status", equalTo("404")))
       .andExpect(jsonPath("$.detail", equalTo("No user mapped to id '" + randomUuid + "'")));
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUpdateUserNotFoundResponse() throws Exception {
 
     String randomUuid = getRandomUUid();
     ScimUser user =
         ScimUtils.buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
-    mvc
-      .perform(put(ScimUtils.getUsersLocation() + "/" + randomUuid)
+    performScim(put(ScimUtils.getUsersLocation() + "/" + randomUuid)
         .content(mapper.writeValueAsBytes(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isNotFound())
@@ -120,8 +168,9 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE})
   void testExistingUserAccess() throws Exception {
+
+    scimAccessToken = token(ScimUtils.SCIM_READ_SCOPE);
 
     // Some existing user as defined in the test db
     String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
@@ -144,7 +193,7 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
       .value("31d9230c-90ae-4457-a990-0c443ab4aacc")
       .build();
 
-    ScimUser user = scimUtils.getUser(uuid);
+    ScimUser user = getUser(uuid);
 
     assertThat(user.getId(), equalTo(uuid));
     assertThat(user.getUserName(), equalTo("test"));
@@ -170,13 +219,11 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testEmptyUsernameValidationError() throws Exception {
 
     ScimUser user = buildUser("", "test@email.test", "Paul", "McCartney").build();
 
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
@@ -184,13 +231,11 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testEmptyEmailValidationError() throws Exception {
 
     ScimUser user = ScimUser.builder("paul").buildName("Paul", "McCartney").build();
 
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
@@ -198,14 +243,11 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testInvalidEmailValidationError() throws Exception {
 
     ScimUser user = buildUser("paul", "this_is_not_an_email", "Paul", "McCartney").build();
 
-
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
@@ -213,19 +255,18 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUserUpdateChangeUsername() throws Exception {
 
     ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
-    ScimUser createdUser = scimUtils.postUser(user);
+    ScimUser createdUser = postUser(user);
     long creationTimeMs = createdUser.getMeta().getCreated().getTime();
 
     ScimUser userWithUpdates =
         buildUserWithUUID(createdUser.getId(), "j.lennon", user.getEmails().get(0).getValue(),
             user.getName().getGivenName(), user.getName().getFamilyName()).build();
 
-    ScimUser updatedUser = scimUtils.putUser(userWithUpdates.getId(), userWithUpdates);
+    ScimUser updatedUser = putUser(userWithUpdates.getId(), userWithUpdates);
 
     assertThat(updatedUser.getUserName(), equalTo(userWithUpdates.getUserName()));
     long returnedTimeMs = updatedUser.getMeta().getCreated().getTime();
@@ -235,17 +276,15 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUpdateUserValidation() throws Exception {
 
     ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
-    scimUtils.postUser(user);
+    postUser(user);
 
     ScimUser userWithUpdates = ScimUser.builder("j.lennon").id(user.getId()).active(true).build();
 
-    mvc
-      .perform(put(ScimUtils.getUsersLocation() + "/" + user.getId())
+    performScim(put(ScimUtils.getUsersLocation() + "/" + user.getId())
         .content(mapper.writeValueAsBytes(userWithUpdates))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
@@ -253,32 +292,29 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testNonExistentUserDeletionReturns404() throws Exception {
 
-    scimUtils.deleteUser(getRandomUUid()).andExpect(status().isNotFound());
+    deleteUser(getRandomUUid()).andExpect(status().isNotFound());
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testReplaceUserWithAlreadyUsedUsername() throws Exception {
 
     ScimUser lennon = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
-    ScimUser lennonCreationResult = scimUtils.postUser(lennon);
+    ScimUser lennonCreationResult = postUser(lennon);
 
     ScimUser mccartney =
         buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
 
-    scimUtils.postUser(mccartney);
+    postUser(mccartney);
 
     ScimUser lennonWantsToBeMcCartney = buildUserWithUUID(lennonCreationResult.getId(),
         mccartney.getUserName(), mccartney.getEmails().get(0).getValue(),
         mccartney.getName().getGivenName(), mccartney.getName().getFamilyName()).build();
 
 
-    mvc
-      .perform(put(ScimUtils.getUsersLocation() + "/" + lennonCreationResult.getId())
+    performScim(put(ScimUtils.getUsersLocation() + "/" + lennonCreationResult.getId())
         .content(mapper.writeValueAsBytes(lennonWantsToBeMcCartney))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
@@ -288,17 +324,15 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testUniqueUsernameCreationCheck() throws Exception {
 
     ScimUser user1 = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
     ScimUser user2 =
         buildUser("john_lennon", "another_lennon@email.test", "John", "Lennon").build();
 
-    scimUtils.postUser(user1);
+    postUser(user1);
 
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user2))
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user2))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail",
@@ -308,7 +342,6 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testEmailIsNotAlreadyLinkedOnCreate() throws Exception {
 
     ScimUser user0 =
@@ -316,10 +349,9 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
     ScimUser user1 =
         buildUser("test_same_email_1", "same_email@test.org", "Test", "Same Email 1").build();
 
-    user0 = scimUtils.postUser(user0);
+    postUser(user0);
 
-    mvc
-      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user1))
+    performScim(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user1))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail",
@@ -328,20 +360,18 @@ class ScimUserProvisioningTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   void testEmailIsNotAlreadyLinkedOnUpdate() throws Exception {
 
     ScimUser user0 = buildUser("user0", "user0@test.org", "Test", "User 0").build();
     ScimUser user1 = buildUser("user1", "user1@test.org", "Test", "User 1").build();
 
-    user0 = scimUtils.postUser(user0);
-    user1 = scimUtils.postUser(user1);
+    user0 = postUser(user0);
+    postUser(user1);
 
     ScimUser updatedUser0 =
         buildUserWithUUID(user0.getId(), "user0", "user1@test.org", "Test", "User 0").build();
 
-    mvc
-      .perform(put(ScimUtils.getUsersLocation() + "/" + user0.getId())
+    performScim(put(ScimUtils.getUsersLocation() + "/" + user0.getId())
         .content(mapper.writeValueAsBytes(updatedUser0))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())

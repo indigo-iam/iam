@@ -31,6 +31,7 @@ import com.google.common.base.Strings;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LoginPageLayout.ExternalAuthnOptions;
 import it.infn.mw.iam.config.IamProperties.Logo;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
@@ -64,12 +65,15 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private OidcValidatedProviders providers;
 
   private final IamProperties iamProperties;
+  private final ClientRegistrationProperties clientRegistrationProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      ClientRegistrationProperties clientRegistrationProperties,
       IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
+    this.clientRegistrationProperties = clientRegistrationProperties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
@@ -80,11 +84,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     githubEnabled = env.acceptsProfiles(Profiles.of("github"));
     samlEnabled = env.acceptsProfiles(Profiles.of("saml"));
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
-    adminOnlyCustomScopes = env.acceptsProfiles(Profiles.of("registration"));
+    adminOnlyCustomScopes = clientRegistrationProperties.isAdminOnlyCustomScopes();
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
-        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
-        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
       .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();

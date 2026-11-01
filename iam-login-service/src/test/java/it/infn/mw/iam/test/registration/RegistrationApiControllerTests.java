@@ -24,10 +24,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import it.infn.mw.iam.test.TestUtils;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class RegistrationApiControllerTests {
+
+  private static final String CSRF_COOKIE = "XSRF-TOKEN";
+  private static final String CSRF_HEADER = "X-XSRF-TOKEN";
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -40,10 +44,29 @@ class RegistrationApiControllerTests {
   @Test
   void testTokenIsNotReflectedInErrorPage() {
 
+    Response loginResponse = RestAssured.given()
+      .port(iamPort)
+      .redirects()
+      .follow(false)
+      .when()
+      .get("/login")
+      .then()
+      .statusCode(200)
+      .extract()
+      .response();
+
+    String csrfToken = loginResponse.getCookie(CSRF_COOKIE);
+
+    assertThat(csrfToken).as("Token CSRF restituito dalla pagina di login").isNotBlank();
+
     String response = RestAssured.given()
       .port(iamPort)
+      .cookies(loginResponse.getCookies())
+      .header(CSRF_HEADER, csrfToken)
       .contentType("application/x-www-form-urlencoded")
       .formParam("token", "<img src=x onerror=alert(1)>")
+      .redirects()
+      .follow(false)
       .when()
       .post("/registration/verify")
       .then()
@@ -51,7 +74,8 @@ class RegistrationApiControllerTests {
       .extract()
       .asString();
 
-    assertThat(response).doesNotContain("<img src=x onerror=alert(1)>")
+    assertThat(response).isNotBlank()
+      .doesNotContain("<img src=x onerror=alert(1)>")
       .contains("No registration request found");
   }
 
@@ -63,6 +87,8 @@ class RegistrationApiControllerTests {
     String response = RestAssured.given()
       .port(iamPort)
       .pathParam("token", payload)
+      .redirects()
+      .follow(false)
       .when()
       .get("/registration/verify/{token}")
       .then()
@@ -70,6 +96,6 @@ class RegistrationApiControllerTests {
       .extract()
       .asString();
 
-    assertThat(response).doesNotContain("<img src=x onerror=alert(1)>");
+    assertThat(response).isNotBlank().doesNotContain("<img src=x onerror=alert(1)>");
   }
 }

@@ -34,6 +34,7 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamTotpAdminKeyRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 @Service
 @Profile("mfa")
@@ -63,6 +64,11 @@ public class IamTotpSecretRotationService {
       throw new IamTotpMfaInvalidArgumentError(
           "TOTP MFA: A password to encrypt mfa secrets is required");
     }
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(mfaProperties.getPasswordToEncryptAndDecrypt())) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "TOTP MFA: mfa.password-to-encrypt-and-decrypt must not exceed 72 UTF-8 bytes. "
+              + "Do not truncate an existing key; rotate it with the previous IAM version first.");
+    }
     Optional<IamTotpAdminKey> adminKey = adminKeyRepository.findAll().stream().findAny();
     if (adminKey.isEmpty()) {
       return;
@@ -70,6 +76,12 @@ public class IamTotpSecretRotationService {
     String currentHash = adminKey.get().getAdminMfaKeyHash();
     if (passwordEncoder.matches(mfaProperties.getPasswordToEncryptAndDecrypt(), currentHash)) {
       return;
+    }
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(mfaProperties.getOldPasswordToDecrypt())) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "TOTP MFA: mfa.old-password-to-decrypt exceeds 72 UTF-8 bytes. "
+              + "Rotate the existing key with the previous IAM version before upgrading; "
+              + "do not truncate the old key.");
     }
     if (StringUtils.hasText(mfaProperties.getOldPasswordToDecrypt())
         && passwordEncoder.matches(mfaProperties.getOldPasswordToDecrypt(), currentHash)) {

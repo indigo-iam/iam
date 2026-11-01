@@ -22,6 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -135,8 +136,8 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isUnauthorized());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -147,8 +148,8 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isUnauthorized());
+    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isUnauthorized());
 
   }
 
@@ -188,8 +189,8 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName("Test-001").orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isCreated());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isCreated());
 
     account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -213,8 +214,8 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName("Test-001").orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isCreated());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isCreated());
 
     account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -238,7 +239,9 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName("Test-001").orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
+    mvc
+      .perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+        .with(csrf().asHeader()))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("access_denied")))
       .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
@@ -255,8 +258,8 @@ class GroupMembersIntegrationTests {
 
     addAccountToGroup(account, group);
 
-    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isNoContent());
 
     group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -281,8 +284,8 @@ class GroupMembersIntegrationTests {
     IamGroup group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isCreated());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isCreated());
 
     group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -309,8 +312,8 @@ class GroupMembersIntegrationTests {
 
     addAccountToGroup(account, group);
 
-    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
-      .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isNoContent());
 
     group =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
@@ -338,19 +341,27 @@ class GroupMembersIntegrationTests {
 
     String randomUuid = UUID.randomUUID().toString();
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", randomUuid, group.getUuid()))
+    mvc
+      .perform(post("/iam/account/{account}/groups/{group}", randomUuid, group.getUuid())
+        .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("Account not found")));
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), randomUuid))
+    mvc
+      .perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), randomUuid)
+        .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("Group not found")));
 
-    mvc.perform(delete("/iam/account/{account}/groups/{group}", randomUuid, group.getUuid()))
+    mvc
+      .perform(delete("/iam/account/{account}/groups/{group}", randomUuid, group.getUuid())
+        .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("Account not found")));
 
-    mvc.perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), randomUuid))
+    mvc
+      .perform(delete("/iam/account/{account}/groups/{group}", account.getUuid(), randomUuid)
+        .with(csrf().asHeader()))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", containsString("Group not found")));
 
@@ -369,9 +380,9 @@ class GroupMembersIntegrationTests {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    mvc
-      .perform(
-          post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+    mvc.perform(
+        post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid())
+          .with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     assertThat(
@@ -419,12 +430,11 @@ class GroupMembersIntegrationTests {
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
     // Add test user to /root/subgroup and /root/sibling
-    mvc
-      .perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subgroup.getUuid()))
-      .andExpect(status().isCreated());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subgroup.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isCreated());
 
-    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), sibling.getUuid()))
-      .andExpect(status().isCreated());
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), sibling.getUuid())
+      .with(csrf().asHeader())).andExpect(status().isCreated());
 
     assertThat(
         groupRepo.findGroupByMemberAccountUuidAndGroupUuid(account.getUuid(), subgroup.getUuid())
@@ -456,9 +466,9 @@ class GroupMembersIntegrationTests {
     assertThat(account.getGroups().contains(m), is(true));
 
     // Remove test user from /root
-    mvc
-      .perform(
-          delete("/iam/account/{account}/groups/{group}", account.getUuid(), rootGroup.getUuid()))
+    mvc.perform(
+        delete("/iam/account/{account}/groups/{group}", account.getUuid(), rootGroup.getUuid())
+          .with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     assertThat(
@@ -477,9 +487,9 @@ class GroupMembersIntegrationTests {
         is(false));
 
     // Add test user to /root/subgroup/subsubgroup
-    mvc
-      .perform(
-          post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+    mvc.perform(
+        post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid())
+          .with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     assertThat(
@@ -498,9 +508,9 @@ class GroupMembersIntegrationTests {
         is(true));
 
     // Remove test user from /root/subgroup/subsubgroup
-    mvc
-      .perform(
-          delete("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+    mvc.perform(
+        delete("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid())
+          .with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
     assertThat(
@@ -580,9 +590,9 @@ class GroupMembersIntegrationTests {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    mvc
-      .perform(
-          post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+    mvc.perform(
+        post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid())
+          .with(csrf().asHeader()))
       .andExpect(status().isCreated());
 
     final int groupsCount = account.getGroups().size();
