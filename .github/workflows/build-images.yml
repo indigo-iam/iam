@@ -14,7 +14,23 @@ jobs:
       fail-fast: false
       matrix:
         java: ['17', '21']
-        database: [h2, mysql]
+        database: [h2, mysql, postgresql]
+
+    # MySQL is preinstalled on the runner, PostgreSQL runs as a service container
+    services:
+      postgres:
+        image: ${{ matrix.database == 'postgresql' && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_DB: iam
+          POSTGRES_USER: iam
+          POSTGRES_PASSWORD: pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iam -d iam"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -51,8 +67,8 @@ jobs:
         shell: bash
         run: |
           args=()
-          if [[ "$TEST_DATABASE" == "mysql" ]]; then
-            args+=(-Dspring.profiles.active=mysql-test)
+          if [[ "$TEST_DATABASE" == "mysql" || "$TEST_DATABASE" == "postgresql" ]]; then
+            args+=("-Dspring.profiles.active=${TEST_DATABASE}-test")
           fi
           mvn -B -ntp verify -Dsurefire.exitTimeout=120 "${args[@]}"
 
