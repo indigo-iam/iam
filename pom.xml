@@ -94,7 +94,15 @@
     <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
     <sonar.language>java</sonar.language>
     <sonar.coverage.exclusions>
-      iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
+      iam-persistence/**/*,
+      iam-test-client/**/*,
+      iam-common/**
+      **/src/main/webapp/**,
+      **/*.js,
+      **/*.jsx,
+      **/*.mjs,
+      **/*.cjs
+    </sonar.coverage.exclusions>
     <sonar.exclusions>iam-login-service/src/main/java/it/infn/mw/iam/util/crypto/**</sonar.exclusions>
   </properties>
 
