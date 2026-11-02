@@ -39,6 +39,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
@@ -137,12 +139,16 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     if (CernHrLifecycleUtils.isActiveMembership(clock, ep.get().getEndDate()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
       restoreAccount(a);
+      // A restored account must not retain a stale lifecycle suspension marker.
+      accountService.deleteLabel(a,
+          IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).build());
     }
     syncAccountEndTime(a, ep.get().getEndDate());
     setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
   }
 
   @Override
+  @SchedulerLock(name = "accountLifecycle", lockAtMostFor = "PT2H")
   public void run() {
 
     LOG.info("CERN HR Lyfecycle handler ... [START]");
@@ -160,8 +166,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
           try {
             handleAccount(getCernPersonId(a), cernProperties.getExperimentName(), a);
           } catch (RuntimeException e) {
-            LOG.error("Error during CERN HR lifecycle handler on account {}: {}", a,
-                e.getMessage());
+            LOG.error("Error during CERN HR lifecycle handler on account {}", a.getUuid(), e);
           }
         }
       }

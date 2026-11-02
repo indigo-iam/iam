@@ -429,6 +429,29 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   }
 
   @Test
+  void testRestoreRemovesLifecycleStatusWhenEndTimeIsUnchanged() {
+    VOPersonDTO person = voPerson(clock, CERN_PERSON_ID);
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(person));
+
+    IamAccount account = loadAccount(CERN_USER_UUID);
+    // First synchronize the end time while the account is active.
+    cernHrLifecycleHandler.run();
+    account = loadAccount(CERN_USER_UUID);
+    Date synchronizedEndTime = account.getEndTime();
+
+    service.disableAccount(account);
+    service.addLabel(account, statusLabel(SUSPENDED));
+
+    // The next HR sync restores the account without changing its end time.
+    cernHrLifecycleHandler.run();
+    account = loadAccount(CERN_USER_UUID);
+
+    assertThat(account.isActive(), is(true));
+    assertThat(account.getEndTime(), is(synchronizedEndTime));
+    assertThat(account.getLabelByName(LIFECYCLE_STATUS_LABEL).isPresent(), is(false));
+  }
+
+  @Test
   void testApiErrorIsHandled() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
