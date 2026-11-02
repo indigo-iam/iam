@@ -19,6 +19,7 @@ import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -46,6 +49,8 @@ import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 public class IamSystemScopeService implements SystemScopeService {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamSystemScopeService.class);
+
+  public static final String CACHE_NAME = "systemScopes";
 
   public static final String ADMIN_READ_SCOPE = "iam:admin.read";
   public static final String ADMIN_WRITE_SCOPE = "iam:admin.write";
@@ -111,6 +116,7 @@ public class IamSystemScopeService implements SystemScopeService {
     return scopeRepository.findByValue(value).orElse(null);
   }
 
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true) 
   @Override
   public void remove(SystemScope entity) {
 
@@ -147,6 +153,7 @@ public class IamSystemScopeService implements SystemScopeService {
       .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true)
   @Override
   public SystemScope create(SystemScope entity) {
 
@@ -157,6 +164,7 @@ public class IamSystemScopeService implements SystemScopeService {
     return createdScope;
   }
 
+  @CacheEvict(cacheNames = CACHE_NAME, allEntries = true)
   @Override
   public SystemScope update(SystemScope entity) {
 
@@ -182,6 +190,12 @@ public class IamSystemScopeService implements SystemScopeService {
     return scopeRepository.findAll(Sort.by("id").ascending())
       .stream()
       .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  @Cacheable (CACHE_NAME)
+  @Override 
+  public List<SystemScope> getAllUnSorted() {
+    return scopeRepository.findAll();
   }
 
   protected void scopeValueValidation(SystemScope scope) {

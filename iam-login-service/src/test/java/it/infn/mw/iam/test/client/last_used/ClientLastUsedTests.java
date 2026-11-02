@@ -31,12 +31,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.ClientLastUsedEntity;
 import it.infn.mw.iam.test.config.ClockConfig;
@@ -55,6 +57,9 @@ class ClientLastUsedTests extends TokenGetterUtils {
 
   static final String TEST_347_USER = "test_347";
   static final String SCOPES = "offline_access";
+
+  @Autowired
+  private CacheManager cacheManager;
 
   @Autowired
   IamProperties iamProperties;
@@ -77,6 +82,7 @@ class ClientLastUsedTests extends TokenGetterUtils {
   void init() {
     context.cleanupSecurityContext();
     now = LocalDate.ofInstant(clock.instant(), ZoneId.of("UTC"));
+    cacheManager.getCache(DefaultClientService.CACHE_NAME).clear();
   }
 
   @Test

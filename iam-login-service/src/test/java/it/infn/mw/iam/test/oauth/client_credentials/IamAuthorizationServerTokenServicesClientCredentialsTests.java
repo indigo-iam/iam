@@ -46,6 +46,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamAuthenticationHolderService;
 import it.infn.mw.iam.core.TokenUtils;
@@ -62,7 +63,6 @@ import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 @ExtendWith(MockitoExtension.class)
@@ -74,9 +74,6 @@ class IamAuthorizationServerTokenServicesClientCredentialsTests {
 
   @Mock
   IamOAuthAccessTokenRepository accessTokenRepo;
-
-  @Mock
-  IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Mock
   IamAuthenticationHolderService authenticationHolderService;
@@ -120,6 +117,9 @@ class IamAuthorizationServerTokenServicesClientCredentialsTests {
   @Mock
   BaseAccessTokenBuilder accessTokenBuilder;
 
+  @Mock
+  CachedRefreshTokenStore refreshTokenStore;
+
   IamAuthorizationServerTokenServices tokenServices;
 
   @BeforeEach
@@ -128,9 +128,9 @@ class IamAuthorizationServerTokenServicesClientCredentialsTests {
     iamProperties = new IamProperties();
 
     tokenServices = new IamAuthorizationServerTokenServices(Clock.systemUTC(), iamProperties,
-        accessTokenRepo, refreshTokenRepo, authenticationHolderService, clientService,
+        accessTokenRepo, authenticationHolderService, clientService,
         accountService, jwtSigningService, revocationService, scopeService, profileResolver,
-        eventPublisher, scopeFilter, tokenUtils);
+        eventPublisher, scopeFilter, tokenUtils, refreshTokenStore);
 
     when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
 
@@ -177,6 +177,6 @@ class IamAuthorizationServerTokenServicesClientCredentialsTests {
 
     assertThat(token.getRefreshToken()).isNull();
 
-    verify(refreshTokenRepo, never()).save(any());
+    verify(refreshTokenStore, never()).save(any());
   }
 }

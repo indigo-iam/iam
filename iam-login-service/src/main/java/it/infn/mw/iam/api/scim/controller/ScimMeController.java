@@ -56,6 +56,7 @@ import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -84,7 +85,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, ScimUserProvisioning scimUserProvisioning,
-      UsernameValidator usernameValidator, Set<UpdaterType> enabledUpdaters) {
+      UsernameValidator usernameValidator, Set<UpdaterType> enabledUpdaters, CachedRefreshTokenStore refreshTokenStore) {
 
     this.clock = clock;
     this.iamAccountRepository = accountRepository;
@@ -92,7 +93,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.enabledUpdaters = enabledUpdaters;
     this.updatersFactory = new DefaultAccountUpdaterFactory(clock, passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
-        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
+        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository, refreshTokenStore);
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {

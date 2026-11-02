@@ -43,6 +43,7 @@ import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -88,6 +89,9 @@ class UsernameUpdaterTests extends TokenGetterUtils {
   @Autowired
   SecurityContextUtils context;
 
+  @Autowired 
+  CachedRefreshTokenStore refreshTokenStore;
+
   @Autowired
   MutableClock clock;
 
@@ -116,7 +120,7 @@ class UsernameUpdaterTests extends TokenGetterUtils {
 
   private Replacers accountReplacers() {
     return AccountUpdaters.replacers(clock, accountRepository, accountService, encoder, account,
-        accessTokenRepository, refreshTokenRepository, usernameValidator);
+        accessTokenRepository, refreshTokenRepository, usernameValidator, refreshTokenStore);
   }
 
   @Test
