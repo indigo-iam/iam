@@ -308,7 +308,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
                 "--iam.jwk.standalone-fallback-enabled=false" };
         BeanCreationException error = assertThrows(BeanCreationException.class, () -> IamLoginService.main(args));
         assertTrue(ExceptionUtils.getThrowableList(error).stream()
-                .anyMatch(t -> t instanceof ConnectException),
+                .anyMatch(ConnectException.class::isInstance),
                 "should fail because the database is unreachable");
     }
 
@@ -458,7 +458,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
         assertTrue(chain.stream().anyMatch(
                 t -> t instanceof SQLException e && expectedSqlState.equals(e.getSQLState())),
                 "expected SQLState " + expectedSqlState + " in " + failure.get());
-        assertTrue(chain.stream().noneMatch(t -> t instanceof ConnectException));
+        assertTrue(chain.stream().noneMatch(ConnectException.class::isInstance));
         assertThrows(IOException.class, () -> get(port, "/jwk"));
     }
 
@@ -473,7 +473,7 @@ public class FallbackApplicationStartupTests implements JWKTestSupport {
         }
         assertTrue(failure.get() instanceof BeanCreationException);
         assertTrue(ExceptionUtils.getThrowableList(failure.get()).stream()
-                .noneMatch(t -> t instanceof ConnectException));
+                .noneMatch(ConnectException.class::isInstance));
         assertThrows(IOException.class, () -> get(port, "/jwk"));
     }
 

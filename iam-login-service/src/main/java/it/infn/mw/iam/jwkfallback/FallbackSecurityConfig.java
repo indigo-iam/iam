@@ -39,8 +39,8 @@ public class FallbackSecurityConfig {
     SecurityFilterChain fallbackFilterChain(HttpSecurity http) throws Exception {
         http
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeRequests(auth -> auth
-                        .antMatchers("/jwk", "/fallback-info").permitAll()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/jwk", "/fallback-info").permitAll()
                         .requestMatchers(
                                 EndpointRequest.toLinks(),
                                 EndpointRequest.to(HealthEndpoint.class, InfoEndpoint.class))
