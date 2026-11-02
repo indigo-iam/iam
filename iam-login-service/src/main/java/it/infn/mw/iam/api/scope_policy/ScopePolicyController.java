@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +25,8 @@ import javax.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
@@ -42,6 +45,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.api.scope_policy.OpaBundleService.OpaBundle;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
@@ -128,6 +132,17 @@ public class ScopePolicyController {
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   public OpaPolicies convertToOpaPolicies() {
     return opaBundleService.getPolicies();
+  }
+
+  @GetMapping(value = "/iam/scope_policies/opa_bundle")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
+  public ResponseEntity<byte[]> buildOpaBundle() throws IOException {
+    OpaBundle bundle = opaBundleService.buildBundle();
+
+    return ResponseEntity.ok()
+      .eTag(bundle.etag())
+      .contentType(MediaType.parseMediaType("application/gzip"))
+      .body(bundle.content());
   }
 
   public record OpaPolicies(List<OpaPolicy> policies) {
