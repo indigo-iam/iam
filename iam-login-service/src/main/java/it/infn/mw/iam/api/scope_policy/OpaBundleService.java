@@ -50,6 +50,8 @@ public class OpaBundleService {
     this.objectMapper = objectMapper;
   }
 
+  // Never compared or logged
+  @SuppressWarnings("java:S6218")
   public record OpaBundle(byte[] content, String etag) {}
 
   public OpaPolicies getPolicies() {
@@ -93,7 +95,7 @@ public class OpaBundleService {
     ) {
       for (Map.Entry<String, byte[]> file : files.entrySet()) {
         TarArchiveEntry entry = new TarArchiveEntry(file.getKey());
-        
+
         entry.setSize(file.getValue().length);
         tar.putArchiveEntry(entry);
         tar.write(file.getValue());
