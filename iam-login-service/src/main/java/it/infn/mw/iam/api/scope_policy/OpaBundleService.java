@@ -15,25 +15,42 @@
  */
 package it.infn.mw.iam.api.scope_policy;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.scope_policy.ScopePolicyController.OpaPolicies;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 
-@Service 
+@Service
 public class OpaBundleService {
 
   private final ScopePolicyService policyService;
   private final IamScopePolicyConverter converter;
+  private final ObjectMapper objectMapper;
 
-  public OpaBundleService(ScopePolicyService policyService, IamScopePolicyConverter converter) {
+  public OpaBundleService(ScopePolicyService policyService, IamScopePolicyConverter converter,
+      ObjectMapper objectMapper) {
     this.policyService = policyService;
     this.converter = converter;
+    this.objectMapper = objectMapper;
   }
+
+  public record OpaBundle(byte[] content, String etag) {}
 
   public OpaPolicies getPolicies() {
     Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();
@@ -46,5 +63,44 @@ public class OpaBundleService {
     });
 
     return new OpaPolicies(dtos);
+  }
+
+  public OpaBundle buildBundle() throws IOException {
+    byte[] data = objectMapper.writeValueAsBytes(getPolicies());
+    String etag = sha256Hex(data);
+
+    Map<String, byte[]> files = new LinkedHashMap<>();
+    files.put("data.json", data);
+    files.put(".manifest", objectMapper.writeValueAsBytes(Map.of("roots", List.of("policies"))));
+
+    return new OpaBundle(tarGzip(files), etag);
+  }
+
+  private static String sha256Hex(byte[] content) {
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 algorithm not available", e);
+    }
+  }
+
+  private byte[] tarGzip(Map<String, byte[]> files) throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    try (
+      GZIPOutputStream gzip = new GZIPOutputStream(output);
+      TarArchiveOutputStream tar = new TarArchiveOutputStream(gzip);
+    ) {
+      for (Map.Entry<String, byte[]> file : files.entrySet()) {
+        TarArchiveEntry entry = new TarArchiveEntry(file.getKey());
+        
+        entry.setSize(file.getValue().length);
+        tar.putArchiveEntry(entry);
+        tar.write(file.getValue());
+        tar.closeArchiveEntry();
+      }
+    }
+
+    return output.toByteArray();
   }
 }
