@@ -7,6 +7,16 @@ COPY iam-login-service.war /indigo-iam/
 RUN java -Djarmode=layertools -jar iam-login-service.war extract
 
 FROM eclipse-temurin:17
+
+RUN groupadd --gid 10001 iam && \
+  useradd --uid 10001 \
+          --gid iam \
+          --no-log-init \
+          --create-home \
+          --home-dir /home/iam \
+          --shell /usr/sbin/nologin \
+          iam
+
 RUN mkdir /indigo-iam
 WORKDIR /indigo-iam
 COPY --from=builder indigo-iam/dependencies/ ./
@@ -23,4 +33,7 @@ RUN if [ -f WEB-INF/classes/keystore.jwks ]; then \
     exit 1; \
   fi
 
-CMD ["/bin/sh", "-c", "java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher"]
+# Keep application files owned by root; IAM only needs read access.
+USER 10001:10001
+
+CMD ["/bin/sh", "-c", "exec java ${IAM_JAVA_OPTS} org.springframework.boot.loader.WarLauncher"]
