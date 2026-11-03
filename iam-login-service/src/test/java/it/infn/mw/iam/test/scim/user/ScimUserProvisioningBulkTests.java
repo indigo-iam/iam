@@ -35,9 +35,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -126,8 +128,7 @@ class ScimUserProvisioningBulkTests {
         .andExpect(status().isForbidden());
 
       mvc
-        .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-          .put(path + "/" + ADMIN_ID)
+        .perform(MockMvcRequestBuilders.put(path + "/" + ADMIN_ID)
           .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
           .contentType(SCIM_CONTENT_TYPE)
           .content("{ invalid json"))
@@ -141,8 +142,7 @@ class ScimUserProvisioningBulkTests {
       performScim(post(path).contentType(SCIM_CONTENT_TYPE).content("{ invalid json"))
         .andExpect(status().isBadRequest());
 
-      performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-        .put(path + "/" + ADMIN_ID)
+      performScim(MockMvcRequestBuilders.put(path + "/" + ADMIN_ID)
         .contentType(SCIM_CONTENT_TYPE)
         .content("{ invalid json")).andExpect(status().isBadRequest());
     }
@@ -154,8 +154,7 @@ class ScimUserProvisioningBulkTests {
         ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
     mvc
-      .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-        .patch(ScimUtils.getMeLocation())
+      .perform(MockMvcRequestBuilders.patch(ScimUtils.getMeLocation())
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
         .contentType(SCIM_CONTENT_TYPE)
         .content("{ invalid json"))
@@ -164,8 +163,7 @@ class ScimUserProvisioningBulkTests {
 
   @Test
   void scimMeParsesMalformedJsonWhenWriteScopeIsPresent() throws Exception {
-    performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-      .patch(ScimUtils.getMeLocation())
+    performScim(MockMvcRequestBuilders.patch(ScimUtils.getMeLocation())
       .contentType(SCIM_CONTENT_TYPE)
       .content("{ invalid json")).andExpect(status().isBadRequest());
   }
@@ -176,8 +174,7 @@ class ScimUserProvisioningBulkTests {
         ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
     mvc
-      .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-        .patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
+      .perform(MockMvcRequestBuilders.patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
         .contentType(SCIM_CONTENT_TYPE)
         .content("{ invalid json"))
@@ -186,8 +183,7 @@ class ScimUserProvisioningBulkTests {
 
   @Test
   void groupPatchParsesMalformedJsonWithWriteScope() throws Exception {
-    performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-      .patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
+    performScim(MockMvcRequestBuilders.patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
       .contentType(SCIM_CONTENT_TYPE)
       .content("{ invalid json")).andExpect(status().isBadRequest());
   }
@@ -198,8 +194,7 @@ class ScimUserProvisioningBulkTests {
         ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
     mvc
-      .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-        .patch(ScimUtils.getUsersLocation() + "/" + ADMIN_ID)
+      .perform(MockMvcRequestBuilders.patch(ScimUtils.getUsersLocation() + "/" + ADMIN_ID)
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
         .contentType(SCIM_CONTENT_TYPE)
         .content("{ invalid json"))
@@ -208,8 +203,7 @@ class ScimUserProvisioningBulkTests {
 
   @Test
   void userPatchParsesMalformedJsonWithWriteScope() throws Exception {
-    performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-      .patch(ScimUtils.getUsersLocation() + "/" + ADMIN_ID)
+    performScim(MockMvcRequestBuilders.patch(ScimUtils.getUsersLocation() + "/" + ADMIN_ID)
       .contentType(SCIM_CONTENT_TYPE)
       .content("{ invalid json")).andExpect(status().isBadRequest());
   }
@@ -377,5 +371,24 @@ class ScimUserProvisioningBulkTests {
             .andExpect(jsonPath("$.detail", containsString("Maximum payload size exceeded")))
             .andExpect(jsonPath("$.detail",
                 containsString(String.valueOf(ScimConstants.SCIM_BULK_MAX_PAYLOAD_SIZE))));
+  }
+
+  @Test
+  void aupRejectsMalformedJsonWithoutAdminWriteScope() throws Exception {
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+
+    mvc
+      .perform(post("/iam/aup").header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{ invalid json"))
+      .andExpect(status().isForbidden());
+
+    mvc
+      .perform(MockMvcRequestBuilders.patch("/iam/aup")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{ invalid json"))
+      .andExpect(status().isForbidden());
   }
 }

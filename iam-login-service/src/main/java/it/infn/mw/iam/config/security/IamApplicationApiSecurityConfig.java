@@ -153,6 +153,12 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
           .antMatchers(PATCH, "/scim/Users/*")
           .access("@iamApiAuthorization.canPatchUser(authentication, request, 'scim:write')")
+          .antMatchers(POST, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .anyRequest()
           .authenticated())
 
@@ -215,6 +221,12 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
           .antMatchers(PATCH, "/scim/Users/*")
           .access("@iamApiAuthorization.canPatchUser(authentication, request, 'scim:write')")
+          .antMatchers(POST, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
