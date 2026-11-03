@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.config.security.ClientRegistrationEarlyAuthorization;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
@@ -245,14 +246,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   }
 
   private void authzChecks(Authentication authentication) {
-    ClientRegistrationAuthorizationPolicy allowedForRegistration =
-        registrationProperties.getAllowFor();
-
     boolean registrationAllowed =
-        (ADMINISTRATORS.equals(allowedForRegistration) && accountUtils.isAdmin(authentication))
-            || (REGISTERED_USERS.equals(allowedForRegistration)
-                && accountUtils.isRegisteredUser(authentication))
-            || (ANYONE.equals(allowedForRegistration));
+        ClientRegistrationEarlyAuthorization.isAllowed(registrationProperties, accountUtils,
+            authentication);
 
     if (!registrationAllowed) {
       throw new AccessDeniedException(ACCESS_DENIED_ERROR);

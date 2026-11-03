@@ -18,7 +18,9 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.HEAD;
+import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import java.util.LinkedHashMap;
@@ -65,6 +67,9 @@ public class IamApplicationApiSecurityConfig {
 
   private static final String AUP_PATH = "/iam/aup";
   private static final String AUP_SIGN_PATH = "/iam/aup/sign";
+  private static final String SCIM_BULK_PATH = "/scim/Users/Bulk";
+  private static final String[] SCIM_CREATE_PATHS = {"/scim/Users", "/scim/Groups"};
+  private static final String[] SCIM_REPLACE_PATHS = {"/scim/Users/*", "/scim/Groups/*"};
 
   /*
    * These endpoints belong to dedicated protocol/browser chains.
@@ -136,7 +141,58 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.anyRequest().authenticated())
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+          .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .antMatchers(POST, SCIM_CREATE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PUT, SCIM_REPLACE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Me")
+          .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Groups/*")
+          .access("@iamApiAuthorization.canPatchScimGroup(authentication, request, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Users/*")
+          .access("@iamApiAuthorization.canPatchScimUser(authentication, request, 'scim:write')")
+          .antMatchers(POST, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/attributes", "/iam/account/*/labels",
+              "/iam/group/*/labels")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/group/*/attributes")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/group/*")
+          .access("@iamApiAuthorization.canUpdateGroup(authentication, request, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*", "/iam/scope_policies/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies",
+              "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, "/iam/aup/signature/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group_requests")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(PUT, "/iam/account/me/proxycert")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(POST, "/api/scopes", "/iam/api/scopes")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/api/scopes/*", "/iam/api/scopes/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .anyRequest()
+          .authenticated())
 
         .csrf(csrf -> csrf.disable());
     }
@@ -185,7 +241,57 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.antMatchers("/iam/password-reset/**")
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+          .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .antMatchers(POST, SCIM_CREATE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PUT, SCIM_REPLACE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Me")
+          .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Groups/*")
+          .access("@iamApiAuthorization.canPatchScimGroup(authentication, request, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Users/*")
+          .access("@iamApiAuthorization.canPatchScimUser(authentication, request, 'scim:write')")
+          .antMatchers(POST, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/attributes", "/iam/account/*/labels",
+              "/iam/group/*/labels")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/group/*/attributes")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/group/*")
+          .access("@iamApiAuthorization.canUpdateGroup(authentication, request, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*", "/iam/scope_policies/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies",
+              "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, "/iam/aup/signature/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group_requests")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(PUT, "/iam/account/me/proxycert")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(POST, "/api/scopes", "/iam/api/scopes")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/api/scopes/*", "/iam/api/scopes/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
           .permitAll()
@@ -244,7 +350,9 @@ public class IamApplicationApiSecurityConfig {
 
         .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
 
-        .authorizeRequests(authorize -> authorize.antMatchers("/resource/**").permitAll())
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, "/resource")
+          .access("@clientRegistrationEarlyAuthorization.canRegister(authentication)")
+          .antMatchers("/resource/**").permitAll())
 
         .csrf(csrf -> csrf.disable())
 
