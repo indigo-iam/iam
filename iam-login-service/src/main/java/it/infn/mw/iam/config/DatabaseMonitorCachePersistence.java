@@ -51,7 +51,7 @@ public class DatabaseMonitorCachePersistence {
         this.wellKnownTtlSecs = cacheProps.getwellKnownCleanupPeriodSecs();
     }
 
-    @Scheduled(fixedDelayString = "${iam.jwk.fallback-database-check-interval:1000}")
+    @Scheduled(fixedDelayString = "${cache.database-availability-check-interval}")
     public void checkDatabaseConnection() {
         boolean up;
         LOG.info("Running scheduler");

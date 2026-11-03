@@ -221,6 +221,7 @@ cache:
   well-known-cleanup-period-secs: ${IAM_WELL_KNOWN_CLEANUP_PERIOD_SECS:60}
   default-cleanup-period-secs: ${IAM_DEFAULT_CLEANUP_PERIOD_SECS:60}
   default-cache-size: ${IAM_DEFAULT_CACHE_SIZE:1000}
+  database-availability-check-interval: ${IAM_DATABASE_AVAILABILITY_CHECK_INTERVAL:5000}
   redis:
     enabled: ${IAM_CACHE_REDIS_ENABLED:false}
 
