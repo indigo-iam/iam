@@ -31,6 +31,7 @@ import java.net.ServerSocket;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import org.h2.tools.Server;
@@ -61,8 +62,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
         "cache.enabled=true",
         "cache.redis.enabled=false",
         "cache.well-known-cleanup-period-secs=5",
-        "cache.database-availability-check-interval=250" })
-@Transactional (propagation = Propagation.NOT_SUPPORTED)
+        "cache.database-availability-check-interval=250",
+        "spring.profiles.active=h2-test" })
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class DatabaseMonitorCacheTests {
 
     private static final String WELL_KNOWN = "/.well-known/openid-configuration";
@@ -113,7 +115,7 @@ class DatabaseMonitorCacheTests {
         await("the monitor to notice the outage", Duration.ofSeconds(15), () -> !availability.isAvailable());
 
         // Wait until cache should have expired and verify it persists
-        Thread.sleep(TimeUnit.SECONDS.toMillis(TTL_SECS + 2));
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS*1000 + 2000L));
         assertNotNull(wellKnownCache.get(SimpleKey.EMPTY), "entry must not be evicted during the outage");
         mvc.perform(get(WELL_KNOWN)).andExpect(status().isOk());
 
@@ -122,7 +124,7 @@ class DatabaseMonitorCacheTests {
         await("the monitor to notice the recovery", Duration.ofSeconds(15), availability::isAvailable);
 
         // Check that eviction happens as normal
-        Thread.sleep(TimeUnit.SECONDS.toMillis(TTL_SECS + 2));
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS*1000 + 2000L));
         assertNull(wellKnownCache.get(SimpleKey.EMPTY), "entry should expire normally after the recovery");
     }
 
@@ -137,7 +139,7 @@ class DatabaseMonitorCacheTests {
             if (System.nanoTime() > deadline) {
                 fail("Timed out waiting for " + what);
             }
-            Thread.sleep(100);
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));;
         }
     }
 
