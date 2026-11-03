@@ -162,6 +162,167 @@ class IamApiAuthorizationTests {
   }
 
   @Test
+  void userPatchRejectsMissingAuthentication() {
+    assertFalse(authorization.canPatchUser(null, mock(HttpServletRequest.class), "scim:write"));
+  }
+
+  @Test
+  void userPatchAllowsWriteScopeWithoutLookingUpUser() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:write"));
+
+    assertTrue(
+        authorization.canPatchUser(authentication, mock(HttpServletRequest.class), "scim:write"));
+    verifyNoInteractions(accountUtils);
+  }
+
+  @Test
+  void userPatchAllowsDashboardAdmin() {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+      .getAuthorities();
+    HttpServletRequest request = requestFor("/scim/Users/user-1");
+
+    assertTrue(authorization.canPatchUser(authentication, request, "scim:write"));
+  }
+
+  @Test
+  void userPatchRejectsMissingAccount() {
+    Authentication authentication = mock(Authentication.class);
+    HttpServletRequest request = requestFor("/scim/Users/user-1");
+    when(accountUtils.getAuthenticatedUserAccount(authentication))
+      .thenReturn(java.util.Optional.empty());
+
+    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+  }
+
+  @Test
+  void userPatchRejectsInvalidPaths() {
+    Authentication authentication = mock(Authentication.class);
+    for (String path : List.of("/iam/group/user-1", "/scim/Users/",
+        "/scim/Users/user-1/attributes")) {
+      assertFalse(authorization.canPatchUser(authentication, requestFor(path), "scim:write"));
+    }
+    verifyNoInteractions(accountUtils);
+  }
+
+  @Test
+  void groupPatchRejectsMissingAuthentication() {
+    assertFalse(authorization.canPatchGroup(null, mock(HttpServletRequest.class), "scim:write"));
+  }
+
+  @Test
+  void groupPatchAllowsWriteScope() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:write"));
+
+    assertTrue(
+        authorization.canPatchGroup(authentication, mock(HttpServletRequest.class), "scim:write"));
+  }
+
+  @Test
+  void groupPatchAllowsDashboardAdmin() {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+      .getAuthorities();
+
+    assertTrue(authorization.canPatchGroup(authentication, requestFor("/scim/Groups/group-1"),
+        "scim:write"));
+  }
+
+  @Test
+  void groupPatchRejectsBearerAdminWithoutScope() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read"));
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+      .getAuthorities();
+
+    assertFalse(authorization.canPatchGroup(authentication, requestFor("/scim/Groups/group-1"),
+        "scim:write"));
+  }
+
+  @Test
+  void groupPatchRejectsInvalidPaths() {
+    Authentication authentication = mock(Authentication.class);
+    for (String path : List.of("/iam/group/group-1", "/scim/Groups/",
+        "/scim/Groups/group-1/attributes")) {
+      assertFalse(authorization.canPatchGroup(authentication, requestFor(path), "scim:write"));
+    }
+  }
+
+  @Test
+  void groupUpdateRejectsMissingAuthentication() {
+    assertFalse(
+        authorization.canUpdateGroup(null, mock(HttpServletRequest.class), "iam:admin.write"));
+  }
+
+  @Test
+  void groupUpdateRejectsInvalidPaths() {
+    Authentication authentication = mock(Authentication.class);
+    for (String path : List.of("/scim/Groups/group-1", "/iam/group/",
+        "/iam/group/group-1/attributes")) {
+      assertFalse(
+          authorization.canUpdateGroup(authentication, requestFor(path), "iam:admin.write"));
+    }
+  }
+
+  @Test
+  void scopeOrUserRoleChecksSessionAndBearerSeparately() {
+    Authentication user = authenticationWithRole("ROLE_USER");
+    Authentication other = authenticationWithRole("ROLE_OTHER");
+    assertTrue(authorization.hasScopeOrUserRole(user, "scim:write"));
+    assertFalse(authorization.hasScopeOrUserRole(other, "scim:write"));
+    assertFalse(authorization.hasScopeOrUserRole(null, "scim:write"));
+
+    OAuth2Authentication bearer = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(bearer)).thenReturn(Set.of("scim:read"));
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_USER"))).when(bearer).getAuthorities();
+    assertFalse(authorization.hasScopeOrUserRole(bearer, "scim:write"));
+    when(scopeResolver.resolveScope(bearer)).thenReturn(Set.of("scim:write"));
+    assertTrue(authorization.hasScopeOrUserRole(bearer, "scim:write"));
+  }
+
+  @Test
+  void scopeOrDashboardAdminChecksSessionAndBearerSeparately() {
+    Authentication admin = authenticationWithRole("ROLE_ADMIN");
+    Authentication other = authenticationWithRole("ROLE_USER");
+    assertTrue(authorization.hasScopeOrDashboardAdmin(admin, "iam:admin.write"));
+    assertFalse(authorization.hasScopeOrDashboardAdmin(other, "iam:admin.write"));
+    assertFalse(authorization.hasScopeOrDashboardAdmin(null, "iam:admin.write"));
+
+    OAuth2Authentication bearer = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(bearer)).thenReturn(Set.of("scim:read"));
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(bearer).getAuthorities();
+    assertFalse(authorization.hasScopeOrDashboardAdmin(bearer, "iam:admin.write"));
+    when(scopeResolver.resolveScope(bearer)).thenReturn(Set.of("iam:admin.write"));
+    assertTrue(authorization.hasScopeOrDashboardAdmin(bearer, "iam:admin.write"));
+  }
+
+  @Test
+  void pathMatchingSupportsServletContext() {
+    Authentication groupManager = authenticationWithRole("ROLE_GM:group-1");
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("/iam-app");
+    when(request.getRequestURI()).thenReturn("/iam-app/iam/group/group-1");
+    assertTrue(authorization.canUpdateGroup(groupManager, request, "iam:admin.write"));
+    when(request.getRequestURI()).thenReturn("/iam-app/scim/Groups/group-1");
+    assertTrue(authorization.canPatchGroup(groupManager, request, "scim:write"));
+  }
+
+  private HttpServletRequest requestFor(String path) {
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn(path);
+    return request;
+  }
+
+  private Authentication authenticationWithRole(String role) {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority(role))).when(authentication).getAuthorities();
+    return authentication;
+  }
+
+  @Test
   void allowsBearerTokenWithWriteScope() {
     OAuth2Authentication authentication = mock(OAuth2Authentication.class);
     when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read", "scim:write"));
