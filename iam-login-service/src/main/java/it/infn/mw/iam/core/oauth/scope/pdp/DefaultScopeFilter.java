@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -22,13 +23,17 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @Component
@@ -43,13 +48,16 @@ public class DefaultScopeFilter implements ScopeFilter {
   private final AccountUtils accountUtils;
   private final ScopePolicyEngine policyEngine;
   private final IamProperties properties;
+  private final ClientDetailsService clientDetailsService;
 
   public DefaultScopeFilter(IamProperties config, AccountUtils accountUtils,
-      ScopePolicyEngine policyEngine, IamProperties properties) {
+      ScopePolicyEngine policyEngine, IamProperties properties,
+      @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService) {
     this.config = config;
     this.accountUtils = accountUtils;
     this.policyEngine = policyEngine;
     this.properties = properties;
+    this.clientDetailsService = clientDetailsService;
   }
 
   @Override
@@ -71,7 +79,7 @@ public class DefaultScopeFilter implements ScopeFilter {
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
-    filteredScopes.retainAll(adminPolicies(requestedScopes, account));
+    filteredScopes.retainAll(adminPolicies(requestedScopes, account, clientId));
     if (config.getScopeAuthz().isEnabled()) {
 
       Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
@@ -93,7 +101,18 @@ public class DefaultScopeFilter implements ScopeFilter {
       .collect(Collectors.toSet());
   }
 
-  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {
+  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account,
+      String clientId) {
+    if (!Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
+      ClientDetailsEntity client =
+          (ClientDetailsEntity) clientDetailsService.loadClientByClientId(clientId);
+
+      if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+        throw new InvalidRequestException(
+            "Public clients are not allowed to request iam:admin or scim scopes");
+      }
+    }
+
     if (!accountUtils.isAdmin(account)) {
       return requestedScopes.stream()
         .filter(s -> !ADMIN_SCOPES.contains(s))
