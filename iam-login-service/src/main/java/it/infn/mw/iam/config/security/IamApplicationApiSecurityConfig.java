@@ -171,6 +171,13 @@ public class IamApplicationApiSecurityConfig {
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(PUT, "/iam/group/*")
           .access("@iamApiAuthorization.canUpdateGroup(authentication, request, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*",
+              "/iam/scope_policies/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .anyRequest()
           .authenticated())
 
@@ -251,6 +258,13 @@ public class IamApplicationApiSecurityConfig {
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(PUT, "/iam/group/*")
           .access("@iamApiAuthorization.canUpdateGroup(authentication, request, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*",
+              "/iam/scope_policies/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
