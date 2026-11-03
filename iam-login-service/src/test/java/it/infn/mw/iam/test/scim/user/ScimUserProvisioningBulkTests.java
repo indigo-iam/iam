@@ -94,6 +94,30 @@ class ScimUserProvisioningBulkTests {
   }
 
   @Test
+  void bulkRejectsMalformedJsonBeforeDeserializationWhenWriteScopeIsMissing() throws Exception {
+    String readOnlyToken =
+        OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ScimUtils.SCIM_CLIENT_ID,
+            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+
+    // An invalid JSON body would normally produce HTTP 400 during MVC argument resolution.
+    // HTTP 403 proves that the request was denied by the security filter chain first.
+    mvc.perform(post(ScimUtils.getUsersBulkLocation())
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+      .contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json"))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void bulkDeserializesMalformedJsonWhenWriteScopeIsGranted() throws Exception {
+    // The same malformed payload must reach MVC when the token has scim:write.
+    performScim(post(ScimUtils.getUsersBulkLocation())
+      .contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json"))
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void testPostSuccessPatchSuccess() throws Exception {
 
     JsonNode user = objectMapper
