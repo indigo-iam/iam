@@ -120,6 +120,39 @@ public class IamApiAuthorization {
       .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
   }
 
+  /**
+   * Checks PUT /iam/group/{id} before MVC deserializes the request body.
+   */
+  public boolean canUpdateGroup(Authentication authentication, HttpServletRequest request,
+      String scope) {
+    if (hasScope(authentication, scope)) {
+      return true;
+    }
+    if (authentication == null) {
+      return false;
+    }
+
+    String prefix = request.getContextPath() + "/iam/group/";
+    String uri = request.getRequestURI();
+    if (!uri.startsWith(prefix)) {
+      return false;
+    }
+    String groupId = uri.substring(prefix.length());
+    if (groupId.isEmpty() || groupId.contains("/")) {
+      return false;
+    }
+
+    if (!(authentication instanceof OAuth2Authentication) &&
+        authentication.getAuthorities().stream()
+          .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+      return true;
+    }
+
+    String gmAuthority = "ROLE_GM:" + groupId;
+    return authentication.getAuthorities().stream()
+      .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
+  }
+
   public boolean hasScopeOrUserRole(Authentication authentication, String scope) {
     if (hasScope(authentication, scope)) {
       return true;

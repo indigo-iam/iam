@@ -112,6 +112,56 @@ class IamApiAuthorizationTests {
   }
 
   @Test
+  void groupUpdateAllowsManagerOnlyForOwnGroup() {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_GM:group-1"))).when(authentication)
+      .getAuthorities();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/iam/group/group-1");
+
+    assertTrue(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+    when(request.getRequestURI()).thenReturn("/iam/group/group-2");
+    assertFalse(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+    when(request.getRequestURI()).thenReturn("/iam/group/group-1/attributes");
+    assertFalse(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+  }
+
+  @Test
+  void groupUpdateAllowsDashboardAdmin() {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+      .getAuthorities();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/iam/group/group-1");
+
+    assertTrue(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+  }
+
+  @Test
+  void groupUpdateRejectsBearerWithoutScopeEvenWithAdminAuthority() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read"));
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
+      .getAuthorities();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/iam/group/group-1");
+
+    assertFalse(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+  }
+
+  @Test
+  void groupUpdateAllowsBearerWithAdminWriteScope() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("iam:admin.write"));
+    HttpServletRequest request = mock(HttpServletRequest.class);
+
+    assertTrue(authorization.canUpdateGroup(authentication, request, "iam:admin.write"));
+  }
+
+  @Test
   void allowsBearerTokenWithWriteScope() {
     OAuth2Authentication authentication = mock(OAuth2Authentication.class);
     when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read", "scim:write"));
