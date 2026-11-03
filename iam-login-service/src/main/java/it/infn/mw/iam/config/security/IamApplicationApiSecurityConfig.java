@@ -141,7 +141,9 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, "/iam/api/client-registration")
+          .access("@clientRegistrationEarlyAuthorization.canRegister(authentication)")
+          .antMatchers(POST, SCIM_BULK_PATH)
           .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
           .antMatchers(POST, SCIM_CREATE_PATHS)
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
@@ -241,7 +243,9 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, "/iam/api/client-registration")
+          .access("@clientRegistrationEarlyAuthorization.canRegister(authentication)")
+          .antMatchers(POST, SCIM_BULK_PATH)
           .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
           .antMatchers(POST, SCIM_CREATE_PATHS)
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
@@ -350,7 +354,9 @@ public class IamApplicationApiSecurityConfig {
 
         .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
 
-        .authorizeRequests(authorize -> authorize.antMatchers("/resource/**").permitAll())
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, "/resource")
+          .access("@clientRegistrationEarlyAuthorization.canRegister(authentication)")
+          .antMatchers("/resource/**").permitAll())
 
         .csrf(csrf -> csrf.disable())
 
