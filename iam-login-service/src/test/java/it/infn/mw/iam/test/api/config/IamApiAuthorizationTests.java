@@ -17,14 +17,19 @@ package it.infn.mw.iam.test.api.config;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.config.security.IamApiAuthorization;
@@ -57,6 +62,20 @@ class IamApiAuthorizationTests {
     when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read"));
 
     assertFalse(authorization.hasScope(authentication, "scim:write"));
+  }
+
+  @Test
+  void groupManagerCanPatchOnlyOwnGroup() {
+    Authentication authentication = mock(Authentication.class);
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_GM:group-1"))).when(authentication)
+      .getAuthorities();
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getRequestURI()).thenReturn("/scim/Groups/group-1");
+    when(request.getContextPath()).thenReturn("");
+
+    assertTrue(authorization.canPatchGroup(authentication, request, "scim:write"));
+    when(request.getRequestURI()).thenReturn("/scim/Groups/group-2");
+    assertFalse(authorization.canPatchGroup(authentication, request, "scim:write"));
   }
 
   @Test

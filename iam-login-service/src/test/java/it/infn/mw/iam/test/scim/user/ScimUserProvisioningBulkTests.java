@@ -95,77 +95,70 @@ class ScimUserProvisioningBulkTests {
 
   @Test
   void bulkRejectsMalformedJsonBeforeDeserializationWhenWriteScopeIsMissing() throws Exception {
-    String readOnlyToken =
-        OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ScimUtils.SCIM_CLIENT_ID,
-            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
     // An invalid JSON body would normally produce HTTP 400 during MVC argument resolution.
     // HTTP 403 proves that the request was denied by the security filter chain first.
     mvc.perform(post(ScimUtils.getUsersBulkLocation())
       .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
       .contentType(SCIM_CONTENT_TYPE)
-      .content("{ invalid json"))
-      .andExpect(status().isForbidden());
+      .content("{ invalid json")).andExpect(status().isForbidden());
   }
 
   @Test
   void bulkDeserializesMalformedJsonWhenWriteScopeIsGranted() throws Exception {
     // The same malformed payload must reach MVC when the token has scim:write.
-    performScim(post(ScimUtils.getUsersBulkLocation())
-      .contentType(SCIM_CONTENT_TYPE)
-      .content("{ invalid json"))
-      .andExpect(status().isBadRequest());
+    performScim(post(ScimUtils.getUsersBulkLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json")).andExpect(status().isBadRequest());
   }
 
   @Test
   void createAndReplaceRejectMalformedJsonWithoutWriteScope() throws Exception {
-    String readOnlyToken =
-        OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ScimUtils.SCIM_CLIENT_ID,
-            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
-    for (String path : new String[] {ScimUtils.getUsersLocation(),
-        ScimUtils.getGroupsLocation()}) {
-      mvc.perform(post(path)
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
-        .contentType(SCIM_CONTENT_TYPE)
-        .content("{ invalid json"))
+    for (String path : new String[] {ScimUtils.getUsersLocation(), ScimUtils.getGroupsLocation()}) {
+      mvc
+        .perform(post(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+          .contentType(SCIM_CONTENT_TYPE)
+          .content("{ invalid json"))
         .andExpect(status().isForbidden());
 
-      mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-        .put(path + "/" + ADMIN_ID)
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
-        .contentType(SCIM_CONTENT_TYPE)
-        .content("{ invalid json"))
+      mvc
+        .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+          .put(path + "/" + ADMIN_ID)
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+          .contentType(SCIM_CONTENT_TYPE)
+          .content("{ invalid json"))
         .andExpect(status().isForbidden());
     }
   }
 
   @Test
   void createAndReplaceParseMalformedJsonWithWriteScope() throws Exception {
-    for (String path : new String[] {ScimUtils.getUsersLocation(),
-        ScimUtils.getGroupsLocation()}) {
+    for (String path : new String[] {ScimUtils.getUsersLocation(), ScimUtils.getGroupsLocation()}) {
       performScim(post(path).contentType(SCIM_CONTENT_TYPE).content("{ invalid json"))
         .andExpect(status().isBadRequest());
 
       performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
         .put(path + "/" + ADMIN_ID)
         .contentType(SCIM_CONTENT_TYPE)
-        .content("{ invalid json"))
-        .andExpect(status().isBadRequest());
+        .content("{ invalid json")).andExpect(status().isBadRequest());
     }
   }
 
   @Test
   void scimMeRejectsMalformedJsonBeforeDeserializationWithoutWriteScope() throws Exception {
-    String readOnlyToken =
-        OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ScimUtils.SCIM_CLIENT_ID,
-            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
 
-    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-      .patch(ScimUtils.getMeLocation())
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
-      .contentType(SCIM_CONTENT_TYPE)
-      .content("{ invalid json"))
+    mvc
+      .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+        .patch(ScimUtils.getMeLocation())
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+        .contentType(SCIM_CONTENT_TYPE)
+        .content("{ invalid json"))
       .andExpect(status().isForbidden());
   }
 
@@ -174,8 +167,29 @@ class ScimUserProvisioningBulkTests {
     performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
       .patch(ScimUtils.getMeLocation())
       .contentType(SCIM_CONTENT_TYPE)
-      .content("{ invalid json"))
-      .andExpect(status().isBadRequest());
+      .content("{ invalid json")).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void groupPatchRejectsMalformedJsonWithoutWriteScopeOrGroupManagerRole() throws Exception {
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+
+    mvc
+      .perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+        .patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+        .contentType(SCIM_CONTENT_TYPE)
+        .content("{ invalid json"))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void groupPatchParsesMalformedJsonWithWriteScope() throws Exception {
+    performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+      .patch(ScimUtils.getGroupsLocation() + "/" + ADMIN_ID)
+      .contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json")).andExpect(status().isBadRequest());
   }
 
   @Test

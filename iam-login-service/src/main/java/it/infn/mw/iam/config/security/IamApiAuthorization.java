@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.config.security;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
@@ -43,6 +45,41 @@ public class IamApiAuthorization {
     }
 
     return scopeResolver.resolveScope(oauth).contains(scope);
+  }
+
+  /**
+   * Checks the group PATCH policy before Spring MVC resolves the request body.
+   * Group managers may operate only on their own group; dashboard admin
+   * privileges do not transfer to bearer tokens.
+   */
+  public boolean canPatchGroup(Authentication authentication, HttpServletRequest request,
+      String scope) {
+    if (hasScope(authentication, scope)) {
+      return true;
+    }
+    if (authentication == null) {
+      return false;
+    }
+
+    String uri = request.getRequestURI();
+    String prefix = request.getContextPath() + "/scim/Groups/";
+    if (!uri.startsWith(prefix)) {
+      return false;
+    }
+    String groupId = uri.substring(prefix.length());
+    if (groupId.isEmpty() || groupId.contains("/")) {
+      return false;
+    }
+
+    if (!(authentication instanceof OAuth2Authentication) &&
+        authentication.getAuthorities().stream()
+          .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+      return true;
+    }
+
+    String gmAuthority = "ROLE_GM:" + groupId;
+    return authentication.getAuthorities().stream()
+      .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
   }
 
   public boolean hasScopeOrUserRole(Authentication authentication, String scope) {

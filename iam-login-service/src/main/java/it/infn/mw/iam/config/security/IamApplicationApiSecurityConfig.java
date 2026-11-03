@@ -149,6 +149,8 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .antMatchers(PATCH, "/scim/Me")
           .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Groups/*")
+          .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
           .anyRequest()
           .authenticated())
 
@@ -207,6 +209,8 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .antMatchers(PATCH, "/scim/Me")
           .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Groups/*")
+          .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
