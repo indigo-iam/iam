@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.HEAD;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import java.util.LinkedHashMap;
@@ -66,6 +67,8 @@ public class IamApplicationApiSecurityConfig {
   private static final String AUP_PATH = "/iam/aup";
   private static final String AUP_SIGN_PATH = "/iam/aup/sign";
   private static final String SCIM_BULK_PATH = "/scim/Users/Bulk";
+  private static final String[] SCIM_CREATE_PATHS = {"/scim/Users", "/scim/Groups"};
+  private static final String[] SCIM_REPLACE_PATHS = {"/scim/Users/*", "/scim/Groups/*"};
 
   /*
    * These endpoints belong to dedicated protocol/browser chains.
@@ -139,6 +142,10 @@ public class IamApplicationApiSecurityConfig {
 
         .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
           .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .antMatchers(POST, SCIM_CREATE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PUT, SCIM_REPLACE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .anyRequest()
           .authenticated())
 
@@ -191,6 +198,10 @@ public class IamApplicationApiSecurityConfig {
 
         .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
           .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .antMatchers(POST, SCIM_CREATE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PUT, SCIM_REPLACE_PATHS)
+          .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")

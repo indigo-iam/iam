@@ -44,4 +44,15 @@ public class IamApiAuthorization {
 
     return scopeResolver.resolveScope(oauth).contains(scope);
   }
+
+  public boolean hasScopeOrDashboardAdmin(Authentication authentication, String scope) {
+    if (hasScope(authentication, scope)) {
+      return true;
+    }
+    if (authentication == null || authentication instanceof OAuth2Authentication) {
+      return false;
+    }
+    return authentication.getAuthorities().stream()
+      .anyMatch(authority -> authority.getAuthority().contains("ROLE_ADMIN"));
+  }
 }
