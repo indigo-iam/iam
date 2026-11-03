@@ -18,6 +18,9 @@ package it.infn.mw.iam.test.api.config;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_SECRET;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
+import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_ID;
+import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_SECRET;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -142,6 +145,57 @@ class RequestBodyEarlyAuthorizationTests {
         .contentType(MediaType.APPLICATION_JSON)
         .content(MALFORMED_JSON))
       .andExpect(status().isForbidden());
+  }
+
+  static Stream<Arguments> bearerAdminWriteEndpoints() {
+    return adminWriteEndpoints();
+  }
+
+  static Stream<Arguments> bearerScimWriteEndpoints() {
+    return Stream.of(Arguments.of(HttpMethod.POST, "/scim/Users"),
+        Arguments.of(HttpMethod.POST, "/scim/Groups"),
+        Arguments.of(HttpMethod.PUT, "/scim/Users/" + ACCOUNT_ID),
+        Arguments.of(HttpMethod.PUT, "/scim/Groups/" + GROUP_ID),
+        Arguments.of(HttpMethod.PATCH, "/scim/Users/" + ACCOUNT_ID),
+        Arguments.of(HttpMethod.PATCH, "/scim/Groups/" + GROUP_ID));
+  }
+
+  @ParameterizedTest
+  @MethodSource("bearerAdminWriteEndpoints")
+  void bearerWithoutAdminWriteScopeIsRejected(HttpMethod method, String path) throws Exception {
+    String token = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ADMIN_CLIENT_ID,
+        ADMIN_CLIENT_SECRET, "iam:admin.read");
+    mvc.perform(malformedRequest(method, path).with(OAuthTokenTestUtils.bearerToken(token)))
+      .andExpect(status().isForbidden());
+  }
+
+  @ParameterizedTest
+  @MethodSource("bearerAdminWriteEndpoints")
+  void bearerWithAdminWriteScopeReachesDeserialization(HttpMethod method, String path)
+      throws Exception {
+    String token = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ADMIN_CLIENT_ID,
+        ADMIN_CLIENT_SECRET, "iam:admin.write");
+    mvc.perform(malformedRequest(method, path).with(OAuthTokenTestUtils.bearerToken(token)))
+      .andExpect(status().isBadRequest());
+  }
+
+  @ParameterizedTest
+  @MethodSource("bearerScimWriteEndpoints")
+  void bearerWithoutScimWriteScopeIsRejected(HttpMethod method, String path) throws Exception {
+    String token = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, SCIM_READ_SCOPE);
+    mvc.perform(malformedRequest(method, path).with(OAuthTokenTestUtils.bearerToken(token)))
+      .andExpect(status().isForbidden());
+  }
+
+  @ParameterizedTest
+  @MethodSource("bearerScimWriteEndpoints")
+  void bearerWithScimWriteScopeReachesDeserialization(HttpMethod method, String path)
+      throws Exception {
+    String token = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
+        SCIM_CLIENT_SECRET, SCIM_WRITE_SCOPE);
+    mvc.perform(malformedRequest(method, path).with(OAuthTokenTestUtils.bearerToken(token)))
+      .andExpect(status().isBadRequest());
   }
 
   @Test
