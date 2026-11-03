@@ -32,7 +32,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.security.IamApiAuthorization;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 
 @SuppressWarnings("deprecation")
@@ -41,7 +43,38 @@ class IamApiAuthorizationTests {
   private final OAuth2AuthenticationScopeResolver scopeResolver =
       mock(OAuth2AuthenticationScopeResolver.class);
 
-  private final IamApiAuthorization authorization = new IamApiAuthorization(scopeResolver);
+  private final AccountUtils accountUtils = mock(AccountUtils.class);
+  private final IamApiAuthorization authorization =
+      new IamApiAuthorization(scopeResolver, accountUtils);
+
+  @Test
+  void userPatchAllowsOwnerButNotOtherUser() {
+    Authentication authentication = mock(Authentication.class);
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    IamAccount account = mock(IamAccount.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/scim/Users/owner-id");
+    when(accountUtils.getAuthenticatedUserAccount(authentication))
+      .thenReturn(java.util.Optional.of(account));
+    when(account.getUuid()).thenReturn("owner-id");
+
+    assertTrue(authorization.canPatchUser(authentication, request, "scim:write"));
+    when(request.getRequestURI()).thenReturn("/scim/Users/other-id");
+    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+  }
+
+  @Test
+  void userPatchRejectsClientCredentialsWithoutWriteScope() {
+    OAuth2Authentication authentication = mock(OAuth2Authentication.class);
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/scim/Users/owner-id");
+    when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:read"));
+    when(accountUtils.getAuthenticatedUserAccount(authentication))
+      .thenReturn(java.util.Optional.empty());
+
+    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+  }
 
   @Test
   void deniesMissingAuthentication() {

@@ -21,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 
 /**
@@ -34,9 +35,12 @@ import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 public class IamApiAuthorization {
 
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final AccountUtils accountUtils;
 
-  public IamApiAuthorization(OAuth2AuthenticationScopeResolver scopeResolver) {
+  public IamApiAuthorization(OAuth2AuthenticationScopeResolver scopeResolver,
+      AccountUtils accountUtils) {
     this.scopeResolver = scopeResolver;
+    this.accountUtils = accountUtils;
   }
 
   public boolean hasScope(Authentication authentication, String scope) {
@@ -45,6 +49,40 @@ public class IamApiAuthorization {
     }
 
     return scopeResolver.resolveScope(oauth).contains(scope);
+  }
+
+  /**
+   * Authorizes PATCH /scim/Users/{id} before request-body deserialization.
+   * Preserve the existing method security rules for scope, ownership and dashboard admin.
+   */
+  public boolean canPatchUser(Authentication authentication, HttpServletRequest request,
+      String scope) {
+    if (hasScope(authentication, scope)) {
+      return true;
+    }
+    if (authentication == null) {
+      return false;
+    }
+
+    String prefix = request.getContextPath() + "/scim/Users/";
+    String uri = request.getRequestURI();
+    if (!uri.startsWith(prefix)) {
+      return false;
+    }
+    String userId = uri.substring(prefix.length());
+    if (userId.isEmpty() || userId.contains("/")) {
+      return false;
+    }
+
+    if (!(authentication instanceof OAuth2Authentication) &&
+        authentication.getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().contains("ROLE_ADMIN"))) {
+      return true;
+    }
+
+    return accountUtils.getAuthenticatedUserAccount(authentication)
+      .map(account -> userId.equals(account.getUuid()))
+      .orElse(false);
   }
 
   /**
