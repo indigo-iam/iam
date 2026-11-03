@@ -174,7 +174,8 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*", "/iam/scope_policies/*")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
-          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies",
+              "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .anyRequest()
@@ -260,7 +261,8 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(PUT, "/iam/account/*/endTime", "/iam/api/clients/*", "/iam/scope_policies/*")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
-          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies")
+          .antMatchers(POST, "/iam/api/clients", "/iam/scope_policies",
+              "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers("/iam/password-reset/**")
