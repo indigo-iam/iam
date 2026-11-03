@@ -65,6 +65,10 @@ class RequestBodyEarlyAuthorizationTests {
 
   static Stream<Arguments> adminWriteEndpoints() {
     return Stream.of(Arguments.of(HttpMethod.PUT, "/iam/account/" + ACCOUNT_ID + "/endTime"),
+        Arguments.of(HttpMethod.POST, "/api/scopes"),
+        Arguments.of(HttpMethod.POST, "/iam/api/scopes"),
+        Arguments.of(HttpMethod.PUT, "/api/scopes/1"),
+        Arguments.of(HttpMethod.PUT, "/iam/api/scopes/1"),
         Arguments.of(HttpMethod.POST, "/iam/api/clients"),
         Arguments.of(HttpMethod.PUT, "/iam/api/clients/example-client"),
         Arguments.of(HttpMethod.POST, "/iam/scope_policies"),
