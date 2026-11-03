@@ -58,9 +58,9 @@ class IamApiAuthorizationTests {
       .thenReturn(java.util.Optional.of(account));
     when(account.getUuid()).thenReturn("owner-id");
 
-    assertTrue(authorization.canPatchUser(authentication, request, "scim:write"));
+    assertTrue(authorization.canPatchScimUser(authentication, request, "scim:write"));
     when(request.getRequestURI()).thenReturn("/scim/Users/other-id");
-    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+    assertFalse(authorization.canPatchScimUser(authentication, request, "scim:write"));
   }
 
   @Test
@@ -73,7 +73,7 @@ class IamApiAuthorizationTests {
     when(accountUtils.getAuthenticatedUserAccount(authentication))
       .thenReturn(java.util.Optional.empty());
 
-    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+    assertFalse(authorization.canPatchScimUser(authentication, request, "scim:write"));
   }
 
   @Test
@@ -106,9 +106,9 @@ class IamApiAuthorizationTests {
     when(request.getRequestURI()).thenReturn("/scim/Groups/group-1");
     when(request.getContextPath()).thenReturn("");
 
-    assertTrue(authorization.canPatchGroup(authentication, request, "scim:write"));
+    assertTrue(authorization.canPatchScimGroup(authentication, request, "scim:write"));
     when(request.getRequestURI()).thenReturn("/scim/Groups/group-2");
-    assertFalse(authorization.canPatchGroup(authentication, request, "scim:write"));
+    assertFalse(authorization.canPatchScimGroup(authentication, request, "scim:write"));
   }
 
   @Test
@@ -163,7 +163,7 @@ class IamApiAuthorizationTests {
 
   @Test
   void userPatchRejectsMissingAuthentication() {
-    assertFalse(authorization.canPatchUser(null, mock(HttpServletRequest.class), "scim:write"));
+    assertFalse(authorization.canPatchScimUser(null, mock(HttpServletRequest.class), "scim:write"));
   }
 
   @Test
@@ -172,7 +172,7 @@ class IamApiAuthorizationTests {
     when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:write"));
 
     assertTrue(
-        authorization.canPatchUser(authentication, mock(HttpServletRequest.class), "scim:write"));
+        authorization.canPatchScimUser(authentication, mock(HttpServletRequest.class), "scim:write"));
     verifyNoInteractions(accountUtils);
   }
 
@@ -183,7 +183,7 @@ class IamApiAuthorizationTests {
       .getAuthorities();
     HttpServletRequest request = requestFor("/scim/Users/user-1");
 
-    assertTrue(authorization.canPatchUser(authentication, request, "scim:write"));
+    assertTrue(authorization.canPatchScimUser(authentication, request, "scim:write"));
   }
 
   @Test
@@ -193,7 +193,7 @@ class IamApiAuthorizationTests {
     when(accountUtils.getAuthenticatedUserAccount(authentication))
       .thenReturn(java.util.Optional.empty());
 
-    assertFalse(authorization.canPatchUser(authentication, request, "scim:write"));
+    assertFalse(authorization.canPatchScimUser(authentication, request, "scim:write"));
   }
 
   @Test
@@ -201,14 +201,14 @@ class IamApiAuthorizationTests {
     Authentication authentication = mock(Authentication.class);
     for (String path : List.of("/iam/group/user-1", "/scim/Users/",
         "/scim/Users/user-1/attributes")) {
-      assertFalse(authorization.canPatchUser(authentication, requestFor(path), "scim:write"));
+      assertFalse(authorization.canPatchScimUser(authentication, requestFor(path), "scim:write"));
     }
     verifyNoInteractions(accountUtils);
   }
 
   @Test
   void groupPatchRejectsMissingAuthentication() {
-    assertFalse(authorization.canPatchGroup(null, mock(HttpServletRequest.class), "scim:write"));
+    assertFalse(authorization.canPatchScimGroup(null, mock(HttpServletRequest.class), "scim:write"));
   }
 
   @Test
@@ -217,7 +217,7 @@ class IamApiAuthorizationTests {
     when(scopeResolver.resolveScope(authentication)).thenReturn(Set.of("scim:write"));
 
     assertTrue(
-        authorization.canPatchGroup(authentication, mock(HttpServletRequest.class), "scim:write"));
+        authorization.canPatchScimGroup(authentication, mock(HttpServletRequest.class), "scim:write"));
   }
 
   @Test
@@ -226,7 +226,7 @@ class IamApiAuthorizationTests {
     doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
       .getAuthorities();
 
-    assertTrue(authorization.canPatchGroup(authentication, requestFor("/scim/Groups/group-1"),
+    assertTrue(authorization.canPatchScimGroup(authentication, requestFor("/scim/Groups/group-1"),
         "scim:write"));
   }
 
@@ -237,7 +237,7 @@ class IamApiAuthorizationTests {
     doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))).when(authentication)
       .getAuthorities();
 
-    assertFalse(authorization.canPatchGroup(authentication, requestFor("/scim/Groups/group-1"),
+    assertFalse(authorization.canPatchScimGroup(authentication, requestFor("/scim/Groups/group-1"),
         "scim:write"));
   }
 
@@ -246,7 +246,7 @@ class IamApiAuthorizationTests {
     Authentication authentication = mock(Authentication.class);
     for (String path : List.of("/iam/group/group-1", "/scim/Groups/",
         "/scim/Groups/group-1/attributes")) {
-      assertFalse(authorization.canPatchGroup(authentication, requestFor(path), "scim:write"));
+      assertFalse(authorization.canPatchScimGroup(authentication, requestFor(path), "scim:write"));
     }
   }
 
@@ -306,7 +306,7 @@ class IamApiAuthorizationTests {
     when(request.getRequestURI()).thenReturn("/iam-app/iam/group/group-1");
     assertTrue(authorization.canUpdateGroup(groupManager, request, "iam:admin.write"));
     when(request.getRequestURI()).thenReturn("/iam-app/scim/Groups/group-1");
-    assertTrue(authorization.canPatchGroup(groupManager, request, "scim:write"));
+    assertTrue(authorization.canPatchScimGroup(groupManager, request, "scim:write"));
   }
 
   private HttpServletRequest requestFor(String path) {

@@ -34,6 +34,10 @@ import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 @SuppressWarnings("deprecation")
 public class IamApiAuthorization {
 
+  public static final String ROLE_ADMIN = "ROLE_ADMIN";
+  public static final String ROLE_USER = "ROLE_USER";
+  public static final String ROLE_GM = "ROLE_GM:";
+
   private final OAuth2AuthenticationScopeResolver scopeResolver;
   private final AccountUtils accountUtils;
 
@@ -55,7 +59,7 @@ public class IamApiAuthorization {
    * Authorizes PATCH /scim/Users/{id} before request-body deserialization.
    * Preserve the existing method security rules for scope, ownership and dashboard admin.
    */
-  public boolean canPatchUser(Authentication authentication, HttpServletRequest request,
+  public boolean canPatchScimUser(Authentication authentication, HttpServletRequest request,
       String scope) {
     if (hasScope(authentication, scope)) {
       return true;
@@ -76,7 +80,7 @@ public class IamApiAuthorization {
 
     if (!(authentication instanceof OAuth2Authentication) &&
         authentication.getAuthorities().stream()
-          .anyMatch(a -> a.getAuthority().contains("ROLE_ADMIN"))) {
+          .anyMatch(a -> a.getAuthority().contains(ROLE_ADMIN))) {
       return true;
     }
 
@@ -90,7 +94,7 @@ public class IamApiAuthorization {
    * Group managers may operate only on their own group; dashboard admin
    * privileges do not transfer to bearer tokens.
    */
-  public boolean canPatchGroup(Authentication authentication, HttpServletRequest request,
+  public boolean canPatchScimGroup(Authentication authentication, HttpServletRequest request,
       String scope) {
     if (hasScope(authentication, scope)) {
       return true;
@@ -111,11 +115,11 @@ public class IamApiAuthorization {
 
     if (!(authentication instanceof OAuth2Authentication) &&
         authentication.getAuthorities().stream()
-          .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+          .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
       return true;
     }
 
-    String gmAuthority = "ROLE_GM:" + groupId;
+    String gmAuthority = ROLE_GM + groupId;
     return authentication.getAuthorities().stream()
       .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
   }
@@ -144,11 +148,11 @@ public class IamApiAuthorization {
 
     if (!(authentication instanceof OAuth2Authentication) &&
         authentication.getAuthorities().stream()
-          .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+          .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
       return true;
     }
 
-    String gmAuthority = "ROLE_GM:" + groupId;
+    String gmAuthority = ROLE_GM + groupId;
     return authentication.getAuthorities().stream()
       .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
   }
@@ -161,7 +165,7 @@ public class IamApiAuthorization {
       return false;
     }
     return authentication.getAuthorities().stream()
-      .anyMatch(authority -> "ROLE_USER".equals(authority.getAuthority()));
+      .anyMatch(authority -> ROLE_USER.equals(authority.getAuthority()));
   }
 
   public boolean hasScopeOrDashboardAdmin(Authentication authentication, String scope) {
@@ -172,6 +176,6 @@ public class IamApiAuthorization {
       return false;
     }
     return authentication.getAuthorities().stream()
-      .anyMatch(authority -> authority.getAuthority().contains("ROLE_ADMIN"));
+      .anyMatch(authority -> authority.getAuthority().contains(ROLE_ADMIN));
   }
 }

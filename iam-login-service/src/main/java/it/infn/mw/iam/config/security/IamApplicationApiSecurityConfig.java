@@ -150,9 +150,9 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(PATCH, "/scim/Me")
           .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
           .antMatchers(PATCH, "/scim/Groups/*")
-          .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
+          .access("@iamApiAuthorization.canPatchScimGroup(authentication, request, 'scim:write')")
           .antMatchers(PATCH, "/scim/Users/*")
-          .access("@iamApiAuthorization.canPatchUser(authentication, request, 'scim:write')")
+          .access("@iamApiAuthorization.canPatchScimUser(authentication, request, 'scim:write')")
           .antMatchers(POST, AUP_PATH)
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
@@ -226,9 +226,9 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(PATCH, "/scim/Me")
           .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
           .antMatchers(PATCH, "/scim/Groups/*")
-          .access("@iamApiAuthorization.canPatchGroup(authentication, request, 'scim:write')")
+          .access("@iamApiAuthorization.canPatchScimGroup(authentication, request, 'scim:write')")
           .antMatchers(PATCH, "/scim/Users/*")
-          .access("@iamApiAuthorization.canPatchUser(authentication, request, 'scim:write')")
+          .access("@iamApiAuthorization.canPatchScimUser(authentication, request, 'scim:write')")
           .antMatchers(POST, AUP_PATH)
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
