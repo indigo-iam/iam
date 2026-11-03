@@ -178,6 +178,13 @@ public class IamApplicationApiSecurityConfig {
               "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, "/iam/aup/signature/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group_requests")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(PUT, "/iam/account/me/proxycert")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
           .anyRequest()
           .authenticated())
 
@@ -265,6 +272,13 @@ public class IamApplicationApiSecurityConfig {
               "/iam/api/exchange/policies", "/api/blacklist", "/api/whitelist")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PATCH, "/iam/aup/signature/*")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group_requests")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
+          .antMatchers(PUT, "/iam/account/me/proxycert")
+          .access("@iamApiAuthorization.hasUserRole(authentication)")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")

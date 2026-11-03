@@ -56,8 +56,8 @@ public class IamApiAuthorization {
   }
 
   /**
-   * Authorizes PATCH /scim/Users/{id} before request-body deserialization.
-   * Preserve the existing method security rules for scope, ownership and dashboard admin.
+   * Authorizes PATCH /scim/Users/{id} before request-body deserialization. Preserve the existing
+   * method security rules for scope, ownership and dashboard admin.
    */
   public boolean canPatchScimUser(Authentication authentication, HttpServletRequest request,
       String scope) {
@@ -78,9 +78,9 @@ public class IamApiAuthorization {
       return false;
     }
 
-    if (!(authentication instanceof OAuth2Authentication) &&
-        authentication.getAuthorities().stream()
-          .anyMatch(a -> a.getAuthority().contains(ROLE_ADMIN))) {
+    if (!(authentication instanceof OAuth2Authentication) && authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().contains(ROLE_ADMIN))) {
       return true;
     }
 
@@ -90,9 +90,8 @@ public class IamApiAuthorization {
   }
 
   /**
-   * Checks the group PATCH policy before Spring MVC resolves the request body.
-   * Group managers may operate only on their own group; dashboard admin
-   * privileges do not transfer to bearer tokens.
+   * Checks the group PATCH policy before Spring MVC resolves the request body. Group managers may
+   * operate only on their own group; dashboard admin privileges do not transfer to bearer tokens.
    */
   public boolean canPatchScimGroup(Authentication authentication, HttpServletRequest request,
       String scope) {
@@ -113,14 +112,15 @@ public class IamApiAuthorization {
       return false;
     }
 
-    if (!(authentication instanceof OAuth2Authentication) &&
-        authentication.getAuthorities().stream()
-          .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
+    if (!(authentication instanceof OAuth2Authentication) && authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
       return true;
     }
 
     String gmAuthority = ROLE_GM + groupId;
-    return authentication.getAuthorities().stream()
+    return authentication.getAuthorities()
+      .stream()
       .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
   }
 
@@ -146,15 +146,23 @@ public class IamApiAuthorization {
       return false;
     }
 
-    if (!(authentication instanceof OAuth2Authentication) &&
-        authentication.getAuthorities().stream()
-          .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
+    if (!(authentication instanceof OAuth2Authentication) && authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> ROLE_ADMIN.equals(a.getAuthority()))) {
       return true;
     }
 
     String gmAuthority = ROLE_GM + groupId;
-    return authentication.getAuthorities().stream()
+    return authentication.getAuthorities()
+      .stream()
       .anyMatch(a -> gmAuthority.equals(a.getAuthority()));
+  }
+
+  /** Matches the controllers' hasRole('USER') policy before body parsing. */
+  public boolean hasUserRole(Authentication authentication) {
+    return authentication != null && authentication.getAuthorities()
+      .stream()
+      .anyMatch(authority -> ROLE_USER.equals(authority.getAuthority()));
   }
 
   public boolean hasScopeOrUserRole(Authentication authentication, String scope) {
@@ -164,7 +172,8 @@ public class IamApiAuthorization {
     if (authentication == null || authentication instanceof OAuth2Authentication) {
       return false;
     }
-    return authentication.getAuthorities().stream()
+    return authentication.getAuthorities()
+      .stream()
       .anyMatch(authority -> ROLE_USER.equals(authority.getAuthority()));
   }
 
@@ -175,7 +184,8 @@ public class IamApiAuthorization {
     if (authentication == null || authentication instanceof OAuth2Authentication) {
       return false;
     }
-    return authentication.getAuthorities().stream()
+    return authentication.getAuthorities()
+      .stream()
       .anyMatch(authority -> authority.getAuthority().contains(ROLE_ADMIN));
   }
 }
