@@ -159,6 +159,9 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(PATCH, AUP_PATH)
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .anyRequest()
           .authenticated())
 
@@ -225,6 +228,9 @@ public class IamApplicationApiSecurityConfig {
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(PATCH, AUP_PATH)
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(POST, "/iam/group")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers("/iam/password-reset/**")

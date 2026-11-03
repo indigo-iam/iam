@@ -374,6 +374,17 @@ class ScimUserProvisioningBulkTests {
   }
 
   @Test
+  void groupCreateRejectsMalformedJsonWithoutAdminWriteScope() throws Exception {
+    String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
+        ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+
+    mvc.perform(post("/iam/group")
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+      .contentType(MediaType.APPLICATION_JSON)
+      .content("{ invalid json")).andExpect(status().isForbidden());
+  }
+
+  @Test
   void aupRejectsMalformedJsonWithoutAdminWriteScope() throws Exception {
     String readOnlyToken = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper,
         ScimUtils.SCIM_CLIENT_ID, ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
