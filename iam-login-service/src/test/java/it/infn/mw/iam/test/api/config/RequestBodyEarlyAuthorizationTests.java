@@ -15,13 +15,12 @@
  */
 package it.infn.mw.iam.test.api.config;
 
+import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_ID;
+import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_SECRET;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_SECRET;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
-import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_ID;
-import static it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants.ADMIN_CLIENT_SECRET;
-
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -48,6 +47,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.oauth.OAuthTokenTestUtils;
 
@@ -192,9 +192,13 @@ class RequestBodyEarlyAuthorizationTests {
   @MethodSource("bearerScimWriteEndpoints")
   void bearerWithScimWriteScopeReachesDeserialization(HttpMethod method, String path)
       throws Exception {
+
     String token = OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, SCIM_CLIENT_ID,
         SCIM_CLIENT_SECRET, SCIM_WRITE_SCOPE);
-    mvc.perform(malformedRequest(method, path).with(OAuthTokenTestUtils.bearerToken(token)))
+
+    mvc
+      .perform(malformedRequest(method, path).contentType(ScimConstants.SCIM_CONTENT_TYPE)
+        .with(OAuthTokenTestUtils.bearerToken(token)))
       .andExpect(status().isBadRequest());
   }
 
