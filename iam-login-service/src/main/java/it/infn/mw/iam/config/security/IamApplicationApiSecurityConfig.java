@@ -162,6 +162,10 @@ public class IamApplicationApiSecurityConfig {
           .antMatchers(POST, "/iam/group")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/attributes", "/iam/account/*/labels",
+              "/iam/group/*/labels")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(PUT, "/iam/group/*/attributes")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
@@ -236,6 +240,10 @@ public class IamApplicationApiSecurityConfig {
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(POST, "/iam/group")
+          .access(
+              "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
+          .antMatchers(PUT, "/iam/account/*/attributes", "/iam/account/*/labels",
+              "/iam/group/*/labels")
           .access(
               "@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'iam:admin.write')")
           .antMatchers(PUT, "/iam/group/*/attributes")
