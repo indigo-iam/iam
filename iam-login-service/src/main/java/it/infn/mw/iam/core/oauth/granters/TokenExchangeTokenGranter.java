@@ -19,12 +19,17 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision.PERMIT;
 import static java.lang.String.format;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.ExpiringOAuth2RefreshToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
@@ -52,10 +57,18 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
   public static final Logger LOG = LoggerFactory.getLogger(TokenExchangeTokenGranter.class);
 
+  private static final String REQUESTED_TOKEN_TYPE = "requested_token_type";
+  private static final String ISSUED_TOKEN_TYPE = "issued_token_type";
+
+  private static final String ACCESS_TOKEN_TYPE =
+      "urn:ietf:params:oauth:token-type:access_token";
+  private static final String REFRESH_TOKEN_TYPE =
+      "urn:ietf:params:oauth:token-type:refresh_token";
+
+  private static final String TOKEN_TYPE_NA = "N_A";
+
   public static final String TOKEN_EXCHANGE_GRANT_TYPE =
       "urn:ietf:params:oauth:grant-type:token-exchange";
-
-  private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
 
   private static final String AUDIENCE_FIELD = "audience";
   private static final String OFFLINE_ACCESS_SCOPE = "offline_access";
@@ -110,13 +123,70 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   @Override
   protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
 
-    OAuth2Authentication auth = getOAuth2Authentication(client, tokenRequest);
+    String requestedTokenType = resolveRequestedTokenType(tokenRequest);
 
-    OAuth2AccessToken token = tokenService.createAccessToken(auth);
+    OAuth2Authentication auth =
+        getOAuth2Authentication(client, tokenRequest);
 
-    token.getAdditionalInformation().put("issued_token_type", TOKEN_TYPE);
+    OAuth2AccessToken token =
+        tokenService.createAccessToken(auth);
+
+    if (REFRESH_TOKEN_TYPE.equals(requestedTokenType)) {
+      return refreshTokenResponse(token);
+    }
+
+    token.getAdditionalInformation().put(
+        ISSUED_TOKEN_TYPE, ACCESS_TOKEN_TYPE);
 
     return token;
+  }
+
+  private String resolveRequestedTokenType(TokenRequest request) {
+
+    String requestedTokenType =
+        request.getRequestParameters().get(REQUESTED_TOKEN_TYPE);
+
+    if (requestedTokenType == null || requestedTokenType.isBlank()) {
+      return ACCESS_TOKEN_TYPE;
+    }
+
+    if (!ACCESS_TOKEN_TYPE.equals(requestedTokenType)
+        && !REFRESH_TOKEN_TYPE.equals(requestedTokenType)) {
+      throw new InvalidRequestException(
+          "Unsupported requested_token_type: " + requestedTokenType);
+    }
+
+    return requestedTokenType;
+  }
+
+  private OAuth2AccessToken refreshTokenResponse(OAuth2AccessToken token) {
+
+    OAuth2RefreshToken refreshToken = token.getRefreshToken();
+
+    if (refreshToken == null) {
+      throw new OAuth2AccessDeniedException(
+          "A refresh token cannot be issued for this token exchange");
+    }
+
+    DefaultOAuth2AccessToken response =
+        new DefaultOAuth2AccessToken(refreshToken.getValue());
+
+    response.setTokenType(TOKEN_TYPE_NA);
+    response.setScope(token.getScope());
+
+    Map<String, Object> additionalInformation =
+        new HashMap<>(token.getAdditionalInformation());
+
+    additionalInformation.put(
+        ISSUED_TOKEN_TYPE, REFRESH_TOKEN_TYPE);
+
+    response.setAdditionalInformation(additionalInformation);
+
+    if (refreshToken instanceof ExpiringOAuth2RefreshToken expiringRefreshToken) {
+      response.setExpiration(expiringRefreshToken.getExpiration());
+    }
+
+    return response;
   }
 
   private SubjectTokenContext resolveSubjectToken(ClientDetailsEntity actor, TokenRequest request) {
