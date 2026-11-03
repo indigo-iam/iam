@@ -156,6 +156,29 @@ class ScimUserProvisioningBulkTests {
   }
 
   @Test
+  void scimMeRejectsMalformedJsonBeforeDeserializationWithoutWriteScope() throws Exception {
+    String readOnlyToken =
+        OAuthTokenTestUtils.clientCredentialsToken(mvc, objectMapper, ScimUtils.SCIM_CLIENT_ID,
+            ScimUtils.SCIM_CLIENT_SECRET, ScimUtils.SCIM_READ_SCOPE);
+
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+      .patch(ScimUtils.getMeLocation())
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + readOnlyToken)
+      .contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json"))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void scimMeParsesMalformedJsonWhenWriteScopeIsPresent() throws Exception {
+    performScim(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+      .patch(ScimUtils.getMeLocation())
+      .contentType(SCIM_CONTENT_TYPE)
+      .content("{ invalid json"))
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void testPostSuccessPatchSuccess() throws Exception {
 
     JsonNode user = objectMapper

@@ -18,6 +18,7 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.HEAD;
+import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
@@ -146,6 +147,8 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .antMatchers(PUT, SCIM_REPLACE_PATHS)
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Me")
+          .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
           .anyRequest()
           .authenticated())
 
@@ -202,6 +205,8 @@ public class IamApplicationApiSecurityConfig {
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
           .antMatchers(PUT, SCIM_REPLACE_PATHS)
           .access("@iamApiAuthorization.hasScopeOrDashboardAdmin(authentication, 'scim:write')")
+          .antMatchers(PATCH, "/scim/Me")
+          .access("@iamApiAuthorization.hasScopeOrUserRole(authentication, 'scim:write')")
           .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
