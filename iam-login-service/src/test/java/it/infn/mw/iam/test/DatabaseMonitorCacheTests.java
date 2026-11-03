@@ -115,7 +115,7 @@ class DatabaseMonitorCacheTests {
         await("the monitor to notice the outage", Duration.ofSeconds(15), () -> !availability.isAvailable());
 
         // Wait until cache should have expired and verify it persists
-        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS*1000 + 2000L));
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS * 1000 + 2000L));
         assertNotNull(wellKnownCache.get(SimpleKey.EMPTY), "entry must not be evicted during the outage");
         mvc.perform(get(WELL_KNOWN)).andExpect(status().isOk());
 
@@ -124,7 +124,7 @@ class DatabaseMonitorCacheTests {
         await("the monitor to notice the recovery", Duration.ofSeconds(15), availability::isAvailable);
 
         // Check that eviction happens as normal
-        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS*1000 + 2000L));
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS * 1000 + 2000L));
         assertNull(wellKnownCache.get(SimpleKey.EMPTY), "entry should expire normally after the recovery");
     }
 
@@ -132,14 +132,13 @@ class DatabaseMonitorCacheTests {
         return Server.createTcpServer("-tcpPort", String.valueOf(DB_PORT), "-ifNotExists").start();
     }
 
-    private static void await(String what, Duration timeout, BooleanSupplier condition)
-            throws InterruptedException {
+    private static void await(String what, Duration timeout, BooleanSupplier condition) {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (!condition.getAsBoolean()) {
             if (System.nanoTime() > deadline) {
                 fail("Timed out waiting for " + what);
             }
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));;
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));
         }
     }
 
