@@ -63,7 +63,6 @@ public class DefaultScopeFilter implements ScopeFilter {
   @Override
   public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn,
       String clientId) {
-    rejectAdminScopesForPublicClients(requestedScopes, clientId);
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
       if (properties.getScopeAuthz().getOpa().isEnabled()) {
@@ -77,11 +76,10 @@ public class DefaultScopeFilter implements ScopeFilter {
   @Override
   public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account,
       String clientId) {
-    rejectAdminScopesForPublicClients(requestedScopes, clientId);
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
-    filteredScopes.retainAll(adminPolicies(requestedScopes, account));
+    filteredScopes.retainAll(adminPolicies(requestedScopes, account, clientId));
     if (config.getScopeAuthz().isEnabled()) {
 
       Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
@@ -103,18 +101,18 @@ public class DefaultScopeFilter implements ScopeFilter {
       .collect(Collectors.toSet());
   }
 
-  private void rejectAdminScopesForPublicClients(Set<String> requestedScopes, String clientId) {
-    ClientDetailsEntity client =
-        (ClientDetailsEntity) clientDetailsService.loadClientByClientId(clientId);
+  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account,
+      String clientId) {
+    if (!Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
+      ClientDetailsEntity client =
+          (ClientDetailsEntity) clientDetailsService.loadClientByClientId(clientId);
 
-    if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())
-        && !Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
-      throw new InvalidRequestException(
-          "Public clients are not allowed to request iam:admin or scim scopes");
+      if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+        throw new InvalidRequestException(
+            "Public clients are not allowed to request iam:admin or scim scopes");
+      }
     }
-  }
 
-  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {
     if (!accountUtils.isAdmin(account)) {
       return requestedScopes.stream()
         .filter(s -> !ADMIN_SCOPES.contains(s))
