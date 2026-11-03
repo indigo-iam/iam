@@ -65,6 +65,7 @@ public class IamApplicationApiSecurityConfig {
 
   private static final String AUP_PATH = "/iam/aup";
   private static final String AUP_SIGN_PATH = "/iam/aup/sign";
+  private static final String SCIM_BULK_PATH = "/scim/Users/Bulk";
 
   /*
    * These endpoints belong to dedicated protocol/browser chains.
@@ -136,7 +137,10 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.anyRequest().authenticated())
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+          .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .anyRequest()
+          .authenticated())
 
         .csrf(csrf -> csrf.disable());
     }
@@ -185,7 +189,9 @@ public class IamApplicationApiSecurityConfig {
 
         .cors(Customizer.withDefaults())
 
-        .authorizeRequests(authorize -> authorize.antMatchers("/iam/password-reset/**")
+        .authorizeRequests(authorize -> authorize.antMatchers(POST, SCIM_BULK_PATH)
+          .access("@iamApiAuthorization.hasScope(authentication, 'scim:write')")
+          .antMatchers("/iam/password-reset/**")
           .permitAll()
           .antMatchers(POST, "/registration/create")
           .permitAll()
