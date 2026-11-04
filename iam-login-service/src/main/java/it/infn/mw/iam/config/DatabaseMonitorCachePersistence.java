@@ -54,12 +54,9 @@ public class DatabaseMonitorCachePersistence {
     @Scheduled(fixedDelayString = "${cache.database-availability-check-interval}")
     public void checkDatabaseConnection() {
         boolean up;
-        LOG.info("Running scheduler");
         try (Connection connection = dataSource.getConnection()) {
-            LOG.info("Got the connection");
             up = connection.isValid(2);
         } catch (SQLException e) {
-            LOG.info("Couldn't get the connection");
             up = false;
         }
         
