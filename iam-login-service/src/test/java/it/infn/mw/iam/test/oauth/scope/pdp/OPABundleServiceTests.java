@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -102,5 +103,30 @@ class OPABundleServiceTests extends ScopePolicyTestUtils {
     }
 
     throw new AssertionError("data.json not found in the bundle");
-  }  
+  }
+
+  @Test
+  void testETagDoesNotChangeWhenPoliciesAreUnchanged() throws IOException {
+    when(policyService.findAllScopePolicies())
+      .thenReturn(List.of(initPolicy("Policy 1"), initPolicy("Policy 2"), initPolicy("Policy 3")));
+    
+    String firstETag = opaBundleService.buildBundle().etag();
+    String secondETag = opaBundleService.buildBundle().etag();
+
+    assertEquals(firstETag, secondETag);
+  }
+
+  @Test
+  void testETagChangesWhenPolicyIsModified() throws IOException {
+    IamScopePolicy policy = initPolicy("Policy 2");
+
+    when(policyService.findAllScopePolicies())
+      .thenReturn(List.of(initPolicy("Policy 1"), policy, initPolicy("Policy 3")));
+    
+    String firstETag = opaBundleService.buildBundle().etag();
+    policy.setDescription("Policy 2 modified");
+    String secondETag = opaBundleService.buildBundle().etag();
+
+    assertNotEquals(firstETag, secondETag);
+  }
 }
