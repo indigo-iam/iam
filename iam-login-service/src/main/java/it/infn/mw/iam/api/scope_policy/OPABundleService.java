@@ -37,13 +37,13 @@ import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 
 @Service
-public class OpaBundleService {
+public class OPABundleService {
 
   private final ScopePolicyService policyService;
   private final IamScopePolicyConverter converter;
   private final ObjectMapper objectMapper;
 
-  public OpaBundleService(ScopePolicyService policyService, IamScopePolicyConverter converter,
+  public OPABundleService(ScopePolicyService policyService, IamScopePolicyConverter converter,
       ObjectMapper objectMapper) {
     this.policyService = policyService;
     this.converter = converter;

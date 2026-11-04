@@ -45,7 +45,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.api.scope_policy.OpaBundleService.OpaBundle;
+import it.infn.mw.iam.api.scope_policy.OPABundleService.OpaBundle;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
@@ -56,11 +56,11 @@ public class ScopePolicyController {
   private static final Logger LOG = LoggerFactory.getLogger(ScopePolicyController.class);
 
   private final ScopePolicyService policyService;
-  private final OpaBundleService opaBundleService;
+  private final OPABundleService opaBundleService;
   private final IamScopePolicyConverter converter;
 
   public ScopePolicyController(ScopePolicyService policyService,
-      OpaBundleService opaBundleService,
+      OPABundleService opaBundleService,
       IamScopePolicyConverter converter) {
     this.policyService = policyService;
     this.opaBundleService = opaBundleService;
