@@ -85,7 +85,7 @@
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=512m -Duser.timezone=UTC</jvm.test.args>
+    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=1024m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
