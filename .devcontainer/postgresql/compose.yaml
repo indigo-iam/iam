@@ -18,7 +18,7 @@ services:
     command: sleep infinity
 
   db:
-    image: postgres:16-alpine
+    image: postgres:14-alpine
     restart: unless-stopped
     ports:
       - "5432:5432"

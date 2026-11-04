@@ -74,7 +74,7 @@ import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 class PostgresqlIntegrationTests {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:14-alpine");
 
   @DynamicPropertySource
   static void datasourceProperties(DynamicPropertyRegistry registry) {
