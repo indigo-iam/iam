@@ -34,7 +34,7 @@ jobs:
     # (an empty image skips the service)
     services:
       postgres:
-        image: ${{ matrix.database == 'postgresql' && 'postgres:16-alpine' || '' }}
+        image: ${{ matrix.database == 'postgresql' && 'postgres:14-alpine' || '' }}
         env:
           POSTGRES_DB: iam
           POSTGRES_USER: iam
