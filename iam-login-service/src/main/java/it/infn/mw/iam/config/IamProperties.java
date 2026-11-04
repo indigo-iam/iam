@@ -885,6 +885,8 @@ public class IamProperties {
   @Valid
   private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
+  private List<ProtectedResourceProperties> protectedResources = Lists.newArrayList();
+
   public String getBaseUrl() {
     return baseUrl;
   }
@@ -1153,6 +1155,14 @@ public class IamProperties {
 
   public void setLoginLockout(LoginLockoutProperties loginLockout) {
     this.loginLockout = loginLockout;
+  }
+
+  public List<ProtectedResourceProperties> getProtectedResources() {
+    return protectedResources;
+  }
+
+  public void setProtectedResources(List<ProtectedResourceProperties> protectedResources) {
+    this.protectedResources = protectedResources;
   }
 
   public List<String> getLanguageNamespaces() {

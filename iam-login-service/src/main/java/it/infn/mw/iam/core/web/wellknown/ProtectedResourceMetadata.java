@@ -31,6 +31,7 @@ public record ProtectedResourceMetadata(String resource,
     @JsonProperty("scopes_supported") Set<String> scopesSupported,
     @JsonProperty("bearer_methods_supported") List<String> bearerMethodsSupported,
     @JsonProperty("resource_name") String resourceName,
+    @JsonProperty("resource_documentation") String resourceDocumentation,
     @JsonProperty("resource_policy_uri") String resourcePolicyUri,
     @JsonProperty("resource_tos_uri") String resourceTosUri) implements Serializable {
 
