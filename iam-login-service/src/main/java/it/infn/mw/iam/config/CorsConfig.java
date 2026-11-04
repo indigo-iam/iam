@@ -38,7 +38,8 @@ public class CorsConfig {
         "/revoke",
         "/jwk",
         "/devicecode",
-        "/.well-known/openid-configuration"
+        "/.well-known/openid-configuration",
+        "/.well-known/oauth-protected-resource"
     };
     //@formatter:on
 

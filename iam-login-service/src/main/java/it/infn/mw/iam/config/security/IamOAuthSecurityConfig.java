@@ -221,7 +221,8 @@ public class IamOAuthSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      http.antMatcher("/.well-known/openid-configuration")
+      http.requestMatchers(matchers -> matchers.antMatchers("/.well-known/openid-configuration",
+          "/.well-known/oauth-protected-resource"))
 
         .cors(Customizer.withDefaults())
 

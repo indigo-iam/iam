@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### What's Added
+
+* Publish OAuth 2.0 Protected Resource Metadata (RFC 9728) at `/.well-known/oauth-protected-resource` and advertise it via the `resource_metadata` parameter in bearer `WWW-Authenticate` challenges
+
 ## 1.15.0 (2026-10-26)
 
 ### What's Added

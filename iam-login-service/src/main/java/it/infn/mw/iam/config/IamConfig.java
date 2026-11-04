@@ -95,6 +95,7 @@ import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
+import it.infn.mw.iam.core.oauth.ProtectedResourceAuthenticationEntryPoint;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
@@ -157,6 +158,7 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceMetadataEndpoint;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -619,9 +621,10 @@ public class IamConfig {
   }
 
   @Bean
-  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
+  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint(IamProperties iamProperties) {
 
-    OAuth2AuthenticationEntryPoint entryPoint = new OAuth2AuthenticationEntryPoint();
+    OAuth2AuthenticationEntryPoint entryPoint = new ProtectedResourceAuthenticationEntryPoint(
+        ProtectedResourceMetadataEndpoint.metadataUrl(iamProperties));
     entryPoint.setRealmName("openidconnect");
     return entryPoint;
   }
