@@ -27,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.persistence.EntityManager;
@@ -53,6 +52,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -198,11 +198,14 @@ class PostgresqlIntegrationTests {
     String accessToken = json.get("access_token").asText();
     assertThat(accessToken, notNullValue());
 
-    List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-        "SELECT token_value_hash, encode(sha256(convert_to(token_value, 'UTF8')), 'hex') AS db_hash "
-            + "FROM access_token WHERE token_value = ?",
-        accessToken);
-    assertThat(rows.size(), is(1));
-    assertThat(rows.get(0).get("token_value_hash"), equalTo(rows.get(0).get("db_hash")));
+    // token_value holds the JWT claims (JSON), token_value_hash the SHA-256 of the serialized JWT
+    List<String> payloads = jdbcTemplate.queryForList(
+        "SELECT token_value FROM access_token "
+            + "WHERE token_value_hash = encode(sha256(convert_to(?, 'UTF8')), 'hex')",
+        String.class, accessToken);
+    assertThat(payloads.size(), is(1));
+
+    String jti = SignedJWT.parse(accessToken).getJWTClaimsSet().getJWTID();
+    assertThat(mapper.readTree(payloads.get(0)).get("jti").asText(), equalTo(jti));
   }
 }
