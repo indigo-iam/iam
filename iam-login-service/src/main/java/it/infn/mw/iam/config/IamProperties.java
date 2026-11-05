@@ -910,6 +910,9 @@ public class IamProperties {
 
   private List<ProtectedResourceProperties> protectedResources = Lists.newArrayList();
 
+  private ProtectedResourcesFileProperties protectedResourcesFile =
+      new ProtectedResourcesFileProperties();
+
   private ResourceIndicatorsProperties resourceIndicators = new ResourceIndicatorsProperties();
 
   public String getBaseUrl() {
@@ -1188,6 +1191,14 @@ public class IamProperties {
 
   public void setProtectedResources(List<ProtectedResourceProperties> protectedResources) {
     this.protectedResources = protectedResources;
+  }
+
+  public ProtectedResourcesFileProperties getProtectedResourcesFile() {
+    return protectedResourcesFile;
+  }
+
+  public void setProtectedResourcesFile(ProtectedResourcesFileProperties protectedResourcesFile) {
+    this.protectedResourcesFile = protectedResourcesFile;
   }
 
   public ResourceIndicatorsProperties getResourceIndicators() {

@@ -230,6 +230,16 @@ iam:
   #     tos-uri: https://data.example.org/tos
   protected-resources: []
 
+  # Alternatively, keep the list in a separate YAML file (same format, under a top-level
+  # "protected-resources:" key). It replaces the list above and can be reloaded without
+  # restarting IAM with POST /iam/api/protected-resources/reload (iam:admin.write). That reloads
+  # only the instance receiving the call: with several replicas, set check-period-secs to make
+  # every instance reload the file when its content changes. An invalid file is rejected and the
+  # current resources are kept.
+  protected-resources-file:
+    path: ${IAM_PROTECTED_RESOURCES_FILE:}
+    check-period-secs: ${IAM_PROTECTED_RESOURCES_FILE_CHECK_PERIOD_SECS:0}
+
   resource-indicators:
     # When true, a resource parameter (RFC 8707) is accepted only if it is IAM's own resource
     # identifier (the base URL) or one of the protected-resources above; any other value is

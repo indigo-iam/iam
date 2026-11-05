@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -31,18 +32,18 @@ import it.infn.mw.iam.core.error.InvalidResourceError;
 
 public class AudienceRequestValidator {
 
-  private final Optional<Set<String>> allowedResources;
+  private final Optional<Supplier<Collection<String>>> allowedResources;
 
   public AudienceRequestValidator() {
     this.allowedResources = Optional.empty();
   }
 
   /**
-   * @param allowedResources the only resource indicator values accepted; any other value is
-   *        rejected with <code>invalid_target</code>
+   * @param allowedResources supplies the only resource indicator values accepted, looked up on
+   *        each request; any other value is rejected with <code>invalid_target</code>
    */
-  public AudienceRequestValidator(Set<String> allowedResources) {
-    this.allowedResources = Optional.of(Set.copyOf(allowedResources));
+  public AudienceRequestValidator(Supplier<Collection<String>> allowedResources) {
+    this.allowedResources = Optional.of(allowedResources);
   }
 
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
@@ -95,7 +96,7 @@ public class AudienceRequestValidator {
   }
 
   private void validateAllowed(String url) {
-    allowedResources.filter(allowed -> !allowed.contains(url)).ifPresent(allowed -> {
+    allowedResources.filter(allowed -> !allowed.get().contains(url)).ifPresent(allowed -> {
       throw new InvalidResourceError(
           "The requested resource is not a registered protected resource: " + url);
     });

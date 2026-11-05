@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -163,6 +162,7 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceRegistry;
 import it.infn.mw.iam.core.web.wellknown.ProtectedResources;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.notification.NotificationProperties;
@@ -650,11 +650,11 @@ public class IamConfig {
   }
 
   @Bean
-  AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties) {
+  AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties,
+      ProtectedResourceRegistry protectedResourceRegistry) {
 
     return iamProperties.getResourceIndicators().isRestrictToProtectedResources()
-        ? new AudienceRequestValidator(
-            Set.copyOf(ProtectedResources.resourceIdentifiers(iamProperties)))
+        ? new AudienceRequestValidator(protectedResourceRegistry::resourceIdentifiers)
         : new AudienceRequestValidator();
   }
 

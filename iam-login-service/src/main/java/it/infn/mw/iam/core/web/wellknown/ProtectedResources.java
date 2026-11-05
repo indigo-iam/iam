@@ -15,15 +15,10 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import java.util.List;
-import java.util.stream.Stream;
-
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.ProtectedResourceProperties;
 
 /**
- * The protected resources known to IAM: IAM itself and the external resources configured under
- * <code>iam.protected-resources</code>.
+ * IAM's own protected resource. The external ones are held by {@link ProtectedResourceRegistry}.
  */
 public final class ProtectedResources {
 
@@ -42,19 +37,5 @@ public final class ProtectedResources {
 
   public static String iamMetadataUrl(IamProperties properties) {
     return String.format("%s/%s", iamResourceIdentifier(properties), PROTECTED_RESOURCE_URL);
-  }
-
-  /**
-   * All the resource identifiers, IAM first, as published in the <code>protected_resources</code>
-   * authorization server metadata parameter (RFC 9728, Section 4).
-   */
-  public static List<String> resourceIdentifiers(IamProperties properties) {
-    return Stream
-      .concat(Stream.of(iamResourceIdentifier(properties)),
-          properties.getProtectedResources()
-            .stream()
-            .map(ProtectedResourceProperties::getResource))
-      .distinct()
-      .toList();
   }
 }

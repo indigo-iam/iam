@@ -24,9 +24,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.ProtectedResourceProperties;
-import it.infn.mw.iam.core.web.wellknown.ProtectedResourceMetadataEndpoint;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceRegistry;
 
 class ProtectedResourcePropertiesValidationTests {
 
@@ -38,18 +37,20 @@ class ProtectedResourcePropertiesValidationTests {
   }
 
   private static String startupError(ProtectedResourceProperties... resources) {
-    IamProperties properties = new IamProperties();
-    properties.setProtectedResources(List.of(resources));
     return assertThrows(IllegalArgumentException.class,
-        () -> new ProtectedResourceMetadataEndpoint(properties, () -> null)).getMessage();
+        () -> ProtectedResourceRegistry.validate(List.of(resources))).getMessage();
   }
 
   @Test
   void testValidResourcesAreAccepted() {
-    IamProperties properties = new IamProperties();
-    properties.setProtectedResources(List.of(resource("a", "https://a.example.org/api"),
-        resource("b.2_x-y", "http://localhost:8443")));
-    assertDoesNotThrow(() -> new ProtectedResourceMetadataEndpoint(properties, () -> null));
+    assertDoesNotThrow(() -> ProtectedResourceRegistry.validate(List.of(
+        resource("a", "https://a.example.org/api"), resource("b.2_x-y", "http://localhost:8443"))));
+  }
+
+  @Test
+  void testDuplicateResourceIsRejected() {
+    assertThat(startupError(resource("a", "https://a.example.org"),
+        resource("b", "https://a.example.org")), containsString("Duplicate resource"));
   }
 
   @Test
