@@ -25,6 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -297,6 +300,27 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
     scopePolicyRepo.save(p);
 
     listOpaPolicyWorks().andExpect(jsonPath("$.policies").value(Matchers.hasSize(1)));
+  }
+
+  @Test
+  void opaBundleRequiresAuthentication() throws Exception {
+    mvc.perform(get("/iam/scope_policies/opa_bundle")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, 
+      scopes = "iam:admin.read")
+  void opaBundleIsNotModifiedWhenETagMatches() throws Exception {
+    String etag = mvc.perform(get("/iam/scope_policies/opa_bundle"))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType("application/gzip"))
+      .andExpect(header().exists(HttpHeaders.ETAG))
+      .andReturn()
+      .getResponse()
+      .getHeader(HttpHeaders.ETAG);
+
+    mvc.perform(get("/iam/scope_policies/opa_bundle").header(HttpHeaders.IF_NONE_MATCH, etag))
+      .andExpect(status().isNotModified());
   }
 
   @Test

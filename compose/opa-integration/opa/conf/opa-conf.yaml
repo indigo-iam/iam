@@ -2,8 +2,8 @@ services:
   gh:
     url: https://ghcr.io
     type: oci
-  nginx:
-    url: http://nginx/
+  iam:
+    url: http://iam-be:8080/
 
 bundles:
   scope-policy-engine:
@@ -14,8 +14,8 @@ bundles:
       min_delay_seconds: 20
       max_delay_seconds: 40
   policies:
-    service: nginx
-    resource: bundles/iam-policies.tar.gz
+    service: iam
+    resource: iam/scope_policies/opa_bundle
     persist: true
     polling:
       min_delay_seconds: 10
