@@ -82,10 +82,14 @@ public class DefaultScopeFilter implements ScopeFilter {
         .filter(ADMIN_SCOPES::contains)
         .forEach(filteredScopes::add);
 
+      if (!cleanedRequestedScopes.equals(filteredScopes)) {
+        Set<String> removedScopes = new HashSet<>(cleanedRequestedScopes);
+        removedScopes.removeAll(filteredScopes);
+        LOG.info("Scope policy removed scopes {} for client {}", removedScopes, clientId);
 
-      if (config.getScopeAuthz().isEarlyFail() && !cleanedRequestedScopes.equals(filteredScopes)) {
-
-        throw new InvalidRequestException("Scopes not allowed by the scope policy");
+        if (config.getScopeAuthz().isEarlyFail()) {
+          throw new InvalidRequestException("Scopes not allowed by the scope policy");
+        }
       }
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
