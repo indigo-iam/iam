@@ -70,15 +70,10 @@ public class AuthorizationRequestBuilder {
       return;
     }
 
-    LOG.debug("ARB.filterRequestedScopes() - authn: {}", authn);
-    LOG.debug("ARB.filterRequestedScopes() - inputParams: {}", inputParams);
-    LOG.debug("ARB.filterRequestedScopes() - clientId: {}", clientId);
+    LOG.debug("Filtering requested scopes for client {}", clientId);
     String rawScopes = inputParams.get(OAuth2Utils.SCOPE);
-    LOG.debug("ARB.filterRequestedScopes() - rawScopes: {}", rawScopes);
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(rawScopes);
-    LOG.debug("ARB.filterRequestedScopes() - requestedScopes: {}", requestedScopes);
     Set<String> authorizedScopes = scopeFilter.filterScopes(requestedScopes, authn, clientId);
-    LOG.debug("ARB.filterRequestedScopes() - authorizedScopes: {}", authorizedScopes);
 
     // scopes are filtered also here to avoid authorizing them on the consent page
     // Preserve the request order: the scope filter may return an unordered set.
