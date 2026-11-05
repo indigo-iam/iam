@@ -15,10 +15,14 @@
  */
 package it.infn.mw.iam.core.error;
 
-import org.springframework.security.oauth2.common.exceptions.ClientAuthenticationException;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
 @SuppressWarnings("deprecation")
-public class InvalidResourceError extends ClientAuthenticationException {
+/*
+ * Not a ClientAuthenticationException: the authorization endpoint must redirect this error to the
+ * client (RFC 6749, Section 4.1.2.1), and it never redirects client authentication errors.
+ */
+public class InvalidResourceError extends OAuth2Exception {
 
   private static final long serialVersionUID = 1L;
 

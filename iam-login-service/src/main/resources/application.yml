@@ -235,6 +235,10 @@ iam:
     # identifier (the base URL) or one of the protected-resources above; any other value is
     # rejected with invalid_target. When false, any absolute URL is accepted.
     restrict-to-protected-resources: ${IAM_RESOURCE_INDICATORS_RESTRICT_TO_PROTECTED_RESOURCES:false}
+    # When true, IAM's own APIs (SCIM, IAM APIs, userinfo, ...) reject access tokens whose aud does
+    # not include IAM (its base URL or issuer) or the WLCG "any" audience. Tokens without aud are
+    # still accepted.
+    require-iam-audience: ${IAM_RESOURCE_INDICATORS_REQUIRE_IAM_AUDIENCE:false}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}

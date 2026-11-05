@@ -10,6 +10,8 @@
 * Publish the protected resources (IAM and `iam.protected-resources`) as `protected_resources` in the authorization server and OpenID Connect discovery documents
 * Accept repeated `resource` parameters (RFC 8707) and include every requested resource in the access token audience
 * Optionally reject `resource` values that are not registered protected resources with `invalid_target` (`iam.resource-indicators.restrict-to-protected-resources`)
+* Optionally reject, at IAM's own APIs, access tokens whose audience does not include IAM (`iam.resource-indicators.require-iam-audience`)
+* Return `invalid_target` errors from the authorization endpoint to the client redirect URI instead of an error page, and validate resource indicators at the device authorization endpoint
 
 ## 1.15.0 (2026-10-26)
 

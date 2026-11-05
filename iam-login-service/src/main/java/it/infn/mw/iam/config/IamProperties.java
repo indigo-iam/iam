@@ -767,6 +767,16 @@ public class IamProperties {
 
     private boolean restrictToProtectedResources = false;
 
+    private boolean requireIamAudience = false;
+
+    public boolean isRequireIamAudience() {
+      return requireIamAudience;
+    }
+
+    public void setRequireIamAudience(boolean requireIamAudience) {
+      this.requireIamAudience = requireIamAudience;
+    }
+
     public boolean isRestrictToProtectedResources() {
       return restrictToProtectedResources;
     }

@@ -47,12 +47,25 @@ public class AudienceRequestValidator {
 
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
 
+    validateResourceRequest(params);
+    updateAudienceRequest(params);
+  }
+
+  /**
+   * Checks the resource indicators in the request, throwing {@link InvalidResourceError} for an
+   * invalid or not allowed value.
+   */
+  public void validateResourceRequest(Map<String, String> params) {
+
     if (params.containsKey(IamOAuthRequestParameters.RESOURCE_KEY)) {
       List<String> resourceParams =
           splitBySpace(params.get(IamOAuthRequestParameters.RESOURCE_KEY));
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
       resourceParams.forEach(this::validateAllowed);
     }
+  }
+
+  void updateAudienceRequest(Map<String, String> params) {
 
     Optional<String> audience = Optional.ofNullable(getFirstNotEmptyAudience(params));
     audience.ifPresent(aud -> params.put(IamOAuthRequestParameters.AUD_KEY, aud));

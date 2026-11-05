@@ -99,6 +99,7 @@ import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.AudienceRequestValidator;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.RepeatedResourceParameterFilter;
+import it.infn.mw.iam.core.oauth.ResourceIndicatorRequestValidator;
 import it.infn.mw.iam.core.oauth.ProtectedResourceAuthenticationEntryPoint;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
@@ -649,22 +650,27 @@ public class IamConfig {
   }
 
   @Bean
-  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
+  AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties) {
 
-    return new ScopeMatcherOAuthRequestValidator(registry);
+    return iamProperties.getResourceIndicators().isRestrictToProtectedResources()
+        ? new AudienceRequestValidator(
+            Set.copyOf(ProtectedResources.resourceIdentifiers(iamProperties)))
+        : new AudienceRequestValidator();
+  }
+
+  @Bean
+  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry,
+      AudienceRequestValidator audienceRequestValidator) {
+
+    return new ResourceIndicatorRequestValidator(new ScopeMatcherOAuthRequestValidator(registry),
+        audienceRequestValidator);
   }
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
       IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators, IamProperties iamProperties) {
-
-    AudienceRequestValidator audienceRequestValidator =
-        iamProperties.getResourceIndicators().isRestrictToProtectedResources()
-            ? new AudienceRequestValidator(
-                Set.copyOf(ProtectedResources.resourceIdentifiers(iamProperties)))
-            : new AudienceRequestValidator();
+      ClientKeyCacheService validators, AudienceRequestValidator audienceRequestValidator) {
 
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
         deviceCodeService, authzCodeRepository, refreshTokenRepo, validators,
