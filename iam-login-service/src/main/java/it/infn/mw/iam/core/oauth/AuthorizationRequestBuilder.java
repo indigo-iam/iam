@@ -70,6 +70,7 @@ public class AuthorizationRequestBuilder {
       return;
     }
 
+    LOG.debug("Filtering requested scopes for client {}", clientId);
     String rawScopes = inputParams.get(OAuth2Utils.SCOPE);
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(rawScopes);
     Set<String> authorizedScopes = scopeFilter.filterScopes(requestedScopes, authn, clientId);
