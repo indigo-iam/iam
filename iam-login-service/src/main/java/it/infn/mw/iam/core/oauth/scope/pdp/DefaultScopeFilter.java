@@ -77,6 +77,12 @@ public class DefaultScopeFilter implements ScopeFilter {
       Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
       filteredScopes.retainAll(policyEngine.apply(filteredScopes, account, clientId));
 
+      // Only admin scopes that passed the account role check can be restored.
+      cleanedRequestedScopes.stream()
+        .filter(ADMIN_SCOPES::contains)
+        .forEach(filteredScopes::add);
+
+
       if (config.getScopeAuthz().isEarlyFail() && !cleanedRequestedScopes.equals(filteredScopes)) {
 
         throw new InvalidRequestException("Scopes not allowed by the scope policy");
