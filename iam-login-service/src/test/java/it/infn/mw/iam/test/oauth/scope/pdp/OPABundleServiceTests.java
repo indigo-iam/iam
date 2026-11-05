@@ -77,8 +77,8 @@ class OPABundleServiceTests extends ScopePolicyTestUtils {
 
     assertEquals(3, policies.size());
     assertEquals("Policy 1", policies.get(0).get("description").asText());
-    assertEquals("Policy 2", policies.get(0).get("description").asText());
-    assertEquals("Policy 3", policies.get(0).get("description").asText());
+    assertEquals("Policy 2", policies.get(1).get("description").asText());
+    assertEquals("Policy 3", policies.get(2).get("description").asText());
   }
 
   // Create a policy
