@@ -23,6 +23,8 @@ public class IamDiscoveryEndpoint {
 
   private static final String WELL_KNOWN_URL = ".well-known";
   public static final String OPENID_CONFIGURATION_URL = WELL_KNOWN_URL + "/openid-configuration";
+  public static final String OAUTH_AUTHORIZATION_SERVER_URL =
+      WELL_KNOWN_URL + "/oauth-authorization-server";
 
   private final WellKnownInfoProvider wellKnownInfoProvider;
 
@@ -30,7 +32,11 @@ public class IamDiscoveryEndpoint {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
   }
 
-  @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL})
+  /*
+   * The same document is served as OpenID Connect discovery and as OAuth 2.0 Authorization Server
+   * Metadata (RFC 8414): the OpenID provider metadata is a superset of the RFC 8414 one.
+   */
+  @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL, "/" + OAUTH_AUTHORIZATION_SERVER_URL})
   public WellKnownConfiguration providerConfiguration() {
     return wellKnownInfoProvider.getWellKnownInfo();
   }

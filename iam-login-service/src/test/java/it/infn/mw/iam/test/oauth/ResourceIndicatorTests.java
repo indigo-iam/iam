@@ -408,6 +408,41 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  void testRepeatedResourceIndicatorClientCredentialFlow() throws Exception {
+
+    String tokenResponseJson = mvc
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", "client_credentials")
+        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("resource", "https://example1.org", "https://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+
+    JWTClaimsSet claims = JWTParser.parse(accessToken).getJWTClaimsSet();
+
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+    assertThat(claims.getAudience(), hasItem("https://example2.org"));
+  }
+
+  @Test
+  void testRepeatedResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", "client_credentials")
+        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("resource", "https://example1.org", "resource"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description").value("Not a valid URI: resource"));
+  }
+
+  @Test
   void testResourceIndicatorOverridesAudienceRequestClientCredentialFlow() throws Exception {
 
     String tokenResponseJson = mvc

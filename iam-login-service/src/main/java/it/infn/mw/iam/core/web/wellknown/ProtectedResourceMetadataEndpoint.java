@@ -48,7 +48,7 @@ import it.infn.mw.iam.config.ProtectedResourceProperties;
 @RestController
 public class ProtectedResourceMetadataEndpoint {
 
-  public static final String PROTECTED_RESOURCE_URL = ".well-known/oauth-protected-resource";
+  public static final String PROTECTED_RESOURCE_URL = ProtectedResources.PROTECTED_RESOURCE_URL;
   public static final String HOSTED_METADATA_URL = "protected-resource-metadata";
 
   private static final List<String> BEARER_METHODS = List.of("header");
@@ -64,15 +64,6 @@ public class ProtectedResourceMetadataEndpoint {
     this.properties = properties;
     this.wellKnownInfoProvider = wellKnownInfoProvider;
     this.hostedResources = validate(properties.getProtectedResources());
-  }
-
-  public static String resourceIdentifier(IamProperties properties) {
-    String baseUrl = properties.getBaseUrl();
-    return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-  }
-
-  public static String metadataUrl(IamProperties properties) {
-    return String.format("%s/%s", resourceIdentifier(properties), PROTECTED_RESOURCE_URL);
   }
 
   private static Map<String, ProtectedResourceProperties> validate(
@@ -129,7 +120,7 @@ public class ProtectedResourceMetadataEndpoint {
 
     WellKnownConfiguration asConfig = wellKnownInfoProvider.getWellKnownInfo();
 
-    return new ProtectedResourceMetadata(resourceIdentifier(properties),
+    return new ProtectedResourceMetadata(ProtectedResources.iamResourceIdentifier(properties),
         List.of(properties.getIssuer()), asConfig.scopesSupported(), BEARER_METHODS,
         properties.getTopbarTitle(), null, asConfig.opPolicyUri(), asConfig.opTosUri());
   }

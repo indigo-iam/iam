@@ -222,7 +222,8 @@ public class IamOAuthSecurityConfig {
     protected void configure(final HttpSecurity http) throws Exception {
 
       http.requestMatchers(matchers -> matchers.antMatchers("/.well-known/openid-configuration",
-          "/.well-known/oauth-protected-resource", "/protected-resource-metadata/**"))
+          "/.well-known/oauth-authorization-server", "/.well-known/oauth-protected-resource",
+          "/protected-resource-metadata/**"))
 
         .cors(Customizer.withDefaults())
 

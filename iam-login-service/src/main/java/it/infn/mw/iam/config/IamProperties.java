@@ -763,6 +763,19 @@ public class IamProperties {
     }
   }
 
+  public static class ResourceIndicatorsProperties {
+
+    private boolean restrictToProtectedResources = false;
+
+    public boolean isRestrictToProtectedResources() {
+      return restrictToProtectedResources;
+    }
+
+    public void setRestrictToProtectedResources(boolean restrictToProtectedResources) {
+      this.restrictToProtectedResources = restrictToProtectedResources;
+    }
+  }
+
   public static class LoginLockoutProperties {
 
     private boolean enabled;
@@ -886,6 +899,8 @@ public class IamProperties {
   private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
 
   private List<ProtectedResourceProperties> protectedResources = Lists.newArrayList();
+
+  private ResourceIndicatorsProperties resourceIndicators = new ResourceIndicatorsProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -1163,6 +1178,14 @@ public class IamProperties {
 
   public void setProtectedResources(List<ProtectedResourceProperties> protectedResources) {
     this.protectedResources = protectedResources;
+  }
+
+  public ResourceIndicatorsProperties getResourceIndicators() {
+    return resourceIndicators;
+  }
+
+  public void setResourceIndicators(ResourceIndicatorsProperties resourceIndicators) {
+    this.resourceIndicators = resourceIndicators;
   }
 
   public List<String> getLanguageNamespaces() {

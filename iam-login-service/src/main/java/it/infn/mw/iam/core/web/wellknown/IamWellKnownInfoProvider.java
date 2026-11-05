@@ -185,6 +185,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
       .codeChallengeMethodsSupported(CODE_CHALLENGE_METHODS)
       .scopesSupported(supportedScopes)
       .endSessionEndpoint(logoutEndpoint)
+      .protectedResources(ProtectedResources.resourceIdentifiers(properties))
       .build();
   }
 

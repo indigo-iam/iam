@@ -39,6 +39,7 @@ public class CorsConfig {
         "/jwk",
         "/devicecode",
         "/.well-known/openid-configuration",
+        "/.well-known/oauth-authorization-server",
         "/.well-known/oauth-protected-resource",
         "/protected-resource-metadata/**"
     };

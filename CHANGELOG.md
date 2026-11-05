@@ -6,6 +6,10 @@
 
 * Publish OAuth 2.0 Protected Resource Metadata (RFC 9728) at `/.well-known/oauth-protected-resource` and advertise it via the `resource_metadata` parameter in bearer `WWW-Authenticate` challenges
 * Host RFC 9728 metadata for external protected resources configured under `iam.protected-resources`, served at `/protected-resource-metadata/{id}`
+* Serve OAuth 2.0 Authorization Server Metadata (RFC 8414) at `/.well-known/oauth-authorization-server`
+* Publish the protected resources (IAM and `iam.protected-resources`) as `protected_resources` in the authorization server and OpenID Connect discovery documents
+* Accept repeated `resource` parameters (RFC 8707) and include every requested resource in the access token audience
+* Optionally reject `resource` values that are not registered protected resources with `invalid_target` (`iam.resource-indicators.restrict-to-protected-resources`)
 
 ## 1.15.0 (2026-10-26)
 
