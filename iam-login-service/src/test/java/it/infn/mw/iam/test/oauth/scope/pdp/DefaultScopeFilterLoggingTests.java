@@ -106,6 +106,55 @@ class DefaultScopeFilterLoggingTests {
     assertTrue(appender.list.isEmpty());
   }
 
+  private void enableDashboardWithEarlyFail() {
+    properties.getDashboard().setEnabled(true);
+    properties.getDashboard().setClientId(CLIENT_ID);
+    properties.getScopeAuthz().setEarlyFail(true);
+  }
+
+  @Test
+  void dashboardAdminKeepsLoginScopesWhenPolicyDeniesAll() {
+    enableDashboardWithEarlyFail();
+    Set<String> loginScopes = Set.of("openid", "email", "profile", "offline_access",
+        "scim:read", "scim:write", "iam:admin.read", "iam:admin.write");
+    when(engine.apply(loginScopes, account, CLIENT_ID)).thenReturn(Set.of());
+
+    assertEquals(loginScopes, filter.filterScopes(loginScopes, account, CLIENT_ID));
+    assertTrue(appender.list.isEmpty());
+  }
+
+  @Test
+  void dashboardAdminStillFailsForDeniedScopeOutsideLoginSet() {
+    enableDashboardWithEarlyFail();
+    Set<String> requested = Set.of("profile", "storage.read:/");
+    when(engine.apply(requested, account, CLIENT_ID)).thenReturn(Set.of());
+
+    assertThrows(InvalidRequestException.class,
+        () -> filter.filterScopes(requested, account, CLIENT_ID));
+    assertRemovedScopesLogged(Set.of("storage.read:/"));
+  }
+
+  @Test
+  void ordinaryDashboardUserStillFailsForDeniedProfile() {
+    enableDashboardWithEarlyFail();
+    when(accounts.isAdmin(account)).thenReturn(false);
+    Set<String> requested = Set.of("profile");
+    when(engine.apply(requested, account, CLIENT_ID)).thenReturn(Set.of());
+
+    assertThrows(InvalidRequestException.class,
+        () -> filter.filterScopes(requested, account, CLIENT_ID));
+  }
+
+  @Test
+  void adminOfAnotherClientStillFailsForDeniedProfile() {
+    enableDashboardWithEarlyFail();
+    Set<String> requested = Set.of("profile");
+    when(engine.apply(requested, account, "other-client")).thenReturn(Set.of());
+
+    assertThrows(InvalidRequestException.class,
+        () -> filter.filterScopes(requested, account, "other-client"));
+  }
+
   private void assertRemovedScopesLogged(Set<String> expectedScopes) {
     assertEquals(1, appender.list.size());
     ILoggingEvent event = appender.list.get(0);
