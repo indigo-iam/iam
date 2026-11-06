@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
@@ -44,12 +46,16 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   public static final String ECLIPSELINK_LOGGING_LEVEL = "eclipselink.logging.level";
   public static final String ECLIPSELINK_LOGGING_LEVEL_SQL = "eclipselink.logging.level.sql";
+  public static final String ECLIPSELINK_SESSION_NAME = "eclipselink.session-name";
   public final IamProperties iamProperties;
+  private final DataSourceProperties dataSourceProperties;
 
   protected JpaConfig(DataSource dataSource, JpaProperties properties,
-      ObjectProvider<JtaTransactionManager> jtaTransactionManager, IamProperties iamProperties) {
+      ObjectProvider<JtaTransactionManager> jtaTransactionManager, IamProperties iamProperties,
+      DataSourceProperties dataSourceProperties) {
     super(dataSource, properties, jtaTransactionManager);
     this.iamProperties = iamProperties;
+    this.dataSourceProperties = dataSourceProperties;
   }
 
   @Autowired
@@ -70,7 +76,7 @@ public class JpaConfig extends JpaBaseConfiguration {
     map.put(ECLIPSELINK_LOGGING_LEVEL, "WARNING");
     map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "OFF");
     map.put("eclipselink.cache.shared.default", "false");
-    map.put("eclipselink.session-name", "iam-" + UUID.randomUUID());
+    map.put(ECLIPSELINK_SESSION_NAME, sessionName());
 
     if (iamProperties.isShowSql()) {
       map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
@@ -87,6 +93,14 @@ public class JpaConfig extends JpaBaseConfiguration {
 
     return map;
 
+  }
+
+  private String sessionName() {
+    String url = dataSourceProperties.getUrl();
+    if (url == null) {
+      return "iam";
+    }
+    return "iam-" + UUID.nameUUIDFromBytes(url.getBytes(StandardCharsets.UTF_8));
   }
 
   @Override
