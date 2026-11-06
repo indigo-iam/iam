@@ -28,8 +28,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -46,7 +44,7 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Component
 @Profile("cern")
-public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
+public class CernHrLifecycleHandler implements Runnable {
 
   public static final String INVALID_ACCOUNT_MESSAGE =
       "Account has not the mandatory CERN person id label";
@@ -132,18 +130,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
 
     LOG.info("CERN HR Lyfecycle handler ... [END]");
-  }
-
-  @Override
-  public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-
-    if (!cernProperties.getTask().isEnabled()) {
-      LOG.info("CERN HR DB lifecycle handler is DISABLED");
-    } else {
-      final String cronSchedule = cernProperties.getTask().getCronSchedule();
-      LOG.info("Scheduling CERN HR DB lifecycle handler with schedule: {}", cronSchedule);
-      taskRegistrar.addCronTask(this, cronSchedule);
-    }
   }
 
 }
