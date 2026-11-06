@@ -79,6 +79,9 @@ public class CernHrLifecycleHandler implements Runnable {
   }
 
   public void handleAccount(String cernPersonId, String experiment, IamAccount account) {
+    if (accountProcessor.skipIfIgnored(account.getUuid())) {
+      return;
+    }
     // External I/O must not hold a database row lock.
     Optional<VOPersonDTO> person;
     try {

@@ -57,8 +57,24 @@ public class CernHrLifecycleAccountProcessor {
   }
 
   @Transactional
+  public boolean skipIfIgnored(String uuid) {
+    return skipIfIgnored(lockedAccount(uuid));
+  }
+
+  private boolean skipIfIgnored(IamAccount account) {
+    if (!CernHrLifecycleUtils.isAccountIgnored(account)) {
+      return false;
+    }
+    setCernStatusLabel(account, CernStatus.IGNORED, IGNORE_MESSAGE);
+    return true;
+  }
+
+  @Transactional
   public void processApiError(String uuid) {
     IamAccount a = lockedAccount(uuid);
+    if (skipIfIgnored(a)) {
+      return;
+    }
     setCernStatusLabel(a, CernStatus.ERROR, HR_DB_API_ERROR);
   }
 
@@ -68,8 +84,7 @@ public class CernHrLifecycleAccountProcessor {
     IamAccount a = lockedAccount(uuid);
     LOG.debug("Handling IAM account (username: {}, uuid: {})", a.getUsername(), uuid);
 
-    if (CernHrLifecycleUtils.isAccountIgnored(a)) {
-      setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
+    if (skipIfIgnored(a)) {
       return;
     }
 
