@@ -67,7 +67,6 @@ public class CernHrLifecycleAccountProcessor {
       Optional<VOPersonDTO> voPerson) {
     IamAccount a = lockedAccount(uuid);
     LOG.debug("Handling IAM account (username: {}, uuid: {})", a.getUsername(), uuid);
-    deleteDeprecatedLabels(a);
 
     if (CernHrLifecycleUtils.isAccountIgnored(a)) {
       setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
@@ -107,11 +106,6 @@ public class CernHrLifecycleAccountProcessor {
   private IamAccount lockedAccount(String uuid) {
     return accountRepo.findByUuidForUpdate(uuid)
       .orElseThrow(() -> new EntityNotFoundException("Account not found: " + uuid));
-  }
-
-  private void deleteDeprecatedLabels(IamAccount a) {
-    accountService.deleteLabel(a, CernHrLifecycleUtils.buildCernTimestampLabel());
-    accountService.deleteLabel(a, CernHrLifecycleUtils.buildCernActionLabel());
   }
 
   private void syncAccountInformation(IamAccount a, VOPersonDTO p) {
