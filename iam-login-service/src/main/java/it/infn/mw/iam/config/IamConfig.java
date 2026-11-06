@@ -20,13 +20,17 @@ import static java.util.Collections.singletonList;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
@@ -653,9 +657,17 @@ public class IamConfig {
   AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties,
       ProtectedResourceRegistry protectedResourceRegistry) {
 
-    return iamProperties.getResourceIndicators().isRestrictToProtectedResources()
-        ? new AudienceRequestValidator(protectedResourceRegistry::resourceIdentifiers)
-        : new AudienceRequestValidator();
+    Optional<Supplier<Collection<String>>> allowedResources =
+        iamProperties.getResourceIndicators().isRestrictToProtectedResources()
+            ? Optional.of(protectedResourceRegistry::resourceIdentifiers)
+            : Optional.empty();
+
+    Set<String> forbiddenAudiences =
+        iamProperties.getResourceIndicators().isAllowIamAudienceRequest() ? Set.of()
+            : Set.of(ProtectedResources.iamResourceIdentifier(iamProperties),
+                iamProperties.getIssuer());
+
+    return new AudienceRequestValidator(allowedResources, forbiddenAudiences);
   }
 
   @Bean

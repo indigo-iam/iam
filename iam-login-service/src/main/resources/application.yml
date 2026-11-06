@@ -249,6 +249,11 @@ iam:
     # not include IAM (its base URL or issuer) or the WLCG "any" audience. Tokens without aud are
     # still accepted.
     require-iam-audience: ${IAM_RESOURCE_INDICATORS_REQUIRE_IAM_AUDIENCE:false}
+    # When false, clients cannot request IAM itself (its base URL or issuer) in the resource,
+    # audience or aud parameters (invalid_target), so a token requested for several resources never
+    # carries IAM in aud. Combined with require-iam-audience, only tokens requested without
+    # resource or audience can be used at IAM's APIs.
+    allow-iam-audience-request: ${IAM_RESOURCE_INDICATORS_ALLOW_IAM_AUDIENCE_REQUEST:true}
 
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}

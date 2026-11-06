@@ -11,6 +11,7 @@
 * Accept repeated `resource` parameters (RFC 8707) and include every requested resource in the access token audience
 * Optionally reject `resource` values that are not registered protected resources with `invalid_target` (`iam.resource-indicators.restrict-to-protected-resources`)
 * Optionally reject, at IAM's own APIs, access tokens whose audience does not include IAM (`iam.resource-indicators.require-iam-audience`)
+* Optionally forbid requesting IAM itself in the `resource`, `audience` or `aud` parameters (`iam.resource-indicators.allow-iam-audience-request`)
 * Return `invalid_target` errors from the authorization endpoint to the client redirect URI instead of an error page, and validate resource indicators at the device authorization endpoint
 * Load protected resources from a separate file (`iam.protected-resources-file.path`) that can be reloaded without restarting IAM, via `POST /iam/api/protected-resources/reload` or periodically when it changes (`iam.protected-resources-file.check-period-secs`); list them with `GET /iam/api/protected-resources`
 

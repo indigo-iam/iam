@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Collection;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -33,9 +34,10 @@ import it.infn.mw.iam.core.error.InvalidResourceError;
 public class AudienceRequestValidator {
 
   private final Optional<Supplier<Collection<String>>> allowedResources;
+  private final Set<String> forbiddenAudiences;
 
   public AudienceRequestValidator() {
-    this.allowedResources = Optional.empty();
+    this(Optional.empty(), Set.of());
   }
 
   /**
@@ -43,7 +45,18 @@ public class AudienceRequestValidator {
    *        each request; any other value is rejected with <code>invalid_target</code>
    */
   public AudienceRequestValidator(Supplier<Collection<String>> allowedResources) {
-    this.allowedResources = Optional.of(allowedResources);
+    this(Optional.of(allowedResources), Set.of());
+  }
+
+  /**
+   * @param allowedResources as above, or empty to accept any valid resource indicator
+   * @param forbiddenAudiences values that cannot be requested in any of the resource, audience or
+   *        aud parameters; they are rejected with <code>invalid_target</code>
+   */
+  public AudienceRequestValidator(Optional<Supplier<Collection<String>>> allowedResources,
+      Set<String> forbiddenAudiences) {
+    this.allowedResources = allowedResources;
+    this.forbiddenAudiences = Set.copyOf(forbiddenAudiences);
   }
 
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
@@ -64,6 +77,16 @@ public class AudienceRequestValidator {
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
       resourceParams.forEach(this::validateAllowed);
     }
+
+    // Checked on every audience parameter, otherwise audience=... would bypass the restriction
+    IamOAuthRequestParameters.AUD_KEYS.stream()
+      .map(params::get)
+      .flatMap(value -> splitBySpace(value).stream())
+      .filter(forbiddenAudiences::contains)
+      .findFirst()
+      .ifPresent(aud -> {
+        throw new InvalidResourceError("This resource cannot be requested: " + aud);
+      });
   }
 
   void updateAudienceRequest(Map<String, String> params) {

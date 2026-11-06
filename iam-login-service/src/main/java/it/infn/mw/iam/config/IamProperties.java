@@ -769,6 +769,16 @@ public class IamProperties {
 
     private boolean requireIamAudience = false;
 
+    private boolean allowIamAudienceRequest = true;
+
+    public boolean isAllowIamAudienceRequest() {
+      return allowIamAudienceRequest;
+    }
+
+    public void setAllowIamAudienceRequest(boolean allowIamAudienceRequest) {
+      this.allowIamAudienceRequest = allowIamAudienceRequest;
+    }
+
     public boolean isRequireIamAudience() {
       return requireIamAudience;
     }
