@@ -55,6 +55,9 @@ public interface NotificationFactory {
 
   IamEmailNotification createAupSignatureRequestMessage(IamAccount account);
 
+  IamEmailNotification createPendingSuspensionAccountsMessage(List<IamAccount> accounts,
+      long suspensionGracePeriodDays);
+
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
 
   IamEmailNotification createAccountLockedMessage(IamAccount account, Duration duration);
