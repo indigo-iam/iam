@@ -144,6 +144,9 @@ public interface IamAccountService {
    */
   IamAccount setAccountEmail(IamAccount account, String email) throws EmailAlreadyBoundException;
 
+  /** Attempts an email update, returning false if another account already owns the address. */
+  boolean setAccountEmailIfAvailable(IamAccount account, String email);
+
   /**
    * Sets end time for a given account
    * 

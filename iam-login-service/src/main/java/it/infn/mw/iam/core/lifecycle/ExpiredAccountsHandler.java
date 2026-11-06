@@ -36,6 +36,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -226,6 +228,7 @@ public class ExpiredAccountsHandler implements Runnable {
   }
 
   @Override
+  @SchedulerLock(name = "accountLifecycle", lockAtMostFor = "PT2H")
   public void run() {
     handleExpiredAccounts();
   }
