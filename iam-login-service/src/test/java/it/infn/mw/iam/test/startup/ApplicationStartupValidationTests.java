@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import it.infn.mw.iam.IamLoginService;
 
@@ -35,8 +37,11 @@ class ApplicationStartupValidationTests {
   @Test
   void testSuccessStatup() {
 
-    assertDoesNotThrow(() -> IamLoginService
-      .main(new String[] {}));
+    // IamLoginService.main() does not return the context: start it here, so that it can be closed
+    // and does not stay in memory for the rest of the test run
+    ConfigurableApplicationContext context =
+        assertDoesNotThrow(() -> SpringApplication.run(IamLoginService.class));
+    context.close();
   }
 
 }

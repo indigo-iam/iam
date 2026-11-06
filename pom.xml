@@ -68,6 +68,8 @@
     <json-path.version>2.9.0</json-path.version>
     <google-guava.version>33.7.1-jre</google-guava.version>
 
+    <postgresql.version>42.7.7</postgresql.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <spring-framework.version>5.3.39</spring-framework.version>
     <spring-security.version>5.8.16</spring-security.version>
 
@@ -83,7 +85,7 @@
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=512m -Duser.timezone=UTC</jvm.test.args>
+    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=1024m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
@@ -289,12 +291,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-client</artifactId>
-        <version>${mitreid.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.jayway.jsonpath</groupId>
         <artifactId>json-path</artifactId>
         <version>${json-path.version}</version>
@@ -334,6 +330,22 @@
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-core</artifactId>
         <version>${flyway.version}</version>
+      </dependency>
+
+      <!-- JUnit 4 is required by Testcontainers 1.x; pinned here since junit.version
+           (used by Spring Boot for junit:junit) is set to the JUnit 5 version above -->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.13.2</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- JSR APIs (for Java 11 compatibility) -->

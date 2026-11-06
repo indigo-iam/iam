@@ -1,0 +1,1 @@
+UPDATE client_details set device_code_validity_seconds = 600 where device_code_validity_seconds is NULL;
