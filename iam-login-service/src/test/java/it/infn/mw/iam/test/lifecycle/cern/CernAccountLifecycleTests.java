@@ -58,6 +58,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
@@ -580,6 +581,38 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
+  }
+
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void duplicateHrEmailStillCommitsMembershipRenewal() {
+    IamAccount owner = getTestAccount();
+    owner.setUsername("cern-email-owner");
+    owner = service.createAccount(owner);
+    try {
+      assertHrRenewalCommitsWithEmail(owner.getUserInfo().getEmail());
+    } finally {
+      service.deleteAccount(owner);
+    }
+  }
+
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void missingHrEmailStillCommitsMembershipRenewal() {
+    assertHrRenewalCommitsWithEmail(null);
+  }
+
+  private void assertHrRenewalCommitsWithEmail(String hrEmail) {
+    Date endTime = Date.from(clock.daysAfter(90).truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
+    VOPersonDTO person = voPerson(clock, CERN_PERSON_ID, endTime);
+    person.setEmail(hrEmail);
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(person));
+
+    cernHrLifecycleHandler.handleAccount(CERN_PERSON_ID, "test", cernUser);
+
+    IamAccount renewed = loadAccount(CERN_USER_UUID);
+    assertThat(renewed.getEndTime(), is(endTime));
+    assertThat(renewed.getUserInfo().getEmail(), is(CERN_USER + "@example"));
   }
 
   @Test

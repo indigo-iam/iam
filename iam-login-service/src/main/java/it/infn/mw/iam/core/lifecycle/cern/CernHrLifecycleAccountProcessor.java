@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.user.IamAccountService;
-import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -118,12 +117,9 @@ public class CernHrLifecycleAccountProcessor {
   private void syncAccountInformation(IamAccount a, VOPersonDTO p) {
     accountService.setAccountGivenName(a, p.getFirstName());
     accountService.setAccountFamilyName(a, p.getName());
-    if (!isSkipEmailSynch(a)) {
-      try {
-        accountService.setAccountEmail(a, p.getEmail());
-      } catch (EmailAlreadyBoundException | NullPointerException e) {
-        LOG.error("Error on setting email for account {}: {}", a.getUuid(), e.getMessage());
-      }
+    if (!isSkipEmailSynch(a) && p.getEmail() != null
+        && !accountService.setAccountEmailIfAvailable(a, p.getEmail())) {
+      LOG.warn("Skipping HR email update for account {}: address already in use", a.getUuid());
     }
   }
 
