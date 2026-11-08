@@ -20,20 +20,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -51,60 +46,44 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.ProtectedResourceProperties;
+import it.infn.mw.iam.config.IamProperties.ProtectedResourceProperties;
 
-/**
- * Holds the external protected resources whose RFC 9728 metadata is hosted by IAM.
- *
- * The resources come from <code>iam.protected-resources-file.path</code> when set, otherwise from
- * <code>iam.protected-resources</code>. Only the file can be reloaded at runtime, either through
- * {@link #reload()} or, when <code>iam.protected-resources-file.check-period-secs</code> is
- * positive, whenever its content changes. A reload that fails validation keeps the current
- * resources.
- */
 @Component
 public class ProtectedResourceRegistry {
 
   public static final Logger LOG = LoggerFactory.getLogger(ProtectedResourceRegistry.class);
 
-  private static final String FILE_ROOT_KEY = "protected-resources";
-  private static final Set<String> VALID_BEARER_METHODS = Set.of("header", "body", "query");
+  private static final Set<String> BEARER_METHODS = Set.of("header", "body", "query");
   private static final Pattern VALID_ID = Pattern.compile("[A-Za-z0-9._-]+");
 
-  private record Snapshot(Map<String, ProtectedResourceProperties> byId,
-      List<String> resourceIdentifiers, String contentHash) {
-  }
-
-  private final IamProperties properties;
+  private final String iamResourceIdentifier;
   private final CacheManager cacheManager;
-  private final Optional<Path> file;
-  private final AtomicReference<Snapshot> snapshot;
+  private final Path file;
   private final ScheduledExecutorService fileWatcher;
 
+  private volatile Map<String, ProtectedResourceProperties> resources;
+  private volatile byte[] fileContent;
+
   public ProtectedResourceRegistry(IamProperties properties, CacheManager cacheManager) {
-    this.properties = properties;
+    this.iamResourceIdentifier = properties.getBaseUrl().replaceAll("/+$", "");
     this.cacheManager = cacheManager;
 
     String path = properties.getProtectedResourcesFile().getPath();
-    this.file = path == null || path.isBlank() ? Optional.empty() : Optional.of(Path.of(path));
+    this.file = path == null || path.isBlank() ? null : Path.of(path);
 
-    if (file.isPresent() && !properties.getProtectedResources().isEmpty()) {
-      LOG.warn("Both iam.protected-resources and iam.protected-resources-file are set: "
-          + "using {} and ignoring iam.protected-resources", file.get());
+    if (file == null) {
+      resources = validate(properties.getProtectedResources());
+    } else {
+      if (!properties.getProtectedResources().isEmpty()) {
+        LOG.warn("iam.protected-resources is ignored as iam.protected-resources-file is set");
+      }
+      load();
     }
 
-    this.snapshot = new AtomicReference<>(file.map(this::loadFile)
-      .orElseGet(() -> snapshot(properties.getProtectedResources(), null)));
-
-    long checkPeriodSecs = properties.getProtectedResourcesFile().getCheckPeriodSecs();
-    if (file.isPresent() && checkPeriodSecs > 0) {
-      fileWatcher = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "protected-resources-file-watcher");
-        t.setDaemon(true);
-        return t;
-      });
-      fileWatcher.scheduleWithFixedDelay(this::reloadIfChanged, checkPeriodSecs, checkPeriodSecs,
-          TimeUnit.SECONDS);
+    long period = properties.getProtectedResourcesFile().getCheckPeriodSecs();
+    if (file != null && period > 0) {
+      fileWatcher = Executors.newSingleThreadScheduledExecutor();
+      fileWatcher.scheduleWithFixedDelay(this::reloadIfChanged, period, period, TimeUnit.SECONDS);
     } else {
       fileWatcher = null;
     }
@@ -117,156 +96,118 @@ public class ProtectedResourceRegistry {
     }
   }
 
+  public String iamResourceIdentifier() {
+    return iamResourceIdentifier;
+  }
+
+  public String iamMetadataUrl() {
+    return iamResourceIdentifier + "/" + ProtectedResourceMetadataEndpoint.PROTECTED_RESOURCE_URL;
+  }
+
   public Optional<ProtectedResourceProperties> findById(String id) {
-    return Optional.ofNullable(snapshot.get().byId().get(id));
+    return Optional.ofNullable(resources.get(id));
   }
 
   public List<ProtectedResourceProperties> getResources() {
-    return List.copyOf(snapshot.get().byId().values());
+    return List.copyOf(resources.values());
   }
 
-  /**
-   * All the resource identifiers, IAM first, as published in the <code>protected_resources</code>
-   * authorization server metadata parameter (RFC 9728, Section 4).
-   */
   public List<String> resourceIdentifiers() {
-    return snapshot.get().resourceIdentifiers();
+    return Stream
+      .concat(Stream.of(iamResourceIdentifier),
+          resources.values().stream().map(ProtectedResourceProperties::getResource))
+      .distinct()
+      .toList();
   }
 
-  public boolean isReloadable() {
-    return file.isPresent();
-  }
-
-  /**
-   * Reloads the resources from the configured file.
-   *
-   * @return the resources now in use
-   * @throws IllegalStateException if no file is configured
-   * @throws IllegalArgumentException if the file cannot be read or is not valid; the current
-   *         resources are kept
-   */
   public synchronized List<ProtectedResourceProperties> reload() {
-    Path path = file.orElseThrow(() -> new IllegalStateException(
-        "Protected resources are not reloadable: iam.protected-resources-file.path is not set"));
-    replace(loadFile(path));
+    if (file == null) {
+      throw new IllegalStateException("iam.protected-resources-file is not set");
+    }
+    load();
     return getResources();
   }
 
-  synchronized void reloadIfChanged() {
+  public synchronized void reloadIfChanged() {
     try {
-      Path path = file.orElseThrow();
-      if (!hash(Files.readAllBytes(path)).equals(snapshot.get().contentHash())) {
-        replace(loadFile(path));
+      if (!Arrays.equals(Files.readAllBytes(file), fileContent)) {
+        load();
       }
-    } catch (Exception e) {
-      LOG.error("Protected resources not reloaded, keeping the current ones: {}", e.getMessage());
+    } catch (IOException | RuntimeException e) {
+      LOG.error("Protected resources not reloaded: {}", e.getMessage());
     }
   }
 
-  private void replace(Snapshot newSnapshot) {
-    snapshot.set(newSnapshot);
+  private void load() {
+    byte[] content;
+    try {
+      content = Files.readAllBytes(file);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Cannot read " + file, e);
+    }
+
+    List<ProtectedResourceProperties> loaded;
+    try {
+      YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
+      yaml.setResources(new ByteArrayResource(content));
+      loaded = new Binder(new MapConfigurationPropertySource(yaml.getObject()))
+        .bind("protected-resources", Bindable.listOf(ProtectedResourceProperties.class))
+        .orElse(List.of());
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Cannot parse " + file + ": " + e.getMessage(), e);
+    }
+
+    resources = validate(loaded);
+    fileContent = content;
+
+    // protected_resources is part of the cached discovery document
     Cache cache = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
     if (cache != null) {
       cache.clear();
     }
-    LOG.info("Protected resources reloaded from {}: {}", file.orElseThrow(),
-        newSnapshot.byId().keySet());
-  }
-
-  private Snapshot loadFile(Path path) {
-    byte[] content;
-    try {
-      content = Files.readAllBytes(path);
-    } catch (IOException e) {
-      throw new IllegalArgumentException(
-          String.format("Cannot read protected resources file %s: %s", path, e.getMessage()), e);
-    }
-
-    List<ProtectedResourceProperties> resources;
-    try {
-      YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-      yaml.setResources(new ByteArrayResource(content));
-      Properties props = yaml.getObject();
-      resources = new Binder(new MapConfigurationPropertySource(props))
-        .bind(FILE_ROOT_KEY, Bindable.listOf(ProtectedResourceProperties.class))
-        .orElse(List.of());
-    } catch (RuntimeException e) {
-      throw new IllegalArgumentException(
-          String.format("Invalid protected resources file %s: %s", path, e.getMessage()), e);
-    }
-
-    return snapshot(resources, hash(content));
-  }
-
-  private Snapshot snapshot(List<ProtectedResourceProperties> resources, String contentHash) {
-    Map<String, ProtectedResourceProperties> byId = validate(resources);
-    List<String> identifiers = Stream
-      .concat(Stream.of(ProtectedResources.iamResourceIdentifier(properties)),
-          byId.values().stream().map(ProtectedResourceProperties::getResource))
-      .distinct()
-      .toList();
-    return new Snapshot(byId, identifiers, contentHash);
-  }
-
-  private static String hash(byte[] content) {
-    try {
-      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException(e);
-    }
+    LOG.info("Protected resources loaded from {}: {}", file, resources.keySet());
   }
 
   public static Map<String, ProtectedResourceProperties> validate(
       List<ProtectedResourceProperties> resources) {
 
     Map<String, ProtectedResourceProperties> byId = new LinkedHashMap<>();
-    Set<String> identifiers = new LinkedHashSet<>();
-
     for (ProtectedResourceProperties r : resources) {
       String id = r.getId();
       if (id == null || !VALID_ID.matcher(id).matches()) {
-        throw new IllegalArgumentException(String.format(
-            "Invalid iam.protected-resources id '%s': use letters, digits, '.', '_' or '-'", id));
+        throw invalid(id, "id must only contain letters, digits, '.', '_' or '-'");
       }
-      if (byId.containsKey(id)) {
-        throw new IllegalArgumentException(
-            String.format("Duplicate iam.protected-resources id '%s'", id));
+      if (byId.putIfAbsent(id, r) != null) {
+        throw invalid(id, "duplicate id");
       }
-      validateResourceIdentifier(id, r.getResource());
-      if (!identifiers.add(r.getResource())) {
-        throw new IllegalArgumentException(String.format(
-            "Duplicate resource '%s' in iam.protected-resources '%s'", r.getResource(), id));
+      if (!isAbsoluteHttpUrlWithoutFragment(r.getResource())) {
+        throw invalid(id, "resource must be an absolute http(s) URL without fragment");
       }
-      if (!VALID_BEARER_METHODS.containsAll(r.getBearerMethods())) {
-        throw new IllegalArgumentException(String.format(
-            "Invalid bearer-methods for iam.protected-resources '%s': allowed values are %s", id,
-            VALID_BEARER_METHODS));
+      if (byId.values().stream().filter(o -> o.getResource().equals(r.getResource())).count() > 1) {
+        throw invalid(id, "duplicate resource " + r.getResource());
       }
-      byId.put(id, r);
+      if (!BEARER_METHODS.containsAll(r.getBearerMethods())) {
+        throw invalid(id, "bearer-methods must be among " + BEARER_METHODS);
+      }
     }
     return byId;
   }
 
-  private static void validateResourceIdentifier(String id, String resource) {
-    String error = null;
+  private static IllegalArgumentException invalid(String id, String error) {
+    return new IllegalArgumentException(
+        String.format("Invalid protected resource '%s': %s", id, error));
+  }
+
+  private static boolean isAbsoluteHttpUrlWithoutFragment(String resource) {
     if (resource == null) {
-      error = "resource is required";
-    } else {
-      try {
-        URI uri = new URI(resource);
-        if (!"https".equalsIgnoreCase(uri.getScheme()) && !"http".equalsIgnoreCase(uri.getScheme())
-            || uri.getHost() == null) {
-          error = "resource must be an absolute http(s) URL";
-        } else if (uri.getRawFragment() != null) {
-          error = "resource must not contain a fragment";
-        }
-      } catch (URISyntaxException e) {
-        error = "resource is not a valid URL";
-      }
+      return false;
     }
-    if (error != null) {
-      throw new IllegalArgumentException(
-          String.format("Invalid iam.protected-resources '%s': %s", id, error));
+    try {
+      URI uri = new URI(resource);
+      return ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+          && uri.getHost() != null && uri.getRawFragment() == null;
+    } catch (URISyntaxException e) {
+      return false;
     }
   }
 }

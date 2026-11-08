@@ -37,10 +37,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 
-/**
- * IAM cannot be requested as a resource or audience, so tokens requested for resources never
- * carry IAM in aud and, with require-iam-audience, cannot be used at IAM's APIs.
- */
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
     properties = {"iam.protected-resources[0].id=data-api",
         "iam.protected-resources[0].resource=https://data.example.org/api",
@@ -87,27 +83,11 @@ class ForbidIamAudienceRequestTests {
   }
 
   @Test
-  void testIamResourceIsRejected() throws Exception {
+  void testIamCannotBeRequested() throws Exception {
     expectInvalidTarget(passwordGrant().param("resource", IAM));
-  }
-
-  @Test
-  void testIamResourceAmongOthersIsRejected() throws Exception {
     expectInvalidTarget(passwordGrant().param("resource", DATA_API + " " + IAM));
-  }
-
-  @Test
-  void testRepeatedIamResourceIsRejected() throws Exception {
     expectInvalidTarget(passwordGrant().param("resource", DATA_API, IAM));
-  }
-
-  @Test
-  void testIamIssuerAsAudienceIsRejected() throws Exception {
     expectInvalidTarget(passwordGrant().param("audience", IAM_ISSUER));
-  }
-
-  @Test
-  void testIamAsAudParameterIsRejected() throws Exception {
     expectInvalidTarget(passwordGrant().param("aud", IAM));
   }
 

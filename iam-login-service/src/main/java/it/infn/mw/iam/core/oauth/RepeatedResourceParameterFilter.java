@@ -30,12 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/**
- * RFC 8707 requests multiple resources by repeating the <code>resource</code> parameter, but the
- * OAuth endpoints only see the first value of each parameter. This filter joins the repeated values
- * into the space-separated form already understood by IAM, so that every requested resource is
- * validated and ends up in the token audience.
- */
+// The OAuth endpoints only see the first value of a parameter: join repeated resource parameters
+// (RFC 8707) into the space-separated form IAM already supports
 public class RepeatedResourceParameterFilter extends OncePerRequestFilter {
 
   @Override

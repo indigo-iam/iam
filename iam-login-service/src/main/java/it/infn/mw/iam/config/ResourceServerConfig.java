@@ -29,7 +29,7 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgAccessTokenBuilder;
 import it.infn.mw.iam.core.rs.IamAudienceAuthenticationManager;
-import it.infn.mw.iam.core.web.wellknown.ProtectedResources;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceRegistry;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -44,6 +44,9 @@ public class ResourceServerConfig {
 
   @Autowired
   private IamProperties iamProperties;
+
+  @Autowired
+  private ProtectedResourceRegistry protectedResourceRegistry;
 
   @Bean
   FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
@@ -66,8 +69,8 @@ public class ResourceServerConfig {
 
     if (iamProperties.getResourceIndicators().isRequireIamAudience()) {
       filter.setAuthenticationManager(new IamAudienceAuthenticationManager(manager,
-          Set.of(ProtectedResources.iamResourceIdentifier(iamProperties),
-              iamProperties.getIssuer(), WlcgAccessTokenBuilder.ALL_AUDIENCES_VALUE)));
+          Set.of(protectedResourceRegistry.iamResourceIdentifier(), iamProperties.getIssuer(),
+              WlcgAccessTokenBuilder.ALL_AUDIENCES_VALUE)));
     } else {
       filter.setAuthenticationManager(manager);
     }

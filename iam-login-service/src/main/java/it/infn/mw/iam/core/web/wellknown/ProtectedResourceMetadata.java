@@ -16,19 +16,16 @@
 package it.infn.mw.iam.core.web.wellknown;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * OAuth 2.0 Protected Resource Metadata, as defined in RFC 9728, Section 2.
- */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record ProtectedResourceMetadata(String resource,
     @JsonProperty("authorization_servers") List<String> authorizationServers,
-    @JsonProperty("scopes_supported") Set<String> scopesSupported,
+    @JsonProperty("scopes_supported") Collection<String> scopesSupported,
     @JsonProperty("bearer_methods_supported") List<String> bearerMethodsSupported,
     @JsonProperty("resource_name") String resourceName,
     @JsonProperty("resource_documentation") String resourceDocumentation,

@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Collection;
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -33,29 +32,16 @@ import it.infn.mw.iam.core.error.InvalidResourceError;
 
 public class AudienceRequestValidator {
 
-  private final Optional<Supplier<Collection<String>>> allowedResources;
+  private final Predicate<String> allowedResource;
   private final Set<String> forbiddenAudiences;
 
   public AudienceRequestValidator() {
-    this(Optional.empty(), Set.of());
+    this(resource -> true, Set.of());
   }
 
-  /**
-   * @param allowedResources supplies the only resource indicator values accepted, looked up on
-   *        each request; any other value is rejected with <code>invalid_target</code>
-   */
-  public AudienceRequestValidator(Supplier<Collection<String>> allowedResources) {
-    this(Optional.of(allowedResources), Set.of());
-  }
-
-  /**
-   * @param allowedResources as above, or empty to accept any valid resource indicator
-   * @param forbiddenAudiences values that cannot be requested in any of the resource, audience or
-   *        aud parameters; they are rejected with <code>invalid_target</code>
-   */
-  public AudienceRequestValidator(Optional<Supplier<Collection<String>>> allowedResources,
+  public AudienceRequestValidator(Predicate<String> allowedResource,
       Set<String> forbiddenAudiences) {
-    this.allowedResources = allowedResources;
+    this.allowedResource = allowedResource;
     this.forbiddenAudiences = Set.copyOf(forbiddenAudiences);
   }
 
@@ -65,17 +51,16 @@ public class AudienceRequestValidator {
     updateAudienceRequest(params);
   }
 
-  /**
-   * Checks the resource indicators in the request, throwing {@link InvalidResourceError} for an
-   * invalid or not allowed value.
-   */
   public void validateResourceRequest(Map<String, String> params) {
 
     if (params.containsKey(IamOAuthRequestParameters.RESOURCE_KEY)) {
       List<String> resourceParams =
           splitBySpace(params.get(IamOAuthRequestParameters.RESOURCE_KEY));
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
-      resourceParams.forEach(this::validateAllowed);
+      resourceParams.stream().filter(allowedResource.negate()).findFirst().ifPresent(url -> {
+        throw new InvalidResourceError(
+            "The requested resource is not a registered protected resource: " + url);
+      });
     }
 
     // Checked on every audience parameter, otherwise audience=... would bypass the restriction
@@ -116,13 +101,6 @@ public class AudienceRequestValidator {
       .filter(aud -> aud != null && !aud.isEmpty())
       .findFirst()
       .orElse(null);
-  }
-
-  private void validateAllowed(String url) {
-    allowedResources.filter(allowed -> !allowed.get().contains(url)).ifPresent(allowed -> {
-      throw new InvalidResourceError(
-          "The requested resource is not a registered protected resource: " + url);
-    });
   }
 
   static void validateUrl(String url) {

@@ -101,9 +101,7 @@ class ProtectedResourcesReloadTests {
     mvc.perform(get(LIST))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[0].id").value("data-api"))
-      .andExpect(jsonPath("$[0].resource").value("https://data.example.org/api"))
-      .andExpect(jsonPath("$[0].metadata_url")
-        .value("http://localhost:8080/protected-resource-metadata/data-api"));
+      .andExpect(jsonPath("$[0].resource").value("https://data.example.org/api"));
   }
 
   @Test
@@ -161,7 +159,7 @@ class ProtectedResourcesReloadTests {
 
     mvc.perform(post(RELOAD).with(csrf()))
       .andExpect(status().isBadRequest())
-      .andExpect(content().string(containsString("Invalid iam.protected-resources 'a'")));
+      .andExpect(content().string(containsString("Invalid protected resource 'a'")));
 
     mvc.perform(get("/protected-resource-metadata/data-api")).andExpect(status().isOk());
   }

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -25,28 +24,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.ProtectedResourceProperties;
+import it.infn.mw.iam.config.IamProperties.ProtectedResourceProperties;
 
-/**
- * Publishes OAuth 2.0 Protected Resource Metadata (RFC 9728).
- *
- * IAM's own bearer-protected APIs (SCIM, IAM APIs, userinfo, client registration) are described at
- * the well-known location. The resource identifier is the IAM base URL, so the metadata URL is
- * obtained by appending the well-known suffix to the host, as required by RFC 9728, Section 3.1.
- *
- * External resources configured under <code>iam.protected-resources</code> (or in
- * <code>iam.protected-resources-file</code>, see {@link ProtectedResourceRegistry}) are served at
- * <code>/protected-resource-metadata/{id}</code>. That URL is not derived from the resource
- * identifier, so those resources must advertise it in the <code>resource_metadata</code> parameter
- * of their <code>WWW-Authenticate</code> challenges (RFC 9728, Section 5).
- */
 @RestController
 public class ProtectedResourceMetadataEndpoint {
 
-  public static final String PROTECTED_RESOURCE_URL = ProtectedResources.PROTECTED_RESOURCE_URL;
-  public static final String HOSTED_METADATA_URL = "protected-resource-metadata";
+  public static final String PROTECTED_RESOURCE_URL = ".well-known/oauth-protected-resource";
 
-  private static final List<String> BEARER_METHODS = List.of("header");
+  // Not under .well-known: RFC 9728 derives that URL from the resource's own host, so external
+  // resources must advertise this one in the resource_metadata parameter of their challenges
+  public static final String HOSTED_METADATA_URL = "protected-resource-metadata";
 
   private final IamProperties properties;
   private final WellKnownInfoProvider wellKnownInfoProvider;
@@ -59,25 +46,24 @@ public class ProtectedResourceMetadataEndpoint {
     this.registry = registry;
   }
 
-  @GetMapping(value = {"/" + PROTECTED_RESOURCE_URL})
+  @GetMapping("/" + PROTECTED_RESOURCE_URL)
   public ProtectedResourceMetadata protectedResourceMetadata() {
 
     WellKnownConfiguration asConfig = wellKnownInfoProvider.getWellKnownInfo();
 
-    return new ProtectedResourceMetadata(ProtectedResources.iamResourceIdentifier(properties),
-        List.of(properties.getIssuer()), asConfig.scopesSupported(), BEARER_METHODS,
+    return new ProtectedResourceMetadata(registry.iamResourceIdentifier(),
+        List.of(properties.getIssuer()), asConfig.scopesSupported(), List.of("header"),
         properties.getTopbarTitle(), null, asConfig.opPolicyUri(), asConfig.opTosUri());
   }
 
-  @GetMapping(value = {"/" + HOSTED_METADATA_URL + "/{id}"})
+  @GetMapping("/" + HOSTED_METADATA_URL + "/{id}")
   public ProtectedResourceMetadata hostedProtectedResourceMetadata(@PathVariable String id) {
 
     ProtectedResourceProperties r = registry.findById(id)
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-          String.format("Protected resource '%s' not found", id)));
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
     return new ProtectedResourceMetadata(r.getResource(), List.of(properties.getIssuer()),
-        new LinkedHashSet<>(r.getScopes()), r.getBearerMethods(), r.getName(),
-        r.getDocumentation(), r.getPolicyUri(), r.getTosUri());
+        r.getScopes(), r.getBearerMethods(), r.getName(), r.getDocumentation(), r.getPolicyUri(),
+        r.getTosUri());
   }
 }

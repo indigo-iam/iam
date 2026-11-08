@@ -32,10 +32,6 @@ public class IamDiscoveryEndpoint {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
   }
 
-  /*
-   * The same document is served as OpenID Connect discovery and as OAuth 2.0 Authorization Server
-   * Metadata (RFC 8414): the OpenID provider metadata is a superset of the RFC 8414 one.
-   */
   @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL, "/" + OAUTH_AUTHORIZATION_SERVER_URL})
   public WellKnownConfiguration providerConfiguration() {
     return wellKnownInfoProvider.getWellKnownInfo();

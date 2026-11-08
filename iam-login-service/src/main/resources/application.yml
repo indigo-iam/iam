@@ -215,44 +215,16 @@ iam:
     observation-window: ${IAM_LOGIN_LOCKOUT_OBSERVATION_WINDOW:5m}
     lock-duration: ${IAM_LOGIN_LOCKOUT_LOCK_DURATION:30m}
 
-  # External protected resources whose RFC 9728 metadata is hosted by IAM at
-  # <base-url>/protected-resource-metadata/<id>. Each resource must advertise that URL in the
-  # resource_metadata parameter of its WWW-Authenticate challenges. Example:
-  #
-  # protected-resources:
-  #   - id: data-api
-  #     resource: https://data.example.org/api
-  #     scopes: [storage.read:/, storage.modify:/]
-  #     bearer-methods: [header]   # default; allowed: header, body, query
-  #     name: Example data API
-  #     documentation: https://data.example.org/docs
-  #     policy-uri: https://data.example.org/policy
-  #     tos-uri: https://data.example.org/tos
+  # Hosted RFC 9728 metadata, see ProtectedResourceProperties for the fields
   protected-resources: []
 
-  # Alternatively, keep the list in a separate YAML file (same format, under a top-level
-  # "protected-resources:" key). It replaces the list above and can be reloaded without
-  # restarting IAM with POST /iam/api/protected-resources/reload (iam:admin.write). That reloads
-  # only the instance receiving the call: with several replicas, set check-period-secs to make
-  # every instance reload the file when its content changes. An invalid file is rejected and the
-  # current resources are kept.
   protected-resources-file:
     path: ${IAM_PROTECTED_RESOURCES_FILE:}
     check-period-secs: ${IAM_PROTECTED_RESOURCES_FILE_CHECK_PERIOD_SECS:0}
 
   resource-indicators:
-    # When true, a resource parameter (RFC 8707) is accepted only if it is IAM's own resource
-    # identifier (the base URL) or one of the protected-resources above; any other value is
-    # rejected with invalid_target. When false, any absolute URL is accepted.
     restrict-to-protected-resources: ${IAM_RESOURCE_INDICATORS_RESTRICT_TO_PROTECTED_RESOURCES:false}
-    # When true, IAM's own APIs (SCIM, IAM APIs, userinfo, ...) reject access tokens whose aud does
-    # not include IAM (its base URL or issuer) or the WLCG "any" audience. Tokens without aud are
-    # still accepted.
     require-iam-audience: ${IAM_RESOURCE_INDICATORS_REQUIRE_IAM_AUDIENCE:false}
-    # When false, clients cannot request IAM itself (its base URL or issuer) in the resource,
-    # audience or aud parameters (invalid_target), so a token requested for several resources never
-    # carries IAM in aud. Combined with require-iam-audience, only tokens requested without
-    # resource or audience can be used at IAM's APIs.
     allow-iam-audience-request: ${IAM_RESOURCE_INDICATORS_ALLOW_IAM_AUDIENCE_REQUEST:true}
 
 cache:

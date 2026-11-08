@@ -26,13 +26,6 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 
 import com.nimbusds.jwt.JWTParser;
 
-/**
- * Accepts an access token at IAM's own protected resources only if its audience includes IAM.
- *
- * With resource indicators (RFC 8707) a token is issued for specific resources; one issued for
- * another resource must not be usable against IAM. Tokens without an audience are accepted, as
- * they are not restricted to any resource.
- */
 public class IamAudienceAuthenticationManager implements AuthenticationManager {
 
   private final AuthenticationManager delegate;
@@ -50,20 +43,19 @@ public class IamAudienceAuthenticationManager implements AuthenticationManager {
 
     Authentication result = delegate.authenticate(authentication);
 
-    List<String> audience = audience((String) authentication.getPrincipal());
-    if (!audience.isEmpty() && audience.stream().noneMatch(acceptedAudiences::contains)) {
-      throw new InvalidTokenException("The access token audience does not include this resource");
-    }
-
-    return result;
-  }
-
-  private static List<String> audience(String accessToken) {
+    List<String> audience;
     try {
-      List<String> audience = JWTParser.parse(accessToken).getJWTClaimsSet().getAudience();
-      return audience == null ? List.of() : audience;
+      audience = JWTParser.parse((String) authentication.getPrincipal())
+        .getJWTClaimsSet()
+        .getAudience();
     } catch (ParseException e) {
       throw new InvalidTokenException("Invalid access token");
     }
+
+    // Tokens without audience are not restricted to any resource
+    if (!audience.isEmpty() && audience.stream().noneMatch(acceptedAudiences::contains)) {
+      throw new InvalidTokenException("The access token audience does not include this resource");
+    }
+    return result;
   }
 }

@@ -20,13 +20,8 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
-/**
- * Adds resource indicator (RFC 8707) validation to authorization requests.
- *
- * The authorization endpoint calls this after resolving the client redirect URI, so a failure is
- * redirected to the client as an <code>invalid_target</code> error. Token requests are validated
- * when they are created by {@link IamOAuth2RequestFactory}.
- */
+// Called by the authorization endpoint once the redirect URI is resolved, so that invalid_target
+// is redirected to the client. Token requests are validated by IamOAuth2RequestFactory.
 @SuppressWarnings("deprecation")
 public class ResourceIndicatorRequestValidator implements OAuth2RequestValidator {
 

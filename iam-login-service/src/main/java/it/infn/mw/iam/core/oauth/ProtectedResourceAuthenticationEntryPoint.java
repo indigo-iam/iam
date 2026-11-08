@@ -29,17 +29,10 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-/**
- * Adds the RFC 9728 (Section 5.1) <code>resource_metadata</code> parameter to the bearer
- * challenge returned when a request to an IAM protected resource is not authenticated.
- *
- * The same entry point also handles client authentication failures on the authorization server
- * endpoints (token, introspection, revocation); those are not protected resources, so the
- * parameter is not added there.
- */
 @SuppressWarnings("deprecation")
 public class ProtectedResourceAuthenticationEntryPoint extends OAuth2AuthenticationEntryPoint {
 
+  // Client authentication failures on these endpoints are not protected resource challenges
   private static final RequestMatcher AUTHORIZATION_SERVER_ENDPOINTS =
       new OrRequestMatcher(new AntPathRequestMatcher("/token"),
           new AntPathRequestMatcher("/introspect/**"), new AntPathRequestMatcher("/revoke**"));
@@ -67,23 +60,11 @@ public class ProtectedResourceAuthenticationEntryPoint extends OAuth2Authenticat
       super(response);
     }
 
-    private String withResourceMetadata(String name, String value) {
-      if (!HttpHeaders.WWW_AUTHENTICATE.equalsIgnoreCase(name)
-          || !value.regionMatches(true, 0, "Bearer", 0, 6)) {
-        return value;
-      }
-      return value.trim().equalsIgnoreCase("Bearer") ? value + " " + resourceMetadataParam
-          : value + ", " + resourceMetadataParam;
-    }
-
-    @Override
-    public void setHeader(String name, String value) {
-      super.setHeader(name, withResourceMetadata(name, value));
-    }
-
     @Override
     public void addHeader(String name, String value) {
-      super.addHeader(name, withResourceMetadata(name, value));
+      super.addHeader(name, HttpHeaders.WWW_AUTHENTICATE.equalsIgnoreCase(name)
+          ? value + ", " + resourceMetadataParam
+          : value);
     }
   }
 }

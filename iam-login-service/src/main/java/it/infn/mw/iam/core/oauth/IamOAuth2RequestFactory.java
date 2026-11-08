@@ -93,8 +93,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     authorizationRequestBuilder.filterRequestedScopes(inputParams, authn,
         inputParams.get(OAuth2Utils.CLIENT_ID));
-    // Resource indicators are validated by ResourceIndicatorRequestValidator, once the redirect URI
-    // is known, so that an invalid_target error can be returned to the client
+    // Resource indicators are validated later, by ResourceIndicatorRequestValidator
     audienceRequestValidator.updateAudienceRequest(inputParams);
 
     AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);
