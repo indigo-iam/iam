@@ -57,7 +57,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +69,7 @@ import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.cern.CernAccountLifecycleTask;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -82,16 +82,12 @@ import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
 @Transactional
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
-  CernAccountLifecycleTests.TestConfig.class})
-@TestPropertySource(properties = {
-// @formatter:off
-  "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-  "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
-  "cern.task.pageSize=5"
-// @formatter:on
-})
-@ActiveProfiles(value = {"h2-test", "cern"})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, CernAccountLifecycleTests.TestConfig.class})
+@TestPropertySource(properties = {"spring.profiles.include=${spring.profiles.active:h2-test},cern",
+    "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+    "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
+    "lifecycle.account.expiredAccountsTask.enabled=true", "cern.task.pageSize=5"})
 class CernAccountLifecycleTests implements LifecycleTestSupport {
 
   static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
@@ -116,6 +112,9 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
 
   @Autowired
   ExpiredAccountsHandler expiredAccountsHandler;
+
+  @Autowired
+  CernAccountLifecycleTask cernLifecycleTask;
 
   @Autowired
   CernHrDBApiService hrDb;
@@ -264,8 +263,8 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   @Test
   void testLifecycleWorksForAccountsWithOneValidParticipationAndOneExpired() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getLimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
+    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(), Sets.newHashSet(
+        getLimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     Comparator<ParticipationDTO> comparator = Comparator.comparing(ParticipationDTO::getEndDate);
 
@@ -302,8 +301,8 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   @Test
   void testLifecycleWorksForAccountsWithOneUnlimitedParticipationAndOneExpired() {
 
-    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(),
-        Sets.newHashSet(getUnlimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
+    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, getTestAccount(), Sets.newHashSet(
+        getUnlimitedParticipation(clock, "test"), getExpiredParticipation(clock, "test", 20)));
 
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
@@ -422,6 +421,43 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(account.isActive(), is(true));
     assertThat(account.getEndTime(), is(synchronizedEndTime));
     assertThat(account.getLabelByName(LIFECYCLE_STATUS_LABEL).isPresent(), is(false));
+  }
+
+  @Test
+  void coordinatedCycleRenewsMembershipBeforeExpiration() {
+    service.setAccountEndTime(cernUser,
+        Date.from(clock.instant().minus(40, java.time.temporal.ChronoUnit.DAYS)));
+    VOPersonDTO person = voPerson(clock, CERN_PERSON_ID);
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(person));
+
+    cernLifecycleTask.run();
+
+    IamAccount account = loadAccount(CERN_USER_UUID);
+    assertTrue(account.isActive());
+    assertTrue(account.getEndTime().after(Date.from(clock.instant())));
+  }
+
+  @Test
+  void coordinatedCycleSuspendsExpiredAccountWhenHrPersonIsAbsent() {
+    service.setAccountEndTime(cernUser,
+        Date.from(clock.instant().minus(1, java.time.temporal.ChronoUnit.DAYS)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.empty());
+
+    cernLifecycleTask.run();
+
+    assertThat(loadAccount(CERN_USER_UUID).isActive(), is(false));
+  }
+
+  @Test
+  void coordinatedCycleDefersRemovalWhenHrRequestFails() {
+    service.setAccountEndTime(cernUser,
+        Date.from(clock.instant().minus(40, java.time.temporal.ChronoUnit.DAYS)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
+      .thenThrow(new CernHrDbApiError("API is unreachable"));
+
+    cernLifecycleTask.run();
+
+    assertTrue(loadAccount(CERN_USER_UUID).isActive());
   }
 
   @Test
@@ -559,7 +595,8 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
   }
 
   private void assertHrRenewalCommitsWithEmail(String hrEmail) {
-    Date endTime = Date.from(clock.daysAfter(90).truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
+    Date endTime =
+        Date.from(clock.daysAfter(90).truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     VOPersonDTO person = voPerson(clock, CERN_PERSON_ID, endTime);
     person.setEmail(hrEmail);
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(person));
@@ -680,9 +717,11 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(account.getUserInfo().getGivenName(), is(givenName));
     assertThat(account.getUserInfo().getFamilyName(), is(familyName));
     assertThat(account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS)
-      .orElseThrow(AssertionError::new).getValue(), is(CernStatus.IGNORED.name()));
+      .orElseThrow(AssertionError::new)
+      .getValue(), is(CernStatus.IGNORED.name()));
     assertThat(account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE)
-      .orElseThrow(AssertionError::new).getValue(), is(IGNORE_MESSAGE));
+      .orElseThrow(AssertionError::new)
+      .getValue(), is(IGNORE_MESSAGE));
   }
 
   @Test

@@ -19,8 +19,10 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecy
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +81,12 @@ public class CernHrLifecycleHandler implements Runnable {
   }
 
   public void handleAccount(String cernPersonId, String experiment, IamAccount account) {
+    synchronizeAccount(cernPersonId, experiment, account);
+  }
+
+  private boolean synchronizeAccount(String cernPersonId, String experiment, IamAccount account) {
     if (accountProcessor.skipIfIgnored(account.getUuid())) {
-      return;
+      return true;
     }
     // External I/O must not hold a database row lock.
     Optional<VOPersonDTO> person;
@@ -89,9 +95,10 @@ public class CernHrLifecycleHandler implements Runnable {
     } catch (CernHrDbApiError e) {
       LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
       accountProcessor.processApiError(account.getUuid());
-      return;
+      return false;
     }
     accountProcessor.process(account.getUuid(), cernPersonId, experiment, person);
+    return true;
   }
 
   private String getCernPersonId(IamAccount account) {
@@ -104,6 +111,12 @@ public class CernHrLifecycleHandler implements Runnable {
   @Override
   @SchedulerLock(name = "accountLifecycle", lockAtMostFor = "PT2H")
   public void run() {
+    synchronizeAccounts();
+  }
+
+  /** Returns accounts whose synchronization failed during this cycle. */
+  public Set<String> synchronizeAccounts() {
+    Set<String> failedAccounts = new HashSet<>();
 
     LOG.info("CERN HR Lyfecycle handler ... [START]");
 
@@ -118,8 +131,11 @@ public class CernHrLifecycleHandler implements Runnable {
       if (accountsPage.hasContent()) {
         for (IamAccount a : accountsPage.getContent()) {
           try {
-            handleAccount(getCernPersonId(a), cernProperties.getExperimentName(), a);
+            if (!synchronizeAccount(getCernPersonId(a), cernProperties.getExperimentName(), a)) {
+              failedAccounts.add(a.getUuid());
+            }
           } catch (RuntimeException e) {
+            failedAccounts.add(a.getUuid());
             LOG.error("Error during CERN HR lifecycle handler on account {}", a.getUuid(), e);
           }
         }
@@ -133,6 +149,7 @@ public class CernHrLifecycleHandler implements Runnable {
     }
 
     LOG.info("CERN HR Lyfecycle handler ... [END]");
+    return failedAccounts;
   }
 
 }

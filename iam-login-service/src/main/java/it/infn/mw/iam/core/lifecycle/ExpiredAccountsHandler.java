@@ -189,6 +189,10 @@ public class ExpiredAccountsHandler implements Runnable {
   }
 
   public void handleExpiredAccounts() {
+    handleExpiredAccounts(Set.of());
+  }
+
+  public void handleExpiredAccounts(Set<String> excludedAccountUuids) {
 
     LOG.info("Expired accounts handler ... [START]");
 
@@ -207,7 +211,9 @@ public class ExpiredAccountsHandler implements Runnable {
         LOG.debug("expiredAccountsPage [{}/{}]", expiredAccountsPage.getNumber()+1, expiredAccountsPage.getNumberOfElements());
 
         for (IamAccount expiredAccount : expiredAccountsPage.getContent()) {
-          handleExpiredAccount(expiredAccount);
+          if (!excludedAccountUuids.contains(expiredAccount.getUuid())) {
+            handleExpiredAccount(expiredAccount);
+          }
         }
       }
 

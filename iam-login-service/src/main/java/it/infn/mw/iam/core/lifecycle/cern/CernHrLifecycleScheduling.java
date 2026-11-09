@@ -17,7 +17,6 @@ package it.infn.mw.iam.core.lifecycle.cern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
@@ -32,10 +31,10 @@ public class CernHrLifecycleScheduling implements SchedulingConfigurer {
   private static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleScheduling.class);
 
   private final CernProperties cernProperties;
-  private final Runnable handler;
+  private final CernAccountLifecycleTask handler;
 
   public CernHrLifecycleScheduling(CernProperties cernProperties,
-      @Qualifier("cernHrLifecycleHandler") Runnable handler) {
+      CernAccountLifecycleTask handler) {
     this.cernProperties = cernProperties;
     this.handler = handler;
   }
@@ -48,7 +47,7 @@ public class CernHrLifecycleScheduling implements SchedulingConfigurer {
     } else {
       final String cronSchedule = cernProperties.getTask().getCronSchedule();
       LOG.info("Scheduling CERN HR DB lifecycle handler with schedule: {}", cronSchedule);
-      taskRegistrar.addCronTask(handler, cronSchedule);
+      taskRegistrar.addCronTask(handler::run, cronSchedule);
     }
   }
 
