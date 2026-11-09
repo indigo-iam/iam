@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.stereotype.Component;
@@ -64,6 +65,7 @@ public class DefaultScopeFilter implements ScopeFilter {
   @Override
   public Set<String> filterScopes(Set<String> requestedScopes, Authentication authn,
       String clientId) {
+    rejectAdminScopesForPublicClients(requestedScopes, clientId);
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authn);
     if (account.isEmpty()) {
       if (properties.getScopeAuthz().getOpa().isEnabled()) {
@@ -77,6 +79,7 @@ public class DefaultScopeFilter implements ScopeFilter {
   @Override
   public Set<String> filterScopes(Set<String> requestedScopes, IamAccount account,
       String clientId) {
+    rejectAdminScopesForPublicClients(requestedScopes, clientId); 
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
@@ -116,17 +119,23 @@ public class DefaultScopeFilter implements ScopeFilter {
       .collect(Collectors.toSet());
   }
 
-  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account,
-      String clientId) {
-    if (!Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
-      ClientDetailsEntity client =
-          (ClientDetailsEntity) clientDetailsService.loadClientByClientId(clientId);
-
-      if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
-        throw new InvalidRequestException(
-            "Public clients are not allowed to request iam:admin or scim scopes");
-      }
+  private void rejectAdminScopesForPublicClients(Set<String> requestedScopes, String clientId) {
+    if (Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
+      return;
     }
+
+    ClientDetailsEntity client =
+        (ClientDetailsEntity) clientDetailsService.loadClientByClientId(clientId);
+
+    if (client == null) {
+      throw new InvalidClientException("Client with id " + clientId + " was not found");
+    }
+
+    if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+      throw new InvalidRequestException(
+          "Public clients are not allowed to request iam:admin or scim scopes");
+    }
+  }
 
   private Set<String> adminPolicies(Set<String> requestedScopes, boolean admin) {
     if (!admin) {
