@@ -72,7 +72,7 @@ public class DatabaseMonitorCachePersistence {
     });
 
     @PostConstruct
-    void start() {
+    public void start() {
         monitorExecutor.scheduleWithFixedDelay(this::checkSafely, checkIntervalMs, checkIntervalMs,
                 TimeUnit.MILLISECONDS);
     }
@@ -98,7 +98,7 @@ public class DatabaseMonitorCachePersistence {
     }
 
     @PreDestroy
-    void shutdown() {
+    public void shutdown() {
         monitorExecutor.shutdownNow();
         probeExecutor.shutdownNow();
     }
