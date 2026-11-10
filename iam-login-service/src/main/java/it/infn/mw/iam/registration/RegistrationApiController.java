@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -66,6 +67,7 @@ public class RegistrationApiController {
 
   private final RegistrationRequestService service;
   private final RegistrationProperties registrationProperties;
+  private final String dashboardBasePath;
 
   private static final String INVALID_REGISTRATION_TEMPLATE = "Invalid registration request: %s";
 
@@ -73,6 +75,7 @@ public class RegistrationApiController {
       IamProperties properties) {
     service = registrationService;
     registrationProperties = properties.getRegistration();
+    dashboardBasePath = properties.getDashboard().getBasePath();
   }
 
   private Optional<ExternalAuthenticationRegistrationInfo> getExternalAuthenticationInfo() {
@@ -157,6 +160,19 @@ public class RegistrationApiController {
     }
 
     return new ModelAndView("iam/requestVerified");
+  }
+
+  @GetMapping(value = "/registration/insufficient-auth")
+  public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request,
+      final Authentication auth) {
+
+    if (auth != null && auth.isAuthenticated()
+        && auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_USER"))) {
+      return new ModelAndView("redirect:" + dashboardBasePath);
+    }
+
+    model.addAttribute("authError", request.getAttribute("authError"));
+    return new ModelAndView("iam/insufficient-auth");
   }
 
   @GetMapping(value = "/registration/submitted")
