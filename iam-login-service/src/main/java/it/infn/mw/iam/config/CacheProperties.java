@@ -46,6 +46,8 @@ public class CacheProperties {
 
   private long defaultCacheSize = 1000;
 
+  private boolean databaseMonitorEnabled = false;
+
   private String databaseAvailabilityCheckInterval = "5000";
 
   private RedisProperties redis = new RedisProperties();
@@ -82,20 +84,28 @@ public class CacheProperties {
     this.defaultCleanupPeriodSecs = defaultCleanupPeriodSecs;
   }
 
-  public String getdatabaseAvailabilityCheckInterval() {
-    return databaseAvailabilityCheckInterval;
-  }
-
-  public void setdatabaseAvailabilityCheckInterval(String databaseAvailabilityCheckInterval) {
-    this.databaseAvailabilityCheckInterval = databaseAvailabilityCheckInterval;
-  }
-
   public long getDefaultCacheSize() {
     return defaultCacheSize;
   }
 
   public void setDefaultCacheSize(long defaultCacheSize) {
     this.defaultCacheSize = defaultCacheSize;
+  }
+
+  public boolean getDatabaseMonitorEnabled() {
+    return databaseMonitorEnabled;
+  }
+
+  public void setDatabaseMonitorEnabled(boolean databaseMonitorEnabled) {
+    this.databaseMonitorEnabled = databaseMonitorEnabled;
+  }
+
+  public String getdatabaseAvailabilityCheckInterval() {
+    return databaseAvailabilityCheckInterval;
+  }
+
+  public void setdatabaseAvailabilityCheckInterval(String databaseAvailabilityCheckInterval) {
+    this.databaseAvailabilityCheckInterval = databaseAvailabilityCheckInterval;
   }
 
   public RedisProperties getRedis() {

@@ -62,6 +62,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
         "cache.enabled=true",
         "cache.redis.enabled=false",
         "cache.well-known-cleanup-period-secs=5",
+        "cache.database-monitor-enabled=true",
         "cache.database-availability-check-interval=250",
         "spring.profiles.active=h2-test" }) // Forced to run h2 or mysql as the database connection string has to be configured. 
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
