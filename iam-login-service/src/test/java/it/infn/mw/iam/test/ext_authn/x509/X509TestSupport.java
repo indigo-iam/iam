@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -40,6 +41,7 @@ import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
@@ -55,6 +57,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class X509TestSupport {
+
+  @Value("${iam.dashboard.base-path}")
+  protected String dashboardBasePath;
 
   public static final String TEST_0_CERT_PATH = "src/test/resources/x509/test0.cert.pem";
   public static final String OLD_TEST_0_CERT_PATH = "src/test/resources/x509/oldtest0.cert.pem";
@@ -297,7 +302,8 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("/login"))
+          .andExpect(redirectedUrl(dashboardBasePath))
+          .andExpect(unauthenticated())
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -325,7 +331,8 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("/login"))
+          .andExpect(redirectedUrl(dashboardBasePath))
+          .andExpect(unauthenticated())
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -353,7 +360,8 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test1SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("/login"))
+          .andExpect(redirectedUrl(dashboardBasePath))
+          .andExpect(unauthenticated())
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
@@ -381,7 +389,8 @@ public class X509TestSupport {
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test2SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
-          .andExpect(redirectedUrl("/login"))
+          .andExpect(redirectedUrl(dashboardBasePath))
+          .andExpect(unauthenticated())
           .andExpect(MockMvcResultMatchers.request()
             .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
           .andReturn()
