@@ -50,9 +50,6 @@ public class OPABundleService {
     this.objectMapper = objectMapper;
   }
 
-  // Records don't compare array contents, so two bundles with the same bytes are not equal.
-  // Not a problem here: OpaBundle only carries the response, it is never compared.
-  @SuppressWarnings("java:S6218")
   public record OpaBundle(byte[] content, String etag) {}
 
 
