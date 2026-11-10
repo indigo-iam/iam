@@ -56,7 +56,6 @@ public class CernAccountLifecycleTask {
     if (!isEnabled()) {
       return;
     }
-    // Call the worker methods under this lock, avoiding nested lock acquisition.
     Set<String> failedAccounts = hrHandler.synchronizeAccounts();
     if (lifecycleProperties.getAccount().getExpiredAccountsTask().isEnabled()) {
       LOG.info("Processing expired accounts after HR sync, excluding {} failed accounts",
