@@ -214,10 +214,10 @@ public class DatabaseMonitorCacheErrorsTests {
         try {
             databaseUp.set(false);
             // First call throws the error
-            verify(cacheManager, timeout(3000).atLeast(1)).getCache(anyString()); 
+            verify(cacheManager, timeout(3000).atLeast(1)).getCache(anyString());
             databaseUp.set(true);
-            // The monitor is still running despite the error 
-            verify(cacheManager, timeout(3000).atLeast(2)).getCache(anyString()); 
+            // The monitor is still running despite the error
+            verify(cacheManager, timeout(3000).atLeast(2)).getCache(anyString());
         } finally {
             looping.shutdown();
         }
@@ -229,7 +229,7 @@ public class DatabaseMonitorCacheErrorsTests {
         return connection;
     }
 
-    private static void await(Duration timeout, BooleanSupplier condition) throws InterruptedException {
+    private static void await(Duration timeout, BooleanSupplier condition) {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (!condition.getAsBoolean()) {
             if (System.nanoTime() > deadline) {

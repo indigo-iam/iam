@@ -38,7 +38,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
@@ -113,7 +112,6 @@ public class DatabaseMonitorCachePersistence {
         }
     }
 
-    @Scheduled(fixedDelayString = "${cache.database-availability-check-interval}")
     public void checkDatabaseConnection() {
         // Call probe method to check current availability
         boolean up = probe();
