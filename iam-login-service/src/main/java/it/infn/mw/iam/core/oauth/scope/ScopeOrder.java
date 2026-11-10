@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile.wlcg;
+package it.infn.mw.iam.core.oauth.scope;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -25,9 +25,9 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 /** Reorders already authorized scopes without changing the authorization decision. */
 @SuppressWarnings("deprecation")
-public class WlcgScopeOrder {
+public class ScopeOrder {
 
-  private WlcgScopeOrder() {}
+  private ScopeOrder() {}
 
   public static Set<String> fromRaw(String rawScopes, Set<String> authorized) {
     LinkedHashSet<String> result = new LinkedHashSet<>();

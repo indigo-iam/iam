@@ -29,6 +29,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.ScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.scope.ScopeOrder;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -48,7 +49,7 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
         return WlcgJWTProfile.PROFILE_VERSION;
       case WLCG_GROUPS:
         return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(
-            WlcgScopeOrder.forAuthentication(auth, auth.getOAuth2Request().getScope()),
+            ScopeOrder.forAuthentication(auth, auth.getOAuth2Request().getScope()),
             account.get().getUserInfo().getGroups()) : null;
       case AUTH_TIME:
         return account.isPresent() && account.get().getLastLoginTime() != null

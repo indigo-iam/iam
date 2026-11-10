@@ -311,6 +311,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
       IamSSOProfileOptions options = new IamSSOProfileOptions();
       options.setIncludeScoping(false);
+      options.setForceAuthN(samlProperties.isForceAuthn());
       options.setNameID(samlProperties.getNameidPolicy().type());
 
       return options;

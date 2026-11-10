@@ -25,6 +25,7 @@
     <module>iam-persistence</module>
     <module>iam-voms-aa</module>
     <module>iam-login-service</module>
+    <module>iam-db-migrations</module>
   </modules>
 
   <properties>
@@ -39,9 +40,10 @@
     <junit-jupiter.version>5.14.1</junit-jupiter.version>
 
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
+    <jackson-bom.version>2.18.11</jackson-bom.version>
 
-    <voms.version>3.4.0</voms.version>
-    <bc.version>1.86</bc.version>
+    <voms.version>3.4.1</voms.version>
+    <bc.version>1.84</bc.version>
 
     <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
@@ -64,7 +66,7 @@
 
     <rest-assured.version>5.5.7</rest-assured.version>
     <json-path.version>2.9.0</json-path.version>
-    <google-guava.version>33.6.0-jre</google-guava.version>
+    <google-guava.version>33.7.1-jre</google-guava.version>
 
     <spring-framework.version>5.3.39</spring-framework.version>
     <spring-security.version>5.8.16</spring-security.version>
@@ -77,11 +79,11 @@
     <jsr250-api.version>1.0</jsr250-api.version>
     <shedlock-spring.version>4.48.0</shedlock-spring.version>
 
-    <nimbus-jose-jwt.version>9.48</nimbus-jose-jwt.version>
+    <nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
 
     <resource.delimiter>@</resource.delimiter>
 
-    <jvm.test.args>-Xmx2500m -Duser.timezone=UTC</jvm.test.args>
+    <jvm.test.args>-Xmx3072m -XX:MaxMetaspaceSize=512m -Duser.timezone=UTC</jvm.test.args>
     <!-- Default (used in Eclipse) -->
     <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
@@ -92,7 +94,15 @@
     <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
     <sonar.language>java</sonar.language>
     <sonar.coverage.exclusions>
-      iam-persistence/**/*,iam-test-client/**/*,iam-common/**</sonar.coverage.exclusions>
+      iam-persistence/**/*,
+      iam-test-client/**/*,
+      iam-common/**
+      **/src/main/webapp/**,
+      **/*.js,
+      **/*.jsx,
+      **/*.mjs,
+      **/*.cjs
+    </sonar.coverage.exclusions>
     <sonar.exclusions>iam-login-service/src/main/java/it/infn/mw/iam/util/crypto/**</sonar.exclusions>
   </properties>
 

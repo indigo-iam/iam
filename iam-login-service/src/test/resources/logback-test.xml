@@ -17,14 +17,22 @@
 
 -->
 
-<configuration>
-  <include
-    resource="org/springframework/boot/logging/logback/base.xml" />
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="logback-test.xsd">
+
+  <include resource="org/springframework/boot/logging/logback/base.xml" />
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+  </root>
 
   <logger name="org.springframework" level="WARN" />
-  <logger name="org.springframework.test.web.servlet.result" level="INFO"/>
+  <logger name="org.springframework.test.web.servlet.result" level="INFO" />
   <logger name="org.flywaydb" level="WARN" />
-  <logger name="org.testcontainers" level="INFO"/>
-  <logger name="com.github.dockerjava" level="INFO"/>
-  <logger name="org.hibernate.validator" level="INFO"/>
+  <logger name="org.testcontainers" level="INFO" />
+  <logger name="com.github.dockerjava" level="INFO" />
+  <logger name="org.hibernate.validator" level="INFO" />
+
+  <logger name="org.springframework.jdbc" level="WARN" />
+  <logger name="org.flywaydb.core.internal" level="WARN" />
 </configuration>

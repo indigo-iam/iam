@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.service.client;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CLIENT_CREDENTIALS;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CODE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.DEVICE_CODE;
-import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.IMPLICIT;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REDELEGATE;
 import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.REFRESH_TOKEN;
 import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_basic;
@@ -134,8 +133,7 @@ class ClientManagementServiceTests {
 
     assertEquals("client", client.getClientId());
     assertEquals(new IamSha256PasswordEncoder().encode("secret"), client.getClientSecret());
-    assertTrue(
-        client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN)));
+    assertTrue(client.getGrantTypes().containsAll(Set.of(CODE, REDELEGATE, REFRESH_TOKEN)));
     assertTrue(client.getScope()
       .containsAll(Set.of("openid", "offline_access", "profile", "email", "address", "phone",
           "read-tasks", "write-tasks", "read:/", "write:/")));

@@ -52,22 +52,6 @@ public class IdTokenHashUtils {
     return getHash(signingAlg, code.getBytes());
   }
 
-  /**
-   * Compute the SHA hash of a token
-   *
-   * @param signingAlg
-   * @param token
-   * @return
-   */
-  public static Base64URL getAccessTokenHash(JWSAlgorithm signingAlg,
-      String accessTokenValue) {
-
-    byte[] tokenBytes = accessTokenValue.getBytes();
-
-    return getHash(signingAlg, tokenBytes);
-
-  }
-
   public static Base64URL getHash(JWSAlgorithm signingAlg, byte[] bytes) {
 
     String hashAlg = null;

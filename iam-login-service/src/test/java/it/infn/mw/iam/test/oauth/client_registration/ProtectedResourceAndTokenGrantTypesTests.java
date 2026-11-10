@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.oauth.client_registration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -91,29 +94,19 @@ class ProtectedResourceAndTokenGrantTypesTests extends EndpointsTestUtils {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  void testProtectedResourceGetsNoTokenWithImplicitFlow() throws Exception {
+  void protectedResourceCannotUseUnsupportedResponseType() throws Exception {
 
-    UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl("http://localhost/authorize")
-      .queryParam("response_type", "token")
-      .queryParam("client_id", PROTECTED_RESOURCE_ID)
-      .queryParam("redirect_uri", "http://localhost:9876/implicit")
-      .queryParam("scope", "openid profile")
-      .queryParam("nonce", "1")
-      .queryParam("state", "1")
-      .build();
-
-    String authzEndpointUrl = uriComponents.toUriString();
-
-    MvcResult result = mvc.perform(get(authzEndpointUrl))
+    mvc.perform(get("/authorize")
+        .param("response_type", "token")
+        .param("client_id", PROTECTED_RESOURCE_ID)
+        .param("redirect_uri", "https://resource.example/callback")
+        .param("scope", "openid")
+        .param("nonce", "1")
+        .param("state", "1"))
       .andExpect(status().isBadRequest())
-      .andExpect(view().name("forward:/oauth/error"))
-      .andReturn();
-
-    InvalidGrantException ex =
-        (InvalidGrantException) result.getModelAndView().getModel().get("error");
-
-    assertThat(ex).isInstanceOf(InvalidGrantException.class);
-    assertThat(ex.getMessage()).isEqualTo("A client must have at least one authorized grant type.");
+      .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
+      .andExpect(jsonPath("$.error")
+        .value("unsupported_response_type"));
   }
 
   @Test

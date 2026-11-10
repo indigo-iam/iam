@@ -54,9 +54,9 @@ public class IamUserInfoInterceptor implements HandlerInterceptor, AsyncHandlerI
 
   public IamUserInfoInterceptor(IamAccountService accountService) {
     this.accountService = accountService;
-    gsonBuilder = new GsonBuilder()
-      .registerTypeHierarchyAdapter(GrantedAuthority.class, AUTHORITY_SERIALIZER)
-      .create();
+    gsonBuilder =
+        new GsonBuilder().registerTypeHierarchyAdapter(GrantedAuthority.class, AUTHORITY_SERIALIZER)
+          .create();
   }
 
   private void resolveUserInfo(Authentication auth, HttpServletRequest request) {
@@ -64,7 +64,7 @@ public class IamUserInfoInterceptor implements HandlerInterceptor, AsyncHandlerI
 
     if (user.isPresent()) {
       request.setAttribute(USERINFO_ATTR_NAME, user.get().getUserInfo());
-      request.setAttribute(USERINFO_JSON_ATTR_NAME, user.get().toJson());
+      request.setAttribute(USERINFO_JSON_ATTR_NAME, gsonBuilder.toJson(user.get().toJson()));
     }
   }
 

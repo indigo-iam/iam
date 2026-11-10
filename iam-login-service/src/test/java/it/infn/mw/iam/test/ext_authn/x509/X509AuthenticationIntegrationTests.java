@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -44,7 +45,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -97,8 +97,6 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
   @Test
   void testX509AuthenticationSuccessButNotRequestedLeadsToLoginPage() throws Exception {
 
-    Instant now = clock.instant();
-
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -114,6 +112,11 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     assertThat(resolvedAccount.getUsername(), equalTo("test"));
 
+    IamAccount accountBeforeLogin =
+        iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow();
+
+    Date lastLoginBefore = accountBeforeLogin.getLastLoginTime();
+
     mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
       .andExpect(status().isFound())
       .andExpect(redirectedUrl("/login"))
@@ -127,13 +130,17 @@ class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test"));
 
-    resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
-      .orElseThrow(
-          () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
+    IamAccount accountAfterLogin =
+        iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow();
+
+    assertNotNull(accountAfterLogin.getLastLoginTime(),
+        "Last login time should be set after X.509 authentication");
 
     // Check that last login time is updated when login in with X.509 credentials
-    assertThat(resolvedAccount.getLastLoginTime().toInstant(), greaterThan(now));
-
+    if (lastLoginBefore != null) {
+      assertThat(accountAfterLogin.getLastLoginTime().toInstant(),
+          greaterThan(lastLoginBefore.toInstant()));
+    }
   }
 
   @Test

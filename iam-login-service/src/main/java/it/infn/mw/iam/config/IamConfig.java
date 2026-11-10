@@ -51,7 +51,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -68,7 +67,6 @@ import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
-import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
 import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswordTokenGranter;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
@@ -106,7 +104,6 @@ import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamClientCredentialsTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
-import it.infn.mw.iam.core.oauth.granters.IamImplicitTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
@@ -179,6 +176,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -364,7 +362,7 @@ public class IamConfig {
 
   @Bean
   PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
+    return new IamBCryptPasswordEncoder();
   }
 
   @Bean
@@ -495,14 +493,6 @@ public class IamConfig {
   }
 
   @Bean
-  ImplicitTokenGranter implicitTokenGranter(AuthorizationServerTokenServices tokenServices,
-      OAuth2RequestFactory requestFactory,
-      @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService) {
-
-    return new IamImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory);
-  }
-
-  @Bean
   RefreshTokenGranter refreshTokenGranter(AuthorizationServerTokenServices tokenServices,
       OAuth2RequestFactory requestFactory,
       @Qualifier("iamClientDetailsEntityService") ClientDetailsService clientDetailsService,
@@ -556,15 +546,15 @@ public class IamConfig {
 
   @Bean
   TokenGranter tokenGranter(AuthorizationCodeTokenGranter codeTokenGranter,
-      ImplicitTokenGranter implicitTokenGranter, RefreshTokenGranter refreshTokenGranter,
+      RefreshTokenGranter refreshTokenGranter,
       ClientCredentialsTokenGranter clientCredentialsTokenGranter,
       ResourceOwnerPasswordTokenGranter passwordTokenGranter,
       IamDeviceCodeTokenGranter deviceCodeTokenGranter,
       TokenExchangeTokenGranter tokenExchangeGranter) {
 
     return new CompositeTokenGranter(Arrays.<TokenGranter>asList(codeTokenGranter,
-        implicitTokenGranter, refreshTokenGranter, clientCredentialsTokenGranter,
-        passwordTokenGranter, tokenExchangeGranter, deviceCodeTokenGranter));
+        refreshTokenGranter, clientCredentialsTokenGranter, passwordTokenGranter,
+        tokenExchangeGranter, deviceCodeTokenGranter));
   }
 
   @Bean

@@ -53,6 +53,20 @@ class ScopePolicyEarlyFailTests extends ScopePolicyTestUtils {
   ScopeFilter pdp;
 
   @Test
+  void earlyFailIgnoresDeniedAdminScopesButRejectsDeniedOrdinaryScopes() {
+    IamAccount admin = accountRepo.findByUsername("admin").orElseThrow();
+    IamScopePolicy deny = initDenyScopePolicy();
+    deny.linkAccount(admin);
+    deny.getScopes().addAll(Set.of("iam:admin.write", "scim:read", PROFILE));
+    policyScopeRepo.save(deny);
+
+    Set<String> adminScopes = Set.of("iam:admin.write", "scim:read");
+    assertEquals(adminScopes, pdp.filterScopes(adminScopes, admin, CLIENT_ID));
+    assertThrows(InvalidRequestException.class,
+        () -> pdp.filterScopes(Set.of("scim:read", PROFILE), admin, CLIENT_ID));
+  }
+
+  @Test
   void testEarlyFailWhenScopeIsNotAllowed() {
 
     IamAccount testAccount = accountRepo.findByUsername("test")

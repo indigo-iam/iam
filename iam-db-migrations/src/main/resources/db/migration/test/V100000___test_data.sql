@@ -22,7 +22,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (10, 'registration-client', 'secret', 'Registration service test client', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (11, 'token-lookup-client', 'secret', 'Token lookup client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (12, 'device-code-client', 'secret', 'Device code client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
-  (13, 'implicit-flow-client', null, 'Implicit Flow client', false, 86400, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), 'optional', true),
+  (13, 'consent-client', null, 'Consent Client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (14, 'public-dc-client', null, 'Public Device Code client', false, 86400, 3600, 600, false, 'NONE', false, 600, CURRENT_TIMESTAMP(), 'optional', true),
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, 86400, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), 'optional', true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, 86400, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), 'optional', true),
@@ -36,8 +36,9 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (26, 'pkce-none-client', 'secret', 'Client with PKCE none', false, 3600, 3600, 600, false, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), 'none', true),
   (27, 'https://federated-client.com', 'secret', 'Federated client', false, 86400, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), 'optional', true);
 
-UPDATE client_details SET client_description = 'implicit-flow-client description'
-WHERE id = 13 AND client_id = 'implicit-flow-client';
+UPDATE client_details
+SET client_description = 'Consent client description'
+WHERE id = 13 AND client_id = 'consent-client';
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -204,7 +205,7 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (3, 'http://localhost:4000/callback'),
   (4, 'http://localhost:5000/callback'),
   (11, 'http://localhost:1234/callback'),
-  (13, 'http://localhost:9876/implicit'),
+  (13, 'http://localhost:9876/callback'),
   (18, 'https://iam.local.io/iam-test-client/openid_connect_login'),
   (20, 'http://localhost:4000/callback'),
   (22, 'http://localhost:1234/callback'),
@@ -215,7 +216,6 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
   (1, 'urn:ietf:params:oauth:grant_type:redelegate'),
-  (1, 'implicit'),
   (1, 'password'),
   (1, 'refresh_token'),
   (3, 'authorization_code'),
@@ -249,7 +249,7 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (11, 'urn:ietf:params:oauth:grant-type:token-exchange'),
   (12, 'refresh_token'),
   (12, 'urn:ietf:params:oauth:grant-type:device_code'),
-  (13, 'implicit'),
+  (13, 'authorization_code'),
   (14, 'urn:ietf:params:oauth:grant-type:device_code'),
   (15, 'client_credentials'),
   (16, 'client_credentials'),

@@ -92,7 +92,6 @@ import it.infn.mw.iam.persistence.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.util.IdTokenHashUtils;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -616,15 +615,7 @@ public class IamAuthorizationServerTokenServices implements AuthorizationServerT
       idClaims.claim("nonce", nonce);
     }
 
-    Set<String> responseTypes = request.getResponseTypes();
-
     JWSAlgorithm signingAlg = jwtSigningService.getDefaultSigningAlgorithm();
-
-    if (responseTypes.contains("token")) {
-      Base64URL atHash =
-          IdTokenHashUtils.getAccessTokenHash(signingAlg, accessToken.getJwt().serialize());
-      idClaims.claim("at_hash", atHash);
-    }
 
     addCustomIdTokenClaims(idClaims, client, request, sub, accessToken);
 

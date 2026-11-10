@@ -13,30 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.core.user.validation;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 
-public class Sha256Encoder {
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
-  private Sha256Encoder() {
-    // Nothing to do
-  }
+public class BCryptLengthValidator implements ConstraintValidator<ValidBCryptLength, String> {
 
-  public static String encode(String secret) {
-
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] digest = md.digest(secret.getBytes(StandardCharsets.UTF_8));
-
-      return Base64.getEncoder().encodeToString(digest);
-
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Unable to calculate SHA256", e);
-    }
-
+  @Override
+  public boolean isValid(String value, ConstraintValidatorContext context) {
+    return !IamBCryptPasswordEncoder.exceedsMaxLength(value);
   }
 }

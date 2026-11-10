@@ -66,4 +66,9 @@ public class OAuth2ProtocolException extends RuntimeException {
     return new OAuth2ProtocolException(HttpStatus.BAD_REQUEST, OAuth2ErrorCode.INVALID_SCOPE,
         errorDescription);
   }
+
+  public static OAuth2ProtocolException unsupportedResponseType(String errorDescription) {
+    return new OAuth2ProtocolException(HttpStatus.BAD_REQUEST,
+        OAuth2ErrorCode.UNSUPPORTED_RESPONSE_TYPE, errorDescription);
+  }
 }

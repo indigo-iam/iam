@@ -21,8 +21,7 @@ import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 
 public enum OAuthResponseType {
 
-  CODE("code"),
-  TOKEN("token");
+  CODE("code");
 
   private String responseType;
 
@@ -38,9 +37,7 @@ public enum OAuthResponseType {
   public static final OAuthResponseType fromResponseType(String value) {
     if (value.equals("code")) {
       return CODE;
-    } else if (value.equals("token")) {
-      return TOKEN;
-    } else
-      throw new IllegalArgumentException(String.format("Usupported response type: %s", value));
+    }
+    throw new IllegalArgumentException(String.format("Usupported response type: %s", value));
   }
 }
