@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -71,15 +72,29 @@ public class DefaultScopeFilter implements ScopeFilter {
     Set<String> filteredScopes = new HashSet<>();
     filteredScopes.addAll(requestedScopes);
 
-    filteredScopes.retainAll(adminPolicies(requestedScopes, account));
+    boolean admin = accountUtils.isAdmin(account);
+    filteredScopes.retainAll(adminPolicies(requestedScopes, admin));
     if (config.getScopeAuthz().isEnabled()) {
 
       Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
       filteredScopes.retainAll(policyEngine.apply(filteredScopes, account, clientId));
 
-      if (config.getScopeAuthz().isEarlyFail() && !cleanedRequestedScopes.equals(filteredScopes)) {
+      var dashboard = config.getDashboard();
+      boolean dashboardAdmin = admin && dashboard != null && dashboard.isEnabled()
+          && clientId != null && clientId.equals(dashboard.getClientId());
+      cleanedRequestedScopes.stream()
+        .filter(scope -> ADMIN_SCOPES.contains(scope)
+            || (dashboardAdmin && DashboardConfigService.DASHBOARD_SCOPES.contains(scope)))
+        .forEach(filteredScopes::add);
 
-        throw new InvalidRequestException("Scopes not allowed by the scope policy");
+      if (!cleanedRequestedScopes.equals(filteredScopes)) {
+        Set<String> removedScopes = new HashSet<>(cleanedRequestedScopes);
+        removedScopes.removeAll(filteredScopes);
+        LOG.info("Scope policy removed scopes {} for client {}", removedScopes, clientId);
+
+        if (config.getScopeAuthz().isEarlyFail()) {
+          throw new InvalidRequestException("Scopes not allowed by the scope policy");
+        }
       }
     }
     filteredScopes.addAll(excludedScopes(requestedScopes));
@@ -93,8 +108,8 @@ public class DefaultScopeFilter implements ScopeFilter {
       .collect(Collectors.toSet());
   }
 
-  private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {
-    if (!accountUtils.isAdmin(account)) {
+  private Set<String> adminPolicies(Set<String> requestedScopes, boolean admin) {
+    if (!admin) {
       return requestedScopes.stream()
         .filter(s -> !ADMIN_SCOPES.contains(s))
         .collect(Collectors.toSet());
