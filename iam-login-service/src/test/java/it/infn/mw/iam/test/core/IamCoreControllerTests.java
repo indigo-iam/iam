@@ -92,12 +92,12 @@ class IamCoreControllerTests {
   }
 
   @Test
-  void unauthenticatedUserIsRedirectedToLoginPage() throws Exception {
+  void unauthenticatedUserIsRedirectedToDashboard() throws Exception {
 
     mvc.perform(get("/"))
       .andDo(print())
       .andExpect(status().isFound())
-      .andExpect(redirectedUrl("/login"));
+      .andExpect(redirectedUrl(dashboardBasePath));
 
     mvc.perform(get("/login"))
       .andDo(print())
@@ -146,9 +146,27 @@ class IamCoreControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  void authenticatedAccessToRootLeadsToMitreWebapp() throws Exception {
+  void authenticatedAccessToRootRedirectsToDashboard() throws Exception {
 
-    mvc.perform(get("/")).andDo(print()).andExpect(status().isOk()).andExpect(view().name("home"));
+    mvc.perform(get("/"))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl(dashboardBasePath));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void legacyDashboardRemainsAccessible() throws Exception {
+    mvc.perform(get("/dashboard"))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/dashboard"));
+  }
+
+  @Test
+  @WithMockOIDCUser
+  void unregisteredUserAtRootContinuesRegistration() throws Exception {
+    mvc.perform(get("/"))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/start-registration"));
   }
 
   @Test
