@@ -15,7 +15,6 @@
 #
 
 # Default to JVM metrics only; avoid exporting application-specific MBeans.
-# Operators can mount their own configuration if additional metrics are needed.
 includeObjectNames:
   - "java.lang:*"
   - "java.nio:*"
