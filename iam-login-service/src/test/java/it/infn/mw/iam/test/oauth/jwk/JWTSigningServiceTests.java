@@ -230,4 +230,14 @@ class JWTSigningServiceTests implements JWKTestSupport {
 
   }
 
+  @Test
+  void noneIsRejectedAsDefaultSigningAlgorithm() throws Exception {
+    lenient().when(properties.getDefaultJwsAlgorithm()).thenReturn("none");
+    lenient().when(properties.getDefaultKeyId()).thenReturn("iam1");
+
+    JwkKeyStore keystore = JwkKeyStore.from(loadJWKSet(KS1_LOCATION));
+
+    assertThrows(IllegalArgumentException.class,
+        () -> new IamJWTSigningService(keystore, properties));
+  }
 }

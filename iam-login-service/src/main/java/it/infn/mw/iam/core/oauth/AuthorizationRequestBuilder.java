@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +97,12 @@ public class AuthorizationRequestBuilder {
     addClaimsExtension(inputParams, authzRequest);
     addPkceExtensions(inputParams, authzRequest);
     addRequestObjectExtension(inputParams, authzRequest);
+    addTransactionId(UUID.randomUUID().toString(), authzRequest);
+  }
+
+  private void addTransactionId(String transactionId, AuthorizationRequest authzRequest) {
+    authzRequest.getExtensions()
+      .put(IamOAuthRequestParameters.CONSENT_TRANSACTION_ID, transactionId);
   }
 
   public void applyClientDefaults(AuthorizationRequest authzRequest) {

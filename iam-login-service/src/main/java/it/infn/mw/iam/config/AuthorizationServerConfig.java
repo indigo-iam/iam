@@ -32,6 +32,8 @@ import org.springframework.security.oauth2.provider.approval.UserApprovalHandler
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
+import it.infn.mw.iam.core.oauth.ConsentTransactionUserApprovalHandler;
+
 @SuppressWarnings("deprecation")
 @Configuration
 @EnableAuthorizationServer
@@ -72,7 +74,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
       .pathMapping("/oauth/token", "/token")
       .pathMapping("/oauth/authorize", "/authorize")
       .tokenServices(tokenServices)
-      .userApprovalHandler(iamUserApprovalHandler)
+      .userApprovalHandler(
+          new ConsentTransactionUserApprovalHandler(iamUserApprovalHandler))
       .requestFactory(requestFactory)
       .tokenGranter(tokenGranter)
       .authorizationCodeServices(authorizationCodeServices);

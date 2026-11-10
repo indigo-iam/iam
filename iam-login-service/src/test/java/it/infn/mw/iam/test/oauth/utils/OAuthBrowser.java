@@ -79,6 +79,7 @@ public final class OAuthBrowser {
 
     return request()
       .formParam("_csrf", csrfFromPage(consentPage))
+      .formParam("consent_transaction_id", consentTransactionIdFromPage(consentPage))
       .formParam("user_oauth_approval", Boolean.toString(approved))
       .formParam(approved ? "authorize" : "deny",
           approved ? "Authorize" : "Deny")
@@ -105,6 +106,18 @@ public final class OAuthBrowser {
     assertFalse(code.isBlank(), "Authorization code must not be blank");
 
     return code;
+  }
+
+  private static String consentTransactionIdFromPage(ValidatableResponse page) {
+    String transactionId = page.extract()
+      .htmlPath()
+      .getString(
+          "**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
+
+    assertNotNull(transactionId, "Expected a consent transaction ID in the page");
+    assertFalse(transactionId.isBlank(), "Consent transaction ID must not be blank");
+
+    return transactionId;
   }
 
   private static String csrfFromPage(ValidatableResponse page) {

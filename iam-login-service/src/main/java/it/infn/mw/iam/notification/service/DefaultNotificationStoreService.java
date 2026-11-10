@@ -23,11 +23,13 @@ import org.apache.commons.lang.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Service
 public class DefaultNotificationStoreService implements NotificationStoreService {
@@ -47,6 +49,8 @@ public class DefaultNotificationStoreService implements NotificationStoreService
   }
 
   @Override
+  @SchedulerLock(name = "clearExpiredNotifications", lockAtLeastFor = "20s", lockAtMostFor = "5m")
+  @Transactional(value = "defaultTransactionManager")
   public void clearExpiredNotifications() {
     Date currentTime = Date.from(clock.instant());
     Date threshold = DateUtils.addDays(currentTime, -properties.getCleanupAge());

@@ -273,6 +273,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount createAccount(IamAccount account) {
     checkNotNull(account, "Cannot create a null account");
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(account.getPassword())) {
+      throw new IllegalArgumentException(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE);
+    }
 
     final Date now = Date.from(clock.instant());
     final String randomUuid = UUID.randomUUID().toString();

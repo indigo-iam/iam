@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.web.wellknown;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +61,7 @@ public record WellKnownConfiguration(
     @JsonProperty("require_request_uri_registration") boolean requireRequestUriRegistration,
     @JsonProperty("code_challenge_methods_supported") List<PKCEAlgorithm> codeChallengeMethodsSupported,
     @JsonProperty("scopes_supported") Set<String> scopesSupported,
-    @JsonProperty("end_session_endpoint") String endSessionEndpoint) {
+    @JsonProperty("end_session_endpoint") String endSessionEndpoint) implements Serializable {
 
   public static Builder builder() {
     return new Builder();
