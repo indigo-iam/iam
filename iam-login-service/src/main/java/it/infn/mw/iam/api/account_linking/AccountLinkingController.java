@@ -27,6 +27,7 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -40,7 +41,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
@@ -176,15 +179,27 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
     linkingService.unlinkExternalAccount(principal, type, issuer, subject, attributeId);
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(IllegalArgumentException.class)
-  public String handleIllegalArgumentException(HttpServletRequest request, Exception ex) {
-    return "redirect:" + dashboardBasePath;
+  public Object handleIllegalArgumentException(HttpServletRequest request, Exception ex,
+      RedirectAttributes attributes) {
+    return handleAccountLinkingError(request, ex, attributes, HttpStatus.BAD_REQUEST);
   }
 
-  @ResponseStatus(value = HttpStatus.FORBIDDEN)
   @ExceptionHandler(AccountLinkingDisabledException.class)
-  public String handleAccountLinkingDisabledException(HttpServletRequest request, Exception ex) {
-    return "redirect:" + dashboardBasePath;
+  public Object handleAccountLinkingDisabledException(HttpServletRequest request, Exception ex,
+      RedirectAttributes attributes) {
+    return handleAccountLinkingError(request, ex, attributes, HttpStatus.FORBIDDEN);
+  }
+
+  private Object handleAccountLinkingError(HttpServletRequest request, Exception ex,
+      RedirectAttributes attributes, HttpStatus errorStatus) {
+    if ("DELETE".equals(request.getMethod())) {
+      return ResponseEntity.status(errorStatus).body(ErrorDTO.fromString(ex.getMessage()));
+    }
+
+    saveAccountLinkingError(ex, attributes);
+    RedirectView redirect = new RedirectView(dashboardBasePath, true);
+    redirect.setStatusCode(HttpStatus.SEE_OTHER);
+    return redirect;
   }
 }
