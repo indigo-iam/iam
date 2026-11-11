@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.openid_federation;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -74,9 +76,12 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SuppressWarnings("deprecation")
 @ActiveProfiles({"h2-test", "openid-federation"})
 @IamMockMvcIntegrationTest
 class AutomaticClientRegistrationTests {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -201,12 +206,24 @@ class AutomaticClientRegistrationTests {
         .param("request", requestJwt))
       .andExpect(status().isOk());
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    assertNotNull(authorizationRequest);
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertNotNull(consentTransactionId);
+    assertFalse(consentTransactionId.isBlank());
+
     var approveResult = mvc
       .perform(post("/authorize").with(csrf().asHeader())
         .session(session)
         .param("scope.openid", "true")
         .param("remember", "none")
         .param("user_oauth_approval", "true")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .param("authorize", "Authorize"))
       .andExpect(status().isSeeOther())
       .andExpect(header().exists("Location"))

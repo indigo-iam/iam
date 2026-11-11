@@ -36,6 +36,8 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.TokenGenerator;
+import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordError;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 @Service
 public class DefaultPasswordResetService
@@ -90,6 +92,7 @@ public class DefaultPasswordResetService
 
     IamAccount account = findAndValidateAccount(resetToken);
 
+    validatePasswordLength(password);
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);
 
@@ -139,11 +142,18 @@ public class DefaultPasswordResetService
       throw new BadUserPasswordError("Wrong password provided");
     }
 
+    validatePasswordLength(newPassword);
     account.setPassword(passwordEncoder.encode(newPassword));
     accountRepository.save(account);
 
     eventPublisher.publishEvent(new PasswordUpdatedEvent(this, account,
         String.format("User %s update its password", account.getUsername())));
+  }
+
+  private static void validatePasswordLength(String password) {
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(password)) {
+      throw new InvalidPasswordError(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE);
+    }
   }
 
 }

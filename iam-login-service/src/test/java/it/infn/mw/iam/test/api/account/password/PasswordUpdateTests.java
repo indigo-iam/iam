@@ -154,6 +154,29 @@ class PasswordUpdateTests {
   }
 
   @Test
+  void rejectsOversizedUtf8PasswordWithoutChangingCredentials() throws Exception {
+    String accessToken = getUserAccessToken(USER_PASSWORD);
+    updatePassword(accessToken, USER_PASSWORD, "Aa1!" + "é".repeat(35))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string(containsString("72 bytes")));
+    getUserAccessToken(USER_PASSWORD);
+
+    String boundary = "Aa1!" + "é".repeat(34);
+    updatePassword(accessToken, USER_PASSWORD, boundary).andExpect(status().isOk());
+    getUserAccessToken(boundary);
+
+    // A matching 72-byte prefix must not authenticate an oversized password.
+    mvc.perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", testUser.getUsername())
+        .param("password", boundary + "x"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error", is("invalid_grant")));
+  }
+
+  @Test
   void testUpdatePassword() throws Exception {
 
     String accessToken = getUserAccessToken(USER_PASSWORD);

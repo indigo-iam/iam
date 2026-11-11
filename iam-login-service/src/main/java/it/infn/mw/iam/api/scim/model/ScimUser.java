@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
+import it.infn.mw.iam.core.user.validation.ValidBCryptLength;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonFilter("attributeFilter")
@@ -55,6 +56,7 @@ public class ScimUser extends ScimResource {
   private final String userName;
 
   @JsonFilter("passwordFilter")
+  @ValidBCryptLength
   private final String password;
 
   @Valid

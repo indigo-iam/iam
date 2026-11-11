@@ -410,4 +410,11 @@ class JwtUtilsValidationTests {
 
     assertEquals("Token algorithm none does not match expected algorithm RS256", ex.getMessage());
   }
+
+  @Test
+  void plainIdTokenIsAcceptedOnlyWhenNoneIsExplicitlyConfigured() {
+
+    PlainJWT jwt = new PlainJWT(new JWTClaimsSet.Builder().build());
+    assertDoesNotThrow(() -> JwtUtils.validateSignature(jwt, "none", null));
+  }
 }

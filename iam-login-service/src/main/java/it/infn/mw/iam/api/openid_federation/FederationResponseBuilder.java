@@ -94,6 +94,7 @@ public class FederationResponseBuilder {
     rpMetadata.put("client_id", registered.getClientId());
     rpMetadata.put("redirect_uris", registered.getRedirectUris());
     rpMetadata.put("token_endpoint_auth_method", registered.getTokenEndpointAuthMethod());
+    rpMetadata.put("id_token_signed_response_alg", registered.getIdTokenSignedResponseAlg());
     rpMetadata.put("response_types",
         registered.getResponseTypes().stream().map(OAuthResponseType::getResponseType).toList());
     rpMetadata.put("grant_types",

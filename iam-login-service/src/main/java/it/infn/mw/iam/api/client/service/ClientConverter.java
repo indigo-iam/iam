@@ -37,6 +37,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.core.jwk.JWTSigningAndValidationService;
 import it.infn.mw.iam.persistence.model.ClientAuthMethod;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamFederatedClientEntity;
@@ -48,11 +49,14 @@ public class ClientConverter {
 
   private final String clientRegistrationBaseUrl;
   private final ClientRegistrationProperties clientRegistrationProperties;
+  private final JWTSigningAndValidationService jwtSigningService;
 
   public ClientConverter(IamProperties properties,
-      ClientRegistrationProperties clientRegistrationProperties) {
+      ClientRegistrationProperties clientRegistrationProperties,
+      JWTSigningAndValidationService jwtSigningService) {
     this.iamProperties = properties;
     this.clientRegistrationProperties = clientRegistrationProperties;
+    this.jwtSigningService = jwtSigningService;
     clientRegistrationBaseUrl =
         String.format("%s%s", iamProperties.getBaseUrl(), ClientRegistrationApiController.ENDPOINT);
   }
@@ -142,6 +146,7 @@ public class ClientConverter {
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
     clientDTO.setDynamicallyRegistered(entity.isDynamicallyRegistered());
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
+    clientDTO.setIdTokenSignedResponseAlg(jwtSigningService.getDefaultSigningAlgorithm().getName());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
     clientDTO.setRefreshTokenValiditySeconds(entity.getRefreshTokenValiditySeconds());
@@ -237,7 +242,6 @@ public class ClientConverter {
       client.setCodeChallengeMethod(dto.getCodeChallengeMethod());
     }
 
-    // bypasses MitreID default setting to zero inside client's entity
     client.setAccessTokenValiditySeconds(
         clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     client.setRefreshTokenValiditySeconds(

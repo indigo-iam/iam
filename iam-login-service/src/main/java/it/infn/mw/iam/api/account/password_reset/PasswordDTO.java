@@ -20,6 +20,7 @@ import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
+import it.infn.mw.iam.core.user.validation.ValidBCryptLength;
 
 public class PasswordDTO {
 
@@ -28,6 +29,7 @@ public class PasswordDTO {
 
   @NotEmpty(message = "The password cannot be empty")
   @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
+  @ValidBCryptLength
   private String updatedPassword;
 
   public String getCurrentPassword() {
