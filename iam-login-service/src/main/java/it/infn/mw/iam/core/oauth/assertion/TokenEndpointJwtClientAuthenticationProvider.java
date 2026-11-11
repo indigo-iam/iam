@@ -60,8 +60,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
   private final Clock clock;
   private final ClientService clientService;
   private final ClientKeyCacheService validators;
-
-  private final String tokenEndpoint;
+  private final String issuer;
 
   public TokenEndpointJwtClientAuthenticationProvider(Clock clock, IamProperties iamProperties,
       ClientService clientService, ClientKeyCacheService validators) {
@@ -69,13 +68,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     this.clock = clock;
     this.clientService = clientService;
     this.validators = validators;
-
-    if (iamProperties.getIssuer().endsWith("/")) {
-      tokenEndpoint = iamProperties.getIssuer() + "token";
-    } else {
-      tokenEndpoint = iamProperties.getIssuer() + "/token";
-    }
-
+    this.issuer = iamProperties.getIssuer();
   }
 
   private String invalidSignatureAlgorithm(JWSAlgorithm alg) {
@@ -105,7 +98,8 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
         throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
     } else if (client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.SECRET_JWT)) {
-      throw new AuthenticationServiceException(ClientAuthMethod.SECRET_JWT + " has been deprecated");
+      throw new AuthenticationServiceException(
+          ClientAuthMethod.SECRET_JWT + " has been deprecated");
     }
   }
 
@@ -166,7 +160,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     if (isNull(jwtClaims.getAudience())) {
       throw invalidBearerAssertion("assertion audience is null");
     } else {
-      if (!jwtClaims.getAudience().contains(tokenEndpoint)) {
+      if (!jwtClaims.getAudience().contains(issuer)) {
         throw invalidBearerAssertion("invalid audience");
       }
     }
