@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,8 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 @Controller
 public class AupSignaturePageController {
 
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
 
   final IamAupRepository repo;
   final IamAupSignatureRepository signatureRepo;
@@ -82,7 +85,6 @@ public class AupSignaturePageController {
     } else {
       view = new ModelAndView("iam/noAup");
     }
-
     return view;
   }
 
@@ -95,9 +97,7 @@ public class AupSignaturePageController {
     }
 
     return ofNullable(savedRequest);
-
   }
-
 
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = "/iam/aup/sign")
@@ -105,7 +105,6 @@ public class AupSignaturePageController {
       HttpSession session) throws IamAupSignatureUpdateError {
 
     Optional<IamAup> aup = repo.findDefaultAup();
-
 
     if (!aup.isPresent()) {
       return new ModelAndView("iam/noAup");
@@ -129,8 +128,7 @@ public class AupSignaturePageController {
         }
       }
     }
-
-    return new ModelAndView("redirect:/dashboard");
+    return new ModelAndView("redirect:" + dashboardBasePath);
   }
 
   @ExceptionHandler(IamAupSignatureUpdateError.class)
@@ -139,5 +137,3 @@ public class AupSignaturePageController {
     return new ResponseEntity<>(errorResponse, HttpStatus.METHOD_NOT_ALLOWED);
   }
 }
-
-

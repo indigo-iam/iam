@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,10 +64,10 @@ import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
 public class RegistrationApiController {
 
   public static final Logger LOG = LoggerFactory.getLogger(RegistrationApiController.class);
-  private static final GrantedAuthority USER_AUTHORITY = new SimpleGrantedAuthority("ROLE_USER");
 
   private final RegistrationRequestService service;
   private final RegistrationProperties registrationProperties;
+  private final String dashboardBasePath;
 
   private static final String INVALID_REGISTRATION_TEMPLATE = "Invalid registration request: %s";
 
@@ -76,6 +75,7 @@ public class RegistrationApiController {
       IamProperties properties) {
     service = registrationService;
     registrationProperties = properties.getRegistration();
+    dashboardBasePath = properties.getDashboard().getBasePath();
   }
 
   private Optional<ExternalAuthenticationRegistrationInfo> getExternalAuthenticationInfo() {
@@ -132,14 +132,16 @@ public class RegistrationApiController {
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @PostMapping(value = "/registration/reject/{uuid}")
   public RegistrationRequestDto rejectRequest(@PathVariable String uuid,
-      @RequestParam(required = false) String motivation, @RequestParam(required = false) boolean doNotSendEmail) {
+      @RequestParam(required = false) String motivation,
+      @RequestParam(required = false) boolean doNotSendEmail) {
 
-    return service.rejectRequest(uuid, Optional.ofNullable(motivation), Boolean.TRUE.equals(doNotSendEmail));
+    return service.rejectRequest(uuid, Optional.ofNullable(motivation),
+        Boolean.TRUE.equals(doNotSendEmail));
   }
 
   @GetMapping(value = "/registration/verify/{token}")
   public ModelAndView openConfirmRequestPage(final Model model, @PathVariable String token) {
-    
+
     model.addAttribute("token", token);
     return new ModelAndView("iam/confirmRequest");
   }
@@ -164,8 +166,9 @@ public class RegistrationApiController {
   public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request,
       final Authentication auth) {
 
-    if (auth.isAuthenticated() && auth.getAuthorities().contains(USER_AUTHORITY)) {
-      return new ModelAndView("redirect:/dashboard");
+    if (auth != null && auth.isAuthenticated()
+        && auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_USER"))) {
+      return new ModelAndView("redirect:" + dashboardBasePath);
     }
 
     model.addAttribute("authError", request.getAttribute("authError"));

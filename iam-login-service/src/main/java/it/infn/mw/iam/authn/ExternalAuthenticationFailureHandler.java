@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -31,6 +32,9 @@ import org.springframework.web.util.UriUtils;
 
 public class ExternalAuthenticationFailureHandler extends ExternalAuthenticationHandlerSupport
     implements AuthenticationFailureHandler {
+
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ExternalAuthenticationFailureHandler.class);
@@ -72,12 +76,9 @@ public class ExternalAuthenticationFailureHandler extends ExternalAuthentication
 
       clearAccountLinkingSessionAttributes(request.getSession());
 
-      response.sendRedirect("/dashboard");
+      response.sendRedirect(dashboardBasePath);
       return;
     }
-
     response.sendRedirect(buildRedirectURL(exception));
-
   }
-
 }

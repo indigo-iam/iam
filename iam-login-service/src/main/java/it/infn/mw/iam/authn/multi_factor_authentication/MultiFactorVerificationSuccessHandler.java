@@ -36,6 +36,7 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -49,16 +50,18 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountService accountService;
   private final String iamBaseUrl;
+  private final DashboardProperties dashboardProperties;
 
   public MultiFactorVerificationSuccessHandler(Clock clock, AccountUtils accountUtils,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountService accountService,
-      String iamBaseUrl) {
+      String iamBaseUrl, DashboardProperties dashboardProperties) {
 
     this.clock = clock;
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountService = accountService;
     this.iamBaseUrl = iamBaseUrl;
+    this.dashboardProperties = dashboardProperties;
   }
 
   @Override
@@ -80,8 +83,8 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   private void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
-    AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+    AuthenticationSuccessHandler delegate = new RootIsDashboardSuccessHandler(iamBaseUrl,
+        new HttpSessionRequestCache(), dashboardProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
         delegate, aupSignatureCheckService, accountUtils, accountService);
@@ -97,4 +100,3 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     request.removeAttribute(TOTP_VERIFIED);
   }
 }
-
