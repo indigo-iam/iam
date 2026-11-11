@@ -104,7 +104,7 @@ class ClientEventTests {
     String patchBody =
         "[{\"op\":\"replace\",\"path\":\"/client_name\",\"value\":\"patched-name\"}]";
 
-    mvc.perform(patch("/iam/api/clients/client")
+    mvc.perform(patch("/iam/api/clients/client").with(csrf().asHeader())
             .contentType("application/json-patch+json")
             .content(patchBody))
           .andExpect(status().isOk())

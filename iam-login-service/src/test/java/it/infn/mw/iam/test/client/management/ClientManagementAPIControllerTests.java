@@ -462,7 +462,7 @@ class ClientManagementAPIControllerTests {
     client.setScope(Set.of("test"));
 
     mvc
-      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+      .perform(post(IAM_CLIENTS_API_URL).with(csrf().asHeader()).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(CREATED);
 
@@ -471,7 +471,8 @@ class ClientManagementAPIControllerTests {
         replaceOp("/client_description", "patched client description")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "test-client-patch").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "test-client-patch").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(OK)
       .andExpect(jsonPath("$.client_name", is("patched-client-name")))
@@ -489,7 +490,8 @@ class ClientManagementAPIControllerTests {
     String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", "new-name")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(FORBIDDEN);
   }
@@ -502,7 +504,8 @@ class ClientManagementAPIControllerTests {
         mapper.writeValueAsString(List.of(replaceOp("/client_id", "another-client-id")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", startsWith("Unsupported patch path")));
@@ -516,7 +519,8 @@ class ClientManagementAPIControllerTests {
         mapper.writeValueAsString(List.of(Map.of("op", "remove", "path", "/client_name")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", startsWith("Unsupported patch operation")));
@@ -530,7 +534,8 @@ class ClientManagementAPIControllerTests {
         mapper.writeValueAsString(List.of(Map.of("op", "replace", "path", "/client_name", "value", 42)));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is("Patch operation for path '/client_name' requires a string value")));
@@ -544,7 +549,8 @@ class ClientManagementAPIControllerTests {
     String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", tooLongName)));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(BAD_REQUEST);
   }
@@ -556,7 +562,8 @@ class ClientManagementAPIControllerTests {
     String patchBody = mapper.writeValueAsString(List.of(replaceOp("/client_name", "new-name")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(APPLICATION_JSON)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON)
         .content(patchBody))
       .andExpect(status().isUnsupportedMediaType());
   }
@@ -569,7 +576,8 @@ class ClientManagementAPIControllerTests {
         mapper.writeValueAsString(List.of(Map.of("op", "replace", "path", "/client_name")));
 
     mvc
-      .perform(patch(IAM_CLIENTS_API_URL + "client").contentType(JSON_PATCH_CONTENT_TYPE)
+      .perform(patch(IAM_CLIENTS_API_URL + "client").with(csrf().asHeader())
+        .contentType(JSON_PATCH_CONTENT_TYPE)
         .content(patchBody))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error",
@@ -584,7 +592,8 @@ class ClientManagementAPIControllerTests {
 
     mvc
       .perform(
-          patch(IAM_CLIENTS_API_URL + "does-not-exist").contentType(JSON_PATCH_CONTENT_TYPE)
+          patch(IAM_CLIENTS_API_URL + "does-not-exist").with(csrf().asHeader())
+            .contentType(JSON_PATCH_CONTENT_TYPE)
             .content(patchBody))
       .andExpect(status().isNotFound());
   }
