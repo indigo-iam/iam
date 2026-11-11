@@ -21,6 +21,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -73,6 +74,7 @@ public class SamlAuthenticationTestSupport {
   public static final String T1_GIVEN_NAME = "Test";
   public static final String T1_SN = "Saml User";
   public static final String T1_MAIL = "test-user@example.org";
+  public static final List<String> T1_EPSA = List.of("staff@infn.it", "member@infn.it");
 
   public static final String T2_NAMEID = "4567";
   public static final String T2_EPPN = "test-user-2@idptestbed";
@@ -241,6 +243,7 @@ public class SamlAuthenticationTestSupport {
       .givenName(T1_GIVEN_NAME)
       .sn(T1_SN)
       .mail(T1_MAIL)
+      .epsa(T1_EPSA)
       .recipient(authnRequest.getAssertionConsumerServiceURL())
       .requestId(authnRequest.getID())
       .audience(metadataGenerator.getEntityId())
@@ -256,7 +259,6 @@ public class SamlAuthenticationTestSupport {
 
     return r;
   }
-
 
   public Response buildJitTest1Response(AuthnRequest authnRequest)
       throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException,

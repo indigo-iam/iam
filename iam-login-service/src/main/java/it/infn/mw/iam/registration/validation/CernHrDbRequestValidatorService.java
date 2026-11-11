@@ -24,6 +24,7 @@ import static java.util.Objects.isNull;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -106,8 +107,8 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
           format("User is not authenticated by CERN SSO issuer %s", cernProperties.getSsoIssuer()));
     }
 
-    final String cernPersonId =
-        auth.getAdditionalAttributes().get(cernProperties.getPersonIdClaim());
+    final String cernPersonId = Objects
+      .toString(auth.getAdditionalAttributes().get(cernProperties.getPersonIdClaim()), null);
 
     if (cernPersonId == null || cernPersonId.isBlank()) {
       return invalid(format("CERN person id claim '%s' not found in authentication attributes",
