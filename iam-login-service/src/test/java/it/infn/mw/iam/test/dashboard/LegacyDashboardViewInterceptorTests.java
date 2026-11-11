@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.dashboard;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.ModelAndView;
@@ -43,6 +46,19 @@ class LegacyDashboardViewInterceptorTests {
   private final LegacyDashboardViewInterceptor interceptor =
       new LegacyDashboardViewInterceptor(properties);
 
+  private MockMvc mockMvc(MockEnvironment environment) {
+    IamRootController rootController = new IamRootController();
+    DefaultStartRegistrationController registrationController =
+        new DefaultStartRegistrationController(environment);
+    // standaloneSetup does not inject @Value fields.
+    ReflectionTestUtils.setField(rootController, "dashboardBasePath", "/ui");
+    ReflectionTestUtils.setField(registrationController, "dashboardBasePath", "/ui");
+    return MockMvcBuilders
+      .standaloneSetup(rootController, new DashboardController(), registrationController)
+      .addInterceptors(interceptor)
+      .build();
+  }
+
   private void intercept(ModelAndView mav) {
     interceptor.postHandle(new MockHttpServletRequest(), new MockHttpServletResponse(),
         new Object(), mav);
@@ -57,16 +73,31 @@ class LegacyDashboardViewInterceptorTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/", "/home", "/index", "/manage", "/manage/clients",
-      "/dashboard", "/start-registration"})
-  void disablesAllLegacyEntrypoints(String path) throws Exception {
+  @ValueSource(strings = {"/manage", "/manage/clients", "/dashboard"})
+  void disablesLegacyViews(String path) throws Exception {
     properties.getDashboard().setLegacyEnabled(false);
-    MockMvc mvc = MockMvcBuilders.standaloneSetup(new IamRootController(),
-        new DashboardController(), new DefaultStartRegistrationController(new MockEnvironment()))
-      .addInterceptors(interceptor)
-      .build();
+    MockMvc mvc = mockMvc(new MockEnvironment());
     mvc.perform(get(path).principal(new TestingAuthenticationToken("user", "unused", "ROLE_USER")))
       .andExpect(view().name("iam/legacyDashboardDisabled"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/", "/home", "/index", "/start-registration"})
+  void preservesAuthenticatedDashboardRedirects(String path) throws Exception {
+    properties.getDashboard().setLegacyEnabled(false);
+    MockMvc mvc = mockMvc(new MockEnvironment());
+    mvc.perform(get(path).principal(new TestingAuthenticationToken("user", "unused", "ROLE_USER")))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("/ui"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/", "/home", "/index"})
+  void preservesAnonymousDashboardRedirects(String path) throws Exception {
+    properties.getDashboard().setLegacyEnabled(false);
+    mockMvc(new MockEnvironment()).perform(get(path))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("/ui"));
   }
 
   @ParameterizedTest
@@ -84,12 +115,8 @@ class LegacyDashboardViewInterceptorTests {
     properties.getDashboard().setLegacyEnabled(false);
     MockEnvironment environment = new MockEnvironment();
     environment.setActiveProfiles("registration");
-    MockMvc mvc = MockMvcBuilders.standaloneSetup(new IamRootController(),
-        new DefaultStartRegistrationController(environment))
-      .addInterceptors(interceptor)
-      .build();
+    MockMvc mvc = mockMvc(environment);
     mvc.perform(get("/login")).andExpect(view().name("iam/login"));
-    mvc.perform(get("/")).andExpect(view().name("redirect:/login"));
     mvc.perform(get("/start-registration")).andExpect(view().name("iam/register"));
   }
 
