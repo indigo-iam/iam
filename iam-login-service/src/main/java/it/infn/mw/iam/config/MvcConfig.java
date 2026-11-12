@@ -32,6 +32,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 import it.infn.mw.iam.core.web.util.IamViewInfoInterceptor;
+import it.infn.mw.iam.dashboard.LegacyDashboardViewInterceptor;
 
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
@@ -41,17 +42,20 @@ public class MvcConfig implements WebMvcConfigurer {
   private IamUserInfoInterceptor userInfoInterceptor;
   private LegacyServerConfigInterceptor serverConfigInterceptor;
   private IamViewInfoInterceptor iamViewInfoInterceptor;
+  private LegacyDashboardViewInterceptor legacyDashboardViewInterceptor;
   private IamProperties iamProperties;
   private ResourceHandlerConfigurer resourceConfigurer;
 
   public MvcConfig(IamUserInfoInterceptor userInfoInterceptor,
       LegacyServerConfigInterceptor serverConfigInterceptor,
-      IamViewInfoInterceptor iamViewInfoInterceptor, IamProperties iamProperties,
+      IamViewInfoInterceptor iamViewInfoInterceptor,
+      LegacyDashboardViewInterceptor legacyDashboardViewInterceptor, IamProperties iamProperties,
       ResourceHandlerConfigurer resourceConfigurer) {
 
     this.userInfoInterceptor = userInfoInterceptor;
     this.serverConfigInterceptor = serverConfigInterceptor;
     this.iamViewInfoInterceptor = iamViewInfoInterceptor;
+    this.legacyDashboardViewInterceptor = legacyDashboardViewInterceptor;
     this.iamProperties = iamProperties;
     this.resourceConfigurer = resourceConfigurer;
   }
@@ -59,6 +63,7 @@ public class MvcConfig implements WebMvcConfigurer {
   @Override
   public void addInterceptors(final InterceptorRegistry registry) {
 
+    registry.addInterceptor(legacyDashboardViewInterceptor);
     registry.addInterceptor(userInfoInterceptor);
     registry.addInterceptor(serverConfigInterceptor);
     registry.addInterceptor(iamViewInfoInterceptor);

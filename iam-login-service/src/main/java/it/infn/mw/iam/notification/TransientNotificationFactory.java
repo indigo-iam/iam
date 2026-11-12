@@ -43,6 +43,7 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
+import it.infn.mw.iam.dashboard.DashboardUrlResolver;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -73,6 +74,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Value("${iam.organisation.name}")
   private String organisationName;
 
+  private final DashboardUrlResolver dashboardUrls;
   private final Clock clock;
   private final NotificationProperties properties;
   private final AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
@@ -80,7 +82,9 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final Configuration freeMarkerConfiguration;
 
   public TransientNotificationFactory(Clock clock, Configuration fm, NotificationProperties np,
-      AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+      AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds,
+      DashboardUrlResolver dashboardUrls) {
+    this.dashboardUrls = dashboardUrls;
     this.clock = clock;
     this.freeMarkerConfiguration = fm;
     this.properties = np;
@@ -163,7 +167,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put("indigoDashboardUrl", dashboardUrls.registrationRequestsUrl());
     model.put(ORGANISATION_NAME, organisationName);
     model.put("notes", request.getNotes());
 
@@ -204,7 +208,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(USERNAME_FIELD, groupRequest.getAccount().getUsername());
     model.put(GROUPNAME_FIELD, groupName);
     model.put("notes", groupRequest.getNotes());
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put("indigoDashboardUrl", dashboardUrls.groupRequestsUrl());
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("New membership request for group %s", groupName);
