@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oidc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -111,6 +113,45 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
 
     assertTrue(json.has("access_token"));
     assertEquals("Bearer", json.get("token_type").asText());
+  }
+
+  private void grantAdminScopesToPublicClient() throws ParseException {
+    RegisteredClientDTO client =
+        clientManagementService.retrieveClientByClientId(PUBLIC_CLIENT_ID).orElseThrow();
+    client.setScope(Set.of("openid", "profile", "email", "iam:admin.write", "scim:read"));
+    client.setGrantTypes(
+        Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS, AuthorizationGrantType.PASSWORD));
+    clientManagementService.updateClient(client.getClientId(), client);
+  }
+
+  @Test
+  void publicClientRequestingAdminScopeWithClientCredentialsIsRejected() throws Exception {
+    grantAdminScopesToPublicClient();
+
+    MvcResult result = postForm(TOKEN_ENDPOINT,
+        Map.of("grant_type", "client_credentials", "scope", "iam:admin.write"), PUBLIC_CLIENT_ID,
+        "");
+
+    assertPublicClientAdminScopeError(result);
+  }
+
+  @Test
+  void publicClientRequestingAdminScopeWithPasswordGrantIsRejectedEvenForAdminUser()
+      throws Exception {
+    grantAdminScopesToPublicClient();
+
+    MvcResult result = postForm(TOKEN_ENDPOINT, Map.of("grant_type", "password", "username",
+        "admin", "password", "password", "scope", "openid iam:admin.write"), PUBLIC_CLIENT_ID, "");
+
+    assertPublicClientAdminScopeError(result);
+  }
+
+  private void assertPublicClientAdminScopeError(MvcResult result) throws Exception {
+    assertEquals(400, result.getResponse().getStatus());
+    JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
+    assertEquals("invalid_request", json.get("error").asText());
+    assertEquals("Public clients are not allowed to request iam:admin or scim scopes",
+        json.get("error_description").asText());
   }
 
   @Test
