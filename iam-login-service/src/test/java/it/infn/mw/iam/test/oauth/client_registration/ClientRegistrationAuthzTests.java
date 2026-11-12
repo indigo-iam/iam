@@ -63,7 +63,7 @@ class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport {
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
     mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isUnauthorized());
   }
 
   @WithMockUser(username = "test", roles = "USER")
