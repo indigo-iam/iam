@@ -190,6 +190,16 @@ class ClientLastUsedTests extends TokenGetterUtils {
     assertLastUsedIs(PROTECTED_RESOURCE_ID, now);
   }
 
+  @Test
+  void testInactiveClientLastUsedIsNotUpdated() {
+
+    iamProperties.getClient().setTrackLastUsed(true);
+    clientDetailsService.findClientByClientId(TEST_CLIENT_ID).get().setActive(false);
+
+    clientDetailsService.findClientByClientIdAndMarkUsed(TEST_CLIENT_ID);
+    assertLastUsedIs(TEST_CLIENT_ID, LocalDate.of(1994, 3, 21));
+  }
+
   private void assertLastUsedIs(String clientId, LocalDate expected) {
 
     ClientLastUsedEntity lastUsedEntity =
