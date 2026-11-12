@@ -92,17 +92,13 @@ public class IamIntrospectionService implements IntrospectionService {
 
     Objects.requireNonNull(tokenValue, "Unexpected null tokenValue");
 
-    ClientDetailsEntity authenticatedClient = loadClient(auth);
-
     IntrospectionResponse response = null;
     TokenInfo info = null;
     try {
 
       info = getTokenInfo(tokenValue, tokenTypeHint);
+      ClientDetailsEntity authenticatedClient = loadClient(auth);
       validateClient(authenticatedClient);
-      if (iamProperties.getClient().isTrackLastUsed()) {
-        clientService.useClient(authenticatedClient);
-      }
 
       switch (info.tokenType) {
         case REFRESH_TOKEN:
@@ -242,10 +238,12 @@ public class IamIntrospectionService implements IntrospectionService {
 
   private ClientDetailsEntity loadClient(Authentication auth) {
 
-    return clientService
-      .findClientByClientId(
-          auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
-              : auth.getName())
+    String clientId = auth instanceof OAuth2Authentication oauth2
+        ? oauth2.getOAuth2Request().getClientId()
+        : auth.getName();
+    return (iamProperties.getClient().isTrackLastUsed()
+        ? clientService.findClientByClientIdAndMarkUsed(clientId)
+        : clientService.findClientByClientId(clientId))
       .orElseThrow();
   }
 

@@ -113,6 +113,13 @@ public class DefaultClientService implements ClientService {
     return clientRepo.findByClientId(clientId);
   }
 
+  @Override
+  public Optional<ClientDetailsEntity> findClientByClientIdAndMarkUsed(String clientId) {
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
+    client.filter(ClientDetailsEntity::isActive).ifPresent(this::updateLastUsed);
+    return client;
+  }
+
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientIdAndAccount(String clientId,
@@ -157,17 +164,18 @@ public class DefaultClientService implements ClientService {
 
   @Override
   public void useClient(ClientDetailsEntity client) {
+    updateLastUsed(client);
+  }
 
-    ClientDetailsEntity managedClient = clientRepo.findById(client.getId())
-      .orElseThrow(() -> new IllegalStateException("Client not found: " + client.getClientId()));
+  private void updateLastUsed(ClientDetailsEntity client) {
 
     LocalDate today = LocalDate.now(clock);
-    if (managedClient.getClientLastUsed() == null) {
-      managedClient.setClientLastUsed(new ClientLastUsedEntity(managedClient, today));
+    if (client.getClientLastUsed() == null) {
+      client.setClientLastUsed(new ClientLastUsedEntity(client, today));
       return;
     }
-    if (!today.equals(managedClient.getClientLastUsed().getLastUsed())) {
-      managedClient.getClientLastUsed().setLastUsed(today);
+    if (!today.equals(client.getClientLastUsed().getLastUsed())) {
+      client.getClientLastUsed().setLastUsed(today);
     }
   }
 
