@@ -158,13 +158,16 @@ public class DefaultClientService implements ClientService {
   @Override
   public void useClient(ClientDetailsEntity client) {
 
+    ClientDetailsEntity managedClient = clientRepo.findById(client.getId())
+      .orElseThrow(() -> new IllegalStateException("Client not found: " + client.getClientId()));
+
     LocalDate today = LocalDate.now(clock);
-    if (client.getClientLastUsed() == null) {
-      client.setClientLastUsed(new ClientLastUsedEntity(client, today));
+    if (managedClient.getClientLastUsed() == null) {
+      managedClient.setClientLastUsed(new ClientLastUsedEntity(managedClient, today));
       return;
     }
-    if (!today.equals(client.getClientLastUsed().getLastUsed())) {
-      client.getClientLastUsed().setLastUsed(today);
+    if (!today.equals(managedClient.getClientLastUsed().getLastUsed())) {
+      managedClient.getClientLastUsed().setLastUsed(today);
     }
   }
 
