@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
@@ -134,7 +135,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     cernUser.setUsername(CERN_USER);
     cernUser.setUuid(CERN_USER_UUID);
     cernUser.setActive(true);
-    cernUser.setEndTime(Date.from(clock.daysAfter(365)));
+    cernUser.setEndTime(Date.from(clock.daysAfter(365).truncatedTo(ChronoUnit.SECONDS)));
     cernUser.getUserInfo().setEmail(CERN_USER + "@example");
     cernUser.getUserInfo().setGivenName("cern");
     cernUser.getUserInfo().setFamilyName("user");
