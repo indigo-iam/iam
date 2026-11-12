@@ -79,6 +79,19 @@ class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   }
 
   @Test
+  void adminKeepsOnlyRequestedAdminScopesWhenPolicyDeniesAllRequestedScopes() {
+    IamAccount admin = accountRepo.findByUsername("admin").orElseThrow();
+    IamScopePolicy deny = initDenyScopePolicy();
+    deny.linkAccount(admin);
+    deny.getScopes().addAll(Set.of("iam:admin.read", SCIM_WRITE, PROFILE));
+    policyScopeRepo.save(deny);
+
+    Set<String> result = pdp.filterScopes(Set.of("iam:admin.read", SCIM_WRITE, PROFILE),
+        admin, CLIENT_ID);
+    assertThat(result, equalTo(Set.of("iam:admin.read", SCIM_WRITE)));
+  }
+
+  @Test
   void testBasicDefaultPolicyDecision() {
 
     IamAccount testAccount = findTestAccount();
