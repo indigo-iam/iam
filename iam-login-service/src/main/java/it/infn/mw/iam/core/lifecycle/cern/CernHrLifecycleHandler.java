@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,9 +86,14 @@ public class CernHrLifecycleHandler implements Runnable {
     synchronizeAccount(cernPersonId, experiment, account);
   }
 
-  private boolean synchronizeAccount(String cernPersonId, String experiment, IamAccount account) {
+  private enum SyncOutcome {
+    SYNCHRONIZED, IGNORED, FAILED
+  }
+
+  private SyncOutcome synchronizeAccount(String cernPersonId, String experiment,
+      IamAccount account) {
     if (accountProcessor.skipIfIgnored(account.getUuid())) {
-      return true;
+      return SyncOutcome.IGNORED;
     }
     // External I/O must not hold a database row lock.
     Optional<VOPersonDTO> person;
@@ -96,10 +102,10 @@ public class CernHrLifecycleHandler implements Runnable {
     } catch (CernHrDbApiError e) {
       LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
       accountProcessor.processApiError(account.getUuid());
-      return false;
+      return SyncOutcome.FAILED;
     }
     accountProcessor.process(account.getUuid(), cernPersonId, experiment, person);
-    return true;
+    return SyncOutcome.SYNCHRONIZED;
   }
 
   private String getCernPersonId(IamAccount account) {
@@ -118,8 +124,12 @@ public class CernHrLifecycleHandler implements Runnable {
   /** Returns accounts whose synchronization failed during this cycle. */
   public Set<String> synchronizeAccounts() {
     Set<String> failedAccounts = new HashSet<>();
+    long startedAt = System.nanoTime();
+    long synchronizedCount = 0;
+    long ignoredCount = 0;
+    long processedCount = 0;
 
-    LOG.info("CERN HR Lyfecycle handler ... [START]");
+    LOG.info("CERN HR lifecycle handler ... [START]");
 
     Pageable pageRequest =
         PageRequest.of(0, cernProperties.getTask().getPageSize(), Sort.by("id").ascending());
@@ -132,9 +142,22 @@ public class CernHrLifecycleHandler implements Runnable {
 
       if (accountsPage.hasContent()) {
         for (IamAccount a : accountsPage.getContent()) {
+          processedCount++;
           try {
-            if (!synchronizeAccount(getCernPersonId(a), cernProperties.getExperimentName(), a)) {
-              failedAccounts.add(a.getUuid());
+            SyncOutcome outcome =
+                synchronizeAccount(getCernPersonId(a), cernProperties.getExperimentName(), a);
+            switch (outcome) {
+              case SYNCHRONIZED:
+                synchronizedCount++;
+                break;
+              case IGNORED:
+                ignoredCount++;
+                break;
+              case FAILED:
+                failedAccounts.add(a.getUuid());
+                break;
+              default:
+                throw new IllegalStateException("Unexpected HR sync outcome: " + outcome);
             }
           } catch (RuntimeException e) {
             failedAccounts.add(a.getUuid());
@@ -150,7 +173,9 @@ public class CernHrLifecycleHandler implements Runnable {
       pageRequest = accountsPage.nextPageable();
     }
 
-    LOG.info("CERN HR Lyfecycle handler ... [END]");
+    LOG.info("CERN HR lifecycle handler ... [END] processed={}, synchronized={}, ignored={}, "
+        + "failed={}, durationMs={}", processedCount, synchronizedCount, ignoredCount,
+        failedAccounts.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
     return failedAccounts;
   }
 

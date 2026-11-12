@@ -736,7 +736,7 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
 
     for (int i = 0; i < 11; i++) {
       String uuid = UUID.randomUUID().toString();
-      String personId = "pagination-" + uuid;
+      String personId = String.valueOf(100000 + i);
       IamAccount account = IamAccount.newAccount();
       account.setUuid(uuid);
       account.setUsername("cern-pagination-" + uuid);
