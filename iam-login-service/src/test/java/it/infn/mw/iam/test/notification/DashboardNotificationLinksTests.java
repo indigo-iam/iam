@@ -51,7 +51,7 @@ class DashboardNotificationLinksTests {
       "false, https://iam.example/iam/, /ui/, https://iam.example/iam/ui/requests, https://iam.example/iam/ui/requests",
       "false, https://iam.example/, /, https://iam.example/requests, https://iam.example/requests"})
   void resolvesAndRendersBothNotificationLinks(boolean legacyEnabled, String baseUrl,
-      String basePath, String registrationUrl, String groupUrl) throws Exception {
+      String basePath, String registrationUrl, String groupUrl) {
 
     IamProperties iam = new IamProperties();
     iam.setBaseUrl(baseUrl);
