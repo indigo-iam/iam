@@ -29,7 +29,8 @@
     <h1>The legacy dashboard is disabled</h1>
     <p>The identity and access management service is still available.</p>
     <c:if test="${newDashboardEnabled}">
-      <p><a href="<c:url value='/ui/' />">Open the new dashboard</a></p>
+      <c:url var="newDashboardUrl" value="${newDashboardBasePath}" />
+      <p><a href="<c:out value='${newDashboardUrl}' />">Open the new dashboard</a></p>
     </c:if>
   </main>
 </body>

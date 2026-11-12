@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.dashboard;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -147,5 +148,20 @@ class LegacyDashboardViewInterceptorTests {
     mav = new ModelAndView("iam/dashboard");
     intercept(mav);
     assertThat(mav.getModel().get("newDashboardEnabled"), is(true));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/ui", "/portal", "/portal/", "/"})
+  void exposesConfiguredDashboardBasePath(String basePath) throws Exception {
+    properties.getDashboard().setLegacyEnabled(false);
+    properties.getDashboard().setEnabled(true);
+    properties.getDashboard().setBasePath(basePath);
+
+    mockMvc(new MockEnvironment())
+      .perform(get("/dashboard")
+        .principal(new TestingAuthenticationToken("user", "unused", "ROLE_USER")))
+      .andExpect(view().name("iam/legacyDashboardDisabled"))
+      .andExpect(model().attribute("newDashboardEnabled", true))
+      .andExpect(model().attribute("newDashboardBasePath", basePath));
   }
 }

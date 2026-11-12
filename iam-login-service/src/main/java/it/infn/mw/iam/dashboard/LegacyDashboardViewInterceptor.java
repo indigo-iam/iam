@@ -48,5 +48,6 @@ public class LegacyDashboardViewInterceptor implements HandlerInterceptor {
 
     modelAndView.setViewName("iam/legacyDashboardDisabled");
     modelAndView.addObject("newDashboardEnabled", properties.getDashboard().isEnabled());
+    modelAndView.addObject("newDashboardBasePath", properties.getDashboard().getBasePath());
   }
 }
