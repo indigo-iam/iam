@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -120,7 +121,8 @@ public class CernHrLifecycleHandler implements Runnable {
 
     LOG.info("CERN HR Lyfecycle handler ... [START]");
 
-    Pageable pageRequest = PageRequest.of(0, cernProperties.getTask().getPageSize());
+    Pageable pageRequest =
+        PageRequest.of(0, cernProperties.getTask().getPageSize(), Sort.by("id").ascending());
 
     while (true) {
       Page<IamAccount> accountsPage = accountRepo.findByLabelPrefixAndName(LABEL_CERN_PREFIX,

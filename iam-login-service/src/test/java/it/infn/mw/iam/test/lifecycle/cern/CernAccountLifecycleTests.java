@@ -32,6 +32,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -40,8 +41,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -723,6 +726,39 @@ class CernAccountLifecycleTests implements LifecycleTestSupport {
     assertThat(account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE)
       .orElseThrow(AssertionError::new)
       .getValue(), is(IGNORE_MESSAGE));
+  }
+
+  @Test
+  void synchronizesEveryAccountExactlyOnceAcrossMultiplePages() {
+    // cern.task.pageSize=5; 12 accounts force three pages.
+    List<String> personIds = new ArrayList<>();
+    personIds.add(CERN_PERSON_ID);
+
+    for (int i = 0; i < 11; i++) {
+      String uuid = UUID.randomUUID().toString();
+      String personId = "pagination-" + uuid;
+      IamAccount account = IamAccount.newAccount();
+      account.setUuid(uuid);
+      account.setUsername("cern-pagination-" + uuid);
+      account.setActive(true);
+      account.setEndTime(Date.from(clock.daysAfter(365).truncatedTo(ChronoUnit.SECONDS)));
+      account.getUserInfo().setEmail("cern-pagination-" + uuid + "@example.org");
+      account.getUserInfo().setGivenName("Pagination");
+      account.getUserInfo().setFamilyName("Test");
+      account.getUserInfo().setEmailVerified(true);
+      service.createAccount(account);
+      service.addLabel(account, cernPersonIdLabel(personId));
+      personIds.add(personId);
+    }
+
+    // Missing HR records update the CERN status without changing the selection label.
+    when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
+
+    assertThat(cernHrLifecycleHandler.synchronizeAccounts().isEmpty(), is(true));
+
+    for (String personId : personIds) {
+      verify(hrDb, times(1)).getHrDbPersonRecord(personId);
+    }
   }
 
   @Test
