@@ -27,7 +27,7 @@ public class RemoveDanglingDeviceCodes implements SpringJdbcFlywayMigration {
   // Approved device codes whose authentication holder is missing: either never set or
   // deleted by the orphaned authentication holder cleanup (device_code.auth_holder_id has no FK)
   private static final String DANGLING_DEVICE_CODE_IDS =
-      "SELECT id FROM device_code WHERE approved = 1 AND (auth_holder_id IS NULL"
+      "SELECT id FROM device_code WHERE approved = TRUE AND (auth_holder_id IS NULL"
           + " OR auth_holder_id NOT IN (SELECT id FROM authentication_holder))";
 
   private static final String DELETE_DANGLING_DEVICE_CODE_SCOPES =
