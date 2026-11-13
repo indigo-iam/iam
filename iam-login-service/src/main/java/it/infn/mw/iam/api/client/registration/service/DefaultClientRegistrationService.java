@@ -16,9 +16,6 @@
 package it.infn.mw.iam.api.client.registration.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ADMINISTRATORS;
-import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ANYONE;
-import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.REGISTERED_USERS;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -57,7 +54,7 @@ import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.config.security.ClientRegistrationEarlyAuthorization;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
@@ -245,14 +242,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   }
 
   private void authzChecks(Authentication authentication) {
-    ClientRegistrationAuthorizationPolicy allowedForRegistration =
-        registrationProperties.getAllowFor();
-
-    boolean registrationAllowed =
-        (ADMINISTRATORS.equals(allowedForRegistration) && accountUtils.isAdmin(authentication))
-            || (REGISTERED_USERS.equals(allowedForRegistration)
-                && accountUtils.isRegisteredUser(authentication))
-            || (ANYONE.equals(allowedForRegistration));
+    boolean registrationAllowed = ClientRegistrationEarlyAuthorization
+      .isAllowed(registrationProperties, accountUtils, authentication);
 
     if (!registrationAllowed) {
       throw new AccessDeniedException(ACCESS_DENIED_ERROR);

@@ -179,6 +179,7 @@ class AupIntegrationTests extends AupTestSupport {
   void aupCreationRequiresAdminPrivileges() throws Exception {
     Date now = clock.now();
     String reminders = "1,15,30";
+
     AupDTO aup =
         new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
 
@@ -187,7 +188,7 @@ class AupIntegrationTests extends AupTestSupport {
         .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(aup)))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("Access is denied")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")));
   }
 
   @Test
