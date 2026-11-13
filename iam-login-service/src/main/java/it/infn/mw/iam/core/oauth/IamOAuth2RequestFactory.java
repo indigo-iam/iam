@@ -69,14 +69,15 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
   public IamOAuth2RequestFactory(ClientDetailsService clientDetailsService, ScopeFilter scopeFilter,
       JWTProfileResolver profileResolver, DeviceCodeService deviceCodeService,
       IamAuthorizationCodeRepository authzCodeRepository,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientKeyCacheService validators) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientKeyCacheService validators,
+      AudienceRequestValidator audienceRequestValidator) {
     super(clientDetailsService);
     this.profileResolver = profileResolver;
     this.clientDetailsService = clientDetailsService;
     this.deviceCodeService = deviceCodeService;
     this.authzCodeRepository = authzCodeRepository;
     this.refreshTokenRepo = refreshTokenRepo;
-    this.audienceRequestValidator = new AudienceRequestValidator();
+    this.audienceRequestValidator = audienceRequestValidator;
 
     RequestObjectProcessor requestObjectProcessor =
         new RequestObjectProcessor(clientDetailsService, validators);
@@ -92,7 +93,8 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     authorizationRequestBuilder.filterRequestedScopes(inputParams, authn,
         inputParams.get(OAuth2Utils.CLIENT_ID));
-    audienceRequestValidator.validateAndUpdateAudienceRequest(inputParams);
+    // Resource indicators are validated later, by ResourceIndicatorRequestValidator
+    audienceRequestValidator.updateAudienceRequest(inputParams);
 
     AuthorizationRequest authzRequest = authorizationRequestBuilder.build(inputParams);
 

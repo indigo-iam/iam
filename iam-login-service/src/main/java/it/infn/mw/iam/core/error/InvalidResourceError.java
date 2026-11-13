@@ -15,10 +15,11 @@
  */
 package it.infn.mw.iam.core.error;
 
-import org.springframework.security.oauth2.common.exceptions.ClientAuthenticationException;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
 @SuppressWarnings("deprecation")
-public class InvalidResourceError extends ClientAuthenticationException {
+// Not a ClientAuthenticationException, which the authorization endpoint never redirects
+public class InvalidResourceError extends OAuth2Exception {
 
   private static final long serialVersionUID = 1L;
 

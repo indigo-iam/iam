@@ -782,6 +782,145 @@ public class IamProperties {
     }
   }
 
+  public static class ProtectedResourceProperties {
+
+    private String id;
+
+    private String resource;
+
+    private List<String> scopes = Lists.newArrayList();
+
+    private List<String> bearerMethods = Lists.newArrayList("header");
+
+    private String name;
+
+    private String documentation;
+
+    private String policyUri;
+
+    private String tosUri;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public String getResource() {
+      return resource;
+    }
+
+    public void setResource(String resource) {
+      this.resource = resource;
+    }
+
+    public List<String> getScopes() {
+      return scopes;
+    }
+
+    public void setScopes(List<String> scopes) {
+      this.scopes = scopes;
+    }
+
+    public List<String> getBearerMethods() {
+      return bearerMethods;
+    }
+
+    public void setBearerMethods(List<String> bearerMethods) {
+      this.bearerMethods = bearerMethods;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public String getDocumentation() {
+      return documentation;
+    }
+
+    public void setDocumentation(String documentation) {
+      this.documentation = documentation;
+    }
+
+    public String getPolicyUri() {
+      return policyUri;
+    }
+
+    public void setPolicyUri(String policyUri) {
+      this.policyUri = policyUri;
+    }
+
+    public String getTosUri() {
+      return tosUri;
+    }
+
+    public void setTosUri(String tosUri) {
+      this.tosUri = tosUri;
+    }
+  }
+
+  public static class ProtectedResourcesFileProperties {
+
+    private String path;
+
+    private long checkPeriodSecs = 0;
+
+    public String getPath() {
+      return path;
+    }
+
+    public void setPath(String path) {
+      this.path = path;
+    }
+
+    public long getCheckPeriodSecs() {
+      return checkPeriodSecs;
+    }
+
+    public void setCheckPeriodSecs(long checkPeriodSecs) {
+      this.checkPeriodSecs = checkPeriodSecs;
+    }
+  }
+
+  public static class ResourceIndicatorsProperties {
+
+    private boolean restrictToProtectedResources = false;
+
+    private boolean requireIamAudience = false;
+
+    private boolean allowIamAudienceRequest = true;
+
+    public boolean isAllowIamAudienceRequest() {
+      return allowIamAudienceRequest;
+    }
+
+    public void setAllowIamAudienceRequest(boolean allowIamAudienceRequest) {
+      this.allowIamAudienceRequest = allowIamAudienceRequest;
+    }
+
+    public boolean isRequireIamAudience() {
+      return requireIamAudience;
+    }
+
+    public void setRequireIamAudience(boolean requireIamAudience) {
+      this.requireIamAudience = requireIamAudience;
+    }
+
+    public boolean isRestrictToProtectedResources() {
+      return restrictToProtectedResources;
+    }
+
+    public void setRestrictToProtectedResources(boolean restrictToProtectedResources) {
+      this.restrictToProtectedResources = restrictToProtectedResources;
+    }
+  }
+
   public static class LoginLockoutProperties {
 
     private boolean enabled;
@@ -903,6 +1042,13 @@ public class IamProperties {
 
   @Valid
   private LoginLockoutProperties loginLockout = new LoginLockoutProperties();
+
+  private List<ProtectedResourceProperties> protectedResources = Lists.newArrayList();
+
+  private ProtectedResourcesFileProperties protectedResourcesFile =
+      new ProtectedResourcesFileProperties();
+
+  private ResourceIndicatorsProperties resourceIndicators = new ResourceIndicatorsProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -1172,6 +1318,30 @@ public class IamProperties {
 
   public void setLoginLockout(LoginLockoutProperties loginLockout) {
     this.loginLockout = loginLockout;
+  }
+
+  public List<ProtectedResourceProperties> getProtectedResources() {
+    return protectedResources;
+  }
+
+  public void setProtectedResources(List<ProtectedResourceProperties> protectedResources) {
+    this.protectedResources = protectedResources;
+  }
+
+  public ProtectedResourcesFileProperties getProtectedResourcesFile() {
+    return protectedResourcesFile;
+  }
+
+  public void setProtectedResourcesFile(ProtectedResourcesFileProperties protectedResourcesFile) {
+    this.protectedResourcesFile = protectedResourcesFile;
+  }
+
+  public ResourceIndicatorsProperties getResourceIndicators() {
+    return resourceIndicators;
+  }
+
+  public void setResourceIndicators(ResourceIndicatorsProperties resourceIndicators) {
+    this.resourceIndicators = resourceIndicators;
   }
 
   public List<String> getLanguageNamespaces() {

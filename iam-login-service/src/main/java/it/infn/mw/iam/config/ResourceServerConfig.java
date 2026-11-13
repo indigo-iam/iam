@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.config;
 
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +26,10 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgAccessTokenBuilder;
+import it.infn.mw.iam.core.rs.IamAudienceAuthenticationManager;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceRegistry;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -35,6 +41,12 @@ public class ResourceServerConfig {
 
   @Autowired
   private ResourceServerTokenServices tokenService;
+
+  @Autowired
+  private IamProperties iamProperties;
+
+  @Autowired
+  private ProtectedResourceRegistry protectedResourceRegistry;
 
   @Bean
   FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
@@ -54,7 +66,14 @@ public class ResourceServerConfig {
 
     OAuth2AuthenticationProcessingFilter filter = new OAuth2AuthenticationProcessingFilter();
     filter.setAuthenticationEntryPoint(authenticationEntryPoint);
-    filter.setAuthenticationManager(manager);
+
+    if (iamProperties.getResourceIndicators().isRequireIamAudience()) {
+      filter.setAuthenticationManager(new IamAudienceAuthenticationManager(manager,
+          Set.of(protectedResourceRegistry.iamResourceIdentifier(), iamProperties.getIssuer(),
+              WlcgAccessTokenBuilder.ALL_AUDIENCES_VALUE)));
+    } else {
+      filter.setAuthenticationManager(manager);
+    }
     filter.setStateless(false);
     return filter;
   }

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,13 +32,49 @@ import it.infn.mw.iam.core.error.InvalidResourceError;
 
 public class AudienceRequestValidator {
 
+  private final Predicate<String> allowedResource;
+  private final Set<String> forbiddenAudiences;
+
+  public AudienceRequestValidator() {
+    this(resource -> true, Set.of());
+  }
+
+  public AudienceRequestValidator(Predicate<String> allowedResource,
+      Set<String> forbiddenAudiences) {
+    this.allowedResource = allowedResource;
+    this.forbiddenAudiences = Set.copyOf(forbiddenAudiences);
+  }
+
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
+
+    validateResourceRequest(params);
+    updateAudienceRequest(params);
+  }
+
+  public void validateResourceRequest(Map<String, String> params) {
 
     if (params.containsKey(IamOAuthRequestParameters.RESOURCE_KEY)) {
       List<String> resourceParams =
           splitBySpace(params.get(IamOAuthRequestParameters.RESOURCE_KEY));
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
+      resourceParams.stream().filter(allowedResource.negate()).findFirst().ifPresent(url -> {
+        throw new InvalidResourceError(
+            "The requested resource is not a registered protected resource: " + url);
+      });
     }
+
+    // Checked on every audience parameter, otherwise audience=... would bypass the restriction
+    IamOAuthRequestParameters.AUD_KEYS.stream()
+      .map(params::get)
+      .flatMap(value -> splitBySpace(value).stream())
+      .filter(forbiddenAudiences::contains)
+      .findFirst()
+      .ifPresent(aud -> {
+        throw new InvalidResourceError("This resource cannot be requested: " + aud);
+      });
+  }
+
+  void updateAudienceRequest(Map<String, String> params) {
 
     Optional<String> audience = Optional.ofNullable(getFirstNotEmptyAudience(params));
     audience.ifPresent(aud -> params.put(IamOAuthRequestParameters.AUD_KEY, aud));

@@ -24,9 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import javax.sql.DataSource;
 
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -94,7 +97,11 @@ import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.oauth.AudienceRequestValidator;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
+import it.infn.mw.iam.core.oauth.ProtectedResourceAuthenticationEntryPoint;
+import it.infn.mw.iam.core.oauth.RepeatedResourceParameterFilter;
+import it.infn.mw.iam.core.oauth.ResourceIndicatorRequestValidator;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
@@ -157,6 +164,7 @@ import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 import it.infn.mw.iam.core.web.BlockedUriAwareRedirectResolver;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
+import it.infn.mw.iam.core.web.wellknown.ProtectedResourceRegistry;
 import it.infn.mw.iam.dashboard.DashboardConfigService;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -371,6 +379,15 @@ public class IamConfig {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
     FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
+    return frb;
+  }
+
+  @Bean
+  FilterRegistrationBean<RepeatedResourceParameterFilter> repeatedResourceParameterFilter() {
+    FilterRegistrationBean<RepeatedResourceParameterFilter> frb =
+        new FilterRegistrationBean<>(new RepeatedResourceParameterFilter());
+    frb.addUrlPatterns("/authorize", "/token", "/devicecode");
+    frb.setOrder(SecurityProperties.DEFAULT_FILTER_ORDER - 1);
     return frb;
   }
 
@@ -619,9 +636,11 @@ public class IamConfig {
   }
 
   @Bean
-  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
+  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint(
+      ProtectedResourceRegistry protectedResourceRegistry) {
 
-    OAuth2AuthenticationEntryPoint entryPoint = new OAuth2AuthenticationEntryPoint();
+    OAuth2AuthenticationEntryPoint entryPoint =
+        new ProtectedResourceAuthenticationEntryPoint(protectedResourceRegistry.iamMetadataUrl());
     entryPoint.setRealmName("openidconnect");
     return entryPoint;
   }
@@ -633,18 +652,38 @@ public class IamConfig {
   }
 
   @Bean
-  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
+  AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties,
+      ProtectedResourceRegistry protectedResourceRegistry) {
 
-    return new ScopeMatcherOAuthRequestValidator(registry);
+    IamProperties.ResourceIndicatorsProperties config = iamProperties.getResourceIndicators();
+
+    Predicate<String> allowedResource = config.isRestrictToProtectedResources()
+        ? resource -> protectedResourceRegistry.resourceIdentifiers().contains(resource)
+        : resource -> true;
+
+    Set<String> forbiddenAudiences = config.isAllowIamAudienceRequest() ? Set.of()
+        : Set.of(protectedResourceRegistry.iamResourceIdentifier(), iamProperties.getIssuer());
+
+    return new AudienceRequestValidator(allowedResource, forbiddenAudiences);
+  }
+
+  @Bean
+  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry,
+      AudienceRequestValidator audienceRequestValidator) {
+
+    return new ResourceIndicatorRequestValidator(new ScopeMatcherOAuthRequestValidator(registry),
+        audienceRequestValidator);
   }
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
       IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators) {
+      ClientKeyCacheService validators, AudienceRequestValidator audienceRequestValidator) {
+
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators);
+        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators,
+        audienceRequestValidator);
   }
 
   @Bean

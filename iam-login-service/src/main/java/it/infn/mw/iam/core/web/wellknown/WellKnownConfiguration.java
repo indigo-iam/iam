@@ -61,7 +61,8 @@ public record WellKnownConfiguration(
     @JsonProperty("require_request_uri_registration") boolean requireRequestUriRegistration,
     @JsonProperty("code_challenge_methods_supported") List<PKCEAlgorithm> codeChallengeMethodsSupported,
     @JsonProperty("scopes_supported") Set<String> scopesSupported,
-    @JsonProperty("end_session_endpoint") String endSessionEndpoint) implements Serializable {
+    @JsonProperty("end_session_endpoint") String endSessionEndpoint,
+    @JsonProperty("protected_resources") List<String> protectedResources) implements Serializable {
 
   public static Builder builder() {
     return new Builder();
@@ -104,6 +105,7 @@ public record WellKnownConfiguration(
     private List<PKCEAlgorithm> codeChallengeMethodsSupported;
     private Set<String> scopesSupported;
     private String endSessionEndpoint;
+    private List<String> protectedResources;
 
     public Builder issuer(String issuer) {
       this.issuer = issuer;
@@ -296,6 +298,11 @@ public record WellKnownConfiguration(
       return this;
     }
 
+    public Builder protectedResources(List<String> protectedResources) {
+      this.protectedResources = protectedResources;
+      return this;
+    }
+
     public WellKnownConfiguration build() {
       return new WellKnownConfiguration(issuer, authorizationEndpoint, tokenEndpoint,
           userinfoEndpoint, jwksUri, registrationEndpoint, introspectionEndpoint,
@@ -309,7 +316,7 @@ public record WellKnownConfiguration(
           tokenEndpointAuthSigningAlgValuesSupported, claimTypesSupported, claimsSupported,
           claimsParameterSupported, requestParameterSupported, requestUriParameterSupported,
           requireRequestUriRegistration, codeChallengeMethodsSupported, scopesSupported,
-          endSessionEndpoint);
+          endSessionEndpoint, protectedResources);
     }
   }
 }
