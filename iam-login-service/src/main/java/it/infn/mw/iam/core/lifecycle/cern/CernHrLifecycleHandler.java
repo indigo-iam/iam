@@ -116,7 +116,8 @@ public class CernHrLifecycleHandler implements Runnable {
   }
 
   @Override
-  @SchedulerLock(name = "accountLifecycle", lockAtMostFor = "PT2H")
+  @SchedulerLock(name = "accountLifecycle",
+      lockAtMostFor = "${lifecycle.account.lock-at-most-for:PT2H}")
   public void run() {
     synchronizeAccounts();
   }

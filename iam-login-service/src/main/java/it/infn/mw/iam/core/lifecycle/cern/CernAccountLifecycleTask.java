@@ -51,7 +51,8 @@ public class CernAccountLifecycleTask {
     return cernProperties.getTask().isEnabled();
   }
 
-  @SchedulerLock(name = "accountLifecycle", lockAtMostFor = "PT2H")
+  @SchedulerLock(name = "accountLifecycle",
+      lockAtMostFor = "${lifecycle.account.lock-at-most-for:PT2H}")
   public void run() {
     if (!isEnabled()) {
       return;
