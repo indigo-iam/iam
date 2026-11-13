@@ -159,7 +159,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     }
 
     List<String> audience = jwtClaims.getAudience();
-    if (audience.size() != 1 || !issuer.equals(audience.get(0))) {
+    if (audience.isEmpty() || audience.size() != 1 || !issuer.equals(audience.get(0))) {
       throw invalidBearerAssertion("invalid audience");
     }
 
