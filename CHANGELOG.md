@@ -1,5 +1,60 @@
 # Changelog
 
+## 1.16.0 (2026-11-17)
+
+### What's Added
+
+* Add configurable SAML `ForceAuthn` for the default SSO profile through `IAM_SAML_FORCE_AUTHN`
+* Add configurable dashboard routing through `IAM_DASHBOARD_BASE_PATH`
+* Allow disabling legacy dashboard and management views through `IAM_DASHBOARD_LEGACY_ENABLED`
+* Include an optional Prometheus JMX exporter in the login-service Docker image
+* Add POST support to the UserInfo endpoint
+* Add configurable account lifecycle lock duration through `IAM_ACCOUNT_LIFECYCLE_LOCK_AT_MOST_FOR`
+
+### What's Changed
+
+* Enable CSRF protection for browser-based IAM flows
+* Bind OAuth consent submissions to the authorization request displayed to the user
+* Escape HTML-sensitive characters when serializing user information for browser views
+* Increase authorization code randomness to 256 bits
+* Remove implicit grant and response type support, including legacy client settings through a database migration
+* Reject `RSA1_5` for JWE encryption and decryption, and remove it from discovery metadata
+* Reject `none` as the default JWS signing algorithm and remove it from advertised ID token signing algorithms
+* Reject BCrypt passwords longer than 72 UTF-8 bytes and validate TOTP encryption passwords against the same limit
+* Require JWT client assertions to contain the IAM issuer as their single audience
+* Return the server's default signing algorithm as `id_token_signed_response_alg` in client registration responses
+* Populate default client scopes from non-restricted system scopes
+* Preserve requested scope ordering after authorization policy filtering
+* Preserve requested administrative scopes for administrators and required dashboard scopes during administrator dashboard login
+* Log scopes removed by authorization policies
+* Reject requests for administrative or SCIM scopes from public clients instead of silently filtering them
+* Update the last-used date of active clients during introspection when client usage tracking is enabled
+* Fix OpenID Connect discovery response serialization when using the Redis cache
+* Allow spaces and other whitespace in label and attribute values while still rejecting newlines and carriage returns
+* Load all client pages in the legacy dashboard token view and fix token filtering
+* Use the configured dashboard path for redirects and select notification links according to the legacy dashboard setting
+* Fix account-linking error responses
+* Prevent duplicate AUP reminder emails by serializing scheduled reminder tasks
+* Coordinate CERN HR synchronization and expired-account processing under a shared lifecycle lock
+* Restore eligible CERN accounts during HR synchronization and exclude accounts with synchronization failures from subsequent expiration processing
+* Run the login-service Docker image as the non-root `iam` user (UID/GID 10001)
+* Extract Flyway database migrations into the `iam-db-migrations` module
+* Upgrade Spring Boot to 2.7.18, Spring Framework to 5.3.39 and Spring Security to 5.8.16
+* Upgrade Flyway to 8.5.13, H2 to 2.1.214 and EclipseLink to 2.7.16
+* Upgrade Nimbus JOSE JWT to 10.0.2, Jackson to 2.18.11, Guava to 33.7.1-jre and VOMS API Java to 3.4.1
+* Add Java 21 to the build matrix; Docker images continue to use Java 17
+* Update test dependencies and memory settings, extend regression coverage and exclude JavaScript assets from Java coverage reports
+
+### Notes
+
+* Clients using the implicit flow must migrate to the authorization code flow. Existing implicit grant and response type settings are removed by the database migration.
+* JWT client assertions must use the IAM issuer identifier as the only `aud` value. Assertions using the token endpoint URL or multiple audiences are rejected.
+* Browser integrations must supply a valid CSRF token for protected state-changing requests.
+* Passwords longer than 72 UTF-8 bytes are no longer accepted. If an existing TOTP encryption password exceeds this limit, rotate it using the previous IAM version before upgrading; do not truncate the existing encryption password.
+* Review mounted-file and directory permissions for the login-service Docker image: the service now runs with UID/GID 10001. The bundled JMX exporter is disabled by default and can be enabled through `IAM_JAVA_OPTS` as described in `iam-login-service/docker/README.md`.
+* The legacy dashboard remains enabled by default. Set `IAM_DASHBOARD_LEGACY_ENABLED=false` to disable its views and configure `IAM_DASHBOARD_BASE_PATH` for the replacement dashboard.
+* The account lifecycle lock defaults to `PT2H`. Set `IAM_ACCOUNT_LIFECYCLE_LOCK_AT_MOST_FOR` to a duration longer than the maximum expected job runtime.
+
 ## 1.15.0 (2026-10-26)
 
 ### What's Added
