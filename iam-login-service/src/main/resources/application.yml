@@ -304,6 +304,7 @@ proxycert:
 
 lifecycle:
   account:
+    lock-at-most-for: ${IAM_ACCOUNT_LIFECYCLE_LOCK_AT_MOST_FOR:PT2H}
     account-lifetime-days: ${IAM_LIFECYCLE_ACCOUNT_LIFETIME_DAYS:0}
     read-only-end-time: ${IAM_LIFECYCLE_ACCOUNT_READ_ONLY_END_TIME:false}
     expired-account-policy:
