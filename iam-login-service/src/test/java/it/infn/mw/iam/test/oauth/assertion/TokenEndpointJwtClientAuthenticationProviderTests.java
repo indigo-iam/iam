@@ -436,6 +436,28 @@ class TokenEndpointJwtClientAuthenticationProviderTests
   }
 
   @Test
+  void testMultipleAudiencesAreRejected() {
+
+    lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);
+    lenient().when(validator.validateSignature(Mockito.any())).thenReturn(true);
+
+    testForAllSignatureAlgos(client, a -> {
+      JWSHeader header = new JWSHeader(a);
+      JWTClaimsSet claimSet = new JWTClaimsSet.Builder().issuer(JWT_AUTH_NAME)
+        .subject(JWT_AUTH_NAME)
+        .expirationTime(Date.from(clock.instant().plusSeconds(1800)))
+        .audience(List.of(ISSUER_TOKEN_ENDPOINT, "another-audience"))
+        .build();
+      SignedJWT jws = new SignedJWT(header, claimSet);
+      lenient().when(authentication.getCredentials()).thenReturn(jws);
+
+      AuthenticationServiceException e = assertThrows(AuthenticationServiceException.class,
+          () -> provider.authenticate(authentication));
+      assertTrue(e.getMessage().contains("invalid audience"));
+    });
+  }
+
+  @Test
   void testJTIRequired() {
 
     lenient().when(validators.getValidator(Mockito.any(), Mockito.any())).thenReturn(validator);

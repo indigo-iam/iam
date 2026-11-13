@@ -22,6 +22,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -157,12 +158,9 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
       }
     }
 
-    if (isNull(jwtClaims.getAudience())) {
-      throw invalidBearerAssertion("assertion audience is null");
-    } else {
-      if (!jwtClaims.getAudience().contains(issuer)) {
-        throw invalidBearerAssertion("invalid audience");
-      }
+    List<String> audience = jwtClaims.getAudience();
+    if (audience == null || audience.size() != 1 || !issuer.equals(audience.get(0))) {
+      throw invalidBearerAssertion("invalid audience");
     }
 
     if (isNull(jwtClaims.getJWTID())) {
