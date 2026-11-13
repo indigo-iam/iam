@@ -22,6 +22,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -60,8 +61,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
   private final Clock clock;
   private final ClientService clientService;
   private final ClientKeyCacheService validators;
-
-  private final String tokenEndpoint;
+  private final String issuer;
 
   public TokenEndpointJwtClientAuthenticationProvider(Clock clock, IamProperties iamProperties,
       ClientService clientService, ClientKeyCacheService validators) {
@@ -69,13 +69,7 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
     this.clock = clock;
     this.clientService = clientService;
     this.validators = validators;
-
-    if (iamProperties.getIssuer().endsWith("/")) {
-      tokenEndpoint = iamProperties.getIssuer() + "token";
-    } else {
-      tokenEndpoint = iamProperties.getIssuer() + "/token";
-    }
-
+    this.issuer = iamProperties.getIssuer();
   }
 
   private String invalidSignatureAlgorithm(JWSAlgorithm alg) {
@@ -105,7 +99,8 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
         throw invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
     } else if (client.getTokenEndpointAuthMethod().equals(ClientAuthMethod.SECRET_JWT)) {
-      throw new AuthenticationServiceException(ClientAuthMethod.SECRET_JWT + " has been deprecated");
+      throw new AuthenticationServiceException(
+          ClientAuthMethod.SECRET_JWT + " has been deprecated");
     }
   }
 
@@ -163,12 +158,9 @@ public class TokenEndpointJwtClientAuthenticationProvider implements Authenticat
       }
     }
 
-    if (isNull(jwtClaims.getAudience())) {
-      throw invalidBearerAssertion("assertion audience is null");
-    } else {
-      if (!jwtClaims.getAudience().contains(tokenEndpoint)) {
-        throw invalidBearerAssertion("invalid audience");
-      }
+    List<String> audience = jwtClaims.getAudience();
+    if (audience.isEmpty() || audience.size() != 1 || !issuer.equals(audience.get(0))) {
+      throw invalidBearerAssertion("invalid audience");
     }
 
     if (isNull(jwtClaims.getJWTID())) {

@@ -140,11 +140,10 @@ class AutomaticClientRegistrationTests {
     return signedJWT.serialize();
   }
 
-  private String generateClientAssertion(String clientId, String tokenEndpoint)
-      throws JOSEException {
+  private String generateClientAssertion(String clientId) throws JOSEException {
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(clientId)
       .subject(clientId)
-      .audience(tokenEndpoint)
+      .audience(issuer)
       .jwtID(UUID.randomUUID().toString())
       .issueTime(new Date())
       .expirationTime(Date.from(Instant.now().plusSeconds(300)))
@@ -197,8 +196,7 @@ class AutomaticClientRegistrationTests {
         resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
 
     mvc
-      .perform(get("/authorize")
-        .session(session)
+      .perform(get("/authorize").session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -237,7 +235,7 @@ class AutomaticClientRegistrationTests {
       .getQueryParams()
       .getFirst("code");
 
-    String clientAssertion = generateClientAssertion(rpEntityId, "http://localhost:8080/token");
+    String clientAssertion = generateClientAssertion(rpEntityId);
     String tokenResponse =
         mvc
           .perform(post("/token").param("grant_type", "authorization_code")
@@ -607,8 +605,7 @@ class AutomaticClientRegistrationTests {
 
     // Second request should log user out again because prompt=login ALWAYS forces re-auth
     mvc
-      .perform(get("/authorize")
-        .session(session)
+      .perform(get("/authorize").session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
@@ -632,8 +629,7 @@ class AutomaticClientRegistrationTests {
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
     var result = mvc
-      .perform(get("/authorize")
-        .param("client_id", rpEntityId)
+      .perform(get("/authorize").param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
         .param("redirect_uri", redirectUri)
@@ -655,8 +651,7 @@ class AutomaticClientRegistrationTests {
         new Date(System.currentTimeMillis() - 10000)); // > 5 seconds ago
 
     mvc
-      .perform(get("/authorize")
-        .session(session)
+      .perform(get("/authorize").session(session)
         .param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
