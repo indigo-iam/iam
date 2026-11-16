@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.APPROVE_AUTHZ_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.AUTHZ_CODE_URL;
+import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.CONSENT_TRANSACTION_ID;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.RESOURCE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOAuthRequestParameters.STATE_PARAMETER_KEY;
@@ -48,6 +49,7 @@ import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.core.oidc.ConnectRequestParameters;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -131,6 +133,12 @@ public class IamOAuthConfirmationController {
 
   private void setModelForConsentPage(Map<String, Object> model, AuthorizationRequest authRequest,
       Authentication authUser, ClientDetailsEntity client) {
+
+    Object transactionId = authRequest.getExtensions().get(CONSENT_TRANSACTION_ID);
+    if (!(transactionId instanceof String tid) || tid.isBlank()) {
+      throw new InvalidConsentTransactionException();
+    }
+    model.put("consent_transaction_id", transactionId);
 
     model.put("client", client);
     model.put("auth_request", authRequest);

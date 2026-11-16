@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,7 @@ public class AuthorizationRequestBuilder {
       return;
     }
 
+    LOG.debug("Filtering requested scopes for client {}", clientId);
     String rawScopes = inputParams.get(OAuth2Utils.SCOPE);
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(rawScopes);
     Set<String> authorizedScopes = scopeFilter.filterScopes(requestedScopes, authn, clientId);
@@ -96,6 +98,12 @@ public class AuthorizationRequestBuilder {
     addClaimsExtension(inputParams, authzRequest);
     addPkceExtensions(inputParams, authzRequest);
     addRequestObjectExtension(inputParams, authzRequest);
+    addTransactionId(UUID.randomUUID().toString(), authzRequest);
+  }
+
+  private void addTransactionId(String transactionId, AuthorizationRequest authzRequest) {
+    authzRequest.getExtensions()
+      .put(IamOAuthRequestParameters.CONSENT_TRANSACTION_ID, transactionId);
   }
 
   public void applyClientDefaults(AuthorizationRequest authzRequest) {

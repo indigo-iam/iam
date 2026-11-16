@@ -236,4 +236,29 @@ class PasswordResetTests {
 
   }
 
+  @Test
+  void oversizedPasswordDoesNotConsumeResetTokenOrChangePassword() throws Exception {
+    IamAccount account = accountRepo.findByEmail("test@iam.test").orElseThrow();
+    String originalHash = account.getPassword();
+    mvc.perform(post("/iam/password-reset/token").with(csrf().asHeader())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("email", "test@iam.test"))
+        .andExpect(status().isOk());
+    String token = tokenGenerator.getLastToken();
+    ResetPasswordDTO request = new ResetPasswordDTO();
+    request.setToken(token);
+    request.setUpdatedPassword("Aa1!" + "é".repeat(35));
+    mvc.perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON).content(mapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.content().string(
+            org.hamcrest.Matchers.containsString("72 bytes")));
+    org.junit.jupiter.api.Assertions.assertEquals(originalHash, account.getPassword());
+    mvc.perform(head("/iam/password-reset/token/{token}", token)).andExpect(status().isOk());
+    request.setUpdatedPassword("Aa1!" + "é".repeat(34));
+    mvc.perform(post("/iam/password-reset").with(csrf().asHeader())
+        .contentType(APPLICATION_JSON).content(mapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+    mvc.perform(head("/iam/password-reset/token/{token}", token)).andExpect(status().isNotFound());
+  }
+
 }

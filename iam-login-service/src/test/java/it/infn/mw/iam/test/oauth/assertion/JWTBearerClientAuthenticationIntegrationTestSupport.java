@@ -44,6 +44,7 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
 
   public static final String CLIENT_ID_SECRET_JWT = "jwt-auth-client_secret_jwt";
   public static final String CLIENT_ID_SECRET_JWT_SECRET = "c8e9eed0-e6e4-4a66-b16e-6f37096356a7";
+  private static final String ISSUER = "http://localhost:8080/";
   public static final String TOKEN_ENDPOINT_AUDIENCE = "http://localhost:8080/token";
   public static final String TOKEN_ENDPOINT = "/token";
   public static final String JWT_BEARER_ASSERTION_TYPE =
@@ -81,7 +82,7 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(clientId)
       .issuer(clientId)
       .expirationTime(Date.from(Instant.now().plusSeconds(600)))
-      .audience(singletonList(TOKEN_ENDPOINT_AUDIENCE))
+      .audience(singletonList(ISSUER))
       .jwtID(UUID.randomUUID().toString())
       .build();
 

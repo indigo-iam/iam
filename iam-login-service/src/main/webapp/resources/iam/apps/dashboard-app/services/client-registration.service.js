@@ -94,7 +94,7 @@
             });
         }
 
-        function newClient() {
+        function newClient(systemScopes) {
 
             var email = Utils.getLoggedUser().info.email;
 
@@ -103,7 +103,7 @@
                 client_name: "Change me please!",
                 grant_types: ["authorization_code"],
                 redirect_uris: ["http://localhost/example"],
-                scope: "openid profile email",
+                scope: Utils.defaultScopeValue(systemScopes),
                 token_endpoint_auth_method: "client_secret_basic",
                 contacts: [email],
             };
