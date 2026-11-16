@@ -15,6 +15,11 @@
  */
 package it.infn.mw.iam.test.ext_authn.account_linking;
 
+import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_LINKING_DASHBOARD_ERROR_KEY;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -30,12 +36,16 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.account_linking.AccountLinkingDisabledException;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"iam.account-linking.enable=false"})
 class AccountLinkingDisabledTests {
+
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
 
   @Autowired
   private MockMvc mvc;
@@ -45,38 +55,59 @@ class AccountLinkingDisabledTests {
   void accountLinkingDisabledWorkAsExpected() throws Throwable {
 
     mvc.perform(post("/iam/account-linking/X509").with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isSeeOther())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY,
+          AccountLinkingDisabledException.MESSAGE));
 
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", "certificateSubject")
         .param("certificateIssuer", "certificateIssuer")
         .with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isForbidden())
+      .andExpect(header().doesNotExist("Location"))
+      .andExpect(jsonPath("$.error").value(AccountLinkingDisabledException.MESSAGE));
 
     mvc.perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isSeeOther())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY,
+          AccountLinkingDisabledException.MESSAGE));
 
     mvc.perform(get("/iam/account-linking/OIDC/done").with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isSeeOther())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY,
+          AccountLinkingDisabledException.MESSAGE));
 
     mvc
       .perform(delete("/iam/account-linking/OIDC").param("sub", "sub")
         .param("iss", "iss")
         .with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isForbidden())
+      .andExpect(header().doesNotExist("Location"))
+      .andExpect(jsonPath("$.error").value(AccountLinkingDisabledException.MESSAGE));
 
     mvc.perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isSeeOther())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY,
+          AccountLinkingDisabledException.MESSAGE));
 
     mvc.perform(get("/iam/account-linking/SAML/done").with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isSeeOther())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY,
+          AccountLinkingDisabledException.MESSAGE));
 
     mvc
       .perform(delete("/iam/account-linking/SAML").param("sub", "sub")
         .param("iss", "iss")
         .param("attr", "attr")
         .with(csrf().asHeader()))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isForbidden())
+      .andExpect(header().doesNotExist("Location"))
+      .andExpect(jsonPath("$.error").value(AccountLinkingDisabledException.MESSAGE));
 
   }
 

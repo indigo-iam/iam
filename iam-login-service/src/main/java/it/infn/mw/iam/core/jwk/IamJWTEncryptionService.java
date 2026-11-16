@@ -21,6 +21,7 @@ import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildDecrypter;
 import static it.infn.mw.iam.core.jwk.JWKUtils.buildEncrypter;
+import static java.util.stream.Collectors.toList;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,7 +46,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.error.NoSuchKeyError;
 import it.infn.mw.iam.core.error.StartupError;
 
-
+@SuppressWarnings("deprecation")
 public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamJWTEncryptionService.class);
@@ -97,9 +98,9 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
   @Override
   public void encryptJwt(JWEObject jwt) {
 
-    JWEEncrypter encrypter =
-        Optional.ofNullable(encrypters.get(defaultJweEncryptKeyId))
-          .orElseThrow(NoSuchKeyError.forKeyId(defaultJweEncryptKeyId));
+    rejectDeprecatedAlgorithms(jwt);
+    JWEEncrypter encrypter = Optional.ofNullable(encrypters.get(defaultJweEncryptKeyId))
+      .orElseThrow(NoSuchKeyError.forKeyId(defaultJweEncryptKeyId));
 
     try {
       jwt.encrypt(encrypter);
@@ -110,6 +111,8 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
 
   @Override
   public void decryptJwt(JWEObject jwt) {
+
+    rejectDeprecatedAlgorithms(jwt);
     JWEDecrypter decrypter = Optional.ofNullable(decrypters.get(defaultJweDecryptKeyId))
       .orElseThrow(NoSuchKeyError.forKeyId(defaultJweDecryptKeyId));
 
@@ -136,7 +139,8 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
   }
 
   private void registerProvider(JWEProvider provider) {
-    allAlgorithms.addAll(provider.supportedJWEAlgorithms());
+    filterDeprecatedAlgorithm(provider.supportedJWEAlgorithms()).stream()
+      .forEach(allAlgorithms::add);
     allEncryptionMethods.addAll(provider.supportedEncryptionMethods());
   }
 
@@ -173,5 +177,23 @@ public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionServic
       .stream()
       .filter(k -> Strings.isNotBlank(k.getKeyID()))
       .forEach(this::buildEncrypterDecrypter);
+  }
+
+  public static void rejectDeprecatedAlgorithms(JWEObject jwt) {
+    rejectDeprecatedAlgorithms(jwt.getHeader().getAlgorithm());
+  }
+
+  public static void rejectDeprecatedAlgorithms(JWEAlgorithm alg) {
+    if (JWEAlgorithm.RSA1_5.equals(alg)) {
+      throw new IllegalArgumentException("JWE algorithm RSA1_5 is disabled");
+    }
+  }
+
+  public static boolean isDeprecatedAlgorithm(JWEAlgorithm alg) {
+    return JWEAlgorithm.RSA1_5.equals(alg);
+  }
+
+  public static Collection<JWEAlgorithm> filterDeprecatedAlgorithm(Collection<JWEAlgorithm> algs) {
+    return algs.stream().filter(alg -> !isDeprecatedAlgorithm(alg)).collect(toList());
   }
 }

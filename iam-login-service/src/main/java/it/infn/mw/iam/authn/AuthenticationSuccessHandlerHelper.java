@@ -50,10 +50,11 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
-import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -70,6 +71,7 @@ public class AuthenticationSuccessHandlerHelper {
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountService accountService;
   private final IamTotpMfaService iamTotpMfaService;
+  private final DashboardProperties dashboardProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private final ApplicationEventPublisher eventPublisher;
   private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
@@ -78,7 +80,8 @@ public class AuthenticationSuccessHandlerHelper {
   public AuthenticationSuccessHandlerHelper(Clock clock, AccountUtils accountUtils,
       String iamBaseUrl, AUPSignatureCheckService aupSignatureCheckService,
       IamAccountService accountService, IamTotpMfaService iamTotpMfaService,
-      IamTotpMfaProperties iamTotpMfaProperties, ApplicationEventPublisher eventPublisher,
+      DashboardProperties dashboardProperties, IamTotpMfaProperties iamTotpMfaProperties,
+      ApplicationEventPublisher eventPublisher,
       SessionAuthenticationStrategy sessionAuthenticationStrategy) {
 
     this.clock = clock;
@@ -87,6 +90,7 @@ public class AuthenticationSuccessHandlerHelper {
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountService = accountService;
     this.iamTotpMfaService = iamTotpMfaService;
+    this.dashboardProperties = dashboardProperties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.eventPublisher = eventPublisher;
     this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
@@ -147,7 +151,7 @@ public class AuthenticationSuccessHandlerHelper {
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, requestCache);
+        new RootIsDashboardSuccessHandler(iamBaseUrl, requestCache, dashboardProperties);
 
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(clock,
         delegate, aupSignatureCheckService, accountUtils, accountService);
@@ -232,13 +236,13 @@ public class AuthenticationSuccessHandlerHelper {
       HttpServletResponse response) {
     SavedRequest savedRequest = requestCache.getRequest(request, response);
     if (savedRequest == null) {
-      return RootIsDashboardSuccessHandler.DASHBOARD_URL;
+      return dashboardProperties.getBasePath();
     }
 
     String redirectUrl = savedRequest.getRedirectUrl();
     if (RootIsDashboardSuccessHandler.redirectsToIamRoot(redirectUrl, iamBaseUrl)) {
       requestCache.removeRequest(request, response);
-      return RootIsDashboardSuccessHandler.DASHBOARD_URL;
+      return dashboardProperties.getBasePath();
     }
     return redirectUrl;
   }
