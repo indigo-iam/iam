@@ -15,16 +15,32 @@
  */
 package it.infn.mw.iam.config.client_registration;
 
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CLIENT_CREDENTIALS;
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.PASSWORD;
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.TOKEN_EXCHANGE;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ANYONE;
+import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.GrantTypes.DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS;
+import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.GrantTypes.DEFAULT_FORBIDDEN_FOR_USER_CLIENTS;
 
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
+
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 
 @ConfigurationProperties("client-registration")
 @Configuration
 public class ClientRegistrationProperties {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ClientRegistrationProperties.class);
 
   public static class ClientDefaultsProperties {
 
@@ -75,9 +91,29 @@ public class ClientRegistrationProperties {
     ADMINISTRATORS, REGISTERED_USERS, ANYONE
   }
 
+  public record GrantTypes(Set<AuthorizationGrantType> forbiddenForUserClients,
+      Set<AuthorizationGrantType> forbiddenForAnonymousClients) {
+
+    public static final Set<AuthorizationGrantType> DEFAULT_FORBIDDEN_FOR_USER_CLIENTS =
+        Set.copyOf(EnumSet.of(PASSWORD, TOKEN_EXCHANGE));
+
+    public static final Set<AuthorizationGrantType> DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS =
+        Set.copyOf(EnumSet.of(PASSWORD, TOKEN_EXCHANGE, CLIENT_CREDENTIALS));
+
+    public GrantTypes {
+      forbiddenForUserClients =
+          Objects.isNull(forbiddenForUserClients) ? DEFAULT_FORBIDDEN_FOR_USER_CLIENTS
+              : Set.copyOf(forbiddenForUserClients);
+      forbiddenForAnonymousClients =
+          Objects.isNull(forbiddenForAnonymousClients) ? DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS
+              : Set.copyOf(forbiddenForAnonymousClients);
+    }
+  }
+
   private ClientRegistrationAuthorizationPolicy allowFor = ANYONE;
 
   private ClientDefaultsProperties clientDefaults = new ClientDefaultsProperties();
+  private GrantTypes grantTypes = new GrantTypes(null, null);
 
   private boolean enable = true;
 
@@ -97,6 +133,33 @@ public class ClientRegistrationProperties {
 
   public void setClientDefaults(ClientDefaultsProperties clientDefaults) {
     this.clientDefaults = clientDefaults;
+  }
+
+  public GrantTypes getGrantTypes() {
+    return grantTypes;
+  }
+
+  public void setGrantTypes(GrantTypes grantTypes) {
+    this.grantTypes = Objects.nonNull(grantTypes) ? grantTypes : new GrantTypes(null, null);
+  }
+
+  @PostConstruct
+  void warnIfGrantTypeRestrictionsAreWeakerThanDefaults() {
+    warnIfMissingDefaults("client-registration.grant-types.forbidden-for-user-clients",
+        grantTypes.forbiddenForUserClients(), DEFAULT_FORBIDDEN_FOR_USER_CLIENTS);
+    warnIfMissingDefaults("client-registration.grant-types.forbidden-for-anonymous-clients",
+        grantTypes.forbiddenForAnonymousClients(), DEFAULT_FORBIDDEN_FOR_ANONYMOUS_CLIENTS);
+  }
+
+  private static void warnIfMissingDefaults(String property, Set<AuthorizationGrantType> configured,
+      Set<AuthorizationGrantType> defaults) {
+    Set<AuthorizationGrantType> missing = EnumSet.noneOf(AuthorizationGrantType.class);
+    missing.addAll(defaults);
+    missing.removeAll(configured);
+    if (!missing.isEmpty()) {
+      LOG.warn("{} does not include {}, so these grant types can be requested at registration",
+          property, missing);
+    }
   }
 
   public boolean isEnable() {
