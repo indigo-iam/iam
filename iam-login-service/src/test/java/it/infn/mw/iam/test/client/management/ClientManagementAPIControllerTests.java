@@ -153,7 +153,8 @@ class ClientManagementAPIControllerTests {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
-    client.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    client.setRedirectUris(Set.of("https://redirect.example.org/app"));
     client.setScope(Set.of("test"));
 
     mvc
