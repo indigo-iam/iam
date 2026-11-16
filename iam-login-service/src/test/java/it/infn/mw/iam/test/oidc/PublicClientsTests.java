@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oidc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.text.ParseException;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
@@ -49,21 +51,18 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
   ClientRegistrationService clientRegistrationService;
 
   @Test
-  void clientCredentialsSuccessWithNoSecret() throws Exception {
-
-    JsonNode json = assert200AndParse(postForm(TOKEN_ENDPOINT,
-        Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_ID), null, null));
-
-    assertTrue(json.has("access_token"));
-    assertEquals("Bearer", json.get("token_type").asText());
-
-    assertEquals(200, postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials",
-        "client_id", PUBLIC_CLIENT_ID, "client_secret", ""), null, null).getResponse().getStatus());
-
-    assertEquals(200,
-        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, "")
-          .getResponse()
-          .getStatus());
+  void clientCredentialsRejectedForPublicClient() throws Exception {
+    for (MvcResult result : new MvcResult[] {
+        postForm(TOKEN_ENDPOINT,
+            Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_ID), null, null),
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials",
+            "client_id", PUBLIC_CLIENT_ID, "client_secret", ""), null, null),
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, "")}) {
+      assertEquals(400, result.getResponse().getStatus());
+      JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
+      assertEquals("unauthorized_client", json.get("error").asText());
+      assertTrue(!json.has("access_token"));
+    }
   }
 
   @Test
@@ -106,33 +105,17 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
           .getStatus());
 
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
-    clientManagementService.updateClient(client.getClientId(), client);
-
-    JsonNode json = assert200AndParse(
-        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, ""));
-
-    assertTrue(json.has("access_token"));
-    assertEquals("Bearer", json.get("token_type").asText());
+    RegisteredClientDTO publicClient = client;
+    assertThrows(org.springframework.security.oauth2.common.exceptions.InvalidRequestException.class,
+        () -> clientManagementService.updateClient(publicClient.getClientId(), publicClient));
   }
 
   private void grantAdminScopesToPublicClient() throws ParseException {
     RegisteredClientDTO client =
         clientManagementService.retrieveClientByClientId(PUBLIC_CLIENT_ID).orElseThrow();
     client.setScope(Set.of("openid", "profile", "email", "iam:admin.write", "scim:read"));
-    client.setGrantTypes(
-        Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS, AuthorizationGrantType.PASSWORD));
+    client.setGrantTypes(Set.of(AuthorizationGrantType.PASSWORD));
     clientManagementService.updateClient(client.getClientId(), client);
-  }
-
-  @Test
-  void publicClientRequestingAdminScopeWithClientCredentialsIsRejected() throws Exception {
-    grantAdminScopesToPublicClient();
-
-    MvcResult result = postForm(TOKEN_ENDPOINT,
-        Map.of("grant_type", "client_credentials", "scope", "iam:admin.write"), PUBLIC_CLIENT_ID,
-        "");
-
-    assertPublicClientAdminScopeError(result);
   }
 
   @Test
@@ -163,6 +146,9 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
     clientRequest.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     clientRequest.setGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     clientRequest.setClientName("public-client-test");
+    assertThrows(InvalidClientRegistrationRequest.class,
+        () -> clientRegistrationService.registerClient(clientRequest, userAuth));
+    clientRequest.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     RegisteredClientDTO registrationResponse =
         clientRegistrationService.registerClient(clientRequest, userAuth);
     RegisteredClientDTO updatedClient =
@@ -177,14 +163,10 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
         registrationResponse.getClientId(), "").getResponse().getStatus());
 
     updatedClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
-    clientRegistrationService.updateClient(registrationResponse.getClientId(), updatedClient,
-        userAuth);
-
-    JsonNode json = assert200AndParse(postForm(TOKEN_ENDPOINT,
-        Map.of("grant_type", "client_credentials"), registrationResponse.getClientId(), ""));
-
-    assertTrue(json.has("access_token"));
-    assertEquals("Bearer", json.get("token_type").asText());
+    RegisteredClientDTO publicClient = updatedClient;
+    assertThrows(InvalidClientRegistrationRequest.class,
+        () -> clientRegistrationService.updateClient(registrationResponse.getClientId(),
+            publicClient, userAuth));
   }
 
 }

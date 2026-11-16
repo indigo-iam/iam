@@ -18,11 +18,15 @@ package it.infn.mw.iam.core.oauth.granters;
 import java.util.Collection;
 
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
+import org.springframework.security.oauth2.common.exceptions.UnauthorizedClientException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenGranter;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 
 @SuppressWarnings("deprecation")
 public class IamClientCredentialsTokenGranter extends ClientCredentialsTokenGranter {
@@ -34,6 +38,12 @@ public class IamClientCredentialsTokenGranter extends ClientCredentialsTokenGran
 
   @Override
   protected void validateGrantType(String grantType, ClientDetails clientDetails) {
+    if (clientDetails instanceof ClientDetailsEntity client
+        && ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
+      throw new UnauthorizedClientException(
+          "Public clients cannot use the client_credentials grant");
+    }
+
     Collection<String> authorizedGrantTypes = clientDetails.getAuthorizedGrantTypes();
     if (authorizedGrantTypes == null || authorizedGrantTypes.isEmpty()
         || !authorizedGrantTypes.contains(grantType)) {
