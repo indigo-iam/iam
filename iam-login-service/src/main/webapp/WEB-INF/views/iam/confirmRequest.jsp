@@ -27,6 +27,7 @@
           action="${pageContext.request.contextPath.endsWith('/') ? pageContext.request.contextPath : pageContext.request.contextPath.concat('/') }registration/verify"
           method="post">
         <input type="hidden" name="token" value="${fn:escapeXml(token)}" />
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
         <input class="btn btn-primary" type="submit" name="confirm_registration_request" value="Confirm Request" />
       </form>
     </div>
