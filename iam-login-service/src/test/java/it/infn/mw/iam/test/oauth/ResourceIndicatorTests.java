@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -49,9 +51,12 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.test.oauth.devicecode.DeviceCodeTestsConstants;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SuppressWarnings("deprecation")
 @ExtendWith(SpringExtension.class)
 @IamMockMvcIntegrationTest
 public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   public static final String TEST_USERNAME = "test";
   public static final String TEST_PASSWORD = "password";
@@ -1214,11 +1219,20 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     String authzCodeResponse = mvc
       .perform(post(AUTHORIZE_URL).with(csrf().asHeader())
         .param("user_oauth_approval", "true")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .session(session))
       .andExpect(status().is3xxRedirection())
       .andReturn()
@@ -1304,11 +1318,20 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     String authzCodeResponse = mvc
       .perform(post(AUTHORIZE_URL).with(csrf().asHeader())
         .param("user_oauth_approval", "true")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .session(session))
       .andExpect(status().is3xxRedirection())
       .andReturn()

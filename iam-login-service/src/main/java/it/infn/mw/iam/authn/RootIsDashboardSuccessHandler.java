@@ -26,19 +26,19 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+
 public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
-  public static final String DASHBOARD_URL = "/dashboard";
-
   private final RequestCache requestCache;
-
   private final String iamBaseUrl;
 
-  public RootIsDashboardSuccessHandler(String iamBaseUrl, RequestCache cache) {
+  public RootIsDashboardSuccessHandler(String iamBaseUrl, RequestCache cache,
+      DashboardProperties dashboardProperties) {
     setRequestCache(cache);
     this.requestCache = cache;
-    setDefaultTargetUrl(DASHBOARD_URL);
     this.iamBaseUrl = iamBaseUrl;
+    setDefaultTargetUrl(dashboardProperties.getBasePath());
   }
 
   @Override
@@ -55,7 +55,6 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
     if (redirectsToIamRoot(savedRequest.getRedirectUrl(), iamBaseUrl)) {
       requestCache.removeRequest(request, response);
     }
-
     super.onAuthenticationSuccess(request, response, authentication);
   }
 
@@ -63,5 +62,4 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
   public static boolean redirectsToIamRoot(String redirectUrl, String iamBaseUrl) {
     return redirectUrl.equals(iamBaseUrl) || redirectUrl.equals(iamBaseUrl + "/");
   }
-
 }

@@ -59,12 +59,13 @@ import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
@@ -959,6 +960,39 @@ class IamAccountServiceTests extends IamAccountServiceTestSupport {
     Optional<IamAccountGroupMembership> groupMembershipOptional =
         ciccioAccount.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
+  }
+
+
+  @Test
+  void rejectsOversizedPasswordBeforeMutatingOrPersistingAccount() {
+    String password = "é".repeat(37);
+    ciccioAccount.setPassword(password);
+    String uuid = ciccioAccount.getUuid();
+    Date created = ciccioAccount.getCreationTime();
+    Date updated = ciccioAccount.getLastUpdateTime();
+
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> accountService.createAccount(ciccioAccount));
+
+    assertEquals(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE, error.getMessage());
+    assertEquals(password, ciccioAccount.getPassword());
+    assertEquals(uuid, ciccioAccount.getUuid());
+    assertEquals(created, ciccioAccount.getCreationTime());
+    assertEquals(updated, ciccioAccount.getLastUpdateTime());
+    Mockito.verifyNoInteractions(accountRepo, passwordEncoder, eventPublisher, authoritiesRepo,
+        groupRepo, iamGroupService, notificationFactory);
+  }
+
+  @Test
+  void acceptsExactly72Utf8BytesWhenCreatingAccount() {
+    String password = "é".repeat(36);
+    ciccioAccount.setPassword(password);
+
+    accountService.createAccount(ciccioAccount);
+
+    verify(passwordEncoder).encode(password);
+    verify(accountRepo).save(ciccioAccount);
+    assertEquals(PASSWORD, ciccioAccount.getPassword());
   }
 
 }

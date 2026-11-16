@@ -48,10 +48,8 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 import it.infn.mw.iam.test.util.oauth.SecurityContextUtils;
 
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class,
-        ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    ClockConfig.class, ScimRestUtilsMvc.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
@@ -180,4 +178,13 @@ class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
       .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoUser.affiliation",
           containsString("Test-Affiliation")));
   }
+
+  @Test
+  void rejectsOversizedPasswordReplacement() throws Exception {
+    ScimUser updates = ScimUser.builder().password("é".repeat(37)).build();
+    scimUtils.patchUser(testUser.getId(), replace, updates)
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.detail", containsString("72 bytes")));
+  }
+
 }

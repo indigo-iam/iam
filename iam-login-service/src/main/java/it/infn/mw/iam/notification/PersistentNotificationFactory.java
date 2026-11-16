@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import freemarker.template.Configuration;
 import it.infn.mw.iam.core.IamNotificationType;
+import it.infn.mw.iam.dashboard.DashboardUrlResolver;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -35,8 +36,8 @@ public class PersistentNotificationFactory extends TransientNotificationFactory 
 
   public PersistentNotificationFactory(Clock clock, Configuration fm, NotificationProperties np,
       IamEmailNotificationRepository repo, AdminNotificationDeliveryStrategy ands,
-      GroupManagerNotificationDeliveryStrategy gmds) {
-    super(clock, fm, np, ands, gmds);
+      GroupManagerNotificationDeliveryStrategy gmds, DashboardUrlResolver dashboardUrls) {
+    super(clock, fm, np, ands, gmds, dashboardUrls);
     this.repo = repo;
   }
 
