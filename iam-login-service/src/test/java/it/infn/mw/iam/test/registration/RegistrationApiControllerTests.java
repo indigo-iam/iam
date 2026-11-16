@@ -120,6 +120,30 @@ class RegistrationApiControllerTests {
   }
 
   @Test
+  void verificationPostWithNullCsrfIsForbidden() {
+    CookieFilter cookies = new CookieFilter();
+
+    RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .when()
+      .get("/registration/verify/example-token")
+      .then()
+      .statusCode(200);
+
+    RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .contentType("application/x-www-form-urlencoded")
+      .redirects()
+      .follow(false)
+      .when()
+      .post("/registration/verify")
+      .then()
+      .statusCode(403);
+  }
+
+  @Test
   void verificationPostWithoutCsrfIsForbidden() {
     CookieFilter cookies = new CookieFilter();
 
