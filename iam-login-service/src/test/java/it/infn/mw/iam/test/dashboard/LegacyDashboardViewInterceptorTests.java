@@ -111,13 +111,14 @@ class LegacyDashboardViewInterceptorTests {
     assertThat(mav.getViewName(), is(name));
   }
 
-  @Test
-  void mitreHomeIsIndependentOfLegacyDashboardFlag() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {"/mitre", "/mitre/"})
+  void mitreHomeIsDisabledWithLegacyDashboard(String path) throws Exception {
     properties.getDashboard().setLegacyEnabled(false);
     mockMvc(new MockEnvironment())
-      .perform(get("/mitre")
+      .perform(get(path)
         .principal(new TestingAuthenticationToken("user", "unused", "ROLE_USER")))
-      .andExpect(view().name("home"));
+      .andExpect(view().name("iam/legacyDashboardDisabled"));
   }
 
   @Test

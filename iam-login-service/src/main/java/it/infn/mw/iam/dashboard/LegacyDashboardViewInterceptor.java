@@ -40,12 +40,6 @@ public class LegacyDashboardViewInterceptor implements HandlerInterceptor {
   @Override
   public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
       ModelAndView modelAndView) {
-    // The MITRE JSP home is independent of the AngularJS legacy dashboard.
-    if ("/mitre".equals(request.getServletPath())
-        || "/mitre/".equals(request.getServletPath())) {
-      return;
-    }
-
     if (properties.getDashboard().isLegacyEnabled() || modelAndView == null
         || modelAndView.getViewName() == null
         || !LEGACY_VIEWS.contains(modelAndView.getViewName())) {
