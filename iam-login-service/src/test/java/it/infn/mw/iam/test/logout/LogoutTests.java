@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class LogoutTests {
+class LogoutTests {
 
   @Autowired
   private MockMvc mockMvc;
@@ -39,6 +39,12 @@ public class LogoutTests {
     mockMvc.perform(post("/logout").with(user("testuser")).with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("/login?logout"));
+  }
+
+  @Test
+  void logoutWithInvalidCsrfTokenShouldBeRejected() throws Exception {
+    mockMvc.perform(post("/logout").with(user("testuser")).with(csrf().useInvalidToken()))
+      .andExpect(status().isForbidden());
   }
 
   @Test
