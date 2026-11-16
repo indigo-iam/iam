@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.registration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.regex.Pattern;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import io.restassured.RestAssured;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.response.Response;
 import it.infn.mw.iam.test.TestUtils;
 
@@ -97,5 +100,93 @@ class RegistrationApiControllerTests {
       .asString();
 
     assertThat(response).isNotBlank().doesNotContain("<img src=x onerror=alert(1)>");
+  }
+
+  @Test
+  void verificationPageContainsCsrfField() {
+    Response page = RestAssured.given()
+      .port(iamPort)
+      .redirects()
+      .follow(false)
+      .when()
+      .get("/registration/verify/example-token")
+      .then()
+      .statusCode(200)
+      .extract()
+      .response();
+
+    assertThat(page.asString()).contains("name=\"confirmationForm\"");
+    assertThat(csrfFormToken(page)).isNotBlank();
+  }
+
+  @Test
+  void verificationPostWithoutCsrfIsForbidden() {
+    CookieFilter cookies = new CookieFilter();
+
+    RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .when()
+      .get("/registration/verify/example-token")
+      .then()
+      .statusCode(200);
+
+    RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .contentType("application/x-www-form-urlencoded")
+      .formParam("token", "example-token")
+      .redirects()
+      .follow(false)
+      .when()
+      .post("/registration/verify")
+      .then()
+      .statusCode(403);
+  }
+
+  @Test
+  void verificationPostAcceptsCsrfFromForm() {
+    CookieFilter cookies = new CookieFilter();
+
+    Response page = RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .redirects()
+      .follow(false)
+      .when()
+      .get("/registration/verify/example-token")
+      .then()
+      .statusCode(200)
+      .extract()
+      .response();
+
+    String csrfToken = csrfFormToken(page);
+
+    // An invalid confirmation token yields an application error page (200),
+    // proving the POST passed CSRF validation and reached the controller.
+    String response = RestAssured.given()
+      .port(iamPort)
+      .filter(cookies)
+      .contentType("application/x-www-form-urlencoded")
+      .formParam("token", "example-token")
+      .formParam("_csrf", csrfToken)
+      .redirects()
+      .follow(false)
+      .when()
+      .post("/registration/verify")
+      .then()
+      .statusCode(200)
+      .extract()
+      .asString();
+
+    assertThat(response).contains("Request confirmation failure");
+  }
+
+  private String csrfFormToken(Response page) {
+    var matcher = Pattern.compile(
+        "<input[^>]*name=\"_csrf\"[^>]*value=\"([^\"]+)\"[^>]*>",
+        Pattern.CASE_INSENSITIVE).matcher(page.asString());
+    assertThat(matcher.find()).as("CSRF hidden input in verification form").isTrue();
+    return matcher.group(1);
   }
 }
