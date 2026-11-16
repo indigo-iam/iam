@@ -41,6 +41,11 @@
       <module>iam-persistence-jakarta</module>
     </modules>
 
+    <properties>
+      <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
+      <iam-db-migrations.version>1.15.0</iam-db-migrations.version>
+    </properties>
+
     <build>
       <plugins>
         <plugin>
