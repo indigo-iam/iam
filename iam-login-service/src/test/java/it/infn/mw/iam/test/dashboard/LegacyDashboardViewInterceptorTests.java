@@ -112,6 +112,15 @@ class LegacyDashboardViewInterceptorTests {
   }
 
   @Test
+  void mitreHomeIsIndependentOfLegacyDashboardFlag() throws Exception {
+    properties.getDashboard().setLegacyEnabled(false);
+    mockMvc(new MockEnvironment())
+      .perform(get("/mitre")
+        .principal(new TestingAuthenticationToken("user", "unused", "ROLE_USER")))
+      .andExpect(view().name("home"));
+  }
+
+  @Test
   void preservesAnonymousLoginAndRegistration() throws Exception {
     properties.getDashboard().setLegacyEnabled(false);
     MockEnvironment environment = new MockEnvironment();

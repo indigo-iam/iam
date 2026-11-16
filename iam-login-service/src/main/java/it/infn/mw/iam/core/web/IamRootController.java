@@ -46,6 +46,12 @@ public class IamRootController {
   }
 
   @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.GET, path = {"/mitre", "/mitre/"})
+  public String mitre() {
+    return "home";
+  }
+
+  @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = "manage/**")
   public String manage(ModelMap m) {
     return "manage";
