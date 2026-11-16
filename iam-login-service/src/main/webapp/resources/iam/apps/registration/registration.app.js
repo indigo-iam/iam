@@ -15,4 +15,8 @@
  */
 'use strict';
 
-var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies', 'toaster', 'ui.router']);
+var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies', 'toaster', 'ui.router', 'iamCsrf']);
+
+app.config(['$httpProvider', function($httpProvider) {
+    $httpProvider.interceptors.push('csrfInterceptor');
+}]);
