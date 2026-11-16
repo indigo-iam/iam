@@ -408,7 +408,8 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.write")
   void invalidScopePolicyRepresentationTest() throws Exception {
     final String INVALID_POLICY = new String(
         Files.readAllBytes(Paths.get("src/test/resources/api/scope_policy/invalid_policy.json")));

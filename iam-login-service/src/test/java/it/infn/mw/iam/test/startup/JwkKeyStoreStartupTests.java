@@ -18,17 +18,14 @@ package it.infn.mw.iam.test.startup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.config.JWTCriptoConfig;
 
-@SpringBootTest(classes = {IamLoginService.class})
 class JwkKeyStoreStartupTests {
 
   static final String DEFAULT_KEYSTORE_LOCATION = "classpath:keystore.jwks";
