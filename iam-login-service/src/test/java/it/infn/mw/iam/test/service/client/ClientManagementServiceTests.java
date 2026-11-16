@@ -307,10 +307,10 @@ class ClientManagementServiceTests {
     assertNull(client.getClientSecret());
     assertEquals(TokenEndpointAuthenticationMethod.none, client.getTokenEndpointAuthMethod());
 
-    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_post);
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.client_secret_post,
+    assertEquals(TokenEndpointAuthenticationMethod.client_secret_basic,
         updatedClient.getTokenEndpointAuthMethod());
     assertNotNull(updatedClient.getClientSecret());
   }
