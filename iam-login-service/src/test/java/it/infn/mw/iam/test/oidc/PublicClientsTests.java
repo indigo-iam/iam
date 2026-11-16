@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 
+@SuppressWarnings("deprecation")
 @Transactional
 class PublicClientsTests extends OidcMockMvcTestSupport {
 
@@ -51,18 +53,41 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
   ClientRegistrationService clientRegistrationService;
 
   @Test
-  void clientCredentialsRejectedForPublicClient() throws Exception {
-    for (MvcResult result : new MvcResult[] {
-        postForm(TOKEN_ENDPOINT,
-            Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_ID), null, null),
-        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials",
-            "client_id", PUBLIC_CLIENT_ID, "client_secret", ""), null, null),
-        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, "")}) {
-      assertEquals(400, result.getResponse().getStatus());
-      JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
-      assertEquals("unauthorized_client", json.get("error").asText());
-      assertTrue(!json.has("access_token"));
-    }
+  void publicClientCannotUseClientCredentialsGrant() throws Exception {
+
+    MvcResult result = postForm(TOKEN_ENDPOINT,
+        Map.of("grant_type", "client_credentials", "client_id", PUBLIC_CLIENT_ID), null, null);
+
+    assertEquals(401, result.getResponse().getStatus());
+
+    JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
+    assertTrue(!json.has("access_token"));
+  }
+
+  @Test
+  void publicClientCannotUseClientCredentialsWithEmptyFormSecret() throws Exception {
+
+    MvcResult result = postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials",
+        "client_id", PUBLIC_CLIENT_ID, "client_secret", ""), null, null);
+
+    assertEquals(401, result.getResponse().getStatus());
+
+    JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
+    assertTrue(json.has("error"));
+    assertTrue(!json.has("access_token"));
+  }
+
+  @Test
+  void publicClientCannotUseClientCredentialsWithBasicAuthentication() throws Exception {
+
+    MvcResult result =
+        postForm(TOKEN_ENDPOINT, Map.of("grant_type", "client_credentials"), PUBLIC_CLIENT_ID, "");
+
+    assertEquals(401, result.getResponse().getStatus());
+
+    JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
+    assertTrue(json.has("error"));
+    assertTrue(!json.has("access_token"));
   }
 
   @Test
@@ -106,7 +131,7 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
 
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     RegisteredClientDTO publicClient = client;
-    assertThrows(org.springframework.security.oauth2.common.exceptions.InvalidRequestException.class,
+    assertThrows(InvalidRequestException.class,
         () -> clientManagementService.updateClient(publicClient.getClientId(), publicClient));
   }
 
@@ -164,9 +189,8 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
 
     updatedClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     RegisteredClientDTO publicClient = updatedClient;
-    assertThrows(InvalidClientRegistrationRequest.class,
-        () -> clientRegistrationService.updateClient(registrationResponse.getClientId(),
-            publicClient, userAuth));
+    assertThrows(InvalidClientRegistrationRequest.class, () -> clientRegistrationService
+      .updateClient(registrationResponse.getClientId(), publicClient, userAuth));
   }
 
 }
