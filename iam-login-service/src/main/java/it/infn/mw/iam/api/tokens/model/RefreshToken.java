@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonFilter("attributeFilter")
 public record RefreshToken(
     @JsonProperty("id") Long id,
-    @JsonProperty("value") String value,
     @JsonProperty("expiration") Date expiration,
     @JsonProperty("scopes") Set<String> scopes,
     @JsonProperty("clientId") String clientId,
