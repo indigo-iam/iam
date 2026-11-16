@@ -162,6 +162,14 @@ class IamCoreControllerTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void mitreJspHomeRemainsAccessible() throws Exception {
+    mvc.perform(get("/mitre"))
+      .andExpect(status().isOk())
+      .andExpect(view().name("home"));
+  }
+
+  @Test
   @WithMockOIDCUser
   void unregisteredUserAtRootContinuesRegistration() throws Exception {
     mvc.perform(get("/"))

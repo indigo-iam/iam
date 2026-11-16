@@ -190,7 +190,7 @@ public class IamWebSecurityConfig {
 
       http
         .requestMatchers(matchers -> matchers.antMatchers("/", "/login**", "/logout", "/authorize",
-            "/manage/**", "/dashboard**", "/reset-session", "/device/**"))
+            "/manage/**", "/mitre", "/mitre/**", "/dashboard**", "/reset-session", "/device/**"))
 
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

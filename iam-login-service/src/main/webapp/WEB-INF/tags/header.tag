@@ -34,6 +34,30 @@
 
     <!-- Load jQuery up here so that we can use in-page functions -->
     <script type="text/javascript" src="${resourcesPrefix}/js/lib/jquery.js"></script>
+    <c:if test="${not empty _csrf}">
+        <meta name="_csrf" content="<c:out value='${_csrf.token}'/>">
+        <meta name="_csrf_header" content="<c:out value='${_csrf.headerName}'/>">
+    </c:if>
+    <script type="text/javascript">
+        $.ajaxPrefilter(function(options) {
+            var method = (options.type || 'GET').toUpperCase();
+            if (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method)) {
+                return;
+            }
+            var resolved = new URL(options.url, document.baseURI);
+            if (resolved.origin !== window.location.origin) {
+                return;
+            }
+            var token = document.querySelector('meta[name="_csrf"]');
+            var header = document.querySelector('meta[name="_csrf_header"]');
+            if (token && token.content && header && header.content) {
+                options.headers = options.headers || {};
+                if (!options.headers[header.content]) {
+                    options.headers[header.content] = token.content;
+                }
+            }
+        });
+    </script>
     <script type="text/javascript" charset="UTF-8" src="${resourcesPrefix}/js/lib/moment-with-locales.js"></script>
     <script type="text/javascript" src="${resourcesPrefix}/js/lib/i18next.js"></script>
     <script type="text/javascript">

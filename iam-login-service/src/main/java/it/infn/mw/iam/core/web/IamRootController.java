@@ -27,8 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class IamRootController {
@@ -36,7 +35,7 @@ public class IamRootController {
   @Value("${iam.dashboard.base-path}")
   private String dashboardBasePath;
 
-  @RequestMapping(method = RequestMethod.GET, path = { "", "home", "index" })
+  @GetMapping(path = {"", "home", "index"})
   public String home(Authentication authentication) {
     if (authentication != null
         && authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH)) {
@@ -46,12 +45,18 @@ public class IamRootController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = "manage/**")
+  @GetMapping(path = {"/mitre", "/mitre/"})
+  public String mitre() {
+    return "home";
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @GetMapping(path = "manage/**")
   public String manage(ModelMap m) {
     return "manage";
   }
 
-  @RequestMapping(method = RequestMethod.GET, path = "/login")
+  @GetMapping(path = "/login")
   public String login(Authentication authentication, Model model, HttpServletRequest request) {
 
     if (authentication == null) {
@@ -66,7 +71,7 @@ public class IamRootController {
 
   }
 
-  @RequestMapping(method = RequestMethod.GET, path = "/reset-session")
+  @GetMapping(path = "/reset-session")
   public String resetSession(HttpSession session) {
 
     SecurityContextHolder.clearContext();
