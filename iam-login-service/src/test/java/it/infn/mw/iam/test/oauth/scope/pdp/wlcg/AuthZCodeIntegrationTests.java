@@ -242,8 +242,7 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
       .extract()
       .response();
 
-    String consentTransactionId = consentPage
-      .htmlPath()
+    String consentTransactionId = consentPage.htmlPath()
       .getString("**.find { it.name() == 'input' && it.@name == 'consent_transaction_id' }.@value");
 
     assertNotNull(consentTransactionId, "Expected a consent transaction ID in the consent form");
@@ -293,7 +292,13 @@ class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
 
   private String csrfTokenFromPage(Response page) {
 
-    String token = page.htmlPath().getString("**.find { it.@name == '_csrf' }.@value");
+    String token =
+        page.htmlPath().getString("**.find { it.name() == 'input' && it.@name == '_csrf' }.@value");
+
+    if (token == null || token.isBlank()) {
+      token = page.htmlPath()
+        .getString("**.find { it.name() == 'meta' && it.@name == '_csrf' }.@content");
+    }
 
     if (token == null || token.isBlank()) {
       token = page.getCookie("XSRF-TOKEN");
