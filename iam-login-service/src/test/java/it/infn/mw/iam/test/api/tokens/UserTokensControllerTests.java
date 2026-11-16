@@ -208,7 +208,7 @@ class UserTokensControllerTests {
 
   private RefreshToken refreshToken(Long id, String username) {
 
-    return new RefreshToken(id, "refresh-token-value", new Date(), Set.of("openid"), "client-id",
+    return new RefreshToken(id, new Date(), Set.of("openid"), "client-id",
         clientRef(), userRef(username));
   }
 

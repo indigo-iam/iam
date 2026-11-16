@@ -90,7 +90,7 @@ public class DefaultRefreshTokenService extends AbstractTokenService<RefreshToke
   }
 
   protected RefreshToken toRefreshToken(OAuth2RefreshTokenEntity entity) {
-    return new RefreshToken(entity.getId(), entity.getValue(), entity.getExpiration(),
+    return new RefreshToken(entity.getId(), entity.getExpiration(),
         entity.getAuthenticationHolder().getScope(), entity.getClient().getClientId(),
         toClientRef(entity.getClient()), toUserRef(entity.getAuthenticationHolder().getUserAuth()));
   }
