@@ -15,40 +15,7 @@
  */
 'use strict';
 
-var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies', 'toaster', 'ui.router']);
-
-app.factory('csrfInterceptor', ['$document', '$window',
-    function($document, $window) {
-        return {
-            request: function(config) {
-                var method = (config.method || 'GET').toUpperCase();
-
-                if (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method)) {
-                    return config;
-                }
-
-                var document = $document[0];
-                var target = new $window.URL(config.url, document.baseURI);
-
-                if (target.origin !== $window.location.origin) {
-                    return config;
-                }
-
-                var token = document.querySelector('meta[name="_csrf"]');
-                var header = document.querySelector('meta[name="_csrf_header"]');
-
-                if (token && token.content && header && header.content) {
-                    config.headers = config.headers || {};
-                    if (!config.headers[header.content]) {
-                        config.headers[header.content] = token.content;
-                    }
-                }
-
-                return config;
-            }
-        };
-    }
-]);
+var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies', 'toaster', 'ui.router', 'iamCsrf']);
 
 app.config(['$httpProvider', function($httpProvider) {
     $httpProvider.interceptors.push('csrfInterceptor');
