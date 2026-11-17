@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -53,6 +54,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.account.AccountManagementService;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -69,6 +71,9 @@ public class ScimUserController extends ScimControllerSupport {
 
   @Autowired
   ScimUserProvisioning userProvisioningService;
+
+  @Autowired
+  AccountManagementService accountManagementService;
 
   FilterProvider excludePasswordFilter = new SimpleFilterProvider().addFilter("passwordFilter",
       SimpleBeanPropertyFilter.serializeAllExcept("password"));
@@ -87,7 +92,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasScope('iam:user.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER', 'ROLE_USER_MANAGER')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
@@ -118,7 +123,7 @@ public class ScimUserController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasScope('iam:user.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER', 'ROLE_USER_MANAGER')")
   @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
 
@@ -164,12 +169,14 @@ public class ScimUserController extends ScimControllerSupport {
     userProvisioningService.update(id, patchRequest.getOperations());
   }
 
-  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasScope('iam:user.write')"
+      + " or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')")
   @DeleteMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Transactional(propagation = Propagation.SUPPORTS)
   public void deleteUser(@PathVariable final String id) {
 
-    userProvisioningService.delete(id);
+    accountManagementService.removeAccount(id);
   }
 
   @ResponseStatus(value=HttpStatus.BAD_REQUEST)
