@@ -28,7 +28,6 @@ import org.springframework.data.domain.Pageable;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.api.scope_policy.validation.IamAccountId;
 
 public interface ClientManagementService {
 
@@ -57,9 +56,11 @@ public interface ClientManagementService {
 
   ListResponseDTO<ScimUser> getClientOwners(@NotBlank String clientId, @NotNull Pageable pageable);
 
-  void assignClientOwner(@NotBlank String clientId, @IamAccountId String accountId);
+  void assignClientOwner(@NotBlank String clientId, @NotBlank String accountId);
 
-  void removeClientOwner(@NotBlank String clientId, @IamAccountId String accountId);
+  void assignClientOwnerByUsername(@NotBlank String clientId, @NotBlank String username);
+
+  void removeClientOwner(@NotBlank String clientId, @NotBlank String accountId);
 
 
 }

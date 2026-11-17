@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_READ_SCOPE;
+import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_WRITE_SCOPE;
 
 import java.text.ParseException;
 import java.time.Clock;
@@ -31,11 +33,16 @@ import javax.validation.constraints.NotBlank;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -56,7 +63,9 @@ import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
+import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
@@ -64,6 +73,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.model.OAuth2AccessTokenEntity;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -71,26 +81,36 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Transactional
 public class DefaultClientManagementService implements ClientManagementService {
 
+  private static final String NOT_AN_OWNER_ERROR = "Only the owners of a client can manage it";
+
   private final Clock clock;
   private final ClientService clientService;
   private final ClientConverter converter;
   private final ClientUtils clientUtils;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
+  private final IamAccountClientRepository accountClientRepo;
+  private final AccountUtils accountUtils;
+  private final OAuth2AuthenticationScopeResolver scopeResolver;
   private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
-      IamAccountRepository accountRepo, RegistrationTokenService registrationTokenService,
-      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
+      IamAccountRepository accountRepo, IamAccountClientRepository accountClientRepo,
+      AccountUtils accountUtils, OAuth2AuthenticationScopeResolver scopeResolver,
+      RegistrationTokenService registrationTokenService, ApplicationEventPublisher aep,
+      NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
     this.clientUtils = clientUtils;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
+    this.accountClientRepo = accountClientRepo;
+    this.accountUtils = accountUtils;
+    this.scopeResolver = scopeResolver;
     this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
@@ -281,6 +301,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public ListResponseDTO<ScimUser> getClientOwners(String clientId, Pageable pageable) {
 
     Page<IamAccountClient> results = clientService.findClientOwners(clientId, pageable);
+    boolean administrator = isAdministrator(ADMIN_READ_SCOPE);
 
     ListResponseDTO.Builder<ScimUser> resultBuilder = ListResponseDTO.builder();
 
@@ -288,18 +309,43 @@ public class DefaultClientManagementService implements ClientManagementService {
       .resources(results.getContent()
         .stream()
         .map(IamAccountClient::getAccount)
-        .map(userConverter::dtoFromEntity)
+        .map(a -> administrator ? userConverter.dtoFromEntity(a) : ownerSummary(a))
         .collect(Collectors.toList()))
       .fromPage(results, pageable)
+      .build();
+  }
+
+  private ScimUser ownerSummary(IamAccount account) {
+    return ScimUser.builder()
+      .id(account.getUuid())
+      .userName(account.getUsername())
+      .buildName(account.getUserInfo().getGivenName(), account.getUserInfo().getFamilyName())
       .build();
   }
 
   @Override
   public void assignClientOwner(String clientId, String accountId) {
 
+    lockOwnersCheckingCaller(clientId);
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
+    assignClientOwner(client, account);
+  }
+
+  @Override
+  public void assignClientOwnerByUsername(String clientId, String username) {
+
+    lockOwnersCheckingCaller(clientId);
+    ClientDetailsEntity client =
+        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+    IamAccount account = accountRepo.findByUsername(username)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+    assignClientOwner(client, account);
+  }
+
+  private void assignClientOwner(ClientDetailsEntity client, IamAccount account) {
+
     clientService.linkClientToAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));
@@ -308,12 +354,48 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void removeClientOwner(String clientId, String accountId) {
 
+    List<IamAccountClient> owners = lockOwnersCheckingCaller(clientId);
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
+
+    if (!isAdministrator(ADMIN_WRITE_SCOPE) && owners.size() == 1
+        && owners.get(0).getAccount().equals(account)) {
+      throw new InvalidRequestException("Clients must have at least one owner");
+    }
+
     clientService.unlinkClientFromAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
+  }
+
+  // Same rule as the controller: the administrator scope, or the role without a token
+  private boolean isAdministrator(String adminScope) {
+
+    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authn instanceof OAuth2Authentication oauth) {
+      return scopeResolver.resolveScope(oauth).contains(adminScope);
+    }
+
+    return authn == null || accountUtils.isAdmin(authn);
+  }
+
+  // The lock serializes the changes of the owners and must be the first read of the transaction
+  private List<IamAccountClient> lockOwnersCheckingCaller(String clientId) {
+
+    List<IamAccountClient> owners = accountClientRepo.findByClientClientIdForUpdate(clientId);
+
+    if (!isAdministrator(ADMIN_WRITE_SCOPE)) {
+      IamAccount caller = accountUtils.getAuthenticatedUserAccount()
+        .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR));
+
+      if (owners.stream().noneMatch(o -> o.getAccount().equals(caller))) {
+        throw new AccessDeniedException(NOT_AN_OWNER_ERROR);
+      }
+    }
+
+    return owners;
   }
 
   @Override
