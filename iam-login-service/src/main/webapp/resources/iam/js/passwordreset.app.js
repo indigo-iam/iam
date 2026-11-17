@@ -15,4 +15,4 @@
  */
 'use strict'
 
-angular.module('passwordResetApp', ['ui.bootstrap']);
+angular.module('passwordResetApp', ['ui.bootstrap', 'iamCsrf']);

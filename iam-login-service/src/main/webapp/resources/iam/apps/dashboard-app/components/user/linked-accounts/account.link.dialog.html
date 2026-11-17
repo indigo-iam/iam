@@ -28,6 +28,7 @@
 
     <div class="link-external-account">
         <form id="link-oidc-account-form" action="{{$ctrl.oidcActionUrl}}" method="POST">
+            <input type="hidden" iam-csrf-token>
             <input id="oidc-issuer" name="id" type="hidden">
         </form>
 
@@ -46,6 +47,7 @@
         </div>
 
         <form id="link-saml-account-form" action="{{$ctrl.samlActionUrl}}" method="post" ng-cloak>
+            <input type="hidden" iam-csrf-token>
             <input id="idp-id" name="id" type="hidden">
         </form>
 

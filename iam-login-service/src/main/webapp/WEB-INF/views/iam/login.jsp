@@ -24,6 +24,7 @@
         <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
         <script type="text/javascript" src="/webjars/angular-animate/angular-animate.min.js"></script>
         <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/js/csrf.interceptor.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/passwordreset.app.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/service/passwordreset.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/controller/passwordreset.controller.js"></script>

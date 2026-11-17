@@ -22,6 +22,7 @@
         <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
         <script type="text/javascript" src="/webjars/angular-animate/angular-animate.min.js"></script>
         <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/js/csrf.interceptor.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/activateMfa.app.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/service/activateMfa.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/controller/activateMfa.controller.js"></script>
@@ -37,6 +38,7 @@
       </div>
 
       <form class="verify-form text-center" action="/logout" method="post">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
         <button type="submit" class="btn btn-warning">Back to Login Page</button>
       </form>
     </div>

@@ -35,6 +35,7 @@
       value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
 </form>
 <form class="verify-form text-center" action="/logout" method="post">
+  <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
   <button type="submit" class="btn btn-warning">Back to Login Page</button>
 </form>
 </div>

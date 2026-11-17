@@ -21,7 +21,6 @@ angular
         function ($stateProvider, $urlRouterProvider, $httpProvider) {
             $httpProvider.interceptors.push('gatewayErrorInterceptor');
             $httpProvider.interceptors.push('sessionExpiredInterceptor');
-            $httpProvider.interceptors.push('csrfInterceptor');
 
             $urlRouterProvider.otherwise(function ($injector, $location) {
                 return '/home';
