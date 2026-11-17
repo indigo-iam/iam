@@ -45,6 +45,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
@@ -133,8 +134,8 @@ public class DefaultRegistrationRequestService
     this.iamProperties = iamProperties;
   }
 
-  private IamRegistrationRequest findRequestById(String requestUuid) {
-    return requestRepository.findByUuid(requestUuid)
+  private IamRegistrationRequest lockRequestById(String requestUuid) {
+    return requestRepository.findByUuidForUpdate(requestUuid)
       .orElseThrow(() -> new ScimResourceNotFoundException(
           String.format("No request mapped to uuid [%s]", requestUuid)));
   }
@@ -404,10 +405,11 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
+  @Transactional
   public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation,
       boolean doNotSendEmail) {
 
-    IamRegistrationRequest request = findRequestById(requestUuid);
+    IamRegistrationRequest request = lockRequestById(requestUuid);
 
     if (!checkStatusTransition(request.getStatus(), REJECTED)) {
       throw new IllegalArgumentException(
@@ -418,9 +420,10 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
+  @Transactional
   public RegistrationRequestDto approveRequest(String requestUuid) {
 
-    IamRegistrationRequest request = findRequestById(requestUuid);
+    IamRegistrationRequest request = lockRequestById(requestUuid);
 
     if (!checkStatusTransition(request.getStatus(), APPROVED)) {
       throw new IllegalArgumentException(
