@@ -162,6 +162,10 @@ public class IamSecurityExpressionMethods {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
   }
 
+  public boolean holdsUserManagementRole() {
+    return accountUtils.holdsUserManagementRole(authentication);
+  }
+
   public boolean isClientOwner(String clientId) {
     Optional<IamAccount> owner = accountUtils.getAuthenticatedUserAccount();
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);

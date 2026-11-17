@@ -70,6 +70,11 @@ public class RegistrationApiController {
   private final RegistrationProperties registrationProperties;
   private final String dashboardBasePath;
 
+  private static final String CAN_DECIDE_ON_REQUESTS =
+      "#iam.hasScope('registration:write') or hasRole('ADMIN')"
+          + " or ((#iam.hasScope('iam:user.write') or #iam.hasDashboardRole('ROLE_USER_MANAGER'))"
+          + " and #iam.holdsUserManagementRole())";
+
   private static final String INVALID_REGISTRATION_TEMPLATE = "Invalid registration request: %s";
 
   public RegistrationApiController(RegistrationRequestService registrationService,
@@ -126,16 +131,14 @@ public class RegistrationApiController {
     }
   }
 
-  @PreAuthorize("#iam.hasScope('registration:write') or #iam.hasScope('iam:user.write')"
-      + " or #iam.hasDashboardRole('ROLE_USER_MANAGER') or hasRole('ADMIN')")
+  @PreAuthorize(CAN_DECIDE_ON_REQUESTS)
   @PostMapping(value = "/registration/approve/{uuid}")
   @Transactional(propagation = Propagation.SUPPORTS)
   public RegistrationRequestDto approveRequest(@PathVariable String uuid) {
     return service.approveRequest(uuid);
   }
 
-  @PreAuthorize("#iam.hasScope('registration:write') or #iam.hasScope('iam:user.write')"
-      + " or #iam.hasDashboardRole('ROLE_USER_MANAGER') or hasRole('ADMIN')")
+  @PreAuthorize(CAN_DECIDE_ON_REQUESTS)
   @PostMapping(value = "/registration/reject/{uuid}")
   @Transactional(propagation = Propagation.SUPPORTS)
   public RegistrationRequestDto rejectRequest(@PathVariable String uuid,
