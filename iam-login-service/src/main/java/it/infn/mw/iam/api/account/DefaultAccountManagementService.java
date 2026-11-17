@@ -93,21 +93,13 @@ public class DefaultAccountManagementService implements AccountManagementService
       return;
     }
 
-    if (accountUtils.isAdmin(account) || accountUtils.isUserManager(account)) {
+    if (accountUtils.isAdmin(account) || accountUtils.isUserManager(account)
+        || account.isServiceAccount()) {
       throw new AccessDeniedException(
-          "Administrator and user manager accounts can be managed only by administrators");
+          "Administrator, user manager and service accounts can be managed only by administrators");
     }
 
-    if (authn instanceof OAuth2Authentication oauth && oauth.getUserAuthentication() == null) {
-      return;
-    }
-
-    boolean callerHoldsTheRole = accountUtils.getAuthenticatedUserAccount(authn)
-      .filter(IamAccount::isActive)
-      .filter(c -> accountUtils.isUserManager(c) || accountUtils.isAdmin(c))
-      .isPresent();
-
-    if (!callerHoldsTheRole) {
+    if (!accountUtils.holdsUserManagementRole(authn)) {
       throw new AccessDeniedException("The user is no longer allowed to manage accounts");
     }
   }

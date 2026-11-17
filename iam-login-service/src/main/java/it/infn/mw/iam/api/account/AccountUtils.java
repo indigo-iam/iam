@@ -75,6 +75,20 @@ public class AccountUtils {
     return account.getAuthorities().contains(ROLE_USER_MANAGER);
   }
 
+  /**
+   * Sessions and access tokens outlive the roles of the user: this checks the account, which must
+   * be active and still hold the role. Clients acting on their own have no account to check.
+   */
+  public boolean holdsUserManagementRole(Authentication authn) {
+    if (authn instanceof OAuth2Authentication oauth && oauth.getUserAuthentication() == null) {
+      return true;
+    }
+
+    return getAuthenticatedUserAccount(authn).filter(IamAccount::isActive)
+      .filter(a -> isUserManager(a) || isAdmin(a))
+      .isPresent();
+  }
+
   public boolean isPreAuthenticated() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     return isPreAuthenticated(auth);
