@@ -50,6 +50,9 @@ public class IamSystemScopeService implements SystemScopeService {
   public static final String ADMIN_READ_SCOPE = "iam:admin.read";
   public static final String ADMIN_WRITE_SCOPE = "iam:admin.write";
 
+  public static final String USER_READ_SCOPE = "iam:user.read";
+  public static final String USER_WRITE_SCOPE = "iam:user.write";
+
   public static final String REGISTRATION_READ_SCOPE = "registration:read";
   public static final String REGISTRATION_WRITE_SCOPE = "registration:write";
 
@@ -59,8 +62,9 @@ public class IamSystemScopeService implements SystemScopeService {
   public static final Set<String> RESERVED_VALUES =
       Set.of(REGISTRATION_TOKEN_SCOPE, RESOURCE_TOKEN_SCOPE);
 
-  public static final Set<String> PROTECTED_SCOPES = Set.of(ADMIN_READ_SCOPE, ADMIN_WRITE_SCOPE,
-      REGISTRATION_READ_SCOPE, REGISTRATION_WRITE_SCOPE, SCIM_READ_SCOPE, SCIM_WRITE_SCOPE);
+  public static final Set<String> PROTECTED_SCOPES =
+      Set.of(ADMIN_READ_SCOPE, ADMIN_WRITE_SCOPE, USER_READ_SCOPE, USER_WRITE_SCOPE,
+          REGISTRATION_READ_SCOPE, REGISTRATION_WRITE_SCOPE, SCIM_READ_SCOPE, SCIM_WRITE_SCOPE);
 
   private final IamScopeRepository scopeRepository;
   private final ScopeMatcherRegistry scopeMatcherRegistry;
