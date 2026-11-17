@@ -67,7 +67,7 @@
                         </div>
                         <div class="pull-right">
                             <form id="logoutForm" action="/logout" method="POST">
-                                <input type="hidden" id="logoutCsrfToken" name="_csrf">
+                                <input type="hidden" iam-csrf-token>
                                 <button type="submit" class="btn btn-default btn-flat">
                                     Sign out
                                 </button>
@@ -79,8 +79,3 @@
         </ul>
     </div>
 </nav>
-
-<script>
-    document.getElementById("logoutCsrfToken").value =
-        document.querySelector('meta[name="_csrf"]').getAttribute("content");
-</script>

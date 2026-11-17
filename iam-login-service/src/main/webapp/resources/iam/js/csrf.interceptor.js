@@ -16,6 +16,25 @@
 'use strict';
 
 angular.module('iamCsrf', [])
+    .config(['$httpProvider', function($httpProvider) {
+        $httpProvider.interceptors.push('csrfInterceptor');
+    }])
+    // Native form.submit() bypasses $http and submit event handlers.
+    // Populate the hidden field when Angular links the template instead.
+    .directive('iamCsrfToken', ['$document', function($document) {
+        return {
+            restrict: 'A',
+            link: function(scope, element) {
+                var document = $document[0];
+                var token = document.querySelector('meta[name="_csrf"]');
+                var parameter = document.querySelector('meta[name="_csrf_parameter"]');
+                if (token && token.content && parameter && parameter.content) {
+                    element.attr('name', parameter.content);
+                    element.val(token.content);
+                }
+            }
+        };
+    }])
     .factory('csrfInterceptor', ['$document', '$window',
         function($document, $window) {
             return {
