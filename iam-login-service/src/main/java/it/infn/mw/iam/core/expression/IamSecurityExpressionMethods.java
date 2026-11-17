@@ -72,7 +72,7 @@ public class IamSecurityExpressionMethods {
   }
 
   public enum Role {
-    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER
+    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER, ROLE_USER_MANAGER
   }
 
   public boolean isGroupManager(String groupUuid) {
