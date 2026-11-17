@@ -59,7 +59,7 @@ public class IamAuthenticationHolderService {
       if (externalToken != null) {
         userAuth.setSourceClass(externalToken.getClass().getName());
 
-        Map<String, String> info = externalToken.buildAuthnInfoMap(mapBuilder);
+        Map<String, Object> info = externalToken.buildAuthnInfoMap(mapBuilder);
         userAuth.getAdditionalInfo().putAll(info);
       }
       holder.setUserAuth(userAuth);

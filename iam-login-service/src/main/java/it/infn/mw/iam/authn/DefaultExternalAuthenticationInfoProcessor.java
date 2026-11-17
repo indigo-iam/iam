@@ -33,7 +33,7 @@ public class DefaultExternalAuthenticationInfoProcessor
   }
 
   @Override
-  public Map<String, String> process(OAuth2Authentication authentication) {
+  public Map<String, Object> process(OAuth2Authentication authentication) {
 
     SavedUserAuthentication userAuth =
         (SavedUserAuthentication) authentication.getUserAuthentication();
