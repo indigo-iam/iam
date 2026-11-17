@@ -38,6 +38,10 @@
             return Utils.isReader();
         };
 
+        self.isUserManager = function () {
+            return Utils.isUserManager();
+        };
+
         self.isMfaSettingsBtnEnabled = function () {
             return Utils.isMfaSettingsBtnEnabled();
         };
@@ -52,6 +56,10 @@
 
         self.userIsReader = function () {
             return Utils.userIsReader(self.user);
+        };
+
+        self.userIsUserManager = function () {
+            return Utils.userIsUserManager(self.user);
         };
 
         self.isMe = function () {

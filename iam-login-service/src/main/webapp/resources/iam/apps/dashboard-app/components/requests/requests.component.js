@@ -23,9 +23,10 @@
             self.voAdmin = Utils.isAdmin();
             self.groupManager = Utils.isGroupManager();
             self.isReader = Utils.isReader();
-            self.privileged = self.voAdmin || self.groupManager || self.isReader;
+            self.userManager = Utils.isUserManager();
+            self.privileged = self.voAdmin || self.groupManager || self.isReader || self.userManager;
 
-            if (self.voAdmin) {
+            if (self.voAdmin || self.userManager) {
                 self.activeTab = 1;
             } else if (self.groupManager || self.isReader) {
                 self.activeTab = 2;
