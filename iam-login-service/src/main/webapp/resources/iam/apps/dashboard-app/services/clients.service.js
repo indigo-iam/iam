@@ -42,6 +42,7 @@
             rotateRegistrationAccessToken: rotateRegistrationAccessToken,
             retrieveClientOwners: retrieveClientOwners,
             assignClientOwner: assignClientOwner,
+            assignClientOwnerByUsername: assignClientOwnerByUsername,
             removeClientOwner: removeClientOwner,
             newClient: newClient,
             getClientList: getClientList,
@@ -76,6 +77,15 @@
             var url = ownerEndpoint(clientId) + '?' + params;
 
             return HttpUtilsService.doGet(url);
+        }
+
+        function assignClientOwnerByUsername(clientId, username) {
+            var url = ownerEndpoint(clientId);
+            return $http.post(url, null, { params: { username: username } }).then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
         }
 
         function assignClientOwner(clientId, accountId) {

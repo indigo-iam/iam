@@ -16,10 +16,11 @@
 (function () {
     'use strict';
 
-    function ClientOwnersController(ClientsService, $uibModal, toaster) {
+    function ClientOwnersController(ClientsService, $uibModal, toaster, Utils, $location) {
         var self = this;
 
         self.assignOwner = assignOwner;
+        self.addOwnerByUsername = addOwnerByUsername;
         self.removeOwner = removeOwner;
         self.onChangePage = onChangePage;
 
@@ -30,20 +31,17 @@
         };
 
         function onChangePage() {
-            var currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
-
-            if (currentOffset > self.totalResults && self.currentPage > 1) {
-                self.currentPage--;
-                currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
-            }
-
-            self.updateClientOwners(currentOffset, self.itemsPerPage).then(res => {
-                self.totalResults = res.totalResults;
-            });
+            loadClientOwners();
         }
 
-        function updateClientOwners(startIndex, itemsPerPage) {
-            ClientsService.retrieveClientOwners(self.client.client_id, startIndex, itemsPerPage).then(res => {
+        function loadClientOwners() {
+            var startIndex = (self.currentPage - 1) * self.itemsPerPage + 1;
+
+            return ClientsService.retrieveClientOwners(self.client.client_id, startIndex, self.itemsPerPage).then(res => {
+                if (self.currentPage > 1 && (!res.Resources || res.Resources.length === 0)) {
+                    self.currentPage--;
+                    return loadClientOwners();
+                }
                 self.clientOwners = res;
             }).catch(err => {
                 toaster.pop({
@@ -55,11 +53,35 @@
 
         function removeOwner(user) {
             ClientsService.removeClientOwner(self.client.client_id, user.id).then(res => {
-                updateClientOwners();
+                if (Utils.isMe(user.id) && !Utils.isAdmin()) {
+                    toaster.pop({
+                        type: 'success',
+                        body: 'You are no longer an owner of this client'
+                    });
+                    $location.path('/home/clients');
+                    return;
+                }
+                loadClientOwners();
             }).catch(err => {
                 toaster.pop({
                     type: 'error',
-                    body: "Error removing client owner"
+                    body: (err.data && err.data.error) || "Error removing client owner"
+                });
+            });
+        }
+
+        function addOwnerByUsername() {
+            ClientsService.assignClientOwnerByUsername(self.client.client_id, self.newOwnerUsername).then(res => {
+                self.newOwnerUsername = '';
+                loadClientOwners();
+                toaster.pop({
+                    type: 'success',
+                    body: 'Owner added'
+                });
+            }).catch(err => {
+                toaster.pop({
+                    type: 'error',
+                    body: (err.data && err.data.error) || "Error assigning client owner"
                 });
             });
         }
@@ -80,7 +102,7 @@
             modalInstance.result.then(user => {
                 console.log("Selected user: ", user);
                 ClientsService.assignClientOwner(self.client.client_id, user.id).then(res => {
-                    updateClientOwners();
+                    loadClientOwners();
                 }).catch(err => {
                     toaster.pop({
                         type: 'error',
@@ -103,7 +125,7 @@
                 client: '=',
                 clientOwners: '='
             },
-            controller: ['ClientsService', '$uibModal', 'toaster', ClientOwnersController],
+            controller: ['ClientsService', '$uibModal', 'toaster', 'Utils', '$location', ClientOwnersController],
             controllerAs: '$ctrl'
         };
     }
