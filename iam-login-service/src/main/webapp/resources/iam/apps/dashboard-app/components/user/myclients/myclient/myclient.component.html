@@ -56,6 +56,10 @@
                         <uib-tab-heading>Other info</uib-tab-heading>
                         <othersettings client="$ctrl.clientVal"></othersettings>
                     </uib-tab>
+                    <uib-tab index="8" ng-if="!$ctrl.newClient">
+                        <uib-tab-heading>Owners</uib-tab-heading>
+                        <client-owners client="$ctrl.clientVal" client-owners="$ctrl.clientOwners"></client-owners>
+                    </uib-tab>
 
                 </uib-tabset>
             </form>
