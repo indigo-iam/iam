@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -667,8 +668,9 @@ public class IamConfig {
 
   @Bean
   DashboardConfigService dashboardConfigService(ClientService clientService,
-      ClientUtils clientUtils, ApplicationEventPublisher publisher, IamProperties properties) {
+      ClientUtils clientUtils, ApplicationEventPublisher publisher, IamProperties properties,
+      Environment environment) {
     return new DashboardConfigService(clientService, clientUtils, new IamSha256PasswordEncoder(),
-        publisher, properties);
+        publisher, properties, environment);
   }
 }
