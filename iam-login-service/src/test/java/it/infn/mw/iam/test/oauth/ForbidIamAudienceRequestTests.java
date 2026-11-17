@@ -41,7 +41,6 @@ import it.infn.mw.iam.IamLoginService;
     properties = {"iam.protected-resources[0].id=data-api",
         "iam.protected-resources[0].resource=https://data.example.org/api",
         "iam.resource-indicators.restrict-to-protected-resources=true",
-        "iam.resource-indicators.require-iam-audience=true",
         "iam.resource-indicators.allow-iam-audience-request=false"})
 @AutoConfigureMockMvc
 @Transactional
@@ -101,16 +100,8 @@ class ForbidIamAudienceRequestTests {
   }
 
   @Test
-  void testTokenForOtherResourcesCannotBeUsedAtIam() throws Exception {
+  void testTokenForOtherResourcesIsAcceptedAtIamByDefault() throws Exception {
     String token = accessToken(passwordGrant().param("resource", DATA_API));
-
-    mvc.perform(get("/userinfo").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-      .andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  void testTokenWithoutAudienceCanBeUsedAtIam() throws Exception {
-    String token = accessToken(passwordGrant());
 
     mvc.perform(get("/userinfo").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
       .andExpect(status().isOk());

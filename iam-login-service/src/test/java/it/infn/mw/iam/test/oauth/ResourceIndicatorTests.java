@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -1440,6 +1441,13 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .andExpect(jsonPath("$.error_description")
         .value("The requested resource was not originally granted"));
 
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void testProtectedResourcesFromApplicationConfigAreNotReloadable() throws Exception {
+    mvc.perform(post("/iam/api/protected-resources/reload").with(csrf()))
+      .andExpect(status().isConflict());
   }
 
 }

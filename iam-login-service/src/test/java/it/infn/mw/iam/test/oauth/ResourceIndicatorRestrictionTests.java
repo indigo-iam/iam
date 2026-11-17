@@ -26,35 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.IamLoginService;
-
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = {"iam.protected-resources[0].id=data-api",
-        "iam.protected-resources[0].resource=https://data.example.org/api",
-        "iam.protected-resources[1].id=compute-api",
-        "iam.protected-resources[1].resource=https://compute.example.org",
-        "iam.resource-indicators.restrict-to-protected-resources=true",
-        "iam.resource-indicators.require-iam-audience=true"})
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles({"h2-test"})
-class ResourceIndicatorRestrictionTests {
-
-  private static final String IAM = "http://localhost:8080";
-  private static final String DATA_API = "https://data.example.org/api";
-  private static final String COMPUTE_API = "https://compute.example.org";
+class ResourceIndicatorRestrictionTests extends ProtectedResourcesTestSupport {
 
   @Autowired
   private MockMvc mvc;

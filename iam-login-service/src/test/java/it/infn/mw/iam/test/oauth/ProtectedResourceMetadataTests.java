@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,31 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.infn.mw.iam.IamLoginService;
-
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = {"iam.protected-resources[0].id=data-api",
-        "iam.protected-resources[0].resource=https://data.example.org/api",
-        "iam.protected-resources[0].scopes=storage.read:/,storage.modify:/",
-        "iam.protected-resources[0].name=Example data API",
-        "iam.protected-resources[0].documentation=https://data.example.org/docs",
-        "iam.protected-resources[1].id=minimal",
-        "iam.protected-resources[1].resource=https://minimal.example.org"})
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles({"h2-test"})
-class ProtectedResourceMetadataTests {
+class ProtectedResourceMetadataTests extends ProtectedResourcesTestSupport {
 
   private static final String IAM_METADATA = "/.well-known/oauth-protected-resource";
   private static final String AS_METADATA = "/.well-known/oauth-authorization-server";
@@ -62,9 +40,6 @@ class ProtectedResourceMetadataTests {
 
   @Autowired
   private MockMvc mvc;
-
-  @Autowired
-  private ObjectMapper mapper;
 
   @Test
   void testIamMetadata() throws Exception {
@@ -110,8 +85,8 @@ class ProtectedResourceMetadataTests {
         .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*"))
         .andExpect(jsonPath("$.issuer").value("http://localhost:8080/"))
         .andExpect(jsonPath("$.token_endpoint").value("http://localhost:8080/token"))
-        .andExpect(jsonPath("$.protected_resources", contains("http://localhost:8080",
-            "https://data.example.org/api", "https://minimal.example.org")));
+        .andExpect(jsonPath("$.protected_resources",
+            contains(IAM, DATA_API, MINIMAL_API, COMPUTE_API)));
     }
   }
 
@@ -136,32 +111,5 @@ class ProtectedResourceMetadataTests {
       .andExpect(status().isUnauthorized())
       .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE,
           not(containsString("resource_metadata"))));
-  }
-
-  @Test
-  @WithMockUser(roles = "ADMIN")
-  void testResourcesFromApplicationConfigAreNotReloadable() throws Exception {
-    mvc.perform(post("/iam/api/protected-resources/reload").with(csrf()))
-      .andExpect(status().isConflict());
-  }
-
-  @Test
-  void testTokenForAnotherResourceIsAcceptedByDefault() throws Exception {
-    String response = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", "password-grant")
-        .param("client_secret", "secret")
-        .param("username", "test")
-        .param("password", "password")
-        .param("scope", "openid profile")
-        .param("resource", "https://data.example.org/api"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-    String accessToken = mapper.readTree(response).get("access_token").asText();
-
-    mvc.perform(get("/userinfo").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
-      .andExpect(status().isOk());
   }
 }

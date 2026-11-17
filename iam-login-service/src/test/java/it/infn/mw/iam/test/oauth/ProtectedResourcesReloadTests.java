@@ -25,72 +25,34 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.protected_resources.ProtectedResourcesController;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = "iam.resource-indicators.restrict-to-protected-resources=true")
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles({"h2-test"})
-class ProtectedResourcesReloadTests {
+class ProtectedResourcesReloadTests extends ProtectedResourcesTestSupport {
 
-  private static final String DATA_API = """
-      protected-resources:
-        - id: data-api
-          resource: https://data.example.org/api
-      """;
-
-  private static final String COMPUTE_API = """
+  private static final String COMPUTE_API_ONLY = """
       protected-resources:
         - id: compute-api
           resource: https://compute.example.org
       """;
 
-  private static final Path FILE;
-
-  static {
-    try {
-      FILE = Files.createTempFile("protected-resources", ".yml");
-      Files.writeString(FILE, DATA_API);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   private static final String LIST = ProtectedResourcesController.ENDPOINT;
   private static final String RELOAD = ProtectedResourcesController.ENDPOINT + "/reload";
-
-  @DynamicPropertySource
-  static void protectedResourcesFile(DynamicPropertyRegistry registry) {
-    registry.add("iam.protected-resources-file.path", FILE::toString);
-  }
 
   @Autowired
   private MockMvc mvc;
 
   @AfterEach
   void restoreFile() throws Exception {
-    Files.writeString(FILE, DATA_API);
+    Files.writeString(PROTECTED_RESOURCES_FILE, PROTECTED_RESOURCES);
     mvc.perform(post(RELOAD).with(csrf()).with(user("admin").roles("ADMIN", "USER")))
       .andExpect(status().isOk());
   }
@@ -120,7 +82,7 @@ class ProtectedResourcesReloadTests {
   @WithMockUser(roles = "ADMIN")
   void testReloadAppliesEverywhere() throws Exception {
 
-    Files.writeString(FILE, COMPUTE_API);
+    Files.writeString(PROTECTED_RESOURCES_FILE, COMPUTE_API_ONLY);
 
     mvc.perform(post(RELOAD).with(csrf()))
       .andExpect(status().isOk())
@@ -133,7 +95,7 @@ class ProtectedResourcesReloadTests {
 
     mvc.perform(get("/.well-known/oauth-authorization-server"))
       .andExpect(jsonPath("$.protected_resources",
-          contains("http://localhost:8080", "https://compute.example.org")));
+          contains(IAM, COMPUTE_API)));
 
     // The token requests are authenticated as the client, not the admin user.
     TestSecurityContextHolder.clearContext();
@@ -155,7 +117,8 @@ class ProtectedResourcesReloadTests {
   @WithMockUser(roles = "ADMIN")
   void testInvalidReloadKeepsCurrentResources() throws Exception {
 
-    Files.writeString(FILE, "protected-resources:\n  - id: a\n    resource: not a url\n");
+    Files.writeString(PROTECTED_RESOURCES_FILE,
+        "protected-resources:\n  - id: a\n    resource: not a url\n");
 
     mvc.perform(post(RELOAD).with(csrf()))
       .andExpect(status().isBadRequest())
