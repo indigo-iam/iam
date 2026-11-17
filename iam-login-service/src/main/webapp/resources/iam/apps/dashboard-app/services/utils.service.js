@@ -41,6 +41,8 @@
             buildErrorResult: buildErrorResult,
             userIsVoAdmin: userIsVoAdmin,
             userIsReader: userIsReader,
+            userIsUserManager: userIsUserManager,
+            isUserManager: isUserManager,
             isGroupManagerForGroup: isGroupManagerForGroup,
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
@@ -88,6 +90,15 @@
             return false;
         }
 
+        function userIsUserManager(user) {
+            if (user.authorities) {
+                if (user.authorities.indexOf('ROLE_USER_MANAGER') > -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function isGroupMember(group) {
             return (getUserInfo().groups.indexOf(group.displayName) != -1);
         }
@@ -100,6 +111,11 @@
         function isReader() {
 
             return (getUserAuthorities().indexOf("ROLE_READER") != -1);
+        }
+
+        function isUserManager() {
+
+            return (getUserAuthorities().indexOf("ROLE_USER_MANAGER") != -1);
         }
 
         function isUser() {
@@ -125,7 +141,7 @@
         function getLoggedUser() {
             return {
                 info: getUserInfo(), auth: getUserAuthorities(), isAdmin: isAdmin(), isGroupManager: isGroupManager(),
-                isGroupManagerForGroup: isGroupManagerForGroup(), isReader: isReader()
+                isGroupManagerForGroup: isGroupManagerForGroup(), isReader: isReader(), isUserManager: isUserManager()
             };
         }
 

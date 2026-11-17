@@ -96,10 +96,13 @@
                 var promises = [];
                 promises.push(UserService.updateLoggedUserInfo());
 
-                if ($rootScope.isRegistrationEnabled && Utils.isAdmin()) {
+                if ($rootScope.isRegistrationEnabled && (Utils.isAdmin() || Utils.isUserManager())) {
                     promises.push(RegistrationRequestService.listPending().then(function (r) {
                         $rootScope.pendingRegistrationRequests(r.data);
                     }));
+                }
+
+                if ($rootScope.isRegistrationEnabled && Utils.isAdmin()) {
                     promises.push(GroupRequestsService.getGroupRequests({
                         status: 'PENDING'
                     }).then(function (r) {
@@ -164,7 +167,7 @@
                     return grCount;
                 };
 
-                if (Utils.isAdmin()) {
+                if (Utils.isAdmin() || Utils.isUserManager()) {
                     var rrCount = 0;
                     if ($rootScope.pendingRequests.reg) {
                         rrCount = $rootScope.pendingRequests.reg.length;

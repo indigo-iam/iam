@@ -30,7 +30,7 @@
         <div class="row">
             <section class="col-xs-12">
                 <uib-tabset active="$ctrl.activeTab" class="nav-tabs-custom" ng-show="$ctrl.privileged">
-                    <uib-tab index="1" ng-show="$ctrl.voAdmin" select="$ctrl.load0()">
+                    <uib-tab index="1" ng-show="$ctrl.voAdmin || $ctrl.userManager" select="$ctrl.load0()">
                         <uib-tab-heading>
                             <div class="text-larger"><i class="fa fa-user-plus requets-icon"></i> Registration
                                 requests
@@ -41,7 +41,7 @@
 
                         <registration-requests parent-cb="$ctrl.load0=$API.load" />
                     </uib-tab>
-                    <uib-tab index="2" ng-show="$ctrl.privileged" select="$ctrl.load1()">
+                    <uib-tab index="2" ng-show="$ctrl.voAdmin || $ctrl.groupManager || $ctrl.isReader" select="$ctrl.load1()">
                         <uib-tab-heading>
                             <div class="text-larger">
                                 <i class="fa fa-users"></i> Group requests <span
@@ -49,7 +49,7 @@
                                     class="badge bg-blue-gradient">{{$root.pendingGroupMembershipRequests().totalResults}}</span>
                             </div>
                         </uib-tab-heading>
-                        <group-requests parent-cb="$ctrl.load1=$API.load" />
+                        <group-requests ng-if="$ctrl.voAdmin || $ctrl.groupManager || $ctrl.isReader" parent-cb="$ctrl.load1=$API.load" />
                     </uib-tab>
                 </uib-tabset>
             </section>
