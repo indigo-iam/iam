@@ -59,10 +59,12 @@ class DashboardConfigServiceTest {
   private static final String CLIENT_ID = "dashboard-client";
   private static final String CLIENT_SECRET = "dashboard-client-secret-01234567890";
   private static final String BASE_URL = "https://iam.example.org";
-  private static final String REDIRECT_URI = BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK;
-  private static final Set<String> DEV_REDIRECT_URIS = Set.of(REDIRECT_URI,
-      BASE_URL + DashboardConfigService.DASHBOARD_DEV_CALLBACK,
-      BASE_URL + DashboardConfigService.DASHBOARD_DEVCONTAINER_CALLBACK);
+  private static final String DASHBOARD_BASE_PATH = "/ui";
+  private static final String REDIRECT_URI =
+      BASE_URL + DASHBOARD_BASE_PATH + DashboardConfigService.DASHBOARD_CALLBACK;
+  private static final Set<String> DEV_REDIRECT_URIS =
+      Set.of(REDIRECT_URI, BASE_URL + DashboardConfigService.DASHBOARD_DEV_CALLBACK,
+          BASE_URL + DashboardConfigService.DASHBOARD_DEVCONTAINER_CALLBACK);
 
   private static final Set<String> GRANT_TYPES = Set.of("authorization_code", "refresh_token");
 
@@ -140,7 +142,7 @@ class DashboardConfigServiceTest {
     assertEquals(DashboardConfigService.DASHBOARD_SCOPES.size(), created.getScope().size());
     assertTrue(created.getScope().containsAll(DashboardConfigService.DASHBOARD_SCOPES));
     assertEquals(1, created.getRedirectUris().size());
-    assertTrue(created.getRedirectUris().contains(BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK));
+    assertTrue(created.getRedirectUris().contains(REDIRECT_URI));
     assertFalse(created.isDynamicallyRegistered());
     assertTrue(created.isActive());
     assertExpectedConfiguration(created, CLIENT_SECRET);
@@ -345,6 +347,7 @@ class DashboardConfigServiceTest {
     when(dashboardProperties.isEnabled()).thenReturn(true);
     when(dashboardProperties.getClientId()).thenReturn(CLIENT_ID);
     when(dashboardProperties.getClientSecret()).thenReturn(plainSecret);
+    when(dashboardProperties.getBasePath()).thenReturn(DASHBOARD_BASE_PATH);
     when(iamProperties.getBaseUrl()).thenReturn(BASE_URL);
   }
 
