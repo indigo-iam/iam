@@ -95,8 +95,10 @@ import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
+import it.infn.mw.iam.core.oauth.AudienceRequestValidator;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.ProtectedResourceAuthenticationEntryPoint;
+import it.infn.mw.iam.core.oauth.ResourceIndicatorRequestValidator;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
@@ -637,18 +639,27 @@ public class IamConfig {
   }
 
   @Bean
-  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
+  AudienceRequestValidator audienceRequestValidator() {
+    return new AudienceRequestValidator();
+  }
 
-    return new ScopeMatcherOAuthRequestValidator(registry);
+  @Bean
+  OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry,
+      AudienceRequestValidator audienceRequestValidator) {
+
+    return new ResourceIndicatorRequestValidator(new ScopeMatcherOAuthRequestValidator(registry),
+        audienceRequestValidator);
   }
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
       DeviceCodeService deviceCodeService, IamAuthorizationCodeRepository authzCodeRepository,
       IamOAuthRefreshTokenRepository refreshTokenRepo, ClientDetailsService clientDetailsService,
-      ClientKeyCacheService validators) {
+      ClientKeyCacheService validators, AudienceRequestValidator audienceRequestValidator) {
+
     return new IamOAuth2RequestFactory(clientDetailsService, scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators);
+        deviceCodeService, authzCodeRepository, refreshTokenRepo, validators,
+        audienceRequestValidator);
   }
 
   @Bean
