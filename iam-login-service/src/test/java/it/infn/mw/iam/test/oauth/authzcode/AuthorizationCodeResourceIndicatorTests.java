@@ -207,4 +207,29 @@ class AuthorizationCodeResourceIndicatorTests {
 
     assertEquals(List.of(expectedAudience), audience);
   }
+
+  @Test
+  void testInvalidResourceIndicatorIsRedirectedToClient() throws Exception {
+
+    String location = mvc
+      .perform(get("/authorize").session(new MockHttpSession())
+        .param("response_type", "code")
+        .param("client_id", CLIENT_ID)
+        .param("redirect_uri", REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("resource", "not-a-uri")
+        .param("nonce", "1")
+        .param("state", "resource-test"))
+      .andExpect(status().is3xxRedirection())
+      .andReturn()
+      .getResponse()
+      .getHeader("Location");
+
+    assertNotNull(location);
+    var redirect = UriComponentsBuilder.fromUriString(location).build();
+    assertEquals(REDIRECT_URI,
+        UriComponentsBuilder.fromUriString(location).replaceQuery(null).build().toUriString());
+    assertEquals("invalid_target", redirect.getQueryParams().getFirst("error"));
+    assertEquals("resource-test", redirect.getQueryParams().getFirst("state"));
+  }
 }
