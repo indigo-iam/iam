@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -61,8 +62,10 @@ public class ProtectedResourceRegistry {
   private final Path file;
   private final ScheduledExecutorService fileWatcher;
 
-  private volatile Map<String, ProtectedResourceProperties> resources;
-  private volatile byte[] fileContent;
+  // Replaced as a whole on reload, never modified
+  private final AtomicReference<Map<String, ProtectedResourceProperties>> resources =
+      new AtomicReference<>();
+  private final AtomicReference<byte[]> fileContent = new AtomicReference<>();
 
   public ProtectedResourceRegistry(IamProperties properties, CacheManager cacheManager) {
     this.iamResourceIdentifier = properties.getBaseUrl().replaceAll("/+$", "");
@@ -72,7 +75,7 @@ public class ProtectedResourceRegistry {
     this.file = path == null || path.isBlank() ? null : Path.of(path);
 
     if (file == null) {
-      resources = validate(properties.getProtectedResources());
+      resources.set(validate(properties.getProtectedResources()));
     } else {
       if (!properties.getProtectedResources().isEmpty()) {
         LOG.warn("iam.protected-resources is ignored as iam.protected-resources-file is set");
@@ -105,17 +108,17 @@ public class ProtectedResourceRegistry {
   }
 
   public Optional<ProtectedResourceProperties> findById(String id) {
-    return Optional.ofNullable(resources.get(id));
+    return Optional.ofNullable(resources.get().get(id));
   }
 
   public List<ProtectedResourceProperties> getResources() {
-    return List.copyOf(resources.values());
+    return List.copyOf(resources.get().values());
   }
 
   public List<String> resourceIdentifiers() {
     return Stream
       .concat(Stream.of(iamResourceIdentifier),
-          resources.values().stream().map(ProtectedResourceProperties::getResource))
+          resources.get().values().stream().map(ProtectedResourceProperties::getResource))
       .distinct()
       .toList();
   }
@@ -130,7 +133,7 @@ public class ProtectedResourceRegistry {
 
   public synchronized void reloadIfChanged() {
     try {
-      if (!Arrays.equals(Files.readAllBytes(file), fileContent)) {
+      if (!Arrays.equals(Files.readAllBytes(file), fileContent.get())) {
         load();
       }
     } catch (IOException | RuntimeException e) {
@@ -157,15 +160,15 @@ public class ProtectedResourceRegistry {
       throw new IllegalArgumentException("Cannot parse " + file + ": " + e.getMessage(), e);
     }
 
-    resources = validate(loaded);
-    fileContent = content;
+    resources.set(validate(loaded));
+    fileContent.set(content);
 
     // protected_resources is part of the cached discovery document
     Cache cache = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
     if (cache != null) {
       cache.clear();
     }
-    LOG.info("Protected resources loaded from {}: {}", file, resources.keySet());
+    LOG.info("Protected resources loaded from {}: {}", file, resources.get().keySet());
   }
 
   public static Map<String, ProtectedResourceProperties> validate(
