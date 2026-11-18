@@ -138,8 +138,9 @@ public class DefaultScopeFilter implements ScopeFilter {
     }
 
     if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
-      throw new InvalidRequestException(
-          "Public clients are not allowed to request iam:admin, iam:user or scim scopes");
+      throw new InvalidRequestException(Collections.disjoint(requestedScopes, ADMIN_SCOPES)
+          ? "Public clients are not allowed to request iam:user scopes"
+          : "Public clients are not allowed to request iam:admin or scim scopes");
     }
   }
 

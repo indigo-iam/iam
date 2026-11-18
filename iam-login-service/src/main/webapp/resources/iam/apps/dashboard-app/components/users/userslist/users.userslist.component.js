@@ -140,7 +140,10 @@
     };
 
     self.canDelete = function (user) {
-      return Utils.isAdmin() || (Utils.isUserManager() && self.reservedUuids.indexOf(user.id) == -1);
+      if (Utils.isUserManager() && !Utils.isAdmin()) {
+        return self.reservedUuids.indexOf(user.id) == -1;
+      }
+      return !Utils.isReader();
     };
 
     self.isSuspended = function (user) {
