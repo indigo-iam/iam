@@ -17,10 +17,14 @@ package it.infn.mw.iam.test.oauth.code;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
 
 import java.util.Date;
 import java.util.Map;
@@ -30,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
@@ -54,7 +59,7 @@ class IamAuthorizationCodeServiceGcRaceTests {
 
   static final String CLIENT_ID = "password-grant";
 
-  @Autowired
+  @SpyBean
   IamAuthorizationCodeService authorizationCodeService;
 
   @Autowired
@@ -63,7 +68,7 @@ class IamAuthorizationCodeServiceGcRaceTests {
   @Autowired
   IamAuthenticationHolderRepository authenticationHolderRepo;
 
-  @Autowired
+  @SpyBean
   IamAuthorizationCodeRepository codeRepository;
 
   @Autowired
@@ -121,5 +126,29 @@ class IamAuthorizationCodeServiceGcRaceTests {
       codeRepository.delete(saved);
       authenticationHolderRepo.findById(holderId).ifPresent(authenticationHolderRepo::delete);
     }
+  }
+
+  @Test
+  void failedAuthorizationCodeSaveRollsBackAuthenticationHolder() {
+
+    OAuth2Request request = new OAuth2Request(Map.of(), CLIENT_ID, null, true, Set.of("openid"),
+        null, null, null, null);
+    OAuth2Authentication authentication = new OAuth2Authentication(request, null);
+
+    long holdersBefore = authenticationHolderRepo.count();
+
+    doThrow(new IllegalStateException("Simulated authorization code save failure"))
+      .when(codeRepository).save(any(AuthorizationCodeEntity.class));
+
+    try {
+      IllegalStateException ex = assertThrows(IllegalStateException.class,
+          () -> authorizationCodeService.createAuthorizationCode(authentication));
+      assertEquals("Simulated authorization code save failure", ex.getMessage());
+    } finally {
+      reset(codeRepository);
+    }
+
+    assertEquals(holdersBefore, authenticationHolderRepo.count(),
+        "The authentication holder must be rolled back if saving the authorization code fails");
   }
 }
