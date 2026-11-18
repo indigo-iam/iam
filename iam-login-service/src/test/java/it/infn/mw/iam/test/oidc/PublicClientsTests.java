@@ -158,7 +158,7 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
     assertEquals(400, result.getResponse().getStatus());
     JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
     assertEquals("invalid_request", json.get("error").asText());
-    assertEquals("Public clients are not allowed to request iam:admin or scim scopes",
+    assertEquals("Public clients are not allowed to request iam:admin, iam:user or scim scopes",
         json.get("error_description").asText());
   }
 
