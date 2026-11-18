@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -326,6 +327,8 @@ class IamLocalAuthenticationProviderTests {
     assertEquals(Set.of(Authorities.ROLE_PRE_AUTHENTICATED),
         new HashSet<>(pending.getAuthorities()));
     assertEquals(new HashSet<>(authorities), pending.getFullyAuthenticatedAuthorities());
+    assertEquals(Map.of("acr", "https://refeds.org/profile/mfa"), pending.getDetails());
+
     verifyNoInteractions(userDetailsService, passwordEncoder);
     verifyNoLockoutMutation();
   }
@@ -383,6 +386,7 @@ class IamLocalAuthenticationProviderTests {
             .stream()
             .map(IamAuthenticationMethodReference::getName)
             .collect(Collectors.toSet()));
+
       verify(accountService).resetLoginLockout(account.getUuid(),
           LoginLockoutResetReason.SUCCESSFUL_AUTHENTICATION);
     } finally {
@@ -411,6 +415,7 @@ class IamLocalAuthenticationProviderTests {
 
     assertThrows(BadCredentialsException.class,
         () -> iamLocalAuthenticationProvider.authenticate(pending));
+
     verifyNoLockoutMutation();
   }
 
@@ -429,6 +434,8 @@ class IamLocalAuthenticationProviderTests {
     assertFalse(reauthenticated.isAuthenticated());
     assertEquals(Set.of(Authorities.ROLE_PRE_AUTHENTICATED),
         new HashSet<>(reauthenticated.getAuthorities()));
+    assertEquals(Map.of("acr", "https://refeds.org/profile/mfa"), reauthenticated.getDetails());
+
     verify(accountService).loginFailedAttempt(account.getUuid());
     verify(accountService, never()).resetLoginLockout(anyString(),
         any(LoginLockoutResetReason.class));
