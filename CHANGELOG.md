@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.16.0 (2026-11-17)
+## 1.16.0 (2026-11-23)
 
 ### What's Added
 
@@ -28,13 +28,19 @@
 * Preserve requested administrative scopes for administrators and required dashboard scopes during administrator dashboard login
 * Log scopes removed by authorization policies
 * Reject requests for administrative or SCIM scopes from public clients instead of silently filtering them
+* Reject the `client_credentials` grant for public clients (`token_endpoint_auth_method=none`) during client registration, management updates and token requests
+* Remove the `client_credentials` grant from existing public clients through a database migration
 * Update the last-used date of active clients during introspection when client usage tracking is enabled
+* Omit refresh token values from token management API responses
+* Return HTTP `409 Conflict` instead of `400 Bad Request` when creating or updating a duplicate scope policy
 * Fix OpenID Connect discovery response serialization when using the Redis cache
 * Allow spaces and other whitespace in label and attribute values while still rejecting newlines and carriage returns
 * Load all client pages in the legacy dashboard token view and fix token filtering
 * Use the configured dashboard path for redirects and select notification links according to the legacy dashboard setting
+* Configure dashboard OAuth redirect URIs from the dashboard base path and include `/dev` and `/devcontainer` callbacks only with the `dev` profile; avoid rewriting unchanged client secrets
 * Fix account-linking error responses
 * Prevent duplicate AUP reminder emails by serializing scheduled reminder tasks
+* Make authorization code creation and device code approval transactional to prevent orphaned authentication holders and garbage-collection races
 * Coordinate CERN HR synchronization and expired-account processing under a shared lifecycle lock
 * Restore eligible CERN accounts during HR synchronization and exclude accounts with synchronization failures from subsequent expiration processing
 * Run the login-service Docker image as the non-root `iam` user (UID/GID 10001)
@@ -50,6 +56,9 @@
 * Clients using the implicit flow must migrate to the authorization code flow. Existing implicit grant and response type settings are removed by the database migration.
 * JWT client assertions must use the IAM issuer identifier as the only `aud` value. Assertions using the token endpoint URL or multiple audiences are rejected.
 * Browser integrations must supply a valid CSRF token for protected state-changing requests.
+* Public clients cannot use `client_credentials` even if previously configured. Database migration V128 removes this grant from existing public clients; affected integrations must use an appropriate grant or a confidential client with authentication.
+* Token management API consumers must no longer expect the refresh token `value` field in responses.
+* Clients of the scope policy API should handle HTTP `409 Conflict` for duplicate policies instead of `400 Bad Request`.
 * Passwords longer than 72 UTF-8 bytes are no longer accepted. If an existing TOTP encryption password exceeds this limit, rotate it using the previous IAM version before upgrading; do not truncate the existing encryption password.
 * Review mounted-file and directory permissions for the login-service Docker image: the service now runs with UID/GID 10001. The bundled JMX exporter is disabled by default and can be enabled through `IAM_JAVA_OPTS` as described in `iam-login-service/docker/README.md`.
 * The legacy dashboard remains enabled by default. Set `IAM_DASHBOARD_LEGACY_ENABLED=false` to disable its views and configure `IAM_DASHBOARD_BASE_PATH` for the replacement dashboard.
