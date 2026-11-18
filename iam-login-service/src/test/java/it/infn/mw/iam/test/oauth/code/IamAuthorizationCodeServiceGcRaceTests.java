@@ -89,9 +89,11 @@ class IamAuthorizationCodeServiceGcRaceTests {
     assertTrue(authenticationHolderRepo.findById(authHolder.getId()).isEmpty(),
         "The holder must have been swept as an orphan to reproduce the race");
 
+    AuthorizationCodeEntity entity =
+        new AuthorizationCodeEntity("test-code", authHolder, new Date());
+
     InvalidDataAccessApiUsageException ex = assertThrows(InvalidDataAccessApiUsageException.class,
-        () -> codeRepository
-          .save(new AuthorizationCodeEntity("test-code", authHolder, new Date())));
+        () -> codeRepository.save(entity));
 
     assertThat(ex.getMostSpecificCause().getMessage(),
         containsString("not marked cascade PERSIST"));
