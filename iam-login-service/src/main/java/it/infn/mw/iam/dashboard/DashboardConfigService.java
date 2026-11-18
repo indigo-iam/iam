@@ -22,6 +22,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.api.client.service.ClientService;
@@ -40,7 +42,10 @@ public class DashboardConfigService {
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
-  public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
+  public static final String DASHBOARD_CALLBACK = "/api/auth/oauth2/callback/indigo-iam";
+  public static final String DASHBOARD_DEV_CALLBACK = "/dev/api/auth/oauth2/callback/indigo-iam";
+  public static final String DASHBOARD_DEVCONTAINER_CALLBACK =
+      "/devcontainer/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
       Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email",
           "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
@@ -50,14 +55,17 @@ public class DashboardConfigService {
   private final PasswordEncoder secretEncoder;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
+  private final Environment environment;
 
   public DashboardConfigService(ClientService clientService, ClientUtils clientUtils,
-      PasswordEncoder secretEncoder, ApplicationEventPublisher aep, IamProperties iamProperties) {
+      PasswordEncoder secretEncoder, ApplicationEventPublisher aep, IamProperties iamProperties,
+      Environment environment) {
     this.clientService = clientService;
     this.clientUtils = clientUtils;
     this.secretEncoder = secretEncoder;
     this.eventPublisher = aep;
     this.iamProperties = iamProperties;
+    this.environment = environment;
   }
 
   public boolean isEnabled() {
@@ -72,23 +80,36 @@ public class DashboardConfigService {
     DashboardProperties props = iamProperties.getDashboard();
     String clientId = props.getClientId();
     String clientSecret = props.getClientSecret();
-    String redirectUri = iamProperties.getBaseUrl() + DASHBOARD_CALLBACK;
+    Set<String> redirectUris = getDashboardRedirectUris();
 
     Optional<ClientDetailsEntity> client = clientService.findClientByClientId(clientId);
 
     if (client.isEmpty()) {
       LOG.info("Dashboard client does not exist. Creating it...");
-      createRecordDashboard(clientId, clientSecret, redirectUri);
+      createRecordDashboard(clientId, clientSecret, redirectUris);
     } else {
       LOG.debug("Dashboard client exists. Checking client configuration...");
-      reconcileClient(client.get(), clientSecret, redirectUri);
+      reconcileClient(client.get(), clientSecret, redirectUris);
     }
   }
 
-  private void reconcileClient(ClientDetailsEntity client, String configuredSecret,
-      String redirectUri) {
+  private Set<String> getDashboardRedirectUris() {
+    String baseUrl = iamProperties.getBaseUrl();
+    String dashboardBasePath = iamProperties.getDashboard().getBasePath();
+    String dashboardRedirectUri = baseUrl + dashboardBasePath + DASHBOARD_CALLBACK;
 
-    boolean structuralDrift = hasConfigurationDrift(client, redirectUri);
+    if (environment.acceptsProfiles(Profiles.of("dev"))) {
+      return Set.of(dashboardRedirectUri, baseUrl + DASHBOARD_DEV_CALLBACK,
+          baseUrl + DASHBOARD_DEVCONTAINER_CALLBACK);
+    }
+
+    return Set.of(dashboardRedirectUri);
+  }
+
+  private void reconcileClient(ClientDetailsEntity client, String configuredSecret,
+      Set<String> redirectUris) {
+
+    boolean structuralDrift = hasConfigurationDrift(client, redirectUris);
     boolean secretRotated = hasSecretRotation(client, configuredSecret);
 
     if (!structuralDrift && !secretRotated) {
@@ -100,21 +121,21 @@ public class DashboardConfigService {
     if (structuralDrift) {
       LOG.warn("Dashboard client configuration drift detected.");
     }
-    updateRecordDashboard(client, configuredSecret, redirectUri);
+    updateRecordDashboard(client, configuredSecret, redirectUris, secretRotated);
   }
 
   private boolean hasSecretRotation(ClientDetailsEntity client, String configuredSecret) {
     return !hasValidClientSecret(client, configuredSecret);
   }
 
-  private boolean hasConfigurationDrift(ClientDetailsEntity client, String redirectUri) {
+  private boolean hasConfigurationDrift(ClientDetailsEntity client, Set<String> redirectUris) {
 
-    return !hasAllRequiredScopes(client) || !hasValidRedirectUris(client, redirectUri)
+    return !hasAllRequiredScopes(client) || !hasValidRedirectUris(client, redirectUris)
         || !hasExpectedGrantTypes(client) || !usesClientSecretBasicAuth(client)
         || !usesPKCES256(client) || !client.isActive();
   }
 
-  private void createRecordDashboard(String clientId, String secret, String url) {
+  private void createRecordDashboard(String clientId, String secret, Set<String> redirectUris) {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     clientUtils.setupClientDefaults(client);
@@ -127,20 +148,23 @@ public class DashboardConfigService {
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
     client.setActive(true);
     client.setDynamicallyRegistered(false);
-    client.setRedirectUris(Set.of(url));
+    client.setRedirectUris(redirectUris);
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
     clientService.saveNewClient(client);
   }
 
-  private void updateRecordDashboard(ClientDetailsEntity client, String secret, String url) {
+  private void updateRecordDashboard(ClientDetailsEntity client, String secret,
+      Set<String> redirectUris, boolean secretRotated) {
 
     client.setScope(DASHBOARD_SCOPES);
     client.setGrantTypes(Set.of(AuthorizationGrantType.CODE.getGrantType(),
         AuthorizationGrantType.REFRESH_TOKEN.getGrantType()));
     client.setCodeChallengeMethod(PKCEAlgorithm.S256);
-    client.setClientSecret(secretEncoder.encode(secret));
-    client.setRedirectUris(Set.of(url));
+    if (secretRotated) {
+      client.setClientSecret(secretEncoder.encode(secret));
+    }
+    client.setRedirectUris(redirectUris);
     client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
     client.setActive(true);
 
@@ -156,8 +180,8 @@ public class DashboardConfigService {
     return secretEncoder.matches(clientSecret, client.getClientSecret());
   }
 
-  private boolean hasValidRedirectUris(ClientDetailsEntity client, String url) {
-    return Set.of(url).equals(client.getRedirectUris());
+  private boolean hasValidRedirectUris(ClientDetailsEntity client, Set<String> redirectUris) {
+    return redirectUris.equals(client.getRedirectUris());
   }
 
   private boolean hasExpectedGrantTypes(ClientDetailsEntity client) {
