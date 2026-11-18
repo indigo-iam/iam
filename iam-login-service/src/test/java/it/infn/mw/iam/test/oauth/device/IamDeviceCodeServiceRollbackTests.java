@@ -45,7 +45,8 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 
 @SuppressWarnings("deprecation")
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 class IamDeviceCodeServiceRollbackTests {
 
@@ -67,8 +68,10 @@ class IamDeviceCodeServiceRollbackTests {
   void failedDeviceCodeApprovalRollsBackAuthenticationHolder() {
 
     ClientDetailsEntity client = clientRepository.findByClientId(CLIENT_ID).orElseThrow();
+    client.setDeviceCodeValiditySeconds(600);
     DeviceCode deviceCode =
         deviceCodeService.createNewDeviceCode(Set.of("openid"), client, Map.of());
+
     Long deviceCodeId = deviceCode.getId();
     long holderCountBefore = authenticationHolderRepo.count();
 
@@ -78,7 +81,8 @@ class IamDeviceCodeServiceRollbackTests {
 
     try {
       doThrow(new IllegalStateException("Simulated device code save failure"))
-        .when(deviceCodeRepository).save(any(DeviceCode.class));
+        .when(deviceCodeRepository)
+        .save(any(DeviceCode.class));
 
       assertThrows(IllegalStateException.class,
           () -> deviceCodeService.approveDeviceCode(deviceCode, authentication));
