@@ -888,6 +888,39 @@ public class IamProperties {
     }
   }
 
+  public static class ResourceIndicatorsProperties {
+
+    private boolean restrictToProtectedResources = false;
+
+    private boolean requireIamAudience = false;
+
+    private boolean allowIamAudienceRequest = true;
+
+    public boolean isAllowIamAudienceRequest() {
+      return allowIamAudienceRequest;
+    }
+
+    public void setAllowIamAudienceRequest(boolean allowIamAudienceRequest) {
+      this.allowIamAudienceRequest = allowIamAudienceRequest;
+    }
+
+    public boolean isRequireIamAudience() {
+      return requireIamAudience;
+    }
+
+    public void setRequireIamAudience(boolean requireIamAudience) {
+      this.requireIamAudience = requireIamAudience;
+    }
+
+    public boolean isRestrictToProtectedResources() {
+      return restrictToProtectedResources;
+    }
+
+    public void setRestrictToProtectedResources(boolean restrictToProtectedResources) {
+      this.restrictToProtectedResources = restrictToProtectedResources;
+    }
+  }
+
   public static class LoginLockoutProperties {
 
     private boolean enabled;
@@ -1014,6 +1047,8 @@ public class IamProperties {
 
   private ProtectedResourcesFileProperties protectedResourcesFile =
       new ProtectedResourcesFileProperties();
+
+  private ResourceIndicatorsProperties resourceIndicators = new ResourceIndicatorsProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -1299,6 +1334,14 @@ public class IamProperties {
 
   public void setProtectedResourcesFile(ProtectedResourcesFileProperties protectedResourcesFile) {
     this.protectedResourcesFile = protectedResourcesFile;
+  }
+
+  public ResourceIndicatorsProperties getResourceIndicators() {
+    return resourceIndicators;
+  }
+
+  public void setResourceIndicators(ResourceIndicatorsProperties resourceIndicators) {
+    this.resourceIndicators = resourceIndicators;
   }
 
   public List<String> getLanguageNamespaces() {

@@ -32,7 +32,9 @@ import it.infn.mw.iam.IamLoginService;
 
 // Subclasses share one cached application context: every extra context adds to the test JVM
 // metaspace, which is capped by jvm.test.args.
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.resource-indicators.restrict-to-protected-resources=true",
+        "iam.resource-indicators.require-iam-audience=true"})
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles({"h2-test"})

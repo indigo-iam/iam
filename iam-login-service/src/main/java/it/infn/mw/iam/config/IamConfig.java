@@ -23,9 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import javax.sql.DataSource;
 
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -98,6 +101,7 @@ import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.AudienceRequestValidator;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.ProtectedResourceAuthenticationEntryPoint;
+import it.infn.mw.iam.core.oauth.RepeatedResourceParameterFilter;
 import it.infn.mw.iam.core.oauth.ResourceIndicatorRequestValidator;
 import it.infn.mw.iam.core.oauth.TokenEndpointJwtClientAuthFilter;
 import it.infn.mw.iam.core.oauth.assertion.TokenEndpointJwtClientAuthenticationProvider;
@@ -380,6 +384,15 @@ public class IamConfig {
   }
 
   @Bean
+  FilterRegistrationBean<RepeatedResourceParameterFilter> repeatedResourceParameterFilter() {
+    FilterRegistrationBean<RepeatedResourceParameterFilter> frb =
+        new FilterRegistrationBean<>(new RepeatedResourceParameterFilter());
+    frb.addUrlPatterns("/authorize", "/token", "/devicecode");
+    frb.setOrder(SecurityProperties.DEFAULT_FILTER_ORDER - 1);
+    return frb;
+  }
+
+  @Bean
   FilterRegistrationBean<EnforceMfaFilter> enforceMfaFilter(AccountUtils utils,
       IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     EnforceMfaFilter enforceMfaFilter =
@@ -639,8 +652,19 @@ public class IamConfig {
   }
 
   @Bean
-  AudienceRequestValidator audienceRequestValidator() {
-    return new AudienceRequestValidator();
+  AudienceRequestValidator audienceRequestValidator(IamProperties iamProperties,
+      ProtectedResourceRegistry protectedResourceRegistry) {
+
+    IamProperties.ResourceIndicatorsProperties config = iamProperties.getResourceIndicators();
+
+    Predicate<String> allowedResource = config.isRestrictToProtectedResources()
+        ? resource -> protectedResourceRegistry.resourceIdentifiers().contains(resource)
+        : resource -> true;
+
+    Set<String> forbiddenAudiences = config.isAllowIamAudienceRequest() ? Set.of()
+        : Set.of(protectedResourceRegistry.iamResourceIdentifier(), iamProperties.getIssuer());
+
+    return new AudienceRequestValidator(allowedResource, forbiddenAudiences);
   }
 
   @Bean
