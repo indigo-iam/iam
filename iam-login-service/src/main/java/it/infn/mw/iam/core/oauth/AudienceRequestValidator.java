@@ -32,11 +32,20 @@ public class AudienceRequestValidator {
 
   void validateAndUpdateAudienceRequest(Map<String, String> params) {
 
+    validateResourceRequest(params);
+    updateAudienceRequest(params);
+  }
+
+  void validateResourceRequest(Map<String, String> params) {
+
     if (params.containsKey(IamOAuthRequestParameters.RESOURCE_KEY)) {
       List<String> resourceParams =
           splitBySpace(params.get(IamOAuthRequestParameters.RESOURCE_KEY));
       resourceParams.forEach(AudienceRequestValidator::validateUrl);
     }
+  }
+
+  void updateAudienceRequest(Map<String, String> params) {
 
     Optional<String> audience = Optional.ofNullable(getFirstNotEmptyAudience(params));
     audience.ifPresent(aud -> params.put(IamOAuthRequestParameters.AUD_KEY, aud));

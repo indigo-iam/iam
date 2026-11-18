@@ -1358,4 +1358,16 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   }
 
+  @Test
+  void testInvalidResourceIndicatorIsRejectedAtDeviceAuthorizationEndpoint() throws Exception {
+    mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile")
+        .param("resource", "resource"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"));
+  }
+
 }
