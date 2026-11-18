@@ -42,7 +42,7 @@ public class DashboardConfigService {
   private static final Logger LOG = LoggerFactory.getLogger(DashboardConfigService.class);
 
   public static final String DASHBOARD_CLIENT_NAME = "The INDIGO IAM Dashboard";
-  public static final String DASHBOARD_CALLBACK = "/ui/api/auth/oauth2/callback/indigo-iam";
+  public static final String DASHBOARD_CALLBACK = "/api/auth/oauth2/callback/indigo-iam";
   public static final String DASHBOARD_DEV_CALLBACK = "/dev/api/auth/oauth2/callback/indigo-iam";
   public static final String DASHBOARD_DEVCONTAINER_CALLBACK =
       "/devcontainer/api/auth/oauth2/callback/indigo-iam";
@@ -95,11 +95,15 @@ public class DashboardConfigService {
 
   private Set<String> getDashboardRedirectUris() {
     String baseUrl = iamProperties.getBaseUrl();
+    String dashboardBasePath = iamProperties.getDashboard().getBasePath();
+    String dashboardRedirectUri = baseUrl + dashboardBasePath + DASHBOARD_CALLBACK;
+
     if (environment.acceptsProfiles(Profiles.of("dev"))) {
-      return Set.of(baseUrl + DASHBOARD_CALLBACK, baseUrl + DASHBOARD_DEV_CALLBACK,
+      return Set.of(dashboardRedirectUri, baseUrl + DASHBOARD_DEV_CALLBACK,
           baseUrl + DASHBOARD_DEVCONTAINER_CALLBACK);
     }
-    return Set.of(baseUrl + DASHBOARD_CALLBACK);
+
+    return Set.of(dashboardRedirectUri);
   }
 
   private void reconcileClient(ClientDetailsEntity client, String configuredSecret,
