@@ -56,7 +56,7 @@ class ScimPasswordServiceTests {
   private ScimUserProvisioning provisioning() {
     return new ScimUserProvisioning(Clock.systemUTC(), accounts, accessTokens, refreshTokens,
         repository, encoder, converter, null, null, null, null, null, null, null, null, Set.of(),
-        null, null);
+        null, null, null);
   }
 
   @Test
@@ -101,7 +101,7 @@ class ScimPasswordServiceTests {
     IamAccount account = IamAccount.newAccount();
     account.setPassword("original-hash");
     Replacers replacers = new Replacers(Clock.systemUTC(), repository, accounts, encoder, account,
-        accessTokens, refreshTokens, mock(UsernameValidator.class));
+        accessTokens, refreshTokens, mock(UsernameValidator.class), null);
 
     ScimValidationException error =
         assertThrows(ScimValidationException.class, () -> replacers.password("é".repeat(37)));
