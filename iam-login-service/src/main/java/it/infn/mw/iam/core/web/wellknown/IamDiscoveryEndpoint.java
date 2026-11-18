@@ -23,6 +23,8 @@ public class IamDiscoveryEndpoint {
 
   private static final String WELL_KNOWN_URL = ".well-known";
   public static final String OPENID_CONFIGURATION_URL = WELL_KNOWN_URL + "/openid-configuration";
+  public static final String OAUTH_AUTHORIZATION_SERVER_URL =
+      WELL_KNOWN_URL + "/oauth-authorization-server";
 
   private final WellKnownInfoProvider wellKnownInfoProvider;
 
@@ -30,7 +32,7 @@ public class IamDiscoveryEndpoint {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
   }
 
-  @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL})
+  @GetMapping(value = {"/" + OPENID_CONFIGURATION_URL, "/" + OAUTH_AUTHORIZATION_SERVER_URL})
   public WellKnownConfiguration providerConfiguration() {
     return wellKnownInfoProvider.getWellKnownInfo();
   }
