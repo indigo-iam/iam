@@ -123,7 +123,7 @@ public class ClientManagementAPIController {
   }
 
   @GetMapping("/{clientId}/owners")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or (#iam.isRequestWithoutToken() and #iam.isClientOwner(#clientId))")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
@@ -134,7 +134,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or (#iam.isRequestWithoutToken() and #iam.isClientOwner(#clientId))")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public void assignClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.assignClientOwner(clientId, accountId);
@@ -142,7 +142,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/owners")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or (#iam.isRequestWithoutToken() and #iam.isClientOwner(#clientId))")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public void assignClientOwnerByUsername(@PathVariable String clientId,
       @RequestParam final String username) {
     managementService.assignClientOwnerByUsername(clientId, username);
@@ -158,7 +158,7 @@ public class ClientManagementAPIController {
 
   @DeleteMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(NO_CONTENT)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or (#iam.isRequestWithoutToken() and #iam.isClientOwner(#clientId))")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public void removeClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.removeClientOwner(clientId, accountId);

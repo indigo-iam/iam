@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ADMINISTRATORS;
 import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_READ_SCOPE;
 import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_WRITE_SCOPE;
 
@@ -65,6 +66,9 @@ import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DashboardProperties;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.core.oauth.profile.RegistrationTokenService;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.notification.NotificationFactory;
@@ -99,6 +103,8 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final IamAccountClientRepository accountClientRepo;
   private final AccountUtils accountUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final ClientRegistrationProperties registrationProperties;
+  private final IamProperties iamProperties;
   private final RegistrationTokenService registrationTokenService;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
@@ -107,6 +113,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       ClientConverter converter, ClientUtils clientUtils, UserConverter userConverter,
       IamAccountRepository accountRepo, IamAccountClientRepository accountClientRepo,
       AccountUtils accountUtils, OAuth2AuthenticationScopeResolver scopeResolver,
+      ClientRegistrationProperties registrationProperties, IamProperties iamProperties,
       RegistrationTokenService registrationTokenService, ApplicationEventPublisher aep,
       NotificationFactory notificationFactory) {
     this.clock = clock;
@@ -118,6 +125,8 @@ public class DefaultClientManagementService implements ClientManagementService {
     this.accountClientRepo = accountClientRepo;
     this.accountUtils = accountUtils;
     this.scopeResolver = scopeResolver;
+    this.registrationProperties = registrationProperties;
+    this.iamProperties = iamProperties;
     this.registrationTokenService = registrationTokenService;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
@@ -310,6 +319,10 @@ public class DefaultClientManagementService implements ClientManagementService {
     Page<IamAccountClient> results = clientService.findClientOwners(clientId, pageable);
     boolean administrator = isAdministrator(ADMIN_READ_SCOPE);
 
+    if (!administrator) {
+      checkOwnersCanManageOwners();
+    }
+
     ListResponseDTO.Builder<ScimUser> resultBuilder = ListResponseDTO.builder();
 
     return resultBuilder
@@ -409,11 +422,33 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
   // The lock serializes the changes of the owners and must be the first read of the transaction
+  /**
+   * Owners manage owners where users can register clients, and only from a session or with a
+   * token issued to the IAM dashboard: a token issued to another client gives no right on the
+   * clients of its user.
+   */
+  private void checkOwnersCanManageOwners() {
+
+    if (ADMINISTRATORS.equals(registrationProperties.getAllowFor())) {
+      throw new AccessDeniedException("Only administrators can manage the owners of a client");
+    }
+
+    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
+    DashboardProperties dashboard = iamProperties.getDashboard();
+
+    if (authn instanceof OAuth2Authentication oauth && !(dashboard.isEnabled()
+        && oauth.getOAuth2Request().getClientId().equals(dashboard.getClientId()))) {
+      throw new AccessDeniedException("Owners are managed from the IAM dashboard");
+    }
+  }
+
   private List<IamAccountClient> lockOwnersCheckingCaller(String clientId) {
 
     List<IamAccountClient> owners = accountClientRepo.findByClientClientIdForUpdate(clientId);
 
     if (!isAdministrator(ADMIN_WRITE_SCOPE)) {
+      checkOwnersCanManageOwners();
+
       IamAccount caller = accountUtils.getAuthenticatedUserAccount()
         .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR));
 
