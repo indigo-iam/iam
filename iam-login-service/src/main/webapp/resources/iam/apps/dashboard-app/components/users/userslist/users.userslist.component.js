@@ -130,6 +130,17 @@
       $http.get('/iam/account/lockout/suspended').then(function (r) {
         self.suspendedUuids = r.data;
       });
+
+      self.reservedUuids = [];
+      if (Utils.isUserManager() && !Utils.isAdmin()) {
+        $http.get('/iam/account/reserved').then(function (r) {
+          self.reservedUuids = r.data;
+        });
+      }
+    };
+
+    self.canDelete = function (user) {
+      return Utils.isAdmin() || (Utils.isUserManager() && self.reservedUuids.indexOf(user.id) == -1);
     };
 
     self.isSuspended = function (user) {

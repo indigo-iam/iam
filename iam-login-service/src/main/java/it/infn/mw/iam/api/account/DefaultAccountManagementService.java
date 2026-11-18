@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_WRITE_
 import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.SCIM_WRITE_SCOPE;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Transactional
 @SuppressWarnings("deprecation")
 public class DefaultAccountManagementService implements AccountManagementService {
+
+  private static final Set<String> RESERVED_AUTHORITIES =
+      Set.of("ROLE_ADMIN", "ROLE_USER_MANAGER");
 
   private final IamAccountRepository accountRepo;
   private final IamAccountService accountService;
@@ -79,6 +83,18 @@ public class DefaultAccountManagementService implements AccountManagementService
     userProvisioning.delete(uuid);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Set<String> getAccountsReservedToAdministrators() {
+    return Set.copyOf(accountRepo.findUuidByServiceAccountTrueOrAuthorityIn(RESERVED_AUTHORITIES));
+  }
+
+  private boolean isReservedToAdministrators(IamAccount account) {
+    return account.isServiceAccount() || account.getAuthorities()
+      .stream()
+      .anyMatch(a -> RESERVED_AUTHORITIES.contains(a.getAuthority()));
+  }
+
   private Optional<IamAccount> lockManageableAccount(String uuid, String adminScope) {
     Optional<IamAccount> account = accountRepo.findByUuidForUpdate(uuid);
     account.ifPresent(a -> checkCallerCanManage(a, adminScope));
@@ -93,8 +109,7 @@ public class DefaultAccountManagementService implements AccountManagementService
       return;
     }
 
-    if (accountUtils.isAdmin(account) || accountUtils.isUserManager(account)
-        || account.isServiceAccount()) {
+    if (isReservedToAdministrators(account)) {
       throw new AccessDeniedException(
           "Administrator, user manager and service accounts can be managed only by administrators");
     }

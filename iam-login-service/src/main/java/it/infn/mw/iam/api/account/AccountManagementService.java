@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.account;
 
+import java.util.Set;
+
 /**
  * Operations on other users' accounts available to administrators and user managers.
  *
@@ -28,4 +30,10 @@ public interface AccountManagementService {
   void disableAccount(String uuid);
 
   void removeAccount(String uuid);
+
+  /**
+   * The uuids of the accounts that only administrators can manage: administrators, user managers
+   * and service accounts.
+   */
+  Set<String> getAccountsReservedToAdministrators();
 }

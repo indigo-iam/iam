@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -211,6 +212,11 @@ public interface IamAccountRepository
 
   @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
   List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
+
+  @Query("select distinct a.uuid from IamAccount a left join a.authorities auth "
+      + "where a.serviceAccount = true or auth.authority in :authorities")
+  List<String> findUuidByServiceAccountTrueOrAuthorityIn(
+      @Param("authorities") Collection<String> authorities);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select a from IamAccount a where a.username = :username")

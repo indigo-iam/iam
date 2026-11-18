@@ -53,7 +53,7 @@
                         <!-- Edit details button -->
                         <user-edit ng-hide="($ctrl.isReader() || ($ctrl.isUserManager() && !$ctrl.isVoAdmin())) && !$ctrl.isMe()" user="$ctrl.user"></user-edit>
 
-                        <div ng-if="$ctrl.isUserManager() && !$ctrl.isVoAdmin() && !$ctrl.isMe() && !$ctrl.userIsVoAdmin() && !$ctrl.userIsUserManager()">
+                        <div ng-if="$ctrl.isUserManager() && !$ctrl.isVoAdmin() && !$ctrl.isMe() && !$ctrl.userIsVoAdmin() && !$ctrl.userIsUserManager() && !$ctrl.indigoUser().serviceAccount">
                             <!-- Enable/disable user buttons -->
                             <user-status user="$ctrl.user"></user-status>
                         </div>

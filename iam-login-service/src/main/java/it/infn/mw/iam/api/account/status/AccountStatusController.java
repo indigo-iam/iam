@@ -15,9 +15,12 @@
  */
 package it.infn.mw.iam.api.account.status;
 
+import java.util.Set;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,7 +35,7 @@ import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 @RequestMapping(value = AccountStatusController.BASE_RESOURCE)
 public class AccountStatusController {
 
-  public static final String BASE_RESOURCE = "/iam/account/{id}";
+  public static final String BASE_RESOURCE = "/iam/account";
 
   private static final String CAN_MANAGE_ACCOUNT_STATUS =
       "#iam.hasScope('iam:admin.write') or #iam.hasScope('iam:user.write')"
@@ -44,13 +47,20 @@ public class AccountStatusController {
     this.service = service;
   }
 
-  @PatchMapping("/enable")
+  @GetMapping("/reserved")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasScope('iam:user.read')"
+      + " or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')")
+  public Set<String> getAccountsReservedToAdministrators() {
+    return service.getAccountsReservedToAdministrators();
+  }
+
+  @PatchMapping("/{id}/enable")
   @PreAuthorize(CAN_MANAGE_ACCOUNT_STATUS)
   public void enableAccount(@PathVariable String id) {
     service.enableAccount(id);
   }
 
-  @PatchMapping("/disable")
+  @PatchMapping("/{id}/disable")
   @PreAuthorize(CAN_MANAGE_ACCOUNT_STATUS)
   public void disableAccount(@PathVariable String id) {
     service.disableAccount(id);
