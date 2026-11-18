@@ -29,6 +29,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
@@ -45,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -176,7 +179,12 @@ public class ScimUserController extends ScimControllerSupport {
   @Transactional(propagation = Propagation.SUPPORTS)
   public void deleteUser(@PathVariable final String id) {
 
-    accountManagementService.removeAccount(id);
+    try {
+      accountManagementService.removeAccount(id);
+    } catch (ConcurrencyFailureException | TransactionSystemException e) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT,
+          "The user was changed by another request, please retry", e);
+    }
   }
 
   @ResponseStatus(value=HttpStatus.BAD_REQUEST)
