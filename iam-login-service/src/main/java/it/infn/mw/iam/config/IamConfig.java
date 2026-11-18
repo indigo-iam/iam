@@ -52,7 +52,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -178,6 +177,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.core.user.IamBCryptPasswordEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -363,7 +363,7 @@ public class IamConfig {
 
   @Bean
   PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
+    return new IamBCryptPasswordEncoder();
   }
 
   @Bean

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
@@ -42,6 +43,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -60,6 +62,7 @@ import it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning.JitTestConfig
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
+@SuppressWarnings("deprecation")
 @SpringBootTest(classes = {IamLoginService.class, JitTestConfig.class},
     webEnvironment = WebEnvironment.MOCK,
     properties = {"saml.jit-account-provisioning.enabled=true",
@@ -68,6 +71,8 @@ import it.infn.mw.iam.test.util.saml.SamlUtils;
 @AutoConfigureMockMvc
 @Transactional
 public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSupport {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   public static final String TEST_CLIENT_ID = "client";
   public static final String TEST_CLIENT_SECRET = "secret";
@@ -235,6 +240,14 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
           .getRequest()
           .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     // Give consent
     MvcResult result = mvc
       .perform(post("/authorize").session(session)
@@ -243,6 +256,7 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();
@@ -331,6 +345,14 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
           .getRequest()
           .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     // Give consent
     MvcResult result = mvc
       .perform(post("/authorize").session(session)
@@ -339,6 +361,7 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", "none")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .with(csrf()))
       .andExpect(status().is3xxRedirection())
       .andReturn();

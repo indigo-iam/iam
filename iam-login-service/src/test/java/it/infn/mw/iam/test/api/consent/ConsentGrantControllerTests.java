@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.consent;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +39,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,11 +54,16 @@ import it.infn.mw.iam.test.config.ClockConfig;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 import it.infn.mw.iam.test.util.clock.MutableClock;
 
+@SuppressWarnings("deprecation")
+
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 public class ConsentGrantControllerTests extends TokenGetterUtils {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
+
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
 
   public static final String SCOPE = "openid profile";
@@ -176,6 +183,14 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
       .getRequest()
       .getSession();
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     MvcResult result = mvc
       .perform(post("/authorize").with(csrf())
         .param("user_oauth_approval", "true")
@@ -183,6 +198,7 @@ public class ConsentGrantControllerTests extends TokenGetterUtils {
         .param("scope_profile", "profile")
         .param("authorize", "Authorize")
         .param("remember", remember)
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .session(session))
       .andExpect(status().is3xxRedirection())
       .andReturn();

@@ -50,6 +50,7 @@
 <c:if test="${not empty _csrf}">
   <meta name="_csrf" content="<c:out value='${_csrf.token}'/>">
   <meta name="_csrf_header" content="<c:out value='${_csrf.headerName}'/>">
+  <meta name="_csrf_parameter" content="<c:out value='${_csrf.parameterName}'/>">
 </c:if>
 
 </head>

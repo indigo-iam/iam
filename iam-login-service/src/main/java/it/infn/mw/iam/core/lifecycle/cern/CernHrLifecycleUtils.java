@@ -38,19 +38,12 @@ public class CernHrLifecycleUtils {
 
   public static final String LABEL_CERN_PREFIX = "hr.cern";
   public static final String LABEL_STATUS = "status";
-  public static final String LABEL_TIMESTAMP = "timestamp";
   public static final String LABEL_MESSAGE = "message";
-  public static final String LABEL_ACTION = "action";
   public static final String LABEL_IGNORE = "ignore";
   public static final String LABEL_SKIP_EMAIL_SYNCH = "skip-email-synch";
   public static final String LABEL_SKIP_END_DATE_SYNCH = "skip-end-date-synch";
 
   private CernHrLifecycleUtils() {}
-
-  public static IamLabel buildCernActionLabel() {
-
-    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_ACTION).build();
-  }
 
   public static IamLabel buildCernStatusLabel(CernStatus status) {
 
@@ -59,11 +52,6 @@ public class CernHrLifecycleUtils {
       .name(LABEL_STATUS)
       .value(status.name())
       .build();
-  }
-
-  public static IamLabel buildCernTimestampLabel() {
-
-    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_TIMESTAMP).build();
   }
 
   public static IamLabel buildCernIgnoreLabel() {

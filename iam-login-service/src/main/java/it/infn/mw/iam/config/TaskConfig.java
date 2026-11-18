@@ -18,6 +18,7 @@ package it.infn.mw.iam.config;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.cern.CernAccountLifecycleTask;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
@@ -69,6 +71,7 @@ public class TaskConfig implements SchedulingConfigurer {
   private NotificationDeliveryTask deliveryTask;
   private LifecycleProperties lifecycleProperties;
   private ExpiredAccountsHandler expiredAccountsHandler;
+  private final Optional<CernAccountLifecycleTask> cernLifecycleTask;
   private AupReminderTask aupReminderTask;
   private ExecutorService taskScheduler;
   private GarbageCollector garbageCollector;
@@ -93,7 +96,8 @@ public class TaskConfig implements SchedulingConfigurer {
       RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
       ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
-      ExecutorService taskScheduler, GarbageCollector garbageCollector) {
+      ExecutorService taskScheduler, GarbageCollector garbageCollector,
+      Optional<CernAccountLifecycleTask> cernLifecycleTask) {
 
     this.notificationStoreService = notificationStoreService;
     this.registrationRequestRepository = registrationRequestRepository;
@@ -104,6 +108,7 @@ public class TaskConfig implements SchedulingConfigurer {
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
     this.garbageCollector = garbageCollector;
+    this.cernLifecycleTask = cernLifecycleTask;
   }
 
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
@@ -174,6 +179,8 @@ public class TaskConfig implements SchedulingConfigurer {
   public void scheduledExpiredAccountsTask(final ScheduledTaskRegistrar taskRegistrar) {
     if (!lifecycleProperties.getAccount().getExpiredAccountsTask().isEnabled()) {
       LOG.info("Expired accounts task is disabled");
+    } else if (cernLifecycleTask.map(CernAccountLifecycleTask::isEnabled).orElse(false)) {
+      LOG.info("Expired accounts will be processed after CERN HR synchronization");
     } else {
       final String cronSchedule =
           lifecycleProperties.getAccount().getExpiredAccountsTask().getCronSchedule();

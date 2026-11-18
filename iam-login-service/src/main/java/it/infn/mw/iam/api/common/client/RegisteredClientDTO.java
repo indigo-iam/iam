@@ -30,6 +30,8 @@ import org.hibernate.validator.constraints.URL;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -189,6 +191,12 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretManagementRegistration.class})
   private Integer idTokenValiditySeconds;
+
+  // Explicit JSON name ensures READ_ONLY is handled correctly with snake-case naming.
+  @JsonProperty(value = "id_token_signed_response_alg", access = Access.READ_ONLY)
+  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
+  private String idTokenSignedResponseAlg;
 
   @Min(value = 0, groups = OnClientCreation.class)
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
@@ -418,6 +426,14 @@ public class RegisteredClientDTO {
 
   public void setIdTokenValiditySeconds(Integer idTokenValiditySeconds) {
     this.idTokenValiditySeconds = idTokenValiditySeconds;
+  }
+
+  public String getIdTokenSignedResponseAlg() {
+    return idTokenSignedResponseAlg;
+  }
+
+  public void setIdTokenSignedResponseAlg(String idTokenSignedResponseAlg) {
+    this.idTokenSignedResponseAlg = idTokenSignedResponseAlg;
   }
 
   public Integer getDeviceCodeValiditySeconds() {

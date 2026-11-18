@@ -264,7 +264,7 @@ class ClientManagementServiceTests {
   }
 
   @Test
-  void testSwitchingFromBasicAuthnToPublicClientUnsetSecret() throws ParseException {
+  void testSwitchingFromBasicAuthnToNoSecretAuthNMethodUnsetSecret() throws ParseException {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
@@ -279,10 +279,11 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId(clientId).orElseThrow();
     assertNotNull(client.getClientSecret());
 
-    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
+    client.setJwksUri("http://provider.example.org/jwks");
     RegisteredClientDTO updatedClient = managementService.updateClient(clientId, client);
 
-    assertEquals(TokenEndpointAuthenticationMethod.none,
+    assertEquals(TokenEndpointAuthenticationMethod.private_key_jwt,
         updatedClient.getTokenEndpointAuthMethod());
     assertNull(updatedClient.getClientSecret());
   }
@@ -296,7 +297,8 @@ class ClientManagementServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Set.of(CLIENT_CREDENTIALS));
+    request.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Set.of("https://redirect.example.org/here"));
     request.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
     RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
 

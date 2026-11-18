@@ -223,6 +223,7 @@
 							value="${deny_label}" type="submit"
 							onclick="$('#user_oauth_approval').attr('value',false)"
 							class="btn btn-deny btn-large" />
+            <input type="hidden" name="consent_transaction_id" value="${fn:escapeXml(consent_transaction_id)}" />
 					</div>
 				</div>
 				&nbsp;

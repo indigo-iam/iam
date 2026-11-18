@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -510,4 +511,14 @@ class ScimUserCreationTests {
 
     aupService.deleteAup();
   }
+
+  @Test
+  void rejectsPasswordBeyondUtf8LimitWithoutCreatingAccount() throws Exception {
+    ScimUser user = buildUserWithPassword("too_long_password", "é".repeat(37),
+        "too-long@example.org", "Test", "User").build();
+    performScim(post(ScimUtils.getUsersLocation()).contentType(SCIM_CONTENT_TYPE)
+      .content(mapper.writeValueAsBytes(user))).andExpect(status().isBadRequest());
+    assertTrue(accountRepo.findByUsername("too_long_password").isEmpty());
+  }
+
 }

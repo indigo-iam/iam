@@ -190,7 +190,7 @@ public class IamWebSecurityConfig {
 
       http
         .requestMatchers(matchers -> matchers.antMatchers("/", "/login**", "/logout", "/authorize",
-            "/manage/**", "/dashboard**", "/reset-session", "/device/**"))
+            "/manage/**", "/mitre", "/mitre/**", "/dashboard**", "/reset-session", "/device/**"))
 
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
@@ -245,8 +245,8 @@ public class IamWebSecurityConfig {
     @Bean
     AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(clock, accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountService, iamTotpMfaService, iamTotpMfaProperties,
-          eventPublisher, mfaSessionAuthenticationStrategy());
+          aupSignatureCheckService, accountService, iamTotpMfaService, iamProperties.getDashboard(),
+          iamTotpMfaProperties, eventPublisher, mfaSessionAuthenticationStrategy());
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {

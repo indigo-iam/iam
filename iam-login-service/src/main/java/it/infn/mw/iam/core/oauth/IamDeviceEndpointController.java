@@ -75,6 +75,9 @@ public class IamDeviceEndpointController {
   public static final String DEVICE_CODE_URL = "devicecode";
   public static final String USER_CODE_URL = "device";
 
+  private static final String DEVICE_AUTHORIZATION_REQUEST =
+      IamDeviceEndpointController.class.getName() + ".authorizationRequest";
+
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
   private final Clock clock;
@@ -214,7 +217,7 @@ public class IamDeviceEndpointController {
 
     setModelForConsentPage(model, authn, dc.get(), client);
 
-    session.setAttribute("authorizationRequest", authorizationRequest);
+    session.setAttribute(DEVICE_AUTHORIZATION_REQUEST, authorizationRequest);
     session.setAttribute("deviceCode", dc.get());
 
     return APPROVE_DEVICE_PAGE;
@@ -227,7 +230,7 @@ public class IamDeviceEndpointController {
       Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
-        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+        (AuthorizationRequest) session.getAttribute(DEVICE_AUTHORIZATION_REQUEST);
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
 
     if (!dc.getUserCode().equals(userCode)) {

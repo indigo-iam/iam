@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,6 +53,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,11 +75,14 @@ import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.ClientRelyingPartyEntity;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
+@SuppressWarnings({"deprecation", "unchecked"})
 @ActiveProfiles({"h2-test", "openid-federation"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class FederationRegistrationControllerTests {
+
+  private static final String TRANSACTION_PARAMETER = "consent_transaction_id";
 
   private static final String IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT =
       "/iam/api/oid-fed/client-registration";
@@ -165,12 +170,21 @@ class FederationRegistrationControllerTests {
         .param("redirect_uri", REDIRECT_URI.toString()))
       .andExpect(status().isOk());
 
+    AuthorizationRequest authorizationRequest =
+        (AuthorizationRequest) session.getAttribute("authorizationRequest");
+
+    String consentTransactionId =
+        (String) authorizationRequest.getExtensions().get(TRANSACTION_PARAMETER);
+
+    assertThat(consentTransactionId).isNotBlank();
+
     var approveResult = mvc
       .perform(post("/authorize").with(csrf().asHeader())
         .session(session)
         .param("scope.openid", "true")
         .param("remember", "none")
         .param("user_oauth_approval", "true")
+        .param(TRANSACTION_PARAMETER, consentTransactionId)
         .param("authorize", "Authorize"))
       .andExpect(status().isSeeOther())
       .andExpect(header().exists("Location"))

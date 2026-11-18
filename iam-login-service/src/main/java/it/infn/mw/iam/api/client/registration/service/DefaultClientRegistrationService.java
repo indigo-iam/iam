@@ -52,6 +52,7 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
@@ -122,6 +123,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private void throwGrantTypeNotAllowed(AuthorizationGrantType gt) {
     throw new InvalidClientRegistrationRequest(
         String.format(GRANT_TYPE_NOT_ALLOWED_ERROR_STR, gt.getGrantType()));
+  }
+
+  private void rejectPublicClientCredentials(RegisteredClientDTO request) {
+    if (TokenEndpointAuthenticationMethod.none.equals(request.getTokenEndpointAuthMethod())
+        && request.getGrantTypes() != null
+        && request.getGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS)) {
+      throw new InvalidClientRegistrationRequest(
+          "Public clients cannot use the client_credentials grant");
+    }
   }
 
   private Supplier<InvalidClientRegistrationRequest> noAuthUserError() {
@@ -316,6 +326,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
       Authentication authentication) throws ParseException {
 
+    rejectPublicClientCredentials(request);
     authzChecks(authentication);
 
     ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
@@ -466,6 +477,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   @Override
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO request,
       Authentication authentication) throws ParseException {
+    rejectPublicClientCredentials(request);
     authzChecks(authentication);
 
     ClientDetailsEntity oldClient =

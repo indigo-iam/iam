@@ -44,7 +44,9 @@ import it.infn.mw.iam.api.client.service.ClientUtils;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
@@ -124,6 +126,8 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public RegisteredClientDTO saveNewClient(RegisteredClientDTO client) throws ParseException {
 
+    rejectPublicClientCredentials(client);
+
     ClientDetailsEntity entity = converter.entityFromClientManagementRequest(client);
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
@@ -148,6 +152,15 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setClientSecret(plainClientSecret);
 
     return newClient;
+  }
+
+  private void rejectPublicClientCredentials(RegisteredClientDTO client) {
+    if (TokenEndpointAuthenticationMethod.none.equals(client.getTokenEndpointAuthMethod())
+        && client.getGrantTypes() != null
+        && client.getGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS)) {
+      throw new InvalidRequestException(
+          "Public clients cannot use the client_credentials grant");
+    }
   }
 
   private boolean hasRelyingParty(RegisteredClientDTO request) {
@@ -187,6 +200,8 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
+
+    rejectPublicClientCredentials(clientDTO);
 
     ClientDetailsEntity oldClient = clientService.findClientByClientIdFromDatabase(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));

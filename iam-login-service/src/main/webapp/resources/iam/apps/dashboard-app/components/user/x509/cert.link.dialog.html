@@ -61,6 +61,7 @@
 <div class="modal-footer">
 
     <form id="link-certificate-form" action="{{$ctrl.actionUrl}}" method="post" ng-if="$ctrl.action == 'link'">
+        <input type="hidden" iam-csrf-token>
         <button class="btn btn-primary" id="btn-link" data-dismiss="modal" type="button" data-ng-click="$ctrl.doLink()"
             ng-disabled="!$ctrl.enabled">Link</button>
         <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button"

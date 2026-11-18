@@ -273,6 +273,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public IamAccount createAccount(IamAccount account) {
     checkNotNull(account, "Cannot create a null account");
+    if (IamBCryptPasswordEncoder.exceedsMaxLength(account.getPassword())) {
+      throw new IllegalArgumentException(IamBCryptPasswordEncoder.PASSWORD_TOO_LONG_MESSAGE);
+    }
 
     final Date now = Date.from(clock.instant());
     final String randomUuid = UUID.randomUUID().toString();
@@ -579,6 +582,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       eventPublisher.publishEvent(new EmailReplacedEvent(this, account, email));
     }
     return account;
+  }
+
+  @Override
+  public boolean setAccountEmailIfAvailable(IamAccount account, String email) {
+    try {
+      setAccountEmail(account, email);
+      return true;
+    } catch (EmailAlreadyBoundException e) {
+      return false;
+    }
   }
 
   @Override

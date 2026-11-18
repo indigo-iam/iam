@@ -18,7 +18,7 @@
 
     angular.module('dashboardApp', [
         'ui.router', 'ui.bootstrap', 'ui.bootstrap.tpls', 'ui.select', 'ngCookies',
-        'ngSanitize', 'relativeDate', 'ngResource', 'toaster', 'ngclipboard'
+        'ngSanitize', 'relativeDate', 'ngResource', 'toaster', 'ngclipboard', 'iamCsrf'
     ]);
 
     // angular.module('dashboardApp').run(function ($rootScope, $templateCache) {

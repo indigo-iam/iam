@@ -127,6 +127,13 @@ public class DefaultClientService implements ClientService {
   public Optional<ClientDetailsEntity> findClientByClientIdFromDatabase(String clientId) {
     return clientRepo.findByClientId(clientId);
   }
+  @Override
+  public Optional<ClientDetailsEntity> findClientByClientIdAndMarkUsed(String clientId) {
+    Optional<ClientDetailsEntity> client = findClientByClientIdFromDatabase(clientId);
+    client.filter(ClientDetailsEntity::isActive).ifPresent(this::updateLastUsed);
+    return client;
+  }
+
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientIdAndAccount(String clientId,
@@ -171,6 +178,10 @@ public class DefaultClientService implements ClientService {
 
   @Override
   public void useClient(ClientDetailsEntity client) {
+    updateLastUsed(client);
+  }
+
+  private void updateLastUsed(ClientDetailsEntity client) {
 
     LocalDate today = LocalDate.now(clock);
     if (client.getClientLastUsed() == null) {

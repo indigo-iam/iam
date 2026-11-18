@@ -36,6 +36,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -187,6 +189,10 @@ public class ExpiredAccountsHandler implements Runnable {
   }
 
   public void handleExpiredAccounts() {
+    handleExpiredAccounts(Set.of());
+  }
+
+  public void handleExpiredAccounts(Set<String> excludedAccountUuids) {
 
     LOG.info("Expired accounts handler ... [START]");
 
@@ -205,7 +211,9 @@ public class ExpiredAccountsHandler implements Runnable {
         LOG.debug("expiredAccountsPage [{}/{}]", expiredAccountsPage.getNumber()+1, expiredAccountsPage.getNumberOfElements());
 
         for (IamAccount expiredAccount : expiredAccountsPage.getContent()) {
-          handleExpiredAccount(expiredAccount);
+          if (!excludedAccountUuids.contains(expiredAccount.getUuid())) {
+            handleExpiredAccount(expiredAccount);
+          }
         }
       }
 
@@ -226,6 +234,8 @@ public class ExpiredAccountsHandler implements Runnable {
   }
 
   @Override
+  @SchedulerLock(name = "accountLifecycle",
+      lockAtMostFor = "${lifecycle.account.lock-at-most-for:PT2H}")
   public void run() {
     handleExpiredAccounts();
   }

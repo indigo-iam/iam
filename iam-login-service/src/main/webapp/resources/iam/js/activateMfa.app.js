@@ -15,4 +15,4 @@
  */
 'use strict'
 
-angular.module('activateMfaApp', ['ui.bootstrap']);
+angular.module('activateMfaApp', ['ui.bootstrap', 'iamCsrf']);
