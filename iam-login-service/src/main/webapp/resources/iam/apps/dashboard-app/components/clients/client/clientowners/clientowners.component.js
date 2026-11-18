@@ -22,6 +22,7 @@
         self.assignOwner = assignOwner;
         self.addOwnerByUsername = addOwnerByUsername;
         self.removeOwner = removeOwner;
+        self.canRemove = canRemove;
         self.onChangePage = onChangePage;
 
         self.$onInit = function () {
@@ -49,6 +50,16 @@
                     body: "Error fetching client owners"
                 });
             });
+        }
+
+        function canRemove(user, index) {
+            if (Utils.isAdmin()) {
+                return true;
+            }
+            if (Utils.isMe(user.id)) {
+                return self.clientOwners.totalResults > 1;
+            }
+            return index > self.clientOwners.Resources.findIndex(o => Utils.isMe(o.id));
         }
 
         function removeOwner(user) {

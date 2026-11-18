@@ -30,8 +30,8 @@
             <span ng-if="!$root.loggedUser.isAdmin && !$root.loggedUser.isReader">{{user.name.formatted}} ({{user.userName}})</span>
         </div>
         <div class="iam-actions col-xs-4 col-sm-4 text-right">
-            <button class="btn btn-danger btn-xs" ng-disabled="$ctrl.clientOwners.totalResults == 1 && !$root.loggedUser.isAdmin"
-                ng-attr-title="{{$ctrl.clientOwners.totalResults == 1 && !$root.loggedUser.isAdmin ? 'Clients must have at least one owner' : undefined}}" ng-click="$ctrl.removeOwner(user)">
+            <button class="btn btn-danger btn-xs" ng-disabled="!$ctrl.canRemove(user, $index)"
+                ng-attr-title="{{$ctrl.canRemove(user, $index) ? undefined : ($ctrl.clientOwners.totalResults == 1 ? 'Clients must have at least one owner' : 'Owners can only be removed by an owner that was added before them')}}" ng-click="$ctrl.removeOwner(user)">
                 <i class="fa fa-times"></i>
             </button>
         </div>

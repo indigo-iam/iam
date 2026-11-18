@@ -22,6 +22,7 @@ import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.ADMIN_WRITE_
 
 import java.text.ParseException;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -82,6 +83,12 @@ import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 public class DefaultClientManagementService implements ClientManagementService {
 
   private static final String NOT_AN_OWNER_ERROR = "Only the owners of a client can manage it";
+  private static final String SENIOR_OWNER_ERROR =
+      "Owners can only be removed by an owner that was added before them";
+
+  private static final Comparator<IamAccountClient> BY_SENIORITY =
+      Comparator.comparing(IamAccountClient::getCreationTime)
+        .thenComparing(IamAccountClient::getId);
 
   private final Clock clock;
   private final ClientService clientService;
@@ -359,14 +366,34 @@ public class DefaultClientManagementService implements ClientManagementService {
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
 
-    if (!isAdministrator(ADMIN_WRITE_SCOPE) && owners.size() == 1
-        && owners.get(0).getAccount().equals(account)) {
-      throw new InvalidRequestException("Clients must have at least one owner");
+    if (!isAdministrator(ADMIN_WRITE_SCOPE)) {
+      checkRemovalByOwner(owners, account);
     }
 
     clientService.unlinkClientFromAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
+  }
+
+  private void checkRemovalByOwner(List<IamAccountClient> owners, IamAccount account) {
+
+    IamAccount caller = accountUtils.getAuthenticatedUserAccount()
+      .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR));
+
+    if (caller.equals(account)) {
+      if (owners.size() == 1) {
+        throw new InvalidRequestException("Clients must have at least one owner");
+      }
+      return;
+    }
+
+    List<IamAccount> bySeniority =
+        owners.stream().sorted(BY_SENIORITY).map(IamAccountClient::getAccount).toList();
+    int position = bySeniority.indexOf(account);
+
+    if (position >= 0 && position < bySeniority.indexOf(caller)) {
+      throw new AccessDeniedException(SENIOR_OWNER_ERROR);
+    }
   }
 
   // Same rule as the controller: the administrator scope, or the role without a token

@@ -128,7 +128,8 @@ public class ClientManagementAPIController {
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
 
-    return managementService.getClientOwners(clientId, buildPageRequest(count, startIndex));
+    return managementService.getClientOwners(clientId,
+        buildPageRequest(count, startIndex, Sort.by("creationTime", "id")));
   }
 
   @PostMapping("/{clientId}/owners/{accountId}")
