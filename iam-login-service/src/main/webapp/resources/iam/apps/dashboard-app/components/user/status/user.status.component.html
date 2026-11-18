@@ -40,7 +40,7 @@
 <!-- Revoke Suspension button (visible when active but suspended by lockout) -->
 <button class="btn btn-warning btn-block"
     style="margin-top: 5px"
-    ng-if="$ctrl.user.active && $ctrl.user.lockoutInfo.suspended && !$ctrl.isMe()"
+    ng-if="$root.loggedUser.isAdmin && $ctrl.user.active && $ctrl.user.lockoutInfo.suspended && !$ctrl.isMe()"
     ng-click="$ctrl.openUnlockDialog()"
     ng-disabled="!$ctrl.enabled"
     name="unlock-user-btn">
