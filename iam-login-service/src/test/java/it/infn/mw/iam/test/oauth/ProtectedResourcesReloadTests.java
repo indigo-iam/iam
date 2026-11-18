@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -94,6 +95,21 @@ class ProtectedResourcesReloadTests extends ProtectedResourcesTestSupport {
 
     mvc.perform(get("/.well-known/oauth-authorization-server"))
       .andExpect(jsonPath("$.protected_resources", contains(IAM, COMPUTE_API)));
+
+    // The token requests are authenticated as the client, not the admin user.
+    TestSecurityContextHolder.clearContext();
+
+    mvc.perform(post("/token").param("grant_type", "client_credentials")
+      .param("client_id", "client-cred")
+      .param("client_secret", "secret")
+      .param("resource", "https://compute.example.org")).andExpect(status().isOk());
+
+    mvc.perform(post("/token").param("grant_type", "client_credentials")
+      .param("client_id", "client-cred")
+      .param("client_secret", "secret")
+      .param("resource", "https://data.example.org/api"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"));
   }
 
   @Test
