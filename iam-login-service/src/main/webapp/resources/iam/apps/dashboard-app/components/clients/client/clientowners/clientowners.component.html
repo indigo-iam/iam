@@ -30,7 +30,7 @@
             <span ng-if="!$root.loggedUser.isAdmin && !$root.loggedUser.isReader">{{user.name.formatted}} ({{user.userName}})</span>
         </div>
         <div class="iam-actions col-xs-4 col-sm-4 text-right">
-            <button class="btn btn-danger btn-xs" ng-disabled="!$ctrl.canRemove(user, $index)"
+            <button type="button" class="btn btn-danger btn-xs" ng-disabled="!$ctrl.canRemove(user, $index)"
                 ng-attr-title="{{$ctrl.canRemove(user, $index) ? undefined : ($ctrl.clientOwners.totalResults == 1 ? 'Clients must have at least one owner' : 'Owners can only be removed by an owner that was added before them')}}" ng-click="$ctrl.removeOwner(user)">
                 <i class="fa fa-times"></i>
             </button>
@@ -45,11 +45,11 @@
     </div>
 </div>
 <div class="form-group">
-    <button class="btn btn-success" ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isReader" ng-click="$ctrl.assignOwner()">Assign owner</button>
+    <button type="button" class="btn btn-success" ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isReader" ng-click="$ctrl.assignOwner()">Assign owner</button>
 
     <div ng-if="!$root.loggedUser.isAdmin && !$root.loggedUser.isReader" class="form-inline" style="margin-top: 5px">
-        <input class="form-control" placeholder="Username" ng-model="$ctrl.newOwnerUsername" />
-        <button class="btn btn-success" ng-disabled="!$ctrl.newOwnerUsername" ng-click="$ctrl.addOwnerByUsername()">
+        <input class="form-control" placeholder="Username" ng-model="$ctrl.newOwnerUsername" ng-keydown="$ctrl.onUsernameKeydown($event)" />
+        <button type="button" class="btn btn-success" ng-disabled="!$ctrl.newOwnerUsername" ng-click="$ctrl.addOwnerByUsername()">
             Add owner
         </button>
     </div>

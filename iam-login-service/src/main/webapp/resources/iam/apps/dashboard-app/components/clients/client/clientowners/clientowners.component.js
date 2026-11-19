@@ -21,6 +21,7 @@
 
         self.assignOwner = assignOwner;
         self.addOwnerByUsername = addOwnerByUsername;
+        self.onUsernameKeydown = onUsernameKeydown;
         self.removeOwner = removeOwner;
         self.canRemove = canRemove;
         self.onChangePage = onChangePage;
@@ -79,6 +80,16 @@
                     body: (err.data && err.data.error) || "Error removing client owner"
                 });
             });
+        }
+
+        // The field is inside the form of the client: Enter must not submit that form
+        function onUsernameKeydown(event) {
+            if (event.keyCode === 13) {
+                event.preventDefault();
+                if (self.newOwnerUsername) {
+                    addOwnerByUsername();
+                }
+            }
         }
 
         function addOwnerByUsername() {

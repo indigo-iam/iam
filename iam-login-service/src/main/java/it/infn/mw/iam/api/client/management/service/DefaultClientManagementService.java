@@ -374,24 +374,21 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void removeClientOwner(String clientId, String accountId) {
 
-    List<IamAccountClient> owners = lockOwnersCheckingCaller(clientId);
+    List<IamAccountClient> owners = accountClientRepo.findByClientClientIdForUpdate(clientId);
+    Optional<IamAccount> owner = callerUnlessAdministrator(owners);
     ClientDetailsEntity client =
         clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
 
-    if (!isAdministrator(ADMIN_WRITE_SCOPE)) {
-      checkRemovalByOwner(owners, account);
-    }
+    owner.ifPresent(caller -> checkRemovalByOwner(owners, caller, account));
 
     clientService.unlinkClientFromAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerRemoved(this, account, client));
   }
 
-  private void checkRemovalByOwner(List<IamAccountClient> owners, IamAccount account) {
-
-    IamAccount caller = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR));
+  private void checkRemovalByOwner(List<IamAccountClient> owners, IamAccount caller,
+      IamAccount account) {
 
     if (caller.equals(account)) {
       if (owners.size() == 1) {
@@ -421,7 +418,6 @@ public class DefaultClientManagementService implements ClientManagementService {
     return authn == null || accountUtils.isAdmin(authn);
   }
 
-  // The lock serializes the changes of the owners and must be the first read of the transaction
   /**
    * Owners manage owners where users can register clients, and only from a session or with a
    * token issued to the IAM dashboard: a token issued to another client gives no right on the
@@ -442,22 +438,22 @@ public class DefaultClientManagementService implements ClientManagementService {
     }
   }
 
-  private List<IamAccountClient> lockOwnersCheckingCaller(String clientId) {
+  // The lock serializes the changes of the owners and must be the first read of the transaction
+  private void lockOwnersCheckingCaller(String clientId) {
+    callerUnlessAdministrator(accountClientRepo.findByClientClientIdForUpdate(clientId));
+  }
 
-    List<IamAccountClient> owners = accountClientRepo.findByClientClientIdForUpdate(clientId);
+  private Optional<IamAccount> callerUnlessAdministrator(List<IamAccountClient> owners) {
 
-    if (!isAdministrator(ADMIN_WRITE_SCOPE)) {
-      checkOwnersCanManageOwners();
-
-      IamAccount caller = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR));
-
-      if (owners.stream().noneMatch(o -> o.getAccount().equals(caller))) {
-        throw new AccessDeniedException(NOT_AN_OWNER_ERROR);
-      }
+    if (isAdministrator(ADMIN_WRITE_SCOPE)) {
+      return Optional.empty();
     }
 
-    return owners;
+    checkOwnersCanManageOwners();
+
+    return Optional.of(accountUtils.getAuthenticatedUserAccount()
+      .filter(caller -> owners.stream().anyMatch(o -> o.getAccount().equals(caller)))
+      .orElseThrow(() -> new AccessDeniedException(NOT_AN_OWNER_ERROR)));
   }
 
   @Override
