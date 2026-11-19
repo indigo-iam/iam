@@ -29,7 +29,6 @@ import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
-import it.infn.mw.iam.config.DatabaseMonitorCachePersistence;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.jwk.JWTEncryptionAndDecryptionService;
 import it.infn.mw.iam.core.oauth.IamDeviceEndpointController;
@@ -50,6 +49,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String ABOUT_ENDPOINT = "about";
   public static final String SCIM_ENDPOINT = "scim";
   public static final String LOGOUT_ENDPOINT = "logout";
+
+  public static WellKnownConfiguration lasWellKnownConfiguration = null;
 
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS =
       List.of("client_secret_basic", "client_secret_post", "private_key_jwt", "none");
@@ -190,7 +191,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
       // Need to update the monitors temporary value as well
       // (In case the cache isn't populated upon DB failure)
-      DatabaseMonitorCachePersistence.wellKnownConfiguration = wellKnownConfiguration;
+      lasWellKnownConfiguration = wellKnownConfiguration;
 
       return wellKnownConfiguration;
   }

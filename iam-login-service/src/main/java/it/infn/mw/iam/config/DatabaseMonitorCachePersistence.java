@@ -33,7 +33,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
-import it.infn.mw.iam.core.web.wellknown.WellKnownConfiguration;
 
 @EnableScheduling
 @Service 
@@ -46,7 +45,6 @@ public class DatabaseMonitorCachePersistence {
     private final DatabaseAvailability availability;
     private final CacheManager cacheManager;
     private final long wellKnownTtlSecs;
-    public static WellKnownConfiguration wellKnownConfiguration = null;
 
     public DatabaseMonitorCachePersistence(DataSource dataSource, DatabaseAvailability availability,
             CacheManager cacheManager, CacheProperties cacheProps) {
@@ -82,7 +80,7 @@ public class DatabaseMonitorCachePersistence {
 
             // Populate the cache with last known value if cache is empty
             cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).putIfAbsent(SimpleKey.EMPTY,
-                    wellKnownConfiguration);
+                    IamWellKnownInfoProvider.lasWellKnownConfiguration);
         }
     }
 
