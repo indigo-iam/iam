@@ -15,19 +15,39 @@
  */
 package it.infn.mw.iam;
 
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import it.infn.mw.iam.core.util.IamBanner;
+import it.infn.mw.iam.jwkfallback.FallbackShutdownSignal;
+import it.infn.mw.iam.jwkfallback.IamJwkFallbackApplication;
 
 @SpringBootApplication
 @EnableTransactionManagement
@@ -55,10 +75,38 @@ import it.infn.mw.iam.core.util.IamBanner;
 public class IamLoginService {
 
   public static void main(final String[] args) {
+
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
+
+    AtomicReference<ConfigurableEnvironment> environmentRef = new AtomicReference<>();
+    iamLoginService.addListeners(
+        (ApplicationListener<ApplicationEnvironmentPreparedEvent>) event -> environmentRef.set(event.getEnvironment()));
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.addListeners(new ApplicationFailedEventListener());
-    iamLoginService.run(args);
+
+    // Attempting to run the IAM
+    try {
+      iamLoginService.run(args);
+    } catch (BeanCreationException error) {
+      boolean fallbackEnabled = environmentRef.get().getProperty("iam.jwk.standalone-fallback-enabled", Boolean.class,
+          false);
+
+      // Checking if the error is a database connection issue
+      if (isDatabaseUnavailable(error) && fallbackEnabled) {
+
+        // Need to manually log
+        Logger LOG = LoggerFactory.getLogger(IamLoginService.class);
+        LOG.error("Error in establishing a connection to the database");
+
+        // Disabling startup info to avoid miscommnunication to the user
+        iamLoginService.setLogStartupInfo(false);
+
+        // Starting the fallback application
+        startFallBackApplication(args);
+      } else {
+        throw error;
+      }
+    }
   }
 
   @Bean
@@ -72,5 +120,55 @@ public class IamLoginService {
     propsConfig.setIgnoreUnresolvablePlaceholders(true);
 
     return propsConfig;
+  }
+
+  private static boolean isDatabaseUnavailable(Throwable error) {
+    for (Throwable t : ExceptionUtils.getThrowableList(error)) {
+      if (t instanceof ConnectException
+          || t instanceof NoRouteToHostException
+          || t instanceof SocketTimeoutException
+          || t instanceof UnknownHostException
+          || t instanceof SQLTransientConnectionException) {
+        return true;
+      }
+      if (t instanceof SQLException exception) {
+        String state = exception.getSQLState();
+        // 08 failueres in SQLStates are releated to connection exceptions,
+        // but not credentials or schema exceptions
+        if (state != null && state.startsWith("08")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static void startFallBackApplication(final String[] args) {
+
+    Logger LOG = LoggerFactory.getLogger(IamJwkFallbackApplication.class);
+
+    // Starting the fallback application
+    FallbackShutdownSignal shutdownSignal = new FallbackShutdownSignal();
+    SpringApplication fallback = new SpringApplication(IamJwkFallbackApplication.class);
+    fallback.setBannerMode(org.springframework.boot.Banner.Mode.OFF);
+    fallback.addInitializers(context -> context.getBeanFactory().registerSingleton(
+        "fallbackShutdownSignal", shutdownSignal));
+    fallback.addListeners(new ApplicationFailedEventListener());
+    fallback.addListeners(
+        (ApplicationListener<ApplicationReadyEvent>) event -> LOG.info("JWK fallback application is ready"));
+
+    // Have to manually derive the info as the name it inherits from the parent
+    fallback.setLogStartupInfo(false);
+    LOG.info("Starting the JWK fallback application");
+    try (ConfigurableApplicationContext fallbackContext = fallback.run(args)) {
+
+      // Awaiting the shutdown before closing
+      // indicating the database connection has been restored
+      shutdownSignal.awaitStopped();
+      LOG.info("Restarting the IamLoginService");
+
+    } catch (InterruptedException error) {
+      Thread.currentThread().interrupt();
+    }
   }
 }
