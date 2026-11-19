@@ -36,10 +36,12 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 @Configuration
 public class CacheConfig {
 
+  private final DatabaseAvailability databaseAvailability;
   private CacheProperties cacheProps;
 
-  CacheConfig(CacheProperties cacheProps) {
+  CacheConfig(CacheProperties cacheProps, DatabaseAvailability databaseAvailability) {
     this.cacheProps = cacheProps;
+    this.databaseAvailability = databaseAvailability;
   }
 
   @Bean
@@ -54,7 +56,10 @@ public class CacheConfig {
     CaffeineCacheManager cacheManager = new CaffeineCacheManager();
 
     cacheManager.registerCustomCache(IamWellKnownInfoProvider.CACHE_KEY,
-        Caffeine.newBuilder().build());
+        Caffeine.newBuilder()
+            .expireAfter(new ExpireUnlessDatabaseDown(Duration.ofSeconds(cacheProps.getwellKnownCleanupPeriodSecs()),
+                databaseAvailability))
+            .build());
 
     cacheManager.registerCustomCache(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
         Caffeine.newBuilder().build());

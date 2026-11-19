@@ -27,7 +27,6 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -42,7 +41,6 @@ import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernAccountLifecycleTask;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
-import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
@@ -111,13 +109,6 @@ public class TaskConfig implements SchedulingConfigurer {
     this.taskScheduler = taskScheduler;
     this.garbageCollector = garbageCollector;
     this.cernLifecycleTask = cernLifecycleTask;
-  }
-
-  @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
-      timeUnit = TimeUnit.SECONDS)
-  @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
-  public void logWellKnownCacheEviction() {
-    LOG.debug("well-known config cache evicted");
   }
 
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
