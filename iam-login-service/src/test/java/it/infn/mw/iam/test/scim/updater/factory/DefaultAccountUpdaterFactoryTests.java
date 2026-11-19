@@ -74,6 +74,7 @@ import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -127,6 +128,9 @@ public class DefaultAccountUpdaterFactoryTests {
   @Mock
   IamOAuthRefreshTokenRepository refreshTokenRepo;
 
+  @Mock 
+  CachedRefreshTokenStore refreshTokenStore;
+
   MutableClock clock = new MutableClock(Clock.systemUTC());
 
   OidcIdConverter oidcConverter = new OidcIdConverter();
@@ -144,7 +148,7 @@ public class DefaultAccountUpdaterFactoryTests {
 
     factory = new DefaultAccountUpdaterFactory(clock, encoder, repo, accountService, accessTokenRepo,
         refreshTokenRepo, oidcConverter, samlConverter, sshKeyConverter, x509Converter,
-        usernameValidator, groupRepo);
+        usernameValidator, groupRepo, refreshTokenStore);
   }
 
   @Test

@@ -46,6 +46,8 @@ import it.infn.mw.iam.test.util.oidc.OidcMockMvcTestSupport;
 @Transactional
 class PublicClientsTests extends OidcMockMvcTestSupport {
 
+    private final String NEW_PUBLIC_CLIENT_ID = "new-public-client";
+
   @Autowired
   ClientManagementService clientManagementService;
 
@@ -136,11 +138,26 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
   }
 
   private void grantAdminScopesToPublicClient() throws ParseException {
-    RegisteredClientDTO client =
-        clientManagementService.retrieveClientByClientId(PUBLIC_CLIENT_ID).orElseThrow();
-    client.setScope(Set.of("openid", "profile", "email", "iam:admin.write", "scim:read"));
-    client.setGrantTypes(Set.of(AuthorizationGrantType.PASSWORD));
-    clientManagementService.updateClient(client.getClientId(), client);
+
+      // Making a new public client to not change the clients state across the tests
+      // in this class
+      RegisteredClientDTO clientDTO = new RegisteredClientDTO();
+      clientDTO.setClientName(NEW_PUBLIC_CLIENT_ID);
+      clientDTO.setClientId(NEW_PUBLIC_CLIENT_ID);
+
+      clientManagementService.saveNewClient(clientDTO);
+
+      RegisteredClientDTO clientNew = clientManagementService.retrieveClientByClientId(NEW_PUBLIC_CLIENT_ID)
+              .orElseThrow();
+
+      // Making it public
+      clientNew.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.none);
+      // Set public client as admin user
+      clientNew.setScope(Set.of("openid", "profile", "email", "iam:admin.write", "scim:read"));
+      clientNew.setGrantTypes(Set.of(AuthorizationGrantType.PASSWORD));
+
+      clientManagementService.updateClient(clientNew.getClientId(), clientNew);
+
   }
 
   @Test
@@ -149,7 +166,7 @@ class PublicClientsTests extends OidcMockMvcTestSupport {
     grantAdminScopesToPublicClient();
 
     MvcResult result = postForm(TOKEN_ENDPOINT, Map.of("grant_type", "password", "username",
-        "admin", "password", "password", "scope", "openid iam:admin.write"), PUBLIC_CLIENT_ID, "");
+        "admin", "password", "password", "scope", "openid iam:admin.write"), NEW_PUBLIC_CLIENT_ID, "");
 
     assertPublicClientAdminScopeError(result);
   }

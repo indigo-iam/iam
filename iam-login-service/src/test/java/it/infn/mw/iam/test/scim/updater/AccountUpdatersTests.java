@@ -55,6 +55,7 @@ import it.infn.mw.iam.api.scim.updater.builders.Adders;
 import it.infn.mw.iam.api.scim.updater.builders.Removers;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
 import it.infn.mw.iam.api.scim.updater.util.CollectionHelpers;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -132,6 +133,9 @@ public class AccountUpdatersTests extends X509TestSupport {
   @Autowired
   private X509CertificateConverter x509Converter;
 
+  @Autowired 
+  private CachedRefreshTokenStore refreshTokenStore;
+
   @Autowired
   MutableClock clock;
 
@@ -153,7 +157,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   private Adders accountAdders() {
     return AccountUpdaters.adders(clock, accountRepo, accountService, encoder, account,
-        accessTokenRepository, refreshTokenRepository, usernameValidator);
+        accessTokenRepository, refreshTokenRepository, usernameValidator, refreshTokenStore);
   }
 
   private Removers accountRemovers() {
@@ -162,7 +166,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   private Replacers accountReplacers() {
     return AccountUpdaters.replacers(clock, accountRepo, accountService, encoder, account,
-        accessTokenRepository, refreshTokenRepository, usernameValidator);
+        accessTokenRepository, refreshTokenRepository, usernameValidator, refreshTokenStore);
   }
 
   @BeforeEach

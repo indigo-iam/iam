@@ -19,6 +19,7 @@ import java.time.Clock;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -33,9 +34,9 @@ public class AccountUpdaters {
   public static Adders adders(Clock clock, IamAccountRepository repo,
       IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator, CachedRefreshTokenStore refreshTokenStore) {
     return new Adders(clock, repo, accountService, encoder, account, accessTokenRepo,
-        refreshTokenRepo, usernameValidator);
+        refreshTokenRepo, usernameValidator, refreshTokenStore);
   }
 
   public static Removers removers(Clock clock, IamAccountRepository repo,
@@ -46,9 +47,9 @@ public class AccountUpdaters {
   public static Replacers replacers(Clock clock, IamAccountRepository repo,
       IamAccountService accountService, PasswordEncoder encoder, IamAccount account,
       IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator, CachedRefreshTokenStore refreshTokenStore) {
     return new Replacers(clock, repo, accountService, encoder, account, accessTokenRepo,
-        refreshTokenRepo, usernameValidator);
+        refreshTokenRepo, usernameValidator, refreshTokenStore);
   }
 
 }

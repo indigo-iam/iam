@@ -35,6 +35,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.tokens.service.CachedRefreshTokenStore;
 import it.infn.mw.iam.core.gc.DefaultGarbageCollector;
 import it.infn.mw.iam.persistence.model.ConsentGrant;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
@@ -76,6 +77,8 @@ class GarbageCollectorTests {
   private ClientService clientService;
   @Mock
   private Clock clock;
+  @Mock
+  private CachedRefreshTokenStore refreshTokenStore;
 
   private DefaultGarbageCollector gc;
 
@@ -85,7 +88,7 @@ class GarbageCollectorTests {
 
     gc = new DefaultGarbageCollector(clock, consentGrantRepository, accessTokenRepo,
         refreshTokenRepo, deviceCodeRepo, authenticationHolderRepository, revokedAccessTokenRepo,
-        authzCodeRepo, clientRepository, clientService);
+        authzCodeRepo, clientRepository, clientService, refreshTokenStore);
   }
 
   @Test
