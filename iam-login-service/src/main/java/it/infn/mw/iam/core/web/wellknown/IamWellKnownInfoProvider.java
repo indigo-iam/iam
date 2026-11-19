@@ -50,8 +50,6 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String SCIM_ENDPOINT = "scim";
   public static final String LOGOUT_ENDPOINT = "logout";
 
-  public static WellKnownConfiguration lasWellKnownConfiguration = null;
-
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS =
       List.of("client_secret_basic", "client_secret_post", "private_key_jwt", "none");
 
@@ -101,11 +99,12 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String aboutEndpoint;
   private final String scimEndpoint;
   private final String logoutEndpoint;
+  private final WellKnownSnapshot snapshot;
   private Set<String> supportedScopes;
 
 
   public IamWellKnownInfoProvider(IamProperties properties,
-      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService) {
+      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService, WellKnownSnapshot snapshot) {
     this.properties = properties;
     this.systemScopeService = scopeService;
 
@@ -131,6 +130,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
     logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);
     updateSupportedScopes();
+    this.snapshot = snapshot;
   }
 
   protected void updateSupportedScopes() {
@@ -151,7 +151,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     updateSupportedScopes();
 
-    WellKnownConfiguration wellKnownConfiguration = WellKnownConfiguration.builder()
+    WellKnownConfiguration configuration = WellKnownConfiguration.builder()
       .issuer(properties.getIssuer())
       .authorizationEndpoint(authorizeEndpoint)
       .tokenEndpoint(tokenEndpoint)
@@ -189,11 +189,10 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
       .endSessionEndpoint(logoutEndpoint)
       .build();
 
-      // Need to update the monitors temporary value as well
-      // (In case the cache isn't populated upon DB failure)
-      lasWellKnownConfiguration = wellKnownConfiguration;
+      // Storing the last known configuration
+      snapshot.store(configuration);
 
-      return wellKnownConfiguration;
+      return configuration;
   }
 
 }

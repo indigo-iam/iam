@@ -23,7 +23,7 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -33,10 +33,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
+import it.infn.mw.iam.core.web.wellknown.WellKnownSnapshot;
 
 @EnableScheduling
-@Service 
-@ConditionalOnProperty(name = "cache.database-monitor-enabled", havingValue = "true", matchIfMissing = false)
+@Service
+@ConditionalOnExpression("${cache.database-monitor-enabled:false} && ${cache.enabled:false}")
 public class DatabaseMonitorCachePersistence {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatabaseMonitorCachePersistence.class);
@@ -45,13 +46,16 @@ public class DatabaseMonitorCachePersistence {
     private final DatabaseAvailability availability;
     private final CacheManager cacheManager;
     private final long wellKnownTtlSecs;
+    private final WellKnownSnapshot snapshot;
 
     public DatabaseMonitorCachePersistence(DataSource dataSource, DatabaseAvailability availability,
-            CacheManager cacheManager, CacheProperties cacheProps) {
+            CacheManager cacheManager, CacheProperties cacheProps, WellKnownSnapshot snapshot) {
         this.dataSource = dataSource;
         this.availability = availability;
         this.cacheManager = cacheManager;
         this.wellKnownTtlSecs = cacheProps.getwellKnownCleanupPeriodSecs();
+        this.snapshot = snapshot;
+
     }
 
     @Scheduled(fixedDelayString = "${cache.database-availability-check-interval}")
@@ -79,8 +83,8 @@ public class DatabaseMonitorCachePersistence {
             setWellKnownLifetime(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
             // Populate the cache with last known value if cache is empty
-            cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).putIfAbsent(SimpleKey.EMPTY,
-                    IamWellKnownInfoProvider.lasWellKnownConfiguration);
+            snapshot.get().ifPresent(value -> cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY)
+                    .putIfAbsent(SimpleKey.EMPTY, value));
         }
     }
 
