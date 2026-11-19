@@ -64,7 +64,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
         "cache.well-known-cleanup-period-secs=5",
         "cache.database-monitor-enabled=true",
         "cache.database-availability-check-interval=250",
-        "spring.profiles.active=h2-test" }) // Forced to run h2 or mysql as the database connection string has to be configured. 
+        "spring.profiles.active=h2-test" }) // Forced to run h2 or mysql as the database connection string has to be
+                                            // configured.
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class DatabaseMonitorCacheTests {
 
@@ -111,9 +112,16 @@ class DatabaseMonitorCacheTests {
         assertNotNull(wellKnownCache.get(SimpleKey.EMPTY), "entry should be cached after the first request");
         assertTrue(availability.isAvailable());
 
-        // Stop database and check the db monitor registered it
+        // Wait until cache expire, Stop database and check the db monitor registered it
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS * 1000 + 2000L));
         database.stop();
         await("the monitor to notice the outage", Duration.ofSeconds(15), () -> !availability.isAvailable());
+
+        // Check that the cache has been repopulated with last known value, if none
+        // present
+        assertNotNull(wellKnownCache.get(SimpleKey.EMPTY),
+                "entry should be repopulated during outage with last known value");
+        mvc.perform(get(WELL_KNOWN)).andExpect(status().isOk());
 
         // Wait until cache should have expired and verify it persists
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(TTL_SECS * 1000 + 2000L));
