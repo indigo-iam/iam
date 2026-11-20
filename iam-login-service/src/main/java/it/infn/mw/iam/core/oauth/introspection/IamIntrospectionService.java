@@ -46,6 +46,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.oauth.introspection.translation.IamIntrospectionTranslationService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -70,11 +71,13 @@ public class IamIntrospectionService implements IntrospectionService {
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
   private final OpaqueTokenIntrospector introspector;
+  private final IamIntrospectionTranslationService translationService;
 
   public IamIntrospectionService(Clock clock, JWTProfileResolver profileResolver,
       ResourceServerTokenServices tokenService, IamOAuthRefreshTokenRepository refreshTokenRepo,
       ClientService clientService, ApplicationEventPublisher eventPublisher,
-      IamProperties iamProperties, OpaqueTokenIntrospector introspector) {
+      IamProperties iamProperties, OpaqueTokenIntrospector introspector,
+      IamIntrospectionTranslationService translationService) {
 
     this.clock = clock;
     this.profileResolver = profileResolver;
@@ -84,6 +87,7 @@ public class IamIntrospectionService implements IntrospectionService {
     this.eventPublisher = eventPublisher;
     this.iamProperties = iamProperties;
     this.introspector = introspector;
+    this.translationService = translationService;
   }
 
   @Override
@@ -121,6 +125,11 @@ public class IamIntrospectionService implements IntrospectionService {
                 introspectionResult.getAttribute("active"));
 
             response = convertIntrospectionResponse(introspectionResult);
+
+            if (response.isActive()) {
+              response =
+                  translationService.translate(response, issuer, authenticatedClient.getClientId());
+            }
           }
           break;
       }
@@ -238,13 +247,12 @@ public class IamIntrospectionService implements IntrospectionService {
 
   private ClientDetailsEntity loadClient(Authentication auth) {
 
-    String clientId = auth instanceof OAuth2Authentication oauth2
-        ? oauth2.getOAuth2Request().getClientId()
-        : auth.getName();
+    String clientId =
+        auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
+            : auth.getName();
     return (iamProperties.getClient().isTrackLastUsed()
         ? clientService.findClientByClientIdAndMarkUsed(clientId)
-        : clientService.findClientByClientId(clientId))
-      .orElseThrow();
+        : clientService.findClientByClientId(clientId)).orElseThrow();
   }
 
   public record TokenInfo(String tokenValue, TokenTypeHint tokenType, JWTClaimsSet claims,

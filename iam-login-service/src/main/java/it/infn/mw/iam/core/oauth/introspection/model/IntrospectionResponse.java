@@ -42,11 +42,18 @@ public class IntrospectionResponse implements Serializable {
 
   @JsonAnyGetter
   public Map<String, Object> getAdditionalFields() {
-      return additionalFields;
+    return additionalFields;
   }
 
   public static IntrospectionResponse inactive() {
     return new IntrospectionResponse.Builder(false).build();
+  }
+
+  public static IntrospectionResponse from(boolean active, Map<String, Object> fields) {
+
+    Builder builder = new Builder(active);
+    fields.forEach(builder::addField);
+    return builder.build();
   }
 
   public static class Builder {
@@ -59,14 +66,14 @@ public class IntrospectionResponse implements Serializable {
     }
 
     public Builder addField(String key, Object value) {
-      if (!"active".equals(key)){
+      if (!"active".equals(key)) {
         this.additionalFields.put(key, value);
       }
       return this;
     }
 
     public Builder addFieldIfAbsent(String key, Object value) {
-      if (!"active".equals(key)){
+      if (!"active".equals(key)) {
         this.additionalFields.putIfAbsent(key, value);
       }
       return this;
