@@ -12,6 +12,8 @@ The `compose` file definises a few containers:
 
 * `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` (created on-the-fly) used in this deployment for test certificates.
 
+* `mysql-pki-init`: a one-shot that writes on the `mysql-pki` volume the PKI used to encrypt the DB replication links: a CA and one certificate per server, each carrying the `db-<name>.test.example` hostname in its SAN, mounted read-only by the three databases at `/certs-mysql`. The grid host certificate in `hostcerts` cannot be used for this: `setup-trust.sh` writes its key as `0400` owned by uid 1000, while `mysqld` runs as uid 999. The script does nothing when the volume is already provisioned; to rotate the CA, run `docker compose down -v`. See [gen-mysql-pki.sh](assets/mysql-pki/gen-mysql-pki.sh).
+
 The actual VOMS services are virtually divided between three sites:
 
 #### Site 1: CERN
