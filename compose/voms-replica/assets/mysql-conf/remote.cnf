@@ -6,3 +6,7 @@ relay_log = f7467c4a9aac-relay-bin
 
 general_log = 1
 general_log_file = /var/log/mysql/remote.log
+
+ssl_ca=/certs-mysql/ca.pem
+ssl_cert=/certs-mysql/db-remote.cert.pem
+ssl_key=/certs-mysql/db-remote.key.pem
