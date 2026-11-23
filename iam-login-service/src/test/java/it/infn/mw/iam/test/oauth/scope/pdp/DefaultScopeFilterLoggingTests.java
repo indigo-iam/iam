@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -37,6 +39,8 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopeFilter;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyEngine;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -48,8 +52,9 @@ class DefaultScopeFilterLoggingTests {
   private final IamAccount account = mock(IamAccount.class);
   private final AccountUtils accounts = mock(AccountUtils.class);
   private final ScopePolicyEngine engine = mock(ScopePolicyEngine.class);
+  private final ClientDetailsService clientDetailsService = mock(ClientDetailsService.class);
   private final DefaultScopeFilter filter =
-      new DefaultScopeFilter(properties, accounts, engine, properties);
+      new DefaultScopeFilter(properties, accounts, engine, properties, clientDetailsService);
 
   private final Logger logger = (Logger) LoggerFactory.getLogger(DefaultScopeFilter.class);
   private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
@@ -59,6 +64,10 @@ class DefaultScopeFilterLoggingTests {
   void setUp() {
     properties.getScopeAuthz().setEnabled(true);
     when(accounts.isAdmin(account)).thenReturn(true);
+
+    ClientDetailsEntity confidentialClient = new ClientDetailsEntity();
+    confidentialClient.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
+    when(clientDetailsService.loadClientByClientId(anyString())).thenReturn(confidentialClient);
 
     previousLevel = logger.getLevel();
     logger.setLevel(Level.INFO);

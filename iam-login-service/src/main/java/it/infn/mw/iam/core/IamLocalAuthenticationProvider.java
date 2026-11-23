@@ -232,6 +232,14 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   private ExtendedAuthenticationToken createPreAuthenticatedToken(Authentication authentication) {
 
+    // Security interceptors can reauthenticate the token while MFA is pending. Keep the
+    // original authorities instead of replacing them with ROLE_PRE_AUTHENTICATED.
+    // Other trusted preauthenticated tokens still need their initial MFA conversion.
+    if (authentication instanceof ExtendedAuthenticationToken token && token.isPreAuthenticated()
+        && token.getFullyAuthenticatedAuthorities() != null) {
+      return token;
+    }
+
     ExtendedAuthenticationToken token =
         createPasswordToken(authentication, List.of(Authorities.ROLE_PRE_AUTHENTICATED));
 

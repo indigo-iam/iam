@@ -41,6 +41,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -825,10 +827,11 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   }
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
       scopes = "iam:admin.write")
-  void testEquivalentPolicyCreationNotAllowed() throws Exception {
+  void testEquivalentPolicyCreationNotAllowed(boolean differentDescription) throws Exception {
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));
 
@@ -849,12 +852,20 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
         .contentType(APPLICATION_JSON))
       .andExpect(status().isCreated());
 
+    long policyCount = scopePolicyRepo.count();
+    if (differentDescription) {
+      sp.setDescription("A different description for the same policy");
+      serializedSp = mapper.writeValueAsString(sp);
+    }
+
     mvc
       .perform(post("/iam/scope_policies").with(csrf().asHeader())
         .content(serializedSp)
         .contentType(APPLICATION_JSON))
-      .andExpect(status().isBadRequest())
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.error", startsWith("Duplicate policy error")));
+
+    assertThat(scopePolicyRepo.count(), equalTo(policyCount));
   }
 
   @Test
@@ -913,7 +924,7 @@ class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
       .perform(put("/iam/scope_policies/{id}", savedObject.getId()).with(csrf().asHeader())
         .content(mapper.writeValueAsString(sp2))
         .contentType(APPLICATION_JSON))
-      .andExpect(status().isBadRequest())
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.error", startsWith("Duplicate policy error")));
 
   }

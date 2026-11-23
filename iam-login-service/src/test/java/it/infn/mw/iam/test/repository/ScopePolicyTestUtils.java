@@ -32,7 +32,7 @@ public class ScopePolicyTestUtils {
   public static final String OPENID = "openid";
   public static final String PROFILE = "profile";
   public static final String WHATEVER = "whatever";
-  public static final String CLIENT_ID = "1234";
+  public static final String CLIENT_ID = "client";
 
   protected ScopePolicyDTO initPermitScopePolicyDTO() {
     ScopePolicyDTO dto = new ScopePolicyDTO();

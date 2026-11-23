@@ -36,6 +36,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -54,94 +55,94 @@ import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 @SpringBootTest(properties = "iam.registration.fields.certificate.field-behaviour = OPTIONAL")
 class X509PreauthenticationProcessingFilterTests {
 
-    private static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
-    private static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
+  private static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
+  private static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
 
-    // "Sat Sep 24 17:39:34 CEST 2022"
-    private static final Date TEST_0_END_DATE = new Date(1664033974000L);
-    private static final String TEST_0_CERT = """
-            -----BEGIN CERTIFICATE-----
-            MIIDnjCCAoagAwIBAgIBCTANBgkqhkiG9w0BAQUFADAtMQswCQYDVQQGEwJJVDEM
-            MAoGA1UECgwDSUdJMRAwDgYDVQQDDAdUZXN0IENBMB4XDTEyMDkyNjE1MzkzNFoX
-            DTIyMDkyNDE1MzkzNFowKzELMAkGA1UEBhMCSVQxDDAKBgNVBAoTA0lHSTEOMAwG
-            A1UEAxMFdGVzdDAwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDKxtrw
-            hoZ27SxxISjlRqWmBWB6U+N/xW2kS1uUfrQRav6auVtmtEW45J44VTi3WW6Y113R
-            BwmS6oW+3lzyBBZVPqnhV9/VkTxLp83gGVVvHATgGgkjeTxIsOE+TkPKAoZJ/QFc
-            CfPh3WdZ3ANI14WYkAM9VXsSbh2okCsWGa4o6pzt3Pt1zKkyO4PW0cBkletDImJK
-            2vufuDVNm7Iz/y3/8pY8p3MoiwbF/PdSba7XQAxBWUJMoaleh8xy8HSROn7tF2al
-            xoDLH4QWhp6UDn2rvOWseBqUMPXFjsUi1/rkw1oHAjMroTk5lL15GI0LGd5dTVop
-            kKXFbTTYxSkPz1MLAgMBAAGjgcowgccwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU
-            fLdB5+jO9LyWN2/VCNYgMa0jvHEwDgYDVR0PAQH/BAQDAgXgMD4GA1UdJQQ3MDUG
-            CCsGAQUFBwMBBggrBgEFBQcDAgYKKwYBBAGCNwoDAwYJYIZIAYb4QgQBBggrBgEF
-            BQcDBDAfBgNVHSMEGDAWgBSRdzZ7LrRp8yfqt/YIi0ojohFJxjAnBgNVHREEIDAe
-            gRxhbmRyZWEuY2VjY2FudGlAY25hZi5pbmZuLml0MA0GCSqGSIb3DQEBBQUAA4IB
-            AQANYtWXetheSeVpCfnId9TkKyKTAp8RahNZl4XFrWWn2S9We7ACK/G7u1DebJYx
-            d8POo8ClscoXyTO2BzHHZLxauEKIzUv7g2GehI+SckfZdjFyRXjD0+wMGwzX7MDu
-            SL3CG2aWsYpkBnj6BMlr0P3kZEMqV5t2+2Tj0+aXppBPVwzJwRhnrSJiO5WIZAZf
-            49YhMn61sQIrepvhrKEUR4XVorH2Bj8ek1/iLlgcmFMBOds+PrehSRR8Gn0IjlEg
-            C68EY6KPE+FKySuS7Ur7lTAjNdddfdAgKV6hJyST6/dx8ymIkb8nxCPnxCcT2I2N
-            vDxcPMc/wmnMa+smNal0sJ6m
-            -----END CERTIFICATE-----""";
+  // "Sat Sep 24 17:39:34 CEST 2022"
+  private static final Date TEST_0_END_DATE = new Date(1664033974000L);
+  private static final String TEST_0_CERT = """
+      -----BEGIN CERTIFICATE-----
+      MIIDnjCCAoagAwIBAgIBCTANBgkqhkiG9w0BAQUFADAtMQswCQYDVQQGEwJJVDEM
+      MAoGA1UECgwDSUdJMRAwDgYDVQQDDAdUZXN0IENBMB4XDTEyMDkyNjE1MzkzNFoX
+      DTIyMDkyNDE1MzkzNFowKzELMAkGA1UEBhMCSVQxDDAKBgNVBAoTA0lHSTEOMAwG
+      A1UEAxMFdGVzdDAwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDKxtrw
+      hoZ27SxxISjlRqWmBWB6U+N/xW2kS1uUfrQRav6auVtmtEW45J44VTi3WW6Y113R
+      BwmS6oW+3lzyBBZVPqnhV9/VkTxLp83gGVVvHATgGgkjeTxIsOE+TkPKAoZJ/QFc
+      CfPh3WdZ3ANI14WYkAM9VXsSbh2okCsWGa4o6pzt3Pt1zKkyO4PW0cBkletDImJK
+      2vufuDVNm7Iz/y3/8pY8p3MoiwbF/PdSba7XQAxBWUJMoaleh8xy8HSROn7tF2al
+      xoDLH4QWhp6UDn2rvOWseBqUMPXFjsUi1/rkw1oHAjMroTk5lL15GI0LGd5dTVop
+      kKXFbTTYxSkPz1MLAgMBAAGjgcowgccwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU
+      fLdB5+jO9LyWN2/VCNYgMa0jvHEwDgYDVR0PAQH/BAQDAgXgMD4GA1UdJQQ3MDUG
+      CCsGAQUFBwMBBggrBgEFBQcDAgYKKwYBBAGCNwoDAwYJYIZIAYb4QgQBBggrBgEF
+      BQcDBDAfBgNVHSMEGDAWgBSRdzZ7LrRp8yfqt/YIi0ojohFJxjAnBgNVHREEIDAe
+      gRxhbmRyZWEuY2VjY2FudGlAY25hZi5pbmZuLml0MA0GCSqGSIb3DQEBBQUAA4IB
+      AQANYtWXetheSeVpCfnId9TkKyKTAp8RahNZl4XFrWWn2S9We7ACK/G7u1DebJYx
+      d8POo8ClscoXyTO2BzHHZLxauEKIzUv7g2GehI+SckfZdjFyRXjD0+wMGwzX7MDu
+      SL3CG2aWsYpkBnj6BMlr0P3kZEMqV5t2+2Tj0+aXppBPVwzJwRhnrSJiO5WIZAZf
+      49YhMn61sQIrepvhrKEUR4XVorH2Bj8ek1/iLlgcmFMBOds+PrehSRR8Gn0IjlEg
+      C68EY6KPE+FKySuS7Ur7lTAjNdddfdAgKV6hJyST6/dx8ymIkb8nxCPnxCcT2I2N
+      vDxcPMc/wmnMa+smNal0sJ6m
+      -----END CERTIFICATE-----""";
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Value("${iam.dashboard.base-path}")
+  private String dashboardBasePath;
 
-    @MockBean
-    private X509AuthenticationCredentialExtractor credentialExtractor;
+  @Autowired
+  private MockMvc mockMvc;
 
-    @MockBean
-    private IamX509CertificateRepository certificateRepo;
+  @MockBean
+  private X509AuthenticationCredentialExtractor credentialExtractor;
 
-    @Test
-    void x509_filter_is_triggered_when_credential_is_present() throws Exception {
+  @MockBean
+  private IamX509CertificateRepository certificateRepo;
 
-        IamX509AuthenticationCredential cred = mock(IamX509AuthenticationCredential.class);
+  @Test
+  void x509_filter_is_triggered_when_credential_is_present() throws Exception {
 
-        when(cred.failedVerification()).thenReturn(false);
-        when(cred.getSubject()).thenReturn(TEST_0_SUBJECT);
-        when(cred.getIssuer()).thenReturn(TEST_0_ISSUER);
-        X509Certificate userCert = loadTestCertificate();
+    IamX509AuthenticationCredential cred = mock(IamX509AuthenticationCredential.class);
 
-        when(cred.getCertificateChain()).thenReturn(new X509Certificate[] {userCert});
+    when(cred.failedVerification()).thenReturn(false);
+    when(cred.getSubject()).thenReturn(TEST_0_SUBJECT);
+    when(cred.getIssuer()).thenReturn(TEST_0_ISSUER);
+    X509Certificate userCert = loadTestCertificate();
 
-        when(credentialExtractor.extractX509Credential(any())).thenReturn(Optional.of(cred));
+    when(cred.getCertificateChain()).thenReturn(new X509Certificate[] {userCert});
 
-        IamAccount account = mock(IamAccount.class);
-        when(account.isActive()).thenReturn(true);
+    when(credentialExtractor.extractX509Credential(any())).thenReturn(Optional.of(cred));
 
-        IamX509Certificate cert = mock(IamX509Certificate.class);
-        when(cert.getAccount()).thenReturn(account);
+    IamAccount account = mock(IamAccount.class);
+    when(account.isActive()).thenReturn(true);
 
-        when(certificateRepo.findBySubjectDnAndIssuerDn(any(), any()))
-            .thenReturn(Optional.of(cert));
+    IamX509Certificate cert = mock(IamX509Certificate.class);
+    when(cert.getAccount()).thenReturn(account);
 
-        mockMvc.perform(get("/").param("x509ClientAuth", "true"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/login"))
-            .andExpect(request()
-                .attribute(IamX509PreauthenticationProcessingFilter.X509_ALMOST_EXPIRED, true))
-            .andExpect(request().sessionAttribute(
-                    IamX509PreauthenticationProcessingFilter.X509_ALMOST_EXPIRED, true))
-            .andExpect(request().attribute(IamX509PreauthenticationProcessingFilter.X509_REQUIRED,
-                    ExternalAuthAttributeSectionBehaviour.OPTIONAL))
-            .andExpect(request().sessionAttribute(
-                    IamX509PreauthenticationProcessingFilter.X509_REQUIRED,
-                    ExternalAuthAttributeSectionBehaviour.OPTIONAL))
-            .andExpect(request().attribute(
-                    IamX509PreauthenticationProcessingFilter.X509_EXPIRATION_DATE, TEST_0_END_DATE))
-            .andExpect(request().sessionAttribute(
-                    IamX509PreauthenticationProcessingFilter.X509_EXPIRATION_DATE, TEST_0_END_DATE))
-            .andExpect(request().sessionAttribute(
-                    IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY,
-                    notNullValue()));
+    when(certificateRepo.findBySubjectDnAndIssuerDn(any(), any())).thenReturn(Optional.of(cert));
 
-        verify(certificateRepo).findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
-    }
+    mockMvc.perform(get("/").param("x509ClientAuth", "true"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(dashboardBasePath))
+      .andExpect(
+          request().attribute(IamX509PreauthenticationProcessingFilter.X509_ALMOST_EXPIRED, true))
+      .andExpect(request()
+        .sessionAttribute(IamX509PreauthenticationProcessingFilter.X509_ALMOST_EXPIRED, true))
+      .andExpect(request().attribute(IamX509PreauthenticationProcessingFilter.X509_REQUIRED,
+          ExternalAuthAttributeSectionBehaviour.OPTIONAL))
+      .andExpect(request().sessionAttribute(IamX509PreauthenticationProcessingFilter.X509_REQUIRED,
+          ExternalAuthAttributeSectionBehaviour.OPTIONAL))
+      .andExpect(request().attribute(IamX509PreauthenticationProcessingFilter.X509_EXPIRATION_DATE,
+          TEST_0_END_DATE))
+      .andExpect(request().sessionAttribute(
+          IamX509PreauthenticationProcessingFilter.X509_EXPIRATION_DATE, TEST_0_END_DATE))
+      .andExpect(request().sessionAttribute(
+          IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY, notNullValue()));
 
-    private static X509Certificate loadTestCertificate() throws Exception {
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+    verify(certificateRepo).findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
+  }
 
-        return (X509Certificate) cf.generateCertificate(
-                new ByteArrayInputStream(TEST_0_CERT.getBytes(StandardCharsets.US_ASCII)));
-    }
+  private static X509Certificate loadTestCertificate() throws Exception {
+    CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+    return (X509Certificate) cf.generateCertificate(
+        new ByteArrayInputStream(TEST_0_CERT.getBytes(StandardCharsets.US_ASCII)));
+  }
 }

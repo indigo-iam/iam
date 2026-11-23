@@ -34,6 +34,7 @@
 
         <div id="login-external-authn">
             <form class="hidden" id="oidc-link-account" action="{{$ctrl.actionUrl}}" method="post">
+                <input type="hidden" iam-csrf-token>
                 <div ng-repeat="provider in $ctrl.providers">
                     <div id="oidc-login-{{provider.name}}" class="ext-authn-login-button">
                         <button class="btn btn-block btn-social btn-{{provider.loginButton.style}} social-authn" type="submit" data-ng-click="$ctrl.linkOidcAccount()" name="id" value="{{provider.issuer}}">
@@ -59,6 +60,7 @@
 <div class="modal-footer">
 
     <form id="link-account-form" action="{{$ctrl.actionUrl}}" method="post" ng-if="$ctrl.action == 'link'">
+        <input type="hidden" iam-csrf-token>
         <button class="btn btn-primary" id="btn-link" data-dismiss="modal" type="button" data-ng-click="$ctrl.doLink()" ng-disabled="!$ctrl.enabled" ng-show="$ctrl.showLinkButton">Link</button>
         <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button" data-ng-click="$ctrl.cancel()">Cancel</button>
     </form>

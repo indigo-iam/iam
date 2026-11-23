@@ -117,14 +117,10 @@ class TokenEndpointClientAuthenticationTests implements StructuredScopeTestSuppo
   @Test
   void testTokenEndpointPublicClientAuthentication() throws Exception {
 
-    // @formatter:off
-    mvc.perform(post(TOKEN_ENDPOINT)
-        .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
+    mvc
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("client_id", PUBLIC_CLIENT_ID))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.scope", containsString("profile")))
-      .andExpect(jsonPath("$.scope", containsString("email")));
-    // @formatter:on
+      .andExpect(status().isUnauthorized());
   }
 
   @Test

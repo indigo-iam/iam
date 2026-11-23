@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -165,6 +168,36 @@ class ClientLastUsedTests extends TokenGetterUtils {
         new TokenRequest(emptyMap(), TEST_CLIENT_ID, Collections.emptySet(), "");
     tokenService.refreshAccessToken(refreshToken, tokenRequest);
     assertLastUsedIs(TEST_CLIENT_ID, now);
+  }
+
+  @Test
+  void testClientLastUsedUpdateOnIntrospection() throws Exception {
+
+    iamProperties.getClient().setTrackLastUsed(false);
+    context.useLocalUser(LOOKUP_CLIENT_ID, TEST_347_USER, new String[] {"ROLE_USER"});
+    String accessToken = getPasswordToken(LOOKUP_CLIENT_ID, LOOKUP_CLIENT_SECRET, TEST_347_USER,
+        "password", "openid").accessToken();
+    assertNotNull(accessToken);
+    assertNotYetUsed(LOOKUP_CLIENT_ID);
+
+    iamProperties.getClient().setTrackLastUsed(true);
+    mvc.perform(post("/introspect")
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType("application/x-www-form-urlencoded")
+        .param("token", accessToken))
+      .andExpect(status().isOk());
+
+    assertLastUsedIs(PROTECTED_RESOURCE_ID, now);
+  }
+
+  @Test
+  void testInactiveClientLastUsedIsNotUpdated() {
+
+    iamProperties.getClient().setTrackLastUsed(true);
+    clientDetailsService.findClientByClientId(TEST_CLIENT_ID).get().setActive(false);
+
+    clientDetailsService.findClientByClientIdAndMarkUsed(TEST_CLIENT_ID);
+    assertLastUsedIs(TEST_CLIENT_ID, LocalDate.of(1994, 3, 21));
   }
 
   private void assertLastUsedIs(String clientId, LocalDate expected) {

@@ -71,6 +71,7 @@
   
   
   <!-- Dashboard app -->
+  <script type="text/javascript" src="${resourcesPrefix}/iam/js/csrf.interceptor.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/dashboard-app.module.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/dashboard-app.config.js"></script>
 

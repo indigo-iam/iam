@@ -585,6 +585,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
+  public boolean setAccountEmailIfAvailable(IamAccount account, String email) {
+    try {
+      setAccountEmail(account, email);
+      return true;
+    } catch (EmailAlreadyBoundException e) {
+      return false;
+    }
+  }
+
+  @Override
   public IamAccount setAccountEndTime(IamAccount account, Date endTime) {
     checkNotNull(account, "Cannot set endTime on a null account");
 
