@@ -25,6 +25,8 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Pageable;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -46,6 +48,8 @@ public interface ClientManagementService {
 
   RegisteredClientDTO updateClient(@NotBlank String clientId,
       @NotNull @Valid RegisteredClientDTO client) throws ParseException;
+
+  RegisteredClientDTO patchClient(@NotBlank String clientId, @NotNull JsonNode patch);
 
   RegisteredClientDTO generateNewClientSecret(@NotBlank String clientId);
 
