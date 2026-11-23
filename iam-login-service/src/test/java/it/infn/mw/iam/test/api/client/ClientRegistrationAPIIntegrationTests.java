@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -434,6 +435,40 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
     assertEquals(originalGrantTypes, after.getGrantTypes());
     assertEquals(originalResponseTypes, after.getResponseTypes());
     assertEquals(originalName, after.getClientName());
+  }
+
+  @Test
+  void dynamicRegistrationUpdateDoesNotChangeClientId() throws Exception {
+
+    ObjectNode payload = validAuthorizationCodeClientPayload();
+
+    String responseJson = mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).with(csrf())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload)))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO created = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    String clientId = created.getClientId();
+    assertNotNull(created.getRegistrationAccessToken());
+
+    String updatedClientId = "client-id-updated";
+
+    mvc
+      .perform(put(ClientRegistrationApiController.ENDPOINT + "/" + clientId).with(csrf())
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + created.getRegistrationAccessToken())
+        .contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(payload.put("client_id", updatedClientId))))
+      .andExpect(status().isOk());
+
+    ClientDetailsEntity updated = clientRepository.findByClientId(clientId).orElseThrow();
+
+    assertEquals(clientId, updated.getClientId());
+    assertTrue(clientRepository.findByClientId(updatedClientId).isEmpty());
   }
 
   private ObjectNode validAuthorizationCodeClientPayload() throws Exception {

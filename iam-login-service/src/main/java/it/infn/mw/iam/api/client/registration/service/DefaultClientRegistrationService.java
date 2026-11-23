@@ -489,6 +489,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
+    newClient.setClientId(oldClient.getClientId());
     if (ClientUtils.AUTH_METHODS_REQUIRING_SECRET.contains(newClient.getTokenEndpointAuthMethod())
         && Objects.isNull(oldClient.getClientSecret())) {
       String plainClientSecret = clientUtils.generateClientSecret();
