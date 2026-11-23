@@ -78,6 +78,7 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.GrantTypes;
 import it.infn.mw.iam.core.oauth.consent.BlockedUriService;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
@@ -489,6 +490,48 @@ class ClientRegistrationServiceTests extends TokenGetterUtils {
     assertThat(response.getRegistrationAccessToken(), nullValue());
     assertThat(response.getClientSecret(), notNullValue());
     assertThat(response.getContacts(), hasItem(adminAccount.getUserInfo().getEmail()));
+  }
+
+  @Test
+  void testConfiguredForbiddenGrantTypesAreEnforced() throws ParseException {
+    GrantTypes defaultGrantTypes = registrationProperties.getGrantTypes();
+    registrationProperties
+      .setGrantTypes(new GrantTypes(Set.of(AuthorizationGrantType.DEVICE_CODE), Set.of()));
+
+    try {
+      RegisteredClientDTO forbiddenRequest = new RegisteredClientDTO();
+      forbiddenRequest.setClientName("example");
+      forbiddenRequest
+        .setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.DEVICE_CODE));
+      forbiddenRequest.setRedirectUris(Set.of("https://example/cb"));
+
+      InvalidClientRegistrationRequest exception =
+          Assertions.assertThrows(InvalidClientRegistrationRequest.class,
+              () -> service.registerClient(forbiddenRequest, userAuth));
+
+      assertThat(exception.getMessage(), containsString(
+          "Grant type not allowed: " + AuthorizationGrantType.DEVICE_CODE.getGrantType()));
+
+      RegisteredClientDTO request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request
+        .setGrantTypes(Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+      request.setRedirectUris(Set.of("https://example/cb"));
+      RegisteredClientDTO response = service.registerClient(request, userAuth);
+
+      assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.TOKEN_EXCHANGE));
+
+      request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request.setGrantTypes(
+          Set.of(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+      request.setRedirectUris(Set.of("https://example/cb"));
+      response = service.registerClient(request, noAuth);
+
+      assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    } finally {
+      registrationProperties.setGrantTypes(defaultGrantTypes);
+    }
   }
 
   @Test
