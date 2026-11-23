@@ -267,6 +267,24 @@ class IamLocalAuthenticationProviderTests {
   }
 
   @Test
+  void mandatoryMfaWithoutEnrollmentLeavesAuthenticationPending() {
+    IamAccount account = stubAccount("user");
+    UserDetails user = User.withUsername("user").password("encoded").authorities("ROLE_USER").build();
+    when(userDetailsService.loadUserByUsername("user")).thenReturn(user);
+    when(passwordEncoder.matches("cred", "encoded")).thenReturn(true);
+    when(iamTotpMfaService.isAuthenticatorAppActive(account)).thenReturn(false);
+    when(iamTotpMfaProperties.isMultiFactorMandatory()).thenReturn(true);
+
+    var result = (ExtendedAuthenticationToken)
+        iamLocalAuthenticationProvider.authenticate(loginRequest("user"));
+
+    assertTrue(result.isPreAuthenticated());
+    assertFalse(result.isAuthenticated());
+    assertEquals(Set.of(Authorities.ROLE_PRE_AUTHENTICATED), Set.copyOf(result.getAuthorities()));
+    verifyNoLockoutMutation();
+  }
+
+  @Test
   void successfulPasswordLoginWithoutMfaResetsLockout() {
     IamAccount account = stubAccount("user");
 
