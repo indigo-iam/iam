@@ -57,7 +57,7 @@ public class JWTCriptoConfig {
   }
 
   @Bean
-  @Profile({"dev", "h2-test", "mysql-test"})
+  @Profile({"dev", "h2-test", "mysql-test", "postgresql-test"})
   JwkKeyStore testKeyStore(JwkKeyStoreLoader loader, IamProperties iamProperties) {
 
     String location = iamProperties.getJwk().getKeystoreLocation();

@@ -1,32 +1,76 @@
 name: Token not in database tests
 
-on: [push] 
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      database:
+        description: Database used by the tests
+        type: choice
+        options:
+          - default
+          - mysql
+          - postgresql
+        default: default
+
+permissions:
+  contents: read
 
 jobs:
   build-and-test-token-not-in-db:
+    name: Tests with ATs not stored in the db (${{ matrix.database }})
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ${{ fromJSON(
+          (inputs.database == 'mysql' && '["mysql"]') ||
+          (inputs.database == 'postgresql' && '["postgresql"]') ||
+          vars.TEST_DATABASES ||
+          '["mysql","postgresql"]') }}
+
+    # MySQL is preinstalled on the runner, PostgreSQL runs as a service container
+    # (an empty image skips the service)
+    services:
+      postgres:
+        image: ${{ matrix.database == 'postgresql' && 'postgres:14-alpine' || '' }}
+        env:
+          POSTGRES_DB: iam
+          POSTGRES_USER: iam
+          POSTGRES_PASSWORD: pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iam -d iam"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-    - name: Checkout
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          cache: maven
+          java-version: 17
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v5
-      with:
-        distribution: temurin
-        cache: maven
-        java-version: 17
+      - name: Start MySQL
+        if: matrix.database == 'mysql'
+        run: |
+          sudo systemctl start mysql
+          mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
+          mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
+          mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
+          mysql -uroot -proot -e "FLUSH PRIVILEGES;"
 
-    - name: Run tests when ATs are not stored in the db
-      env:
-        IAM_DB_HOST: localhost
-      run: |
-        sudo systemctl start mysql
-        mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
-        mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
-        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
-        mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test -Diam.access_token.store_on_database=false -q package
+      - name: Run tests when ATs are not stored in the db
+        env:
+          IAM_DB_HOST: localhost
+        run: |
+          mvn -B -ntp package -Dspring.profiles.active=${{ matrix.database }}-test -Diam.access_token.store_on_database=false

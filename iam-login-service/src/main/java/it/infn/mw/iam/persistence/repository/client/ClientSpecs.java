@@ -90,7 +90,8 @@ public class ClientSpecs {
   }
 
   public static Specification<ClientDetailsEntity> hasClientNameLike(String filter) {
-    return (root, query, builder) -> builder.like(root.get(CLIENT_NAME), wildcardify(filter));
+    return (root, query, builder) -> builder.like(builder.lower(root.get(CLIENT_NAME)),
+        wildcardify(filter.toLowerCase()));
   }
 
   public static Specification<ClientDetailsEntity> hasContactLike(String filter) {

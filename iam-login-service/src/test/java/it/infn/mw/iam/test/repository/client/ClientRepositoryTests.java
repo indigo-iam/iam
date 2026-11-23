@@ -152,7 +152,8 @@ class ClientRepositoryTests extends TokenGetterUtils {
 
     assertThat(exception.getMessage(),
         anyOf(containsString("Unique index or primary key violation"),
-            containsString("Duplicate entry")));
+            containsString("Duplicate entry"),
+            containsString("duplicate key value violates unique constraint")));
 
   }
 
